@@ -1,16 +1,36 @@
 import pathlib
-from setuptools import setup
+from setuptools import setup, find_packages
+import codecs
+import os
+
+
+VERSION = '0.0.1'
+DESCRIPTION = 'Building machine learning models has never been easier.'
+LONG_DESCRIPTION = 'The ability to perform exploratory data analysis, data preprocessing, data cleaning, data transformation, data segregation, model training, model prediction, and model evaluation has been put together in this package to allow simple flow of ML operations.'
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
+
+# Setting up
 setup(
-  name="leopy",
-  version="0.0.1",
-  description="A beginners hack to data-preprocessing.",
-  long_description=README,
-  long_description_content_type="text/markdown",
-  author="leopy",
-  author_email="workwithtechleo@gmail.com",
-  license="MIT",
-  packages=["leopy"],
-  zip_safe=False
+    name="mlwizard",
+    license="MIT",
+    version=VERSION,
+    author="TechLeo (Onyiriuba Leonard Chukwubuikem)",
+    author_email="<techleo.ng@outlook.com>",
+    description=DESCRIPTION,
+    # long_description=README,
+    long_description_content_type="text/markdown",
+    long_description=LONG_DESCRIPTION,
+    packages=find_packages(),
+    install_requires=['datatable', 'pandas', 'numpy', 'matplotlib', 'seaborn', 'sklearn', 'ydata_profiling', 'sweetviz', 'warnings', 'imblearn'],
+    keywords = ['machine learning', 'data science', 'python library', 'deep learning', 'data analysis', 'predictive modeling', 'feature engineering', 'model training', 'algorithm implementation', 'data preprocessing', 'open source', 'neural networks', 'supervised learning', 'unsupervised learning', 'model evaluation', 'ensemble learning', 'AI development', 'data exploration', 'ML framework', 'data cleaning', 'big data analytics', 'model deployment', 'natural language processing', 'computer vision', 'regression', 'classification', 'clustering', 'hyperparameter tuning', 'cross-validation', 'machine learning toolkit'],
+    classifiers=[
+        "Development Status :: 3 - Test Release",
+        "Intended Audience :: Testers",
+        "Programming Language :: Python :: 3",
+        "Operating System :: Unix",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+    ],
+    zip_safe=False
 )

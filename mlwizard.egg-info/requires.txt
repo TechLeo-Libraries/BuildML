@@ -1,0 +1,10 @@
+datatable
+pandas
+numpy
+matplotlib
+seaborn
+sklearn
+ydata_profiling
+sweetviz
+warnings
+imblearn
