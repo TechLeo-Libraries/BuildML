@@ -3,7 +3,7 @@ pandas
 numpy
 matplotlib
 seaborn
-sklearn
+scikit-learn
 ydata_profiling
 sweetviz
 warnings

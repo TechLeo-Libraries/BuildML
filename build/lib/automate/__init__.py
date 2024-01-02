@@ -20,7 +20,6 @@ __author__ = "TechLeo"
 __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
-__version__ = "0.0.1"
 
 
 

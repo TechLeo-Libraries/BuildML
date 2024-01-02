@@ -13,11 +13,10 @@ __author__ = "TechLeo"
 __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
-__version__ = "0.0.1"
 
 
-def select_features(x, y, strategy: str, estimator: str, number_of_features: int, warnings: bool = False):
-    if warnings == False:
+def select_features(x, y, strategy: str, estimator: str, number_of_features: int, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     types = ["rfe", "selectkbest", "selectfrommodel", "selectpercentile"]
@@ -66,15 +65,15 @@ def select_features(x, y, strategy: str, estimator: str, number_of_features: int
     
     
 
-def split_data(x, y, test_size, random_state, warnings: bool = False):
-    if warnings == False:
+def split_data(x, y, test_size, random_state, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     x_train, x_test, y_train, y_test = sms.train_test_split(x, y, test_size = test_size, random_state = random_state)
     return {"Training X": x_train, "Test X": x_test, "Training Y": y_train, "Test Y": y_test}
 
-def build_regressor_model(regressor, x_train, y_train, x_test, y_test, kfold: int = None, cross_validation: bool = False, warnings: bool = False):
-    if warnings == False:
+def build_regressor_model(regressor, x_train, y_train, x_test, y_test, kfold: int = None, cross_validation: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     model = regressor.fit(x_train, y_train)
@@ -118,8 +117,8 @@ def build_regressor_model(regressor, x_train, y_train, x_test, y_test, kfold: in
         return {"Model": model, "Predictions": {"Actual Training Y": y_train, "Actual Test Y": y_test, "Predicted Training Y": y_pred, "Predicted Test Y": y_pred1}, "Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}, "Cross Validation": {"Cross Validation Mean": score_mean, "Cross Validation Standard Deviation": score_std_dev}}
 
 
-def classifier_model_testing(classifier_model, variables_values: list, scaling: bool = False, warnings: bool = False):
-    if warnings == False:
+def classifier_model_testing(classifier_model, variables_values: list, scaling: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     scaler = sp.StandardScaler()
@@ -133,8 +132,8 @@ def classifier_model_testing(classifier_model, variables_values: list, scaling: 
         return prediction
     
 
-def regressor_model_testing(regressor_model, variables_values: list, scaling: bool = False, warnings: bool = False):
-    if warnings == False:
+def regressor_model_testing(regressor_model, variables_values: list, scaling: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     scaler = sp.StandardScaler()
@@ -148,8 +147,8 @@ def regressor_model_testing(regressor_model, variables_values: list, scaling: bo
         return prediction
    
 
-def build_classifier_model(classifier, x_train, y_train, x_test, y_test, kfold: int = None, cross_validation: bool = False, warnings: bool = False):
-    if warnings == False:
+def build_classifier_model(classifier, x_train, y_train, x_test, y_test, kfold: int = None, cross_validation: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore") 
     
     model = classifier.fit(x_train, y_train)    
@@ -282,8 +281,8 @@ def build_classifier_model(classifier, x_train, y_train, x_test, y_test, kfold: 
             }
 
 
-def build_multiple_regressors(regressors: list or tuple, x_train, y_train, x_test, y_test, kfold: int = None, cross_validation: bool = False, warnings: bool = False):
-    if warnings == False:
+def build_multiple_regressors(regressors: list or tuple, x_train, y_train, x_test, y_test, kfold: int = None, cross_validation: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     if isinstance(regressors, list) or isinstance(regressors, tuple):
@@ -294,8 +293,8 @@ def build_multiple_regressors(regressors: list or tuple, x_train, y_train, x_tes
     return multiple_regressor_models
 
 
-def build_multiple_classifiers(classifiers: list or tuple, x_train, y_train, x_test, y_test, kfold: int = None, cross_validation: bool = False, warnings: bool = False):
-    if warnings == False:
+def build_multiple_classifiers(classifiers: list or tuple, x_train, y_train, x_test, y_test, kfold: int = None, cross_validation: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     if isinstance(classifiers, list) or isinstance(classifiers, tuple):
@@ -306,8 +305,8 @@ def build_multiple_classifiers(classifiers: list or tuple, x_train, y_train, x_t
     return multiple_classifier_models
 
 
-def build_single_regressor_from_features(x, y, regressor, test_size: float, random_state: int, strategy: str, estimator: str, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False, warnings: bool = False):
-    if warnings == False:
+def build_single_regressor_from_features(x, y, regressor, test_size: float, random_state: int, strategy: str, estimator: str, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     types1 = ["selectkbest", "selectpercentile"]
@@ -518,8 +517,8 @@ def build_single_regressor_from_features(x, y, regressor, test_size: float, rand
     dataset_features = dataset_features.reset_index(drop = True)
     return {"Feature Metrics": dataset_features, "More Info": store}
 
-def build_single_classifier_from_features(x, y, classifier, test_size: float, random_state: int, strategy: str, estimator: str, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False, warnings: bool = False):
-    if warnings == False:
+def build_single_classifier_from_features(x, y, classifier, test_size: float, random_state: int, strategy: str, estimator: str, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     types1 = ["selectkbest", "selectpercentile"]
@@ -742,8 +741,8 @@ def build_single_classifier_from_features(x, y, classifier, test_size: float, ra
     return {"Feature Metrics": dataset_features, "More Info": store}
 
 
-def build_multiple_regressors_from_features(x, y, regressors: list or tuple, test_size: float, random_state: int,  strategy: str, estimator: str, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False, warnings: bool = False):
-    if warnings == False:
+def build_multiple_regressors_from_features(x, y, regressors: list or tuple, test_size: float, random_state: int,  strategy: str, estimator: str, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
         
     types1 = ["selectkbest", "selectpercentile"]
@@ -955,8 +954,8 @@ def build_multiple_regressors_from_features(x, y, regressors: list or tuple, tes
         
 
 
-def build_multiple_classifiers_from_features(x, y, classifiers: list or tuple, test_size: float, random_state: int, strategy: str, estimator: str, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False, warnings: bool = False):
-    if warnings == False:
+def build_multiple_classifiers_from_features(x, y, classifiers: list or tuple, test_size: float, random_state: int, strategy: str, estimator: str, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
     
     types1 = ["selectkbest", "selectpercentile"]
@@ -1180,8 +1179,8 @@ def build_multiple_classifiers_from_features(x, y, classifiers: list or tuple, t
 
 
 
-def classifier_graph(classifier, x_train, y_train, cmap_train = "viridis", cmap_test = "viridis", size_train_marker: float = 10, size_test_marker: float = 10, x_test=None, y_test=None, resolution=100, plot_title="Decision Boundary", warnings: bool = False):
-    if warnings == False:
+def classifier_graph(classifier, x_train, y_train, cmap_train = "viridis", cmap_test = "viridis", size_train_marker: float = 10, size_test_marker: float = 10, x_test=None, y_test=None, resolution=100, plot_title="Decision Boundary", warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
         
     feature1 = x_train.iloc[:, 0].name
@@ -1240,8 +1239,8 @@ def classifier_graph(classifier, x_train, y_train, cmap_train = "viridis", cmap_
         
         
 
-def FindK_KNN_Classifier(x_train, y_train, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, warnings: bool = False):
-    if warnings == False:
+def FindK_KNN_Classifier(x_train, y_train, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
         
     algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
@@ -1281,8 +1280,8 @@ def FindK_KNN_Classifier(x_train, y_train, weight = "uniform", algorithm = "auto
         raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
 
 
-def FindK_KNN_Regressor(x_train, y_train, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, warnings: bool = False):
-    if warnings == False:
+def FindK_KNN_Regressor(x_train, y_train, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, warning: bool = False):
+    if warning == False:
         warnings.filterwarnings("ignore")
         
     algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
