@@ -4,7 +4,7 @@ import codecs
 import os
 
 
-VERSION = '0.0.3'
+VERSION = '0.0.4'
 DESCRIPTION = 'Building machine learning models has never been easier.'
 LONG_DESCRIPTION = 'The ability to perform exploratory data analysis, data preprocessing, data cleaning, data transformation, data segregation, model training, model prediction, and model evaluation has been put together in this package to allow simple flow of ML operations.'
 HERE = pathlib.Path(__file__).parent
