@@ -6,5 +6,4 @@ seaborn
 scikit-learn
 ydata_profiling
 sweetviz
-warnings
 imblearn

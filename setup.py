@@ -4,7 +4,7 @@ import codecs
 import os
 
 
-VERSION = '0.0.2'
+VERSION = '0.0.3'
 DESCRIPTION = 'Building machine learning models has never been easier.'
 LONG_DESCRIPTION = 'The ability to perform exploratory data analysis, data preprocessing, data cleaning, data transformation, data segregation, model training, model prediction, and model evaluation has been put together in this package to allow simple flow of ML operations.'
 HERE = pathlib.Path(__file__).parent
@@ -22,7 +22,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=LONG_DESCRIPTION,
     packages=find_packages(),
-    install_requires=['datatable', 'pandas', 'numpy', 'matplotlib', 'seaborn', 'scikit-learn', 'ydata_profiling', 'sweetviz', 'warnings', 'imblearn'],
+    install_requires=['datatable', 'pandas', 'numpy', 'matplotlib', 'seaborn', 'scikit-learn', 'sweetviz', 'imblearn'],
     keywords = ['machine learning', 'data science', 'python library', 'deep learning', 'data analysis', 'predictive modeling', 'feature engineering', 'model training', 'algorithm implementation', 'data preprocessing', 'open source', 'neural networks', 'supervised learning', 'unsupervised learning', 'model evaluation', 'ensemble learning', 'AI development', 'data exploration', 'ML framework', 'data cleaning', 'big data analytics', 'model deployment', 'natural language processing', 'computer vision', 'regression', 'classification', 'clustering', 'hyperparameter tuning', 'cross-validation', 'machine learning toolkit'],
     classifiers=[
         "Development Status :: 4 - Beta",
