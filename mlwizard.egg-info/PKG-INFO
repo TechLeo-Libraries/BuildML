@@ -6,12 +6,20 @@ Author: TechLeo (Onyiriuba Leonard Chukwubuikem)
 Author-email: <techleo.ng@outlook.com>
 License: MIT
 Keywords: machine learning,data science,python library,deep learning,data analysis,predictive modeling,feature engineering,model training,algorithm implementation,data preprocessing,open source,neural networks,supervised learning,unsupervised learning,model evaluation,ensemble learning,AI development,data exploration,ML framework,data cleaning,big data analytics,model deployment,natural language processing,computer vision,regression,classification,clustering,hyperparameter tuning,cross-validation,machine learning toolkit
-Classifier: Development Status :: 3 - Test Release
-Classifier: Intended Audience :: Testers
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: End Users/Desktop
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
 Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
 Classifier: Operating System :: Unix
 Classifier: Operating System :: MacOS :: MacOS X
 Classifier: Operating System :: Microsoft :: Windows
+Requires-Python: >=3.0
 Description-Content-Type: text/markdown
 License-File: LICENSE
 
