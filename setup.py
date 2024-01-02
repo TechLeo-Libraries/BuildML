@@ -25,8 +25,8 @@ setup(
     install_requires=['datatable', 'pandas', 'numpy', 'matplotlib', 'seaborn', 'sklearn', 'ydata_profiling', 'sweetviz', 'warnings', 'imblearn'],
     keywords = ['machine learning', 'data science', 'python library', 'deep learning', 'data analysis', 'predictive modeling', 'feature engineering', 'model training', 'algorithm implementation', 'data preprocessing', 'open source', 'neural networks', 'supervised learning', 'unsupervised learning', 'model evaluation', 'ensemble learning', 'AI development', 'data exploration', 'ML framework', 'data cleaning', 'big data analytics', 'model deployment', 'natural language processing', 'computer vision', 'regression', 'classification', 'clustering', 'hyperparameter tuning', 'cross-validation', 'machine learning toolkit'],
     classifiers=[
-        "Development Status :: 3 - Test Release",
-        "Intended Audience :: Testers",
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: End Users/Desktop",
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
