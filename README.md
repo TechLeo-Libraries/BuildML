@@ -149,11 +149,11 @@ MLWizard is distributed under the MIT License. Feel free to use, modify, and dis
 ## Contributors
 We'd like to express our gratitude to the following contributors that have influenced and supported MLWizard:
 
-[Onyiriuba Leonard][https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/]: for overseeing the entire project development lifecycle.
+[Onyiriuba Leonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/): for overseeing the entire project development lifecycle.
 Role: Project Lead and Maintainer.
 Email: workwithtechleo@gmail.com.
 
 
-[The TechLeo Commumnity][https://www.linkedin.com/in/techleo/]: for allowing the use of this project as a way to explain, learn, test, understand, and make easy, the machine learning process. 
+[The TechLeo Commumnity](https://www.linkedin.com/in/techleo/): for allowing the use of this project as a way to explain, learn, test, understand, and make easy, the machine learning process. 
 Role: Testers.
 Email: techleo.ng@gmail.com.
