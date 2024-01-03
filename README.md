@@ -1,6 +1,25 @@
 # MLWizard
 
-MLWizard is a Python machine learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. MLWizard is a distribution of the TechLeo community with the aim of making the complex, easy.
+MLWizard is a Python machine learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. MLWizard is a distribution of the [TechLeo](https://www.linkedin.com/in/techleo/) community with the aim of making the complex, easy.
+
+## Author
+
+**TechLeo**
+
+- **Email:** techleo.ng@outlook.com
+- **GitHub:** [TechLeo GitHub](https://github.com/TechLeo)
+- **LinkedIn:** [TechLeo LinkedIn](https://www.linkedin.com/in/techleo/)
+
+## Contact
+
+For inquiries, suggestions, or feedback, please feel free to reach out to the author:
+
+- **Email:** techleo.ng@outlook.com
+- **GitHub Issues:** [MLWizard Issues](https://github.com/TechLeo/mlwizard/issues)
+- **LinkedIn Messages:** [TechLeo LinkedIn](https://www.linkedin.com/in/techleo/)
+
+Your feedback is valuable and contributes to the continuous improvement of MLWizard. The author welcomes collaboration and looks forward to hearing from the users of MLWizard.
+
 
 ## Features
 
@@ -102,17 +121,34 @@ build_model = data.build_multiple_classifiers()
 ## Acknowledgments
 MLWizard relies on several open-source libraries to provide its functionality. We would like to express our gratitude to the developers and contributors of the following libraries:
 
-NumPy
-Pandas
-Matplotlib
-Seaborn
-yData Profiling
-Sweetviz
-Imbalanced-Learn (imblearn)
-Scikit-learn
-Warnings
-Datatable
-The MLWizard library builds upon the functionality provided by these excellent tools, and we appreciate the effort and dedication of their respective communities.
+- [NumPy](https://numpy.org/)
+- [Pandas](https://pandas.pydata.org/)
+- [Matplotlib](https://matplotlib.org/)
+- [Seaborn](https://seaborn.pydata.org/)
+- [yData Profiling](https://github.com/ydataai/ydata-profiling)
+- [Sweetviz](https://github.com/fbdesignpro/sweetviz)
+- [Imbalanced-Learn (imblearn)](https://imbalanced-learn.org/)
+- [Scikit-learn](https://scikit-learn.org/)
+- [Warnings](https://docs.python.org/3/library/warnings.html)
+- [Datatable](https://datatable.readthedocs.io/en/latest/)
+
+The MLWizard library builds upon the functionality provided by these excellent tools, We sincerely thank the maintainers and contributors of these libraries for their valuable contributions to the open-source community.
+
 
 ## License
 MLWizard is distributed under the MIT License. Feel free to use, modify, and distribute it according to the terms of the license.
+
+
+## Changelog
+
+### v0.0.1 (January 2024):
+
+- First release
+
+
+## Contributors
+We'd like to express our gratitude to the following contributors that have influenced and supported MLWizard:
+
+[Onyiriuba Leonard][https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/]: for overseeing the entire project development lifecycle.
+Role: Project Lead and Maintainer.
+Email: workwithtechleo@gmail.com.
