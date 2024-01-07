@@ -145,7 +145,7 @@ class SupervisedLearning:
 
 
        
-    def __init__(self, dataset, user_guide: bool =  False, show_warnings: bool = False):
+    def __init__(self, dataset, show_warnings: bool = False):
         if isinstance(show_warnings, bool):
             if show_warnings == False:
                 self.warnings = show_warnings
