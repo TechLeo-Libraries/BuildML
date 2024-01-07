@@ -158,7 +158,6 @@ class SupervisedLearning:
         
         self.__dataset = dataset
         self.__data = dataset
-        self.__user_guide = user_guide
         self.__scaled = False
         self.__fixed_missing = False
         self.__eda = False
@@ -952,6 +951,7 @@ class SupervisedLearning:
     - sklearn.model_selection.cross_val_score : Evaluate a score by cross-validation.
 
         """
+        
         if self.regression_problem == True:
             if kfold == None and cross_validation == False:
                 training_rsquared = sm.r2_score(self.__y_train, self.__y_pred)

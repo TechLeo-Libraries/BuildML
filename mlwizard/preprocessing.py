@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import sklearn.impute as si
 import sklearn.preprocessing as sp
-from imblearn.over_sampling import SMOTE, RandomOverSampler
-from imblearn.under_sampling import RandomUnderSampler
+import imblearn.over_sampling as ios
+import imblearn.under_sampling as ius
 import warnings
 import datatable as dt
 
@@ -666,19 +666,19 @@ def fix_unbalanced_dataset(x_train, y_train, sampler: str, k_neighbors: int = No
         warnings.filterwarnings("ignore")
         
     if sampler == "SMOTE" and k_neighbors != None:
-        technique = SMOTE(random_state = 0, k_neighbors = k_neighbors)
+        technique = ios.SMOTE(random_state = 0, k_neighbors = k_neighbors)
         x_train, y_train = technique.fit_resample(x_train, y_train)
     
     elif sampler == "SMOTE" and k_neighbors == None:
-        technique = SMOTE(random_state = 0)
+        technique = ios.SMOTE(random_state = 0)
         x_train, y_train = technique.fit_resample(x_train, y_train)
         
     elif sampler == "Random over sampler" and k_neighbors == None:
-        technique = RandomOverSampler(random_state = 0)
+        technique = ios.RandomOverSampler(random_state = 0)
         x_train, y_train = technique.fit_resample(x_train, y_train)
         
     elif sampler == "Random under sampler" and k_neighbors == None:
-        technique = RandomUnderSampler(random_state = 0)
+        technique = ius.RandomUnderSampler(random_state = 0)
         x_train, y_train = technique.fit_resample(x_train, y_train)
         
     else:
