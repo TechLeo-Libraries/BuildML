@@ -7,16 +7,8 @@ jobs:
     name: Lint code base
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 16
-
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Run Super-Linter
         uses: github/super-linter@v4
