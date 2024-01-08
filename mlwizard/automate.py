@@ -41,8 +41,23 @@ class SupervisedLearning:
 
     Examples
     --------
-    >>> # Create an instance of the SupervisedLearning class
-    >>> df = SupervisedLearning(dataset)
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
+    >>> from sklearn.snm import SVC
+    >>>
+    >>>
+    >>> dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
+    >>> data = SupervisedLearning(dataset)
+    >>>
+    >>> # Exploratory Data Analysis
+    >>> eda = data.eda()
+    >>> eda_visual = data.eda_visual()
+    >>> 
+    >>> # Build and Evaluate Classifier
+    >>> classifiers = ["LogisticRegression(random_state = 0)", "RandomForestClassifier(random_state = 0)", "DecisionTreeClassifier(random_state = 0)", "SVC()"]
+    >>> build_model = data.build_multiple_classifiers()
 
     Notes
     -----
@@ -214,11 +229,6 @@ class SupervisedLearning:
         return self.__data
     
     
-    
-    
-    
-    
-    
     def get_training_test_data(self):
         """
     Get the training and test data splits.
@@ -271,7 +281,6 @@ class SupervisedLearning:
         
         """
         return (self.__data, self.__dataset)
-    
     
     
     def fix_missing_values(self, strategy: str = None):
@@ -333,7 +342,6 @@ class SupervisedLearning:
             return self.__data
         
         
-            
     def categorical_to_numerical(self, columns: list = None):
         """
     Convert categorical columns to numerical using one-hot encoding.
@@ -378,8 +386,7 @@ class SupervisedLearning:
             self.__data_transformation = True
             return self.__data
     
-    
-    
+  
     def remove_outlier(self, drop_na: bool):
         """
     Remove outliers from the dataset.
@@ -434,7 +441,6 @@ class SupervisedLearning:
         return self.__data
         
     
-    
     def scale_independent_variables(self):
         """
     Standardize independent variables using sklearn.preprocessing.StandardScaler.
@@ -467,36 +473,35 @@ class SupervisedLearning:
         return self.__x
   
     
-  
     def eda(self):
         """
-        Perform Exploratory Data Analysis (EDA) on the dataset.
+    Perform Exploratory Data Analysis (EDA) on the dataset.
 
-        Returns
-        -------
-        Dict
-            A dictionary containing various EDA results, including data head, data tail, descriptive statistics, mode, distinct count, null count, total null count, and correlation matrix.
+    Returns
+    -------
+    Dict
+        A dictionary containing various EDA results, including data head, data tail, descriptive statistics, mode, distinct count, null count, total null count, and correlation matrix.
 
-        Notes
-        -----
-        This method utilizes functionalities from pandas for data analysis.
+    Notes
+    -----
+    This method utilizes functionalities from pandas for data analysis.
 
-        Examples
-        --------
-        >>> # Perform Exploratory Data Analysis
-        >>> df = SupervisedLearning(dataset)
-        >>> eda_results = df.eda()
+    Examples
+    --------
+    >>> # Perform Exploratory Data Analysis
+    >>> df = SupervisedLearning(dataset)
+    >>> eda_results = df.eda()
 
-        See Also
-        --------
-        - pandas.DataFrame.info : Get a concise summary of a DataFrame.
-        - pandas.DataFrame.head : Return the first n rows.
-        - pandas.DataFrame.tail : Return the last n rows.
-        - pandas.DataFrame.describe : Generate descriptive statistics.
-        - pandas.DataFrame.mode : Get the mode(s) of each element.
-        - pandas.DataFrame.nunique : Count distinct observations.
-        - pandas.DataFrame.isnull : Detect missing values.
-        - pandas.DataFrame.corr : Compute pairwise correlation of columns.
+    See Also
+    --------
+    - pandas.DataFrame.info : Get a concise summary of a DataFrame.
+    - pandas.DataFrame.head : Return the first n rows.
+    - pandas.DataFrame.tail : Return the last n rows.
+    - pandas.DataFrame.describe : Generate descriptive statistics.
+    - pandas.DataFrame.mode : Get the mode(s) of each element.
+    - pandas.DataFrame.nunique : Count distinct observations.
+    - pandas.DataFrame.isnull : Detect missing values.
+    - pandas.DataFrame.corr : Compute pairwise correlation of columns.
         """
         self.__data.info()
         print("\n\n")
@@ -512,7 +517,6 @@ class SupervisedLearning:
         data_correlation_matrix = self.__data.corr()
         self.__eda = True
         return {"Data": self.__data, "Data_Head": data_head, "Data_Tail": data_tail, "Data_Descriptive_Statistic": data_descriptive_statistic, "Data_More_Descriptive_Statistic": data_more_descriptive_statistics, "Data_Mode": data_mode, "Data_Distinct_Count": data_distinct_count, "Unique_Elements_in_Data": data_unique, "Data_Null_Count": data_null_count, "Data_Total_Null_Count": data_total_null_count, "Data_Correlation_Matrix": data_correlation_matrix}
-    
     
     
     def eda_visual(self, y: str, before_data_cleaning: bool = True):
@@ -577,8 +581,7 @@ class SupervisedLearning:
             plt.title('Correlation Matrix')
             plt.show()
         self.__eda_visual = True
-    
-    
+      
     
     def select_dependent_and_independent(self, predict: str):
         """
@@ -614,8 +617,7 @@ class SupervisedLearning:
         self.__y = self.__data[f"{predict}"]
         self.__dependent_independent = True
         return {"Dependent Variable": self.__y, "Independent Variables": self.__x}
-  
-        
+    
       
     def split_data(self):
         """
@@ -646,8 +648,7 @@ class SupervisedLearning:
         self.__split_data = True
         return {"Training X": self.__x_train, "Test X": self.__x_test, "Training Y": self.__y_train, "Test Y": self.__y_test}
     
-    
-    
+
     def train_model_regressor(self, regressor):
         """
     Train a regressor model.
@@ -688,8 +689,7 @@ class SupervisedLearning:
         score = self.model_regressor.score(self.__x_train, self.__y_train)
         print(f"{self.regressor.__class__.__name__}'s amount of variation in Y predicted by your features X after training: (Rsquared) ----> {score}")
         self.__model_training = True
-        return self.model_regressor
-      
+        return self.model_regressor 
 
       
     def train_model_classifier(self, classifier):
@@ -733,7 +733,6 @@ class SupervisedLearning:
         self.__model_training = True
         return self.model_classifier
         
-    
     
     def regressor_predict(self):
         """
@@ -784,8 +783,7 @@ class SupervisedLearning:
          
         else:
             raise AssertionError("The training phase of the model has been set to classification. Can not predict a classification model with a regression model.")
-        
-        
+          
      
     def classifier_predict(self):
         """
@@ -836,7 +834,6 @@ class SupervisedLearning:
         else:
             raise AssertionError("The training phase of the model has been set to regression. Can not predict a regression model with a classification model.")
         
-    
     
     def regressor_model_testing(self, variables_values: list, scaling: bool = False):
         """
@@ -891,8 +888,7 @@ class SupervisedLearning:
         else:
             raise AssertionError("You can't test a classification problem with this function.")
         
-        
-        
+            
     def regressor_evaluation(self, kfold: int = None, cross_validation: bool = False):
         """
     Evaluate the performance of the regression model.
@@ -994,8 +990,7 @@ class SupervisedLearning:
         else:
             raise AssertionError("You can not use a regression evaluation function for a classification problem.")
         
-        
-        
+         
     def build_multiple_regressors(self, regressors: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = None, width: int = None):
         """
     Build, evaluate, and optionally graph multiple regression models.
@@ -1201,7 +1196,6 @@ class SupervisedLearning:
         
             
         return {"Regressor Metrics": dataset_regressors, "More Info": self.__multiple_regressor_models}
-    
     
     
     def build_multiple_classifiers(self, classifiers: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = None, width: int = None):
@@ -1780,62 +1774,63 @@ class SupervisedLearning:
         dataset_features = dataset_features.reset_index(drop = True)
         return {"Feature Metrics": dataset_features, "More Info": store}
     
+    
     def build_single_classifier_from_features(self, strategy: str, estimator: str, classifier, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
-        Build and evaluate a single classification model using feature selection.
-    
-        Parameters
-        ----------
-        strategy : str
-            Feature selection strategy. Should be one of ["selectkbest", "selectpercentile", "rfe", "selectfrommodel"].
-        estimator : str
-            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a classifier that implements 'fit'. Should be one of ["f_classif", "chi2", "mutual_info_classif"] if strategy is set to: ["selectkbest", "selectpercentile"].
-        classifier : object
-            Classification model object to be trained.
-        max_num_features : int, optional
-            Maximum number of features to consider, by default None.
-        min_num_features : int, optional
-            Minimum number of features to consider, by default None.
-        kfold : int, optional
-            Number of folds for cross-validation, by default None. Needs cv to be set to True to work.
-        cv : bool, optional
-            Whether to perform cross-validation, by default False.
-    
-        Returns
-        -------
-        dict
-            A dictionary containing feature metrics and additional information about the models.
-    
-        Notes
-        -----
-        - This method builds a classification model using feature selection techniques and evaluates its performance. 
-        - The feature selection strategies include "selectkbest", "selectpercentile", "rfe", and "selectfrommodel". 
-        - The estimator parameter is required for "rfe" and "selectfrommodel" strategies.
-    
-        See Also
-        --------
-        - `scikit-learn.feature_selection` for feature selection techniques.
-        - `scikit-learn.linear_model` for classification models.
-        - `scikit-learn.model_selection` for cross-validation techniques.
-        - `scikit-learn.metrics` for classification performance metrics.
-        - Other libraries used in this method: `numpy`, `pandas`, `matplotlib`, `seaborn`.
-    
-        References:
-        - scikit-learn documentation for feature selection: https://scikit-learn.org/stable/modules/feature_selection.html
-        - scikit-learn documentation for classification models: https://scikit-learn.org/stable/supervised_learning.html#classification
-    
-        See Also:
-        - `select_features` method in this class for feature selection.
-        - `train_model_classifier`, `classifier_predict`, `classifier_evaluation` methods for model training and evaluation.
-        - Similar methods in scikit-learn: `fit`, `predict`, `cross_val_score` for comparison.
-    
-        Note:
-        - This method assumes that the dataset and labels are already set in the class instance.
-    
-        Example:
-        >>> supervised_learning = SupervisedLearning(dataset)
-        >>> results = supervised_learning.build_single_classifier_from_features(strategy='selectkbest', estimator='f_classif', classifier=RandomForestClassifier())
-        >>> print(results)
+    Build and evaluate a single classification model using feature selection.
+
+    Parameters
+    ----------
+    strategy : str
+        Feature selection strategy. Should be one of ["selectkbest", "selectpercentile", "rfe", "selectfrommodel"].
+    estimator : str
+        Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a classifier that implements 'fit'. Should be one of ["f_classif", "chi2", "mutual_info_classif"] if strategy is set to: ["selectkbest", "selectpercentile"].
+    classifier : object
+        Classification model object to be trained.
+    max_num_features : int, optional
+        Maximum number of features to consider, by default None.
+    min_num_features : int, optional
+        Minimum number of features to consider, by default None.
+    kfold : int, optional
+        Number of folds for cross-validation, by default None. Needs cv to be set to True to work.
+    cv : bool, optional
+        Whether to perform cross-validation, by default False.
+
+    Returns
+    -------
+    dict
+        A dictionary containing feature metrics and additional information about the models.
+
+    Notes
+    -----
+    - This method builds a classification model using feature selection techniques and evaluates its performance. 
+    - The feature selection strategies include "selectkbest", "selectpercentile", "rfe", and "selectfrommodel". 
+    - The estimator parameter is required for "rfe" and "selectfrommodel" strategies.
+
+    See Also
+    --------
+    - `scikit-learn.feature_selection` for feature selection techniques.
+    - `scikit-learn.linear_model` for classification models.
+    - `scikit-learn.model_selection` for cross-validation techniques.
+    - `scikit-learn.metrics` for classification performance metrics.
+    - Other libraries used in this method: `numpy`, `pandas`, `matplotlib`, `seaborn`.
+
+    References:
+    - scikit-learn documentation for feature selection: https://scikit-learn.org/stable/modules/feature_selection.html
+    - scikit-learn documentation for classification models: https://scikit-learn.org/stable/supervised_learning.html#classification
+
+    See Also:
+    - `select_features` method in this class for feature selection.
+    - `train_model_classifier`, `classifier_predict`, `classifier_evaluation` methods for model training and evaluation.
+    - Similar methods in scikit-learn: `fit`, `predict`, `cross_val_score` for comparison.
+
+    Note:
+    - This method assumes that the dataset and labels are already set in the class instance.
+
+    Example:
+    >>> supervised_learning = SupervisedLearning(dataset)
+    >>> results = supervised_learning.build_single_classifier_from_features(strategy='selectkbest', estimator='f_classif', classifier=RandomForestClassifier())
+    >>> print(results)
         """
         types1 = ["selectkbest", "selectpercentile"]
         types2 = ["rfe", "selectfrommodel"]
@@ -2322,7 +2317,6 @@ class SupervisedLearning:
         return {"Feature Metrics": dataset_features, "More Info": store}
             
     
-    
     def build_multiple_classifiers_from_features(self, strategy: str, estimator: str, classifiers: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
     Build multiple classifiers using different feature selection strategies and machine learning algorithms.
@@ -2583,7 +2577,6 @@ class SupervisedLearning:
         return {"Feature Metrics": dataset_features, "More Info": store}
     
     
-    
     def classifier_evaluation(self, kfold: int = None, cross_validation: bool = False):
         """
     Evaluate the performance of a classification model.
@@ -2768,7 +2761,6 @@ class SupervisedLearning:
             raise AssertionError("You can not use a classification evaluation function for a regression problem.")
         
         
-        
     def classifier_model_testing(self, variables_values: list, scaling: bool = False):
         """
     Test a classification model with given input variables.
@@ -2836,7 +2828,6 @@ class SupervisedLearning:
         
         else:
             raise AssertionError("You can't test a classification problem with this function.")
-    
     
     
     def classifier_graph(self, classifier, cmap_train = "viridis", cmap_test = "viridis", size_train_marker: float = 10, size_test_marker: float = 10, resolution=100):
@@ -3016,7 +3007,6 @@ class SupervisedLearning:
         return self.__data
     
     
-    
     def categorical_to_datetime(self, column):
         """
     Convert specified categorical columns to datetime format.
@@ -3069,6 +3059,7 @@ class SupervisedLearning:
                 self.__data[items] = pd.to_datetime(self.__data[items])
         
         return self.__data
+    
     
     def extract_date_features(self, datetime_column, hrs_mins_sec: bool = False):
         """
@@ -3177,7 +3168,6 @@ class SupervisedLearning:
             return self.__data
                 
     
-    
     def column_binning(self, column, number_of_bins: int = 10, labels: list or tuple = None):
         """
     Apply binning to specified columns in the dataset.
@@ -3230,7 +3220,6 @@ class SupervisedLearning:
                 self.__data[items] = pd.cut(self.__data[items], bins = number_of_bins, labels = labels)
         
         return self.__data
-    
     
     
     def fix_unbalanced_dataset(self, sampler: str, k_neighbors: int = None, random_state: int = None):
@@ -3327,8 +3316,6 @@ class SupervisedLearning:
             return {"Training X": self.__x_train, "Training Y": self.__y_train}
         
     
-    
-
     def replace_values(self, replace: int or float or str or list or tuple or dict, new_value: int or float or str or list or tuple):
         """
     Replace specified values in the dataset.
@@ -3404,8 +3391,7 @@ class SupervisedLearning:
             raise ValueError("Check your input arguments for the parameters: replace and new_value")
         
         return self.__data
-    
-    
+     
     
     def sort_values(self, column: str or list, ascending: bool = True, reset_index: bool = False):
         """
@@ -3445,7 +3431,6 @@ class SupervisedLearning:
         return self.__data
     
     
-    
     def set_index(self, column: str or list):
         """
         Set the index of the dataset.
@@ -3478,8 +3463,7 @@ class SupervisedLearning:
         
         return self.__data
     
-    
-    
+      
     def sort_index(self, column: str or list, ascending: bool = True, reset_index: bool = False):
         """
         Sort the dataset based on the index.
@@ -3515,8 +3499,7 @@ class SupervisedLearning:
             self.__data.sort_index(by = column, ascending = ascending, ignore_index = reset_index, inplace = True)
         
         return self.__data
-    
-    
+     
     
     def rename_columns(self, old_column: str or list, new_column: str or list):
         """
@@ -3554,8 +3537,7 @@ class SupervisedLearning:
             self.__data.rename({key:value for key, value in zip(old_column, new_column)}, axis = 1, inplace = True)
         
         return self.__data
-    
-    
+       
     
     def reset_index(self, drop_index_after_reset: bool = False):
         """
@@ -3588,8 +3570,7 @@ class SupervisedLearning:
         
         return self.__data
     
-    
-    
+      
     def filter_data(self, column: str or list or tuple, operation: str or list or tuple = None, value: int or float or str or list or tuple = None):
         """
         Filter data based on specified conditions.
@@ -3930,7 +3911,6 @@ class SupervisedLearning:
             
         return self.__data
     
-   
     
     def remove_duplicates(self, which_columns: str or list or tuple = None):
         """
@@ -3984,8 +3964,7 @@ class SupervisedLearning:
             raise ValueError("Removing duplicates from your dataset must be done by indicating the column as either a string, list, or tuple.")
         
         return self.__data
-    
-    
+     
     
     def select_features(self, strategy: str, estimator: str, number_of_features: int):
         """
@@ -4084,8 +4063,7 @@ class SupervisedLearning:
                 
         else:
             raise ValueError(f"Select a feature selection technique from the following: {types}. \n\nRFE Estimator = {rfe_possible_estimator} e.g XGBoost, RandomForest, SVM etc\nSelectKBest Score Function = {kbest_possible_score_functions}\nSelectFromModel Estimator = {frommodel_possible_estimator} e.g XGBoost, RandomForest, SVM etc.\nSelectPercentile Score Function = {percentile_possible_score_functions}")
-        
-        
+           
     
     def group_data(self, columns: list or tuple, column_to_groupby: str or list or tuple, aggregate_function: str, reset_index: bool = False, inplace: bool = False):
         """
@@ -4293,7 +4271,6 @@ class SupervisedLearning:
         return categories_count
     
     
-    
     def sweetviz_profile_report(self, filename: str = "Pandas Profile Report.html", auto_open: bool = False):
         """
         Generate a Sweetviz profile report for the dataset.
@@ -4320,8 +4297,7 @@ class SupervisedLearning:
         """
         report1 = sv.analyze(self.__data)
         report1.show_html(filepath = filename, open_browser = auto_open)
-        
-        
+           
         
     def pandas_profiling(self, output_file: str = "Pandas Profile Report.html", dark_mode: bool = False, title: str = "Report"):
         """
@@ -4391,6 +4367,7 @@ class SupervisedLearning:
         
         return selected_data
     
+    
     def load_large_dataset(self, dataset):
         """
         Load a large dataset using the Datatable library.
@@ -4417,6 +4394,7 @@ class SupervisedLearning:
         
         self.__data = dt.fread(dataset).to_pandas()
         return self.__data
+    
     
     def reduce_data_memory_useage(self, verbose: bool = True):
         """
@@ -4479,7 +4457,6 @@ class SupervisedLearning:
                 )
             )
         return self.__data
-    
     
     
     def get_bestK_KNNclassifier(self, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31):
@@ -4650,7 +4627,6 @@ class SupervisedLearning:
             raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
         
         return b[0]
-    
     
    
     def unique_elements_in_columns(self, count: bool = False):
@@ -4927,7 +4903,6 @@ class SupervisedLearning:
                 plt.xlabel(name_x[0])
                 plt.ylabel(name_y)
                 plt.show()
-                
                 
                 
     def polyreg_x(self, degree: int, include_bias: bool = False,):

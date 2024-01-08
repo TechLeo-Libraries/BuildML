@@ -22,6 +22,7 @@ Your feedback is valuable and contributes to the continuous improvement of MLWiz
 
 
 ## Features
+Features from current release
 
 ### Data Loading and Handling
 - `get_dataset`: Load a dataset.
@@ -54,9 +55,11 @@ Your feedback is valuable and contributes to the continuous improvement of MLWiz
 - `pandas_profiling`: Generate a Pandas Profiling report for the dataset.
 - `sweetviz_profile_report`: Generate a Sweetviz Profile Report for the dataset.
 - `count_column_categories`: Count the categories in a categorical column.
+- `unique_elements_in_columns`: Get the unique elements that exist in each column in the dataset.
 
 ### Feature Engineering
 - `extract_date_features`: Extract date-related features from a datetime column.
+- `polyreg_x`: Get the polynomial regression x for independent variables after specifying the degree.
 - `select_features`: Select relevant features for modeling.
 - `select_dependent_and_independent`: Select dependent and independent variables.
 
@@ -71,6 +74,8 @@ Your feedback is valuable and contributes to the continuous improvement of MLWiz
 - `regressor_predict`: Make predictions using a regression model.
 - `regressor_evaluation`: Evaluate the performance of a regression model.
 - `regressor_model_testing`: Test a regression model.
+- `polyreg_graph`: Visualize a polynomial regression graph.
+- `simple_linregres_graph`: Visualize a regression graph.
 - `build_multiple_regressors`: Build multiple regression models.
 - `build_multiple_regressors_from_features`: Build regression models using selected features.
 - `build_single_regressor_from_features`: Build a single regression model using selected features.
@@ -79,7 +84,7 @@ Your feedback is valuable and contributes to the continuous improvement of MLWiz
 - `classifier_predict`: Make predictions using a classification model.
 - `classifier_evaluation`: Evaluate the performance of a classification model.
 - `classifier_model_testing`: Test a classification model.
-- `classifier_graph`: Visualize the KNN classification graph.
+- `classifier_graph`: Visualize a classification graph.
 - `build_multiple_classifiers`: Build multiple classification models.
 - `build_multiple_classifiers_from_features`: Build classification models using selected features.
 - `build_single_classifier_from_features`: Build a single classification model using selected features.
@@ -146,7 +151,7 @@ MLWizard is distributed under the MIT License. Feel free to use, modify, and dis
 
 ## Changelog
 
-### v0.0.1 (January 2024):
+### v1.0.0 (January 2024):
 
 - First release
 
