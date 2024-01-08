@@ -1,0 +1,11 @@
+datatable==1.1.0
+imbalanced_learn==0.10.1
+imblearn==0.0
+matplotlib>=3.4.3
+numpy>=1.22
+pandas>=1.2.4
+scikit_learn>=0.24.2
+seaborn==0.11.2
+setuptools>=65.5.1
+sweetviz==2.1.4
+ydata_profiling==4.1.2

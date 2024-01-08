@@ -1,0 +1,16 @@
+LICENSE
+README.md
+setup.py
+mlwizard/__init__.py
+mlwizard/automate.py
+mlwizard/build_model.py
+mlwizard/date.py
+mlwizard/eda.py
+mlwizard/output_dataset.py
+mlwizard/preprocessing.py
+mlwizard.egg-info/PKG-INFO
+mlwizard.egg-info/SOURCES.txt
+mlwizard.egg-info/dependency_links.txt
+mlwizard.egg-info/not-zip-safe
+mlwizard.egg-info/requires.txt
+mlwizard.egg-info/top_level.txt
