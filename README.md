@@ -1,6 +1,6 @@
-# MLWizard
+# BuildML
 
-MLwiz is a Python machine learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. MLWizard is a distribution of the [TechLeo](https://www.linkedin.com/in/techleo/) community with the aim of making the complex, easy.
+BuildML is a Python machine learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. BuildML is a distribution of the [TechLeo](https://www.linkedin.com/company/techleo/) community with the aim of making the complex, easy.
 
 ## Author
 
@@ -8,17 +8,19 @@ MLwiz is a Python machine learning library designed to simplify the process of d
 
 - **Email:** techleo.ng@outlook.com
 - **GitHub:** [TechLeo GitHub](https://github.com/TechLeo)
-- **LinkedIn:** [TechLeo LinkedIn](https://www.linkedin.com/in/techleo/)
+- **LinkedIn:** [TechLeo LinkedIn](https://www.linkedin.com/company/techleo/)
 
 ## Contact
 
 For inquiries, suggestions, or feedback, please feel free to reach out to the author:
 
-- **Email:** techleo.ng@outlook.com
-- **GitHub Issues:** [MLWizard Issues](https://github.com/TechLeo-Libraries/mlwizard/issues)
-- **LinkedIn Messages:** [TechLeo LinkedIn](https://www.linkedin.com/in/techleo/)
+- **Team Lead:** [Onyiriuba Leaonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/)
+- **Personal Email:** workwithtechleo@gmail.com
+- **Company Email:** techleo.ng@outlook.com
+- **GitHub Issues:** [BuildML Issues](https://github.com/TechLeo-Libraries/BuildML/issues)
+- **LinkedIn Messages:** [TechLeo LinkedIn](https://www.linkedin.com/company/techleo/)
 
-Your feedback is valuable and contributes to the continuous improvement of MLWizard. The author welcomes collaboration and looks forward to hearing from the users of MLwiz.
+Your feedback is valuable and contributes to the continuous improvement of BuildML. The author welcomes collaboration and looks forward to hearing from the users of MLwiz.
 
 
 ## Features
@@ -97,15 +99,15 @@ Features from current release
 
 ## Installation
 
-You can install MLWizard using pip:
+You can install BuildML using pip:
 
 ```bash
-pip install mlwizard
+pip install BuildML
 ```
 
 
 ## Useage
-from mlwizard import SupervisedLearning
+from BuildML import SupervisedLearning
 
 # Example usage
 ```bash
@@ -129,7 +131,7 @@ build_model = data.build_multiple_classifiers()
 ```
 
 ## Acknowledgments
-MLWizard relies on several open-source libraries to provide its functionality. We would like to express our gratitude to the developers and contributors of the following libraries:
+BuildML relies on several open-source libraries to provide its functionality. We would like to express our gratitude to the developers and contributors of the following libraries:
 
 - [NumPy](https://numpy.org/)
 - [Pandas](https://pandas.pydata.org/)
@@ -142,11 +144,11 @@ MLWizard relies on several open-source libraries to provide its functionality. W
 - [Warnings](https://docs.python.org/3/library/warnings.html)
 - [Datatable](https://datatable.readthedocs.io/en/latest/)
 
-The MLWizard library builds upon the functionality provided by these excellent tools, We sincerely thank the maintainers and contributors of these libraries for their valuable contributions to the open-source community.
+The BuildML library builds upon the functionality provided by these excellent tools, We sincerely thank the maintainers and contributors of these libraries for their valuable contributions to the open-source community.
 
 
 ## License
-MLWizard is distributed under the MIT License. Feel free to use, modify, and distribute it according to the terms of the license.
+BuildML is distributed under the MIT License. Feel free to use, modify, and distribute it according to the terms of the license.
 
 
 ## Changelog
@@ -157,7 +159,7 @@ MLWizard is distributed under the MIT License. Feel free to use, modify, and dis
 
 
 ## Contributors
-We'd like to express our gratitude to the following contributors that have influenced and supported MLWizard:
+We'd like to express our gratitude to the following contributors that have influenced and supported BuildML:
 
 - [Onyiriuba Leonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/): for overseeing the entire project development lifecycle.
 - Role: Project Lead and Maintainer.

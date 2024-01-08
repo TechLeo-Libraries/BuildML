@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .automate import SupervisedLearning
-from .build_model import select_features, split_data, build_regressor_model, classifier_model_testing, regressor_model_testing, build_classifier_model, build_multiple_regressors, build_multiple_classifiers, build_single_regressor_from_features, build_single_classifier_from_features, build_multiple_regressors_from_features, build_multiple_classifiers_from_features, classifier_graph, FindK_KNN_Classifier, FindK_KNN_Regressor, simple_linregres_graph
+from .model import select_features, split_data, build_regressor_model, classifier_model_testing, regressor_model_testing, build_classifier_model, build_multiple_regressors, build_multiple_classifiers, build_single_regressor_from_features, build_single_classifier_from_features, build_multiple_regressors_from_features, build_multiple_classifiers_from_features, classifier_graph, FindK_KNN_Classifier, FindK_KNN_Regressor, simple_linregres_graph
 from .date import categorical_to_datetime, extract_date_features
 from .eda import eda, eda_visual, sweet_viz, pandas_profiling
 from .output_dataset import output_dataset_as_csv, output_dataset_as_excel
