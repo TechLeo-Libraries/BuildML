@@ -104,16 +104,21 @@ from mlwizard import SupervisedLearning
 
 # Example usage
 ```bash
+import numpy as np
+import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
 from sklearn.snm import SVC
 
 
-dataset = ...  # Load your dataset(e.g Pandas DataFrame)
+dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
 data = SupervisedLearning(dataset)
 
+# Exploratory Data Analysis
 eda = data.eda()
+eda_visual = data.eda_visual()
 
+# Build and Evaluate Classifier
 classifiers = ["LogisticRegression(random_state = 0)", "RandomForestClassifier(random_state = 0)", "DecisionTreeClassifier(random_state = 0)", "SVC()"]
 build_model = data.build_multiple_classifiers()
 ```
