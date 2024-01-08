@@ -116,6 +116,7 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
 from sklearn.snm import SVC
+from buildml.automate import SupervisedLearning
 
 
 dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
