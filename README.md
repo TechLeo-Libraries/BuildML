@@ -1,13 +1,13 @@
 # BuildML
 
-BuildML is a Python machine learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. BuildML is a distribution of the [TechLeo](https://www.linkedin.com/company/techleo/) community with the aim of making the complex, easy.
+BuildML is a Python machine-learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. BuildML is a distribution of the [TechLeo](https://www.linkedin.com/company/techleo/) community to make complex machine-learning processes, easy.
 
 ## Author
 
 **TechLeo**
 
 - **Email:** techleo.ng@outlook.com
-- **GitHub:** [TechLeo GitHub](https://github.com/TechLeo)
+- **GitHub:** [TechLeo GitHub](https://github.com/TechLeoo)
 - **LinkedIn:** [TechLeo LinkedIn](https://www.linkedin.com/company/techleo/)
 
 ## Contact
@@ -24,7 +24,7 @@ Your feedback is valuable and contributes to the continuous improvement of Build
 
 
 ## Features
-Features from current release
+Features from the current release.
 
 ### Data Loading and Handling
 - `get_dataset`: Load a dataset.
@@ -102,12 +102,12 @@ Features from current release
 You can install BuildML using pip:
 
 ```bash
-pip install BuildML
+pip install buildml
 ```
 
 
-## Useage
-from BuildML import SupervisedLearning
+## Usage
+from buildml import SupervisedLearning
 
 # Example usage
 ```bash
@@ -159,7 +159,7 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 
 
 ## Contributors
-We'd like to express our gratitude to the following contributors that have influenced and supported BuildML:
+We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:
 
 - [Onyiriuba Leonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/): for overseeing the entire project development lifecycle.
 - Role: Project Lead and Maintainer.
@@ -167,6 +167,6 @@ We'd like to express our gratitude to the following contributors that have influ
 <br>
 
 
-- [The TechLeo Community](https://www.linkedin.com/in/techleo/): for allowing the use of this project as a way to explain, learn, test, understand, and make easy, the machine learning process. 
+- [The TechLeo Community](https://www.linkedin.com/company/techleo/): for allowing the use of this project as a way to explain, learn, test, understand, and make easy, the machine learning process. 
 - Role: Testers.
 - Email: techleo.ng@gmail.com.
