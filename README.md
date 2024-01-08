@@ -151,7 +151,7 @@ MLWizard is distributed under the MIT License. Feel free to use, modify, and dis
 
 ## Changelog
 
-### v1.0.0 (January 2024):
+### v1.0.1 (January 2024):
 
 - First release
 
