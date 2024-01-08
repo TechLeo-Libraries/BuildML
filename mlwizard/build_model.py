@@ -15,6 +15,26 @@ __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
 
 
+__all__ = [
+    "select_features",
+    "split_data",
+    "build_regressor_model",
+    "classifier_model_testing",
+    "regressor_model_testing",
+    "build_classifier_model",
+    "build_multiple_regressors",
+    "build_multiple_classifiers",
+    "build_single_regressor_from_features",
+    "build_single_classifier_from_features",
+    "build_multiple_regressors_from_features",
+    "build_multiple_classifiers_from_features",
+    "classifier_graph",
+    "FindK_KNN_Classifier",
+    "FindK_KNN_Regressor",
+    "simple_linregres_graph",
+    ]
+
+
 def select_features(x, y, strategy: str, estimator: str, number_of_features: int, warning: bool = False):
     if warning == False:
         warnings.filterwarnings("ignore")
@@ -1319,4 +1339,79 @@ def FindK_KNN_Regressor(x_train, y_train, weight = "uniform", algorithm = "auto"
         
     else:
         raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+    
+def simple_linregres_graph(x, y, regressor, title: str, line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False, test_size: float = 0.2):
+    name_x = [col for col in x.columns]
+    name_y = y.name
+    if not (isinstance(regressor, list) or isinstance(regressor, tuple)):
+        if len(name_x) == 1:
+            
+            if not whole_dataset:
+                x_train, x_test, y_train, y_test = sms.train_test_split(x, y, test_size = test_size, random_state = 0)
+                # Visualising the Training set results
+                plt.figure(figsize = (15, 10))
+                plt.scatter(x_train, y_train, color = train_color_marker, s=size_train_marker)
+                plt.plot(x_train, regressor.fit(x_train, y_train).predict(x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+                plt.title(f"{title} (Training Dataset)")
+                plt.xlabel(name_x[0])
+                plt.ylabel(name_y)
+                plt.show()
+        
+                # Visualising the Test set results
+                plt.figure(figsize = (15, 10))
+                plt.scatter(x_test, y_test, color = test_color_marker, s=size_test_marker)
+                plt.plot(x_train, regressor.fit(x_train, y_train).predict(x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+                plt.title(f"{title} (Test Dataset)")
+                plt.xlabel(name_x[0])
+                plt.ylabel(name_y)
+                plt.show()
+                
+            else:
+                plt.figure(figsize = (15, 10))
+                plt.scatter(x, y, color = train_color_marker, s=size_train_marker)
+                plt.plot(x, regressor.fit(x, y).predict(x), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+                plt.title(title)
+                plt.xlabel(name_x[0])
+                plt.ylabel(name_y)
+                plt.show()
+        
+        else:
+            raise ValueError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
+
+
+    else:
+        for each_regressor in regressor:
+            if len(name_x) == 1:
+                
+                if not whole_dataset:
+                    x_train, x_test, y_train, y_test = sms.train_test_split(x, y, test_size = test_size, random_state = 0)
+                    # Visualising the Training set results
+                    plt.figure(figsize = (15, 10))
+                    plt.scatter(x_train, y_train, color = train_color_marker, s=size_train_marker)
+                    plt.plot(x_train, each_regressor.fit(x_train, y_train).predict(x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+                    plt.title(f"{title} (Training Dataset) for {each_regressor.__class__.__name__}")
+                    plt.xlabel(name_x[0])
+                    plt.ylabel(name_y)
+                    plt.show()
+            
+                    # Visualising the Test set results
+                    plt.figure(figsize = (15, 10))
+                    plt.scatter(x_test, y_test, color = test_color_marker, s=size_test_marker)
+                    plt.plot(x_train, each_regressor.fit(x_train, y_train).predict(x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+                    plt.title(f"{title} (Test Dataset) for {each_regressor.__class__.__name__}")
+                    plt.xlabel(name_x[0])
+                    plt.ylabel(name_y)
+                    plt.show()
+                    
+                else:
+                    plt.figure(figsize = (15, 10))
+                    plt.scatter(x, y, color = train_color_marker, s=size_train_marker)
+                    plt.plot(x, each_regressor.fit(x, y).predict(x), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+                    plt.title(f"{title} for {each_regressor.__class__.__name__}")
+                    plt.xlabel(name_x[0])
+                    plt.ylabel(name_y)
+                    plt.show()
+            
+            else:
+                raise ValueError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
     
