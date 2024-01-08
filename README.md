@@ -1,6 +1,6 @@
 # MLWizard
 
-MLWizard is a Python machine learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. MLWizard is a distribution of the [TechLeo](https://www.linkedin.com/in/techleo/) community with the aim of making the complex, easy.
+MLwiz is a Python machine learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. MLWizard is a distribution of the [TechLeo](https://www.linkedin.com/in/techleo/) community with the aim of making the complex, easy.
 
 ## Author
 
@@ -18,7 +18,7 @@ For inquiries, suggestions, or feedback, please feel free to reach out to the au
 - **GitHub Issues:** [MLWizard Issues](https://github.com/TechLeo-Libraries/mlwizard/issues)
 - **LinkedIn Messages:** [TechLeo LinkedIn](https://www.linkedin.com/in/techleo/)
 
-Your feedback is valuable and contributes to the continuous improvement of MLWizard. The author welcomes collaboration and looks forward to hearing from the users of MLWizard.
+Your feedback is valuable and contributes to the continuous improvement of MLWizard. The author welcomes collaboration and looks forward to hearing from the users of MLwiz.
 
 
 ## Features
