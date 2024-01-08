@@ -14,7 +14,7 @@ BuildML is a Python machine learning library designed to simplify the process of
 
 For inquiries, suggestions, or feedback, please feel free to reach out to the author:
 
-- **Team Lead:** [Onyiriuba Leaonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/)
+- **Team Lead:** [Onyiriuba Leonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/)
 - **Personal Email:** workwithtechleo@gmail.com
 - **Company Email:** techleo.ng@outlook.com
 - **GitHub Issues:** [BuildML Issues](https://github.com/TechLeo-Libraries/BuildML/issues)
