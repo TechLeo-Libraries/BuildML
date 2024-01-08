@@ -15,7 +15,7 @@ MLWizard is a Python machine learning library designed to simplify the process o
 For inquiries, suggestions, or feedback, please feel free to reach out to the author:
 
 - **Email:** techleo.ng@outlook.com
-- **GitHub Issues:** [MLWizard Issues](https://github.com/TechLeo/mlwizard/issues)
+- **GitHub Issues:** [MLWizard Issues](https://github.com/TechLeo-Libraries/mlwizard/issues)
 - **LinkedIn Messages:** [TechLeo LinkedIn](https://www.linkedin.com/in/techleo/)
 
 Your feedback is valuable and contributes to the continuous improvement of MLWizard. The author welcomes collaboration and looks forward to hearing from the users of MLWizard.
