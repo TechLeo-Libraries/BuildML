@@ -46,6 +46,7 @@ class SupervisedLearning:
     >>> from sklearn.linear_model import LogisticRegression
     >>> from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
     >>> from sklearn.snm import SVC
+    >>> from buildml.automate import SupervisedLearning
     >>>
     >>>
     >>> dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
@@ -4651,7 +4652,7 @@ class SupervisedLearning:
 
     Examples
     --------
-    >>> from mlwizard import SupervisedLearning
+    >>> from buildml import SupervisedLearning
     >>> model = SupervisedLearning(dataset)
     >>> unique_elements = model.unique_elements_in_columns(count=True)
 
@@ -4932,7 +4933,7 @@ class SupervisedLearning:
 
     Examples
     --------
-    >>> from mlwizard import SupervisedLearning
+    >>> from buildml import SupervisedLearning
     >>> model = SupervisedLearning(dataset)
     >>> model.polyreg_x(degree=2, include_bias=True, inplace=True)
 
