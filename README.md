@@ -15,7 +15,7 @@ MLWizard is a Python machine learning library designed to simplify the process o
 For inquiries, suggestions, or feedback, please feel free to reach out to the author:
 
 - **Email:** techleo.ng@outlook.com
-- **GitHub Issues:** [MLWizard Issues](https://github.com/TechLeo/mlwizard/issues)
+- **GitHub Issues:** [MLWizard Issues](https://github.com/TechLeo-Libraries/mlwizard/issues)
 - **LinkedIn Messages:** [TechLeo LinkedIn](https://www.linkedin.com/in/techleo/)
 
 Your feedback is valuable and contributes to the continuous improvement of MLWizard. The author welcomes collaboration and looks forward to hearing from the users of MLWizard.
@@ -104,16 +104,21 @@ from mlwizard import SupervisedLearning
 
 # Example usage
 ```bash
+import numpy as np
+import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
 from sklearn.snm import SVC
 
 
-dataset = ...  # Load your dataset(e.g Pandas DataFrame)
+dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
 data = SupervisedLearning(dataset)
 
+# Exploratory Data Analysis
 eda = data.eda()
+eda_visual = data.eda_visual()
 
+# Build and Evaluate Classifier
 classifiers = ["LogisticRegression(random_state = 0)", "RandomForestClassifier(random_state = 0)", "DecisionTreeClassifier(random_state = 0)", "SVC()"]
 build_model = data.build_multiple_classifiers()
 ```
