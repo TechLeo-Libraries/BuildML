@@ -163,7 +163,7 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 - Removed boxplot graph from eda_visual.
 - Added new parameters for eda_visual.
 - Removed user_guide from parameters in documentation.
-- Fixed supervisedlearning documentation.
+- Improved documentation.
 
 
 ## Contributors
