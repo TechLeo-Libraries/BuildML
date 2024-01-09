@@ -688,12 +688,22 @@ class SupervisedLearning:
     - sklearn.metrics.r2_score : R^2 (coefficient of determination) regression score function.
 
         """
-        self.regression_problem = True
-        self.regressor = regressor
-        self.model_regressor = self.regressor.fit(self.__x_train, self.__y_train)
-        score = self.model_regressor.score(self.__x_train, self.__y_train)
-        print(f"{self.regressor.__class__.__name__}'s amount of variation in Y predicted by your features X after training: (Rsquared) ----> {score}")
-        self.__model_training = True
+        if self.__split_data == True:
+            self.regression_problem = True
+            self.regressor = regressor
+            self.model_regressor = self.regressor.fit(self.__x_train, self.__y_train)
+            score = self.model_regressor.score(self.__x_train, self.__y_train)
+            print(f"{self.regressor.__class__.__name__}'s amount of variation in Y predicted by your features X after training: (Rsquared) ----> {score}")
+            self.__model_training = True
+            
+        else:
+            self.regression_problem = True
+            self.regressor = regressor
+            self.model_regressor = self.regressor.fit(self.__x, self.__y)
+            score = self.model_regressor.score(self.__x, self.__y)
+            print(f"{self.regressor.__class__.__name__}'s amount of variation in Y predicted by your features X after training: (Rsquared) ----> {score}")
+            self.__model_training = True
+            
         return self.model_regressor 
 
       
@@ -730,12 +740,22 @@ class SupervisedLearning:
     - sklearn.metrics.accuracy_score : Accuracy classification score.
 
         """
-        self.classification_problem = True
-        self.classifier = classifier
-        self.model_classifier = self.classifier.fit(self.__x_train, self.__y_train)
-        score = self.model_classifier.score(self.__x_train, self.__y_train)
-        print(f"{self.classifier.__class__.__name__} accuracy in prediction after training: (Accuracy) ---> {score}")
-        self.__model_training = True
+        if self.__split_data == True:
+            self.classification_problem = True
+            self.classifier = classifier
+            self.model_classifier = self.classifier.fit(self.__x_train, self.__y_train)
+            score = self.model_classifier.score(self.__x_train, self.__y_train)
+            print(f"{self.classifier.__class__.__name__} accuracy in prediction after training: (Accuracy) ---> {score}")
+            self.__model_training = True
+            
+        else:
+            self.classification_problem = True
+            self.classifier = classifier
+            self.model_classifier = self.classifier.fit(self.__x, self.__y)
+            score = self.model_classifier.score(self.__x, self.__y)
+            print(f"{self.classifier.__class__.__name__} accuracy in prediction after training: (Accuracy) ---> {score}")
+            self.__model_training = True
+            
         return self.model_classifier
         
     
@@ -780,15 +800,24 @@ class SupervisedLearning:
     - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
 
         """
-        if self.regression_problem == True:
-            self.__y_pred = self.model_regressor.predict(self.__x_train)
-            self.__y_pred1 = self.model_regressor.predict(self.__x_test)
-            self.__model_prediction = True
-            return {"Actual Training Y": self.__y_train, "Actual Test Y": self.__y_test, "Predicted Training Y": self.__y_pred, "Predicted Test Y": self.__y_pred1}
-         
+        if self.__split_data == True:
+            if self.regression_problem == True:
+                self.__y_pred = self.model_regressor.predict(self.__x_train)
+                self.__y_pred1 = self.model_regressor.predict(self.__x_test)
+                self.__model_prediction = True
+                return {"Actual Training Y": self.__y_train, "Actual Test Y": self.__y_test, "Predicted Training Y": self.__y_pred, "Predicted Test Y": self.__y_pred1}
+             
+            else:
+                raise AssertionError("The training phase of the model has been set to classification. Can not predict a classification model with a regression model.")
         else:
-            raise AssertionError("The training phase of the model has been set to classification. Can not predict a classification model with a regression model.")
-          
+            if self.regression_problem == True:
+                self.__y_pred = self.model_regressor.predict(self.__x)
+                self.__model_prediction = True
+                return {"Actual Y": self.__y, "Predicted Y": self.__y_pred}
+             
+            else:
+                raise AssertionError("The training phase of the model has been set to classification. Can not predict a classification model with a regression model.")
+        
      
     def classifier_predict(self):
         """
@@ -830,14 +859,25 @@ class SupervisedLearning:
     - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
 
         """
-        if self.classification_problem == True:
-            self.__y_pred = self.model_classifier.predict(self.__x_train)
-            self.__y_pred1 = self.model_classifier.predict(self.__x_test)
-            self.__model_prediction = True
-            return {"Actual Training Y": self.__y_train, "Actual Test Y": self.__y_test, "Predicted Training Y": self.__y_pred, "Predicted Test Y": self.__y_pred1}
+        if self.__split_data == True:
+            if self.classification_problem == True:
+                self.__y_pred = self.model_classifier.predict(self.__x_train)
+                self.__y_pred1 = self.model_classifier.predict(self.__x_test)
+                self.__model_prediction = True
+                return {"Actual Training Y": self.__y_train, "Actual Test Y": self.__y_test, "Predicted Training Y": self.__y_pred, "Predicted Test Y": self.__y_pred1}
+            
+            else:
+                raise AssertionError("The training phase of the model has been set to regression. Can not predict a regression model with a classification model.")
         
         else:
-            raise AssertionError("The training phase of the model has been set to regression. Can not predict a regression model with a classification model.")
+            if self.classification_problem == True:
+                self.__y_pred = self.model_classifier.predict(self.__x)
+                self.__model_prediction = True
+                return {"Actual Y": self.__y_train, "Predicted Y": self.__y_pred}
+            
+            else:
+                raise AssertionError("The training phase of the model has been set to regression. Can not predict a regression model with a classification model.")
+        
         
     
     def regressor_model_testing(self, variables_values: list, scaling: bool = False):
@@ -952,49 +992,83 @@ class SupervisedLearning:
     - sklearn.model_selection.cross_val_score : Evaluate a score by cross-validation.
 
         """
-        
-        if self.regression_problem == True:
-            if kfold == None and cross_validation == False:
-                training_rsquared = sm.r2_score(self.__y_train, self.__y_pred)
-                test_rsquared = sm.r2_score(self.__y_test, self.__y_pred1)
+        if self.__split_data == True:
+            if self.regression_problem == True:
+                if kfold == None and cross_validation == False:
+                    training_rsquared = sm.r2_score(self.__y_train, self.__y_pred)
+                    test_rsquared = sm.r2_score(self.__y_test, self.__y_pred1)
+                    
+                    training_rmse = np.sqrt(sm.mean_squared_error(self.__y_train, self.__y_pred))
+                    test_rmse = np.sqrt(sm.mean_squared_error(self.__y_test, self.__y_pred1))
+                    self.__model_evaluation = True
+                    return {"Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}}
                 
-                training_rmse = np.sqrt(sm.mean_squared_error(self.__y_train, self.__y_pred))
-                test_rmse = np.sqrt(sm.mean_squared_error(self.__y_test, self.__y_pred1))
-                self.__model_evaluation = True
-                return {"Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}}
+                elif kfold != None and cross_validation == False:
+                    raise ValueError
+                    
+                elif kfold == None and cross_validation == True:
+                    training_rsquared = sm.r2_score(self.__y_train, self.__y_pred)
+                    test_rsquared = sm.r2_score(self.__y_test, self.__y_pred1)
+                    
+                    training_rmse = np.sqrt(sm.mean_squared_error(self.__y_train, self.__y_pred))
+                    test_rmse = np.sqrt(sm.mean_squared_error(self.__y_test, self.__y_pred1))
+                    
+                    cross_val = sms.cross_val_score(self.model_regressor, self.__x_train, self.__y_train, cv = 10)    
+                    score_mean = round((cross_val.mean() * 100), 2)
+                    score_std_dev = round((cross_val.std() * 100), 2)
+                    self.__model_evaluation = True
+                    return {"Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}, "Cross Validation": {"Cross Validation Mean": score_mean, "Cross Validation Standard Deviation": score_std_dev}}
+                
+                elif kfold != None and cross_validation == True:
+                    training_rsquared = sm.r2_score(self.__y_train, self.__y_pred)
+                    test_rsquared = sm.r2_score(self.__y_test, self.__y_pred1)
+                    
+                    training_rmse = np.sqrt(sm.mean_squared_error(self.__y_train, self.__y_pred))
+                    test_rmse = np.sqrt(sm.mean_squared_error(self.__y_test, self.__y_pred1))
+                    
+                    cross_val = sms.cross_val_score(self.model_regressor, self.__x_train, self.__y_train, cv = kfold)    
+                    score_mean = round((cross_val.mean() * 100), 2)
+                    score_std_dev = round((cross_val.std() * 100), 2)
+                    self.__model_evaluation = True
+                    return {"Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}, "Cross Validation": {"Cross Validation Mean": score_mean, "Cross Validation Standard Deviation": score_std_dev}}
             
-            elif kfold != None and cross_validation == False:
-                raise ValueError
-                
-            elif kfold == None and cross_validation == True:
-                training_rsquared = sm.r2_score(self.__y_train, self.__y_pred)
-                test_rsquared = sm.r2_score(self.__y_test, self.__y_pred1)
-                
-                training_rmse = np.sqrt(sm.mean_squared_error(self.__y_train, self.__y_pred))
-                test_rmse = np.sqrt(sm.mean_squared_error(self.__y_test, self.__y_pred1))
-                
-                cross_val = sms.cross_val_score(self.model_regressor, self.__x_train, self.__y_train, cv = 10)    
-                score_mean = round((cross_val.mean() * 100), 2)
-                score_std_dev = round((cross_val.std() * 100), 2)
-                self.__model_evaluation = True
-                return {"Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}, "Cross Validation": {"Cross Validation Mean": score_mean, "Cross Validation Standard Deviation": score_std_dev}}
-            
-            elif kfold != None and cross_validation == True:
-                training_rsquared = sm.r2_score(self.__y_train, self.__y_pred)
-                test_rsquared = sm.r2_score(self.__y_test, self.__y_pred1)
-                
-                training_rmse = np.sqrt(sm.mean_squared_error(self.__y_train, self.__y_pred))
-                test_rmse = np.sqrt(sm.mean_squared_error(self.__y_test, self.__y_pred1))
-                
-                cross_val = sms.cross_val_score(self.model_regressor, self.__x_train, self.__y_train, cv = kfold)    
-                score_mean = round((cross_val.mean() * 100), 2)
-                score_std_dev = round((cross_val.std() * 100), 2)
-                self.__model_evaluation = True
-                return {"Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}, "Cross Validation": {"Cross Validation Mean": score_mean, "Cross Validation Standard Deviation": score_std_dev}}
-        
+            else:
+                raise AssertionError("You can not use a regression evaluation function for a classification problem.")
         else:
-            raise AssertionError("You can not use a regression evaluation function for a classification problem.")
-        
+            if self.regression_problem == True:
+                if kfold == None and cross_validation == False:
+                    rsquared = sm.r2_score(self.__y, self.__y_pred)
+                    rmse = np.sqrt(sm.mean_squared_error(self.__y, self.__y_pred))
+                    self.__model_evaluation = True
+                    return {"R2": rsquared, "RMSE": rmse}
+                
+                elif kfold != None and cross_validation == False:
+                    raise ValueError
+                    
+                elif kfold == None and cross_validation == True:
+                    rsquared = sm.r2_score(self.__y, self.__y_pred)
+                    rmse = np.sqrt(sm.mean_squared_error(self.__y, self.__y_pred))
+                    
+                    cross_val = sms.cross_val_score(self.model_regressor, self.__x, self.__y, cv = 10)    
+                    score_mean = round((cross_val.mean() * 100), 2)
+                    score_std_dev = round((cross_val.std() * 100), 2)
+                    self.__model_evaluation = True
+                    return {"Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}, "Cross Validation": {"Cross Validation Mean": score_mean, "Cross Validation Standard Deviation": score_std_dev}}
+                
+                elif kfold != None and cross_validation == True:
+                    rsquared = sm.r2_score(self.__y, self.__y_pred)
+                    rmse = np.sqrt(sm.mean_squared_error(self.__y, self.__y_pred))
+                    
+                    cross_val = sms.cross_val_score(self.model_regressor, self.__x, self.__y, cv = kfold)    
+                    score_mean = round((cross_val.mean() * 100), 2)
+                    score_std_dev = round((cross_val.std() * 100), 2)
+                    self.__model_evaluation = True
+                    return {"R2": rsquared, "RMSE": rmse, "Cross Validation Mean": score_mean, "Cross Validation Standard Deviation": score_std_dev}
+            
+            else:
+                raise AssertionError("You can not use a regression evaluation function for a classification problem.")
+            
+            
          
     def build_multiple_regressors(self, regressors: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = None, width: int = None):
         """
@@ -1049,163 +1123,267 @@ class SupervisedLearning:
     - SupervisedLearning.regressor_evaluation : Evaluate the performance of a regression model.
 
         """
-        if (isinstance(regressors, list) or isinstance(regressors, tuple)) and cross_validation == False:
-            self.__multiple_regressor_models = {}
-            store = []
-            for algorithms in regressors:
-                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
-                info = [
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"]
-                    ]
-                store.append(info)
+        if self.__split_data == True:
+            if (isinstance(regressors, list) or isinstance(regressors, tuple)) and cross_validation == False:
+                self.__multiple_regressor_models = {}
+                store = []
+                for algorithms in regressors:
+                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
+                    info = [
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"]
+                        ]
+                    store.append(info)
+                    
+                dataset_regressors = pd.DataFrame(store, columns = ["Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
                 
-            dataset_regressors = pd.DataFrame(store, columns = ["Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
+                if graph == True:
+                    # Training R2
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training R2", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training R2"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training R2", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training RMSE
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training RMSE", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training RMSE"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training RMSE", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test R2
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training R2", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training R2"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training R2", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test RMSE
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training RMSE", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training RMSE"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training RMSE", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                   
+            elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cross_validation == True:
+                self.__multiple_regressor_models = {}
+                store = []
+                for algorithms in regressors:
+                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
+                    info = [
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"],
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"],
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"],
+                        ]
+                    store.append(info)
+                    
+                dataset_regressors = pd.DataFrame(store, columns = ["Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                if graph == True:
+                    # Training R2
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training R2", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training R2"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training R2", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training RMSE
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training RMSE", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training RMSE"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training RMSE", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test R2
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training R2", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training R2"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training R2", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test RMSE
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training RMSE", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training RMSE"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training RMSE", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Cross Validation Mean
+                    plt.figure(figsize = (width, length))
+                    plt.title("Cross Validation Mean", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Mean"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Cross Validation Mean", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Cross Validation Standard Deviation
+                    plt.figure(figsize = (width, length))
+                    plt.title("Cross Validation Standard Deviation", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Standard Deviation"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
             
-            if graph == True:
-                # Training R2
-                plt.figure(figsize = (width, length))
-                plt.title("Training R2", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training R2", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
                 
-                
-                # Training RMSE
-                plt.figure(figsize = (width, length))
-                plt.title("Training RMSE", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training RMSE", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test R2
-                plt.figure(figsize = (width, length))
-                plt.title("Training R2", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training R2", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test RMSE
-                plt.figure(figsize = (width, length))
-                plt.title("Training RMSE", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training RMSE", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-               
-        elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cross_validation == True:
-            self.__multiple_regressor_models = {}
-            store = []
-            for algorithms in regressors:
-                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
-                info = [
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"],
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"],
-                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"],
-                    ]
-                store.append(info)
-                
-            dataset_regressors = pd.DataFrame(store, columns = ["Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
-                        
-            if graph == True:
-                # Training R2
-                plt.figure(figsize = (width, length))
-                plt.title("Training R2", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training R2", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Training RMSE
-                plt.figure(figsize = (width, length))
-                plt.title("Training RMSE", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training RMSE", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test R2
-                plt.figure(figsize = (width, length))
-                plt.title("Training R2", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training R2", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test RMSE
-                plt.figure(figsize = (width, length))
-                plt.title("Training RMSE", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training RMSE", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Cross Validation Mean
-                plt.figure(figsize = (width, length))
-                plt.title("Cross Validation Mean", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Mean"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Cross Validation Mean", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Cross Validation Standard Deviation
-                plt.figure(figsize = (width, length))
-                plt.title("Cross Validation Standard Deviation", pad = 10)
-                plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Standard Deviation"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
+            return {"Regressor Metrics": dataset_regressors, "More Info": self.__multiple_regressor_models}
         
-            
-        return {"Regressor Metrics": dataset_regressors, "More Info": self.__multiple_regressor_models}
+        else:
+            if (isinstance(regressors, list) or isinstance(regressors, tuple)) and cross_validation == False:
+                self.__multiple_regressor_models = {}
+                store = []
+                for algorithms in regressors:
+                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
+                    info = [
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["R2"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["RMSE"], 
+                        ]
+                    store.append(info)
+                    
+                dataset_regressors = pd.DataFrame(store, columns = ["Algorithm", "R2", "RMSE"])
+                
+                if graph == True:
+                    # R2
+                    plt.figure(figsize = (width, length))
+                    plt.title("R2", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["R2"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("R2", labelpad = 20)
+                    plt.show()
+                    
+                    
+                    # RMSE
+                    plt.figure(figsize = (width, length))
+                    plt.title("RMSE", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["RMSE"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("RMSE", labelpad = 20)
+                    plt.show()
+                    
+                   
+            elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cross_validation == True:
+                self.__multiple_regressor_models = {}
+                store = []
+                for algorithms in regressors:
+                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
+                    info = [
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["R2"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["RMSE"], 
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"],
+                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"],
+                        ]
+                    store.append(info)
+                    
+                dataset_regressors = pd.DataFrame(store, columns = ["Algorithm", "R2", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                if graph == True:
+                    # R2
+                    plt.figure(figsize = (width, length))
+                    plt.title("R2", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["R2"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("R2", labelpad = 20)
+                    plt.show()
+                    
+                    
+                    # RMSE
+                    plt.figure(figsize = (width, length))
+                    plt.title("RMSE", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["RMSE"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("RMSE", labelpad = 20)
+                    plt.show()
+                    
+                    
+                    # Cross Validation Mean
+                    plt.figure(figsize = (width, length))
+                    plt.title("Cross Validation Mean", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Mean"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Cross Validation Mean", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Cross Validation Standard Deviation
+                    plt.figure(figsize = (width, length))
+                    plt.title("Cross Validation Standard Deviation", pad = 10)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Standard Deviation"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+
+                
+            return {"Regressor Metrics": dataset_regressors, "More Info": self.__multiple_regressor_models}
     
     
     def build_multiple_classifiers(self, classifiers: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = None, width: int = None):
@@ -1262,267 +1440,426 @@ class SupervisedLearning:
     Note: Ensure that the classifiers provided are compatible with scikit-learn's classification API.
 
         """
-        if (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cross_validation == False:
-            self.__multiple_classifier_models = {}
-            store = []
-            for algorithms in classifiers:
-                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cross_validation)}
-                info = [
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
-                    ]
-                store.append(info)
-              
-            dataset_classifiers = pd.DataFrame(store, columns = ["Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
+        if self.__split_data == True:
+            if (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cross_validation == False:
+                self.__multiple_classifier_models = {}
+                store = []
+                for algorithms in classifiers:
+                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cross_validation)}
+                    info = [
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
+                        ]
+                    store.append(info)
+                  
+                dataset_classifiers = pd.DataFrame(store, columns = ["Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
+                
+                if graph == True:
+                    # Training Accuracy
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training Accuracy", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Accuracy"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training Accuracy", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training Precision
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training Precision", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Precision"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training Precision", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training Recall
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training Recall", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Recall"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training Recall", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training F1 Score
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training F1 Score", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training F1 Score"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training F1 Score", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test Accuracy
+                    plt.figure(figsize = (width, length))
+                    plt.title("Test Accuracy", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Accuracy"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Test Accuracy", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test Precision
+                    plt.figure(figsize = (width, length))
+                    plt.title("Test Precision", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Precision"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Test Precision", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test Recall
+                    plt.figure(figsize = (width, length))
+                    plt.title("Test Recall", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Recall"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Test Recall", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test F1 Score
+                    plt.figure(figsize = (width, length))
+                    plt.title("Test F1 Score", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test F1 Score"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Test F1 Score", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
             
-            if graph == True:
-                # Training Accuracy
-                plt.figure(figsize = (width, length))
-                plt.title("Training Accuracy", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training Accuracy", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
+            elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cross_validation == True:
+                self.__multiple_classifier_models = {}
+                store = []
+                for algorithms in classifiers:
+                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cross_validation)}
+                    name = self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__
+                    info = [
+                        name, 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"],  
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"], 
+                        ]
+                    store.append(info)
+                    
+                dataset_classifiers = pd.DataFrame(store, columns = ["Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test Model F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
                 
+                if graph == True:
+                    # Training Accuracy
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training Accuracy", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Accuracy"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training Accuracy", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training Precision
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training Precision", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Precision"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training Precision", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training Recall
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training Recall", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Recall"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training Recall", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training F1 Score
+                    plt.figure(figsize = (width, length))
+                    plt.title("Training F1 Score", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training F1 Score"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Training F1 Score", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test Accuracy
+                    plt.figure(figsize = (width, length))
+                    plt.title("Test Accuracy", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Accuracy"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Test Accuracy", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test Precision
+                    plt.figure(figsize = (width, length))
+                    plt.title("Test Precision", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Precision"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Test Precision", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test Recall
+                    plt.figure(figsize = (width, length))
+                    plt.title("Test Recall", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Recall"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Test Recall", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Test F1 Score
+                    plt.figure(figsize = (width, length))
+                    plt.title("Test F1 Score", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Model F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Model F1 Score"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Test F1 Score", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Cross Validation Mean
+                    plt.figure(figsize = (width, length))
+                    plt.title("Cross Validation Mean", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Mean"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Cross Validation Mean", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Cross Validation Standard Deviation
+                    plt.figure(figsize = (width, length))
+                    plt.title("Cross Validation Standard Deviation", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Standard Deviation"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
                 
-                # Training Precision
-                plt.figure(figsize = (width, length))
-                plt.title("Training Precision", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Precision"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training Precision", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Training Recall
-                plt.figure(figsize = (width, length))
-                plt.title("Training Recall", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Recall"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training Recall", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Training F1 Score
-                plt.figure(figsize = (width, length))
-                plt.title("Training F1 Score", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training F1 Score"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training F1 Score", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test Accuracy
-                plt.figure(figsize = (width, length))
-                plt.title("Test Accuracy", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Test Accuracy", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test Precision
-                plt.figure(figsize = (width, length))
-                plt.title("Test Precision", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Precision"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Test Precision", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test Recall
-                plt.figure(figsize = (width, length))
-                plt.title("Test Recall", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Recall"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Test Recall", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test F1 Score
-                plt.figure(figsize = (width, length))
-                plt.title("Test F1 Score", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test F1 Score"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Test F1 Score", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
+            return {"Classifier Metrics": dataset_classifiers, "More Info": self.__multiple_classifier_models}
         
-        elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cross_validation == True:
-            self.__multiple_classifier_models = {}
-            store = []
-            for algorithms in classifiers:
-                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cross_validation)}
-                name = self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__
-                info = [
-                    name, 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"],  
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"], 
-                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"], 
-                    ]
-                store.append(info)
+        else:
+            if (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cross_validation == False:
+                self.__multiple_classifier_models = {}
+                store = []
+                for algorithms in classifiers:
+                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cross_validation)}
+                    info = [
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model F1 Score"], 
+                        ]
+                    store.append(info)
+                  
+                dataset_classifiers = pd.DataFrame(store, columns = ["Algorithm", "Accuracy", "Precision", "Recall", "F1 Score",])
                 
-            dataset_classifiers = pd.DataFrame(store, columns = ["Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test Model F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
-            
-            if graph == True:
-                # Training Accuracy
-                plt.figure(figsize = (width, length))
-                plt.title("Training Accuracy", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training Accuracy", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
+                if graph == True:
+                    # Training Accuracy
+                    plt.figure(figsize = (width, length))
+                    plt.title("Accuracy", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Accuracy"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Accuracy", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training Precision
+                    plt.figure(figsize = (width, length))
+                    plt.title("Precision", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Precision"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Precision", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training Recall
+                    plt.figure(figsize = (width, length))
+                    plt.title("Recall", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Recall"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Recall", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training F1 Score
+                    plt.figure(figsize = (width, length))
+                    plt.title("F1 Score", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["F1 Score"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("F1 Score", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+
+            elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cross_validation == True:
+                self.__multiple_classifier_models = {}
+                store = []
+                for algorithms in classifiers:
+                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cross_validation)}
+                    name = self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__
+                    info = [
+                        name, 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model F1 Score"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"], 
+                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"], 
+                        ]
+                    store.append(info)
+                    
+                dataset_classifiers = pd.DataFrame(store, columns = ["Algorithm", "Accuracy", "Precision", "Recall", "F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
                 
+                if graph == True:
+                    # Training Accuracy
+                    plt.figure(figsize = (width, length))
+                    plt.title("Accuracy", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Accuracy"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Accuracy", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training Precision
+                    plt.figure(figsize = (width, length))
+                    plt.title("Precision", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Precision"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Precision", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training Recall
+                    plt.figure(figsize = (width, length))
+                    plt.title("Recall", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Recall"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Recall", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Training F1 Score
+                    plt.figure(figsize = (width, length))
+                    plt.title("F1 Score", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["F1 Score"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("F1 Score", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Cross Validation Mean
+                    plt.figure(figsize = (width, length))
+                    plt.title("Cross Validation Mean", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Mean"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Cross Validation Mean", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
+                    
+                    
+                    # Cross Validation Standard Deviation
+                    plt.figure(figsize = (width, length))
+                    plt.title("Cross Validation Standard Deviation", pad = 10)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Standard Deviation"], 4)):
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                    plt.xlabel("Algorithm", labelpad = 20)
+                    plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
+                    # plt.yticks(np.arange(0.0, 1.0, 0.1))
+                    plt.show()
                 
-                # Training Precision
-                plt.figure(figsize = (width, length))
-                plt.title("Training Precision", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Precision"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training Precision", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Training Recall
-                plt.figure(figsize = (width, length))
-                plt.title("Training Recall", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Recall"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training Recall", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Training F1 Score
-                plt.figure(figsize = (width, length))
-                plt.title("Training F1 Score", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training F1 Score"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Training F1 Score", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test Accuracy
-                plt.figure(figsize = (width, length))
-                plt.title("Test Accuracy", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Accuracy"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Test Accuracy", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test Precision
-                plt.figure(figsize = (width, length))
-                plt.title("Test Precision", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Precision"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Test Precision", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test Recall
-                plt.figure(figsize = (width, length))
-                plt.title("Test Recall", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Recall"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Test Recall", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Test F1 Score
-                plt.figure(figsize = (width, length))
-                plt.title("Test F1 Score", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Model F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Model F1 Score"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Test F1 Score", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Cross Validation Mean
-                plt.figure(figsize = (width, length))
-                plt.title("Cross Validation Mean", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Mean"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Cross Validation Mean", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-                
-                
-                # Cross Validation Standard Deviation
-                plt.figure(figsize = (width, length))
-                plt.title("Cross Validation Standard Deviation", pad = 10)
-                plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
-                for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Standard Deviation"], 4)):
-                    plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
-                plt.xlabel("Algorithm", labelpad = 20)
-                plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
-                # plt.yticks(np.arange(0.0, 1.0, 0.1))
-                plt.show()
-            
-        return {"Classifier Metrics": dataset_classifiers, "More Info": self.__multiple_classifier_models}
+            return {"Classifier Metrics": dataset_classifiers, "More Info": self.__multiple_classifier_models}
     
     
     def build_single_regressor_from_features(self, strategy: str, estimator: str, regressor, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
