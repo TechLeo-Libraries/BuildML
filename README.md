@@ -154,9 +154,16 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 
 ## Changelog
 
-### v1.0.1 (January 2024):
+### v1.0.0 (January 2024):
 
 - First release
+
+### v1.0.1 (January 2024):
+
+- Removed boxplot graph from eda_visual.
+- Added new parameters for eda_visual.
+- Removed user_guide from parameters in documentation.
+- Fixed supervisedlearning documentation.
 
 
 ## Contributors

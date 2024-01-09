@@ -32,10 +32,8 @@ class SupervisedLearning:
 
     Parameters
     ----------
-    dataset : Union[pd.DataFrame, dt.Frame]
+    dataset : pd.DataFrame
         The input dataset for supervised learning.
-    user_guide : bool, optional
-        If True, provide user guides and warnings. Default is False.
     show_warnings : bool, optional
         If True, display warnings. Default is False.
 
@@ -57,7 +55,10 @@ class SupervisedLearning:
     >>> eda_visual = data.eda_visual()
     >>> 
     >>> # Build and Evaluate Classifier
-    >>> classifiers = ["LogisticRegression(random_state = 0)", "RandomForestClassifier(random_state = 0)", "DecisionTreeClassifier(random_state = 0)", "SVC()"]
+    >>> classifiers = ["LogisticRegression(random_state = 0)", 
+    >>>                "RandomForestClassifier(random_state = 0)", 
+    >>>                "DecisionTreeClassifier(random_state = 0)", 
+    >>>                "SVC()"]
     >>> build_model = data.build_multiple_classifiers()
 
     Notes
@@ -638,7 +639,11 @@ class SupervisedLearning:
     >>> # Split the data into training and test sets
     >>> df = SupervisedLearning(dataset)
     >>> data_splits = df.split_data()
-    >>> X_train, X_test, y_train, y_test = data_splits["Training X"], data_splits["Test X"], data_splits["Training Y"], data_splits["Test Y"]
+    >>>
+    >>> X_train = data_splits["Training X"]
+    >>> X_test = data_splits["Test X"]
+    >>> y_train = data_splits["Training Y"]
+    >>> y_test = data_splits["Test Y"]
 
     See Also
     --------
@@ -1030,8 +1035,13 @@ class SupervisedLearning:
     --------
     >>> # Build and evaluate multiple regression models
     >>> df = SupervisedLearning(dataset)
-    >>> models = [LinearRegression(), RandomForestRegressor(), GradientBoostingRegressor()]
-    >>> results = df.build_multiple_regressors(regressors=models, kfold=5, cross_validation=True, graph=True)
+    >>> models = [LinearRegression(), 
+    >>>           RandomForestRegressor(), 
+    >>>           GradientBoostingRegressor()]
+    >>> results = df.build_multiple_regressors(regressors=models, 
+    >>>                                        kfold=5, 
+    >>>                                        cross_validation=True, 
+    >>>                                        graph=True)
 
     See Also
     --------
@@ -1240,8 +1250,15 @@ class SupervisedLearning:
 
     Example:
     --------
-    >>> classifiers = [LogisticRegression(random_state = 0), RandomForestClassifier(random_state = 0), SVC(random_state = 0)]
-    >>> results = build_multiple_classifiers(classifiers, kfold=5, cross_validation=True, graph=True, length=8, width=12)
+    >>> classifiers = [LogisticRegression(random_state = 0), 
+    >>>                RandomForestClassifier(random_state = 0), 
+    >>>                SVC(random_state = 0)]
+    >>> results = build_multiple_classifiers(classifiers, 
+    >>>                                      kfold=5, 
+    >>>                                      cross_validation=True, 
+    >>>                                      graph=True, 
+    >>>                                      length=8, 
+    >>>                                      width=12)
 
     Note: Ensure that the classifiers provided are compatible with scikit-learn's classification API.
 
@@ -1563,8 +1580,10 @@ class SupervisedLearning:
     - This method assumes that the dataset and labels are already set in the class instance.
 
     Example:
-    >>> supervised_learning = SupervisedLearning(dataset)
-    >>> results = supervised_learning.build_single_regressor_from_features(strategy='selectkbest', estimator='f_regression', regressor=LinearRegression())
+    >>> learn = SupervisedLearning(dataset)
+    >>> results = learn.build_single_regressor_from_features(strategy='selectkbest', 
+    >>>                                                      estimator='f_regression', 
+    >>>                                                      regressor=LinearRegression())
     >>> print(results)
         """
         types1 = ["selectkbest", "selectpercentile"]
@@ -1829,8 +1848,10 @@ class SupervisedLearning:
     - This method assumes that the dataset and labels are already set in the class instance.
 
     Example:
-    >>> supervised_learning = SupervisedLearning(dataset)
-    >>> results = supervised_learning.build_single_classifier_from_features(strategy='selectkbest', estimator='f_classif', classifier=RandomForestClassifier())
+    >>> learn = SupervisedLearning(dataset)
+    >>> results = learn.build_single_classifier_from_features(strategy='selectkbest', 
+    >>>                                                       estimator='f_classif', 
+    >>>                                                       classifier=RandomForestClassifier(random_state = 0))
     >>> print(results)
         """
         types1 = ["selectkbest", "selectpercentile"]
@@ -2091,7 +2112,9 @@ class SupervisedLearning:
     >>> results = data.build_multiple_regressors_from_features(
     >>>        strategy='selectkbest',
     >>>        estimator='f_regression',
-    >>>        regressors=[LinearRegression(), RandomForestRegressor(random_state = 0), DecisionTreeRegressor(random_state = 0)],
+    >>>        regressors=[LinearRegression(), 
+    >>>                    RandomForestRegressor(random_state = 0), 
+    >>>                    DecisionTreeRegressor(random_state = 0)],
     >>>        max_num_features=10,
     >>>        kfold=5,
     >>>        cv=True
@@ -2353,8 +2376,13 @@ class SupervisedLearning:
     >>>
     >>>
     >>> data = SupervisedLearning(dataset)
-    >>> classifiers = [RandomForestClassifier(random_state = 0), DecisionTreeClassifier(random_state = 0)]
-    >>> result = data.build_multiple_classifiers_from_features(strategy='selectkbest', estimator='f_classif', classifiers=classifiers, max_num_features=10, kfold=5)
+    >>> classifiers = [RandomForestClassifier(random_state = 0), 
+    >>>                DecisionTreeClassifier(random_state = 0)]
+    >>> result = data.build_multiple_classifiers_from_features(strategy='selectkbest', 
+    >>>                                                        estimator='f_classif', 
+    >>>                                                        classifiers=classifiers, 
+    >>>                                                        max_num_features=10, 
+    >>>                                                        kfold=5)
         """
         
         
@@ -3089,6 +3117,7 @@ class SupervisedLearning:
     >>> model = SupervisedLearning(dataset)
     >>> date_columns = ['DateOfBirth', 'TransactionDate']
     >>> model.extract_date_features(date_columns, hrs_mins_sec=True)
+    >>>
     >>> # Access the DataFrame with additional date-related columns
     >>> processed_data = model.get_dataset()
 
@@ -3416,7 +3445,9 @@ class SupervisedLearning:
         --------
         >>> # Create a supervised learning instance and sort the dataset
         >>> data = SupervisedLearning(dataset)
-        >>> sorted_data = data.sort_values("column_name", ascending=False, reset_index=True)
+        >>> sorted_data = data.sort_values("column_name", 
+        >>>                                ascending=False, 
+        >>>                                reset_index=True)
         >>> print(sorted_data)
         
         See Also
@@ -3487,7 +3518,9 @@ class SupervisedLearning:
         --------
         >>> # Create a supervised learning instance and sort the dataset based on index
         >>> data = SupervisedLearning(dataset)
-        >>> sorted_index_data = data.sort_index("index_column", ascending=False, reset_index=True)
+        >>> sorted_index_data = data.sort_index("index_column", 
+        >>>                                     ascending=False, 
+        >>>                                     reset_index=True)
         >>> print(sorted_index_data)
         
         See Also
@@ -3603,11 +3636,14 @@ class SupervisedLearning:
         >>> data = SupervisedLearning(dataset)
         >>>
         >>> # Filter data where 'column' is greater than 5
-        >>> filter_data = data.filter_data(column='column', operation='>', value=5)
+        >>> filter_data = data.filter_data(column='column', 
+        >>>                                operation='>', 
+        >>>                                value=5)
         >>>
         >>> # Filter data where 'column1' is less than or equal to 10 and 'column2' is not equal to 'value'
-        >>> filter_data = data.filter_data(column=['column1', 'column2'], operation=['<=', '!='], value=[10, 'value'])
-        ```
+        >>> filter_data = data.filter_data(column=['column1', 'column2'], 
+        >>>                                operation=['<=', '!='], 
+        >>>                               value=[10, 'value'])
     
         References
         ----------
@@ -4002,7 +4038,9 @@ class SupervisedLearning:
         >>> model = SupervisedLearning(dataset)
         >>>
         >>> # Select features using Recursive Feature Elimination (RFE)
-        >>> selected_features = model.select_features(strategy='rfe', estimator=RandomForestRegressor(), number_of_features=5)
+        >>> selected_features = model.select_features(strategy='rfe', 
+        >>>                                           estimator=RandomForestRegressor(), 
+        >>>                                           number_of_features=5)
         >>>
         >>> print(selected_features)
     
@@ -4100,7 +4138,9 @@ class SupervisedLearning:
     >>> model = SupervisedLearning(dataset)
     >>>
     >>> # Group data by 'Category' and calculate the mean for 'Value'
-    >>> grouped_data = model.group_data(columns=['Value'], column_to_groupby='Category', aggregate_function='mean')
+    >>> grouped_data = model.group_data(columns=['Value'], 
+    >>>                                 column_to_groupby='Category', 
+    >>>                                 aggregate_function='mean')
     >>>
     >>> print(grouped_data)
 
@@ -4493,7 +4533,8 @@ class SupervisedLearning:
     Examples
     --------
     >>> data = SupervisedLearning(dataset)
-    >>> data.get_bestK_KNNclassifier(weight='distance', algorithm='kd_tree')
+    >>> data.get_bestK_KNNclassifier(weight='distance', 
+    >>>                              algorithm='kd_tree')
 
     See Also
     --------
@@ -4851,7 +4892,9 @@ class SupervisedLearning:
     --------
     >>> # Assuming `sl` is an instance of the SupervisedLearning class
     >>> sl = SupervisedLearning(dataset)
-    >>> sl.polyreg_graph("Polynomial Regression Example", line_style="solid", line_width=3)
+    >>> sl.polyreg_graph("Polynomial Regression Example", 
+    >>>                  line_style="solid", 
+    >>>                  line_width=3)
         """
         
         name_x = [col for col in self.__x.columns]
