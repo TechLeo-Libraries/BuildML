@@ -165,6 +165,9 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 - Removed user_guide from parameters in documentation.
 - Improved documentation.
 
+### v1.0.2 (January 2024):
+
+- Improved documentation.
 
 ## Contributors
 We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:

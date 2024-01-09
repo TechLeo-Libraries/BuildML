@@ -52,14 +52,13 @@ class SupervisedLearning:
     >>>
     >>> # Exploratory Data Analysis
     >>> eda = data.eda()
-    >>> eda_visual = data.eda_visual()
     >>> 
     >>> # Build and Evaluate Classifier
     >>> classifiers = ["LogisticRegression(random_state = 0)", 
     >>>                "RandomForestClassifier(random_state = 0)", 
     >>>                "DecisionTreeClassifier(random_state = 0)", 
     >>>                "SVC()"]
-    >>> build_model = data.build_multiple_classifiers()
+    >>> build_model = data.build_multiple_classifiers(classifiers)
 
     Notes
     -----
