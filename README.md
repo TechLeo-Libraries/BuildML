@@ -170,6 +170,7 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 - Improved documentation.
 - Fix for building all models without splitting the data.
 - Updated requirements.txt file.
+- Fix dependency error in installation.
 
 ## Contributors
 We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:
