@@ -168,7 +168,8 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 ### v1.0.2 (January 2024):
 
 - Improved documentation.
-- Fix building all models without splitting the data.
+- Fix for building all models without splitting the data.
+- Updated requirements.txt file.
 
 ## Contributors
 We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:

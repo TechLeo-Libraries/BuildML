@@ -873,13 +873,12 @@ class SupervisedLearning:
             if self.classification_problem == True:
                 self.__y_pred = self.model_classifier.predict(self.__x)
                 self.__model_prediction = True
-                return {"Actual Y": self.__y_train, "Predicted Y": self.__y_pred}
+                return {"Actual Y": self.__y, "Predicted Y": self.__y_pred}
             
             else:
                 raise AssertionError("The training phase of the model has been set to regression. Can not predict a regression model with a classification model.")
         
         
-    
     def regressor_model_testing(self, variables_values: list, scaling: bool = False):
         """
     Test the trained regressor model with given input variables.
@@ -1068,9 +1067,8 @@ class SupervisedLearning:
             else:
                 raise AssertionError("You can not use a regression evaluation function for a classification problem.")
             
-            
          
-    def build_multiple_regressors(self, regressors: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = None, width: int = None):
+    def build_multiple_regressors(self, regressors: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = 20, width: int = 10, linestyle: str = 'dashed', marker: str = 'o', markersize: int = 12, fontweight: int = 80, fontstretch: int = 50):
         """
     Build, evaluate, and optionally graph multiple regression models.
     
@@ -1142,11 +1140,11 @@ class SupervisedLearning:
                 
                 if graph == True:
                     # Training R2
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training R2", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training R2"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training R2"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training R2", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1154,11 +1152,11 @@ class SupervisedLearning:
                     
                     
                     # Training RMSE
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training RMSE", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training RMSE"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training RMSE"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training RMSE", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1166,11 +1164,11 @@ class SupervisedLearning:
                     
                     
                     # Test R2
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training R2", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test R2"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training R2"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training R2", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1178,11 +1176,11 @@ class SupervisedLearning:
                     
                     
                     # Test RMSE
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training RMSE", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test RMSE"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training RMSE"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training RMSE", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1209,11 +1207,11 @@ class SupervisedLearning:
                             
                 if graph == True:
                     # Training R2
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training R2", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training R2"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training R2"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training R2", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1221,11 +1219,11 @@ class SupervisedLearning:
                     
                     
                     # Training RMSE
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training RMSE", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Training RMSE"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training RMSE"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training RMSE", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1233,11 +1231,11 @@ class SupervisedLearning:
                     
                     
                     # Test R2
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training R2", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test R2"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training R2"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training R2", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1245,11 +1243,11 @@ class SupervisedLearning:
                     
                     
                     # Test RMSE
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training RMSE", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Test RMSE"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Training RMSE"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training RMSE", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1257,11 +1255,11 @@ class SupervisedLearning:
                     
                     
                     # Cross Validation Mean
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Cross Validation Mean", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Mean"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Mean"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Cross Validation Mean", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1269,11 +1267,11 @@ class SupervisedLearning:
                     
                     
                     # Cross Validation Standard Deviation
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Cross Validation Standard Deviation", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Standard Deviation"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Standard Deviation"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1299,22 +1297,22 @@ class SupervisedLearning:
                 
                 if graph == True:
                     # R2
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("R2", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["R2"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["R2"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("R2", labelpad = 20)
                     plt.show()
                     
                     
                     # RMSE
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("RMSE", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["RMSE"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["RMSE"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("RMSE", labelpad = 20)
                     plt.show()
@@ -1338,33 +1336,33 @@ class SupervisedLearning:
                             
                 if graph == True:
                     # R2
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("R2", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["R2"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["R2"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["R2"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("R2", labelpad = 20)
                     plt.show()
                     
                     
                     # RMSE
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("RMSE", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["RMSE"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["RMSE"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["RMSE"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("RMSE", labelpad = 20)
                     plt.show()
                     
                     
                     # Cross Validation Mean
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Cross Validation Mean", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Mean"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Mean"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Cross Validation Mean", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1372,11 +1370,11 @@ class SupervisedLearning:
                     
                     
                     # Cross Validation Standard Deviation
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Cross Validation Standard Deviation", pad = 10)
-                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_regressors["Algorithm"], dataset_regressors["Cross Validation Standard Deviation"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_regressors.Algorithm, round(dataset_regressors["Cross Validation Standard Deviation"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1386,7 +1384,7 @@ class SupervisedLearning:
             return {"Regressor Metrics": dataset_regressors, "More Info": self.__multiple_regressor_models}
     
     
-    def build_multiple_classifiers(self, classifiers: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = None, width: int = None):
+    def build_multiple_classifiers(self, classifiers: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = 20, width: int = 10, linestyle: str = 'dashed', marker: str = 'o', markersize: int = 12, fontweight: int = 80, fontstretch: int = 50):
         """
     Build and evaluate multiple classifiers.
 
@@ -1463,11 +1461,11 @@ class SupervisedLearning:
                 
                 if graph == True:
                     # Training Accuracy
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training Accuracy", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Accuracy"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Accuracy"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training Accuracy", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1475,11 +1473,11 @@ class SupervisedLearning:
                     
                     
                     # Training Precision
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training Precision", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Precision"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Precision"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training Precision", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1487,11 +1485,11 @@ class SupervisedLearning:
                     
                     
                     # Training Recall
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training Recall", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Recall"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Recall"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training Recall", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1499,11 +1497,11 @@ class SupervisedLearning:
                     
                     
                     # Training F1 Score
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training F1 Score", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training F1 Score"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training F1 Score"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training F1 Score", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1511,11 +1509,11 @@ class SupervisedLearning:
                     
                     
                     # Test Accuracy
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Test Accuracy", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Accuracy"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Accuracy"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Test Accuracy", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1523,11 +1521,11 @@ class SupervisedLearning:
                     
                     
                     # Test Precision
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Test Precision", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Precision"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Precision"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Test Precision", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1535,11 +1533,11 @@ class SupervisedLearning:
                     
                     
                     # Test Recall
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Test Recall", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Recall"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Recall"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Test Recall", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1547,11 +1545,11 @@ class SupervisedLearning:
                     
                     
                     # Test F1 Score
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Test F1 Score", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test F1 Score"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test F1 Score"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Test F1 Score", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1583,11 +1581,11 @@ class SupervisedLearning:
                 
                 if graph == True:
                     # Training Accuracy
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training Accuracy", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Accuracy"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Accuracy"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training Accuracy", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1595,11 +1593,11 @@ class SupervisedLearning:
                     
                     
                     # Training Precision
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training Precision", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Precision"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Precision"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training Precision", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1607,11 +1605,11 @@ class SupervisedLearning:
                     
                     
                     # Training Recall
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training Recall", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training Recall"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training Recall"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training Recall", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1619,11 +1617,11 @@ class SupervisedLearning:
                     
                     
                     # Training F1 Score
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Training F1 Score", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Training F1 Score"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Training F1 Score"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Training F1 Score", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1631,11 +1629,11 @@ class SupervisedLearning:
                     
                     
                     # Test Accuracy
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Test Accuracy", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Accuracy"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Accuracy"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Test Accuracy", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1643,11 +1641,11 @@ class SupervisedLearning:
                     
                     
                     # Test Precision
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Test Precision", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Precision"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Precision"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Test Precision", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1655,11 +1653,11 @@ class SupervisedLearning:
                     
                     
                     # Test Recall
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Test Recall", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Recall"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Recall"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Test Recall", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1667,11 +1665,11 @@ class SupervisedLearning:
                     
                     
                     # Test F1 Score
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Test F1 Score", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Model F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Test Model F1 Score"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Test Model F1 Score"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Test F1 Score", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1679,11 +1677,11 @@ class SupervisedLearning:
                     
                     
                     # Cross Validation Mean
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Cross Validation Mean", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Mean"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Mean"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Cross Validation Mean", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1691,11 +1689,11 @@ class SupervisedLearning:
                     
                     
                     # Cross Validation Standard Deviation
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Cross Validation Standard Deviation", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Standard Deviation"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Standard Deviation"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1722,11 +1720,11 @@ class SupervisedLearning:
                 
                 if graph == True:
                     # Training Accuracy
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Accuracy", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Accuracy"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Accuracy"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Accuracy", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1734,11 +1732,11 @@ class SupervisedLearning:
                     
                     
                     # Training Precision
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Precision", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Precision"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Precision"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Precision", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1746,11 +1744,11 @@ class SupervisedLearning:
                     
                     
                     # Training Recall
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Recall", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Recall"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Recall"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Recall", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1758,11 +1756,11 @@ class SupervisedLearning:
                     
                     
                     # Training F1 Score
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("F1 Score", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["F1 Score"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["F1 Score"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("F1 Score", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1789,11 +1787,11 @@ class SupervisedLearning:
                 
                 if graph == True:
                     # Training Accuracy
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Accuracy", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Accuracy"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Accuracy"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Accuracy"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Accuracy", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1801,11 +1799,11 @@ class SupervisedLearning:
                     
                     
                     # Training Precision
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Precision", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Precision"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Precision"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Precision"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Precision", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1813,11 +1811,11 @@ class SupervisedLearning:
                     
                     
                     # Training Recall
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Recall", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Recall"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Recall"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Recall"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Recall", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1825,11 +1823,11 @@ class SupervisedLearning:
                     
                     
                     # Training F1 Score
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("F1 Score", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["F1 Score"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["F1 Score"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["F1 Score"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("F1 Score", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1837,11 +1835,11 @@ class SupervisedLearning:
                     
                     
                     # Cross Validation Mean
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Cross Validation Mean", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Mean"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Mean"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Mean"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Cross Validation Mean", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1849,11 +1847,11 @@ class SupervisedLearning:
                     
                     
                     # Cross Validation Standard Deviation
-                    plt.figure(figsize = (width, length))
+                    plt.figure(figsize = (length, width))
                     plt.title("Cross Validation Standard Deviation", pad = 10)
-                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Standard Deviation"], 'go--', linestyle = 'dashed', marker = 'o', markersize = 12)
+                    plt.plot(dataset_classifiers["Algorithm"], dataset_classifiers["Cross Validation Standard Deviation"], 'go--', linestyle = linestyle, marker = marker, markersize = markersize)
                     for x1, y1 in zip(dataset_classifiers.Algorithm, round(dataset_classifiers["Cross Validation Standard Deviation"], 4)):
-                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = 80, fontstretch = 50)
+                        plt.text(x = x1, y = y1 + 0.0002, s = str(y1), horizontalalignment = "center", verticalalignment = "bottom", size = "large", fontweight = fontweight, fontstretch = fontstretch)
                     plt.xlabel("Algorithm", labelpad = 20)
                     plt.ylabel("Cross Validation Standard Deviation", labelpad = 20)
                     # plt.yticks(np.arange(0.0, 1.0, 0.1))
@@ -1922,64 +1920,21 @@ class SupervisedLearning:
     >>>                                                      regressor=LinearRegression())
     >>> print(results)
         """
-        types1 = ["selectkbest", "selectpercentile"]
-        types2 = ["rfe", "selectfrommodel"]
-        
-        if not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == False:
-            data_columns = [col for col in self.__x.columns]
-            length_col = len(data_columns)
-            store = {}
-            dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
+        if self.__split_data == True:
+            types1 = ["selectkbest", "selectpercentile"]
+            types2 = ["rfe", "selectfrommodel"]
             
-            if (max_num_features != None) and isinstance(max_num_features, int):
-                length_col = max_num_features
-            
-            if (min_num_features == None):
-                for num in range(length_col, 0, -1):
-                    print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
-                    feature_info = {}
-                    features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
-                    
-                    strategy = strategy.lower()
-                    if strategy in types2: 
-                        self.__x = features
-                        
-                    elif strategy in types1: 
-                        self.__x = features["Dataset ---> Features Selected"]
-                       
-                        
-                    self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
-                    
-                    self.__multiple_regressor_models = {}
-                    store_data = []
-                    
-                    self.__multiple_regressor_models[f"{regressor.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = regressor), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
-                    info = [
-                        num,
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"]
-                        ]
-                    store_data.append(info)
-                        
-                    dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
-                    
-                    
-                    feature_info[f"{num} Feature(s) Selected"] = features
-                    feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
-                    store[f"{num}"] = {}
-                    store[f"{num}"] = self.__multiple_regressor_models
-                    store[f"{num}"]["Feature Info"] = feature_info
-                    
-                    dataset2 = dataset_regressors
-                    dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-                    
-                    
-            elif (min_num_features != None) and isinstance(min_num_features, int):
-                if (min_num_features <= length_col):
-                    for num in range(length_col, (min_num_features - 1), -1):
+            if not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == False:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
                         print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
                         feature_info = {}
                         features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
@@ -2020,66 +1975,65 @@ class SupervisedLearning:
                         dataset2 = dataset_regressors
                         dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                         
-                else:
-                    raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
-
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_regressor_models = {}
+                            store_data = []
+                            
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = regressor), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
+                            info = [
+                                num,
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"]
+                                ]
+                            store_data.append(info)
+                                
+                            dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
+                            
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                            store[f"{num}"] = {}
+                            store[f"{num}"] = self.__multiple_regressor_models
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            
+                            dataset2 = dataset_regressors
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+    
+                    
+            elif not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == True:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
                 
-        elif not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == True:
-            data_columns = [col for col in self.__x.columns]
-            length_col = len(data_columns)
-            store = {}
-            dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
-            
-            if (max_num_features != None) and isinstance(max_num_features, int):
-                length_col = max_num_features
-            
-            if (min_num_features == None):
-                for num in range(length_col, 0, -1):
-                    print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
-                    feature_info = {}
-                    features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
-                    
-                    strategy = strategy.lower()
-                    if strategy in types2: 
-                        self.__x = features
-                        
-                    elif strategy in types1: 
-                        self.__x = features["Dataset ---> Features Selected"]
-                       
-                        
-                    self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
-                    
-                    self.__multiple_regressor_models = {}
-                    store_data = []
-                    
-                    self.__multiple_regressor_models[f"{regressor.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = regressor), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
-                    info = [
-                        num,
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"],
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"],
-                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"],
-                        ]
-                    store_data.append(info)
-                        
-                    dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
-                    
-                    feature_info[f"{num} Feature(s) Selected"] = features
-                    feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
-                    store[f"{num}"] = {}
-                    store[f"{num}"] = self.__multiple_regressor_models
-                    store[f"{num}"]["Feature Info"] = feature_info
-                    
-                    dataset2 = dataset_regressors
-                    dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-                    
-                    
-            elif (min_num_features != None) and isinstance(min_num_features, int):
-                if (min_num_features <= length_col):
-                    for num in range(length_col, (min_num_features - 1), -1):
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
                         print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
                         feature_info = {}
                         features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
@@ -2109,7 +2063,7 @@ class SupervisedLearning:
                             self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"],
                             ]
                         store_data.append(info)
-                        
+                            
                         dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
                         
                         feature_info[f"{num} Feature(s) Selected"] = features
@@ -2118,17 +2072,263 @@ class SupervisedLearning:
                         store[f"{num}"] = self.__multiple_regressor_models
                         store[f"{num}"]["Feature Info"] = feature_info
                         
+                        dataset2 = dataset_regressors
+                        dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                        
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_regressor_models = {}
+                            store_data = []
+                            
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = regressor), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
+                            info = [
+                                num,
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"],
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"],
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"],
+                                ]
+                            store_data.append(info)
+                            
+                            dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                            store[f"{num}"] = {}
+                            store[f"{num}"] = self.__multiple_regressor_models
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            
+                            
+                            dataset2 = dataset_regressors
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                   
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+    
+                
+                
+            dataset_features = dataset_features.reset_index(drop = True)
+            return {"Feature Metrics": dataset_features, "More Info": store}
+        
+        else:
+            types1 = ["selectkbest", "selectpercentile"]
+            types2 = ["rfe", "selectfrommodel"]
+
+            if not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == False:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "R2", "RMSE"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
+                        print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                        feature_info = {}
+                        features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                        
+                        strategy = strategy.lower()
+                        if strategy in types2: 
+                            self.__x = features
+                            
+                        elif strategy in types1: 
+                            self.__x = features["Dataset ---> Features Selected"]
+                           
+                            
+                        # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                        
+                        self.__multiple_regressor_models = {}
+                        store_data = []
+                        
+                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = regressor), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
+                        info = [
+                            num,
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["R2"], 
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["RMSE"], 
+                            ]
+                        store_data.append(info)
+                            
+                        dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "R2", "RMSE"])
+                        
+                        
+                        feature_info[f"{num} Feature(s) Selected"] = features
+                        feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                        store[f"{num}"] = {}
+                        store[f"{num}"] = self.__multiple_regressor_models
+                        store[f"{num}"]["Feature Info"] = feature_info
                         
                         dataset2 = dataset_regressors
                         dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-               
-                else:
-                    raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_regressor_models = {}
+                            store_data = []
+                            
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = regressor), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
+                            info = [
+                                num,
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["R2"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["RMSE"],
+                                ]
+                            store_data.append(info)
+                                
+                            dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "R2", "RMSE"])
+                            
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                            store[f"{num}"] = {}
+                            store[f"{num}"] = self.__multiple_regressor_models
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            
+                            dataset2 = dataset_regressors
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
-            
-            
-        dataset_features = dataset_features.reset_index(drop = True)
-        return {"Feature Metrics": dataset_features, "More Info": store}
+                    
+            elif not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == True:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "R2", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
+                        print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                        feature_info = {}
+                        features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                        
+                        strategy = strategy.lower()
+                        if strategy in types2: 
+                            self.__x = features
+                            
+                        elif strategy in types1: 
+                            self.__x = features["Dataset ---> Features Selected"]
+                           
+                            
+                        # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                        
+                        self.__multiple_regressor_models = {}
+                        store_data = []
+                        
+                        self.__multiple_regressor_models[f"{regressor.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = regressor), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
+                        info = [
+                            num,
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["R2"], 
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["RMSE"], 
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"],
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"],
+                            ]
+                        store_data.append(info)
+                            
+                        dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "R2", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                        
+                        feature_info[f"{num} Feature(s) Selected"] = features
+                        feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                        store[f"{num}"] = {}
+                        store[f"{num}"] = self.__multiple_regressor_models
+                        store[f"{num}"]["Feature Info"] = feature_info
+                        
+                        dataset2 = dataset_regressors
+                        dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                        
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_regressor_models = {}
+                            store_data = []
+                            
+                            self.__multiple_regressor_models[f"{regressor.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = regressor), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
+                            info = [
+                                num,
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["R2"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["RMSE"], 
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"],
+                                self.__multiple_regressor_models[f"{regressor.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"],
+                                ]
+                            store_data.append(info)
+                            
+                            dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "R2", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                            store[f"{num}"] = {}
+                            store[f"{num}"] = self.__multiple_regressor_models
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            
+                            
+                            dataset2 = dataset_regressors
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                   
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+
+                
+                
+            dataset_features = dataset_features.reset_index(drop = True)
+            return {"Feature Metrics": dataset_features, "More Info": store}
     
     
     def build_single_classifier_from_features(self, strategy: str, estimator: str, classifier, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
@@ -2190,66 +2390,21 @@ class SupervisedLearning:
     >>>                                                       classifier=RandomForestClassifier(random_state = 0))
     >>> print(results)
         """
-        types1 = ["selectkbest", "selectpercentile"]
-        types2 = ["rfe", "selectfrommodel"]
-        
-        if not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == False:
-            data_columns = [col for col in self.__x.columns]
-            length_col = len(data_columns)
-            store = {}
-            dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
+        if self.__split_data == True:
+            types1 = ["selectkbest", "selectpercentile"]
+            types2 = ["rfe", "selectfrommodel"]
             
-            if (max_num_features != None) and isinstance(max_num_features, int):
-                length_col = max_num_features
-            
-            if (min_num_features == None):
-                for num in range(length_col, 0, -1):
-                    print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
-                    feature_info = {}
-                    features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
-                    
-                    strategy = strategy.lower()
-                    if strategy in types2: 
-                        self.__x = features
-                        
-                    elif strategy in types1: 
-                        self.__x = features["Dataset ---> Features Selected"]
-                       
-                        
-                    self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
-                    
-                    self.__multiple_classifier_models = {}
-                    store_data = []
-                    
-                    self.__multiple_classifier_models[f"{classifier.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = classifier), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
-                    info = [
-                        num,
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
-                        ]
-                    store_data.append(info)
-                      
-                    dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
-                    
-                    feature_info[f"{num} Feature(s) Selected"] = features
-                    feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
-                    store[f"{num}"] = {}
-                    store[f"{num}"] = self.__multiple_classifier_models
-                    store[f"{num}"]["Feature Info"] = feature_info
-                    
-                    dataset2 = dataset_classifiers
-                    dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-                    
-            elif (min_num_features != None) and isinstance(min_num_features, int):
-                if (min_num_features <= length_col):
-                    for num in range(length_col, (min_num_features - 1), -1):
+            if not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == False:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
                         print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
                         feature_info = {}
                         features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
@@ -2293,70 +2448,67 @@ class SupervisedLearning:
                         dataset2 = dataset_classifiers
                         dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                         
-                else:
-                    raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
-        
-        
-        elif not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == True:
-            data_columns = [col for col in self.__x.columns]
-            length_col = len(data_columns)
-            store = {}
-            dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_classifier_models = {}
+                            store_data = []
+                            
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = classifier), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                            info = [
+                                num,
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
+                                ]
+                            store_data.append(info)
+                              
+                            dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                            store[f"{num}"] = {}
+                            store[f"{num}"] = self.__multiple_classifier_models
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            
+                            dataset2 = dataset_classifiers
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
             
-            if (max_num_features != None) and isinstance(max_num_features, int):
-                length_col = max_num_features
             
-            if (min_num_features == None):
-                for num in range((length_col - 1), 0, -1):
-                    print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
-                    feature_info = {}
-                    features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
-                    
-                    strategy = strategy.lower()
-                    if strategy in types2: 
-                        self.__x = features
-                        
-                    elif strategy in types1: 
-                        self.__x = features["Dataset ---> Features Selected"]
-                       
-                        
-                    self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
-                    
-                    self.__multiple_classifier_models = {}
-                    store_data = []
-                    
-                    self.__multiple_classifier_models[f"{classifier.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = classifier), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
-                    info = [
-                        num,
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"], 
-                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"], 
-                        ]
-                    store_data.append(info)
-                      
-                    dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
-                    
-                    feature_info[f"{num} Feature(s) Selected"] = features
-                    feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
-                    store[f"{num}"] = {}
-                    store[f"{num}"] = self.__multiple_classifier_models
-                    store[f"{num}"]["Feature Info"] = feature_info
-                    
-                    dataset2 = dataset_classifiers
-                    dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-                    
-                    
-            elif (min_num_features != None) and isinstance(min_num_features, int):
-                if (min_num_features <= length_col):
-                    for num in range(length_col, (min_num_features - 1), -1):
+            elif not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == True:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range((length_col - 1), 0, -1):
                         print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
                         feature_info = {}
                         features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
@@ -2402,13 +2554,266 @@ class SupervisedLearning:
                         dataset2 = dataset_classifiers
                         dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                         
-                else:
-                    raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_classifier_models = {}
+                            store_data = []
+                            
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = classifier), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                            info = [
+                                num,
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"], 
+                                ]
+                            store_data.append(info)
+                              
+                            dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                            store[f"{num}"] = {}
+                            store[f"{num}"] = self.__multiple_classifier_models
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            
+                            dataset2 = dataset_classifiers
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+            
+                    
+            dataset_features = dataset_features.reset_index(drop = True)
+            return {"Feature Metrics": dataset_features, "More Info": store}
         
+        else:
+            types1 = ["selectkbest", "selectpercentile"]
+            types2 = ["rfe", "selectfrommodel"]
+
+            if not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == False:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score"])
                 
-        dataset_features = dataset_features.reset_index(drop = True)
-        return {"Feature Metrics": dataset_features, "More Info": store}
-    
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
+                        print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                        feature_info = {}
+                        features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                        
+                        strategy = strategy.lower()
+                        if strategy in types2: 
+                            self.__x = features
+                            
+                        elif strategy in types1: 
+                            self.__x = features["Dataset ---> Features Selected"]
+                           
+                            
+                        # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                        
+                        self.__multiple_classifier_models = {}
+                        store_data = []
+                        
+                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = classifier), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                        info = [
+                            num,
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model F1 Score"],
+                            ]
+                        store_data.append(info)
+                          
+                        dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score"])
+                        
+                        feature_info[f"{num} Feature(s) Selected"] = features
+                        feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                        store[f"{num}"] = {}
+                        store[f"{num}"] = self.__multiple_classifier_models
+                        store[f"{num}"]["Feature Info"] = feature_info
+                        
+                        dataset2 = dataset_classifiers
+                        dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_classifier_models = {}
+                            store_data = []
+                            
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = classifier), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                            info = [
+                                num,
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model F1 Score"],
+                                ]
+                            store_data.append(info)
+                              
+                            dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                            store[f"{num}"] = {}
+                            store[f"{num}"] = self.__multiple_classifier_models
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            
+                            dataset2 = dataset_classifiers
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+
+
+            elif not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == True:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range((length_col - 1), 0, -1):
+                        print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                        feature_info = {}
+                        features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                        
+                        strategy = strategy.lower()
+                        if strategy in types2: 
+                            self.__x = features
+                            
+                        elif strategy in types1: 
+                            self.__x = features["Dataset ---> Features Selected"]
+                           
+                            
+                        # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                        
+                        self.__multiple_classifier_models = {}
+                        store_data = []
+                        
+                        self.__multiple_classifier_models[f"{classifier.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = classifier), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                        info = [
+                            num,
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model F1 Score"],
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"], 
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"], 
+                            ]
+                        store_data.append(info)
+                          
+                        dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                        
+                        feature_info[f"{num} Feature(s) Selected"] = features
+                        feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                        store[f"{num}"] = {}
+                        store[f"{num}"] = self.__multiple_classifier_models
+                        store[f"{num}"]["Feature Info"] = feature_info
+                        
+                        dataset2 = dataset_classifiers
+                        dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                        
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_classifier_models = {}
+                            store_data = []
+                            
+                            self.__multiple_classifier_models[f"{classifier.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = classifier), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                            info = [
+                                num,
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Model F1 Score"],
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"], 
+                                self.__multiple_classifier_models[f"{classifier.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"], 
+                                ]
+                            store_data.append(info)
+                              
+                            dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                            store[f"{num}"] = {}
+                            store[f"{num}"] = self.__multiple_classifier_models
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            
+                            dataset2 = dataset_classifiers
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+
+                    
+            dataset_features = dataset_features.reset_index(drop = True)
+            return {"Feature Metrics": dataset_features, "More Info": store}
+        
     
     def build_multiple_regressors_from_features(self, strategy: str, estimator: str, regressors: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
@@ -2469,64 +2874,21 @@ class SupervisedLearning:
     - `sklearn.metrics.r2_score`
     
         """
-        types1 = ["selectkbest", "selectpercentile"]
-        types2 = ["rfe", "selectfrommodel"]
-        
-        if (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == False:
-            data_columns = [col for col in self.__x.columns]
-            length_col = len(data_columns)
-            store = {}
-            dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
+        if self.__split_data == True:
+            types1 = ["selectkbest", "selectpercentile"]
+            types2 = ["rfe", "selectfrommodel"]
             
-            if (max_num_features != None) and isinstance(max_num_features, int):
-                length_col = max_num_features
-            
-            if (min_num_features == None):
-                for num in range(length_col, 0, -1):
-                    print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
-                    feature_info = {}
-                    features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
-                    
-                    strategy = strategy.lower()
-                    if strategy in types2: 
-                        self.__x = features
-                        
-                    elif strategy in types1: 
-                        self.__x = features["Dataset ---> Features Selected"]
-                       
-                        
-                    self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
-                    
-                    self.__multiple_regressor_models = {}
-                    store_data = []
-                    for algorithms in regressors:
-                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
-                        info = [
-                            num,
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"]
-                            ]
-                        store_data.append(info)
-                        
-                    dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
-                    
-                    
-                    feature_info[f"{num} Feature(s) Selected"] = features
-                    feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
-                    store[f"{num}"] = {}
-                    store[f"{num}"]["Feature Info"] = feature_info
-                    store[f"{num}"]["More Info"] = self.__multiple_regressor_models
-                    
-                    dataset2 = dataset_regressors
-                    dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-
-
-            elif (min_num_features != None) and isinstance(min_num_features, int):
-                if (min_num_features <= length_col):
-                    for num in range(length_col, (min_num_features - 1), -1):
+            if (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == False:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
                         print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
                         feature_info = {}
                         features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
@@ -2566,67 +2928,66 @@ class SupervisedLearning:
                         
                         dataset2 = dataset_regressors
                         dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-                        
-                else:
-                    raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
-
+    
+    
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_regressor_models = {}
+                            store_data = []
+                            for algorithms in regressors:
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
+                                info = [
+                                    num,
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"]
+                                    ]
+                                store_data.append(info)
+                                
+                            dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
+                            
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                            store[f"{num}"] = {}
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            store[f"{num}"]["More Info"] = self.__multiple_regressor_models
+                            
+                            dataset2 = dataset_regressors
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+    
+                    
+            elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == True:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
                 
-        elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == True:
-            data_columns = [col for col in self.__x.columns]
-            length_col = len(data_columns)
-            store = {}
-            dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
-            
-            if (max_num_features != None) and isinstance(max_num_features, int):
-                length_col = max_num_features
-            
-            if (min_num_features == None):
-                for num in range(length_col, 0, -1):
-                    print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
-                    feature_info = {}
-                    features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
-                    
-                    strategy = strategy.lower()
-                    if strategy in types2: 
-                        self.__x = features
-                        
-                    elif strategy in types1: 
-                        self.__x = features["Dataset ---> Features Selected"]
-                       
-                        
-                    self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
-                    
-                    self.__multiple_regressor_models = {}
-                    store_data = []
-                    for algorithms in regressors:
-                        self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
-                        info = [
-                            num,
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"],
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"],
-                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"],
-                            ]
-                        store_data.append(info)
-                        
-                    dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
-                    
-                    feature_info[f"{num} Feature(s) Selected"] = features
-                    feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
-                    store[f"{num}"] = {}
-                    store[f"{num}"]["Feature Info"] = feature_info
-                    store[f"{num}"]["More Info"] = self.__multiple_regressor_models
-                    
-                    dataset2 = dataset_regressors
-                    dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-                    
-                    
-            elif (min_num_features != None) and isinstance(min_num_features, int):
-                if (min_num_features <= length_col):
-                    for num in range(length_col, (min_num_features - 1), -1):
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
                         print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
                         feature_info = {}
                         features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
@@ -2667,15 +3028,260 @@ class SupervisedLearning:
                         
                         dataset2 = dataset_regressors
                         dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-               
-                else:
-                    raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_regressor_models = {}
+                            store_data = []
+                            for algorithms in regressors:
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
+                                info = [
+                                    num,
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training R2"], 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Training RMSE"], 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test R2"], 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Test RMSE"],
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"],
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"],
+                                    ]
+                                store_data.append(info)
+                                
+                            dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                            store[f"{num}"] = {}
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            store[f"{num}"]["More Info"] = self.__multiple_regressor_models
+                            
+                            dataset2 = dataset_regressors
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                   
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+    
+                
+                
+            dataset_features = dataset_features.reset_index(drop = True)
+            return {"Feature Metrics": dataset_features, "More Info": store}
+        
+        else:
+            types1 = ["selectkbest", "selectpercentile"]
+            types2 = ["rfe", "selectfrommodel"]
 
-            
-            
-        dataset_features = dataset_features.reset_index(drop = True)
-        return {"Feature Metrics": dataset_features, "More Info": store}
-            
+            if (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == False:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "R2", "RMSE"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
+                        print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                        feature_info = {}
+                        features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                        
+                        strategy = strategy.lower()
+                        if strategy in types2: 
+                            self.__x = features
+                            
+                        elif strategy in types1: 
+                            self.__x = features["Dataset ---> Features Selected"]
+                           
+                            
+                        # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                        
+                        self.__multiple_regressor_models = {}
+                        store_data = []
+                        for algorithms in regressors:
+                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
+                            info = [
+                                num,
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["R2"], 
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["RMSE"],
+                                ]
+                            store_data.append(info)
+                            
+                        dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "R2", "RMSE"])
+                        
+                        
+                        feature_info[f"{num} Feature(s) Selected"] = features
+                        feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                        store[f"{num}"] = {}
+                        store[f"{num}"]["Feature Info"] = feature_info
+                        store[f"{num}"]["More Info"] = self.__multiple_regressor_models
+                        
+                        dataset2 = dataset_regressors
+                        dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+
+
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_regressor_models = {}
+                            store_data = []
+                            for algorithms in regressors:
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = False)}
+                                info = [
+                                    num,
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["R2"], 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["RMSE"],
+                                    ]
+                                store_data.append(info)
+                                
+                            dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "R2", "RMSE"])
+                            
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                            store[f"{num}"] = {}
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            store[f"{num}"]["More Info"] = self.__multiple_regressor_models
+                            
+                            dataset2 = dataset_regressors
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+
+                    
+            elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == True:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "R2", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
+                        print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                        feature_info = {}
+                        features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                        
+                        strategy = strategy.lower()
+                        if strategy in types2: 
+                            self.__x = features
+                            
+                        elif strategy in types1: 
+                            self.__x = features["Dataset ---> Features Selected"]
+                           
+                            
+                        # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                        
+                        self.__multiple_regressor_models = {}
+                        store_data = []
+                        for algorithms in regressors:
+                            self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
+                            info = [
+                                num,
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["R2"], 
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["RMSE"],
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"],
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"],
+                                ]
+                            store_data.append(info)
+                            
+                        dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "R2", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                        
+                        feature_info[f"{num} Feature(s) Selected"] = features
+                        feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                        store[f"{num}"] = {}
+                        store[f"{num}"]["Feature Info"] = feature_info
+                        store[f"{num}"]["More Info"] = self.__multiple_regressor_models
+                        
+                        dataset2 = dataset_regressors
+                        dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                        
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Regression Model with {num} Feature(s): \n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_regressor_models = {}
+                            store_data = []
+                            for algorithms in regressors:
+                                self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_regressor(self, regressor = algorithms), "Prediction": SupervisedLearning.regressor_predict(self), "Evaluation": SupervisedLearning.regressor_evaluation(self, kfold = kfold, cross_validation = True)}
+                                info = [
+                                    num,
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["R2"], 
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["RMSE"],
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"],
+                                    self.__multiple_regressor_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"],
+                                    ]
+                                store_data.append(info)
+                                
+                            dataset_regressors = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "R2", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_regressors
+                            store[f"{num}"] = {}
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            store[f"{num}"]["More Info"] = self.__multiple_regressor_models
+                            
+                            dataset2 = dataset_regressors
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                   
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+
+                
+                
+            dataset_features = dataset_features.reset_index(drop = True)
+            return {"Feature Metrics": dataset_features, "More Info": store}
+    
     
     def build_multiple_classifiers_from_features(self, strategy: str, estimator: str, classifiers: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
@@ -2720,68 +3326,21 @@ class SupervisedLearning:
     >>>                                                        max_num_features=10, 
     >>>                                                        kfold=5)
         """
-        
-        
-        types1 = ["selectkbest", "selectpercentile"]
-        types2 = ["rfe", "selectfrommodel"]
-        
-        if (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == False:
-            data_columns = [col for col in self.__x.columns]
-            length_col = len(data_columns)
-            store = {}
-            dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
+        if self.__split_data == True:        
+            types1 = ["selectkbest", "selectpercentile"]
+            types2 = ["rfe", "selectfrommodel"]
             
-            if (max_num_features != None) and isinstance(max_num_features, int):
-                length_col = max_num_features
-            
-            if (min_num_features == None):
-                for num in range(length_col, 0, -1):
-                    print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
-                    feature_info = {}
-                    features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
-                    
-                    strategy = strategy.lower()
-                    if strategy in types2: 
-                        self.__x = features
-                        
-                    elif strategy in types1: 
-                        self.__x = features["Dataset ---> Features Selected"]
-                       
-                        
-                    self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
-                    
-                    self.__multiple_classifier_models = {}
-                    store_data = []
-                    for algorithms in classifiers:
-                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
-                        info = [
-                            num,
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
-                            ]
-                        store_data.append(info)
-                      
-                    dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
-                    
-                    feature_info[f"{num} Feature(s) Selected"] = features
-                    feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
-                    store[f"{num}"] = {}
-                    store[f"{num}"]["Feature Info"] = feature_info
-                    store[f"{num}"]["More Info"] = self.__multiple_classifier_models
-                    
-                    dataset2 = dataset_classifiers
-                    dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-                    
-            elif (min_num_features != None) and isinstance(min_num_features, int):
-                if (min_num_features <= length_col):
-                    for num in range(length_col, (min_num_features - 1), -1):
+            if (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == False:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
                         print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
                         feature_info = {}
                         features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
@@ -2825,70 +3384,67 @@ class SupervisedLearning:
                         dataset2 = dataset_classifiers
                         dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                         
-                else:
-                    raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
-        
-        
-        elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == True:
-            data_columns = [col for col in self.__x.columns]
-            length_col = len(data_columns)
-            store = {}
-            dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_classifier_models = {}
+                            store_data = []
+                            for algorithms in classifiers:
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                                info = [
+                                    num,
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
+                                    ]
+                                store_data.append(info)
+                              
+                            dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score",])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                            store[f"{num}"] = {}
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            store[f"{num}"]["More Info"] = self.__multiple_classifier_models
+                            
+                            dataset2 = dataset_classifiers
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
             
-            if (max_num_features != None) and isinstance(max_num_features, int):
-                length_col = max_num_features
             
-            if (min_num_features == None):
-                for num in range((length_col - 1), 0, -1):
-                    print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
-                    feature_info = {}
-                    features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
-                    
-                    strategy = strategy.lower()
-                    if strategy in types2: 
-                        self.__x = features
-                        
-                    elif strategy in types1: 
-                        self.__x = features["Dataset ---> Features Selected"]
-                       
-                        
-                    self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
-                    
-                    self.__multiple_classifier_models = {}
-                    store_data = []
-                    for algorithms in classifiers:
-                        self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
-                        info = [
-                            num,
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"], 
-                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"], 
-                            ]
-                        store_data.append(info)
-                      
-                    dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
-                    
-                    feature_info[f"{num} Feature(s) Selected"] = features
-                    feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
-                    store[f"{num}"] = {}
-                    store[f"{num}"]["Feature Info"] = feature_info
-                    store[f"{num}"]["More Info"] = self.__multiple_classifier_models
-                    
-                    dataset2 = dataset_classifiers
-                    dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
-                    
-                    
-            elif (min_num_features != None) and isinstance(min_num_features, int):
-                if (min_num_features <= length_col):
-                    for num in range(length_col, (min_num_features - 1), -1):
+            elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == True:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range((length_col - 1), 0, -1):
                         print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
                         feature_info = {}
                         features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
@@ -2934,13 +3490,266 @@ class SupervisedLearning:
                         dataset2 = dataset_classifiers
                         dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                         
-                else:
-                    raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_classifier_models = {}
+                            store_data = []
+                            for algorithms in classifiers:
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                                info = [
+                                    num,
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Accuracy"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Precision"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model Recall"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Training Evaluation"]["Model F1 Score"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Accuracy"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Precision"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model Recall"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Test Evaluation"]["Model F1 Score"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Mean"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation"]["Cross Validation Standard Deviation"], 
+                                    ]
+                                store_data.append(info)
+                              
+                            dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Training Accuracy", "Training Precision", "Training Recall", "Training F1 Score", "Test Accuracy", "Test Precision", "Test Recall", "Test F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                            store[f"{num}"] = {}
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            store[f"{num}"]["More Info"] = self.__multiple_classifier_models
+                            
+                            dataset2 = dataset_classifiers
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+            
+                    
+            dataset_features = dataset_features.reset_index(drop = True)
+            return {"Feature Metrics": dataset_features, "More Info": store}
         
+        else:
+            types1 = ["selectkbest", "selectpercentile"]
+            types2 = ["rfe", "selectfrommodel"]
+
+            if (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == False:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score"])
                 
-        dataset_features = dataset_features.reset_index(drop = True)
-        return {"Feature Metrics": dataset_features, "More Info": store}
-    
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range(length_col, 0, -1):
+                        print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                        feature_info = {}
+                        features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                        
+                        strategy = strategy.lower()
+                        if strategy in types2: 
+                            self.__x = features
+                            
+                        elif strategy in types1: 
+                            self.__x = features["Dataset ---> Features Selected"]
+                           
+                            
+                        # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                        
+                        self.__multiple_classifier_models = {}
+                        store_data = []
+                        for algorithms in classifiers:
+                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                            info = [
+                                num,
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model F1 Score"],
+                                ]
+                            store_data.append(info)
+                          
+                        dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score"])
+                        
+                        feature_info[f"{num} Feature(s) Selected"] = features
+                        feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                        store[f"{num}"] = {}
+                        store[f"{num}"]["Feature Info"] = feature_info
+                        store[f"{num}"]["More Info"] = self.__multiple_classifier_models
+                        
+                        dataset2 = dataset_classifiers
+                        dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_classifier_models = {}
+                            store_data = []
+                            for algorithms in classifiers:
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                                info = [
+                                    num,
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model F1 Score"],
+                                    ]
+                                store_data.append(info)
+                              
+                            dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                            store[f"{num}"] = {}
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            store[f"{num}"]["More Info"] = self.__multiple_classifier_models
+                            
+                            dataset2 = dataset_classifiers
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+
+
+            elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == True:
+                data_columns = [col for col in self.__x.columns]
+                length_col = len(data_columns)
+                store = {}
+                dataset_features = pd.DataFrame(columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                
+                if (max_num_features != None) and isinstance(max_num_features, int):
+                    length_col = max_num_features
+                
+                if (min_num_features == None):
+                    for num in range((length_col - 1), 0, -1):
+                        print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                        feature_info = {}
+                        features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                        
+                        strategy = strategy.lower()
+                        if strategy in types2: 
+                            self.__x = features
+                            
+                        elif strategy in types1: 
+                            self.__x = features["Dataset ---> Features Selected"]
+                           
+                            
+                        # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                        
+                        self.__multiple_classifier_models = {}
+                        store_data = []
+                        for algorithms in classifiers:
+                            self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                            info = [
+                                num,
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model F1 Score"], 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"], 
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"], 
+                                ]
+                            store_data.append(info)
+                          
+                        dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                        
+                        feature_info[f"{num} Feature(s) Selected"] = features
+                        feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                        store[f"{num}"] = {}
+                        store[f"{num}"]["Feature Info"] = feature_info
+                        store[f"{num}"]["More Info"] = self.__multiple_classifier_models
+                        
+                        dataset2 = dataset_classifiers
+                        dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                        
+                        
+                elif (min_num_features != None) and isinstance(min_num_features, int):
+                    if (min_num_features <= length_col):
+                        for num in range(length_col, (min_num_features - 1), -1):
+                            print(f"\n\n\nBuilding Classification Model with {num} Feature(s):\n")
+                            feature_info = {}
+                            features = SupervisedLearning.select_features(self, strategy = strategy, estimator = estimator, number_of_features = num)
+                            
+                            strategy = strategy.lower()
+                            if strategy in types2: 
+                                self.__x = features
+                                
+                            elif strategy in types1: 
+                                self.__x = features["Dataset ---> Features Selected"]
+                               
+                                
+                            # self.__x_train, self.__x_test, self.__y_train, self.__y_test = SupervisedLearning.split_data(self).values()
+                            
+                            self.__multiple_classifier_models = {}
+                            store_data = []
+                            for algorithms in classifiers:
+                                self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"] = {"Built Model": SupervisedLearning.train_model_classifier(self, classifier = algorithms), "Prediction": SupervisedLearning.classifier_predict(self), "Evaluation": SupervisedLearning.classifier_evaluation(self, kfold = kfold, cross_validation = cv)}
+                                info = [
+                                    num,
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Built Model"].__class__.__name__, 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Accuracy"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Precision"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model Recall"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Model F1 Score"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Mean"], 
+                                    self.__multiple_classifier_models[f"{algorithms.__class__.__name__}"]["Evaluation"]["Cross Validation Standard Deviation"], 
+                                    ]
+                                store_data.append(info)
+                              
+                            dataset_classifiers = pd.DataFrame(store_data, columns = ["No. of features selected", "Algorithm", "Accuracy", "Precision", "Recall", "F1 Score", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+                            
+                            feature_info[f"{num} Feature(s) Selected"] = features
+                            feature_info[f"Model Trained with {num} Feature(s)"] = dataset_classifiers
+                            store[f"{num}"] = {}
+                            store[f"{num}"]["Feature Info"] = feature_info
+                            store[f"{num}"]["More Info"] = self.__multiple_classifier_models
+                            
+                            dataset2 = dataset_classifiers
+                            dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
+                            
+                    else:
+                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+
+                    
+            dataset_features = dataset_features.reset_index(drop = True)
+            return {"Feature Metrics": dataset_features, "More Info": store}
+
     
     def classifier_evaluation(self, kfold: int = None, cross_validation: bool = False):
         """
@@ -2999,132 +3808,203 @@ class SupervisedLearning:
     - Matplotlib: https://matplotlib.org/stable/contents.html
 
         """
+        if self.__split_data == True: 
+            if self.classification_problem == True:
+                if kfold == None and cross_validation == False:
+                    training_analysis = sm.confusion_matrix(self.__y_train, self.__y_pred)
+                    training_class_report = sm.classification_report(self.__y_train, self.__y_pred)
+                    training_accuracy = sm.accuracy_score(self.__y_train, self.__y_pred)
+                    training_precision = sm.precision_score(self.__y_train, self.__y_pred, average='weighted')
+                    training_recall = sm.recall_score(self.__y_train, self.__y_pred, average='weighted')
+                    training_f1score = sm.f1_score(self.__y_train, self.__y_pred, average='weighted')
         
-        if self.classification_problem == True:
-            if kfold == None and cross_validation == False:
-                training_analysis = sm.confusion_matrix(self.__y_train, self.__y_pred)
-                training_class_report = sm.classification_report(self.__y_train, self.__y_pred)
-                training_accuracy = sm.accuracy_score(self.__y_train, self.__y_pred)
-                training_precision = sm.precision_score(self.__y_train, self.__y_pred, average='weighted')
-                training_recall = sm.recall_score(self.__y_train, self.__y_pred, average='weighted')
-                training_f1score = sm.f1_score(self.__y_train, self.__y_pred, average='weighted')
-    
-                test_analysis = sm.confusion_matrix(self.__y_test, self.__y_pred1)
-                test_class_report = sm.classification_report(self.__y_test, self.__y_pred1)
-                test_accuracy = sm.accuracy_score(self.__y_test, self.__y_pred1)
-                test_precision = sm.precision_score(self.__y_test, self.__y_pred1, average='weighted')
-                test_recall = sm.recall_score(self.__y_test, self.__y_pred1, average='weighted')
-                test_f1score = sm.f1_score(self.__y_test, self.__y_pred1, average='weighted')
-                self.__model_evaluation = True
-                return {
-                    "Training Evaluation": {
-                        "Confusion Matrix": training_analysis,
-                        "Classification Report": training_class_report,
-                        "Model Accuracy": training_accuracy,
-                        "Model Precision": training_precision,
-                        "Model Recall": training_recall,
-                        "Model F1 Score": training_f1score,
-                        },
-                    "Test Evaluation": {
-                        "Confusion Matrix": test_analysis,
-                        "Classification Report": test_class_report,
-                        "Model Accuracy": test_accuracy,
-                        "Model Precision": test_precision,
-                        "Model Recall": test_recall,
-                        "Model F1 Score": test_f1score,
-                        },
-                    }
-            
-            elif kfold != None and cross_validation == False:
-                raise ValueError
-                
-            elif kfold == None and cross_validation == True:
-                training_analysis = sm.confusion_matrix(self.__y_train, self.__y_pred)
-                training_class_report = sm.classification_report(self.__y_train, self.__y_pred)
-                training_accuracy = sm.accuracy_score(self.__y_train, self.__y_pred)
-                training_precision = sm.precision_score(self.__y_train, self.__y_pred, average='weighted')
-                training_recall = sm.recall_score(self.__y_train, self.__y_pred, average='weighted')
-                training_f1score = sm.f1_score(self.__y_train, self.__y_pred, average='weighted')
-        
-                test_analysis = sm.confusion_matrix(self.__y_test, self.__y_pred1)
-                test_class_report = sm.classification_report(self.__y_test, self.__y_pred1)
-                test_accuracy = sm.accuracy_score(self.__y_test, self.__y_pred1)
-                test_precision = sm.precision_score(self.__y_test, self.__y_pred1, average='weighted')
-                test_recall = sm.recall_score(self.__y_test, self.__y_pred1, average='weighted')
-                test_f1score = sm.f1_score(self.__y_test, self.__y_pred1, average='weighted')
-                
-                cross_val = sms.cross_val_score(self.model_classifier, self.__x_train, self.__y_train, cv = 10)    
-                score_mean = round((cross_val.mean() * 100), 2)
-                score_std_dev = round((cross_val.std() * 100), 2)
-                self.__model_evaluation = True
-                return {
-                    "Training Evaluation": {
-                        "Confusion Matrix": training_analysis,
-                        "Classification Report": training_class_report,
-                        "Model Accuracy": training_accuracy,
-                        "Model Precision": training_precision,
-                        "Model Recall": training_recall,
-                        "Model F1 Score": training_f1score,
-                        },
-                    "Test Evaluation": {
-                        "Confusion Matrix": test_analysis,
-                        "Classification Report": test_class_report,
-                        "Model Accuracy": test_accuracy,
-                        "Model Precision": test_precision,
-                        "Model Recall": test_recall,
-                        "Model F1 Score": test_f1score,
-                        },
-                    "Cross Validation": {
-                        "Cross Validation Mean": score_mean, 
-                        "Cross Validation Standard Deviation": score_std_dev
+                    test_analysis = sm.confusion_matrix(self.__y_test, self.__y_pred1)
+                    test_class_report = sm.classification_report(self.__y_test, self.__y_pred1)
+                    test_accuracy = sm.accuracy_score(self.__y_test, self.__y_pred1)
+                    test_precision = sm.precision_score(self.__y_test, self.__y_pred1, average='weighted')
+                    test_recall = sm.recall_score(self.__y_test, self.__y_pred1, average='weighted')
+                    test_f1score = sm.f1_score(self.__y_test, self.__y_pred1, average='weighted')
+                    self.__model_evaluation = True
+                    return {
+                        "Training Evaluation": {
+                            "Confusion Matrix": training_analysis,
+                            "Classification Report": training_class_report,
+                            "Model Accuracy": training_accuracy,
+                            "Model Precision": training_precision,
+                            "Model Recall": training_recall,
+                            "Model F1 Score": training_f1score,
+                            },
+                        "Test Evaluation": {
+                            "Confusion Matrix": test_analysis,
+                            "Classification Report": test_class_report,
+                            "Model Accuracy": test_accuracy,
+                            "Model Precision": test_precision,
+                            "Model Recall": test_recall,
+                            "Model F1 Score": test_f1score,
+                            },
                         }
-                    }
-            
-            elif kfold != None and cross_validation == True:
-                training_analysis = sm.confusion_matrix(self.__y_train, self.__y_pred)
-                training_class_report = sm.classification_report(self.__y_train, self.__y_pred)
-                training_accuracy = sm.accuracy_score(self.__y_train, self.__y_pred)
-                training_precision = sm.precision_score(self.__y_train, self.__y_pred, average='weighted')
-                training_recall = sm.recall_score(self.__y_train, self.__y_pred, average='weighted')
-                training_f1score = sm.f1_score(self.__y_train, self.__y_pred, average='weighted')
-        
-                test_analysis = sm.confusion_matrix(self.__y_test, self.__y_pred1)
-                test_class_report = sm.classification_report(self.__y_test, self.__y_pred1)
-                test_accuracy = sm.accuracy_score(self.__y_test, self.__y_pred1)
-                test_precision = sm.precision_score(self.__y_test, self.__y_pred1, average='weighted')
-                test_recall = sm.recall_score(self.__y_test, self.__y_pred1, average='weighted')
-                test_f1score = sm.f1_score(self.__y_test, self.__y_pred1, average='weighted')
                 
-                cross_val = sms.cross_val_score(self.model_classifier, self.__x_train, self.__y_train, cv = kfold)    
-                score_mean = round((cross_val.mean() * 100), 2)
-                score_std_dev = round((cross_val.std() * 100), 2)
-                self.__model_evaluation = True
-                return {
-                    "Training Evaluation": {
-                        "Confusion Matrix": training_analysis,
-                        "Classification Report": training_class_report,
-                        "Model Accuracy": training_accuracy,
-                        "Model Precision": training_precision,
-                        "Model Recall": training_recall,
-                        "Model F1 Score": training_f1score,
-                        },
-                    "Test Evaluation": {
-                        "Confusion Matrix": test_analysis,
-                        "Classification Report": test_class_report,
-                        "Model Accuracy": test_accuracy,
-                        "Model Precision": test_precision,
-                        "Model Recall": test_recall,
-                        "Model F1 Score": test_f1score,
-                        },
-                    "Cross Validation": {
-                        "Cross Validation Mean": score_mean, 
-                        "Cross Validation Standard Deviation": score_std_dev
+                elif kfold != None and cross_validation == False:
+                    raise ValueError("Cross Validation must be set to True if kfold is specified.")
+                    
+                elif kfold == None and cross_validation == True:
+                    training_analysis = sm.confusion_matrix(self.__y_train, self.__y_pred)
+                    training_class_report = sm.classification_report(self.__y_train, self.__y_pred)
+                    training_accuracy = sm.accuracy_score(self.__y_train, self.__y_pred)
+                    training_precision = sm.precision_score(self.__y_train, self.__y_pred, average='weighted')
+                    training_recall = sm.recall_score(self.__y_train, self.__y_pred, average='weighted')
+                    training_f1score = sm.f1_score(self.__y_train, self.__y_pred, average='weighted')
+            
+                    test_analysis = sm.confusion_matrix(self.__y_test, self.__y_pred1)
+                    test_class_report = sm.classification_report(self.__y_test, self.__y_pred1)
+                    test_accuracy = sm.accuracy_score(self.__y_test, self.__y_pred1)
+                    test_precision = sm.precision_score(self.__y_test, self.__y_pred1, average='weighted')
+                    test_recall = sm.recall_score(self.__y_test, self.__y_pred1, average='weighted')
+                    test_f1score = sm.f1_score(self.__y_test, self.__y_pred1, average='weighted')
+                    
+                    cross_val = sms.cross_val_score(self.model_classifier, self.__x_train, self.__y_train, cv = 10)    
+                    score_mean = round((cross_val.mean() * 100), 2)
+                    score_std_dev = round((cross_val.std() * 100), 2)
+                    self.__model_evaluation = True
+                    return {
+                        "Training Evaluation": {
+                            "Confusion Matrix": training_analysis,
+                            "Classification Report": training_class_report,
+                            "Model Accuracy": training_accuracy,
+                            "Model Precision": training_precision,
+                            "Model Recall": training_recall,
+                            "Model F1 Score": training_f1score,
+                            },
+                        "Test Evaluation": {
+                            "Confusion Matrix": test_analysis,
+                            "Classification Report": test_class_report,
+                            "Model Accuracy": test_accuracy,
+                            "Model Precision": test_precision,
+                            "Model Recall": test_recall,
+                            "Model F1 Score": test_f1score,
+                            },
+                        "Cross Validation": {
+                            "Cross Validation Mean": score_mean, 
+                            "Cross Validation Standard Deviation": score_std_dev
+                            }
                         }
-                    }
+                
+                elif kfold != None and cross_validation == True:
+                    training_analysis = sm.confusion_matrix(self.__y_train, self.__y_pred)
+                    training_class_report = sm.classification_report(self.__y_train, self.__y_pred)
+                    training_accuracy = sm.accuracy_score(self.__y_train, self.__y_pred)
+                    training_precision = sm.precision_score(self.__y_train, self.__y_pred, average='weighted')
+                    training_recall = sm.recall_score(self.__y_train, self.__y_pred, average='weighted')
+                    training_f1score = sm.f1_score(self.__y_train, self.__y_pred, average='weighted')
+            
+                    test_analysis = sm.confusion_matrix(self.__y_test, self.__y_pred1)
+                    test_class_report = sm.classification_report(self.__y_test, self.__y_pred1)
+                    test_accuracy = sm.accuracy_score(self.__y_test, self.__y_pred1)
+                    test_precision = sm.precision_score(self.__y_test, self.__y_pred1, average='weighted')
+                    test_recall = sm.recall_score(self.__y_test, self.__y_pred1, average='weighted')
+                    test_f1score = sm.f1_score(self.__y_test, self.__y_pred1, average='weighted')
+                    
+                    cross_val = sms.cross_val_score(self.model_classifier, self.__x_train, self.__y_train, cv = kfold)    
+                    score_mean = round((cross_val.mean() * 100), 2)
+                    score_std_dev = round((cross_val.std() * 100), 2)
+                    self.__model_evaluation = True
+                    return {
+                        "Training Evaluation": {
+                            "Confusion Matrix": training_analysis,
+                            "Classification Report": training_class_report,
+                            "Model Accuracy": training_accuracy,
+                            "Model Precision": training_precision,
+                            "Model Recall": training_recall,
+                            "Model F1 Score": training_f1score,
+                            },
+                        "Test Evaluation": {
+                            "Confusion Matrix": test_analysis,
+                            "Classification Report": test_class_report,
+                            "Model Accuracy": test_accuracy,
+                            "Model Precision": test_precision,
+                            "Model Recall": test_recall,
+                            "Model F1 Score": test_f1score,
+                            },
+                        "Cross Validation": {
+                            "Cross Validation Mean": score_mean, 
+                            "Cross Validation Standard Deviation": score_std_dev
+                            }
+                        }
+            
+            else:
+                raise AssertionError("You can not use a classification evaluation function for a regression problem.")
         
         else:
-            raise AssertionError("You can not use a classification evaluation function for a regression problem.")
-        
+            if self.classification_problem == True:
+                if kfold == None and cross_validation == False:
+                    training_analysis = sm.confusion_matrix(self.__y, self.__y_pred)
+                    training_class_report = sm.classification_report(self.__y, self.__y_pred)
+                    training_accuracy = sm.accuracy_score(self.__y, self.__y_pred)
+                    training_precision = sm.precision_score(self.__y, self.__y_pred, average='weighted')
+                    training_recall = sm.recall_score(self.__y, self.__y_pred, average='weighted')
+                    training_f1score = sm.f1_score(self.__y, self.__y_pred, average='weighted')
+                    self.__model_evaluation = True
+                    return {
+                            "Confusion Matrix": training_analysis,
+                            "Classification Report": training_class_report,
+                            "Model Accuracy": training_accuracy,
+                            "Model Precision": training_precision,
+                            "Model Recall": training_recall,
+                            "Model F1 Score": training_f1score,
+                           }
+                
+                elif kfold != None and cross_validation == False:
+                    raise ValueError("Cross Validation must be set to True if kfold is specified.")
+                    
+                elif kfold == None and cross_validation == True:
+                    training_analysis = sm.confusion_matrix(self.__y, self.__y_pred)
+                    training_class_report = sm.classification_report(self.__y, self.__y_pred)
+                    training_accuracy = sm.accuracy_score(self.__y, self.__y_pred)
+                    training_precision = sm.precision_score(self.__y, self.__y_pred, average='weighted')
+                    training_recall = sm.recall_score(self.__y, self.__y_pred, average='weighted')
+                    training_f1score = sm.f1_score(self.__y, self.__y_pred, average='weighted')
+                    
+                    cross_val = sms.cross_val_score(self.model_classifier, self.__x_train, self.__y, cv = 10)    
+                    score_mean = round((cross_val.mean() * 100), 2)
+                    score_std_dev = round((cross_val.std() * 100), 2)
+                    self.__model_evaluation = True
+                    return {
+                            "Confusion Matrix": training_analysis,
+                            "Classification Report": training_class_report,
+                            "Model Accuracy": training_accuracy,
+                            "Model Precision": training_precision,
+                            "Model Recall": training_recall,
+                            "Model F1 Score": training_f1score,
+                            "Cross Validation Mean": score_mean, 
+                            "Cross Validation Standard Deviation": score_std_dev
+                            }
+                
+                elif kfold != None and cross_validation == True:
+                    training_analysis = sm.confusion_matrix(self.__y, self.__y_pred)
+                    training_class_report = sm.classification_report(self.__y, self.__y_pred)
+                    training_accuracy = sm.accuracy_score(self.__y, self.__y_pred)
+                    training_precision = sm.precision_score(self.__y, self.__y_pred, average='weighted')
+                    training_recall = sm.recall_score(self.__y, self.__y_pred, average='weighted')
+                    training_f1score = sm.f1_score(self.__y, self.__y_pred, average='weighted')
+                    
+                    cross_val = sms.cross_val_score(self.model_classifier, self.__x_train, self.__y, cv = kfold)    
+                    score_mean = round((cross_val.mean() * 100), 2)
+                    score_std_dev = round((cross_val.std() * 100), 2)
+                    self.__model_evaluation = True
+                    return {
+                            "Confusion Matrix": training_analysis,
+                            "Classification Report": training_class_report,
+                            "Model Accuracy": training_accuracy,
+                            "Model Precision": training_precision,
+                            "Model Recall": training_recall,
+                            "Model F1 Score": training_f1score,
+                            "Cross Validation Mean": score_mean, 
+                            "Cross Validation Standard Deviation": score_std_dev
+                            }
+
+            else:
+                raise AssertionError("You can not use a classification evaluation function for a regression problem.")
+                
         
     def classifier_model_testing(self, variables_values: list, scaling: bool = False):
         """
@@ -3251,71 +4131,113 @@ class SupervisedLearning:
     - Matplotlib: https://matplotlib.org/stable/gallery/lines_bars_and_markers/fill.html
 
         """
-        
-        if self.classification_problem == True:
-            columns = [col for col in self.__x_train.columns]
-            
-            if len(columns) == 2:
-                feature1 = self.__x_train.iloc[:, 0].name
-                feature2 = self.__x_train.iloc[:, 1].name
+        if self.__split_data == True:
+            if self.classification_problem == True:
+                columns = [col for col in self.__x_train.columns]
                 
-                le = sp.LabelEncoder()
-                self.__y_train_encoded = le.fit_transform(self.__y_train)
-
-                if isinstance(self.__x_train, pd.DataFrame):
-                    x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((self.__x_train.iloc[:, 0].min() - (self.__x_train.iloc[:, 0].min() / 8)), (self.__x_train.iloc[:, 0].max() + (self.__x_train.iloc[:, 0].max() / 8)), resolution),
-                                                                np.linspace((self.__x_train.iloc[:, 1].min() - (self.__x_train.iloc[:, 1].min() / 8)), (self.__x_train.iloc[:, 1].max() + (self.__x_train.iloc[:, 1].max() / 8)), resolution))
-                elif isinstance(self.__x_train, np.ndarray):
-                    x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((self.__x_train.iloc[:, 0].min() - (self.__x_train.iloc[:, 0].min() / 8)), (self.__x_train.iloc[:, 0].max() + (self.__x_train.iloc[:, 0].max() / 8)), resolution),
-                                                                np.linspace((self.__x_train.iloc[:, 1].min() - (self.__x_train.iloc[:, 1].min() / 8)), (self.__x_train.iloc[:, 1].max() + (self.__x_train.iloc[:, 1].max() / 8)), resolution))
-                else:
-                    raise ValueError("Unsupported input type for self.__x_train. Use either Pandas DataFrame or NumPy array.")
-
-                grid_points_train = np.c_[x1_vals_train.ravel(), x2_vals_train.ravel()]
-                predictions_train = classifier.predict(grid_points_train)
-                predictions_train = le.inverse_transform(predictions_train)
-
-                plt.figure(figsize = (15, 10))
-                
-                plt.contourf(x1_vals_train, x2_vals_train, le.transform(predictions_train).reshape(x1_vals_train.shape), alpha=0.3, cmap = cmap_train)
-                if isinstance(self.__x_train, pd.DataFrame):
-                    plt.scatter(self.__x_train.iloc[:, 0], self.__x_train.iloc[:, 1], c=self.__y_train_encoded, cmap=cmap_train, edgecolors='k', s=size_train_marker, marker='o')
-                elif isinstance(self.__x_train, np.ndarray):
-                    plt.scatter(self.__x_train[:, 0], self.__x_train[:, 1], c=self.__y_train_encoded, cmap=cmap_train, edgecolors='k', s=size_train_marker, marker='o')
-                plt.title(f"{classifier.__class__.__name__} Training Classification Graph")
-                plt.xlabel(feature1)
-                plt.ylabel(feature2)
-                plt.tight_layout()
-                plt.show()
-
-                if self.__x_test is not None and self.__y_test is not None:
+                if len(columns) == 2:
+                    feature1 = self.__x_train.iloc[:, 0].name
+                    feature2 = self.__x_train.iloc[:, 1].name
+                    
+                    le = sp.LabelEncoder()
+                    self.__y_train_encoded = le.fit_transform(self.__y_train)
+    
+                    if isinstance(self.__x_train, pd.DataFrame):
+                        x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((self.__x_train.iloc[:, 0].min() - (self.__x_train.iloc[:, 0].min() / 8)), (self.__x_train.iloc[:, 0].max() + (self.__x_train.iloc[:, 0].max() / 8)), resolution),
+                                                                    np.linspace((self.__x_train.iloc[:, 1].min() - (self.__x_train.iloc[:, 1].min() / 8)), (self.__x_train.iloc[:, 1].max() + (self.__x_train.iloc[:, 1].max() / 8)), resolution))
+                    elif isinstance(self.__x_train, np.ndarray):
+                        x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((self.__x_train.iloc[:, 0].min() - (self.__x_train.iloc[:, 0].min() / 8)), (self.__x_train.iloc[:, 0].max() + (self.__x_train.iloc[:, 0].max() / 8)), resolution),
+                                                                    np.linspace((self.__x_train.iloc[:, 1].min() - (self.__x_train.iloc[:, 1].min() / 8)), (self.__x_train.iloc[:, 1].max() + (self.__x_train.iloc[:, 1].max() / 8)), resolution))
+                    else:
+                        raise ValueError("Unsupported input type for self.__x_train. Use either Pandas DataFrame or NumPy array.")
+    
+                    grid_points_train = np.c_[x1_vals_train.ravel(), x2_vals_train.ravel()]
+                    predictions_train = classifier.predict(grid_points_train)
+                    predictions_train = le.inverse_transform(predictions_train)
+    
                     plt.figure(figsize = (15, 10))
-                    x1_vals_test, x2_vals_test = np.meshgrid(np.linspace((self.__x_test.iloc[:, 0].min() - (self.__x_test.iloc[:, 0].min() / 8)), (self.__x_test.iloc[:, 0].max() + (self.__x_test.iloc[:, 0].max() / 8)), resolution),
-                                                              np.linspace((self.__x_test.iloc[:, 1].min() - (self.__x_test.iloc[:, 1].min() / 8)), (self.__x_test.iloc[:, 1].max() + (self.__x_test.iloc[:, 1].max() / 8)), resolution))
-
-                    grid_points_test = np.c_[x1_vals_test.ravel(), x2_vals_test.ravel()]
-                    predictions_test = classifier.predict(grid_points_test)
-                    predictions_test = le.inverse_transform(predictions_test)
-
-                    plt.contourf(x1_vals_test, x2_vals_test, le.transform(predictions_test).reshape(x1_vals_test.shape), alpha=0.3, cmap=cmap_test)
-
-                    if isinstance(self.__x_test, pd.DataFrame):
-                        plt.scatter(self.__x_test.iloc[:, 0], self.__x_test.iloc[:, 1], c=le.transform(self.__y_test), cmap=cmap_test, edgecolors='k', s=size_test_marker, marker='o')
-                    elif isinstance(self.__x_test, np.ndarray):
-                        plt.scatter(self.__x_test[:, 0], self.__x_test[:, 1], c=le.transform(self.__y_test), cmap=cmap_test, edgecolors='k', s=size_test_marker, marker='o')
-
-                    plt.title(f"{classifier.__class__.__name__} Test Classification Graph")
+                    
+                    plt.contourf(x1_vals_train, x2_vals_train, le.transform(predictions_train).reshape(x1_vals_train.shape), alpha=0.3, cmap = cmap_train)
+                    if isinstance(self.__x_train, pd.DataFrame):
+                        plt.scatter(self.__x_train.iloc[:, 0], self.__x_train.iloc[:, 1], c=self.__y_train_encoded, cmap=cmap_train, edgecolors='k', s=size_train_marker, marker='o')
+                    elif isinstance(self.__x_train, np.ndarray):
+                        plt.scatter(self.__x_train[:, 0], self.__x_train[:, 1], c=self.__y_train_encoded, cmap=cmap_train, edgecolors='k', s=size_train_marker, marker='o')
+                    plt.title(f"{classifier.__class__.__name__} Training Classification Graph")
                     plt.xlabel(feature1)
                     plt.ylabel(feature2)
                     plt.tight_layout()
                     plt.show()
-                
+    
+                    if self.__x_test is not None and self.__y_test is not None:
+                        plt.figure(figsize = (15, 10))
+                        x1_vals_test, x2_vals_test = np.meshgrid(np.linspace((self.__x_test.iloc[:, 0].min() - (self.__x_test.iloc[:, 0].min() / 8)), (self.__x_test.iloc[:, 0].max() + (self.__x_test.iloc[:, 0].max() / 8)), resolution),
+                                                                  np.linspace((self.__x_test.iloc[:, 1].min() - (self.__x_test.iloc[:, 1].min() / 8)), (self.__x_test.iloc[:, 1].max() + (self.__x_test.iloc[:, 1].max() / 8)), resolution))
+    
+                        grid_points_test = np.c_[x1_vals_test.ravel(), x2_vals_test.ravel()]
+                        predictions_test = classifier.predict(grid_points_test)
+                        predictions_test = le.inverse_transform(predictions_test)
+    
+                        plt.contourf(x1_vals_test, x2_vals_test, le.transform(predictions_test).reshape(x1_vals_test.shape), alpha=0.3, cmap=cmap_test)
+    
+                        if isinstance(self.__x_test, pd.DataFrame):
+                            plt.scatter(self.__x_test.iloc[:, 0], self.__x_test.iloc[:, 1], c=le.transform(self.__y_test), cmap=cmap_test, edgecolors='k', s=size_test_marker, marker='o')
+                        elif isinstance(self.__x_test, np.ndarray):
+                            plt.scatter(self.__x_test[:, 0], self.__x_test[:, 1], c=le.transform(self.__y_test), cmap=cmap_test, edgecolors='k', s=size_test_marker, marker='o')
+    
+                        plt.title(f"{classifier.__class__.__name__} Test Classification Graph")
+                        plt.xlabel(feature1)
+                        plt.ylabel(feature2)
+                        plt.tight_layout()
+                        plt.show()
+                    
+                else:
+                    raise ValueError(f"Visualization needs a maximum of 2 features for the independent variables. {len(self.__x_train.columns)} given.")
+    
             else:
-                raise ValueError(f"Visualization needs a maximum of 2 features for the independent variables. {len(self.__x_train.columns)} given.")
-
+                raise AssertionError("You can not use a classification graph for a regression problem.")
+                
         else:
-            raise AssertionError("You can not use a classification graph for a regression problem.")
+            if self.classification_problem == True:
+                columns = [col for col in self.__x.columns]
+                
+                if len(columns) == 2:
+                    feature1 = self.__x.iloc[:, 0].name
+                    feature2 = self.__x.iloc[:, 1].name
+                    
+                    le = sp.LabelEncoder()
+                    self.__y_encoded = le.fit_transform(self.__y)
 
+                    if isinstance(self.__x, pd.DataFrame):
+                        x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((self.__x.iloc[:, 0].min() - (self.__x.iloc[:, 0].min() / 8)), (self.__x.iloc[:, 0].max() + (self.__x.iloc[:, 0].max() / 8)), resolution),
+                                                                    np.linspace((self.__x.iloc[:, 1].min() - (self.__x.iloc[:, 1].min() / 8)), (self.__x.iloc[:, 1].max() + (self.__x.iloc[:, 1].max() / 8)), resolution))
+                    elif isinstance(self.__x, np.ndarray):
+                        x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((self.__x.iloc[:, 0].min() - (self.__x.iloc[:, 0].min() / 8)), (self.__x.iloc[:, 0].max() + (self.__x.iloc[:, 0].max() / 8)), resolution),
+                                                                    np.linspace((self.__x.iloc[:, 1].min() - (self.__x.iloc[:, 1].min() / 8)), (self.__x.iloc[:, 1].max() + (self.__x.iloc[:, 1].max() / 8)), resolution))
+                    else:
+                        raise ValueError("Unsupported input type for self.__x. Use either Pandas DataFrame or NumPy array.")
+
+                    grid_points_train = np.c_[x1_vals_train.ravel(), x2_vals_train.ravel()]
+                    predictions_train = classifier.predict(grid_points_train)
+                    predictions_train = le.inverse_transform(predictions_train)
+
+                    plt.figure(figsize = (15, 10))
+                    
+                    plt.contourf(x1_vals_train, x2_vals_train, le.transform(predictions_train).reshape(x1_vals_train.shape), alpha=0.3, cmap = cmap_train)
+                    if isinstance(self.__x, pd.DataFrame):
+                        plt.scatter(self.__x.iloc[:, 0], self.__x.iloc[:, 1], c=self.__y_encoded, cmap=cmap_train, edgecolors='k', s=size_train_marker, marker='o')
+                    elif isinstance(self.__x, np.ndarray):
+                        plt.scatter(self.__x[:, 0], self.__x[:, 1], c=self.__y_encoded, cmap=cmap_train, edgecolors='k', s=size_train_marker, marker='o')
+                    plt.title(f"{classifier.__class__.__name__} Training Classification Graph")
+                    plt.xlabel(feature1)
+                    plt.ylabel(feature2)
+                    plt.tight_layout()
+                    plt.show()
+                    
+                else:
+                    raise ValueError(f"Visualization needs a maximum of 2 features for the independent variables. {len(self.__x.columns)} given.")
+
+            else:
+                raise AssertionError("You can not use a classification graph for a regression problem.")
 
     def numerical_to_categorical(self, column):
         """
@@ -3635,52 +4557,95 @@ class SupervisedLearning:
     - Scikit-learn Documentation: https://scikit-learn.org/stable/documentation.html
     
         """
+        if self.__split_data == True: 
+            if random_state == None:
+                if sampler == "SMOTE" and k_neighbors != None:
+                    technique = ios.SMOTE(random_state = 0, k_neighbors = k_neighbors)
+                    self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
+                
+                elif sampler == "SMOTE" and k_neighbors == None:
+                    technique = ios.SMOTE(random_state = 0)
+                    self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
+                    
+                elif sampler == "RandomOverSampler" and k_neighbors == None:
+                    technique = ios.RandomOverSampler(random_state = 0)
+                    self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
+                    
+                elif sampler == "RandomUnderSampler" and k_neighbors == None:
+                    technique = ius.RandomUnderSampler(random_state = 0)
+                    self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
+                    
+                else:
+                    raise ValueError("k_neighbors works with only the SMOTE algorithm.")
+                
+                return {"Training X": self.__x_train, "Training Y": self.__y_train}
+            
+            elif random_state != None:
+                if sampler == "SMOTE" and k_neighbors != None:
+                    technique = ios.SMOTE(random_state = random_state, k_neighbors = k_neighbors)
+                    self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
+                
+                elif sampler == "SMOTE" and k_neighbors == None:
+                    technique = ios.SMOTE(random_state = random_state)
+                    self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
+                    
+                elif sampler == "RandomOverSampler" and k_neighbors == None:
+                    technique = ios.RandomOverSampler(random_state = random_state)
+                    self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
+                    
+                elif sampler == "RandomUnderSampler" and k_neighbors == None:
+                    technique = ius.RandomUnderSampler(random_state = random_state)
+                    self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
+                    
+                else:
+                    raise ValueError("k_neighbors works with only the SMOTE algorithm.")
+                
+                return {"Training X": self.__x_train, "Training Y": self.__y_train}
+        else:
+            if random_state == None:
+                if sampler == "SMOTE" and k_neighbors != None:
+                    technique = ios.SMOTE(random_state = 0, k_neighbors = k_neighbors)
+                    self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
+                
+                elif sampler == "SMOTE" and k_neighbors == None:
+                    technique = ios.SMOTE(random_state = 0)
+                    self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
+                    
+                elif sampler == "RandomOverSampler" and k_neighbors == None:
+                    technique = ios.RandomOverSampler(random_state = 0)
+                    self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
+                    
+                elif sampler == "RandomUnderSampler" and k_neighbors == None:
+                    technique = ius.RandomUnderSampler(random_state = 0)
+                    self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
+                    
+                else:
+                    raise ValueError("k_neighbors works with only the SMOTE algorithm.")
+                
+                return {"X": self.__x, "Y": self.__y}
 
+            elif random_state != None:
+                if sampler == "SMOTE" and k_neighbors != None:
+                    technique = ios.SMOTE(random_state = random_state, k_neighbors = k_neighbors)
+                    self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
+                
+                elif sampler == "SMOTE" and k_neighbors == None:
+                    technique = ios.SMOTE(random_state = random_state)
+                    self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
+                    
+                elif sampler == "RandomOverSampler" and k_neighbors == None:
+                    technique = ios.RandomOverSampler(random_state = random_state)
+                    self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
+                    
+                elif sampler == "RandomUnderSampler" and k_neighbors == None:
+                    technique = ius.RandomUnderSampler(random_state = random_state)
+                    self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
+                    
+                else:
+                    raise ValueError("k_neighbors works with only the SMOTE algorithm.")
+                
+                return {"X": self.__x, "Y": self.__y}
 
-        if random_state == None:
-            if sampler == "SMOTE" and k_neighbors != None:
-                technique = ios.SMOTE(random_state = 0, k_neighbors = k_neighbors)
-                self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
-            
-            elif sampler == "SMOTE" and k_neighbors == None:
-                technique = ios.SMOTE(random_state = 0)
-                self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
-                
-            elif sampler == "RandomOverSampler" and k_neighbors == None:
-                technique = ios.RandomOverSampler(random_state = 0)
-                self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
-                
-            elif sampler == "RandomUnderSampler" and k_neighbors == None:
-                technique = ius.RandomUnderSampler(random_state = 0)
-                self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
-                
-            else:
-                raise ValueError("k_neighbors works with only the SMOTE algorithm.")
-            
-            return {"Training X": self.__x_train, "Training Y": self.__y_train}
-        
-        elif random_state != None:
-            if sampler == "SMOTE" and k_neighbors != None:
-                technique = ios.SMOTE(random_state = random_state, k_neighbors = k_neighbors)
-                self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
-            
-            elif sampler == "SMOTE" and k_neighbors == None:
-                technique = ios.SMOTE(random_state = random_state)
-                self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
-                
-            elif sampler == "RandomOverSampler" and k_neighbors == None:
-                technique = ios.RandomOverSampler(random_state = random_state)
-                self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
-                
-            elif sampler == "RandomUnderSampler" and k_neighbors == None:
-                technique = ius.RandomUnderSampler(random_state = random_state)
-                self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
-                
-            else:
-                raise ValueError("k_neighbors works with only the SMOTE algorithm.")
-            
-            return {"Training X": self.__x_train, "Training Y": self.__y_train}
-        
     
     def replace_values(self, replace: int or float or str or list or tuple or dict, new_value: int or float or str or list or tuple):
         """
@@ -4836,7 +5801,7 @@ class SupervisedLearning:
         return self.__data
     
     
-    def get_bestK_KNNclassifier(self, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31):
+    def get_bestK_KNNclassifier(self, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, figsize: tuple = (15, 10)):
         """
     Find the best value of k for K-Nearest Neighbors (KNN) classifier.
 
@@ -4850,6 +5815,8 @@ class SupervisedLearning:
         Distance metric for the tree. Refer to the documentation of sklearn.neighbors.DistanceMetric for more options.
     max_k_range : int, default 31
         Maximum range of k values to consider.
+    figsize: tuple
+        A tuple containing the frame length and breadth for the graph to be plotted.
 
     Returns
     -------
@@ -4881,48 +5848,88 @@ class SupervisedLearning:
     - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
 
         """
-        
-        algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
-        weights = ['uniform', 'distance']
-        
-        a = algorithm.lower()
-        b = weight.lower()
-        
-        if (a in algorithms) or (b in weights):    
-            k = [num for num in range(1, max_k_range)]
-            scores_knn = []
-            scores_store = {}
-            for num in k:
-                classifier = sn.KNeighborsClassifier(n_neighbors = num, weights = weight, algorithm = algorithm, metric = metric)
-                model = classifier.fit(self.__x_train, self.__y_train)
+        if self.__split_data == True: 
+            algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
+            weights = ['uniform', 'distance']
+            
+            a = algorithm.lower()
+            b = weight.lower()
+            
+            if (a in algorithms) or (b in weights):    
+                k = [num for num in range(1, max_k_range)]
+                scores_knn = []
+                scores_store = {}
+                for num in k:
+                    classifier = sn.KNeighborsClassifier(n_neighbors = num, weights = weight, algorithm = algorithm, metric = metric)
+                    model = classifier.fit(self.__x_train, self.__y_train)
+                    
+                    # Model Evaluation
+                    scores_knn.append(model.score(self.__x_train, self.__y_train))
+                    scores_store[num] = (model.score(self.__x_train, self.__y_train))
                 
-                # Model Evaluation
-                scores_knn.append(model.score(self.__x_train, self.__y_train))
-                scores_store[num] = (model.score(self.__x_train, self.__y_train))
-            
-            # Plotting a graph
-            plt.figure(figsize = (15, 10))
-            plt.plot(k, scores_knn)
-            plt.title('KNN graph for values of K and their scores')
-            plt.xlabel('Ranges of K values')
-            plt.ylabel('Scores')
-            plt.show()
-            
-            # Getting the best score
-            b = (0, 0)
-            for key, value in scores_store.items():    
-                if value > b[1]:
-                    b = (key, value)
-            print(f'\n\nKNN CLASSIFIER ------> Finding the besk K value:\nThe best k-value is {b[0]} with a score of {b[1]}.')
-            
-    
+                # Plotting a graph
+                plt.figure(figsize = figsize)
+                plt.plot(k, scores_knn)
+                plt.title('KNN graph for values of K and their scores')
+                plt.xlabel('Ranges of K values')
+                plt.ylabel('Scores')
+                plt.show()
+                
+                # Getting the best score
+                b = (0, 0)
+                for key, value in scores_store.items():    
+                    if value > b[1]:
+                        b = (key, value)
+                print(f'\n\nKNN CLASSIFIER ------> Finding the besk K value:\nThe best k-value is {b[0]} with a score of {b[1]}.')
+                
+        
+            else:
+                raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+                
+            return b[0]
+        
         else:
-            raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
-            
-        return b[0]
+            algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
+            weights = ['uniform', 'distance']
+
+            a = algorithm.lower()
+            b = weight.lower()
+
+            if (a in algorithms) or (b in weights):    
+                k = [num for num in range(1, max_k_range)]
+                scores_knn = []
+                scores_store = {}
+                for num in k:
+                    classifier = sn.KNeighborsClassifier(n_neighbors = num, weights = weight, algorithm = algorithm, metric = metric)
+                    model = classifier.fit(self.__x, self.__y)
+                    
+                    # Model Evaluation
+                    scores_knn.append(model.score(self.__x, self.__y))
+                    scores_store[num] = (model.score(self.__x, self.__y))
+                
+                # Plotting a graph
+                plt.figure(figsize = figsize)
+                plt.plot(k, scores_knn)
+                plt.title('KNN graph for values of K and their scores')
+                plt.xlabel('Ranges of K values')
+                plt.ylabel('Scores')
+                plt.show()
+                
+                # Getting the best score
+                b = (0, 0)
+                for key, value in scores_store.items():    
+                    if value > b[1]:
+                        b = (key, value)
+                print(f'\n\nKNN CLASSIFIER ------> Finding the besk K value:\nThe best k-value is {b[0]} with a score of {b[1]}.')
+                
+
+            else:
+                raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+                
+            return b[0]
     
     
-    def get_bestK_KNNregressor(self, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31):
+    def get_bestK_KNNregressor(self, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, figsize: tuple = (15, 10)):
         """
     Find the best value of k for K-Nearest Neighbors (KNN) regressor.
 
@@ -4936,6 +5943,8 @@ class SupervisedLearning:
         Distance metric for the tree. Refer to the documentation of sklearn.neighbors.DistanceMetric for more options.
     max_k_range : int, default 31
         Maximum range of k values to consider.
+    figsize: tuple
+        A tuple containing the frame length and breadth for the graph to be plotted.
 
     Returns
     -------
@@ -4966,46 +5975,86 @@ class SupervisedLearning:
     - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html
 
         """
-        
-        algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
-        weights = ['uniform', 'distance']
-        
-        a = algorithm.lower()
-        b = weight.lower()
-        
-        if (a in algorithms) or (b in weights):    
-            k = [num for num in range(1, max_k_range)]
-            scores_knn = []
-            scores_store = {}
-            for num in k:
-                regressor = sn.KNeighborsRegressor(n_neighbors = num, weights = weight, algorithm = algorithm, metric = metric)
-                model = regressor.fit(self.__x_train, self.__y_train)
+        if self.__split_data == True: 
+            algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
+            weights = ['uniform', 'distance']
+            
+            a = algorithm.lower()
+            b = weight.lower()
+            
+            if (a in algorithms) or (b in weights):    
+                k = [num for num in range(1, max_k_range)]
+                scores_knn = []
+                scores_store = {}
+                for num in k:
+                    regressor = sn.KNeighborsRegressor(n_neighbors = num, weights = weight, algorithm = algorithm, metric = metric)
+                    model = regressor.fit(self.__x_train, self.__y_train)
+                    
+                    # Model Evaluation
+                    scores_knn.append(model.score(self.__x_train, self.__y_train))
+                    scores_store[num] = (model.score(self.__x_train, self.__y_train))
                 
-                # Model Evaluation
-                scores_knn.append(model.score(self.__x_train, self.__y_train))
-                scores_store[num] = (model.score(self.__x_train, self.__y_train))
-            
-            # Plotting a graph
-            plt.figure(figsize = (15, 10))
-            plt.plot(k, scores_knn)
-            plt.title('KNN graph for values of K and their scores')
-            plt.xlabel('Ranges of K values')
-            plt.ylabel('Scores')
-            plt.show()
-            
-            # Getting the best score
-            b = (0, 0)
-            for key, value in scores_store.items():    
-                if value > b[1]:
-                    b = (key, value)
-            print(f'\n\nKNN Regressor ------> Finding the besk K value:\nThe best k-value is {b[0]} with a score of {b[1]}.')
-            
-    
-        else:
-            raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+                # Plotting a graph
+                plt.figure(figsize = figsize)
+                plt.plot(k, scores_knn)
+                plt.title('KNN graph for values of K and their scores')
+                plt.xlabel('Ranges of K values')
+                plt.ylabel('Scores')
+                plt.show()
+                
+                # Getting the best score
+                b = (0, 0)
+                for key, value in scores_store.items():    
+                    if value > b[1]:
+                        b = (key, value)
+                print(f'\n\nKNN Regressor ------> Finding the besk K value:\nThe best k-value is {b[0]} with a score of {b[1]}.')
+                
         
-        return b[0]
-    
+            else:
+                raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+            
+            return b[0]
+        
+        else:
+            algorithms = ['auto', 'ball_tree', 'kd_tree', 'brute']
+            weights = ['uniform', 'distance']
+
+            a = algorithm.lower()
+            b = weight.lower()
+
+            if (a in algorithms) or (b in weights):    
+                k = [num for num in range(1, max_k_range)]
+                scores_knn = []
+                scores_store = {}
+                for num in k:
+                    regressor = sn.KNeighborsRegressor(n_neighbors = num, weights = weight, algorithm = algorithm, metric = metric)
+                    model = regressor.fit(self.__x, self.__y)
+                    
+                    # Model Evaluation
+                    scores_knn.append(model.score(self.__x, self.__y))
+                    scores_store[num] = (model.score(self.__x, self.__y))
+                
+                # Plotting a graph
+                plt.figure(figsize = figsize)
+                plt.plot(k, scores_knn)
+                plt.title('KNN graph for values of K and their scores')
+                plt.xlabel('Ranges of K values')
+                plt.ylabel('Scores')
+                plt.show()
+                
+                # Getting the best score
+                b = (0, 0)
+                for key, value in scores_store.items():    
+                    if value > b[1]:
+                        b = (key, value)
+                print(f'\n\nKNN Regressor ------> Finding the besk K value:\nThe best k-value is {b[0]} with a score of {b[1]}.')
+                
+
+            else:
+                raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+
+            return b[0]
+
    
     def unique_elements_in_columns(self, count: bool = False):
         """
