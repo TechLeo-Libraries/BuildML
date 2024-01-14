@@ -5542,7 +5542,7 @@ class SupervisedLearning:
         return grouped_columns               
              
     
-    def count_column_categories(self, column: str or list or tuple, reset_index: bool = False, inplace: bool = False):
+    def count_column_categories(self, column: str or list or tuple, reset_index: bool = False, inplace: bool = False, test_data: bool = False):
         """
     Count the occurrences of categories in a categorical column.
 
@@ -5554,6 +5554,8 @@ class SupervisedLearning:
         Whether to reset the index after counting.
     inplace : bool, default False
         Replace the original dataset with this groupby operation.
+    test_data : bool, default False
+        Include the categories count for the test data.
 
     Returns
     -------
@@ -5586,32 +5588,86 @@ class SupervisedLearning:
     - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reset_index.html
 
         """
+        if self.__split_data == False:
+            if reset_index == False:
+                if isinstance(column, str) or isinstance(column, list) or isinstance(column, tuple):
+                    categories_count = self.__data[column].value_counts()
+                    
+                else:
+                    raise ValueError("Column inserted must be a string, list, or tuple.")
+                    
+            elif reset_index == True:
+                if isinstance(column, str) or isinstance(column, list) or isinstance(column, tuple):
+                    categories_count = self.__data[column].value_counts()
+                    categories_count = categories_count.reset_index()
+                    
+                else:
+                    raise ValueError("Column inserted must be a string, list, or tuple.")
+                    
+            else:
+                raise ValueError("The arguments for 'reset_index' must be boolean TRUE or FALSE.")
+                
+            
+            if inplace == True:
+                self.__data = categories_count
+                return self.__data
+                
+            return categories_count
         
-        if reset_index == False:
-            if isinstance(column, str) or isinstance(column, list) or isinstance(column, tuple):
-                categories_count = self.__data[column].value_counts()
-                
-            else:
-                raise ValueError("Column inserted must be a string, list, or tuple.")
-                
-        elif reset_index == True:
-            if isinstance(column, str) or isinstance(column, list) or isinstance(column, tuple):
-                categories_count = self.__data[column].value_counts()
-                categories_count = categories_count.reset_index()
-                
-            else:
-                raise ValueError("Column inserted must be a string, list, or tuple.")
-                
         else:
-            raise ValueError("The arguments for 'reset_index' must be boolean of TRUE or FALSE.")
-            
-        
-        if inplace == True:
-            self.__data = categories_count
-            return self.__data
-            
-        return categories_count
-    
+            x_train_col = [col for col in self.__x_train.columns]
+            y_train_col = [self.__y_train.name]
+
+            if test_data == False:
+                if isinstance(column, str):
+                    if column in x_train_col:
+                        categories_count = self.__x_train[column].value_counts()
+                    elif column in y_train_col:
+                        categories_count = self.__y_train.value_counts()
+                        
+                elif isinstance(column, list) or isinstance(column, tuple):
+                    a = set(x_train_col)
+                    b = set(column)
+                    if b.issubset(a):
+                        categories_count = self.__x_train[column].value_counts()
+                    
+                    else:
+                        raise ValueError("One or more of the columns specified cannot be found among your independent variables columns (x_train). Also, check that your dependent variable column (y_train) is not among the columns. To get the value counts of the y_train, it must be specified seperately as a string.")
+                
+                if reset_index == True:
+                    categories_count = categories_count.reset_index()
+
+                if inplace == True:
+                    self.__data = categories_count
+                    return self.__data
+                    
+                return categories_count
+                
+            elif test_data == True:
+                if isinstance(column, str):
+                    if column in x_train_col:
+                        categories_count_train = self.__x_train[column].value_counts()
+                        categories_count_test = self.__x_test[column].value_counts()
+                        
+                    elif column in y_train_col:
+                        categories_count_train = self.__y_train.value_counts()
+                        categories_count_test = self.__y_test.value_counts()
+                        
+                elif isinstance(column, list) or isinstance(column, tuple):
+                    a = set(x_train_col)
+                    b = set(column)
+                    if b.issubset(a):
+                        categories_count_train = self.__x_train[column].value_counts()
+                        categories_count_test = self.__x_test[column].value_counts()
+                        
+                    else:
+                        raise ValueError("One or more of the columns specified cannot be found among your independent variables columns (x_train). Also, check that your dependent variable column (y_train) is not among the columns. To get the value counts of the y_train, it must be specified seperately as a string.")    
+
+                if reset_index == True:
+                    categories_count_train = categories_count_train.reset_index()
+                    categories_count_test = categories_count_test.reset_index()
+                    
+                return {"Training Data": categories_count_train, "Test Data": categories_count_test}
     
     def sweetviz_profile_report(self, filename: str = "Pandas Profile Report.html", auto_open: bool = False):
         """

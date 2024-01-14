@@ -162,7 +162,7 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 
 - Removed boxplot graph from eda_visual.
 - Added new parameters for eda_visual.
-- Removed user_guide from parameters in documentation.
+- Removed user_guide from SupervisedLearning parameter in documentation.
 - Improved documentation.
 
 ### v1.0.2 (January 2024):
@@ -171,6 +171,10 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 - Fix for building all models without splitting the data.
 - Updated requirements.txt file.
 - Fix dependency error in installation.
+
+### v1.0.3 (January 2024):
+
+- Allow the method `count_column_categories` to work for split_data.
 
 ## Contributors
 We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:
