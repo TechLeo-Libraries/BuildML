@@ -5,7 +5,7 @@ build:
   python:
     version: "3.8"
   tools:
-    - sphinx
+    sphinx: null  # Add an empty entry for the sphinx tool
 
 dependencies:
   override:
