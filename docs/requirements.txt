@@ -1,0 +1,11 @@
+datatable
+imbalanced_learn
+imblearn
+matplotlib
+numpy
+pandas
+scikit_learn
+seaborn
+setuptools
+sweetviz
+ydata_profiling

@@ -243,6 +243,15 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 - Allow the method `count_column_categories` to work for split_data.
 - Improved documentation.
 
+### v1.0.4 (January 2024):
+
+- Improved documentation.
+
+### v1.0.5 (January 2024):
+
+- Improved documentation.
+- Created external documentation for BuildML.
+
 ## Contributors
 We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:
 

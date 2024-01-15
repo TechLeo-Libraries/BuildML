@@ -28,3 +28,14 @@ v1.0.3 (January 2024):
 
 -  Allow the method ``count_column_categories`` to work for split_data.
 -  Improved documentation.
+
+v1.0.4 (January 2024):
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Improved documentation.
+
+v1.0.5 (January 2024):
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Improved documentation.
+- Created external documentation for BuildML.
