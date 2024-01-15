@@ -46,7 +46,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 source_suffix = ".rst"
 
 # The master toctree document.
-# master_doc = "index"
+master_doc = "index"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -58,7 +58,7 @@ version = buildml.__version__
 release = buildml.__version__
 
 # The name of the Pygments (syntax highlighting) style to use.
-# pygments_style = "sphinx"
+pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -69,7 +69,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'alabaster'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -80,12 +80,12 @@ html_theme = 'sphinx_rtd_theme'
 # -- Options for HTMLHelp output ---------------------------------------
 
 # Output file base name for HTML help builder.
-# htmlhelp_basename = "buildmldoc"
+htmlhelp_basename = "buildmldoc"
 
 
 # -- Options for LaTeX output ------------------------------------------
 
-# latex_elements = {
+latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
@@ -98,27 +98,27 @@ html_theme = 'sphinx_rtd_theme'
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
-# }
+}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass
 # [howto, manual, or own class]).
-# latex_documents = [
-#     (
-#         master_doc,
-#         "buildml.tex",
-#         u"BuildML Documentation",
-#         u"TechLeo",
-#         "manual",
-#     ),
-# ]
+latex_documents = [
+    (
+        master_doc,
+        "buildml.tex",
+        u"BuildML Documentation",
+        u"TechLeo",
+        "manual",
+    ),
+]
 
 
 # -- Options for manual page output ------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-# man_pages = [(master_doc, "buildml", u"BuildML Documentation", [author], 1)]
+man_pages = [(master_doc, "buildml", u"BuildML Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------
@@ -126,14 +126,14 @@ html_theme = 'sphinx_rtd_theme'
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-# texinfo_documents = [
-#     (
-#         master_doc,
-#         "buildml",
-#         u"BuildML Documentation",
-#         author,
-#         "buildml",
-#         "Let's make building machine learning models the complex way, easy.",
-#         "Miscellaneous",
-#     ),
-# ]
+texinfo_documents = [
+    (
+        master_doc,
+        "buildml",
+        u"BuildML Documentation",
+        author,
+        "buildml",
+        "Let's make building machine learning models the complex way, easy.",
+        "Miscellaneous",
+    ),
+]
