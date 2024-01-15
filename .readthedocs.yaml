@@ -2,16 +2,12 @@ version: 2
 
 build:
   os: "ubuntu-22.04"
-  python:
-    version: "3.8"
   tools:
-    sphinx: null  # Add an empty entry for the sphinx tool
+    python: "3.8"
 
-dependencies:
-  override:
-    - python -m pip install -r docs/requirements.txt
-    - python -m pip install .
+python:
+  install:
+    - requirements: docs/requirements.txt
 
 sphinx:
-  configuration: docs/conf.py
-  fail_on_warning: true
+  configuration: docs/source/conf.py
