@@ -1,3 +1,5 @@
+[![Downloads](https://static.pepy.tech/badge/buildml)](https://pepy.tech/project/buildml)
+
 # BuildML
 
 BuildML is a Python machine-learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. BuildML is a distribution of the [TechLeo](https://www.linkedin.com/company/techleo/) community to make complex machine-learning processes, easy.
@@ -105,11 +107,8 @@ You can install BuildML using pip:
 pip install buildml
 ```
 
-
-## Usage
-from buildml import SupervisedLearning
-
-# Example usage
+## Example Usage
+Example 1
 ```bash
 import numpy as np
 import pandas as pd
@@ -129,6 +128,73 @@ eda_visual = data.eda_visual()
 # Build and Evaluate Classifier
 classifiers = ["LogisticRegression(random_state = 0)", "RandomForestClassifier(random_state = 0)", "DecisionTreeClassifier(random_state = 0)", "SVC()"]
 build_model = data.build_multiple_classifiers()
+```
+
+Example 2: Working on a dataset with train and test data given.
+```bash
+# Import Libraries
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from xgboost import XGBClassifier
+from buildml.automate import SupervisedLearning
+
+# Get Dataset
+training_data = pd.read_csv("train.csv")
+test_data = pd.read_csv("test.csv")
+
+dataset = pd.concat([training_data, test_data], axis = 0)
+
+# BuildML on Dataset
+automate_training = SupervisedLearning(training_data)
+automate_test = SupervisedLearning(test_data)
+
+automate = [automate_training, automate_test]
+
+# Exploratory Data Analysis
+training_eda = automate_training.eda()
+test_eda = automate_test.eda()
+
+# Data Cleaning and Transformation 
+training_eda_visual = automate_training.eda_visual(y = "Specify what you are predicting", figsize_barchart = (55, 10), figsize_heatmap = (15, 10), figsize_histogram=(35, 20))
+
+for data in automate:
+    data.reduce_data_memory_useage()
+    data.drop_columns("Drop irrelevant columns")
+    data.categorical_to_numerical() # If your data has categorical features
+
+select_variables = automate_training.select_dependent_and_independent(predict = "Loan Status")
+
+# Further Data Preparation and Segregation
+training_data_clean = automate_training.get_dataset()
+test_data_clean = automate_test.get_dataset()
+
+unbalanced_dataset_check = automate_training.count_column_categories(column = "Specify what you are predicting")
+split_data = automate_training.split_data()
+fix_unbalanced_data = automate_training.fix_unbalanced_dataset(sampler = "RandomOverSampler", random_state = 0)
+
+check_unbalanced_data_fix = automate_training.count_column_categories(column = "Specify what you are predicting", test_data = True)
+
+# Model Building 
+classifiers = [LogisticRegression(random_state = 0),
+                SVC(),
+                RandomForestClassifier(random_state = 0),
+                DecisionTreeClassifier(random_state = 0),
+                XGBClassifier(random_state = 0)
+                ]
+
+build_model = automate_training.build_multiple_classifiers(classifiers = classifiers,
+                                                            kfold = 10,
+                                                            cross_validation = True,
+                                                            graph = True
+                                                            )
+
+model = automate_training.train_model_classifier(classifiers[1])
+prediction = automate_training.classifier_predict() 
+evaluation = automate_training.classifier_evaluation(cross_validation = True)
 ```
 
 ## Acknowledgments
@@ -160,21 +226,22 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 
 ### v1.0.1 (January 2024):
 
-- Removed boxplot graph from eda_visual.
-- Added new parameters for eda_visual.
-- Removed user_guide from SupervisedLearning parameter in documentation.
+- Removed boxplot graph from `eda_visual`.
+- Added new parameters for `eda_visual`.
+- Removed `user_guide` from SupervisedLearning parameter in documentation.
 - Improved documentation.
 
 ### v1.0.2 (January 2024):
 
 - Improved documentation.
 - Fix for building all models without splitting the data.
-- Updated requirements.txt file.
+- Updated `requirements.txt` file.
 - Fix dependency error in installation.
 
 ### v1.0.3 (January 2024):
 
 - Allow the method `count_column_categories` to work for split_data.
+- Improved documentation.
 
 ## Contributors
 We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:

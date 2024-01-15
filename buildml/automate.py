@@ -195,35 +195,35 @@ class SupervisedLearning:
         
     def drop_columns(self, columns: list or str):
         """
-    Drop specified columns from the dataset.
-
-    Parameters
-    ----------
-    columns : str or list of str
-        A single column name (string) or a list of column names to be dropped.
-
-    Returns
-    -------
-    pd.DataFrame
-        A new DataFrame with the specified columns dropped.
-
-    Notes
-    -----
-    This method utilizes the `pandas` library for DataFrame manipulation.
+        Drop specified columns from the dataset.
     
-    Examples
-    --------
-    >>> # Drop a single column
-    >>> df = SupervisedLearning(dataset)
-    >>> df.drop_columns('column_name')
-
-    >>> # Drop multiple columns
-    >>> df = SupervisedLearning(dataset)
-    >>> df.drop_columns(['column1', 'column2'])
-
-    See Also
-    --------
-    - pandas.DataFrame.drop : Drop specified labels from rows or columns.
+        Parameters
+        ----------
+        columns : str or list of str
+            A single column name (string) or a list of column names to be dropped.
+    
+        Returns
+        -------
+        pd.DataFrame
+            A new DataFrame with the specified columns dropped.
+        
+        Notes
+        -----
+        This method utilizes the `pandas` library for DataFrame manipulation.
+    
+        See Also
+        --------
+        - pandas.DataFrame.drop : Drop specified labels from rows or columns.
+        
+        Examples
+        --------
+        >>> # Drop a single column
+        >>> df = SupervisedLearning(dataset)
+        >>> df.drop_columns('column_name')
+    
+        >>> # Drop multiple columns
+        >>> df = SupervisedLearning(dataset)
+        >>> df.drop_columns(['column1', 'column2'])
 
         """
         self.__data = self.__data.drop(columns, axis = 1)
@@ -232,90 +232,88 @@ class SupervisedLearning:
     
     def get_training_test_data(self):
         """
-    Get the training and test data splits.
-
-    Returns
-    -------
-    Tuple
-        A tuple containing X_train, X_test, y_train, and y_test.
-
-    Notes
-    -----
-    This method uses the `sklearn.model_selection` library for splitting the data into training and test sets.
-
-    Examples
-    --------
-    >>> # Get training and test data splits
-    >>> df = SupervisedLearning(dataset)
-    >>> X_train, X_test, y_train, y_test = df.get_training_test_data()
-
-    See Also
-    --------
-    - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
-
+        Get the training and test data splits.
+    
+        Returns
+        -------
+        Tuple
+            A tuple containing X_train, X_test, y_train, and y_test.
+    
+    
+        Notes
+        -----
+        This method uses the `sklearn.model_selection` library for splitting the data into training and test sets.
+    
+        See Also
+        --------
+        - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
+        
+        Examples
+        --------
+        >>> # Get training and test data splits
+        >>> df = SupervisedLearning(dataset)
+        >>> X_train, X_test, y_train, y_test = df.get_training_test_data()
         """
         return (self.__x_train, self.__x_test, self.__y_train, self.__y_test)
         
     
     def get_dataset(self):
         """
-    Retrieve the original dataset and the processed data.
-    
-    Returns
-    -------
-    Tuple
-        A tuple containing the original dataset and the processed data.
-    
-    Notes
-    -----
-    This method provides access to both the original and processed datasets.
-    
-    Examples
-    --------
-    >>> # Get the original and processed datasets
-    >>> df = SupervisedLearning(dataset)
-    >>> original_data, processed_data = df.get_dataset()
-    
-    See Also
-    --------
-    pandas.DataFrame : Data structure for handling tabular data.
+        Retrieve the original dataset and the processed data.
         
+        Returns
+        -------
+        Tuple
+            A tuple containing the original dataset and the processed data.
+        
+        Notes
+        -----
+        This method provides access to both the original and processed datasets.
+        
+        See Also
+        --------
+        pandas.DataFrame : Data structure for handling tabular data.
+        
+        Examples
+        --------
+        >>> # Get the original and processed datasets
+        >>> df = SupervisedLearning(dataset)
+        >>> original_data, processed_data = df.get_dataset()
         """
         return (self.__data, self.__dataset)
     
     
     def fix_missing_values(self, strategy: str = None):
         """
-    Fix missing values in the dataset.
+        Fix missing values in the dataset.
+    
+        Parameters
+        ----------
+        strategy : str, optional
+            The strategy to use for imputation. If not specified, it defaults to "mean".
+            Options: "mean", "median", "mode".
+    
+        Returns
+        -------
+        pd.DataFrame
+            The dataset with missing values imputed.
+        
+        Notes
+        -----
+        This method uses the `sklearn.impute` library for handling missing values.
+    
+        See Also
+        --------
+        sklearn.impute.SimpleImputer : Imputation transformer for completing missing values.
 
-    Parameters
-    ----------
-    strategy : str, optional
-        The strategy to use for imputation. If not specified, it defaults to "mean".
-        Options: "mean", "median", "mode".
-
-    Returns
-    -------
-    pd.DataFrame
-        The dataset with missing values imputed.
-
-    Notes
-    -----
-    This method uses the `sklearn.impute` library for handling missing values.
-
-    Examples
-    --------
-    >>> # Fix missing values using the default strategy ("mean")
-    >>> df = SupervisedLearning(dataset)
-    >>> df.fix_missing_values()
-
-    >>> # Fix missing values using a specific strategy (e.g., "median")
-    >>> df.fix_missing_values(strategy="median")
-
-    See Also
-    --------
-    sklearn.impute.SimpleImputer : Imputation transformer for completing missing values.
-
+        Examples
+        --------
+        >>> # Fix missing values using the default strategy ("mean")
+        >>> df = SupervisedLearning(dataset)
+        >>> df.fix_missing_values()
+    
+        >>> # Fix missing values using a specific strategy (e.g., "median")
+        >>> df.fix_missing_values(strategy="median")
         """
         self.__strategy = strategy
         if self.__strategy == None:
@@ -345,35 +343,34 @@ class SupervisedLearning:
         
     def categorical_to_numerical(self, columns: list = None):
         """
-    Convert categorical columns to numerical using one-hot encoding.
-
-    Parameters
-    ----------
-    columns : list, optional
-        A list of column names to apply one-hot encoding. If not provided, one-hot encoding is applied to all categorical columns.
-
-    Returns
-    -------
-    pd.DataFrame
-        Transformed DataFrame with categorical columns converted to numerical using one-hot encoding.
-
-    Notes
-    -----
-    This method uses the `pandas` library for one-hot encoding.
-
-    Examples
-    --------
-    >>> # Convert all categorical columns to numerical using one-hot encoding
-    >>> df = SupervisedLearning(dataset)
-    >>> df.categorical_to_numerical()
-
-    >>> # Convert specific columns to numerical using one-hot encoding
-    >>> df.categorical_to_numerical(columns=['Category1', 'Category2'])
-
-    See Also
-    --------
-    pandas.get_dummies : Convert categorical variable(s) into dummy/indicator variables.
-
+        Convert categorical columns to numerical using one-hot encoding.
+    
+        Parameters
+        ----------
+        columns : list, optional
+            A list of column names to apply one-hot encoding. If not provided, one-hot encoding is applied to all categorical columns.
+    
+        Returns
+        -------
+        pd.DataFrame
+            Transformed DataFrame with categorical columns converted to numerical using one-hot encoding.
+    
+        Notes
+        -----
+        This method uses the `pandas` library for one-hot encoding.
+    
+        See Also
+        --------
+        pandas.get_dummies : Convert categorical variable(s) into dummy/indicator variables.
+        
+        Examples
+        --------
+        >>> # Convert all categorical columns to numerical using one-hot encoding
+        >>> df = SupervisedLearning(dataset)
+        >>> df.categorical_to_numerical()
+    
+        >>> # Convert specific columns to numerical using one-hot encoding
+        >>> df.categorical_to_numerical(columns=['Category1', 'Category2'])
         """
         self.__columns = columns
         
@@ -390,38 +387,37 @@ class SupervisedLearning:
   
     def remove_outlier(self, drop_na: bool):
         """
-    Remove outliers from the dataset.
+        Remove outliers from the dataset.
+    
+        This method uses the `sklearn.preprocessing` library for standard scaling and outlier removal.
+    
+        Parameters
+        ----------
+        drop_na : bool
+            If False, outliers are replaced with NaN values. If True, rows with NaN values are dropped.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The dataset with outliers removed.
+    
+        Notes
+        -----
+        The method applies standard scaling using `sklearn.preprocessing.StandardScaler` and removes outliers
+        based on the range of -3 to 3 standard deviations.
+    
+        See Also
+        --------
+        sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
 
-    This method uses the `sklearn.preprocessing` library for standard scaling and outlier removal.
-
-    Parameters
-    ----------
-    drop_na : bool
-        If False, outliers are replaced with NaN values. If True, rows with NaN values are dropped.
-
-    Returns
-    -------
-    pd.DataFrame
-        The dataset with outliers removed.
-
-    Notes
-    -----
-    The method applies standard scaling using `sklearn.preprocessing.StandardScaler` and removes outliers
-    based on the range of -3 to 3 standard deviations.
-
-    Examples
-    --------
-    >>> # Remove outliers, replace with NaN
-    >>> df = SupervisedLearning(dataset)
-    >>> df.remove_outlier(drop_na=False)
-
-    >>> # Remove outliers and drop rows with NaN values
-    >>> df.remove_outlier(drop_na=True)
-
-    See Also
-    --------
-    sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
-
+        Examples
+        --------
+        >>> # Remove outliers, replace with NaN
+        >>> df = SupervisedLearning(dataset)
+        >>> df.remove_outlier(drop_na=False)
+    
+        >>> # Remove outliers and drop rows with NaN values
+        >>> df.remove_outlier(drop_na=True)
         """
         if drop_na == False:
             scaler = sp.StandardScaler()
@@ -444,27 +440,27 @@ class SupervisedLearning:
     
     def scale_independent_variables(self):
         """
-    Standardize independent variables using sklearn.preprocessing.StandardScaler.
-
-    Returns
-    -------
-    pd.DataFrame
-        A DataFrame with scaled independent variables.
-
-    Notes
-    -----
-    This method uses the `sklearn.preprocessing` library for standardization.
-
-    Examples
-    --------
-    >>> # Create an instance of SupervisedLearning
-    >>> df = SupervisedLearning(dataset)
-    >>> # Scale independent variables
-    >>> scaled_data = df.scale_independent_variables()
-
-    See Also
-    --------
-    sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
+        Standardize independent variables using sklearn.preprocessing.StandardScaler.
+    
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame with scaled independent variables.
+    
+        Notes
+        -----
+        This method uses the `sklearn.preprocessing` library for standardization.
+    
+        Examples
+        --------
+        >>> # Create an instance of SupervisedLearning
+        >>> df = SupervisedLearning(dataset)
+        >>> # Scale independent variables
+        >>> scaled_data = df.scale_independent_variables()
+    
+        See Also
+        --------
+        sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
 
         """
         self.__scaler = sp.StandardScaler()
@@ -476,33 +472,33 @@ class SupervisedLearning:
     
     def eda(self):
         """
-    Perform Exploratory Data Analysis (EDA) on the dataset.
-
-    Returns
-    -------
-    Dict
-        A dictionary containing various EDA results, including data head, data tail, descriptive statistics, mode, distinct count, null count, total null count, and correlation matrix.
-
-    Notes
-    -----
-    This method utilizes functionalities from pandas for data analysis.
-
-    Examples
-    --------
-    >>> # Perform Exploratory Data Analysis
-    >>> df = SupervisedLearning(dataset)
-    >>> eda_results = df.eda()
-
-    See Also
-    --------
-    - pandas.DataFrame.info : Get a concise summary of a DataFrame.
-    - pandas.DataFrame.head : Return the first n rows.
-    - pandas.DataFrame.tail : Return the last n rows.
-    - pandas.DataFrame.describe : Generate descriptive statistics.
-    - pandas.DataFrame.mode : Get the mode(s) of each element.
-    - pandas.DataFrame.nunique : Count distinct observations.
-    - pandas.DataFrame.isnull : Detect missing values.
-    - pandas.DataFrame.corr : Compute pairwise correlation of columns.
+        Perform Exploratory Data Analysis (EDA) on the dataset.
+    
+        Returns
+        -------
+        Dict
+            A dictionary containing various EDA results, including data head, data tail, descriptive statistics, mode, distinct count, null count, total null count, and correlation matrix.
+    
+        Notes
+        -----
+        This method utilizes functionalities from pandas for data analysis.
+    
+        Examples
+        --------
+        >>> # Perform Exploratory Data Analysis
+        >>> df = SupervisedLearning(dataset)
+        >>> eda_results = df.eda()
+    
+        See Also
+        --------
+        - pandas.DataFrame.info : Get a concise summary of a DataFrame.
+        - pandas.DataFrame.head : Return the first n rows.
+        - pandas.DataFrame.tail : Return the last n rows.
+        - pandas.DataFrame.describe : Generate descriptive statistics.
+        - pandas.DataFrame.mode : Get the mode(s) of each element.
+        - pandas.DataFrame.nunique : Count distinct observations.
+        - pandas.DataFrame.isnull : Detect missing values.
+        - pandas.DataFrame.corr : Compute pairwise correlation of columns.
         """
         self.__data.info()
         print("\n\n")
@@ -522,42 +518,42 @@ class SupervisedLearning:
     
     def eda_visual(self, y: str, histogram_bins: int = 10, figsize_heatmap: tuple = (15, 10), figsize_histogram: tuple = (15, 10), figsize_barchart: tuple = (15, 10), before_data_cleaning: bool = True):
         """
-    Generate visualizations for exploratory data analysis (EDA).
-
-    Parameters
-    ----------
-    y : str
-        The target variable for visualization.
-    histogram_bins: int
-        The number of bins for each instogram.
-    figsize_heatmap: tuple
-        The length and breadth for the frame of the heatmap.
-    figsize_histogram: tuple
-        The length and breadth for the frame of the histogram.
-    figsize_barchart: tuple
-        The length and breadth for the frame of the barchart.
-    before_data_cleaning : bool, default True
-        If True, visualizes data before cleaning. If False, visualizes cleaned data.
-
-    Returns
-    -------
-    None
-        The method generates and displays various visualizations based on the data distribution and correlation.
-
-    Notes
-    -----
-    This method utilizes the following libraries for visualization:
-    - `matplotlib.pyplot` for creating histograms and heatmaps.
-    - `seaborn` for creating count plots and box plots.
-
-    Examples
-    --------
-    >>> # Generate EDA visualizations before data cleaning
-    >>> df = SupervisedLearning(dataset)
-    >>> df.eda_visual(y='target_variable', before_data_cleaning=True)
-
-    >>> # Generate EDA visualizations after data cleaning
-    >>> df.eda_visual(y='target_variable', before_data_cleaning=False)
+        Generate visualizations for exploratory data analysis (EDA).
+    
+        Parameters
+        ----------
+        y : str
+            The target variable for visualization.
+        histogram_bins: int
+            The number of bins for each instogram.
+        figsize_heatmap: tuple
+            The length and breadth for the frame of the heatmap.
+        figsize_histogram: tuple
+            The length and breadth for the frame of the histogram.
+        figsize_barchart: tuple
+            The length and breadth for the frame of the barchart.
+        before_data_cleaning : bool, default True
+            If True, visualizes data before cleaning. If False, visualizes cleaned data.
+    
+        Returns
+        -------
+        None
+            The method generates and displays various visualizations based on the data distribution and correlation.
+    
+        Notes
+        -----
+        This method utilizes the following libraries for visualization:
+        - `matplotlib.pyplot` for creating histograms and heatmaps.
+        - `seaborn` for creating count plots and box plots.
+    
+        Examples
+        --------
+        >>> # Generate EDA visualizations before data cleaning
+        >>> df = SupervisedLearning(dataset)
+        >>> df.eda_visual(y='target_variable', before_data_cleaning=True)
+    
+        >>> # Generate EDA visualizations after data cleaning
+        >>> df.eda_visual(y='target_variable', before_data_cleaning=False)
 
         """
         if before_data_cleaning == False:
@@ -586,32 +582,32 @@ class SupervisedLearning:
     
     def select_dependent_and_independent(self, predict: str):
         """
-    Select the dependent and independent variables for the supervised learning model.
-
-    Parameters
-    ----------
-    predict : str
-        The name of the column to be used as the dependent variable.
-
-    Returns
-    -------
-    Dict
-        A dictionary containing the dependent variable and independent variables.
-
-    Notes
-    -----
-    This method uses the `pandas` library for data manipulation.
-
-    Examples
-    --------
-    >>> # Select dependent and independent variables
-    >>> df = SupervisedLearning(dataset)
-    >>> variables = df.select_dependent_and_independent("target_column")
-
-    See Also
-    --------
-    - pandas.DataFrame.drop : Drop specified labels from rows or columns.
-    - pandas.Series : One-dimensional ndarray with axis labels.
+        Select the dependent and independent variables for the supervised learning model.
+    
+        Parameters
+        ----------
+        predict : str
+            The name of the column to be used as the dependent variable.
+    
+        Returns
+        -------
+        Dict
+            A dictionary containing the dependent variable and independent variables.
+    
+        Notes
+        -----
+        This method uses the `pandas` library for data manipulation.
+    
+        Examples
+        --------
+        >>> # Select dependent and independent variables
+        >>> df = SupervisedLearning(dataset)
+        >>> variables = df.select_dependent_and_independent("target_column")
+    
+        See Also
+        --------
+        - pandas.DataFrame.drop : Drop specified labels from rows or columns.
+        - pandas.Series : One-dimensional ndarray with axis labels.
 
         """
         self.__x = self.__data.drop(predict, axis = 1)
@@ -622,31 +618,31 @@ class SupervisedLearning:
       
     def split_data(self):
         """
-    Split the dataset into training and test sets.
-
-    Returns
-    -------
-    Dict
-        A dictionary containing the training and test sets for independent (X) and dependent (y) variables.
-
-    Notes
-    -----
-    This method uses the `sklearn.model_selection.train_test_split` function for data splitting.
-
-    Examples
-    --------
-    >>> # Split the data into training and test sets
-    >>> df = SupervisedLearning(dataset)
-    >>> data_splits = df.split_data()
-    >>>
-    >>> X_train = data_splits["Training X"]
-    >>> X_test = data_splits["Test X"]
-    >>> y_train = data_splits["Training Y"]
-    >>> y_test = data_splits["Test Y"]
-
-    See Also
-    --------
-    - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
+        Split the dataset into training and test sets.
+    
+        Returns
+        -------
+        Dict
+            A dictionary containing the training and test sets for independent (X) and dependent (y) variables.
+    
+        Notes
+        -----
+        This method uses the `sklearn.model_selection.train_test_split` function for data splitting.
+    
+        Examples
+        --------
+        >>> # Split the data into training and test sets
+        >>> df = SupervisedLearning(dataset)
+        >>> data_splits = df.split_data()
+        >>>
+        >>> X_train = data_splits["Training X"]
+        >>> X_test = data_splits["Test X"]
+        >>> y_train = data_splits["Training Y"]
+        >>> y_test = data_splits["Test Y"]
+    
+        See Also
+        --------
+        - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
 
         """
         self.__x_train, self.__x_test, self.__y_train, self.__y_test = sms.train_test_split(self.__x, self.__y, test_size = 0.2, random_state = 0)
@@ -656,36 +652,36 @@ class SupervisedLearning:
 
     def train_model_regressor(self, regressor):
         """
-    Train a regressor model.
-
-    Parameters
-    ----------
-    regressor : Any
-        A regressor model object compatible with scikit-learn's regressor interface.
-
-    Returns
-    -------
-    Any
-        The trained regressor model.
-
-    Notes
-    -----
-    - This method uses the `sklearn.model_selection` and `sklearn.metrics` libraries for training and evaluation. 
-    - All required steps before model training should have been completed before running this function.
-
-    Examples
-    --------
-    >>> from sklearn.linear_model import LinearRegression
-    >>>
-    >>> # Train a regressor model
-    >>> df = SupervisedLearning(dataset)
-    >>> regressor = LinearRegression()
-    >>> trained_regressor = df.train_model_regressor(regressor)
-
-    See Also
-    --------
-    - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
-    - sklearn.metrics.r2_score : R^2 (coefficient of determination) regression score function.
+        Train a regressor model.
+    
+        Parameters
+        ----------
+        regressor : Any
+            A regressor model object compatible with scikit-learn's regressor interface.
+    
+        Returns
+        -------
+        Any
+            The trained regressor model.
+    
+        Notes
+        -----
+        - This method uses the `sklearn.model_selection` and `sklearn.metrics` libraries for training and evaluation. 
+        - All required steps before model training should have been completed before running this function.
+    
+        Examples
+        --------
+        >>> from sklearn.linear_model import LinearRegression
+        >>>
+        >>> # Train a regressor model
+        >>> df = SupervisedLearning(dataset)
+        >>> regressor = LinearRegression()
+        >>> trained_regressor = df.train_model_regressor(regressor)
+    
+        See Also
+        --------
+        - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
+        - sklearn.metrics.r2_score : R^2 (coefficient of determination) regression score function.
 
         """
         if self.__split_data == True:
@@ -709,35 +705,35 @@ class SupervisedLearning:
       
     def train_model_classifier(self, classifier):
         """
-    Train a classifier on the provided data.
-
-    Parameters
-    ----------
-    classifier : Any
-        The classifier object to be trained.
-
-    Returns
-    -------
-    Any
-        The trained classifier.
-
-    Notes
-    -----
-    This method uses the `sklearn.model_selection` and `sklearn.metrics` libraries for training and evaluating the classifier.
-
-    Examples
-    --------
-    >>> from sklearn.ensemble import RandomForestClassifier
-    >>>
-    >>> # Train a classifier
-    >>> df = SupervisedLearning(dataset)
-    >>> classifier = RandomForestClassifier(random_state = 0)
-    >>> trained_classifier = df.train_model_classifier(classifier)
-
-    See Also
-    --------
-    - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
-    - sklearn.metrics.accuracy_score : Accuracy classification score.
+        Train a classifier on the provided data.
+    
+        Parameters
+        ----------
+        classifier : Any
+            The classifier object to be trained.
+    
+        Returns
+        -------
+        Any
+            The trained classifier.
+    
+        Notes
+        -----
+        This method uses the `sklearn.model_selection` and `sklearn.metrics` libraries for training and evaluating the classifier.
+    
+        Examples
+        --------
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>>
+        >>> # Train a classifier
+        >>> df = SupervisedLearning(dataset)
+        >>> classifier = RandomForestClassifier(random_state = 0)
+        >>> trained_classifier = df.train_model_classifier(classifier)
+    
+        See Also
+        --------
+        - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
+        - sklearn.metrics.accuracy_score : Accuracy classification score.
 
         """
         if self.__split_data == True:
@@ -761,43 +757,43 @@ class SupervisedLearning:
     
     def regressor_predict(self):
         """
-    Predict the target variable for regression models.
-
-    Returns
-    -------
-    Dict[str, np.ndarray]
-        A dictionary containing actual training and test targets along with predicted values,
-        or None if the model is set for classification.
-
-    Raises
-    ------
-    AssertionError
-        If the training phase of the model is set to classification, as regression models
-        cannot predict a classification model.
-
-    Notes
-    -----
-    This method uses the `sklearn` library for regression model prediction.
-
-    Examples
-    --------
-    >>> from sklearn.linear_model import LinearRegression
-    >>>
-    >>> # Train a regressor model
-    >>> df = SupervisedLearning(dataset)
-    >>> regressor = LinearRegression()
-    >>> trained_regressor = df.train_model_regressor(regressor)
-    >>>
-    >>> # Predict for regression model
-    >>> predictions = df.regressor_predict()
-    >>>
-    >>> print(predictions)
-    {'Actual Training Y': array([...]), 'Actual Test Y': array([...]),
-     'Predicted Training Y': array([...]), 'Predicted Test Y': array([...])}
-
-    See Also
-    --------
-    - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
+        Predict the target variable for regression models.
+    
+        Returns
+        -------
+        Dict[str, np.ndarray]
+            A dictionary containing actual training and test targets along with predicted values,
+            or None if the model is set for classification.
+    
+        Raises
+        ------
+        AssertionError
+            If the training phase of the model is set to classification, as regression models
+            cannot predict a classification model.
+    
+        Notes
+        -----
+        This method uses the `sklearn` library for regression model prediction.
+    
+        Examples
+        --------
+        >>> from sklearn.linear_model import LinearRegression
+        >>>
+        >>> # Train a regressor model
+        >>> df = SupervisedLearning(dataset)
+        >>> regressor = LinearRegression()
+        >>> trained_regressor = df.train_model_regressor(regressor)
+        >>>
+        >>> # Predict for regression model
+        >>> predictions = df.regressor_predict()
+        >>>
+        >>> print(predictions)
+        {'Actual Training Y': array([...]), 'Actual Test Y': array([...]),
+         'Predicted Training Y': array([...]), 'Predicted Test Y': array([...])}
+    
+        See Also
+        --------
+        - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
 
         """
         if self.__split_data == True:
@@ -821,42 +817,42 @@ class SupervisedLearning:
      
     def classifier_predict(self):
         """
-    Predict the target variable using the trained classifier.
-
-    Returns
-    -------
-    Dict[str, np.ndarray]
-        A dictionary containing the actual and predicted values for training and test sets.
-        Keys include 'Actual Training Y', 'Actual Test Y', 'Predicted Training Y', and 'Predicted Test Y'.
-
-    Raises
-    ------
-    AssertionError
-        If the model is set for regression, not classification.
-
-    Notes
-    -----
-    This method uses the `sklearn` library for classification model prediction.
-
-    Examples
-    --------
-    >>> from sklearn.ensemble import RandomForestClassifier
-    >>>
-    >>> # Train a regressor model
-    >>> df = SupervisedLearning(dataset)
-    >>> classifier = RandomForestClassifier(random_state = 0)
-    >>> trained_classifier = df.train_model_classifier(classifier)
-    >>>
-    >>> # Predict for regression model
-    >>> predictions = df.classifier_predict()
-    >>>
-    >>> print(predictions)
-    {'Actual Training Y': array([...]), 'Actual Test Y': array([...]),
-     'Predicted Training Y': array([...]), 'Predicted Test Y': array([...])}
-
-    See Also
-    --------
-    - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
+        Predict the target variable using the trained classifier.
+    
+        Returns
+        -------
+        Dict[str, np.ndarray]
+            A dictionary containing the actual and predicted values for training and test sets.
+            Keys include 'Actual Training Y', 'Actual Test Y', 'Predicted Training Y', and 'Predicted Test Y'.
+    
+        Raises
+        ------
+        AssertionError
+            If the model is set for regression, not classification.
+    
+        Notes
+        -----
+        This method uses the `sklearn` library for classification model prediction.
+    
+        Examples
+        --------
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>>
+        >>> # Train a regressor model
+        >>> df = SupervisedLearning(dataset)
+        >>> classifier = RandomForestClassifier(random_state = 0)
+        >>> trained_classifier = df.train_model_classifier(classifier)
+        >>>
+        >>> # Predict for regression model
+        >>> predictions = df.classifier_predict()
+        >>>
+        >>> print(predictions)
+        {'Actual Training Y': array([...]), 'Actual Test Y': array([...]),
+         'Predicted Training Y': array([...]), 'Predicted Test Y': array([...])}
+    
+        See Also
+        --------
+        - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
 
         """
         if self.__split_data == True:
@@ -881,40 +877,40 @@ class SupervisedLearning:
         
     def regressor_model_testing(self, variables_values: list, scaling: bool = False):
         """
-    Test the trained regressor model with given input variables.
-
-    Parameters
-    ----------
-    variables_values : list
-        A list containing values for each independent variable.
-    scaling : bool, default False
-        Whether to scale the input variables. If True, the method expects
-        scaled input using the same scaler used during training.
-
-    Returns
-    -------
-    np.ndarray
-        The predicted values from the regressor model.
-
-    Raises
-    ------
-    AssertionError
-        If the problem type is not regression.
-
-    Notes
-    -----
-    - This method tests a pre-trained regressor model. 
-    - If scaling is set to True, the input variables are expected to be scaled using the same scaler used during training.
-
-    Examples
-    --------
-    >>> # Assuming df is an instance of SupervisedLearning class with a trained regressor model
-    >>> df.regressor_model_testing([1.5, 0.7, 2.0], scaling=True)
-    array([42.0])
-
-    See Also
-    --------
-    - sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
+        Test the trained regressor model with given input variables.
+    
+        Parameters
+        ----------
+        variables_values : list
+            A list containing values for each independent variable.
+        scaling : bool, default False
+            Whether to scale the input variables. If True, the method expects
+            scaled input using the same scaler used during training.
+    
+        Returns
+        -------
+        np.ndarray
+            The predicted values from the regressor model.
+    
+        Raises
+        ------
+        AssertionError
+            If the problem type is not regression.
+    
+        Notes
+        -----
+        - This method tests a pre-trained regressor model. 
+        - If scaling is set to True, the input variables are expected to be scaled using the same scaler used during training.
+    
+        Examples
+        --------
+        >>> # Assuming df is an instance of SupervisedLearning class with a trained regressor model
+        >>> df.regressor_model_testing([1.5, 0.7, 2.0], scaling=True)
+        array([42.0])
+    
+        See Also
+        --------
+        - sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
 
         """
         if self.regression_problem == True:
@@ -935,60 +931,60 @@ class SupervisedLearning:
             
     def regressor_evaluation(self, kfold: int = None, cross_validation: bool = False):
         """
-    Evaluate the performance of the regression model.
-
-    Parameters
-    ----------
-    kfold : int, optional
-        Number of folds for cross-validation. If provided, cross-validation will be performed.
-    cross_validation : bool, default False
-        If True, perform cross-validation; otherwise, perform a simple train-test split evaluation.
-
-    Returns
-    -------
-    dict
-        Dictionary containing evaluation metrics.
-
-    Raises
-    ------
-    ValueError
-        If invalid combination of parameters is provided.
-
-    Notes
-    -----
-    This method uses the `sklearn.metrics` and `sklearn.model_selection` libraries for regression evaluation.
-
-    Examples
-    --------
-    >>> # Evaluate regression model performance using simple train-test split
-    >>> from sklearn.linear_model import LinearRegression
-    >>>
-    >>> # Train a regressor model
-    >>> df = SupervisedLearning(dataset)
-    >>> regressor = LinearRegression()
-    >>> trained_regressor = df.train_model_regressor(regressor)
-    >>>
-    >>> # Predict for regression model
-    >>> predictions = df.regressor_predict()
-    >>> evaluation_results = df.regressor_evaluation()
-
-    >>> # Evaluate regression model performance using 10-fold cross-validation
-    >>> from sklearn.linear_model import LinearRegression
-    >>>
-    >>> # Train a regressor model
-    >>> df = SupervisedLearning(dataset)
-    >>> regressor = LinearRegression()
-    >>> trained_regressor = df.train_model_regressor(regressor)
-    >>>
-    >>> # Predict for regression model
-    >>> predictions = df.regressor_predict()
-    >>> evaluation_results = df.regressor_evaluation(kfold=10, cross_validation=True)
-
-    See Also
-    --------
-    - sklearn.metrics.r2_score : R-squared (coefficient of determination) regression score function.
-    - sklearn.metrics.mean_squared_error : Mean squared error regression loss.
-    - sklearn.model_selection.cross_val_score : Evaluate a score by cross-validation.
+        Evaluate the performance of the regression model.
+    
+        Parameters
+        ----------
+        kfold : int, optional
+            Number of folds for cross-validation. If provided, cross-validation will be performed.
+        cross_validation : bool, default False
+            If True, perform cross-validation; otherwise, perform a simple train-test split evaluation.
+    
+        Returns
+        -------
+        dict
+            Dictionary containing evaluation metrics.
+    
+        Raises
+        ------
+        ValueError
+            If invalid combination of parameters is provided.
+    
+        Notes
+        -----
+        This method uses the `sklearn.metrics` and `sklearn.model_selection` libraries for regression evaluation.
+    
+        Examples
+        --------
+        >>> # Evaluate regression model performance using simple train-test split
+        >>> from sklearn.linear_model import LinearRegression
+        >>>
+        >>> # Train a regressor model
+        >>> df = SupervisedLearning(dataset)
+        >>> regressor = LinearRegression()
+        >>> trained_regressor = df.train_model_regressor(regressor)
+        >>>
+        >>> # Predict for regression model
+        >>> predictions = df.regressor_predict()
+        >>> evaluation_results = df.regressor_evaluation()
+    
+        >>> # Evaluate regression model performance using 10-fold cross-validation
+        >>> from sklearn.linear_model import LinearRegression
+        >>>
+        >>> # Train a regressor model
+        >>> df = SupervisedLearning(dataset)
+        >>> regressor = LinearRegression()
+        >>> trained_regressor = df.train_model_regressor(regressor)
+        >>>
+        >>> # Predict for regression model
+        >>> predictions = df.regressor_predict()
+        >>> evaluation_results = df.regressor_evaluation(kfold=10, cross_validation=True)
+    
+        See Also
+        --------
+        - sklearn.metrics.r2_score : R-squared (coefficient of determination) regression score function.
+        - sklearn.metrics.mean_squared_error : Mean squared error regression loss.
+        - sklearn.model_selection.cross_val_score : Evaluate a score by cross-validation.
 
         """
         if self.__split_data == True:
@@ -1070,55 +1066,55 @@ class SupervisedLearning:
          
     def build_multiple_regressors(self, regressors: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = 20, width: int = 10, linestyle: str = 'dashed', marker: str = 'o', markersize: int = 12, fontweight: int = 80, fontstretch: int = 50):
         """
-    Build, evaluate, and optionally graph multiple regression models.
+        Build, evaluate, and optionally graph multiple regression models.
+        
+        This method facilitates the construction and assessment of multiple regression models using a variety of algorithms.
+        It supports both single train-test split and k-fold cross-validation approaches. The generated models are evaluated
+        based on key regression metrics, providing insights into their performance on both training and test datasets.
     
-    This method facilitates the construction and assessment of multiple regression models using a variety of algorithms.
-    It supports both single train-test split and k-fold cross-validation approaches. The generated models are evaluated
-    based on key regression metrics, providing insights into their performance on both training and test datasets.
-
-    Parameters
-    ----------
-    regressors : list or tuple
-        List of regression models to build and evaluate.
-    kfold : int, optional
-        Number of folds for cross-validation. Default is None.
-    cross_validation : bool, default False
-        If True, perform cross-validation; otherwise, use a simple train-test split.
-    graph : bool, default False
-        If True, plot evaluation metrics for each regression model.
-    length : int, optional, default=None
-        Length of the graph (if graph=True).
-    width : int, optional, default=None
-        Width of the graph (if graph=True).
-
-    Returns
-    -------
-    dict
-        A dictionary containing regression metrics and additional information.
-
-    Notes
-    -----
-    This method uses the following libraries:
-    - `sklearn.model_selection` for train-test splitting and cross-validation.
-    - `matplotlib.pyplot` for plotting if graph=True.
-
-    Examples
-    --------
-    >>> # Build and evaluate multiple regression models
-    >>> df = SupervisedLearning(dataset)
-    >>> models = [LinearRegression(), 
-    >>>           RandomForestRegressor(), 
-    >>>           GradientBoostingRegressor()]
-    >>> results = df.build_multiple_regressors(regressors=models, 
-    >>>                                        kfold=5, 
-    >>>                                        cross_validation=True, 
-    >>>                                        graph=True)
-
-    See Also
-    --------
-    - SupervisedLearning.train_model_regressor : Train a single regression model.
-    - SupervisedLearning.regressor_predict : Make predictions using a trained regression model.
-    - SupervisedLearning.regressor_evaluation : Evaluate the performance of a regression model.
+        Parameters
+        ----------
+        regressors : list or tuple
+            List of regression models to build and evaluate.
+        kfold : int, optional
+            Number of folds for cross-validation. Default is None.
+        cross_validation : bool, default False
+            If True, perform cross-validation; otherwise, use a simple train-test split.
+        graph : bool, default False
+            If True, plot evaluation metrics for each regression model.
+        length : int, optional, default=None
+            Length of the graph (if graph=True).
+        width : int, optional, default=None
+            Width of the graph (if graph=True).
+    
+        Returns
+        -------
+        dict
+            A dictionary containing regression metrics and additional information.
+    
+        Notes
+        -----
+        This method uses the following libraries:
+        - `sklearn.model_selection` for train-test splitting and cross-validation.
+        - `matplotlib.pyplot` for plotting if graph=True.
+    
+        Examples
+        --------
+        >>> # Build and evaluate multiple regression models
+        >>> df = SupervisedLearning(dataset)
+        >>> models = [LinearRegression(), 
+        >>>           RandomForestRegressor(), 
+        >>>           GradientBoostingRegressor()]
+        >>> results = df.build_multiple_regressors(regressors=models, 
+        >>>                                        kfold=5, 
+        >>>                                        cross_validation=True, 
+        >>>                                        graph=True)
+    
+        See Also
+        --------
+        - SupervisedLearning.train_model_regressor : Train a single regression model.
+        - SupervisedLearning.regressor_predict : Make predictions using a trained regression model.
+        - SupervisedLearning.regressor_evaluation : Evaluate the performance of a regression model.
 
         """
         if self.__split_data == True:
@@ -1386,56 +1382,56 @@ class SupervisedLearning:
     
     def build_multiple_classifiers(self, classifiers: list or tuple, kfold: int = None, cross_validation: bool = False, graph: bool = False, length: int = 20, width: int = 10, linestyle: str = 'dashed', marker: str = 'o', markersize: int = 12, fontweight: int = 80, fontstretch: int = 50):
         """
-    Build and evaluate multiple classifiers.
-
-    Parameters
-    ----------
-    classifiers : list or tuple
-        A list or tuple of classifier objects to be trained and evaluated.
-    kfold : int, optional, default=None
-        Number of folds for cross-validation. If None, cross-validation is not performed.
-    cross_validation : bool, optional, default=False
-        Perform cross-validation if True.
-    graph : bool, optional, default=False
-        Whether to display performance metrics as graphs.
-    length : int, optional, default=None
-        Length of the graph (if graph=True).
-    width : int, optional, default=None
-        Width of the graph (if graph=True).
-
-    Returns
-    -------
-    dict
-        A dictionary containing classifier metrics and additional information.
-
-    Notes
-    -----
-    This method builds and evaluates multiple classifiers on the provided dataset. It supports both traditional
-    training/testing evaluation and cross-validation.
-
-    If `graph` is True, the method also displays graphs showing performance metrics for training and testing datasets.
-
-    References
-    ----------
-    - `scikit-learn: Machine Learning in Python <https://scikit-learn.org/stable/>`_
-    - `matplotlib: Python plotting <https://matplotlib.org/>`_
-    - `numpy: The fundamental package for scientific computing with Python <https://numpy.org/>`_
-    - `pandas: Powerful data structures for data analysis <https://pandas.pydata.org/>`_
-
-
-    Example:
-    --------
-    >>> classifiers = [LogisticRegression(random_state = 0), 
-    >>>                RandomForestClassifier(random_state = 0), 
-    >>>                SVC(random_state = 0)]
-    >>> results = build_multiple_classifiers(classifiers, 
-    >>>                                      kfold=5, 
-    >>>                                      cross_validation=True, 
-    >>>                                      graph=True, 
-    >>>                                      length=8, 
-    >>>                                      width=12)
-
-    Note: Ensure that the classifiers provided are compatible with scikit-learn's classification API.
+        Build and evaluate multiple classifiers.
+    
+        Parameters
+        ----------
+        classifiers : list or tuple
+            A list or tuple of classifier objects to be trained and evaluated.
+        kfold : int, optional, default=None
+            Number of folds for cross-validation. If None, cross-validation is not performed.
+        cross_validation : bool, optional, default=False
+            Perform cross-validation if True.
+        graph : bool, optional, default=False
+            Whether to display performance metrics as graphs.
+        length : int, optional, default=None
+            Length of the graph (if graph=True).
+        width : int, optional, default=None
+            Width of the graph (if graph=True).
+    
+        Returns
+        -------
+        dict
+            A dictionary containing classifier metrics and additional information.
+    
+        Notes
+        -----
+        This method builds and evaluates multiple classifiers on the provided dataset. It supports both traditional
+        training/testing evaluation and cross-validation.
+    
+        If `graph` is True, the method also displays graphs showing performance metrics for training and testing datasets.
+    
+        References
+        ----------
+        - `scikit-learn: Machine Learning in Python <https://scikit-learn.org/stable/>`_
+        - `matplotlib: Python plotting <https://matplotlib.org/>`_
+        - `numpy: The fundamental package for scientific computing with Python <https://numpy.org/>`_
+        - `pandas: Powerful data structures for data analysis <https://pandas.pydata.org/>`_
+    
+    
+        Example:
+        --------
+        >>> classifiers = [LogisticRegression(random_state = 0), 
+        >>>                RandomForestClassifier(random_state = 0), 
+        >>>                SVC(random_state = 0)]
+        >>> results = build_multiple_classifiers(classifiers, 
+        >>>                                      kfold=5, 
+        >>>                                      cross_validation=True, 
+        >>>                                      graph=True, 
+        >>>                                      length=8, 
+        >>>                                      width=12)
+    
+        Note: Ensure that the classifiers provided are compatible with scikit-learn's classification API.
 
         """
         if self.__split_data == True:
@@ -1862,63 +1858,58 @@ class SupervisedLearning:
     
     def build_single_regressor_from_features(self, strategy: str, estimator: str, regressor, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
-    Build and evaluate a single regression model using feature selection.
-
-    Parameters
-    ----------
-    strategy : str
-        Feature selection strategy. Should be one of ["selectkbest", "selectpercentile", "rfe", "selectfrommodel"].
-    estimator : str
-        Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a regressor that implements 'fit'. Should be one of ["f_regression", "f_oneway", "chi2"] if strategy is set to: ["selectkbest", "selectpercentile"].
-    regressor : object
-        Regression model object to be trained.
-    max_num_features : int, optional
-        Maximum number of features to consider, by default None.
-    min_num_features : int, optional
-        Minimum number of features to consider, by default None.
-    kfold : int, optional
-        Number of folds for cross-validation, by default None. Needs cv to be set to True to work.
-    cv : bool, optional
-        Whether to perform cross-validation, by default False.
-
-    Returns
-    -------
-    dict
-        A dictionary containing feature metrics and additional information about the models.
-
-    Notes
-    -----
-    - This method builds a regression model using feature selection techniques and evaluates its performance. 
-    - The feature selection strategies include "selectkbest", "selectpercentile", "rfe", and "selectfrommodel". 
-    - The estimator parameter is required for "rfe" and "selectfrommodel" strategies.
-
-    See Also
-    --------
-    - `scikit-learn.feature_selection` for feature selection techniques.
-    - `scikit-learn.linear_model` for regression models.
-    - `scikit-learn.model_selection` for cross-validation techniques.
-    - `scikit-learn.metrics` for regression performance metrics.
-    - Other libraries used in this method: `numpy`, `pandas`, `matplotlib`, `seaborn`, `ydata_profiling`, `sweetviz`, 
-      `imblearn`, `sklearn`, `warnings`, `datatable`.
-
-    References:
-    - scikit-learn documentation for feature selection: https://scikit-learn.org/stable/modules/feature_selection.html
-    - scikit-learn documentation for regression models: https://scikit-learn.org/stable/supervised_learning.html#regression
-
-    See Also:
-    - `select_features` method in this class for feature selection.
-    - `train_model_regressor`, `regressor_predict`, `regressor_evaluation` methods for model training and evaluation.
-    - Similar methods in scikit-learn: `fit`, `predict`, `cross_val_score` for comparison.
-
-    Note:
-    - This method assumes that the dataset and labels are already set in the class instance.
-
-    Example:
-    >>> learn = SupervisedLearning(dataset)
-    >>> results = learn.build_single_regressor_from_features(strategy='selectkbest', 
-    >>>                                                      estimator='f_regression', 
-    >>>                                                      regressor=LinearRegression())
-    >>> print(results)
+        Build and evaluate a single regression model using feature selection.
+    
+        Parameters
+        ----------
+        strategy : str
+            Feature selection strategy. Should be one of ["selectkbest", "selectpercentile", "rfe", "selectfrommodel"].
+        estimator : str
+            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a regressor that implements 'fit'. Should be one of ["f_regression", "f_oneway", "chi2"] if strategy is set to: ["selectkbest", "selectpercentile"].
+        regressor : object
+            Regression model object to be trained.
+        max_num_features : int, optional
+            Maximum number of features to consider, by default None.
+        min_num_features : int, optional
+            Minimum number of features to consider, by default None.
+        kfold : int, optional
+            Number of folds for cross-validation, by default None. Needs cv to be set to True to work.
+        cv : bool, optional
+            Whether to perform cross-validation, by default False.
+    
+        Returns
+        -------
+        dict
+            A dictionary containing feature metrics and additional information about the models.
+    
+        Notes
+        -----
+        - This method builds a regression model using feature selection techniques and evaluates its performance. 
+        - The feature selection strategies include "selectkbest", "selectpercentile", "rfe", and "selectfrommodel". 
+        - The estimator parameter is required for "rfe" and "selectfrommodel" strategies.
+        - This method assumes that the dataset and labels are already set in the class instance.
+    
+        See Also
+        --------
+        - `scikit-learn.feature_selection` for feature selection techniques.
+        - `scikit-learn.linear_model` for regression models.
+        - `scikit-learn.model_selection` for cross-validation techniques.
+        - `scikit-learn.metrics` for regression performance metrics.
+        - Other libraries used in this method: `numpy`, `pandas`, `matplotlib`, `seaborn`, `ydata_profiling`, `sweetviz`, 
+          `imblearn`, `sklearn`, `warnings`, `datatable`.
+    
+        References
+        -----------
+        - scikit-learn documentation for feature selection: https://scikit-learn.org/stable/modules/feature_selection.html
+        - scikit-learn documentation for regression models: https://scikit-learn.org/stable/supervised_learning.html#regression
+    
+        Example
+        --------
+        >>> learn = SupervisedLearning(dataset)
+        >>> results = learn.build_single_regressor_from_features(strategy='selectkbest', 
+        >>>                                                      estimator='f_regression', 
+        >>>                                                      regressor=LinearRegression())
+        >>> print(results)
         """
         if self.__split_data == True:
             types1 = ["selectkbest", "selectpercentile"]
@@ -2333,62 +2324,57 @@ class SupervisedLearning:
     
     def build_single_classifier_from_features(self, strategy: str, estimator: str, classifier, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
-    Build and evaluate a single classification model using feature selection.
-
-    Parameters
-    ----------
-    strategy : str
-        Feature selection strategy. Should be one of ["selectkbest", "selectpercentile", "rfe", "selectfrommodel"].
-    estimator : str
-        Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a classifier that implements 'fit'. Should be one of ["f_classif", "chi2", "mutual_info_classif"] if strategy is set to: ["selectkbest", "selectpercentile"].
-    classifier : object
-        Classification model object to be trained.
-    max_num_features : int, optional
-        Maximum number of features to consider, by default None.
-    min_num_features : int, optional
-        Minimum number of features to consider, by default None.
-    kfold : int, optional
-        Number of folds for cross-validation, by default None. Needs cv to be set to True to work.
-    cv : bool, optional
-        Whether to perform cross-validation, by default False.
-
-    Returns
-    -------
-    dict
-        A dictionary containing feature metrics and additional information about the models.
-
-    Notes
-    -----
-    - This method builds a classification model using feature selection techniques and evaluates its performance. 
-    - The feature selection strategies include "selectkbest", "selectpercentile", "rfe", and "selectfrommodel". 
-    - The estimator parameter is required for "rfe" and "selectfrommodel" strategies.
-
-    See Also
-    --------
-    - `scikit-learn.feature_selection` for feature selection techniques.
-    - `scikit-learn.linear_model` for classification models.
-    - `scikit-learn.model_selection` for cross-validation techniques.
-    - `scikit-learn.metrics` for classification performance metrics.
-    - Other libraries used in this method: `numpy`, `pandas`, `matplotlib`, `seaborn`.
-
-    References:
-    - scikit-learn documentation for feature selection: https://scikit-learn.org/stable/modules/feature_selection.html
-    - scikit-learn documentation for classification models: https://scikit-learn.org/stable/supervised_learning.html#classification
-
-    See Also:
-    - `select_features` method in this class for feature selection.
-    - `train_model_classifier`, `classifier_predict`, `classifier_evaluation` methods for model training and evaluation.
-    - Similar methods in scikit-learn: `fit`, `predict`, `cross_val_score` for comparison.
-
-    Note:
-    - This method assumes that the dataset and labels are already set in the class instance.
-
-    Example:
-    >>> learn = SupervisedLearning(dataset)
-    >>> results = learn.build_single_classifier_from_features(strategy='selectkbest', 
-    >>>                                                       estimator='f_classif', 
-    >>>                                                       classifier=RandomForestClassifier(random_state = 0))
-    >>> print(results)
+        Build and evaluate a single classification model using feature selection.
+    
+        Parameters
+        ----------
+        strategy : str
+            Feature selection strategy. Should be one of ["selectkbest", "selectpercentile", "rfe", "selectfrommodel"].
+        estimator : str
+            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a classifier that implements 'fit'. Should be one of ["f_classif", "chi2", "mutual_info_classif"] if strategy is set to: ["selectkbest", "selectpercentile"].
+        classifier : object
+            Classification model object to be trained.
+        max_num_features : int, optional
+            Maximum number of features to consider, by default None.
+        min_num_features : int, optional
+            Minimum number of features to consider, by default None.
+        kfold : int, optional
+            Number of folds for cross-validation, by default None. Needs cv to be set to True to work.
+        cv : bool, optional
+            Whether to perform cross-validation, by default False.
+    
+        Returns
+        -------
+        dict
+            A dictionary containing feature metrics and additional information about the models.
+    
+        Notes
+        -----
+        - This method builds a classification model using feature selection techniques and evaluates its performance. 
+        - The feature selection strategies include "selectkbest", "selectpercentile", "rfe", and "selectfrommodel". 
+        - The estimator parameter is required for "rfe" and "selectfrommodel" strategies.
+        - This method assumes that the dataset and labels are already set in the class instance.
+    
+        See Also
+        --------
+        - `scikit-learn.feature_selection` for feature selection techniques.
+        - `scikit-learn.linear_model` for classification models.
+        - `scikit-learn.model_selection` for cross-validation techniques.
+        - `scikit-learn.metrics` for classification performance metrics.
+        - Other libraries used in this method: `numpy`, `pandas`, `matplotlib`, `seaborn`.
+    
+        References
+        -----------
+        - scikit-learn documentation for feature selection: https://scikit-learn.org/stable/modules/feature_selection.html
+        - scikit-learn documentation for classification models: https://scikit-learn.org/stable/supervised_learning.html#classification
+    
+        Example
+        --------
+        >>> learn = SupervisedLearning(dataset)
+        >>> results = learn.build_single_classifier_from_features(strategy='selectkbest', 
+        >>>                                                       estimator='f_classif', 
+        >>>                                                       classifier=RandomForestClassifier(random_state = 0))
+        >>> print(results)
         """
         if self.__split_data == True:
             types1 = ["selectkbest", "selectpercentile"]
@@ -2817,61 +2803,61 @@ class SupervisedLearning:
     
     def build_multiple_regressors_from_features(self, strategy: str, estimator: str, regressors: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
-    Build and evaluate multiple regression models with varying numbers of features.
-
-    Parameters:
-    -----------
-    strategy : str
-        The feature selection strategy. Supported values are 'selectkbest', 'selectpercentile',
-        'rfe', and 'selectfrommodel'.
-    estimator : str
-        The estimator to use for feature selection. Choose from 'f_regression', 'f_classif', 'mutual_info_regression',
-        'mutual_info_classif', 'linear', 'lasso', 'tree', etc., based on the chosen strategy.
-    regressors : list or tuple
-        List of regression models to build and evaluate.
-    max_num_features : int, optional
-        Maximum number of features to consider during the feature selection process.
-    min_num_features : int, optional
-        Minimum number of features to consider during the feature selection process.
-    kfold : int, optional
-        Number of folds for cross-validation. If provided, cross-validation metrics will be calculated.
-    cv : bool, default False
-        If True, perform cross-validation; otherwise, use a single train-test split.
-
-    Returns:
-    --------
-    dict
-        A dictionary containing feature metrics and additional information for each model.
-
-    Example:
-    --------
-    >>> from sklearn.ensemble import RandomForestRegressor, DecisionTreeRegressor
-    >>> from sklearn.linear_model import LinearRegression
-    >>>
-    >>>
-    >>> data = SupervisedLearning(dataset)
-    >>> results = data.build_multiple_regressors_from_features(
-    >>>        strategy='selectkbest',
-    >>>        estimator='f_regression',
-    >>>        regressors=[LinearRegression(), 
-    >>>                    RandomForestRegressor(random_state = 0), 
-    >>>                    DecisionTreeRegressor(random_state = 0)],
-    >>>        max_num_features=10,
-    >>>        kfold=5,
-    >>>        cv=True
-    >>>        )
-
-    See Also:
-    ---------
-    - `sklearn.feature_selection.SelectKBest`
-    - `sklearn.feature_selection.SelectPercentile`
-    - `sklearn.feature_selection.RFE`
-    - `sklearn.feature_selection.SelectFromModel`
-    - `sklearn.linear_model`
-    - `sklearn.ensemble.RandomForestRegressor`
-    - `sklearn.model_selection.cross_val_score`
-    - `sklearn.metrics.mean_squared_error`
-    - `sklearn.metrics.r2_score`
+        Build and evaluate multiple regression models with varying numbers of features.
+    
+        Parameters:
+        -----------
+        strategy : str
+            The feature selection strategy. Supported values are 'selectkbest', 'selectpercentile',
+            'rfe', and 'selectfrommodel'.
+        estimator : str
+            The estimator to use for feature selection. Choose from 'f_regression', 'f_classif', 'mutual_info_regression',
+            'mutual_info_classif', 'linear', 'lasso', 'tree', etc., based on the chosen strategy.
+        regressors : list or tuple
+            List of regression models to build and evaluate.
+        max_num_features : int, optional
+            Maximum number of features to consider during the feature selection process.
+        min_num_features : int, optional
+            Minimum number of features to consider during the feature selection process.
+        kfold : int, optional
+            Number of folds for cross-validation. If provided, cross-validation metrics will be calculated.
+        cv : bool, default False
+            If True, perform cross-validation; otherwise, use a single train-test split.
+    
+        Returns:
+        --------
+        dict
+            A dictionary containing feature metrics and additional information for each model.
+    
+        Example:
+        --------
+        >>> from sklearn.ensemble import RandomForestRegressor, DecisionTreeRegressor
+        >>> from sklearn.linear_model import LinearRegression
+        >>>
+        >>>
+        >>> data = SupervisedLearning(dataset)
+        >>> results = data.build_multiple_regressors_from_features(
+        >>>        strategy='selectkbest',
+        >>>        estimator='f_regression',
+        >>>        regressors=[LinearRegression(), 
+        >>>                    RandomForestRegressor(random_state = 0), 
+        >>>                    DecisionTreeRegressor(random_state = 0)],
+        >>>        max_num_features=10,
+        >>>        kfold=5,
+        >>>        cv=True
+        >>>        )
+    
+        See Also:
+        ---------
+        - `sklearn.feature_selection.SelectKBest`
+        - `sklearn.feature_selection.SelectPercentile`
+        - `sklearn.feature_selection.RFE`
+        - `sklearn.feature_selection.SelectFromModel`
+        - `sklearn.linear_model`
+        - `sklearn.ensemble.RandomForestRegressor`
+        - `sklearn.model_selection.cross_val_score`
+        - `sklearn.metrics.mean_squared_error`
+        - `sklearn.metrics.r2_score`
     
         """
         if self.__split_data == True:
@@ -3285,46 +3271,46 @@ class SupervisedLearning:
     
     def build_multiple_classifiers_from_features(self, strategy: str, estimator: str, classifiers: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
-    Build multiple classifiers using different feature selection strategies and machine learning algorithms.
-
-    This method performs feature selection, trains multiple classifiers, and evaluates their performance.
-
-    Parameters:
-    -----------
-    - strategy (str): Feature selection strategy. Should be one of 'selectkbest', 'selectpercentile', 'rfe', or 'selectfrommodel'.
-    - estimator (str): The estimator to use for feature selection. It could be the name of an estimator (e.g., 'RandomForestClassifier') or a string specifying the strategy (e.g., 'mean' for 'selectpercentile').
-    - classifiers (list or tuple): List of classifier instances to be trained and evaluated.
-    - max_num_features (int, optional): Maximum number of features to consider. If None, all features are considered.
-    - min_num_features (int, optional): Minimum number of features to consider. If None, the process starts with max_num_features and decreases the count until 1.
-    - kfold (int, optional): Number of folds for cross-validation. If None, regular train-test split is used.
-    - cv (bool, optional): If True, perform cross-validation. If False, use a train-test split.
-
-    Returns:
-    --------
-    - dict: A dictionary containing feature metrics and additional information about the trained models.
-
-    See Also:
-    ---------
-    - `scikit-learn.feature_selection` for feature selection strategies: https://scikit-learn.org/stable/modules/feature_selection.html
-    - `scikit-learn.ensemble` for ensemble classifiers: https://scikit-learn.org/stable/modules/ensemble.html
-    - `scikit-learn.neighbors` for k-nearest neighbors classifiers: https://scikit-learn.org/stable/modules/neighbors.html
-    - `pandas` for data manipulation: https://pandas.pydata.org/docs/
-    - `numpy` for numerical operations: https://numpy.org/doc/stable/
-    - `sklearn` for various machine learning utilities: https://scikit-learn.org/stable/documentation.html
-
-    Example:
-    --------
-    >>> from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
-    >>>
-    >>>
-    >>> data = SupervisedLearning(dataset)
-    >>> classifiers = [RandomForestClassifier(random_state = 0), 
-    >>>                DecisionTreeClassifier(random_state = 0)]
-    >>> result = data.build_multiple_classifiers_from_features(strategy='selectkbest', 
-    >>>                                                        estimator='f_classif', 
-    >>>                                                        classifiers=classifiers, 
-    >>>                                                        max_num_features=10, 
-    >>>                                                        kfold=5)
+        Build multiple classifiers using different feature selection strategies and machine learning algorithms.
+    
+        This method performs feature selection, trains multiple classifiers, and evaluates their performance.
+    
+        Parameters:
+        -----------
+        - strategy (str): Feature selection strategy. Should be one of 'selectkbest', 'selectpercentile', 'rfe', or 'selectfrommodel'.
+        - estimator (str): The estimator to use for feature selection. It could be the name of an estimator (e.g., 'RandomForestClassifier') or a string specifying the strategy (e.g., 'mean' for 'selectpercentile').
+        - classifiers (list or tuple): List of classifier instances to be trained and evaluated.
+        - max_num_features (int, optional): Maximum number of features to consider. If None, all features are considered.
+        - min_num_features (int, optional): Minimum number of features to consider. If None, the process starts with max_num_features and decreases the count until 1.
+        - kfold (int, optional): Number of folds for cross-validation. If None, regular train-test split is used.
+        - cv (bool, optional): If True, perform cross-validation. If False, use a train-test split.
+    
+        Returns:
+        --------
+        - dict: A dictionary containing feature metrics and additional information about the trained models.
+    
+        See Also:
+        ---------
+        - `scikit-learn.feature_selection` for feature selection strategies: https://scikit-learn.org/stable/modules/feature_selection.html
+        - `scikit-learn.ensemble` for ensemble classifiers: https://scikit-learn.org/stable/modules/ensemble.html
+        - `scikit-learn.neighbors` for k-nearest neighbors classifiers: https://scikit-learn.org/stable/modules/neighbors.html
+        - `pandas` for data manipulation: https://pandas.pydata.org/docs/
+        - `numpy` for numerical operations: https://numpy.org/doc/stable/
+        - `sklearn` for various machine learning utilities: https://scikit-learn.org/stable/documentation.html
+    
+        Example:
+        --------
+        >>> from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
+        >>>
+        >>>
+        >>> data = SupervisedLearning(dataset)
+        >>> classifiers = [RandomForestClassifier(random_state = 0), 
+        >>>                DecisionTreeClassifier(random_state = 0)]
+        >>> result = data.build_multiple_classifiers_from_features(strategy='selectkbest', 
+        >>>                                                        estimator='f_classif', 
+        >>>                                                        classifiers=classifiers, 
+        >>>                                                        max_num_features=10, 
+        >>>                                                        kfold=5)
         """
         if self.__split_data == True:        
             types1 = ["selectkbest", "selectpercentile"]
@@ -3753,59 +3739,59 @@ class SupervisedLearning:
     
     def classifier_evaluation(self, kfold: int = None, cross_validation: bool = False):
         """
-    Evaluate the performance of a classification model.
-
-    Parameters
-    ----------
-    kfold : int, optional
-        Number of folds for cross-validation. If not provided, default is None.
-    cross_validation : bool, default False
-        Flag to indicate whether to perform cross-validation.
-
-    Returns
-    -------
-    dict
-        A dictionary containing evaluation metrics for both training and test sets.
-
-    Raises
-    ------
-    ValueError
-        - If `kfold` is provided without enabling cross-validation.
+        Evaluate the performance of a classification model.
     
-    AssertionError
-        - If called for a regression problem.
-
-    Notes
-    -----
-    - This method evaluates the performance of a classification model using metrics such as confusion matrix, classification report, accuracy, precision, recall, and F1 score.
-    - If `kfold` is not provided, it evaluates the model on the training and test sets.
-    - If `cross_validation` is set to True, cross-validation scores are also included in the result.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and train a classification model
-    >>> model = SupervisedLearning(dataset)
-    >>> model.train_model_classifier()
-    >>>
-    >>> # Evaluate the model
-    >>> evaluation_results = model.classifier_evaluation(kfold=5, cross_validation=True)
-    >>> print(evaluation_results)
-
-    See Also
-    --------
-    - sklearn.metrics.confusion_matrix : Compute confusion matrix.
-    - sklearn.metrics.classification_report : Build a text report showing the main classification metrics.
-    - sklearn.metrics.accuracy_score : Accuracy classification score.
-    - sklearn.metrics.precision_score : Compute the precision.
-    - sklearn.metrics.recall_score : Compute the recall.
-    - sklearn.metrics.f1_score : Compute the F1 score.
-    - sklearn.model_selection.cross_val_score : Evaluate a score by cross-validation.
-
-    References
-    ----------
-    - Scikit-learn: https://scikit-learn.org/stable/modules/model_evaluation.html
-    - NumPy: https://numpy.org/doc/stable/
-    - Matplotlib: https://matplotlib.org/stable/contents.html
+        Parameters
+        ----------
+        kfold : int, optional
+            Number of folds for cross-validation. If not provided, default is None.
+        cross_validation : bool, default False
+            Flag to indicate whether to perform cross-validation.
+    
+        Returns
+        -------
+        dict
+            A dictionary containing evaluation metrics for both training and test sets.
+    
+        Raises
+        ------
+        ValueError
+            - If `kfold` is provided without enabling cross-validation.
+        
+        AssertionError
+            - If called for a regression problem.
+    
+        Notes
+        -----
+        - This method evaluates the performance of a classification model using metrics such as confusion matrix, classification report, accuracy, precision, recall, and F1 score.
+        - If `kfold` is not provided, it evaluates the model on the training and test sets.
+        - If `cross_validation` is set to True, cross-validation scores are also included in the result.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and train a classification model
+        >>> model = SupervisedLearning(dataset)
+        >>> model.train_model_classifier()
+        >>>
+        >>> # Evaluate the model
+        >>> evaluation_results = model.classifier_evaluation(kfold=5, cross_validation=True)
+        >>> print(evaluation_results)
+    
+        See Also
+        --------
+        - sklearn.metrics.confusion_matrix : Compute confusion matrix.
+        - sklearn.metrics.classification_report : Build a text report showing the main classification metrics.
+        - sklearn.metrics.accuracy_score : Accuracy classification score.
+        - sklearn.metrics.precision_score : Compute the precision.
+        - sklearn.metrics.recall_score : Compute the recall.
+        - sklearn.metrics.f1_score : Compute the F1 score.
+        - sklearn.model_selection.cross_val_score : Evaluate a score by cross-validation.
+    
+        References
+        ----------
+        - Scikit-learn: https://scikit-learn.org/stable/modules/model_evaluation.html
+        - NumPy: https://numpy.org/doc/stable/
+        - Matplotlib: https://matplotlib.org/stable/contents.html
 
         """
         if self.__split_data == True: 
@@ -4008,55 +3994,55 @@ class SupervisedLearning:
         
     def classifier_model_testing(self, variables_values: list, scaling: bool = False):
         """
-    Test a classification model with given input variables.
-
-    Parameters
-    ----------
-    variables_values : list
-        A list containing values for input variables used to make predictions.
-    scaling : bool, default False
-        Flag to indicate whether to scale input variables. If True, the method
-        assumes that the model was trained on scaled data.
-
-    Returns
-    -------
-    array
-        Predicted labels for the given input variables.
-
-    Raises
-    ------
-    AssertionError
-        If called for a regression problem.
-
-    Notes
-    -----
-    - This method is used to test a classification model by providing values for the input variables and obtaining predicted labels. 
-    - If scaling is required, it is important to set the `scaling` parameter to True.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and train a classification model
-    >>> model = SupervisedLearning(dataset)
-    >>> model.train_model_classifier()
-    >>>
-    >>> # Provide input variables for testing
-    >>> input_data = [value1, value2, value3]
-    >>>
-    >>> # Test the model
-    >>> predicted_labels = model.classifier_model_testing(input_data, scaling=True)
-    >>> print(predicted_labels)
-
-    See Also
-    --------
-    - sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
-    - sklearn.neighbors.KNeighborsClassifier : K-nearest neighbors classifier.
-    - sklearn.ensemble.RandomForestClassifier : A meta-estimator that fits a number of decision tree classifiers on various sub-samples of the dataset.
-
-    References
-    ----------
-    - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
-    - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
-    - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
+        Test a classification model with given input variables.
+    
+        Parameters
+        ----------
+        variables_values : list
+            A list containing values for input variables used to make predictions.
+        scaling : bool, default False
+            Flag to indicate whether to scale input variables. If True, the method
+            assumes that the model was trained on scaled data.
+    
+        Returns
+        -------
+        array
+            Predicted labels for the given input variables.
+    
+        Raises
+        ------
+        AssertionError
+            If called for a regression problem.
+    
+        Notes
+        -----
+        - This method is used to test a classification model by providing values for the input variables and obtaining predicted labels. 
+        - If scaling is required, it is important to set the `scaling` parameter to True.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and train a classification model
+        >>> model = SupervisedLearning(dataset)
+        >>> model.train_model_classifier()
+        >>>
+        >>> # Provide input variables for testing
+        >>> input_data = [value1, value2, value3]
+        >>>
+        >>> # Test the model
+        >>> predicted_labels = model.classifier_model_testing(input_data, scaling=True)
+        >>> print(predicted_labels)
+    
+        See Also
+        --------
+        - sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
+        - sklearn.neighbors.KNeighborsClassifier : K-nearest neighbors classifier.
+        - sklearn.ensemble.RandomForestClassifier : A meta-estimator that fits a number of decision tree classifiers on various sub-samples of the dataset.
+    
+        References
+        ----------
+        - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
+        - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
+        - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
 
         """
         if self.classification_problem == True:
@@ -4077,58 +4063,58 @@ class SupervisedLearning:
     
     def classifier_graph(self, classifier, cmap_train = "viridis", cmap_test = "viridis", size_train_marker: float = 10, size_test_marker: float = 10, resolution=100):
         """
-    Visualize the decision boundaries of a classification model.
-
-    Parameters
-    ----------
-    classifier : scikit-learn classifier object
-        The trained classification model.
-    cmap_train : str, default "viridis"
-        Colormap for the training set.
-    cmap_test : str, default "viridis"
-        Colormap for the test set.
-    size_train_marker : float, default 10
-        Marker size for training set points.
-    size_test_marker : float, default 10
-        Marker size for test set points.
-    resolution : int, default 100
-        Resolution of the decision boundary plot.
-
-    Raises
-    ------
-    AssertionError
-        If called for a regression problem.
-    ValueError
-        If the number of features is not 2.
-
-    Notes
-    -----
-    - This method visualizes the decision boundaries of a classification model by plotting the regions where the model predicts different classes. 
-    - It supports both training and test sets, with different markers and colormaps for each.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and train a classification model
-    >>> model = SupervisedLearning(dataset)
-    >>> model.train_model_classifier()
-    >>>
-    >>> # Visualize the decision boundaries
-    >>> model.classifier_graph(classifier=model.model_classifier)
-
-    See Also
-    --------
-    - sklearn.preprocessing.LabelEncoder : Encode target labels.
-    - sklearn.linear_model.LogisticRegression : Logistic Regression classifier.
-    - sklearn.svm.SVC : Support Vector Classification.
-    - sklearn.tree.DecisionTreeClassifier : Decision Tree classifier.
-    - sklearn.ensemble.RandomForestClassifier : Random Forest classifier.
-    - sklearn.neighbors.KNeighborsClassifier : K-Nearest Neighbors classifier.
-    - matplotlib.pyplot.scatter : Plot scatter plots.
-
-    References
-    ----------
-    - Scikit-learn: https://scikit-learn.org/stable/supervised_learning.html
-    - Matplotlib: https://matplotlib.org/stable/gallery/lines_bars_and_markers/fill.html
+        Visualize the decision boundaries of a classification model.
+    
+        Parameters
+        ----------
+        classifier : scikit-learn classifier object
+            The trained classification model.
+        cmap_train : str, default "viridis"
+            Colormap for the training set.
+        cmap_test : str, default "viridis"
+            Colormap for the test set.
+        size_train_marker : float, default 10
+            Marker size for training set points.
+        size_test_marker : float, default 10
+            Marker size for test set points.
+        resolution : int, default 100
+            Resolution of the decision boundary plot.
+    
+        Raises
+        ------
+        AssertionError
+            If called for a regression problem.
+        ValueError
+            If the number of features is not 2.
+    
+        Notes
+        -----
+        - This method visualizes the decision boundaries of a classification model by plotting the regions where the model predicts different classes. 
+        - It supports both training and test sets, with different markers and colormaps for each.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and train a classification model
+        >>> model = SupervisedLearning(dataset)
+        >>> model.train_model_classifier()
+        >>>
+        >>> # Visualize the decision boundaries
+        >>> model.classifier_graph(classifier=model.model_classifier)
+    
+        See Also
+        --------
+        - sklearn.preprocessing.LabelEncoder : Encode target labels.
+        - sklearn.linear_model.LogisticRegression : Logistic Regression classifier.
+        - sklearn.svm.SVC : Support Vector Classification.
+        - sklearn.tree.DecisionTreeClassifier : Decision Tree classifier.
+        - sklearn.ensemble.RandomForestClassifier : Random Forest classifier.
+        - sklearn.neighbors.KNeighborsClassifier : K-Nearest Neighbors classifier.
+        - matplotlib.pyplot.scatter : Plot scatter plots.
+    
+        References
+        ----------
+        - Scikit-learn: https://scikit-learn.org/stable/supervised_learning.html
+        - Matplotlib: https://matplotlib.org/stable/gallery/lines_bars_and_markers/fill.html
 
         """
         if self.__split_data == True:
@@ -4241,43 +4227,43 @@ class SupervisedLearning:
 
     def numerical_to_categorical(self, column):
         """
-    Convert numerical columns to categorical in the dataset.
-
-    Parameters
-    ----------
-    column : str, list, or tuple
-        The name of the column or a list/tuple of column names to be converted.
-
-    Returns
-    -------
-    DataFrame
-        A new DataFrame with specified numerical columns converted to categorical.
-
-    Notes
-    -----
-    - This method converts numerical columns in the dataset to categorical type. 
-    - It is useful when dealing with features that represent categories or labels but are encoded as numerical values.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and load a dataset
-    >>> data = SupervisedLearning(dataset)
-    >>>
-    >>> # Convert a single numerical column to categorical
-    >>> data.numerical_to_categorical("numeric_column")
-    >>>
-    >>> # Convert multiple numerical columns to categorical
-    >>> data.numerical_to_categorical(["numeric_col1", "numeric_col2"])
-
-    See Also
-    --------
-    - pandas.DataFrame.astype : Cast a pandas object to a specified dtype.
-    - NumPy: https://numpy.org/doc/stable/
+        Convert numerical columns to categorical in the dataset.
     
-    References
-    ----------
-    - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.astype.html
-    - NumPy: https://numpy.org/doc/stable/user/basics.types.html
+        Parameters
+        ----------
+        column : str, list, or tuple
+            The name of the column or a list/tuple of column names to be converted.
+    
+        Returns
+        -------
+        DataFrame
+            A new DataFrame with specified numerical columns converted to categorical.
+    
+        Notes
+        -----
+        - This method converts numerical columns in the dataset to categorical type. 
+        - It is useful when dealing with features that represent categories or labels but are encoded as numerical values.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and load a dataset
+        >>> data = SupervisedLearning(dataset)
+        >>>
+        >>> # Convert a single numerical column to categorical
+        >>> data.numerical_to_categorical("numeric_column")
+        >>>
+        >>> # Convert multiple numerical columns to categorical
+        >>> data.numerical_to_categorical(["numeric_col1", "numeric_col2"])
+    
+        See Also
+        --------
+        - pandas.DataFrame.astype : Cast a pandas object to a specified dtype.
+        - NumPy: https://numpy.org/doc/stable/
+        
+        References
+        ----------
+        - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.astype.html
+        - NumPy: https://numpy.org/doc/stable/user/basics.types.html
 
         """
         if isinstance(column, list):
@@ -4296,42 +4282,42 @@ class SupervisedLearning:
     
     def categorical_to_datetime(self, column):
         """
-    Convert specified categorical columns to datetime format.
-
-    Parameters
-    ----------
-    column : str, list, or tuple
-        The column or columns to be converted to datetime format.
-
-    Returns
-    -------
-    DataFrame
-        The DataFrame with specified columns converted to datetime.
-
-    Notes
-    -----
-    This method allows for the conversion of categorical columns containing date or time information to the datetime format.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and convert a single column
-    >>> model = SupervisedLearning(dataset)
-    >>> model.categorical_to_datetime('date_column')
-
-    >>> # Convert multiple columns
-    >>> model.categorical_to_datetime(['start_date', 'end_date'])
-
-    >>> # Convert a combination of columns using a tuple
-    >>> model.categorical_to_datetime(('start_date', 'end_date'))
-
-    See Also
-    --------
-    - pandas.to_datetime : Convert argument to datetime.
-
-    References
-    ----------
-    - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html
-    - NumPy: https://numpy.org/doc/stable/
+        Convert specified categorical columns to datetime format.
+    
+        Parameters
+        ----------
+        column : str, list, or tuple
+            The column or columns to be converted to datetime format.
+    
+        Returns
+        -------
+        DataFrame
+            The DataFrame with specified columns converted to datetime.
+    
+        Notes
+        -----
+        This method allows for the conversion of categorical columns containing date or time information to the datetime format.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and convert a single column
+        >>> model = SupervisedLearning(dataset)
+        >>> model.categorical_to_datetime('date_column')
+    
+        >>> # Convert multiple columns
+        >>> model.categorical_to_datetime(['start_date', 'end_date'])
+    
+        >>> # Convert a combination of columns using a tuple
+        >>> model.categorical_to_datetime(('start_date', 'end_date'))
+    
+        See Also
+        --------
+        - pandas.to_datetime : Convert argument to datetime.
+    
+        References
+        ----------
+        - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html
+        - NumPy: https://numpy.org/doc/stable/
 
         """
         if isinstance(column, list):
@@ -4350,47 +4336,47 @@ class SupervisedLearning:
     
     def extract_date_features(self, datetime_column, hrs_mins_sec: bool = False):
         """
-    Extracts date-related features from a datetime column.
-
-    Parameters
-    ----------
-    datetime_column : str, list, or tuple
-        The name of the datetime column or a list/tuple of datetime columns.
-    hrs_mins_sec : bool, default False
-        Flag indicating whether to include hour, minute, and second features.
-
-    Returns
-    -------
-    DataFrame
-        A DataFrame with additional columns containing extracted date features.
-
-    Notes
-    -----
-    - This method extracts date-related features such as day, month, year, quarter, and day of the week from the specified datetime column(s). 
-    - If `hrs_mins_sec` is set to True, it also includes hour, minute, and second features.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and extract date features
-    >>> model = SupervisedLearning(dataset)
-    >>> date_columns = ['DateOfBirth', 'TransactionDate']
-    >>> model.extract_date_features(date_columns, hrs_mins_sec=True)
-    >>>
-    >>> # Access the DataFrame with additional date-related columns
-    >>> processed_data = model.get_dataset()
-
-    See Also
-    --------
-    - pandas.Series.dt : Accessor object for datetime properties.
-    - sklearn.preprocessing.OneHotEncoder : Encode categorical integer features using a one-hot encoding.
-    - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
-    - matplotlib.pyplot : Plotting library for creating visualizations.
-
-    References
-    ----------
-    - Pandas Documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html
-    - Scikit-learn Documentation: https://scikit-learn.org/stable/modules/preprocessing.html
-    - Matplotlib Documentation: https://matplotlib.org/stable/contents.html
+        Extracts date-related features from a datetime column.
+    
+        Parameters
+        ----------
+        datetime_column : str, list, or tuple
+            The name of the datetime column or a list/tuple of datetime columns.
+        hrs_mins_sec : bool, default False
+            Flag indicating whether to include hour, minute, and second features.
+    
+        Returns
+        -------
+        DataFrame
+            A DataFrame with additional columns containing extracted date features.
+    
+        Notes
+        -----
+        - This method extracts date-related features such as day, month, year, quarter, and day of the week from the specified datetime column(s). 
+        - If `hrs_mins_sec` is set to True, it also includes hour, minute, and second features.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and extract date features
+        >>> model = SupervisedLearning(dataset)
+        >>> date_columns = ['DateOfBirth', 'TransactionDate']
+        >>> model.extract_date_features(date_columns, hrs_mins_sec=True)
+        >>>
+        >>> # Access the DataFrame with additional date-related columns
+        >>> processed_data = model.get_dataset()
+    
+        See Also
+        --------
+        - pandas.Series.dt : Accessor object for datetime properties.
+        - sklearn.preprocessing.OneHotEncoder : Encode categorical integer features using a one-hot encoding.
+        - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
+        - matplotlib.pyplot : Plotting library for creating visualizations.
+    
+        References
+        ----------
+        - Pandas Documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html
+        - Scikit-learn Documentation: https://scikit-learn.org/stable/modules/preprocessing.html
+        - Matplotlib Documentation: https://matplotlib.org/stable/contents.html
 
         """
         
@@ -4458,42 +4444,42 @@ class SupervisedLearning:
     
     def column_binning(self, column, number_of_bins: int = 10, labels: list or tuple = None):
         """
-    Apply binning to specified columns in the dataset.
-
-    Parameters
-    ----------
-    column : str or list or tuple
-        The column(s) to apply binning to.
-    number_of_bins : int, default 10
-        The number of bins to use.
-    labels: list or tuple, default = None
-        Name the categorical columns created by giving them labels.
-
-    Returns
-    -------
-    DataFrame
-        The dataset with specified column(s) binned.
-
-    Notes
-    -----
-    - This method uses the `pd.cut` function to apply binning to the specified column(s).
-    - Binning is a process of converting numerical data into categorical data.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and perform column binning
-    >>> model = SupervisedLearning(dataset)
-    >>> model.column_binning(column="Age", number_of_bins=5)
-    >>> model.column_binning(column=["Salary", "Experience"], number_of_bins=10)
-
-    See Also
-    --------
-    - pandas.cut : Bin values into discrete intervals.
-    - pandas.DataFrame : Data structure for handling the dataset.
-
-    References
-    ----------
-    - Pandas Documentation: https://pandas.pydata.org/pandas-docs/stable/index.html
+        Apply binning to specified columns in the dataset.
+    
+        Parameters
+        ----------
+        column : str or list or tuple
+            The column(s) to apply binning to.
+        number_of_bins : int, default 10
+            The number of bins to use.
+        labels: list or tuple, default = None
+            Name the categorical columns created by giving them labels.
+    
+        Returns
+        -------
+        DataFrame
+            The dataset with specified column(s) binned.
+    
+        Notes
+        -----
+        - This method uses the `pd.cut` function to apply binning to the specified column(s).
+        - Binning is a process of converting numerical data into categorical data.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and perform column binning
+        >>> model = SupervisedLearning(dataset)
+        >>> model.column_binning(column="Age", number_of_bins=5)
+        >>> model.column_binning(column=["Salary", "Experience"], number_of_bins=10)
+    
+        See Also
+        --------
+        - pandas.cut : Bin values into discrete intervals.
+        - pandas.DataFrame : Data structure for handling the dataset.
+    
+        References
+        ----------
+        - Pandas Documentation: https://pandas.pydata.org/pandas-docs/stable/index.html
 
         """
         if isinstance(column, list):
@@ -4512,49 +4498,49 @@ class SupervisedLearning:
     
     def fix_unbalanced_dataset(self, sampler: str, k_neighbors: int = None, random_state: int = None):
         """
-    Apply techniques to address class imbalance in the dataset.
-
-    Parameters
-    ----------
-    sampler : str
-        The resampling technique. Options: "SMOTE", "RandomOverSampler", "RandomUnderSampler".
-    k_neighbors : int, optional
-        The number of nearest neighbors to use in the SMOTE algorithm.
-    random_state : int, optional
-        Seed for reproducibility.
-
-    Returns
-    -------
-    dict
-        A dictionary containing the resampled training data.
-
-    Raises
-    ------
-    ValueError
-        - If `k_neighbors` is specified for a sampler other than "SMOTE".
-
-    Notes
-    -----
-    - This method addresses class imbalance in the dataset using various resampling techniques.
-    - Supported samplers include SMOTE, RandomOverSampler, and RandomUnderSampler.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and fix unbalanced dataset
-    >>> model = SupervisedLearning(dataset)
-    >>> model.fix_unbalanced_dataset(sampler="SMOTE", k_neighbors=5)
-
-    See Also
-    --------
-    - imblearn.over_sampling.SMOTE : Synthetic Minority Over-sampling Technique.
-    - imblearn.over_sampling.RandomOverSampler : Random over-sampling.
-    - imblearn.under_sampling.RandomUnderSampler : Random under-sampling.
-    - sklearn.impute.SimpleImputer : Simple imputation for handling missing values.
-
-    References
-    ----------
-    - Imbalanced-learn Documentation: https://imbalanced-learn.org/stable/
-    - Scikit-learn Documentation: https://scikit-learn.org/stable/documentation.html
+        Apply techniques to address class imbalance in the dataset.
+    
+        Parameters
+        ----------
+        sampler : str
+            The resampling technique. Options: "SMOTE", "RandomOverSampler", "RandomUnderSampler".
+        k_neighbors : int, optional
+            The number of nearest neighbors to use in the SMOTE algorithm.
+        random_state : int, optional
+            Seed for reproducibility.
+    
+        Returns
+        -------
+        dict
+            A dictionary containing the resampled training data.
+    
+        Raises
+        ------
+        ValueError
+            - If `k_neighbors` is specified for a sampler other than "SMOTE".
+    
+        Notes
+        -----
+        - This method addresses class imbalance in the dataset using various resampling techniques.
+        - Supported samplers include SMOTE, RandomOverSampler, and RandomUnderSampler.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and fix unbalanced dataset
+        >>> model = SupervisedLearning(dataset)
+        >>> model.fix_unbalanced_dataset(sampler="SMOTE", k_neighbors=5)
+    
+        See Also
+        --------
+        - imblearn.over_sampling.SMOTE : Synthetic Minority Over-sampling Technique.
+        - imblearn.over_sampling.RandomOverSampler : Random over-sampling.
+        - imblearn.under_sampling.RandomUnderSampler : Random under-sampling.
+        - sklearn.impute.SimpleImputer : Simple imputation for handling missing values.
+    
+        References
+        ----------
+        - Imbalanced-learn Documentation: https://imbalanced-learn.org/stable/
+        - Scikit-learn Documentation: https://scikit-learn.org/stable/documentation.html
     
         """
         if self.__split_data == True: 
@@ -4649,54 +4635,54 @@ class SupervisedLearning:
     
     def replace_values(self, replace: int or float or str or list or tuple or dict, new_value: int or float or str or list or tuple):
         """
-    Replace specified values in the dataset.
-
-    Parameters
-    ----------
-    replace : int or float or str or list or tuple or dict
-        The value or set of values to be replaced.
-    new_value : int or float or str or list or tuple
-        The new value or set of values to replace the existing ones.
-
-    Returns
-    -------
-    pd.DataFrame
-        A dataframe containing the modified dataset with replaced values.
-
-    Raises
-    ------
-    ValueError
-        - If `replace` is a string, integer, or float, and `new_value` is not a string, integer, or float.
-        - If `replace` is a list or tuple, and `new_value` is not a string, integer, float, list, or tuple.
-        - If `replace` is a dictionary, and `new_value` is not specified.
-
-    Notes
-    -----
-    This method replaces specified values in the dataset. The replacement can be done for a single value, a list of values, or using a dictionary for multiple replacements.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and replace values
-    >>> data = SupervisedLearning(dataset)
-    >>>
-    >>> # Replace a single value
-    >>> replaced_values = data.replace_values(0, -1)
-    >>>
-    >>> # Replace multiple values using a dictionary
-    >>> replaced_values = data.replace_values({'Male': 1, 'Female': 0})
-
-    See Also
-    --------
-    - pandas.DataFrame.replace : Replace values in a DataFrame.
-    - NumPy: https://numpy.org/doc/stable/
-    - Scikit-learn: https://scikit-learn.org/stable/modules/preprocessing.html#imputation
-    - Matplotlib: https://matplotlib.org/stable/contents.html
-
-    References
-    ----------
-    - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
-    - Scikit-learn: https://scikit-learn.org/stable/modules/preprocessing.html
-    - NumPy: https://numpy.org/doc/stable/
+        Replace specified values in the dataset.
+    
+        Parameters
+        ----------
+        replace : int or float or str or list or tuple or dict
+            The value or set of values to be replaced.
+        new_value : int or float or str or list or tuple
+            The new value or set of values to replace the existing ones.
+    
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe containing the modified dataset with replaced values.
+    
+        Raises
+        ------
+        ValueError
+            - If `replace` is a string, integer, or float, and `new_value` is not a string, integer, or float.
+            - If `replace` is a list or tuple, and `new_value` is not a string, integer, float, list, or tuple.
+            - If `replace` is a dictionary, and `new_value` is not specified.
+    
+        Notes
+        -----
+        This method replaces specified values in the dataset. The replacement can be done for a single value, a list of values, or using a dictionary for multiple replacements.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and replace values
+        >>> data = SupervisedLearning(dataset)
+        >>>
+        >>> # Replace a single value
+        >>> replaced_values = data.replace_values(0, -1)
+        >>>
+        >>> # Replace multiple values using a dictionary
+        >>> replaced_values = data.replace_values({'Male': 1, 'Female': 0})
+    
+        See Also
+        --------
+        - pandas.DataFrame.replace : Replace values in a DataFrame.
+        - NumPy: https://numpy.org/doc/stable/
+        - Scikit-learn: https://scikit-learn.org/stable/modules/preprocessing.html#imputation
+        - Matplotlib: https://matplotlib.org/stable/contents.html
+    
+        References
+        ----------
+        - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.replace.html
+        - Scikit-learn: https://scikit-learn.org/stable/modules/preprocessing.html
+        - NumPy: https://numpy.org/doc/stable/
     
         """
     
@@ -5407,53 +5393,53 @@ class SupervisedLearning:
     
     def group_data(self, columns: list or tuple, column_to_groupby: str or list or tuple, aggregate_function: str, reset_index: bool = False, inplace: bool = False):
         """
-    Group data by specified columns and apply an aggregate function.
-
-    Parameters
-    ----------
-    columns : list or tuple
-        Columns to be grouped and aggregated.
-    column_to_groupby : str or list or tuple
-        Column or columns to be used for grouping.
-    aggregate_function : str
-        The aggregate function to apply (e.g., 'mean', 'count', 'min', 'max', 'std', 'var', 'median').
-    reset_index : bool, default False
-        Whether to reset the index after grouping.
-    inplace : bool, default False
-        Replace the original dataset with this groupby operation.
-
-    Returns
-    -------
-    DataFrame
-        Grouped and aggregated data.
-
-    Raises
-    ------
-    ValueError
-        If the column types or aggregate function are not recognized.
-        
+        Group data by specified columns and apply an aggregate function.
     
-    Examples
-    --------
-    >>> # Create a supervised learning instance and load a dataset
-    >>> model = SupervisedLearning(dataset)
-    >>>
-    >>> # Group data by 'Category' and calculate the mean for 'Value'
-    >>> grouped_data = model.group_data(columns=['Value'], 
-    >>>                                 column_to_groupby='Category', 
-    >>>                                 aggregate_function='mean')
-    >>>
-    >>> print(grouped_data)
-
-    See Also
-    --------
-    - pandas.DataFrame.groupby : Group DataFrame using a mapper or by a Series of columns.
-    - pandas.DataFrame.agg : Aggregate using one or more operations over the specified axis.
-
-    References
-    ----------
-    - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.groupby.html
-    - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.agg.html
+        Parameters
+        ----------
+        columns : list or tuple
+            Columns to be grouped and aggregated.
+        column_to_groupby : str or list or tuple
+            Column or columns to be used for grouping.
+        aggregate_function : str
+            The aggregate function to apply (e.g., 'mean', 'count', 'min', 'max', 'std', 'var', 'median').
+        reset_index : bool, default False
+            Whether to reset the index after grouping.
+        inplace : bool, default False
+            Replace the original dataset with this groupby operation.
+    
+        Returns
+        -------
+        DataFrame
+            Grouped and aggregated data.
+    
+        Raises
+        ------
+        ValueError
+            If the column types or aggregate function are not recognized.
+            
+        
+        Examples
+        --------
+        >>> # Create a supervised learning instance and load a dataset
+        >>> model = SupervisedLearning(dataset)
+        >>>
+        >>> # Group data by 'Category' and calculate the mean for 'Value'
+        >>> grouped_data = model.group_data(columns=['Value'], 
+        >>>                                 column_to_groupby='Category', 
+        >>>                                 aggregate_function='mean')
+        >>>
+        >>> print(grouped_data)
+    
+        See Also
+        --------
+        - pandas.DataFrame.groupby : Group DataFrame using a mapper or by a Series of columns.
+        - pandas.DataFrame.agg : Aggregate using one or more operations over the specified axis.
+    
+        References
+        ----------
+        - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.groupby.html
+        - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.agg.html
 
         """
         
@@ -5544,48 +5530,48 @@ class SupervisedLearning:
     
     def count_column_categories(self, column: str or list or tuple, reset_index: bool = False, inplace: bool = False, test_data: bool = False):
         """
-    Count the occurrences of categories in a categorical column.
-
-    Parameters
-    ----------
-    column : str or list or tuple
-        Categorical column or columns to count categories.
-    reset_index : bool, default False
-        Whether to reset the index after counting.
-    inplace : bool, default False
-        Replace the original dataset with this groupby operation.
-    test_data : bool, default False
-        Include the categories count for the test data.
-
-    Returns
-    -------
-    DataFrame
-        Count of occurrences of each category in the specified column.
-
-    Raises
-    ------
-    ValueError
-        If the column type is not recognized.
-
-    Examples
-    --------
-    >>> # Create a supervised learning instance and load a dataset
-    >>> model = SupervisedLearning(dataset)
-    >>>
-    >>> # Count the occurrences of each category in the 'Category' column
-    >>> category_counts = model.count_column_categories(column='Category')
-    >>>
-    >>> print(category_counts)
-
-    See Also
-    --------
-    - pandas.Series.value_counts : Return a Series containing counts of unique values.
-    - pandas.DataFrame.reset_index : Reset the index of a DataFrame.
-
-    References
-    ----------
-    - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.value_counts.html
-    - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reset_index.html
+        Count the occurrences of categories in a categorical column.
+    
+        Parameters
+        ----------
+        column : str or list or tuple
+            Categorical column or columns to count categories.
+        reset_index : bool, default False
+            Whether to reset the index after counting.
+        inplace : bool, default False
+            Replace the original dataset with this groupby operation.
+        test_data : bool, default False
+            Include the categories count for the test data.
+    
+        Returns
+        -------
+        DataFrame
+            Count of occurrences of each category in the specified column.
+    
+        Raises
+        ------
+        ValueError
+            If the column type is not recognized.
+    
+        Examples
+        --------
+        >>> # Create a supervised learning instance and load a dataset
+        >>> model = SupervisedLearning(dataset)
+        >>>
+        >>> # Count the occurrences of each category in the 'Category' column
+        >>> category_counts = model.count_column_categories(column='Category')
+        >>>
+        >>> print(category_counts)
+    
+        See Also
+        --------
+        - pandas.Series.value_counts : Return a Series containing counts of unique values.
+        - pandas.DataFrame.reset_index : Reset the index of a DataFrame.
+    
+        References
+        ----------
+        - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.value_counts.html
+        - Pandas: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reset_index.html
 
         """
         if self.__split_data == False:
@@ -5859,49 +5845,49 @@ class SupervisedLearning:
     
     def get_bestK_KNNclassifier(self, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, figsize: tuple = (15, 10)):
         """
-    Find the best value of k for K-Nearest Neighbors (KNN) classifier.
-
-    Parameters
-    ----------
-    weight : str, default 'uniform'
-        Weight function used in prediction. Possible values: 'uniform' or 'distance'.
-    algorithm : str, default 'auto'
-        Algorithm used to compute the nearest neighbors. Possible values: 'auto', 'ball_tree', 'kd_tree', 'brute'.
-    metric : str, default 'minkowski'
-        Distance metric for the tree. Refer to the documentation of sklearn.neighbors.DistanceMetric for more options.
-    max_k_range : int, default 31
-        Maximum range of k values to consider.
-    figsize: tuple
-        A tuple containing the frame length and breadth for the graph to be plotted.
-
-    Returns
-    -------
-    Int
-        An integer indicating the best k value for the KNN Classifier.
-
-    Raises
-    ------
-    ValueError
-        If invalid values are provided for 'algorithm' or 'weight'.
-
-    Notes
-    -----
-    This method evaluates the KNN classifier with different values of k and plots a graph to help identify the best k.
-    The best k-value is determined based on the highest accuracy score.
-
-    Examples
-    --------
-    >>> data = SupervisedLearning(dataset)
-    >>> data.get_bestK_KNNclassifier(weight='distance', 
-    >>>                              algorithm='kd_tree')
-
-    See Also
-    --------
-    - sklearn.neighbors.KNeighborsClassifier : K-nearest neighbors classifier.
-
-    References
-    ----------
-    - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
+        Find the best value of k for K-Nearest Neighbors (KNN) classifier.
+    
+        Parameters
+        ----------
+        weight : str, default 'uniform'
+            Weight function used in prediction. Possible values: 'uniform' or 'distance'.
+        algorithm : str, default 'auto'
+            Algorithm used to compute the nearest neighbors. Possible values: 'auto', 'ball_tree', 'kd_tree', 'brute'.
+        metric : str, default 'minkowski'
+            Distance metric for the tree. Refer to the documentation of sklearn.neighbors.DistanceMetric for more options.
+        max_k_range : int, default 31
+            Maximum range of k values to consider.
+        figsize: tuple
+            A tuple containing the frame length and breadth for the graph to be plotted.
+    
+        Returns
+        -------
+        Int
+            An integer indicating the best k value for the KNN Classifier.
+    
+        Raises
+        ------
+        ValueError
+            If invalid values are provided for 'algorithm' or 'weight'.
+    
+        Notes
+        -----
+        This method evaluates the KNN classifier with different values of k and plots a graph to help identify the best k.
+        The best k-value is determined based on the highest accuracy score.
+    
+        Examples
+        --------
+        >>> data = SupervisedLearning(dataset)
+        >>> data.get_bestK_KNNclassifier(weight='distance', 
+        >>>                              algorithm='kd_tree')
+    
+        See Also
+        --------
+        - sklearn.neighbors.KNeighborsClassifier : K-nearest neighbors classifier.
+    
+        References
+        ----------
+        - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
 
         """
         if self.__split_data == True: 
@@ -5987,48 +5973,48 @@ class SupervisedLearning:
     
     def get_bestK_KNNregressor(self, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, figsize: tuple = (15, 10)):
         """
-    Find the best value of k for K-Nearest Neighbors (KNN) regressor.
-
-    Parameters
-    ----------
-    weight : str, default 'uniform'
-        Weight function used in prediction. Possible values: 'uniform' or 'distance'.
-    algorithm : str, default 'auto'
-        Algorithm used to compute the nearest neighbors. Possible values: 'auto', 'ball_tree', 'kd_tree', 'brute'.
-    metric : str, default 'minkowski'
-        Distance metric for the tree. Refer to the documentation of sklearn.neighbors.DistanceMetric for more options.
-    max_k_range : int, default 31
-        Maximum range of k values to consider.
-    figsize: tuple
-        A tuple containing the frame length and breadth for the graph to be plotted.
-
-    Returns
-    -------
-    Int
-        An integer indicating the best k value for the KNN Regressor.
-
-    Raises
-    ------
-    ValueError
-        If invalid values are provided for 'algorithm' or 'weight'.
-
-    Notes
-    -----
-    This method evaluates the KNN regressor with different values of k and plots a graph to help identify the best k.
-    The best k-value is determined based on the highest R-squared score.
-
-    Examples
-    --------
-    >>> data = SupervisedLearning(dataset)
-    >>> data.get_bestK_KNNregressor(weight='distance', algorithm='kd_tree')
-
-    See Also
-    --------
-    - sklearn.neighbors.KNeighborsRegressor : K-nearest neighbors regressor.
-
-    References
-    ----------
-    - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html
+        Find the best value of k for K-Nearest Neighbors (KNN) regressor.
+    
+        Parameters
+        ----------
+        weight : str, default 'uniform'
+            Weight function used in prediction. Possible values: 'uniform' or 'distance'.
+        algorithm : str, default 'auto'
+            Algorithm used to compute the nearest neighbors. Possible values: 'auto', 'ball_tree', 'kd_tree', 'brute'.
+        metric : str, default 'minkowski'
+            Distance metric for the tree. Refer to the documentation of sklearn.neighbors.DistanceMetric for more options.
+        max_k_range : int, default 31
+            Maximum range of k values to consider.
+        figsize: tuple
+            A tuple containing the frame length and breadth for the graph to be plotted.
+    
+        Returns
+        -------
+        Int
+            An integer indicating the best k value for the KNN Regressor.
+    
+        Raises
+        ------
+        ValueError
+            If invalid values are provided for 'algorithm' or 'weight'.
+    
+        Notes
+        -----
+        This method evaluates the KNN regressor with different values of k and plots a graph to help identify the best k.
+        The best k-value is determined based on the highest R-squared score.
+    
+        Examples
+        --------
+        >>> data = SupervisedLearning(dataset)
+        >>> data.get_bestK_KNNregressor(weight='distance', algorithm='kd_tree')
+    
+        See Also
+        --------
+        - sklearn.neighbors.KNeighborsRegressor : K-nearest neighbors regressor.
+    
+        References
+        ----------
+        - Scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html
 
         """
         if self.__split_data == True: 
@@ -6114,34 +6100,34 @@ class SupervisedLearning:
    
     def unique_elements_in_columns(self, count: bool = False):
         """
-    Extracts unique elements in each column of the dataset.
-
-    This method generates a DataFrame containing unique elements in each column. If specified, it can also provide the count of unique elements in each column.
-
-    Parameters
-    ----------
-    count : bool, optional, default=False
-        If True, returns the count of unique elements in each column.
-
-    Returns
-    -------
-    pd.DataFrame or pd.Series
-        If count is False, a DataFrame with unique elements. If count is True, a Series with counts.
-
-    Notes
-    -----
-    This method utilizes Pandas for extracting unique elements and their counts.
-
-    Examples
-    --------
-    >>> from buildml import SupervisedLearning
-    >>> model = SupervisedLearning(dataset)
-    >>> unique_elements = model.unique_elements_in_columns(count=True)
-
-    References
-    ----------
-    - Pandas unique: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.unique.html
-    - Pandas nunique: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.nunique.html
+        Extracts unique elements in each column of the dataset.
+    
+        This method generates a DataFrame containing unique elements in each column. If specified, it can also provide the count of unique elements in each column.
+    
+        Parameters
+        ----------
+        count : bool, optional, default=False
+            If True, returns the count of unique elements in each column.
+    
+        Returns
+        -------
+        pd.DataFrame or pd.Series
+            If count is False, a DataFrame with unique elements. If count is True, a Series with counts.
+    
+        Notes
+        -----
+        This method utilizes Pandas for extracting unique elements and their counts.
+    
+        Examples
+        --------
+        >>> from buildml import SupervisedLearning
+        >>> model = SupervisedLearning(dataset)
+        >>> unique_elements = model.unique_elements_in_columns(count=True)
+    
+        References
+        ----------
+        - Pandas unique: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.unique.html
+        - Pandas nunique: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.nunique.html
 
         """
         column = [col for col in self.__data.columns]
@@ -6160,58 +6146,58 @@ class SupervisedLearning:
 
     def simple_linregres_graph(self, regressor, title: str, line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False):
         """
-    Generate a simple linear regression graph with optional visualization of training and test datasets.
-
-    Parameters:
-    -----------
-    regressor (object or list): 
-        Single or list of regression models (e.g., sklearn.linear_model.LinearRegression) to visualize.
-    title (str): 
-        Title of the graph.
-    line_style : str, optional, default: "dashed"
-        Style of the regression line ("solid", "dashed", "dashdot", etc.).
-    line_width (float, optional): 
-        Width of the regression line. Default is 2.
-    line_marker (str, optional): 
-        Marker style for data points on the regression line. Default is "o".
-    line_marker_size (float, optional): 
-        Size of the marker for data points on the regression line. Default is 12.
-    train_color_marker (str, optional): 
-        Color of markers for the training dataset. Default is "red".
-    test_color_marker (str, optional): 
-        Color of markers for the test dataset. Default is "red".
-    line_color (str, optional): 
-        Color of the regression line. Default is "green".
-    size_train_marker (float, optional): 
-        Size of markers for the training dataset. Default is 10.
-    size_test_marker (float, optional): 
-        Size of markers for the test dataset. Default is 10.
-    whole_dataset (bool, optional): 
-        If True, visualize the entire dataset with the regression line. If False, visualize training and test datasets separately. Default is False.
-
-    Returns:
-    --------
-    None
-        Displays a simple linear regression graph.
-
-    Examples:
-    ---------
-    >>> # Example 1: Visualize a simple linear regression model
-    >>> model.simple_linregres_graph(regressor=LinearRegression(), 
-                                     title="Simple Linear Regression")
-
-    >>> # Example 2: Visualize multiple linear regression models
-    >>> regressors = [LinearRegression(), Ridge(), Lasso()]
-    >>> model.simple_linregres_graph(regressor=regressors, 
-                                     title="Multiple Linear Regression Models")
+        Generate a simple linear regression graph with optional visualization of training and test datasets.
     
-    References:
-    -----------
-    - `matplotlib.pyplot`: Matplotlib's plotting interface. [Matplotlib Documentation](https://matplotlib.org/stable/contents.html)
-    - `scikit-learn`: Scikit-learn for machine learning tools. [Scikit-learn Documentation](https://scikit-learn.org/stable/documentation.html)
-    - `numpy`: NumPy for numerical operations. [NumPy Documentation](https://numpy.org/doc/stable/)
-    - `pandas`: Pandas for data manipulation. [Pandas Documentation](https://pandas.pydata.org/pandas-docs/stable/index.html)
-    - `matplotlib`: Matplotlib library for plotting. [Matplotlib Documentation](https://matplotlib.org/stable/contents.html)
+        Parameters:
+        -----------
+        regressor (object or list): 
+            Single or list of regression models (e.g., sklearn.linear_model.LinearRegression) to visualize.
+        title (str): 
+            Title of the graph.
+        line_style : str, optional, default: "dashed"
+            Style of the regression line ("solid", "dashed", "dashdot", etc.).
+        line_width (float, optional): 
+            Width of the regression line. Default is 2.
+        line_marker (str, optional): 
+            Marker style for data points on the regression line. Default is "o".
+        line_marker_size (float, optional): 
+            Size of the marker for data points on the regression line. Default is 12.
+        train_color_marker (str, optional): 
+            Color of markers for the training dataset. Default is "red".
+        test_color_marker (str, optional): 
+            Color of markers for the test dataset. Default is "red".
+        line_color (str, optional): 
+            Color of the regression line. Default is "green".
+        size_train_marker (float, optional): 
+            Size of markers for the training dataset. Default is 10.
+        size_test_marker (float, optional): 
+            Size of markers for the test dataset. Default is 10.
+        whole_dataset (bool, optional): 
+            If True, visualize the entire dataset with the regression line. If False, visualize training and test datasets separately. Default is False.
+    
+        Returns:
+        --------
+        None
+            Displays a simple linear regression graph.
+    
+        Examples:
+        ---------
+        >>> # Example 1: Visualize a simple linear regression model
+        >>> model.simple_linregres_graph(regressor=LinearRegression(), 
+                                         title="Simple Linear Regression")
+    
+        >>> # Example 2: Visualize multiple linear regression models
+        >>> regressors = [LinearRegression(), Ridge(), Lasso()]
+        >>> model.simple_linregres_graph(regressor=regressors, 
+                                         title="Multiple Linear Regression Models")
+        
+        References:
+        -----------
+        - `matplotlib.pyplot`: Matplotlib's plotting interface. [Matplotlib Documentation](https://matplotlib.org/stable/contents.html)
+        - `scikit-learn`: Scikit-learn for machine learning tools. [Scikit-learn Documentation](https://scikit-learn.org/stable/documentation.html)
+        - `numpy`: NumPy for numerical operations. [NumPy Documentation](https://numpy.org/doc/stable/)
+        - `pandas`: Pandas for data manipulation. [Pandas Documentation](https://pandas.pydata.org/pandas-docs/stable/index.html)
+        - `matplotlib`: Matplotlib library for plotting. [Matplotlib Documentation](https://matplotlib.org/stable/contents.html)
         """
         
         name_x = [col for col in self.__x.columns]
@@ -6289,53 +6275,53 @@ class SupervisedLearning:
                 
     def polyreg_graph(self, title: str, line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False):        
         """
-    Generate a polynomial regression graph for visualization.
-
-    Parameters
-    ----------
-    title : str
-        The title of the graph.
-    line_style : str, optional, default: "dashed"
-        Style of the regression line ("solid", "dashed", "dashdot", etc.).
-    line_width : float, optional, default: 2
-        Width of the regression line.
-    line_marker : str, optional, default: "o"
-        Marker style for data points on the regression line.
-    line_marker_size : float, optional, default: 12
-        Size of the marker on the regression line.
-    train_color_marker : str, optional, default: "red"
-        Color of markers for training data.
-    test_color_marker : str, optional, default: "red"
-        Color of markers for test data.
-    line_color : str, optional, default: "green"
-        Color of the regression line.
-    size_train_marker : float, optional, default: 10
-        Size of markers for training data.
-    size_test_marker : float, optional, default: 10
-        Size of markers for test data.
-    whole_dataset : bool, optional, default: False
-        If True, visualize the regression line on the entire dataset.
-        If False, visualize on training and test datasets separately.
-
-    Returns
-    -------
-    None
-        Displays the polynomial regression graph.
-
-    See Also
-    --------
-    - `matplotlib.pyplot.scatter`: Plot a scatter plot using Matplotlib.
-    - `matplotlib.pyplot.plot`: Plot lines and/or markers using Matplotlib.
-    - `numpy`: Fundamental package for scientific computing with Python.
-    - `scikit-learn`: Simple and efficient tools for predictive data analysis.
-
-    Examples
-    --------
-    >>> # Assuming `sl` is an instance of the SupervisedLearning class
-    >>> sl = SupervisedLearning(dataset)
-    >>> sl.polyreg_graph("Polynomial Regression Example", 
-    >>>                  line_style="solid", 
-    >>>                  line_width=3)
+        Generate a polynomial regression graph for visualization.
+    
+        Parameters
+        ----------
+        title : str
+            The title of the graph.
+        line_style : str, optional, default: "dashed"
+            Style of the regression line ("solid", "dashed", "dashdot", etc.).
+        line_width : float, optional, default: 2
+            Width of the regression line.
+        line_marker : str, optional, default: "o"
+            Marker style for data points on the regression line.
+        line_marker_size : float, optional, default: 12
+            Size of the marker on the regression line.
+        train_color_marker : str, optional, default: "red"
+            Color of markers for training data.
+        test_color_marker : str, optional, default: "red"
+            Color of markers for test data.
+        line_color : str, optional, default: "green"
+            Color of the regression line.
+        size_train_marker : float, optional, default: 10
+            Size of markers for training data.
+        size_test_marker : float, optional, default: 10
+            Size of markers for test data.
+        whole_dataset : bool, optional, default: False
+            If True, visualize the regression line on the entire dataset.
+            If False, visualize on training and test datasets separately.
+    
+        Returns
+        -------
+        None
+            Displays the polynomial regression graph.
+    
+        See Also
+        --------
+        - `matplotlib.pyplot.scatter`: Plot a scatter plot using Matplotlib.
+        - `matplotlib.pyplot.plot`: Plot lines and/or markers using Matplotlib.
+        - `numpy`: Fundamental package for scientific computing with Python.
+        - `scikit-learn`: Simple and efficient tools for predictive data analysis.
+    
+        Examples
+        --------
+        >>> # Assuming `sl` is an instance of the SupervisedLearning class
+        >>> sl = SupervisedLearning(dataset)
+        >>> sl.polyreg_graph("Polynomial Regression Example", 
+        >>>                  line_style="solid", 
+        >>>                  line_width=3)
         """
         
         name_x = [col for col in self.__x.columns]
@@ -6392,41 +6378,41 @@ class SupervisedLearning:
                 
     def polyreg_x(self, degree: int, include_bias: bool = False,):
         """
-    Polynomial Regression Feature Expansion.
-
-    This method performs polynomial regression feature expansion on the independent variables (features).
-    It uses scikit-learn's PolynomialFeatures to generate polynomial and interaction features up to a specified degree.
-
-    Parameters
-    ----------
-    degree : int
-        The degree of the polynomial features.
-    include_bias : bool, optional, default=False
-        If True, the polynomial features include a bias column (intercept).
-    inplace : bool, optional, default=False
-        If True, the original dataset is modified in-place. If False, a new DataFrame with polynomial features is returned.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with polynomial features.
-
-    Notes
-    -----
-    This method utilizes scikit-learn's PolynomialFeatures for feature expansion.
-
-    Examples
-    --------
-    >>> from buildml import SupervisedLearning
-    >>> model = SupervisedLearning(dataset)
-    >>> model.polyreg_x(degree=2, include_bias=True, inplace=True)
-
-    References
-    ----------
-    - Scikit-learn PolynomialFeatures: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
-    - Numpy: https://numpy.org/
-    - Pandas: https://pandas.pydata.org/
-    - Scikit-learn: https://scikit-learn.org/
+        Polynomial Regression Feature Expansion.
+    
+        This method performs polynomial regression feature expansion on the independent variables (features).
+        It uses scikit-learn's PolynomialFeatures to generate polynomial and interaction features up to a specified degree.
+    
+        Parameters
+        ----------
+        degree : int
+            The degree of the polynomial features.
+        include_bias : bool, optional, default=False
+            If True, the polynomial features include a bias column (intercept).
+        inplace : bool, optional, default=False
+            If True, the original dataset is modified in-place. If False, a new DataFrame with polynomial features is returned.
+    
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with polynomial features.
+    
+        Notes
+        -----
+        This method utilizes scikit-learn's PolynomialFeatures for feature expansion.
+    
+        Examples
+        --------
+        >>> from buildml import SupervisedLearning
+        >>> model = SupervisedLearning(dataset)
+        >>> model.polyreg_x(degree=2, include_bias=True, inplace=True)
+    
+        References
+        ----------
+        - Scikit-learn PolynomialFeatures: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
+        - Numpy: https://numpy.org/
+        - Pandas: https://pandas.pydata.org/
+        - Scikit-learn: https://scikit-learn.org/
         """
         self.__poly_features = sp.PolynomialFeatures(degree = degree, include_bias = include_bias)
         poly_x = self.__poly_features.fit_transform(self.__x)
