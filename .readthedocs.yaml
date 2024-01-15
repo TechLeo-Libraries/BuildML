@@ -4,6 +4,8 @@ build:
   os: "ubuntu-22.04"
   python:
     version: "3.8"
+  tools:
+    - sphinx
 
 dependencies:
   override:
