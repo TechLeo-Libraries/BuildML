@@ -616,10 +616,15 @@ class SupervisedLearning:
         return {"Dependent Variable": self.__y, "Independent Variables": self.__x}
     
       
-    def split_data(self):
+    def split_data(self, test_size: float = 0.2):
         """
         Split the dataset into training and test sets.
-    
+        
+        Parameters
+        ----------
+        test_size: float, optional, default=0.2
+            Specifies the size of the data to split as test data.
+        
         Returns
         -------
         Dict
@@ -645,8 +650,12 @@ class SupervisedLearning:
         - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
 
         """
-        self.__x_train, self.__x_test, self.__y_train, self.__y_test = sms.train_test_split(self.__x, self.__y, test_size = 0.2, random_state = 0)
+        self.__x_train, self.__x_test, self.__y_train, self.__y_test = sms.train_test_split(self.__x, self.__y, test_size = test_size, random_state = 0)
         self.__split_data = True
+        
+        if self.__polynomial_regression == True:
+            self.__x_train1, self.__x_test1, self.__y_train1, self.__y_test1 = sms.train_test_split(self.__x1, self.__y, test_size = test_size, random_state = 0)
+        
         return {"Training X": self.__x_train, "Test X": self.__x_test, "Training Y": self.__y_train, "Test Y": self.__y_test}
     
 
@@ -6273,7 +6282,7 @@ class SupervisedLearning:
                     raise ValueError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
         
                 
-    def polyreg_graph(self, title: str, line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False):        
+    def polyreg_graph(self, title: str, xlabel: str, ylabel: str, figsize: tuple = (15, 10), line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False):        
         """
         Generate a polynomial regression graph for visualization.
     
@@ -6281,6 +6290,12 @@ class SupervisedLearning:
         ----------
         title : str
             The title of the graph.
+        xlabel : str
+            A title for the xaxis.
+        ylabel : str
+            A title for the yaxis. 
+        figsize : str, optional, default: (15, 10)
+            The size(length, breadth) of the figure frame where we plot our graph.
         line_style : str, optional, default: "dashed"
             Style of the regression line ("solid", "dashed", "dashdot", etc.).
         line_width : float, optional, default: 2
@@ -6324,59 +6339,92 @@ class SupervisedLearning:
         >>>                  line_width=3)
         """
         
-        name_x = [col for col in self.__x.columns]
-        name_y = self.__y.name
-        
         possible_line_styles = ["dashed", "solid"]
         possible_line_styles_symbols = ["-", "--", "-.", ":"]
         
-        if len(name_x) == 1:
-            if not whole_dataset:
-                lin_reg_2 = slm.LinearRegression()
-                model = lin_reg_2.fit(self.__poly_features.transform(self.__x_train), self.__y_train)
-                
-                x = [integer for integer in self.__x[name_x[0]]]
-                
-                X_grid = [num for num in np.arange(np.min(x), np.max(x), 0.1)]
-                X_grid = np.array(X_grid).reshape((len(X_grid), 1))
-                
-                # Visualising the Training set results
-                plt.figure(figsize = (15, 10))
-                plt.scatter(self.__x_train, self.__y_train, color = train_color_marker, s=size_train_marker)
-                plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
-                plt.title(f"{title} (Training Dataset)")
-                plt.xlabel(name_x[0])
-                plt.ylabel(name_y)
-                plt.show()
+        model = self.model_regressor
+        if not whole_dataset:
+            # Visualising the Training set results
+            plt.figure(figsize = figsize)
+            plt.scatter(self.__x_train1, self.__y_train, color = train_color_marker, s=size_train_marker)
+            plt.plot(self.__x_train, model.predict(self.__x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+            plt.title(f"{title} (Training Dataset)")
+            plt.xlabel(f"{xlabel}")
+            plt.ylabel(f"{ylabel}")
+            plt.show()
+
+            # Visualising the Test set results
+            plt.figure(figsize = figsize)
+            plt.scatter(self.__x_test1, self.__y_test, color = test_color_marker, s=size_test_marker)
+            plt.plot(self.__x_test, model.predict(self.__x_test), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+            plt.title(f"{title} (Test Dataset)")
+            plt.xlabel(f"{xlabel}")
+            plt.ylabel(f"{ylabel}")
+            plt.show()
+
+        else:
+            plt.figure(figsize = figsize)
+            plt.title(title)
+            plt.scatter(self.__x1, self.__y, color = train_color_marker, s=size_train_marker)
+            plt.plot(self.__x, model.predict(X_grid), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+            plt.xlabel(f"{xlabel}")
+            plt.ylabel(f"{ylabel}")
+            plt.show()
     
-                # Visualising the Test set results
-                plt.figure(figsize = (15, 10))
-                plt.scatter(self.__x_test, self.__y_test, color = test_color_marker, s=size_test_marker)
-                plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
-                plt.title(f"{title} (Test Dataset)")
-                plt.xlabel(name_x[0])
-                plt.ylabel(name_y)
-                plt.show()
+        
+        # name_x = [col for col in self.__x.columns]
+        # name_y = self.__y.name
+        
+        # possible_line_styles = ["dashed", "solid"]
+        # possible_line_styles_symbols = ["-", "--", "-.", ":"]
+        
+        # if len(name_x) == 1:
+        #     if not whole_dataset:
+        #         lin_reg_2 = slm.LinearRegression()
+        #         model = lin_reg_2.fit(self.__poly_features.transform(self.__x_train), self.__y_train)
+                
+        #         x = [integer for integer in self.__x[name_x[0]]]
+                
+        #         X_grid = [num for num in np.arange(np.min(x), np.max(x), 0.1)]
+        #         X_grid = np.array(X_grid).reshape((len(X_grid), 1))
+                
+        #         # Visualising the Training set results
+        #         plt.figure(figsize = (15, 10))
+        #         plt.scatter(self.__x_train, self.__y_train, color = train_color_marker, s=size_train_marker)
+        #         plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+        #         plt.title(f"{title} (Training Dataset)")
+        #         plt.xlabel(name_x[0])
+        #         plt.ylabel(name_y)
+        #         plt.show()
     
-            else:
-                lin_reg_2 = slm.LinearRegression()
-                model = lin_reg_2.fit(self.__poly_x, self.__y)
+        #         # Visualising the Test set results
+        #         plt.figure(figsize = (15, 10))
+        #         plt.scatter(self.__x_test, self.__y_test, color = test_color_marker, s=size_test_marker)
+        #         plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+        #         plt.title(f"{title} (Test Dataset)")
+        #         plt.xlabel(name_x[0])
+        #         plt.ylabel(name_y)
+        #         plt.show()
+    
+        #     else:
+        #         lin_reg_2 = slm.LinearRegression()
+        #         model = lin_reg_2.fit(self.__poly_x, self.__y)
                 
-                x = [integer for integer in self.__x[name_x[0]]]
+        #         x = [integer for integer in self.__x[name_x[0]]]
                 
-                X_grid = [num for num in np.arange(np.min(x), np.max(x), 0.1)]
-                X_grid = np.array(X_grid).reshape((len(X_grid), 1))
+        #         X_grid = [num for num in np.arange(np.min(x), np.max(x), 0.1)]
+        #         X_grid = np.array(X_grid).reshape((len(X_grid), 1))
                 
-                plt.figure(figsize = (15, 10))
-                plt.title(title)
-                plt.scatter(self.__x, self.__y, color = train_color_marker, s=size_train_marker)
-                plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
-                plt.xlabel(name_x[0])
-                plt.ylabel(name_y)
-                plt.show()
+        #         plt.figure(figsize = (15, 10))
+        #         plt.title(title)
+        #         plt.scatter(self.__x, self.__y, color = train_color_marker, s=size_train_marker)
+        #         plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+        #         plt.xlabel(name_x[0])
+        #         plt.ylabel(name_y)
+        #         plt.show()
                 
                 
-    def polyreg_x(self, degree: int, include_bias: bool = False,):
+    def polyreg_x(self, degree: int, include_bias: bool = False):
         """
         Polynomial Regression Feature Expansion.
     
@@ -6389,8 +6437,6 @@ class SupervisedLearning:
             The degree of the polynomial features.
         include_bias : bool, optional, default=False
             If True, the polynomial features include a bias column (intercept).
-        inplace : bool, optional, default=False
-            If True, the original dataset is modified in-place. If False, a new DataFrame with polynomial features is returned.
     
         Returns
         -------
@@ -6405,7 +6451,7 @@ class SupervisedLearning:
         --------
         >>> from buildml import SupervisedLearning
         >>> model = SupervisedLearning(dataset)
-        >>> model.polyreg_x(degree=2, include_bias=True, inplace=True)
+        >>> model.polyreg_x(degree=2, include_bias=True)
     
         References
         ----------
@@ -6421,4 +6467,7 @@ class SupervisedLearning:
         column = [f"x{num}" for num in range(1, (b + 1))]
         self.__poly_x = pd.DataFrame(poly_x, columns = column)
         
-        return self.__poly_x
+        self.__x1 = self.__x
+        self.__polynomial_regression = True
+        self.__x = self.__poly_x
+        return self.__x
