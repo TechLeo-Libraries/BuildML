@@ -16,8 +16,8 @@ Welcome to BuildML's documentation!
    usage
    modules
    authors
-   sponsor
    history
+   sponsor
 
 
 Indices and tables
