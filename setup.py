@@ -12,7 +12,7 @@ VERSION = '1.0.6'
 DESCRIPTION = "Let's make building machine learning models the complex way, easy."
 LONG_DESCRIPTION = 'The ability to perform exploratory data analysis, data preprocessing, data cleaning, data transformation, data segregation, model training, model prediction, and model evaluation has been put together in this package to allow simple flow of ML operations.'
 HERE = pathlib.Path(__file__).parent
-README = (HERE / "README.md").read_text()
+README = (HERE / "README.md").read_text(encoding='utf-8')
 
 # Setting up
 setup(
@@ -23,7 +23,7 @@ setup(
     author_email="<techleo.ng@outlook.com>",
     description=DESCRIPTION,
     long_description_content_type="text/markdown",
-    long_description=README,
+    long_description = (HERE / "README.md").read_text(encoding='utf-8'),
     packages=find_packages(),
     install_requires=install_requires,
     keywords = ['machine learning', 'data science', 'data preprocessing', 'supervised learning', 'data exploration', 'ML framework', 'data cleaning', 'regression', 'classification', 'machine learning toolkit'],
