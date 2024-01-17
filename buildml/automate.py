@@ -6452,7 +6452,7 @@ class SupervisedLearning:
         return self.__x
     
     
-    def poly_get_optimal_degree(self, max_degree: int = 10, whole_dataset: bool = False, test_size: float = 0.2, random_state: int = 0, include_bias: bool = True, cross_validation: bool = False):
+    def poly_get_optimal_degree(self, max_degree: int = 10, whole_dataset: bool = False, test_size: float = 0.2, random_state: int = 0, include_bias: bool = True, cross_validation: bool = False, kfold: int = 5):
         """
         This method is designed to determine the optimal degree for polynomial regression. It evaluates the performance of polynomial regression models with degrees ranging from 1 to a specified maximum degree. The evaluation includes training and testing the models, as well as optional cross-validation metrics.
 
@@ -6470,6 +6470,8 @@ class SupervisedLearning:
             Whether to include a bias column in the polynomial features.
         cross_validation : bool, optional, default=False
             If True, includes cross-validation metrics in the output.
+        kfold : int, optional, default=5
+            Number of folds for cross-validation.
 
         Returns
         ----------
@@ -6603,7 +6605,7 @@ class SupervisedLearning:
                     test_r2 = sm.r2_score(y_test, y_pred1)
                     test_rmse = np.sqrt(sm.mean_squared_error(y_test, y_pred1))
                     
-                    cross_validation = sms.cross_val_score(estimator = regressor, X = x, y = y)
+                    cross_validation = sms.cross_val_score(estimator = regressor, X = x, y = y, cv = kfold)
                     cross_val_mean = np.mean(cross_validation)
                     cross_val_standard_deviation = np.std(cross_validation)
                     
@@ -6635,7 +6637,7 @@ class SupervisedLearning:
                     r2 = sm.r2_score(y, y_pred)
                     rmse = np.sqrt(sm.mean_squared_error(y, y_pred))
                     
-                    cross_validation = sms.cross_val_score(estimator = regressor, X = x, y = y)
+                    cross_validation = sms.cross_val_score(estimator = regressor, X = x, y = y, cv = kfold)
                     cross_val_mean = np.mean(cross_validation)
                     cross_val_standard_deviation = np.std(cross_validation)
                     

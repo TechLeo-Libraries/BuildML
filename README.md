@@ -215,6 +215,38 @@ BuildML relies on several open-source libraries to provide its functionality. We
 The BuildML library builds upon the functionality provided by these excellent tools, We sincerely thank the maintainers and contributors of these libraries for their valuable contributions to the open-source community.
 
 
+## ❤️ Support [BuildML](https://github.com/TechLeo-Libraries/BuildML)
+
+If you find BuildML helpful and would like to support its development, there are several ways you can contribute:
+
+### ☕ Buy Me a Coffee
+
+You can show your appreciation by [buying me a coffee](https://ko-fi.com/techleo#). Every little bit helps and goes directly towards keeping this project maintained and improving.
+
+[![Buy Me a Coffee](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/techleo#)
+
+### 🌟 Sponsorship
+
+Consider becoming a sponsor to provide ongoing support. Sponsors receive special recognition and exclusive perks:
+
+- 🎉 Exclusive updates on the latest features and developments.
+- 🚀 Early access to pre-releases and beta versions.
+- 📢 Special mention in the project documentation and README.
+
+Become a sponsor by clicking on the "Sponsor" button on the [BuildML repository](https://github.com/TechLeo-Libraries/BuildML).
+
+### 👩‍💻 Contribute
+
+If you're a developer, you can contribute directly by:
+
+- 🐛 Reporting bugs or suggesting improvements by opening [issues](https://github.com/TechLeo-Libraries/BuildML/issues).
+- 🛠 Submitting pull requests to enhance the codebase.
+
+No contribution is too small, and your involvement is highly appreciated!
+
+Thank you for considering supporting BuildML! Your generosity keeps the project alive and thriving. 🚀
+
+
 ## License
 BuildML is distributed under the MIT License. Feel free to use, modify, and distribute it according to the terms of the license.
 
@@ -252,6 +284,18 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 
 - Improved documentation.
 - Created external documentation for BuildML.
+
+### v1.0.6 (January 2024):
+
+- Fix polynomial regression graph
+- Fix documentation on build_single_regressor_from_features
+- Fix documentation on build_single_classifier_from_features
+- Imporved documentation for `polyreg_graph`
+- Imporved documentation for `split_data`
+- Added option to specify the test_size in `split_data` but default parameter remains 0.2
+- Created method `poly_get_optimal_degree` to find the best degree for polynomial regression. 
+- Updated `README.md` file.
+
 
 ## Contributors
 We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:
