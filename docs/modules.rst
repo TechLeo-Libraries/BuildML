@@ -1,4 +1,4 @@
-BuildML
+Package
 =======
 
 .. toctree::
