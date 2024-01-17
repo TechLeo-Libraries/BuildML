@@ -132,6 +132,7 @@ class SupervisedLearning:
         "split_data",
     
         # Model Building and Evaluation
+        "poly_get_optimal_degree"
         "get_bestK_KNNregressor",
         "train_model_regressor",
         "regressor_predict",
@@ -6153,7 +6154,7 @@ class SupervisedLearning:
         return dataframe
     
 
-    def simple_linregres_graph(self, regressor, title: str, line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False):
+    def simple_linregres_graph(self, regressor, title: str, xlabel: str, ylabel: str, figsize: tuple = (15, 10), line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False):
         """
         Generate a simple linear regression graph with optional visualization of training and test datasets.
     
@@ -6163,6 +6164,12 @@ class SupervisedLearning:
             Single or list of regression models (e.g., sklearn.linear_model.LinearRegression) to visualize.
         title (str): 
             Title of the graph.
+        xlabel : str
+            A title for the xaxis.
+        ylabel : str
+            A title for the yaxis. 
+        figsize : str, optional, default: (15, 10)
+            The size(length, breadth) of the figure frame where we plot our graph.
         line_style : str, optional, default: "dashed"
             Style of the regression line ("solid", "dashed", "dashdot", etc.).
         line_width (float, optional): 
@@ -6193,12 +6200,16 @@ class SupervisedLearning:
         ---------
         >>> # Example 1: Visualize a simple linear regression model
         >>> model.simple_linregres_graph(regressor=LinearRegression(), 
-                                         title="Simple Linear Regression")
+                                         title="Simple Linear Regression",
+                                         xlabel="Specify your title for xaxis",
+                                         ylabel="Specify your title for yaxis")
     
         >>> # Example 2: Visualize multiple linear regression models
         >>> regressors = [LinearRegression(), Ridge(), Lasso()]
         >>> model.simple_linregres_graph(regressor=regressors, 
-                                         title="Multiple Linear Regression Models")
+                                         title="Analyzing Impact of Expenditure on Growth",
+                                         xlabel="Expenditure",
+                                         ylabel="Growth")
         
         References:
         -----------
@@ -6210,36 +6221,35 @@ class SupervisedLearning:
         """
         
         name_x = [col for col in self.__x.columns]
-        name_y = self.__y.name
         if not (isinstance(regressor, list) or isinstance(regressor, tuple)):
             if len(name_x) == 1:
                 
                 if not whole_dataset:
                     # Visualising the Training set results
-                    plt.figure(figsize = (15, 10))
+                    plt.figure(figsize = figsize)
                     plt.scatter(self.__x_train, self.__y_train, color = train_color_marker, s=size_train_marker)
                     plt.plot(self.__x_train, self.model_regressor.predict(self.__x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
                     plt.title(f"{title} (Training Dataset)")
-                    plt.xlabel(name_x[0])
-                    plt.ylabel(name_y)
+                    plt.xlabel(f"{xlabel}")
+                    plt.ylabel(f"{ylabel}")
                     plt.show()
             
                     # Visualising the Test set results
-                    plt.figure(figsize = (15, 10))
+                    plt.figure(figsize = figsize)
                     plt.scatter(self.__x_test, self.__y_test, color = test_color_marker, s=size_test_marker)
                     plt.plot(self.__x_train, self.model_regressor.predict(self.__x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
                     plt.title(f"{title} (Test Dataset)")
-                    plt.xlabel(name_x[0])
-                    plt.ylabel(name_y)
+                    plt.xlabel(f"{xlabel}")
+                    plt.ylabel(f"{ylabel}")
                     plt.show()
                     
                 else:
-                    plt.figure(figsize = (15, 10))
+                    plt.figure(figsize = figsize)
                     plt.scatter(self.__x, self.__y, color = train_color_marker, s=size_train_marker)
                     plt.plot(self.__x, self.model_regressor.predict(self.__x), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
                     plt.title(title)
-                    plt.xlabel(name_x[0])
-                    plt.ylabel(name_y)
+                    plt.xlabel(f"{xlabel}")
+                    plt.ylabel(f"{ylabel}")
                     plt.show()
             
             else:
@@ -6252,30 +6262,30 @@ class SupervisedLearning:
                     
                     if not whole_dataset:
                         # Visualising the Training set results
-                        plt.figure(figsize = (15, 10))
+                        plt.figure(figsize = figsize)
                         plt.scatter(self.__x_train, self.__y_train, color = train_color_marker, s=size_train_marker)
                         plt.plot(self.__x_train, each_regressor.fit(self.__x_train, self.__y_train).predict(self.__x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
                         plt.title(f"{title} (Training Dataset) for {each_regressor.__class__.__name__}")
-                        plt.xlabel(name_x[0])
-                        plt.ylabel(name_y)
+                        plt.xlabel(f"{xlabel}")
+                        plt.ylabel(f"{ylabel}")
                         plt.show()
                 
                         # Visualising the Test set results
-                        plt.figure(figsize = (15, 10))
+                        plt.figure(figsize = figsize)
                         plt.scatter(self.__x_test, self.__y_test, color = test_color_marker, s=size_test_marker)
                         plt.plot(self.__x_train, each_regressor.fit(self.__x_train, self.__y_train).predict(self.__x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
                         plt.title(f"{title} (Test Dataset) for {each_regressor.__class__.__name__}")
-                        plt.xlabel(name_x[0])
-                        plt.ylabel(name_y)
+                        plt.xlabel(f"{xlabel}")
+                        plt.ylabel(f"{ylabel}")
                         plt.show()
                         
                     else:
-                        plt.figure(figsize = (15, 10))
+                        plt.figure(figsize = figsize)
                         plt.scatter(self.__x, self.__y, color = train_color_marker, s=size_train_marker)
                         plt.plot(self.__x, each_regressor.fit(self.__x, self.__y).predict(self.__x), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
                         plt.title(f"{title} for {each_regressor.__class__.__name__}")
-                        plt.xlabel(name_x[0])
-                        plt.ylabel(name_y)
+                        plt.xlabel(f"{xlabel}")
+                        plt.ylabel(f"{ylabel}")
                         plt.show()
                 
                 else:
@@ -6330,13 +6340,34 @@ class SupervisedLearning:
         - `numpy`: Fundamental package for scientific computing with Python.
         - `scikit-learn`: Simple and efficient tools for predictive data analysis.
     
-        Examples
-        --------
-        >>> # Assuming `sl` is an instance of the SupervisedLearning class
-        >>> sl = SupervisedLearning(dataset)
-        >>> sl.polyreg_graph("Polynomial Regression Example", 
-        >>>                  line_style="solid", 
-        >>>                  line_width=3)
+        Example
+        -------
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> from buildml.automate import SupervisedLearning
+        >>> from sklearn.linear_model import LinearRegression
+        >>>
+        >>> # Get the Dataset
+        >>> dataset = pd.read_csv("Your dataset/path")
+        >>> 
+        >>> # Assuming `automate` is an instance of the SupervisedLearning class
+        >>> automate = SupervisedLearning(dataset)
+        >>> regressor = LinearRegression()
+        >>>
+        >>> # Further Data Preparation and Segregation
+        >>> select_variables = automate.select_dependent_and_independent(predict = "Salary")
+        >>> poly_x = automate.polyreg_x(degree = 5)
+        >>>
+        >>> # Model Building
+        >>> training = automate.train_model_regressor(regressor)
+        >>> prediction = automate.regressor_predict()
+        >>> evaluation = automate.regressor_evaluation()
+        >>> poly_reg = automate.polyreg_graph(title = "Analyzing salary across different levels",  
+        >>>                                   xlabel = "Levels", 
+        >>>                                   ylabel = "Salary", 
+        >>>                                   whole_dataset = True, 
+        >>>                                   line_marker = None, 
+        >>>                                   line_style = "solid")
         """
         
         possible_line_styles = ["dashed", "solid"]
@@ -6347,7 +6378,7 @@ class SupervisedLearning:
             # Visualising the Training set results
             plt.figure(figsize = figsize)
             plt.scatter(self.__x_train1, self.__y_train, color = train_color_marker, s=size_train_marker)
-            plt.plot(self.__x_train, model.predict(self.__x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+            plt.plot(self.__x_train1, model.predict(self.__x_train), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
             plt.title(f"{title} (Training Dataset)")
             plt.xlabel(f"{xlabel}")
             plt.ylabel(f"{ylabel}")
@@ -6356,7 +6387,7 @@ class SupervisedLearning:
             # Visualising the Test set results
             plt.figure(figsize = figsize)
             plt.scatter(self.__x_test1, self.__y_test, color = test_color_marker, s=size_test_marker)
-            plt.plot(self.__x_test, model.predict(self.__x_test), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+            plt.plot(self.__x_test1, model.predict(self.__x_test), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
             plt.title(f"{title} (Test Dataset)")
             plt.xlabel(f"{xlabel}")
             plt.ylabel(f"{ylabel}")
@@ -6366,63 +6397,11 @@ class SupervisedLearning:
             plt.figure(figsize = figsize)
             plt.title(title)
             plt.scatter(self.__x1, self.__y, color = train_color_marker, s=size_train_marker)
-            plt.plot(self.__x, model.predict(X_grid), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
+            plt.plot(self.__x1, model.predict(self.__x), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
             plt.xlabel(f"{xlabel}")
             plt.ylabel(f"{ylabel}")
             plt.show()
     
-        
-        # name_x = [col for col in self.__x.columns]
-        # name_y = self.__y.name
-        
-        # possible_line_styles = ["dashed", "solid"]
-        # possible_line_styles_symbols = ["-", "--", "-.", ":"]
-        
-        # if len(name_x) == 1:
-        #     if not whole_dataset:
-        #         lin_reg_2 = slm.LinearRegression()
-        #         model = lin_reg_2.fit(self.__poly_features.transform(self.__x_train), self.__y_train)
-                
-        #         x = [integer for integer in self.__x[name_x[0]]]
-                
-        #         X_grid = [num for num in np.arange(np.min(x), np.max(x), 0.1)]
-        #         X_grid = np.array(X_grid).reshape((len(X_grid), 1))
-                
-        #         # Visualising the Training set results
-        #         plt.figure(figsize = (15, 10))
-        #         plt.scatter(self.__x_train, self.__y_train, color = train_color_marker, s=size_train_marker)
-        #         plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
-        #         plt.title(f"{title} (Training Dataset)")
-        #         plt.xlabel(name_x[0])
-        #         plt.ylabel(name_y)
-        #         plt.show()
-    
-        #         # Visualising the Test set results
-        #         plt.figure(figsize = (15, 10))
-        #         plt.scatter(self.__x_test, self.__y_test, color = test_color_marker, s=size_test_marker)
-        #         plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
-        #         plt.title(f"{title} (Test Dataset)")
-        #         plt.xlabel(name_x[0])
-        #         plt.ylabel(name_y)
-        #         plt.show()
-    
-        #     else:
-        #         lin_reg_2 = slm.LinearRegression()
-        #         model = lin_reg_2.fit(self.__poly_x, self.__y)
-                
-        #         x = [integer for integer in self.__x[name_x[0]]]
-                
-        #         X_grid = [num for num in np.arange(np.min(x), np.max(x), 0.1)]
-        #         X_grid = np.array(X_grid).reshape((len(X_grid), 1))
-                
-        #         plt.figure(figsize = (15, 10))
-        #         plt.title(title)
-        #         plt.scatter(self.__x, self.__y, color = train_color_marker, s=size_train_marker)
-        #         plt.plot(X_grid, model.predict(self.__poly_features.fit_transform(X_grid)), color = line_color, linestyle = line_style, linewidth = line_width, marker = line_marker, markersize = line_marker_size)
-        #         plt.xlabel(name_x[0])
-        #         plt.ylabel(name_y)
-        #         plt.show()
-                
                 
     def polyreg_x(self, degree: int, include_bias: bool = False):
         """
@@ -6471,3 +6450,142 @@ class SupervisedLearning:
         self.__polynomial_regression = True
         self.__x = self.__poly_x
         return self.__x
+    
+    
+    def poly_get_optimal_degree(self, max_degree: int = 10, whole_dataset: bool = False, test_size: float = 0.2, random_state: int = 0, include_bias: bool = True, cross_validation: bool = False):
+        x = self.__x
+        y = self.__y
+        
+        if cross_validation == False:
+            data = []
+            regressor = slm.LinearRegression()
+            if whole_dataset == False:  
+                for num in range(1, (max_degree + 1)):
+                    info = []
+                    poly_features = sp.PolynomialFeatures(degree = num, include_bias = include_bias)
+                    poly_x = poly_features.fit_transform(x)
+                    
+                    x_train, x_test, y_train, y_test = sms.train_test_split(poly_x, y, test_size = test_size, random_state = random_state)
+                    
+                    # Model Training
+                    model = regressor.fit(x_train, y_train)
+                    
+                    # Model Prediction
+                    y_pred = model.predict(x_train)
+                    y_pred1 = model.predict(x_test)
+                    
+                    # Model Evaluation
+                    train_r2 = sm.r2_score(y_train, y_pred)
+                    train_rmse = np.sqrt(sm.mean_squared_error(y_train, y_pred))
+                
+                    test_r2 = sm.r2_score(y_test, y_pred1)
+                    test_rmse = np.sqrt(sm.mean_squared_error(y_test, y_pred1))
+                    
+                    info.append(num)
+                    info.append(regressor.__class__.__name__)
+                    info.append(train_r2)
+                    info.append(train_rmse)
+                    info.append(test_r2)
+                    info.append(test_rmse)
+                    data.append(info)
+                
+                data = pd.DataFrame(data, columns = ["Degree", "Base Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE"])
+            
+            else:
+                for num in range(1, (max_degree + 1)):
+                    info = []
+                    poly_features = sp.PolynomialFeatures(degree = num, include_bias = include_bias)
+                    poly_x = poly_features.fit_transform(x)
+                    
+                    # Model Training
+                    model = regressor.fit(poly_x, y)
+                    
+                    # Model Prediction
+                    y_pred = model.predict(poly_x)
+                    
+                    # Model Evaluation
+                    r2 = sm.r2_score(y, y_pred)
+                    rmse = np.sqrt(sm.mean_squared_error(y, y_pred))
+                    
+                    info.append(num)
+                    info.append(regressor.__class__.__name__)
+                    info.append(r2)
+                    info.append(rmse)
+                    data.append(info)
+                
+                data = pd.DataFrame(data, columns = ["Degree", "Base Algorithm", "R-Squared", "RMSE"])
+            
+            return data
+            
+        else:
+            data = []
+            regressor = slm.LinearRegression()
+            if whole_dataset == False:  
+                for num in range(1, (max_degree + 1)):
+                    info = []
+                    poly_features = sp.PolynomialFeatures(degree = num, include_bias = include_bias)
+                    poly_x = poly_features.fit_transform(x)
+                    
+                    x_train, x_test, y_train, y_test = sms.train_test_split(poly_x, y, test_size = test_size, random_state = random_state)
+                    
+                    # Model Training
+                    model = regressor.fit(x_train, y_train)
+                    
+                    # Model Prediction
+                    y_pred = model.predict(x_train)
+                    y_pred1 = model.predict(x_test)
+                    
+                    # Model Evaluation
+                    train_r2 = sm.r2_score(y_train, y_pred)
+                    train_rmse = np.sqrt(sm.mean_squared_error(y_train, y_pred))
+                
+                    test_r2 = sm.r2_score(y_test, y_pred1)
+                    test_rmse = np.sqrt(sm.mean_squared_error(y_test, y_pred1))
+                    
+                    cross_validation = sms.cross_val_score(estimator = regressor, X = x, y = y)
+                    cross_val_mean = np.mean(cross_validation)
+                    cross_val_standard_deviation = np.std(cross_validation)
+                    
+                    info.append(num)
+                    info.append(regressor.__class__.__name__)
+                    info.append(train_r2)
+                    info.append(train_rmse)
+                    info.append(test_r2)
+                    info.append(test_rmse)
+                    info.append(cross_val_mean)
+                    info.append(cross_val_standard_deviation)
+                    data.append(info)
+                
+                data = pd.DataFrame(data, columns = ["Degree", "Base Algorithm", "Training R2", "Training RMSE", "Test R2", "Test RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+    
+            else:
+                for num in range(1, (max_degree + 1)):
+                    info = []
+                    poly_features = sp.PolynomialFeatures(degree = num, include_bias = include_bias)
+                    poly_x = poly_features.fit_transform(x)
+                    
+                    # Model Training
+                    model = regressor.fit(poly_x, y)
+                    
+                    # Model Prediction
+                    y_pred = model.predict(poly_x)
+                    
+                    # Model Evaluation
+                    r2 = sm.r2_score(y, y_pred)
+                    rmse = np.sqrt(sm.mean_squared_error(y, y_pred))
+                    
+                    cross_validation = sms.cross_val_score(estimator = regressor, X = x, y = y)
+                    cross_val_mean = np.mean(cross_validation)
+                    cross_val_standard_deviation = np.std(cross_validation)
+                    
+                    info.append(num)
+                    info.append(regressor.__class__.__name__)
+                    info.append(r2)
+                    info.append(rmse)
+                    info.append(cross_val_mean)
+                    info.append(cross_val_standard_deviation)
+                    data.append(info)
+                
+                data = pd.DataFrame(data, columns = ["Degree", "Base Algorithm", "R-Squared", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
+            
+            return {"Degree Metrics": data, "Cross Validation Info": cross_validation}          

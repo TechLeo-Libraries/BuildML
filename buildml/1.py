@@ -1,4 +1,4 @@
-3# Import Libraraies
+# Import Libraraies
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,7 +29,7 @@ drop_columns = automate.drop_columns("Position")
 
 # Further Data Preparation and Segregation
 select_variables = automate.select_dependent_and_independent(predict = "Salary")
-poly_x = automate.polyreg_x(degree = 10, inplace = True)
+# poly_x = automate.polyreg_x(degree = 5)
 
 
 
@@ -44,26 +44,26 @@ poly_x = automate.polyreg_x(degree = 10, inplace = True)
 
 
 
-# # Model Building 1
-# regressors = [LinearRegression(),
-#                 RandomForestRegressor(random_state = 0),
-#                 DecisionTreeRegressor(random_state = 0),
-#                 XGBRegressor(random_state = 0)
-#                 ]
+# Model Building 1
+regressors = [LinearRegression(),
+                RandomForestRegressor(random_state = 0),
+                DecisionTreeRegressor(random_state = 0),
+                XGBRegressor(random_state = 0)
+                ]
 
-# build_model = automate.build_multiple_regressors(regressors = regressors, graph = True)
+build_model = automate.build_multiple_regressors(regressors = regressors, graph = True)
+# graph = automate.polyreg_graph(title = "fjd", xlabel = "djkf", ylabel = "dffd", whole_dataset = True, line_marker = None)
 
 
+# # Model Building 2
+# regressor = LinearRegression()
 
-# Model Building 2
-regressor = LinearRegression()
-poly_reg = automate.polyreg_graph(title = "Analyzing salary across different levels", whole_dataset = True, line_marker = None, line_style = "solid",)
-
-# Bug1 - Poly Reg not picking up on singular regressor
-# Bug2 - Fix documentation for build_single_regressor_from_features
-training = automate.train_model_regressor(regressor)
-prediction = automate.regressor_predict()
-evaluation = automate.regressor_evaluation()
+# # # Bug1 - Poly Reg not picking up on singular regressor
+# # # Bug2 - Fix documentation for build_single_regressor_from_features
+# training = automate.train_model_regressor(regressor)
+# prediction = automate.regressor_predict()
+# evaluation = automate.regressor_evaluation()
+# poly_reg = automate.polyreg_graph(title = "Analyzing salary across different levels",  xlabel = "djkf", ylabel = "dffd", whole_dataset = True, line_marker = None, line_style = "solid",)
 
 
 # # Model Building 3

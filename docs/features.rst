@@ -75,6 +75,7 @@ Data Preprocessing
 Model Building and Evaluation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-  ``poly_get_optimal_degree``: Find the best degree for polynomial regression.
 -  ``get_bestK_KNNregressor``: Find the best K value for KNN regression.
 -  ``train_model_regressor``: Train a regression model.
 -  ``regressor_predict``: Make predictions using a regression model.
