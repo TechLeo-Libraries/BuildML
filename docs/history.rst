@@ -39,3 +39,15 @@ v1.0.5 (January 2024):
 
 - Improved documentation.
 - Created external documentation for BuildML.
+
+v1.0.6 (January 2024):
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Fix polynomial regression graph
+- Fix documentation on build_single_regressor_from_features
+- Fix documentation on build_single_classifier_from_features
+- Imporved documentation for `polyreg_graph`
+- Imporved documentation for `split_data`
+- Added option to specify the test_size in `split_data` but default parameter remains 0.2
+- Created method `poly_get_optimal_degree` to find the best degree for polynomial regression. 
+- Updated `README.md` file.
