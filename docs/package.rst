@@ -55,7 +55,7 @@ buildml.preprocessing module
 Module contents
 ---------------
 
-.. automodule:: buildml
+.. automodule:: package
    :members:
    :undoc-members:
    :show-inheritance:
