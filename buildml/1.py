@@ -29,6 +29,7 @@ drop_columns = automate.drop_columns("Position")
 
 # Further Data Preparation and Segregation
 select_variables = automate.select_dependent_and_independent(predict = "Salary")
+best_degree = automate.poly_get_optimal_degree()
 # poly_x = automate.polyreg_x(degree = 5)
 
 
@@ -44,14 +45,14 @@ select_variables = automate.select_dependent_and_independent(predict = "Salary")
 
 
 
-# Model Building 1
-regressors = [LinearRegression(),
-                RandomForestRegressor(random_state = 0),
-                DecisionTreeRegressor(random_state = 0),
-                XGBRegressor(random_state = 0)
-                ]
+# # Model Building 1
+# regressors = [LinearRegression(),
+#                 RandomForestRegressor(random_state = 0),
+#                 DecisionTreeRegressor(random_state = 0),
+#                 XGBRegressor(random_state = 0)
+#                 ]
 
-build_model = automate.build_multiple_regressors(regressors = regressors, graph = True)
+# build_model = automate.build_multiple_regressors(regressors = regressors, graph = True)
 # graph = automate.polyreg_graph(title = "fjd", xlabel = "djkf", ylabel = "dffd", whole_dataset = True, line_marker = None)
 
 

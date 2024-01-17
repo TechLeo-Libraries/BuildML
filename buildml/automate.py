@@ -6453,6 +6453,67 @@ class SupervisedLearning:
     
     
     def poly_get_optimal_degree(self, max_degree: int = 10, whole_dataset: bool = False, test_size: float = 0.2, random_state: int = 0, include_bias: bool = True, cross_validation: bool = False):
+        """
+        This method is designed to determine the optimal degree for polynomial regression. It evaluates the performance of polynomial regression models with degrees ranging from 1 to a specified maximum degree. The evaluation includes training and testing the models, as well as optional cross-validation metrics.
+
+        Parameters
+        ----------
+        max_degree : int, optional, default=10 
+            The maximum degree of the polynomial to evaluate.
+        whole_dataset : bool, optional, default=False 
+            If True, the model is trained on the entire dataset without splitting into training and testing sets.
+        test_size : float, optional, default=0.2 
+            The proportion of the dataset to include in the test split if not using the entire dataset.
+        random_state : int, optional, default=0
+            Seed for the random number generator.
+        include_bias : bool, optional, default=True 
+            Whether to include a bias column in the polynomial features.
+        cross_validation : bool, optional, default=False
+            If True, includes cross-validation metrics in the output.
+
+        Returns
+        ----------
+        - If cross_validation is False:
+            DataFrame: A DataFrame containing metrics for each degree, including training R2, training RMSE, test R2, and test RMSE.
+
+        - If cross_validation is True:
+            Dictionary: A dictionary containing two keys:
+                - "Degree Metrics": A DataFrame with metrics for each degree, including training R2, training RMSE, test R2, test RMSE, cross-validation mean, and cross-validation standard deviation.
+                - "Cross Validation Info": An array containing cross-validation scores.
+
+        Example
+        -------
+        >>> # Import Libraries
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> import matplotlib.pyplot as plt
+        >>> from buildml.automate import SupervisedLearning
+        >>> 
+        >>> # Get the Dataset
+        >>> dataset = pd.read_csv("Your dataset")
+        >>> 
+        >>> # Using BuildML
+        >>> automate = SupervisedLearning(data)
+        >>> 
+        >>> # EDA
+        >>> eda = automate.eda()
+        >>> 
+        >>> # Further Data Preparation and Segregation
+        >>> select_variables = automate.select_dependent_and_independent(predict = "Salary")
+        >>> best_degree = automate.poly_get_optimal_degree(max_degree=5, 
+        >>>                                                whole_dataset=False, 
+        >>>                                                test_size=0.2, 
+        >>>                                                random_state=42, 
+        >>>                                                include_bias=True, 
+        >>>                                                cross_validation=True)
+
+        Notes
+        -----
+            - Cross-validation scores are only available in the output when cross_validation is True.
+            - This method uses polynomial regression models and linear regression as the base algorithm.
+            - The output provides insights into model performance with various degrees, aiding in selecting the optimal degree for polynomial regression.
+
+        """
         x = self.__x
         y = self.__y
         
