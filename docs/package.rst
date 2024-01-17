@@ -1,8 +1,5 @@
-buildml package
-===============
-
-Submodules
-----------
+Modules
+=======
 
 buildml.automate module
 -----------------------
