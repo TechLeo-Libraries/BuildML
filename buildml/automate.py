@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,7 +13,6 @@ import sklearn.preprocessing as sp
 import sklearn.model_selection as sms
 import sklearn.metrics as sm
 import sklearn.neighbors as sn
-import warnings
 import sklearn.feature_selection as sfs
 import datatable as dt
 
@@ -21,7 +21,6 @@ __author__ = "TechLeo"
 __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
-
 
 
 class SupervisedLearning: 
@@ -175,6 +174,32 @@ class SupervisedLearning:
         
         self.__dataset = dataset
         self.__data = dataset
+        self.__x = None
+        self.__y = None
+        self.__x_train = None
+        self.__y_train = None
+        self.__x_test = None
+        self.__y_test = None
+        self.__x_train1 = None
+        self.__x_test1 = None
+        self.__y_train1 = None
+        self.__y_test1 = None
+        self.regressor = None
+        self.model_regressor = None
+        self.model_classifier = None
+        self.classifier = None
+        self.__y_pred = None
+        self.__y_pred1 = None
+        self.__multiple_regressor_models = None
+        self.__multiple_classifier_models = None
+        self.__y_train_encoded = None
+        self.__y_encoded = None
+        self.__poly_features = None
+        self.__poly_x = None
+        self.__x1 = None
+        self.__strategy = None
+        self.__columns = None
+        self.__scaler = None
         self.__scaled = False
         self.__fixed_missing = False
         self.__eda = False
@@ -186,6 +211,7 @@ class SupervisedLearning:
         self.__model_evaluation = False
         self.__model_testing = False
         self.__remove_outlier = False
+        self.__polynomial_regression = False
         self.__eda_visual = False
         self.__split_data = False
         self.__dependent_independent = False
@@ -321,26 +347,23 @@ class SupervisedLearning:
             imputer = si.SimpleImputer(strategy = "mean")
             self.__data = pd.DataFrame(imputer.fit_transform(self.__data), columns = imputer.feature_names_in_)
             self.__fixed_missing = True
-            return self.__data
             
         elif self.__strategy.lower().strip() == "mean":
             imputer = si.SimpleImputer(strategy = "mean")
             self.__data = pd.DataFrame(imputer.fit_transform(self.__data), columns = imputer.feature_names_in_)
             self.__fixed_missing = True
-            return self.__data
             
         elif self.__strategy.lower().strip() == "median":
             imputer = si.SimpleImputer(strategy = "median")
             self.__data = pd.DataFrame(imputer.fit_transform(self.__data), columns = imputer.feature_names_in_)
             self.__fixed_missing = True
-            return self.__data
             
         elif self.__strategy.lower().strip() == "mode":
             imputer = si.SimpleImputer(strategy = "most_frequent")
             self.__data = pd.DataFrame(imputer.fit_transform(self.__data), columns = imputer.feature_names_in_)
             self.__fixed_missing = True
-            return self.__data
         
+        return self.__data
         
     def categorical_to_numerical(self, columns: list = None):
         """
@@ -517,14 +540,12 @@ class SupervisedLearning:
         return {"Data": self.__data, "Data_Head": data_head, "Data_Tail": data_tail, "Data_Descriptive_Statistic": data_descriptive_statistic, "Data_More_Descriptive_Statistic": data_more_descriptive_statistics, "Data_Mode": data_mode, "Data_Distinct_Count": data_distinct_count, "Unique_Elements_in_Data": data_unique, "Data_Null_Count": data_null_count, "Data_Total_Null_Count": data_total_null_count, "Data_Correlation_Matrix": data_correlation_matrix}
     
     
-    def eda_visual(self, y: str, histogram_bins: int = 10, figsize_heatmap: tuple = (15, 10), figsize_histogram: tuple = (15, 10), figsize_barchart: tuple = (15, 10), before_data_cleaning: bool = True):
+    def eda_visual(self, histogram_bins: int = 10, figsize_heatmap: tuple = (15, 10), figsize_histogram: tuple = (15, 10), figsize_barchart: tuple = (15, 10), before_data_cleaning: bool = True):
         """
         Generate visualizations for exploratory data analysis (EDA).
     
         Parameters
         ----------
-        y : str
-            The target variable for visualization.
         histogram_bins: int
             The number of bins for each instogram.
         figsize_heatmap: tuple
@@ -579,6 +600,8 @@ class SupervisedLearning:
             plt.title('Correlation Matrix')
             plt.show()
         self.__eda_visual = True
+        
+        return {"Heatmap": data_heatmap, "Histogram": data_histogram}
       
     
     def select_dependent_and_independent(self, predict: str):
@@ -1445,7 +1468,7 @@ class SupervisedLearning:
 
         """
         if self.__split_data == True:
-            if (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cross_validation == False:
+            if isinstance(classifiers, (list, tuple)) and cross_validation == False:
                 self.__multiple_classifier_models = {}
                 store = []
                 for algorithms in classifiers:
@@ -5149,28 +5172,22 @@ class SupervisedLearning:
             if isinstance(operation, str):
                 if isinstance(value, int) or isinstance(value, float):
                    if operation.lower() not in possible_operations:
-                       raise ValueError(f"This operation is not supported. Please use the following: {possible_operations}")
-                       
+                       raise ValueError(f"This operation is not supported. Please use the following: {possible_operations}")     
                    elif (operation.lower() == 'greater than' or operation == '>'):
                        condition = self.__data > value
-                       self.__data = self.__data[condition]
-                       
+                       self.__data = self.__data[condition]     
                    elif (operation.lower() == 'less than' or operation == '<'):
                        condition = self.__data < value
-                       self.__data = self.__data[condition]
-                       
+                       self.__data = self.__data[condition]   
                    elif (operation.lower() == 'equal to' or operation == '=='):
                        condition = self.__data == value
-                       self.__data = self.__data[condition]
-                       
+                       self.__data = self.__data[condition]   
                    elif (operation.lower() == 'greater than or equal to' or operation == '>='):
                        condition = self.__data >= value
-                       self.__data = self.__data[condition]
-                       
+                       self.__data = self.__data[condition] 
                    elif (operation.lower() == 'less than or equal to' or operation == '<='):
                        condition = self.__data <= value
-                       self.__data = self.__data[condition]
-                       
+                       self.__data = self.__data[condition] 
                    elif (operation.lower() == 'not equal to' or operation == '!='):
                        condition = self.__data != value
                        self.__data = self.__data[condition]
@@ -5720,7 +5737,7 @@ class SupervisedLearning:
 
         """
         
-        report = pp(df = self.__data, dark_mode = dark_mode, explorative = True, title = title)
+        report = pp.ProfileReport(df = self.__data, dark_mode = dark_mode, explorative = True, title = title)
         report.to_widgets()
         report.to_file(output_file = output_file)
     
@@ -6370,9 +6387,6 @@ class SupervisedLearning:
         >>>                                   line_style = "solid")
         """
         
-        possible_line_styles = ["dashed", "solid"]
-        possible_line_styles_symbols = ["-", "--", "-.", ":"]
-        
         model = self.model_regressor
         if not whole_dataset:
             # Visualising the Training set results
@@ -6442,7 +6456,7 @@ class SupervisedLearning:
         self.__poly_features = sp.PolynomialFeatures(degree = degree, include_bias = include_bias)
         poly_x = self.__poly_features.fit_transform(self.__x)
         
-        a, b = poly_x.shape
+        _, b = poly_x.shape
         column = [f"x{num}" for num in range(1, (b + 1))]
         self.__poly_x = pd.DataFrame(poly_x, columns = column)
         
@@ -6519,10 +6533,10 @@ class SupervisedLearning:
         x = self.__x
         y = self.__y
         
-        if cross_validation == False:
+        if cross_validation is False:
             data = []
             regressor = slm.LinearRegression()
-            if whole_dataset == False:  
+            if not whole_dataset:  
                 for num in range(1, (max_degree + 1)):
                     info = []
                     poly_features = sp.PolynomialFeatures(degree = num, include_bias = include_bias)
@@ -6583,7 +6597,7 @@ class SupervisedLearning:
         else:
             data = []
             regressor = slm.LinearRegression()
-            if whole_dataset == False:  
+            if not whole_dataset:  
                 for num in range(1, (max_degree + 1)):
                     info = []
                     poly_features = sp.PolynomialFeatures(degree = num, include_bias = include_bias)
