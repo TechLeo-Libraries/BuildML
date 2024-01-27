@@ -1,3 +1,5 @@
+"""Automated Supervised Learning with BuildML library."""
+
 import warnings
 import numpy as np
 import pandas as pd
@@ -23,7 +25,7 @@ __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
 
 
-class SupervisedLearning: 
+class SupervisedLearning:
     """
     Automated Supervised Learning module designed for end-to-end data handling,
     preprocessing, model development, and evaluation in the context of supervised
@@ -43,7 +45,7 @@ class SupervisedLearning:
     >>> from sklearn.linear_model import LogisticRegression
     >>> from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
     >>> from sklearn.snm import SVC
-    >>> from buildml.automate import SupervisedLearning
+    >>> from buildml import SupervisedLearning
     >>>
     >>>
     >>> dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
@@ -66,7 +68,8 @@ class SupervisedLearning:
     sweetviz, imbalanced-learn, scikit-learn, warnings, feature-engine, and datatable.
 
     The workflow involves steps like loading and handling data, cleaning and manipulation,
-    formatting and transformation, exploratory data analysis, feature engineering, data preprocessing,
+    formatting and transformation, exploratory data analysis, 
+    feature engineering, data preprocessing,
     model building and evaluation, data aggregation and summarization, and data type handling.
     
     
@@ -85,82 +88,7 @@ class SupervisedLearning:
     - datatable: https://datatable.readthedocs.io/en/latest/
 
     """
-    __all__ = [
-        # Data Loading and Handling
-        "get_dataset",
-        "get_training_test_data",
-        "load_large_dataset",
-        "reduce_data_memory_useage"
     
-        # Data Cleaning and Manipulation
-        "drop_columns",
-        "fix_missing_values",
-        "fix_unbalanced_dataset",
-        "filter_data",
-        "remove_duplicates",
-        "rename_columns",
-        "replace_values",
-        "reset_index",
-        "set_index",
-        "sort_index",
-        "sort_values",
-    
-        # Data Formatting and Transformation
-        "categorical_to_datetime",
-        "categorical_to_numerical",
-        "numerical_to_categorical",
-        "column_binning",
-    
-        # Exploratory Data Analysis
-        "eda",
-        "eda_visual",
-        "pandas_profiling",
-        "sweetviz_profile_report",
-        "count_column_categories",
-        "unique_elements_in_columns",
-    
-        # Feature Engineering
-        "polyreg_x",
-        "extract_date_features",
-        "select_features",
-        "select_dependent_and_independent",
-    
-        # Data Preprocessing
-        "scale_independent_variables",
-        "remove_outlier",
-        "split_data",
-    
-        # Model Building and Evaluation
-        "poly_get_optimal_degree"
-        "get_bestK_KNNregressor",
-        "train_model_regressor",
-        "regressor_predict",
-        "regressor_evaluation",
-        "regressor_model_testing",
-        "polyreg_graph",
-        "simple_linregres_graph",
-        "build_multiple_regressors",
-        "build_multiple_regressors_from_features",
-        "build_single_regressor_from_features",
-        "get_bestK_KNNclassifier"
-        "train_model_classifier",
-        "classifier_predict",
-        "classifier_evaluation",
-        "classifier_model_testing",
-        "classifier_graph",
-        "build_multiple_classifiers",
-        "build_multiple_classifiers_from_features",
-        "build_single_classifier_from_features",
-    
-        # Data Aggregation and Summarization
-        "group_data",
-    
-        # Data Type Handling
-        "select_datatype"
-    ]
-
-
-       
     def __init__(self, dataset, show_warnings: bool = False):
         if isinstance(show_warnings, bool):
             if show_warnings == False:
@@ -170,7 +98,7 @@ class SupervisedLearning:
                 self.warnings = warnings
         
         else:
-            raise ValueError("Warnings must be boolean of True or False.")
+            raise TypeError("Warnings must be boolean of True or False.")
         
         self.__dataset = dataset
         self.__data = dataset
@@ -215,8 +143,6 @@ class SupervisedLearning:
         self.__eda_visual = False
         self.__split_data = False
         self.__dependent_independent = False
-        
-        
         self.classification_problem = False
         self.regression_problem = False
         
@@ -401,12 +327,10 @@ class SupervisedLearning:
         if self.__columns == None:
             self.__data = pd.get_dummies(self.__data, drop_first = True, dtype = int)
             self.__data_transformation = True
-            return self.__data
-            
         else:
             self.__data = pd.get_dummies(self.__data, columns = self.__columns, drop_first = True, dtype = int)
             self.__data_transformation = True
-            return self.__data
+        return self.__data
     
   
     def remove_outlier(self, drop_na: bool):
@@ -835,18 +759,11 @@ class SupervisedLearning:
                 self.__y_pred1 = self.model_regressor.predict(self.__x_test)
                 self.__model_prediction = True
                 return {"Actual Training Y": self.__y_train, "Actual Test Y": self.__y_test, "Predicted Training Y": self.__y_pred, "Predicted Test Y": self.__y_pred1}
-             
-            else:
-                raise AssertionError("The training phase of the model has been set to classification. Can not predict a classification model with a regression model.")
         else:
             if self.regression_problem == True:
                 self.__y_pred = self.model_regressor.predict(self.__x)
                 self.__model_prediction = True
                 return {"Actual Y": self.__y, "Predicted Y": self.__y_pred}
-             
-            else:
-                raise AssertionError("The training phase of the model has been set to classification. Can not predict a classification model with a regression model.")
-        
      
     def classifier_predict(self):
         """
@@ -980,7 +897,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             If invalid combination of parameters is provided.
     
         Notes
@@ -1032,7 +949,7 @@ class SupervisedLearning:
                     return {"Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}}
                 
                 elif kfold != None and cross_validation == False:
-                    raise ValueError
+                    raise TypeError
                     
                 elif kfold == None and cross_validation == True:
                     training_rsquared = sm.r2_score(self.__y_train, self.__y_pred)
@@ -1071,7 +988,7 @@ class SupervisedLearning:
                     return {"R2": rsquared, "RMSE": rmse}
                 
                 elif kfold != None and cross_validation == False:
-                    raise ValueError
+                    raise TypeError
                     
                 elif kfold == None and cross_validation == True:
                     rsquared = sm.r2_score(self.__y, self.__y_pred)
@@ -1889,7 +1806,7 @@ class SupervisedLearning:
             return {"Classifier Metrics": dataset_classifiers, "More Info": self.__multiple_classifier_models}
     
     
-    def build_single_regressor_from_features(self, strategy: str, estimator: str, regressor, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
+    def build_single_regressor_from_features(self, strategy: str, estimator, regressor, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
         Build and evaluate a single regression model using feature selection.
     
@@ -1897,8 +1814,8 @@ class SupervisedLearning:
         ----------
         strategy : str
             Feature selection strategy. Should be one of ["selectkbest", "selectpercentile", "rfe", "selectfrommodel"].
-        estimator : str
-            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a regressor that implements 'fit'. Should be one of ["f_regression", "f_oneway", "chi2"] if strategy is set to: ["selectkbest", "selectpercentile"].
+        estimator :
+            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a regressor that implements 'fit'. Could be one of ["f_regression", "f_oneway", "chi2"] if strategy is set to: ["selectkbest", "selectpercentile"].
         regressor : object
             Regression model object to be trained.
         max_num_features : int, optional
@@ -1938,9 +1855,13 @@ class SupervisedLearning:
     
         Example
         --------
+        >>> from sklearn.feature_selection import f_regression
+        >>> from buildml import SupervisedLearning
+        >>> from sklearn.linear_model import LinearRegression
+        >>>
         >>> learn = SupervisedLearning(dataset)
         >>> results = learn.build_single_regressor_from_features(strategy='selectkbest', 
-        >>>                                                      estimator='f_regression', 
+        >>>                                                      estimator=f_regression, 
         >>>                                                      regressor=LinearRegression())
         >>> print(results)
         """
@@ -2044,7 +1965,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
     
                     
             elif not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == True:
@@ -2146,7 +2067,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                    
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
     
                 
                 
@@ -2249,7 +2170,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
                     
             elif not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == True:
@@ -2347,7 +2268,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                    
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
                 
                 
@@ -2355,7 +2276,7 @@ class SupervisedLearning:
             return {"Feature Metrics": dataset_features, "More Info": store}
     
     
-    def build_single_classifier_from_features(self, strategy: str, estimator: str, classifier, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
+    def build_single_classifier_from_features(self, strategy: str, estimator, classifier, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
         Build and evaluate a single classification model using feature selection.
     
@@ -2363,8 +2284,8 @@ class SupervisedLearning:
         ----------
         strategy : str
             Feature selection strategy. Should be one of ["selectkbest", "selectpercentile", "rfe", "selectfrommodel"].
-        estimator : str
-            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a classifier that implements 'fit'. Should be one of ["f_classif", "chi2", "mutual_info_classif"] if strategy is set to: ["selectkbest", "selectpercentile"].
+        estimator :
+            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a classifier that implements 'fit'. Could be one of ["f_classif", "chi2", "mutual_info_classif"] if strategy is set to: ["selectkbest", "selectpercentile"].
         classifier : object
             Classification model object to be trained.
         max_num_features : int, optional
@@ -2403,9 +2324,13 @@ class SupervisedLearning:
     
         Example
         --------
+        >>> from sklearn.feature_selection import f_classif
+        >>> from buildml import SupervisedLearning
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>>
         >>> learn = SupervisedLearning(dataset)
         >>> results = learn.build_single_classifier_from_features(strategy='selectkbest', 
-        >>>                                                       estimator='f_classif', 
+        >>>                                                       estimator=f_classif, 
         >>>                                                       classifier=RandomForestClassifier(random_state = 0))
         >>> print(results)
         """
@@ -2514,7 +2439,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
             
             
             elif not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == True:
@@ -2623,7 +2548,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
             
                     
             dataset_features = dataset_features.reset_index(drop = True)
@@ -2726,7 +2651,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
 
             elif not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == True:
@@ -2827,14 +2752,14 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
                     
             dataset_features = dataset_features.reset_index(drop = True)
             return {"Feature Metrics": dataset_features, "More Info": store}
         
     
-    def build_multiple_regressors_from_features(self, strategy: str, estimator: str, regressors: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
+    def build_multiple_regressors_from_features(self, strategy: str, estimator, regressors: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
         Build and evaluate multiple regression models with varying numbers of features.
     
@@ -2843,9 +2768,8 @@ class SupervisedLearning:
         strategy : str
             The feature selection strategy. Supported values are 'selectkbest', 'selectpercentile',
             'rfe', and 'selectfrommodel'.
-        estimator : str
-            The estimator to use for feature selection. Choose from 'f_regression', 'f_classif', 'mutual_info_regression',
-            'mutual_info_classif', 'linear', 'lasso', 'tree', etc., based on the chosen strategy.
+        estimator : 
+            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a regressor that implements 'fit'. Could be one of ["f_regression", "chi2"] if strategy is set to: ["selectkbest", "selectpercentile"].
         regressors : list or tuple
             List of regression models to build and evaluate.
         max_num_features : int, optional
@@ -2864,6 +2788,8 @@ class SupervisedLearning:
     
         Example:
         --------
+        >>> from buildml import SupervisedLearning
+        >>> from sklearn.feature_selection import f_regression
         >>> from sklearn.ensemble import RandomForestRegressor, DecisionTreeRegressor
         >>> from sklearn.linear_model import LinearRegression
         >>>
@@ -2871,7 +2797,7 @@ class SupervisedLearning:
         >>> data = SupervisedLearning(dataset)
         >>> results = data.build_multiple_regressors_from_features(
         >>>        strategy='selectkbest',
-        >>>        estimator='f_regression',
+        >>>        estimator=f_regression,
         >>>        regressors=[LinearRegression(), 
         >>>                    RandomForestRegressor(random_state = 0), 
         >>>                    DecisionTreeRegressor(random_state = 0)],
@@ -2993,7 +2919,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
     
                     
             elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == True:
@@ -3094,7 +3020,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                    
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
     
                 
                 
@@ -3197,7 +3123,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
                     
             elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == True:
@@ -3294,7 +3220,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                    
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
                 
                 
@@ -3302,7 +3228,7 @@ class SupervisedLearning:
             return {"Feature Metrics": dataset_features, "More Info": store}
     
     
-    def build_multiple_classifiers_from_features(self, strategy: str, estimator: str, classifiers: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
+    def build_multiple_classifiers_from_features(self, strategy: str, estimator, classifiers: list or tuple, max_num_features: int = None, min_num_features: int = None, kfold: int = None, cv: bool = False):
         """
         Build multiple classifiers using different feature selection strategies and machine learning algorithms.
     
@@ -3310,17 +3236,24 @@ class SupervisedLearning:
     
         Parameters:
         -----------
-        - strategy (str): Feature selection strategy. Should be one of 'selectkbest', 'selectpercentile', 'rfe', or 'selectfrommodel'.
-        - estimator (str): The estimator to use for feature selection. It could be the name of an estimator (e.g., 'RandomForestClassifier') or a string specifying the strategy (e.g., 'mean' for 'selectpercentile').
-        - classifiers (list or tuple): List of classifier instances to be trained and evaluated.
-        - max_num_features (int, optional): Maximum number of features to consider. If None, all features are considered.
-        - min_num_features (int, optional): Minimum number of features to consider. If None, the process starts with max_num_features and decreases the count until 1.
-        - kfold (int, optional): Number of folds for cross-validation. If None, regular train-test split is used.
-        - cv (bool, optional): If True, perform cross-validation. If False, use a train-test split.
+        strategy : str 
+            Feature selection strategy. Should be one of 'selectkbest', 'selectpercentile', 'rfe', or 'selectfrommodel'.
+        estimator : 
+            Estimator used for feature selection, applicable for "rfe" and "selectfrommodel" strategies. Is set to a classifier that implements 'fit'. Could be one of ["f_classif", "chi2", "mutual_info_classif"] if strategy is set to: ["selectkbest", "selectpercentile"].
+        classifiers : list or tuple
+            List of classifier instances to be trained and evaluated.
+        max_num_features : int, optional 
+            Maximum number of features to consider. If None, all features are considered.
+        min_num_features : int, optional 
+            Minimum number of features to consider. If None, the process starts with max_num_features and decreases the count until 1.
+        kfold : int, optional
+            Number of folds for cross-validation. If None, regular train-test split is used.
+        cv : bool, optional 
+            If True, perform cross-validation. If False, use a train-test split.
     
         Returns:
         --------
-        - dict: A dictionary containing feature metrics and additional information about the trained models.
+        dict: A dictionary containing feature metrics and additional information about the trained models.
     
         See Also:
         ---------
@@ -3333,6 +3266,8 @@ class SupervisedLearning:
     
         Example:
         --------
+        >>> from buildml import SupervisedLearning
+        >>> from sklearn.feature_selection import f_classif
         >>> from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
         >>>
         >>>
@@ -3340,7 +3275,7 @@ class SupervisedLearning:
         >>> classifiers = [RandomForestClassifier(random_state = 0), 
         >>>                DecisionTreeClassifier(random_state = 0)]
         >>> result = data.build_multiple_classifiers_from_features(strategy='selectkbest', 
-        >>>                                                        estimator='f_classif', 
+        >>>                                                        estimator=f_classif, 
         >>>                                                        classifiers=classifiers, 
         >>>                                                        max_num_features=10, 
         >>>                                                        kfold=5)
@@ -3450,7 +3385,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
             
             
             elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == True:
@@ -3559,7 +3494,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
             
                     
             dataset_features = dataset_features.reset_index(drop = True)
@@ -3662,7 +3597,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
 
             elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == True:
@@ -3763,7 +3698,7 @@ class SupervisedLearning:
                             dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                             
                     else:
-                        raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                        raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
                     
             dataset_features = dataset_features.reset_index(drop = True)
@@ -3788,7 +3723,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             - If `kfold` is provided without enabling cross-validation.
         
         AssertionError
@@ -3864,7 +3799,7 @@ class SupervisedLearning:
                         }
                 
                 elif kfold != None and cross_validation == False:
-                    raise ValueError("Cross Validation must be set to True if kfold is specified.")
+                    raise TypeError("Cross Validation must be set to True if kfold is specified.")
                     
                 elif kfold == None and cross_validation == True:
                     training_analysis = sm.confusion_matrix(self.__y_train, self.__y_pred)
@@ -3973,7 +3908,7 @@ class SupervisedLearning:
                            }
                 
                 elif kfold != None and cross_validation == False:
-                    raise ValueError("Cross Validation must be set to True if kfold is specified.")
+                    raise TypeError("Cross Validation must be set to True if kfold is specified.")
                     
                 elif kfold == None and cross_validation == True:
                     training_analysis = sm.confusion_matrix(self.__y, self.__y_pred)
@@ -4117,7 +4052,7 @@ class SupervisedLearning:
         ------
         AssertionError
             If called for a regression problem.
-        ValueError
+        TypeError
             If the number of features is not 2.
     
         Notes
@@ -4168,7 +4103,7 @@ class SupervisedLearning:
                         x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((self.__x_train.iloc[:, 0].min() - (self.__x_train.iloc[:, 0].min() / 8)), (self.__x_train.iloc[:, 0].max() + (self.__x_train.iloc[:, 0].max() / 8)), resolution),
                                                                     np.linspace((self.__x_train.iloc[:, 1].min() - (self.__x_train.iloc[:, 1].min() / 8)), (self.__x_train.iloc[:, 1].max() + (self.__x_train.iloc[:, 1].max() / 8)), resolution))
                     else:
-                        raise ValueError("Unsupported input type for self.__x_train. Use either Pandas DataFrame or NumPy array.")
+                        raise TypeError("Unsupported input type for self.__x_train. Use either Pandas DataFrame or NumPy array.")
     
                     grid_points_train = np.c_[x1_vals_train.ravel(), x2_vals_train.ravel()]
                     predictions_train = classifier.predict(grid_points_train)
@@ -4210,7 +4145,7 @@ class SupervisedLearning:
                         plt.show()
                     
                 else:
-                    raise ValueError(f"Visualization needs a maximum of 2 features for the independent variables. {len(self.__x_train.columns)} given.")
+                    raise TypeError(f"Visualization needs a maximum of 2 features for the independent variables. {len(self.__x_train.columns)} given.")
     
             else:
                 raise AssertionError("You can not use a classification graph for a regression problem.")
@@ -4233,7 +4168,7 @@ class SupervisedLearning:
                         x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((self.__x.iloc[:, 0].min() - (self.__x.iloc[:, 0].min() / 8)), (self.__x.iloc[:, 0].max() + (self.__x.iloc[:, 0].max() / 8)), resolution),
                                                                     np.linspace((self.__x.iloc[:, 1].min() - (self.__x.iloc[:, 1].min() / 8)), (self.__x.iloc[:, 1].max() + (self.__x.iloc[:, 1].max() / 8)), resolution))
                     else:
-                        raise ValueError("Unsupported input type for self.__x. Use either Pandas DataFrame or NumPy array.")
+                        raise TypeError("Unsupported input type for self.__x. Use either Pandas DataFrame or NumPy array.")
 
                     grid_points_train = np.c_[x1_vals_train.ravel(), x2_vals_train.ravel()]
                     predictions_train = classifier.predict(grid_points_train)
@@ -4253,7 +4188,7 @@ class SupervisedLearning:
                     plt.show()
                     
                 else:
-                    raise ValueError(f"Visualization needs a maximum of 2 features for the independent variables. {len(self.__x.columns)} given.")
+                    raise TypeError(f"Visualization needs a maximum of 2 features for the independent variables. {len(self.__x.columns)} given.")
 
             else:
                 raise AssertionError("You can not use a classification graph for a regression problem.")
@@ -4549,7 +4484,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             - If `k_neighbors` is specified for a sampler other than "SMOTE".
     
         Notes
@@ -4595,7 +4530,7 @@ class SupervisedLearning:
                     self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
                     
                 else:
-                    raise ValueError("k_neighbors works with only the SMOTE algorithm.")
+                    raise TypeError("k_neighbors works with only the SMOTE algorithm.")
                 
                 return {"Training X": self.__x_train, "Training Y": self.__y_train}
             
@@ -4617,7 +4552,7 @@ class SupervisedLearning:
                     self.__x_train, self.__y_train = technique.fit_resample(self.__x_train, self.__y_train)
                     
                 else:
-                    raise ValueError("k_neighbors works with only the SMOTE algorithm.")
+                    raise TypeError("k_neighbors works with only the SMOTE algorithm.")
                 
                 return {"Training X": self.__x_train, "Training Y": self.__y_train}
         else:
@@ -4639,7 +4574,7 @@ class SupervisedLearning:
                     self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
                     
                 else:
-                    raise ValueError("k_neighbors works with only the SMOTE algorithm.")
+                    raise TypeError("k_neighbors works with only the SMOTE algorithm.")
                 
                 return {"X": self.__x, "Y": self.__y}
 
@@ -4661,7 +4596,7 @@ class SupervisedLearning:
                     self.__x, self.__y = technique.fit_resample(self.__x, self.__y)
                     
                 else:
-                    raise ValueError("k_neighbors works with only the SMOTE algorithm.")
+                    raise TypeError("k_neighbors works with only the SMOTE algorithm.")
                 
                 return {"X": self.__x, "Y": self.__y}
 
@@ -4684,7 +4619,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             - If `replace` is a string, integer, or float, and `new_value` is not a string, integer, or float.
             - If `replace` is a list or tuple, and `new_value` is not a string, integer, float, list, or tuple.
             - If `replace` is a dictionary, and `new_value` is not specified.
@@ -4723,7 +4658,7 @@ class SupervisedLearning:
             if isinstance(new_value, str) or isinstance(new_value, int) or isinstance(new_value, float):
                 self.__data.replace(to_replace = replace, value = new_value, inplace = True)
             else:
-                raise ValueError("If replace is a string, integer, or float, then new value must be either a string, integer, or float.")
+                raise TypeError("If replace is a string, integer, or float, then new value must be either a string, integer, or float.")
         
         elif isinstance(replace, list) or isinstance(replace, tuple):
             if isinstance(new_value, str) or isinstance(new_value, int) or isinstance(new_value, float):
@@ -4732,13 +4667,13 @@ class SupervisedLearning:
                 for word, new in zip(replace, new_value):
                     self.__data.replace(to_replace = word, value = new, inplace = True)
             else:
-                raise ValueError("If replace is a list or tuple, then value can be any of int, str, float, list, or tuple.")
+                raise TypeError("If replace is a list or tuple, then value can be any of int, str, float, list, or tuple.")
                     
         elif isinstance(replace, dict):
             self.__data.replace(to_replace = replace, value = new_value, inplace = True)
             
         else:
-            raise ValueError("Check your input arguments for the parameters: replace and new_value")
+            raise TypeError("Check your input arguments for the parameters: replace and new_value")
         
         return self.__data
      
@@ -4948,7 +4883,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        - ValueError: If input parameters are invalid or inconsistent.
+        - TypeError: If input parameters are invalid or inconsistent.
     
         Example
         -------
@@ -4977,7 +4912,7 @@ class SupervisedLearning:
                 if isinstance(value, int) or isinstance(value, float):
                     if isinstance(operation, str):
                         if operation.lower() not in possible_operations:
-                            raise ValueError(f"This operation is not supported. Please use the following: {possible_operations}")
+                            raise TypeError(f"This operation is not supported. Please use the following: {possible_operations}")
                             
                         elif (operation.lower() == 'greater than' or operation == '>'):
                             condition = self.__data[column] > value
@@ -5004,7 +4939,7 @@ class SupervisedLearning:
                             self.__data = self.__data[condition]
                             
                     elif isinstance(operation, list) or isinstance(operation, int) or isinstance(operation, float) or isinstance(operation, tuple):
-                        raise ValueError("When column is set to string and value is set to either float, int, or string. Operation can not be a list or tuple. Must be set to string")
+                        raise TypeError("When column is set to string and value is set to either float, int, or string. Operation can not be a list or tuple. Must be set to string")
                        
                         
                        
@@ -5018,13 +4953,13 @@ class SupervisedLearning:
                         self.__data = self.__data[condition]  
                         
                     else:
-                        raise ValueError("When value is a string, comparison of greater than or less than cannot be made.")
+                        raise TypeError("When value is a string, comparison of greater than or less than cannot be made.")
                         
                         
                         
                 elif isinstance(value, list) or isinstance(value, tuple):
                     if isinstance(operation, str):
-                        raise ValueError("Length of values should be same as length of available operations to perform")
+                        raise TypeError("Length of values should be same as length of available operations to perform")
                                 
                     elif isinstance(operation, list) or isinstance(operation, tuple):
                         for item, symbol in zip(value, operation):
@@ -5038,7 +4973,7 @@ class SupervisedLearning:
                                     self.__data = self.__data[condition]  
                                     
                                 else:
-                                    raise ValueError("When value is a string, comparison of greater than or less than cannot be made.")
+                                    raise TypeError("When value is a string, comparison of greater than or less than cannot be made.")
                                     
                             
                             elif isinstance(item, int) or isinstance(item, float):
@@ -5070,7 +5005,7 @@ class SupervisedLearning:
             
             elif isinstance(column, list) or isinstance(column, tuple):
                 if isinstance(value, int) or isinstance(value, float) or isinstance(value, str):
-                    raise ValueError("If column is a list or tuple, then value must assume form of a list or tuple with same length.")
+                    raise TypeError("If column is a list or tuple, then value must assume form of a list or tuple with same length.")
                     
                 elif (isinstance(value, list) or isinstance(value, tuple)) and (len(value) == len(column)):
                     if isinstance(operation, str):
@@ -5085,7 +5020,7 @@ class SupervisedLearning:
                                     self.__data = self.__data[condition]  
                                     
                                 else:
-                                    raise ValueError("When value is a string, comparison of greater than or less than cannot be made. Consider switching operation to a list or tuple for more control.")
+                                    raise TypeError("When value is a string, comparison of greater than or less than cannot be made. Consider switching operation to a list or tuple for more control.")
                                     
                             
                             elif isinstance(item, int) or isinstance(item, float):
@@ -5127,7 +5062,7 @@ class SupervisedLearning:
                                         self.__data = self.__data[condition]  
                                         
                                     else:
-                                        raise ValueError("When value is a string, comparison of greater than or less than cannot be made.")
+                                        raise TypeError("When value is a string, comparison of greater than or less than cannot be made.")
                                         
                                 
                                 elif isinstance(item, int) or isinstance(item, float):
@@ -5157,14 +5092,14 @@ class SupervisedLearning:
                         
                         
                         else:
-                            raise ValueError("When arguments in column, value, and operation are a list or tuple, they must all have same size.")
+                            raise TypeError("When arguments in column, value, and operation are a list or tuple, they must all have same size.")
             
             
                 elif (isinstance(value, list) or isinstance(value, tuple)) and (len(value) != len(column)):
-                    raise ValueError("The parameters column and value must have the same length when both set to either list or tuple.")
+                    raise TypeError("The parameters column and value must have the same length when both set to either list or tuple.")
             
             else:
-                raise ValueError("Column must be either a string, list, tuple, or dictionary.")
+                raise TypeError("Column must be either a string, list, tuple, or dictionary.")
         
         
         
@@ -5172,7 +5107,7 @@ class SupervisedLearning:
             if isinstance(operation, str):
                 if isinstance(value, int) or isinstance(value, float):
                    if operation.lower() not in possible_operations:
-                       raise ValueError(f"This operation is not supported. Please use the following: {possible_operations}")     
+                       raise TypeError(f"This operation is not supported. Please use the following: {possible_operations}")     
                    elif (operation.lower() == 'greater than' or operation == '>'):
                        condition = self.__data > value
                        self.__data = self.__data[condition]     
@@ -5203,19 +5138,19 @@ class SupervisedLearning:
                        self.__data = self.__data[condition]  
                        
                    else:
-                       raise ValueError("When column is set to NONE and value is a string, comparison of greater than or less than cannot be made.")
+                       raise TypeError("When column is set to NONE and value is a string, comparison of greater than or less than cannot be made.")
                        
                        
                        
                 elif isinstance(value, list) or isinstance(value, tuple):
-                    raise ValueError("Length of values should be same as length of available operations to perform")
+                    raise TypeError("Length of values should be same as length of available operations to perform")
                                
             elif isinstance(operation, list) or isinstance(operation, tuple):
                 if isinstance(value, int) or isinstance(value, float):
-                    raise ValueError("If operation is list or tuple, then value must be list or tuple of same size.")
+                    raise TypeError("If operation is list or tuple, then value must be list or tuple of same size.")
                     
                 elif isinstance(value, str):
-                    raise ValueError("If operation is list or tuple, then value must be list or tuple of same size.")
+                    raise TypeError("If operation is list or tuple, then value must be list or tuple of same size.")
                 
                 elif (isinstance(value, list) or isinstance(value, tuple)) and (len(value) == len(operation)):
                     for item, symbol in zip(value, operation):
@@ -5229,7 +5164,7 @@ class SupervisedLearning:
                                 self.__data = self.__data[condition]  
                                
                             else:
-                                raise ValueError("When value is a string, comparison of greater than or less than cannot be made.")
+                                raise TypeError("When value is a string, comparison of greater than or less than cannot be made.")
                                
                        
                         elif isinstance(item, int) or isinstance(item, float):
@@ -5258,7 +5193,7 @@ class SupervisedLearning:
                                 self.__data = self.__data[condition]
                                 
                 elif (isinstance(value, list) or isinstance(value, tuple)) and (len(value) != len(operation)):
-                    raise ValueError("If operation is list or tuple, then value must be list or tuple of same size.")
+                    raise TypeError("If operation is list or tuple, then value must be list or tuple of same size.")
             
         return self.__data
     
@@ -5280,7 +5215,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             If `which_columns` is not a valid string, list, or tuple.
     
         Notes
@@ -5312,12 +5247,12 @@ class SupervisedLearning:
             self.__data.drop_duplicates(inplace = True, subset = which_columns)
             
         else:
-            raise ValueError("Removing duplicates from your dataset must be done by indicating the column as either a string, list, or tuple.")
+            raise TypeError("Removing duplicates from your dataset must be done by indicating the column as either a string, list, or tuple.")
         
         return self.__data
      
     
-    def select_features(self, strategy: str, estimator: str, number_of_features: int):
+    def select_features(self, strategy: str, estimator, number_of_features: int):
         """
         Select features using different techniques.
     
@@ -5326,7 +5261,7 @@ class SupervisedLearning:
         strategy : str
             The feature selection strategy. Options include "rfe", "selectkbest", 
             "selectfrommodel", and "selectpercentile".
-        estimator : str
+        estimator : 
             The estimator or score function used for feature selection.
         number_of_features : int
             The number of features to select.
@@ -5339,7 +5274,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             If the strategy or estimator is not recognized.
     
         Notes
@@ -5412,10 +5347,10 @@ class SupervisedLearning:
                 return {"Dataset ---> Features Selected": self.__x, "Selection Metrics": best_features}
             
             elif estimator == None:
-                raise ValueError("You must specify an estimator or score function to use feature selection processes")
+                raise TypeError("You must specify an estimator or score function to use feature selection processes")
                 
         else:
-            raise ValueError(f"Select a feature selection technique from the following: {types}. \n\nRFE Estimator = {rfe_possible_estimator} e.g XGBoost, RandomForest, SVM etc\nSelectKBest Score Function = {kbest_possible_score_functions}\nSelectFromModel Estimator = {frommodel_possible_estimator} e.g XGBoost, RandomForest, SVM etc.\nSelectPercentile Score Function = {percentile_possible_score_functions}")
+            raise TypeError(f"Select a feature selection technique from the following: {types}. \n\nRFE Estimator = {rfe_possible_estimator} e.g XGBoost, RandomForest, SVM etc\nSelectKBest Score Function = {kbest_possible_score_functions}\nSelectFromModel Estimator = {frommodel_possible_estimator} e.g XGBoost, RandomForest, SVM etc.\nSelectPercentile Score Function = {percentile_possible_score_functions}")
            
     
     def group_data(self, columns: list or tuple, column_to_groupby: str or list or tuple, aggregate_function: str, reset_index: bool = False, inplace: bool = False):
@@ -5442,7 +5377,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             If the column types or aggregate function are not recognized.
             
         
@@ -5499,10 +5434,10 @@ class SupervisedLearning:
                             grouped_columns = self.__data[columns].groupby(column_to_groupby).median()
                             
                     else:
-                        raise ValueError(f"Specify the right aggregate function from the following: {agg}")
+                        raise TypeError(f"Specify the right aggregate function from the following: {agg}")
                             
             else:
-                raise ValueError("You need to select more than one column as a list or tuple to perform a groupby operation.")
+                raise TypeError("You need to select more than one column as a list or tuple to perform a groupby operation.")
         
         elif reset_index == True:
             if isinstance(columns, list) or isinstance(columns, tuple):
@@ -5538,14 +5473,14 @@ class SupervisedLearning:
                             grouped_columns = grouped_columns.reset_index()
                             
                     else:
-                        raise ValueError(f"Specify the right aggregate function from the following: {agg}")
+                        raise TypeError(f"Specify the right aggregate function from the following: {agg}")
                             
             else:
-                raise ValueError("You need to select more than one column as a list or tuple to perform a groupby operation.")
+                raise TypeError("You need to select more than one column as a list or tuple to perform a groupby operation.")
         
         
         else:
-            raise ValueError("The arguments for 'reset_index' must be boolean of TRUE or FALSE.")
+            raise TypeError("The arguments for 'reset_index' must be boolean of TRUE or FALSE.")
         
         
         if inplace == True:
@@ -5577,7 +5512,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             If the column type is not recognized.
     
         Examples
@@ -5607,7 +5542,7 @@ class SupervisedLearning:
                     categories_count = self.__data[column].value_counts()
                     
                 else:
-                    raise ValueError("Column inserted must be a string, list, or tuple.")
+                    raise TypeError("Column inserted must be a string, list, or tuple.")
                     
             elif reset_index == True:
                 if isinstance(column, str) or isinstance(column, list) or isinstance(column, tuple):
@@ -5615,10 +5550,10 @@ class SupervisedLearning:
                     categories_count = categories_count.reset_index()
                     
                 else:
-                    raise ValueError("Column inserted must be a string, list, or tuple.")
+                    raise TypeError("Column inserted must be a string, list, or tuple.")
                     
             else:
-                raise ValueError("The arguments for 'reset_index' must be boolean TRUE or FALSE.")
+                raise TypeError("The arguments for 'reset_index' must be boolean TRUE or FALSE.")
                 
             
             if inplace == True:
@@ -5645,7 +5580,7 @@ class SupervisedLearning:
                         categories_count = self.__x_train[column].value_counts()
                     
                     else:
-                        raise ValueError("One or more of the columns specified cannot be found among your independent variables columns (x_train). Also, check that your dependent variable column (y_train) is not among the columns. To get the value counts of the y_train, it must be specified seperately as a string.")
+                        raise TypeError("One or more of the columns specified cannot be found among your independent variables columns (x_train). Also, check that your dependent variable column (y_train) is not among the columns. To get the value counts of the y_train, it must be specified seperately as a string.")
                 
                 if reset_index == True:
                     categories_count = categories_count.reset_index()
@@ -5674,7 +5609,7 @@ class SupervisedLearning:
                         categories_count_test = self.__x_test[column].value_counts()
                         
                     else:
-                        raise ValueError("One or more of the columns specified cannot be found among your independent variables columns (x_train). Also, check that your dependent variable column (y_train) is not among the columns. To get the value counts of the y_train, it must be specified seperately as a string.")    
+                        raise TypeError("One or more of the columns specified cannot be found among your independent variables columns (x_train). Also, check that your dependent variable column (y_train) is not among the columns. To get the value counts of the y_train, it must be specified seperately as a string.")    
 
                 if reset_index == True:
                     categories_count_train = categories_count_train.reset_index()
@@ -5894,7 +5829,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             If invalid values are provided for 'algorithm' or 'weight'.
     
         Notes
@@ -5953,7 +5888,7 @@ class SupervisedLearning:
                 
         
             else:
-                raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+                raise TypeError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
                 
             return b[0]
         
@@ -5993,7 +5928,7 @@ class SupervisedLearning:
                 
 
             else:
-                raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+                raise TypeError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
                 
             return b[0]
     
@@ -6022,7 +5957,7 @@ class SupervisedLearning:
     
         Raises
         ------
-        ValueError
+        TypeError
             If invalid values are provided for 'algorithm' or 'weight'.
     
         Notes
@@ -6080,7 +6015,7 @@ class SupervisedLearning:
                 
         
             else:
-                raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+                raise TypeError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
             
             return b[0]
         
@@ -6120,7 +6055,7 @@ class SupervisedLearning:
                 
 
             else:
-                raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+                raise TypeError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
 
             return b[0]
 
@@ -6270,7 +6205,7 @@ class SupervisedLearning:
                     plt.show()
             
             else:
-                raise ValueError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
+                raise TypeError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
     
     
         else:
@@ -6306,7 +6241,7 @@ class SupervisedLearning:
                         plt.show()
                 
                 else:
-                    raise ValueError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
+                    raise TypeError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
         
                 
     def polyreg_graph(self, title: str, xlabel: str, ylabel: str, figsize: tuple = (15, 10), line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False):        
@@ -6361,7 +6296,7 @@ class SupervisedLearning:
         -------
         >>> import pandas as pd
         >>> import numpy as np
-        >>> from buildml.automate import SupervisedLearning
+        >>> from buildml import SupervisedLearning
         >>> from sklearn.linear_model import LinearRegression
         >>>
         >>> # Get the Dataset
@@ -6503,7 +6438,7 @@ class SupervisedLearning:
         >>> import pandas as pd
         >>> import numpy as np
         >>> import matplotlib.pyplot as plt
-        >>> from buildml.automate import SupervisedLearning
+        >>> from buildml import SupervisedLearning
         >>> 
         >>> # Get the Dataset
         >>> dataset = pd.read_csv("Your dataset")

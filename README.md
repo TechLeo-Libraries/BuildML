@@ -116,7 +116,7 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
 from sklearn.snm import SVC
-from buildml.automate import SupervisedLearning
+from buildml import SupervisedLearning
 
 
 dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
@@ -141,7 +141,7 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
-from buildml.automate import SupervisedLearning
+from buildml import SupervisedLearning
 
 # Get Dataset
 training_data = pd.read_csv("train.csv")
@@ -192,10 +192,6 @@ build_model = automate_training.build_multiple_classifiers(classifiers = classif
                                                             cross_validation = True,
                                                             graph = True
                                                             )
-
-model = automate_training.train_model_classifier(classifiers[1])
-prediction = automate_training.classifier_predict() 
-evaluation = automate_training.classifier_evaluation(cross_validation = True)
 ```
 
 ## Acknowledgments
@@ -295,6 +291,14 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 - Added option to specify the test_size in `split_data` but default parameter remains 0.2
 - Created method `poly_get_optimal_degree` to find the best degree for polynomial regression. 
 - Updated `README.md` file.
+
+### v1.0.7 (January 2024):
+
+- Fix `self.__polynomial_regression` not defined.
+- Improved documentation for `build_single_classifier_from_features`.
+- Improved documentation for `build_single_regressor_from_features`.
+- Improved documentation for `build_multiple_classifier_from_features`.
+- Improved documentation for `build_multiple_regressor_from_features`.
 
 
 ## Contributors

@@ -1,14 +1,40 @@
-# -*- coding: utf-8 -*-
+"""
+Machine Learning Toolkit for Python
+===================================
 
-from .automate import SupervisedLearning
-from .model import select_features, split_data, build_regressor_model, classifier_model_testing, regressor_model_testing, build_classifier_model, build_multiple_regressors, build_multiple_classifiers, build_single_regressor_from_features, build_single_classifier_from_features, build_multiple_regressors_from_features, build_multiple_classifiers_from_features, classifier_graph, FindK_KNN_Classifier, FindK_KNN_Regressor, simple_linregres_graph
-from .date import categorical_to_datetime, extract_date_features
-from .eda import eda, eda_visual, sweet_viz, pandas_profiling
-from .output_dataset import output_dataset_as_csv, output_dataset_as_excel
-from .preprocessing import column_binning, categorical_to_numerical, count_column_categories, drop_columns, filter_data, fix_missing_values, fix_unbalanced_dataset, group_data, load_large_dataset, numerical_to_categorical, remove_duplicates, remove_outlier, rename_columns, replace_values, reset_index, scale_independent_variables, select_datatype, set_index, sort_index, sort_values, replace_values
+BuildML is a comprehensive Python toolkit designed to simplify and streamline the machine learning workflow. It provides a set of tools and utilities that cover various aspects of building machine learning models.
+
+Key Features:
+- Data Exploration and Analysis: Perform exploratory data analysis to gain insights into your datasets.
+- Data Preprocessing and Cleaning: Easily handle data preprocessing and cleaning tasks to ensure high-quality input for your models.
+- Model Training and Prediction: Train machine learning models effortlessly and make predictions with ease.
+- Regression and Classification: Support for both regression and classification tasks to address diverse machine learning needs.
+- Supervised Learning: Built to support various supervised learning scenarios, making it versatile for different use cases.
+- Model Evaluation: Evaluate the performance of your models using comprehensive metrics.
+
+BuildML is built on top of popular scientific Python packages such as numpy, scipy, and matplotlib, ensuring seamless integration with the broader Python ecosystem.
+
+Visit our documentation at https://buildml.readthedocs.io/ for detailed information on how to use BuildML and unleash the power of machine learning in your projects.
+"""
+
+from ._automate import SupervisedLearning
+import date_features
+import eda
+import output_dataset
+import model
+import preprocessing
 
 __author__ = "TechLeo"
 __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
 __version__ = "1.0.6"
+
+__all__ = [
+    'SupervisedLearning',
+    'date_features',
+    'eda',
+    'output_dataset',
+    'model',
+    'preprocessing'
+]

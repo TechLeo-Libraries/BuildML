@@ -8,13 +8,6 @@ __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
 
-__all__ = [
-    "eda",
-    "eda_visual",
-    "sweet_viz",
-    "pandas_profiling"
-    ]
-
 def eda(data):
     data.info()
     print("\n\n")
@@ -57,6 +50,6 @@ def sweet_viz(dataset, filename: str, auto_open: bool = False):
     report1.show_html(filepath = filename, open_browser = auto_open)
     
 def pandas_profiling(dataset, output_file: str = "Pandas Profile Report.html", dark_mode: bool = False, title: str = "Report"):
-    report = pp(df = dataset, dark_mode = dark_mode, explorative = True, title = title)
+    report = pp.ProfileReport(df = dataset, dark_mode = dark_mode, explorative = True, title = title)
     report.to_widgets()
     report.to_file(output_file = output_file)

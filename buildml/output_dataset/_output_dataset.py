@@ -3,12 +3,6 @@ __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
 
-
-__all__ = [
-    "output_dataset_as_csv",
-    "output_dataset_as_excel"
-    ]
-
 def output_dataset_as_csv(dataset, file_name: str, file_path: str = None):
     if file_path == None:
         dataset.to_csv(rf"{file_name}.csv", index = True)

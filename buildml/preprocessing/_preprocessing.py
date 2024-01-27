@@ -12,33 +12,6 @@ __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
 
-
-__all__ = [
-    "column_binning",
-    "categorical_to_numerical",
-    "count_column_categories",
-    "drop_columns",
-    "filter_data",
-    "fix_missing_values",
-    "fix_unbalanced_dataset",
-    "group_data",
-    "load_large_dataset",
-    "numerical_to_categorical",
-    "remove_duplicates",
-    "remove_outlier",
-    "rename_columns",
-    "replace_values",
-    "reset_index",
-    "scale_independent_variables",
-    "select_datatype",
-    "set_index",
-    "sort_index",
-    "sort_values",
-    "replace_values",
-]
-
-
-
 def group_data(dataset, columns: list or tuple, column_to_groupby: str or list or tuple, aggregate_function: str, reset_index: bool = False):
     agg = ["mean", "count", "min", "max", "std", "var", "median"]
     
@@ -69,10 +42,10 @@ def group_data(dataset, columns: list or tuple, column_to_groupby: str or list o
                         grouped_columns = dataset[columns].groupby(column_to_groupby).median()
                         
                 else:
-                    raise ValueError(f"Specify the right aggregate function from the following: {agg}")
+                    raise TypeError(f"Specify the right aggregate function from the following: {agg}")
                         
         else:
-            raise ValueError("You need to select more than one column as a list or tuple to perform a groupby operation.")
+            raise TypeError("You need to select more than one column as a list or tuple to perform a groupby operation.")
     
     elif reset_index == True:
         if isinstance(columns, list) or isinstance(columns, tuple):
@@ -108,14 +81,14 @@ def group_data(dataset, columns: list or tuple, column_to_groupby: str or list o
                         grouped_columns = grouped_columns.reset_index()
                         
                 else:
-                    raise ValueError(f"Specify the right aggregate function from the following: {agg}")
+                    raise TypeError(f"Specify the right aggregate function from the following: {agg}")
                         
         else:
-            raise ValueError("You need to select more than one column as a list or tuple to perform a groupby operation.")
+            raise TypeError("You need to select more than one column as a list or tuple to perform a groupby operation.")
     
     
     else:
-        raise ValueError("The arguments for 'reset_index' must be boolean of TRUE or FALSE.")
+        raise TypeError("The arguments for 'reset_index' must be boolean of TRUE or FALSE.")
     
     return grouped_columns               
          
@@ -126,7 +99,7 @@ def count_column_categories(dataset, column: str or list or tuple, reset_index: 
             categories_count = dataset[column].value_counts()
             
         else:
-            raise ValueError("Column inserted must be a string, list, or tuple.")
+            raise TypeError("Column inserted must be a string, list, or tuple.")
             
     elif reset_index == True:
         if isinstance(column, str) or isinstance(column, list) or isinstance(column, tuple):
@@ -134,10 +107,10 @@ def count_column_categories(dataset, column: str or list or tuple, reset_index: 
             categories_count = categories_count.reset_index()
             
         else:
-            raise ValueError("Column inserted must be a string, list, or tuple.")
+            raise TypeError("Column inserted must be a string, list, or tuple.")
             
     else:
-        raise ValueError("The arguments for 'reset_index' must be boolean of TRUE or FALSE.")
+        raise TypeError("The arguments for 'reset_index' must be boolean of TRUE or FALSE.")
         
     return categories_count
 
@@ -147,7 +120,7 @@ def replace_values(dataset, replace: int or float or str or list or tuple or dic
         if isinstance(new_value, str) or isinstance(new_value, int) or isinstance(new_value, float):
             dataset.replace(to_replace = replace, value = new_value, inplace = True)
         else:
-            raise ValueError("If replace is a string, integer, or float, then new value must be either a string, integer, or float.")
+            raise TypeError("If replace is a string, integer, or float, then new value must be either a string, integer, or float.")
     
     elif isinstance(replace, list) or isinstance(replace, tuple):
         if isinstance(new_value, str) or isinstance(new_value, int) or isinstance(new_value, float):
@@ -156,13 +129,13 @@ def replace_values(dataset, replace: int or float or str or list or tuple or dic
             for word, new in zip(replace, new_value):
                 dataset.replace(to_replace = word, value = new, inplace = True)
         else:
-            raise ValueError("If replace is a list or tuple, then value can be any of int, str, float, list, or tuple.")
+            raise TypeError("If replace is a list or tuple, then value can be any of int, str, float, list, or tuple.")
                 
     elif isinstance(replace, dict):
         dataset.replace(to_replace = replace, value = new_value, inplace = True)
         
     else:
-        raise ValueError("Check your input arguments for the parameters: replace and new_value")
+        raise TypeError("Check your input arguments for the parameters: replace and new_value")
     
     return {"Dataset ---> Dataset with Replaced Values": dataset}
 
@@ -217,7 +190,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
             if isinstance(value, int) or isinstance(value, float):
                 if isinstance(operation, str):
                     if operation.lower() not in possible_operations:
-                        raise ValueError(f"This operation is not supported. Please use the following: {possible_operations}")
+                        raise TypeError(f"This operation is not supported. Please use the following: {possible_operations}")
                         
                     elif (operation.lower() == 'greater than' or operation == '>'):
                         condition = dataset[column] > value
@@ -244,7 +217,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                         dataset = dataset[condition]
                         
                 elif isinstance(operation, list) or isinstance(operation, int) or isinstance(operation, float) or isinstance(operation, tuple):
-                    raise ValueError("When column is set to string and value is set to either float, int, or string. Operation can not be a list or tuple. Must be set to string")
+                    raise TypeError("When column is set to string and value is set to either float, int, or string. Operation can not be a list or tuple. Must be set to string")
                    
                     
                    
@@ -258,13 +231,13 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                     dataset = dataset[condition]  
                     
                 else:
-                    raise ValueError("When value is a string, comparison of greater than or less than cannot be made.")
+                    raise TypeError("When value is a string, comparison of greater than or less than cannot be made.")
                     
                     
                     
             elif isinstance(value, list) or isinstance(value, tuple):
                 if isinstance(operation, str):
-                    raise ValueError("Length of values should be same as length of available operations to perform")
+                    raise TypeError("Length of values should be same as length of available operations to perform")
                             
                 elif isinstance(operation, list) or isinstance(operation, tuple):
                     for item, symbol in zip(value, operation):
@@ -278,7 +251,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                                 dataset = dataset[condition]  
                                 
                             else:
-                                raise ValueError("When value is a string, comparison of greater than or less than cannot be made.")
+                                raise TypeError("When value is a string, comparison of greater than or less than cannot be made.")
                                 
                         
                         elif isinstance(item, int) or isinstance(item, float):
@@ -310,7 +283,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
         
         elif isinstance(column, list) or isinstance(column, tuple):
             if isinstance(value, int) or isinstance(value, float) or isinstance(value, str):
-                raise ValueError("If column is a list or tuple, then value must assume form of a list or tuple with same length.")
+                raise TypeError("If column is a list or tuple, then value must assume form of a list or tuple with same length.")
                 
             elif (isinstance(value, list) or isinstance(value, tuple)) and (len(value) == len(column)):
                 if isinstance(operation, str):
@@ -325,7 +298,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                                 dataset = dataset[condition]  
                                 
                             else:
-                                raise ValueError("When value is a string, comparison of greater than or less than cannot be made. Consider switching operation to a list or tuple for more control.")
+                                raise TypeError("When value is a string, comparison of greater than or less than cannot be made. Consider switching operation to a list or tuple for more control.")
                                 
                         
                         elif isinstance(item, int) or isinstance(item, float):
@@ -367,7 +340,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                                     dataset = dataset[condition]  
                                     
                                 else:
-                                    raise ValueError("When value is a string, comparison of greater than or less than cannot be made.")
+                                    raise TypeError("When value is a string, comparison of greater than or less than cannot be made.")
                                     
                             
                             elif isinstance(item, int) or isinstance(item, float):
@@ -397,14 +370,14 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                     
                     
                     else:
-                        raise ValueError("When arguments in column, value, and operation are a list or tuple, they must all have same size.")
+                        raise TypeError("When arguments in column, value, and operation are a list or tuple, they must all have same size.")
         
         
             elif (isinstance(value, list) or isinstance(value, tuple)) and (len(value) != len(column)):
-                raise ValueError("The parameters column and value must have the same length when both set to either list or tuple.")
+                raise TypeError("The parameters column and value must have the same length when both set to either list or tuple.")
         
         else:
-            raise ValueError("Column must be either a string, list, tuple, or dictionary.")
+            raise TypeError("Column must be either a string, list, tuple, or dictionary.")
     
     
     
@@ -412,7 +385,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
         if isinstance(operation, str):
             if isinstance(value, int) or isinstance(value, float):
                if operation.lower() not in possible_operations:
-                   raise ValueError(f"This operation is not supported. Please use the following: {possible_operations}")
+                   raise TypeError(f"This operation is not supported. Please use the following: {possible_operations}")
                    
                elif (operation.lower() == 'greater than' or operation == '>'):
                    condition = dataset > value
@@ -449,19 +422,19 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                    dataset = dataset[condition]  
                    
                else:
-                   raise ValueError("When column is set to NONE and value is a string, comparison of greater than or less than cannot be made.")
+                   raise TypeError("When column is set to NONE and value is a string, comparison of greater than or less than cannot be made.")
                    
                    
                    
             elif isinstance(value, list) or isinstance(value, tuple):
-                raise ValueError("Length of values should be same as length of available operations to perform")
+                raise TypeError("Length of values should be same as length of available operations to perform")
                            
         elif isinstance(operation, list) or isinstance(operation, tuple):
             if isinstance(value, int) or isinstance(value, float):
-                raise ValueError("If operation is list or tuple, then value must be list or tuple of same size.")
+                raise TypeError("If operation is list or tuple, then value must be list or tuple of same size.")
                 
             elif isinstance(value, str):
-                raise ValueError("If operation is list or tuple, then value must be list or tuple of same size.")
+                raise TypeError("If operation is list or tuple, then value must be list or tuple of same size.")
             
             elif (isinstance(value, list) or isinstance(value, tuple)) and (len(value) == len(operation)):
                 for item, symbol in zip(value, operation):
@@ -475,7 +448,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                             dataset = dataset[condition]  
                            
                         else:
-                            raise ValueError("When value is a string, comparison of greater than or less than cannot be made.")
+                            raise TypeError("When value is a string, comparison of greater than or less than cannot be made.")
                            
                    
                     elif isinstance(item, int) or isinstance(item, float):
@@ -504,7 +477,7 @@ def filter_data(dataset, column: str or list or tuple, operation: str or list or
                             dataset = dataset[condition]
                             
             elif (isinstance(value, list) or isinstance(value, tuple)) and (len(value) != len(operation)):
-                raise ValueError("If operation is list or tuple, then value must be list or tuple of same size.")
+                raise TypeError("If operation is list or tuple, then value must be list or tuple of same size.")
         
     return dataset
 
@@ -515,7 +488,7 @@ def remove_duplicates(dataset, which_columns: str or list or tuple = None):
         dataset.drop_duplicates(inplace = True, subset = which_columns)
         
     else:
-        raise ValueError("Removing duplicates from your dataset must be done by indicating the column as either a string, list, or tuple.")
+        raise TypeError("Removing duplicates from your dataset must be done by indicating the column as either a string, list, or tuple.")
     
     return {"Dataset ---> Removed Duplicates": dataset}
 
@@ -682,6 +655,6 @@ def fix_unbalanced_dataset(x_train, y_train, sampler: str, k_neighbors: int = No
         x_train, y_train = technique.fit_resample(x_train, y_train)
         
     else:
-        ValueError("k_neighbors works with only the SMOTE algorithm.")
+        TypeError("k_neighbors works with only the SMOTE algorithm.")
     
     return {"Training X": x_train, "Training Y": y_train}

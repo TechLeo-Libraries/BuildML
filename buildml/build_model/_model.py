@@ -8,32 +8,10 @@ import sklearn.feature_selection as sfs
 import sklearn.neighbors as sn
 import warnings
 
-
 __author__ = "TechLeo"
 __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
-
-
-__all__ = [
-    "select_features",
-    "split_data",
-    "build_regressor_model",
-    "classifier_model_testing",
-    "regressor_model_testing",
-    "build_classifier_model",
-    "build_multiple_regressors",
-    "build_multiple_classifiers",
-    "build_single_regressor_from_features",
-    "build_single_classifier_from_features",
-    "build_multiple_regressors_from_features",
-    "build_multiple_classifiers_from_features",
-    "classifier_graph",
-    "FindK_KNN_Classifier",
-    "FindK_KNN_Regressor",
-    "simple_linregres_graph",
-    ]
-
 
 def select_features(x, y, strategy: str, estimator: str, number_of_features: int, warning: bool = False):
     if warning == False:
@@ -78,10 +56,10 @@ def select_features(x, y, strategy: str, estimator: str, number_of_features: int
             return {"Dataset ---> Features Selected": x, "Selection Metrics": best_features}
         
         elif estimator == None:
-            raise ValueError("You must specify an estimator or score function to use feature selection processes")
+            raise TypeError("You must specify an estimator or score function to use feature selection processes")
             
     else:
-        raise ValueError(f"Select a feature selection technique from the following: {types}. \n\nRFE Estimator = {rfe_possible_estimator} e.g XGBoost, RandomForest, SVM etc\nSelectKBest Score Function = {kbest_possible_score_functions}\nSelectFromModel Estimator = {frommodel_possible_estimator} e.g XGBoost, RandomForest, SVM etc.\nSelectPercentile Score Function = {percentile_possible_score_functions}")
+        raise TypeError(f"Select a feature selection technique from the following: {types}. \n\nRFE Estimator = {rfe_possible_estimator} e.g XGBoost, RandomForest, SVM etc\nSelectKBest Score Function = {kbest_possible_score_functions}\nSelectFromModel Estimator = {frommodel_possible_estimator} e.g XGBoost, RandomForest, SVM etc.\nSelectPercentile Score Function = {percentile_possible_score_functions}")
     
     
 
@@ -110,7 +88,7 @@ def build_regressor_model(regressor, x_train, y_train, x_test, y_test, kfold: in
         return {"Model": model, "Predictions": {"Actual Training Y": y_train, "Actual Test Y": y_test, "Predicted Training Y": y_pred, "Predicted Test Y": y_pred1}, "Training Evaluation": {"Training R2": training_rsquared, "Training RMSE": training_rmse}, "Test Evaluation": {"Test R2": test_rsquared, "Test RMSE": test_rmse}}
     
     elif kfold != None and cross_validation == False:
-        raise ValueError("KFold cannot work when cross validation is set to FALSE")
+        raise TypeError("KFold cannot work when cross validation is set to FALSE")
         
     elif kfold == None and cross_validation == True:
         training_rsquared = sm.r2_score(y_train, y_pred)
@@ -212,7 +190,7 @@ def build_classifier_model(classifier, x_train, y_train, x_test, y_test, kfold: 
             }
     
     elif kfold != None and cross_validation == False:
-        raise ValueError("KFold cannot work when cross validation is set to FALSE")
+        raise TypeError("KFold cannot work when cross validation is set to FALSE")
         
     elif kfold == None and cross_validation == True:
         training_analysis = sm.confusion_matrix(y_train, y_pred)
@@ -428,7 +406,7 @@ def build_single_regressor_from_features(x, y, regressor, test_size: float, rand
                     dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                     
             else:
-                raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
             
     elif not (isinstance(regressor, list) or isinstance(regressor, tuple)) and cv == True:
@@ -530,7 +508,7 @@ def build_single_regressor_from_features(x, y, regressor, test_size: float, rand
                     dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
            
             else:
-                raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
         
         
@@ -645,7 +623,7 @@ def build_single_classifier_from_features(x, y, classifier, test_size: float, ra
                     dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                     
             else:
-                raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
     
     
     elif not (isinstance(classifier, list) or isinstance(classifier, tuple)) and cv == True:
@@ -754,7 +732,7 @@ def build_single_classifier_from_features(x, y, classifier, test_size: float, ra
                     dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                     
             else:
-                raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
     
             
     dataset_features = dataset_features.reset_index(drop = True)
@@ -864,7 +842,7 @@ def build_multiple_regressors_from_features(x, y, regressors: list or tuple, tes
                     dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                     
             else:
-                raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
             
     elif (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == True:
@@ -965,7 +943,7 @@ def build_multiple_regressors_from_features(x, y, regressors: list or tuple, tes
                     dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
            
             else:
-                raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
 
         
         
@@ -1082,7 +1060,7 @@ def build_multiple_classifiers_from_features(x, y, classifiers: list or tuple, t
                     dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                     
             else:
-                raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
     
     
     elif (isinstance(classifiers, list) or isinstance(classifiers, tuple)) and cv == True:
@@ -1191,7 +1169,7 @@ def build_multiple_classifiers_from_features(x, y, classifiers: list or tuple, t
                     dataset_features = pd.concat([dataset_features, dataset2], axis = 0)
                     
             else:
-                raise ValueError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
+                raise TypeError("The parameter 'min_num_features' cannot be more than the number of features in our dataset.")
            
             
     dataset_features = dataset_features.reset_index(drop = True)
@@ -1216,7 +1194,7 @@ def classifier_graph(classifier, x_train, y_train, cmap_train = "viridis", cmap_
         x1_vals_train, x2_vals_train = np.meshgrid(np.linspace((x_train.iloc[:, 0].min() - (x_train.iloc[:, 0].min() / 8)), (x_train.iloc[:, 0].max() + (x_train.iloc[:, 0].max() / 8)), resolution),
                                                     np.linspace((x_train.iloc[:, 1].min() - (x_train.iloc[:, 1].min() / 8)), (x_train.iloc[:, 1].max() + (x_train.iloc[:, 1].max() / 8)), resolution))
     else:
-        raise ValueError("Unsupported input type for x_train. Use either Pandas DataFrame or NumPy array.")
+        raise TypeError("Unsupported input type for x_train. Use either Pandas DataFrame or NumPy array.")
 
     grid_points_train = np.c_[x1_vals_train.ravel(), x2_vals_train.ravel()]
     predictions_train = classifier.predict(grid_points_train)
@@ -1297,7 +1275,7 @@ def FindK_KNN_Classifier(x_train, y_train, weight = "uniform", algorithm = "auto
         print(f'\n\nKNN CLASSIFIER ------> Finding the besk K value:\nThe best k-value is {b[0]} with a score of {b[1]}.')
         
     else:
-        raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+        raise TypeError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
 
 
 def FindK_KNN_Regressor(x_train, y_train, weight = "uniform", algorithm = "auto", metric = "minkowski", max_k_range: int = 31, warning: bool = False):
@@ -1338,7 +1316,7 @@ def FindK_KNN_Regressor(x_train, y_train, weight = "uniform", algorithm = "auto"
         print(f'\n\nKNN REGRESSOR ------> Finding the besk K value:\nThe best k-value is {b[0]} with a score of {b[1]}.')
         
     else:
-        raise ValueError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
+        raise TypeError(f"Check that the parameter 'algorithm' is one of the following: {algorithms}. Also, check that the parameter 'weight' is one of the following: {weights}")
     
 def simple_linregres_graph(x, y, regressor, title: str, line_style: str = "dashed", line_width: float = 2, line_marker: str = "o", line_marker_size: float = 12, train_color_marker: str = "red", test_color_marker: str = "red", line_color: str = "green", size_train_marker: float = 10, size_test_marker: float = 10, whole_dataset: bool = False, test_size: float = 0.2):
     name_x = [col for col in x.columns]
@@ -1376,7 +1354,7 @@ def simple_linregres_graph(x, y, regressor, title: str, line_style: str = "dashe
                 plt.show()
         
         else:
-            raise ValueError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
+            raise TypeError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
 
 
     else:
@@ -1413,5 +1391,5 @@ def simple_linregres_graph(x, y, regressor, title: str, line_style: str = "dashe
                     plt.show()
             
             else:
-                raise ValueError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
+                raise TypeError("Simple Linear Regression involves only one independent variable. Ensure that your dataframe for x has just one column.")
     
