@@ -2823,7 +2823,7 @@ class SupervisedLearning:
             types1 = ["selectkbest", "selectpercentile"]
             types2 = ["rfe", "selectfrommodel"]
             
-            if (isinstance(regressors, list) or isinstance(regressors, tuple)) and cv == False:
+            if isinstance(regressors, (list, tuple)) and cv == False:
                 data_columns = [col for col in self.__x.columns]
                 length_col = len(data_columns)
                 store = {}
