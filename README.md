@@ -171,7 +171,11 @@ training_eda = automate_training.eda()
 test_eda = automate_test.eda()
 
 # Data Cleaning and Transformation 
-training_eda_visual = automate_training.eda_visual(y = "Specify what you are predicting", figsize_barchart = (55, 10), figsize_heatmap = (15, 10), figsize_histogram=(35, 20))
+training_eda_visual = automate_training.eda_visual(
+                            figsize_barchart = (55, 10), 
+                            figsize_heatmap = (15, 10), 
+                            figsize_histogram=(35, 20)
+                            )
 
 for data in automate:
     data.reduce_data_memory_useage()
@@ -186,9 +190,15 @@ test_data_clean = automate_test.get_dataset()
 
 unbalanced_dataset_check = automate_training.count_column_categories(column = "Specify what you are predicting")
 split_data = automate_training.split_data()
-fix_unbalanced_data = automate_training.fix_unbalanced_dataset(sampler = "RandomOverSampler", random_state = 0)
+fix_unbalanced_data = automate_training.fix_unbalanced_dataset(
+                                        sampler = "RandomOverSampler", 
+                                        random_state = 0
+                                        )
 
-check_unbalanced_data_fix = automate_training.count_column_categories(column = "Specify what you are predicting", test_data = True)
+check_unbalanced_data_fix = automate_training.count_column_categories(
+                                    column = "Specify what you are predicting", 
+                                    test_data = True
+                                    )
 
 # Model Building 
 classifiers = [LogisticRegression(random_state = 0),

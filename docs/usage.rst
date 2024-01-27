@@ -66,7 +66,11 @@ Usage
     test_eda = automate_test.eda()
 
     # Data Cleaning and Transformation 
-    training_eda_visual = automate_training.eda_visual(y = "Specify what you are predicting", figsize_barchart = (55, 10), figsize_heatmap = (15, 10), figsize_histogram=(35, 20))
+    training_eda_visual = automate_training.eda_visual( 
+                                        figsize_barchart = (55, 10), 
+                                        figsize_heatmap = (15, 10), 
+                                        figsize_histogram=(35, 20)
+                                        )
 
     for data in automate:
         data.reduce_data_memory_useage()
@@ -78,12 +82,23 @@ Usage
     # Further Data Preparation and Segregation
     unbalanced_dataset_check = automate_training.count_column_categories(column = "Specify what you are predicting")
     split_data = automate_training.split_data()
-    fix_unbalanced_data = automate_training.fix_unbalanced_dataset(sampler = "RandomOverSampler", random_state = 0)
+    fix_unbalanced_data = automate_training.fix_unbalanced_dataset(
+                                                sampler = "RandomOverSampler", 
+                                                random_state = 0
+                                                )
 
     # Model Building 
-    classifiers = [LogisticRegression(random_state = 0), SVC(), RandomForestClassifier(random_state = 0), DecisionTreeClassifier(random_state = 0), XGBClassifier(random_state = 0)]
-    build_model = automate_training.build_multiple_classifiers(classifiers = classifiers, kfold = 10, cross_validation = True, graph = True)
-
-    model = automate_training.train_model_classifier(classifiers[1])
-    prediction = automate_training.classifier_predict() 
-    evaluation = automate_training.classifier_evaluation(cross_validation = True)
+    classifiers = [
+            LogisticRegression(random_state = 0), 
+            RandomForestClassifier(random_state = 0), 
+            DecisionTreeClassifier(random_state = 0), 
+            XGBClassifier(random_state = 0)
+            ]
+            
+    build_model = automate_training.build_multiple_classifiers(
+                                            classifiers = classifiers, 
+                                            kfold = 10, 
+                                            cross_validation = True, 
+                                            graph = True
+                                            )
+                                            
