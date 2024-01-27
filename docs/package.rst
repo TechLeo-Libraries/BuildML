@@ -9,10 +9,10 @@ buildml.automate module
    :undoc-members:
    :show-inheritance:
 
-buildml.date module
+buildml.date\_features module
 -------------------
 
-.. automodule:: buildml.date
+.. automodule:: buildml.date_features
    :members:
    :undoc-members:
    :show-inheritance:
@@ -25,10 +25,10 @@ buildml.eda module
    :undoc-members:
    :show-inheritance:
 
-buildml.model module
+buildml.build\_model module
 --------------------
 
-.. automodule:: buildml.model
+.. automodule:: buildml.build_model
    :members:
    :undoc-members:
    :show-inheritance:
