@@ -127,8 +127,19 @@ eda = data.eda()
 eda_visual = data.eda_visual()
 
 # Build and Evaluate Classifier
-classifiers = ["LogisticRegression(random_state = 0)", "RandomForestClassifier(random_state = 0)", "DecisionTreeClassifier(random_state = 0)", "SVC()"]
-build_model = data.build_multiple_classifiers()
+classifiers = [
+    "LogisticRegression(random_state = 0)", 
+    "RandomForestClassifier(random_state = 0)", 
+    "DecisionTreeClassifier(random_state = 0)", 
+    "SVC()"
+    ]
+    
+build_model = data.build_multiple_classifiers(classifiers, 
+                                          kfold=5, 
+                                          cross_validation=True, 
+                                          graph=True, 
+                                          length=8, 
+                                          width=12)
 ```
 
 Example 2: Working on a dataset with train and test data given.
@@ -265,7 +276,7 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 - Improved documentation.
 - Fix for building all models without splitting the data.
 - Updated `requirements.txt` file.
-- Fix dependency error in installation.
+- Fixed dependency error in installation.
 
 ### v1.0.3 (January 2024):
 
@@ -283,9 +294,9 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 
 ### v1.0.6 (January 2024):
 
-- Fix polynomial regression graph
-- Fix documentation on build_single_regressor_from_features
-- Fix documentation on build_single_classifier_from_features
+- Fixed polynomial regression graph
+- Updated documentation on build_single_regressor_from_features
+- Updated documentation on build_single_classifier_from_features
 - Imporved documentation for `polyreg_graph`
 - Imporved documentation for `split_data`
 - Added option to specify the test_size in `split_data` but default parameter remains 0.2
@@ -294,11 +305,19 @@ BuildML is distributed under the MIT License. Feel free to use, modify, and dist
 
 ### v1.0.7 (January 2024):
 
-- Fix `self.__polynomial_regression` not defined.
+- Fixed `self.__polynomial_regression` not defined.
 - Improved documentation for `build_single_classifier_from_features`.
 - Improved documentation for `build_single_regressor_from_features`.
 - Improved documentation for `build_multiple_classifier_from_features`.
 - Improved documentation for `build_multiple_regressor_from_features`.
+
+### v1.0.8 (January 2024):
+
+- Fixed unstable release v1.0.7.
+
+### v1.0.9 (January 2024):
+
+- Fixed unstable release v1.0.8.
 
 
 ## Contributors

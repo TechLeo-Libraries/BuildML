@@ -8,7 +8,7 @@ with open('requirements.txt', 'r') as f:
     install_requires = f.read().splitlines()
 
 
-VERSION = '1.0.7'
+VERSION = '1.0.9'
 DESCRIPTION = "Let's make building machine learning models the complex way, easy."
 LONG_DESCRIPTION = 'The ability to perform exploratory data analysis, data preprocessing, data cleaning, data transformation, data segregation, model training, model prediction, and model evaluation has been put together in this package to allow simple flow of ML operations.'
 HERE = pathlib.Path(__file__).parent

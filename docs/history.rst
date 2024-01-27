@@ -59,3 +59,13 @@ v1.0.7 (January 2024):
 - Improved documentation for `build_single_regressor_from_features`.
 - Improved documentation for `build_multiple_classifier_from_features`.
 - Improved documentation for `build_multiple_regressor_from_features`.
+
+v1.0.8 (January 2024):
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed unstable release v1.0.7.
+
+v1.0.9 (January 2024):
+~~~~~~~~~~~~~~~~~~~~~~
+
+- Fixed unstable release v1.0.8.

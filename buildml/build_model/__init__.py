@@ -1,5 +1,5 @@
 """
-Create multiple regressor and classifiers based on your approach to the problem as well as provides other functions for model splitting, training, prediction, evaluation, etc.
+Create multiple regressor and classifiers based on your approach to the problem. This module provides functions for model splitting, training, prediction, evaluation, etc.
 """
 
 from ._model import (

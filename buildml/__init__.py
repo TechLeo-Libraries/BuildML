@@ -17,24 +17,14 @@ BuildML is built on top of popular scientific Python packages such as numpy, sci
 Visit our documentation at https://buildml.readthedocs.io/ for detailed information on how to use BuildML and unleash the power of machine learning in your projects.
 """
 
-from ._automate import SupervisedLearning
-import date_features
-import eda
-import output_dataset
-import model
-import preprocessing
+from .automate import SupervisedLearning
 
 __author__ = "TechLeo"
 __email__ = "techleo.ng@outlook.com"
 __copyright__ = "Copyright (c) 2023 TechLeo"
 __license__ = "MIT"
-__version__ = "1.0.6"
+__version__ = "1.0.9"
 
 __all__ = [
     'SupervisedLearning',
-    'date_features',
-    'eda',
-    'output_dataset',
-    'model',
-    'preprocessing'
 ]

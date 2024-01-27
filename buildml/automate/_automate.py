@@ -6600,4 +6600,5 @@ class SupervisedLearning:
                 
                 data = pd.DataFrame(data, columns = ["Degree", "Base Algorithm", "R-Squared", "RMSE", "Cross Validation Mean", "Cross Validation Standard Deviation"])
             
-            return {"Degree Metrics": data, "Cross Validation Info": cross_validation}          
+            return {"Degree Metrics": data, "Cross Validation Info": cross_validation}
+         

@@ -11,7 +11,7 @@ Usage
    from sklearn.linear_model import LogisticRegression
    from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
    from sklearn.snm import SVC
-   from buildml.automate import SupervisedLearning
+   from buildml import SupervisedLearning
 
    # Get Dataset
    dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
@@ -22,10 +22,19 @@ Usage
    eda_visual = data.eda_visual()
 
    # Build and Evaluate Classifier
-   classifiers = ["LogisticRegression(random_state = 0)", "RandomForestClassifier(random_state = 0)", "DecisionTreeClassifier(random_state = 0)", "SVC()"]
-   build_model = data.build_multiple_classifiers()
+   classifiers = [
+       "LogisticRegression(random_state = 0)", 
+       "RandomForestClassifier(random_state = 0)", 
+       "DecisionTreeClassifier(random_state = 0)", 
+       "SVC()"
+       ]
+   build_model = data.build_multiple_classifiers(classifiers, 
+                                             kfold=5, 
+                                             cross_validation=True, 
+                                             graph=True, 
+                                             length=8, 
+                                             width=12)
    
-
 **Example 2: Working on a dataset with train and test data given.**
 
 .. code:: bash
@@ -38,7 +47,7 @@ Usage
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.tree import DecisionTreeClassifier
     from xgboost import XGBClassifier
-    from buildml.automate import SupervisedLearning
+    from buildml import SupervisedLearning
 
     # Get Dataset
     training_data = pd.read_csv("train.csv")
