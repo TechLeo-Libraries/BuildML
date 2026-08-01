@@ -3,7 +3,7 @@
 Approved lock for the retrieval thin slice.  
 Parent plan: [rag-phase-plan.md](./rag-phase-plan.md).
 
-**Status:** M0 locked · M1 complete  
+**Status:** M0 locked · M1 complete · M2 complete  
 **Approved:** 2026-08-01
 
 ---
@@ -15,8 +15,10 @@ Parent plan: [rag-phase-plan.md](./rag-phase-plan.md).
 | `Session.rag_ingest_corpus(...)` | Load text files / folder, or a tabular text column, into a `CorpusHandle` |
 | `Session.rag_chunk(...)` | Split corpus documents with size + overlap; stable chunk ids |
 | `Session.rag_embed_and_index(...)` | Embed chunks and build the default vector index |
-| `Session.rag_retrieve(query, k=...)` | Dense top-k retrieve with scores |
-| `Session.rag_evaluate(...)` | Retrieval metrics on gold qrels (recall@k, MRR) |
+| `Session.rag_retrieve(query, k=..., mode=..., filters=..., rerank=...)` | Dense / BM25 / hybrid retrieve; optional metadata filters and rerank |
+| `Session.rag_evaluate(..., relevance_mode=...)` | Retrieval metrics on gold qrels (recall@k, MRR, nDCG@k, hit-rate@k) |
+| `Session.rag_upsert(...)` | Upsert documents/chunks without a full index rebuild |
+| `Session.rag_delete(...)` | Delete by `chunk_ids` and/or `doc_ids` |
 | `Session.save_rag_bundle(path)` | Persist RAG bundle (`buildml.rag_bundle.v1`) |
 | `Session.load_rag_bundle(path)` | Restore a RAG bundle into the Session |
 
@@ -94,18 +96,33 @@ Missing semantic stack → `MissingExtraError("rag", feature=...)` with
 
 ---
 
-## Explicit non-goals (M1)
+## Explicit non-goals (M1; generate still deferred after M2)
 
 | Non-goal | Notes |
 | --- | --- |
-| Generate / LLM operator | No `rag_generate`; no `buildml.ai` |
-| Hybrid dense+lexical / BM25 | M2 |
-| Rerank / cross-encoder | M2 |
-| Teaching Studio redesign / RAG cockpit | Catalog + structured results only in M1 |
+| Generate / LLM operator | No `rag_generate`; no `buildml.ai` (deferred M3→L) |
+| Teaching Studio redesign / RAG cockpit | Catalog + structured results + walkthrough `rag_status` |
 | Hosted vector DB product | Out of library scope |
 | PDF / OCR / HTML cleanup product | Later adapters |
 | Embedding fine-tuning inside BuildML | Use DL or external tools |
 | Folding RAG into `all-classical` | Keep classical extras free of RAG |
+
+---
+
+## M2 retrieve / eval defaults
+
+| Concern | Lock |
+| --- | --- |
+| Default retrieve mode | `dense` (M1 cosine path unchanged) |
+| Hybrid fusion default | `rrf` with `rrf_k=60`; optional `weighted` + `dense_weight=0.5` |
+| BM25 | In-process Okapi BM25 over chunk text (no extra dep) |
+| Rerank default | Off; `rerank=True` / `"cross-encoder"` uses sentence-transformers CrossEncoder behind `buildml[rag]` |
+| Metadata filters | Equality AND on chunk `metadata` keys at retrieve time |
+| Upsert / delete | In-place store update; bundle schema remains `buildml.rag_bundle.v1` (BM25 rebuilt from chunk text) |
+| Metrics | `recall_at_k`, `mrr`, `ndcg_at_k`, `hit_rate_at_k` |
+| Relevance modes | `document` (default) or `chunk` |
+| Config compare | `buildml.rag.compare_retrieval_configs(...)` |
+| Walkthrough | `rag_status` block: index counts, embedder id/dim/store, last eval metrics |
 
 ---
 

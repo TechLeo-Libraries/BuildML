@@ -173,10 +173,11 @@ jobs:
       - name: Core import smoke without relying on RAG internals
         run: python -c "import buildml; print(buildml.__version__)"
 
-      - name: RAG thin slice unit + integration smoke
+      - name: RAG unit + integration smoke (M1/M2)
         run: |
           pytest \
             tests/unit/test_rag_slice.py \
+            tests/unit/test_rag_m2_depth.py \
             tests/integration/test_rag_smoke.py \
             -q
 

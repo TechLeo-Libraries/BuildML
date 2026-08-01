@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.rag.hybrid import match_metadata_filters
 from buildml.rag.results import Chunk, Hit
 
 
@@ -18,7 +20,13 @@ class VectorStore(Protocol):
     embeddings: np.ndarray
     dim: int
 
-    def query(self, vector: np.ndarray, *, k: int) -> list[Hit]: ...
+    def query(
+        self,
+        vector: np.ndarray,
+        *,
+        k: int,
+        filters: dict[str, Any] | None = None,
+    ) -> list[Hit]: ...
 
 
 @dataclass
@@ -51,7 +59,13 @@ class NumpyCosineStore:
         matrix = matrix / norms
         return cls(chunks=chunk_tuple, embeddings=matrix, dim=int(matrix.shape[1]))
 
-    def query(self, vector: np.ndarray, *, k: int) -> list[Hit]:
+    def query(
+        self,
+        vector: np.ndarray,
+        *,
+        k: int,
+        filters: dict[str, Any] | None = None,
+    ) -> list[Hit]:
         if k <= 0:
             raise ValidationError(f"k must be positive; got {k}")
         if self.embeddings.shape[0] == 0:
@@ -65,10 +79,23 @@ class NumpyCosineStore:
         if q_norm > 0:
             q = q / q_norm
         scores = self.embeddings @ q
-        top_k = min(k, scores.shape[0])
-        # argpartition then sort the shortlist for stable ranking
-        idx = np.argpartition(-scores, top_k - 1)[:top_k]
-        idx = idx[np.argsort(-scores[idx], kind="stable")]
+        if filters:
+            mask = np.array(
+                [match_metadata_filters(c.metadata, filters) for c in self.chunks],
+                dtype=bool,
+            )
+            if not bool(mask.any()):
+                return []
+            eligible = np.flatnonzero(mask)
+            eligible_scores = scores[eligible]
+            top_k = min(k, eligible_scores.shape[0])
+            local = np.argpartition(-eligible_scores, top_k - 1)[:top_k]
+            local = local[np.argsort(-eligible_scores[local], kind="stable")]
+            idx = eligible[local]
+        else:
+            top_k = min(k, scores.shape[0])
+            idx = np.argpartition(-scores, top_k - 1)[:top_k]
+            idx = idx[np.argsort(-scores[idx], kind="stable")]
         hits: list[Hit] = []
         for rank, i in enumerate(idx, start=1):
             chunk = self.chunks[int(i)]
@@ -83,3 +110,26 @@ class NumpyCosineStore:
                 )
             )
         return hits
+
+    def without_ids(
+        self,
+        *,
+        chunk_ids: Sequence[str] | None = None,
+        doc_ids: Sequence[str] | None = None,
+    ) -> NumpyCosineStore:
+        """Return a store with matching chunk/doc ids removed (no re-embed)."""
+        drop_chunks = set(chunk_ids or ())
+        drop_docs = set(doc_ids or ())
+        keep_idx = [
+            i
+            for i, c in enumerate(self.chunks)
+            if c.chunk_id not in drop_chunks and c.doc_id not in drop_docs
+        ]
+        if len(keep_idx) == len(self.chunks):
+            return self
+        if not keep_idx:
+            empty = np.zeros((0, self.dim), dtype=np.float32)
+            return NumpyCosineStore(chunks=(), embeddings=empty, dim=self.dim)
+        kept_chunks = tuple(self.chunks[i] for i in keep_idx)
+        kept_emb = self.embeddings[np.asarray(keep_idx, dtype=np.int64)]
+        return NumpyCosineStore(chunks=kept_chunks, embeddings=kept_emb, dim=self.dim)

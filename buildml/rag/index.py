@@ -1,17 +1,17 @@
-"""Build a dense vector index from a corpus."""
+"""Build and update a dense vector index from a corpus."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import numpy as np
 
 from buildml.core.errors import ValidationError
 from buildml.rag.chunk import chunk_documents
-from buildml.rag.corpus import refuse_eval_only_index
+from buildml.rag.corpus import corpus_from_documents, refuse_eval_only_index
 from buildml.rag.embed import Embedder, EmbedFn, resolve_embedder
-from buildml.rag.results import Chunk, ChunkResult, CorpusHandle, IndexResult
+from buildml.rag.results import Chunk, ChunkResult, CorpusHandle, Document, IndexResult
 from buildml.rag.store import NumpyCosineStore
 from buildml.rag.types import HASHING_EMBEDDER_ID, ChunkConfig, EmbedConfig, IndexConfig
 
@@ -61,6 +61,133 @@ class RagIndex:
             disclosures=self.disclosures,
         )
 
+    def _refresh_doc_count(self) -> None:
+        self.n_documents = len({c.doc_id for c in self.store.chunks})
+
+    def _refresh_disclosures(self, *, note: str | None = None) -> None:
+        notes = [
+            f"embedder_id={self.embed_config.embedder_id}",
+            f"dim={self.embed_config.dim}",
+            f"store_backend={self.index_config.store_backend}",
+            f"n_chunks={len(self.store.chunks)}",
+            f"n_documents={self.n_documents}",
+        ]
+        if self.embed_config.embedder_id == HASHING_EMBEDDER_ID:
+            notes.append(
+                "Default hashing embedder is lexical/hashed, not a semantic sentence model."
+            )
+        if note:
+            notes.append(note)
+        self.disclosures = tuple(notes)
+
+    def delete(
+        self,
+        *,
+        chunk_ids: Sequence[str] | None = None,
+        doc_ids: Sequence[str] | None = None,
+    ) -> IndexResult:
+        """Remove chunks by ``chunk_id`` and/or parent ``doc_id`` without full rebuild.
+
+        Dense rows for survivors are retained; embeddings for deleted rows are dropped.
+        """
+        if not chunk_ids and not doc_ids:
+            raise ValidationError("rag delete requires chunk_ids and/or doc_ids.")
+        before = len(self.store.chunks)
+        self.store = self.store.without_ids(chunk_ids=chunk_ids, doc_ids=doc_ids)
+        removed = before - len(self.store.chunks)
+        self._refresh_doc_count()
+        self._refresh_disclosures(note=f"deleted_chunks={removed}")
+        return self.to_index_result()
+
+    def upsert_chunks(self, chunks: Sequence[Chunk]) -> IndexResult:
+        """Insert or replace chunks by ``chunk_id``, re-embedding only new/changed rows.
+
+        Existing embeddings for untouched chunk ids are preserved. Replaced ids are
+        re-encoded with the index embedder.
+        """
+        incoming = list(chunks)
+        if not incoming:
+            raise ValidationError("upsert_chunks requires at least one chunk.")
+        by_id = {c.chunk_id: (i, c) for i, c in enumerate(self.store.chunks)}
+        emb = (
+            np.asarray(self.store.embeddings, dtype=np.float32)
+            if self.store.embeddings.size
+            else np.zeros((0, self.embed_config.dim), dtype=np.float32)
+        )
+        kept_chunks: list[Chunk] = list(self.store.chunks)
+        kept_emb_rows: list[np.ndarray] = (
+            [emb[i] for i in range(emb.shape[0])] if emb.shape[0] else []
+        )
+
+        to_encode: list[Chunk] = []
+        replace_ids: set[str] = set()
+        for chunk in incoming:
+            if chunk.chunk_id in by_id:
+                replace_ids.add(chunk.chunk_id)
+            to_encode.append(chunk)
+
+        if replace_ids:
+            kept_chunks = []
+            next_emb_rows: list[np.ndarray] = []
+            for c, row in zip(self.store.chunks, kept_emb_rows, strict=True):
+                if c.chunk_id in replace_ids:
+                    continue
+                kept_chunks.append(c)
+                next_emb_rows.append(row)
+            kept_emb_rows = next_emb_rows
+
+        matrix_new = self.embedder.encode([c.text for c in to_encode])
+        if matrix_new.shape[1] != self.embed_config.dim:
+            raise ValidationError(
+                f"Upsert embed dim {matrix_new.shape[1]} != index dim {self.embed_config.dim}."
+            )
+        # L2-normalize new rows to match store convention.
+        norms = np.linalg.norm(matrix_new, axis=1, keepdims=True)
+        norms = np.maximum(norms, 1e-12)
+        matrix_new = matrix_new / norms
+
+        final_chunks = kept_chunks + to_encode
+        if kept_emb_rows:
+            final_emb = np.vstack([np.stack(kept_emb_rows, axis=0), matrix_new])
+        else:
+            final_emb = matrix_new
+        self.store = NumpyCosineStore(
+            chunks=tuple(final_chunks),
+            embeddings=np.asarray(final_emb, dtype=np.float32),
+            dim=self.embed_config.dim,
+        )
+        self._refresh_doc_count()
+        self._refresh_disclosures(
+            note=f"upserted_chunks={len(to_encode)}; replaced={len(replace_ids)}"
+        )
+        return self.to_index_result()
+
+    def upsert_documents(
+        self,
+        documents: Sequence[Document | Mapping[str, Any] | str],
+        *,
+        chunk: bool = True,
+    ) -> IndexResult:
+        """Chunk (optional) and upsert documents into this index."""
+        corpus = corpus_from_documents(documents)
+        refuse_eval_only_index(corpus)
+        if chunk:
+            chunked = chunk_documents(corpus, config=self.chunk_config)
+            return self.upsert_chunks(chunked.chunks)
+        # Treat each document as a single chunk when chunk=False.
+        synthetic = [
+            Chunk(
+                chunk_id=f"{d.doc_id}::c0",
+                doc_id=d.doc_id,
+                text=d.text,
+                start_char=0,
+                end_char=len(d.text),
+                metadata=dict(d.metadata),
+            )
+            for d in corpus.documents
+        ]
+        return self.upsert_chunks(synthetic)
+
 
 def build_index(
     corpus: CorpusHandle,
@@ -70,6 +197,7 @@ def build_index(
     chunk_overlap: int | None = None,
     embedder: Embedder | EmbedFn | str | None = None,
     chunks: ChunkResult | Sequence[Chunk] | None = None,
+    device: str | None = None,
 ) -> RagIndex:
     """Chunk (optional), embed, and build the default NumPy cosine index.
 
@@ -95,7 +223,7 @@ def build_index(
     if not chunk_list:
         raise ValidationError("Cannot build an index from zero chunks.")
 
-    resolved, embed_cfg = resolve_embedder(embedder)
+    resolved, embed_cfg = resolve_embedder(embedder, device=device)
     texts = [c.text for c in chunk_list]
     matrix = resolved.encode(texts)
     store = NumpyCosineStore.build(chunk_list, matrix)
@@ -105,6 +233,7 @@ def build_index(
         dim=int(matrix.shape[1]),
         backend=embed_cfg.backend,
         model_name=embed_cfg.model_name,
+        device=embed_cfg.device or device,
     )
     index_cfg = IndexConfig()
     warnings: list[str] = []
@@ -115,6 +244,8 @@ def build_index(
         f"n_chunks={len(chunk_list)}",
         f"n_documents={corpus.n_documents}",
     ]
+    if embed_cfg.device:
+        disclosures.append(f"embed_device={embed_cfg.device}")
     if embed_cfg.embedder_id == HASHING_EMBEDDER_ID:
         disclosures.append(
             "Default hashing embedder is lexical/hashed, not a semantic sentence model."

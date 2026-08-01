@@ -1581,11 +1581,13 @@ class Session:
         embedder: Any | None = None,
         chunk_size: int | None = None,
         chunk_overlap: int | None = None,
+        device: str | None = None,
     ) -> Session:
         """Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
 
         Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
         Default embedder is ``buildml.hashing_embed.v1`` (lexical/hashed, not semantic).
+        ``device`` applies to sentence-transformer backends; hashing stays CPU-only.
         """
         from buildml.rag.extras import require_rag_stack
         from buildml.rag.index import build_index
@@ -1600,6 +1602,7 @@ class Session:
             chunk_overlap=chunk_overlap,
             embedder=embedder,
             chunks=self._rag_chunks,
+            device=device,
         )
         self._rag_index = index
         self._rag_index_result = index.to_index_result()
@@ -1614,25 +1617,62 @@ class Session:
                 "embedder_id": index.embed_config.embedder_id,
                 "dim": index.embed_config.dim,
                 "store_backend": index.index_config.store_backend,
+                "device": index.embed_config.device,
             },
             result_summary=self._rag_index_result.to_dict(),
             warnings=tuple(index.warnings),
         )
         return self
 
-    def rag_retrieve(self, query: str, *, k: int = 5) -> Any:
-        """Dense top-k retrieve against the active RAG index (requires ``buildml[rag]``)."""
+    def rag_retrieve(
+        self,
+        query: str,
+        *,
+        k: int = 5,
+        mode: str | None = None,
+        fusion: str | None = None,
+        filters: dict[str, Any] | None = None,
+        rerank: bool | str | None = None,
+        config: Any | None = None,
+    ) -> Any:
+        """Retrieve ranked chunks (dense / BM25 / hybrid) against the active RAG index.
+
+        Defaults: ``mode="dense"``, no metadata filters, ``rerank=False``. Hybrid
+        defaults to RRF (``rrf_k=60``). Cross-encoder rerank requires ``buildml[rag]``.
+        """
         from buildml.rag.extras import require_rag_stack
         from buildml.rag.retrieve import retrieve
+        from buildml.rag.types import RetrieveConfig
 
         require_rag_stack(feature="RAG retrieve")
         if self._rag_index is None:
             raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-        result = retrieve(self._rag_index, query, k=k)
+        cfg = (
+            config
+            if config is not None
+            else RetrieveConfig(k=k, mode=(mode or "dense"))  # type: ignore[arg-type]
+        )
+        result = retrieve(
+            self._rag_index,
+            query,
+            k=k,
+            config=cfg,
+            mode=mode,  # type: ignore[arg-type]
+            filters=filters,
+            rerank=rerank,
+            fusion=fusion,
+        )
         self._rag_retrieve_result = result
         self._record(
             "rag_retrieve",
-            {"query": query, "k": k},
+            {
+                "query": query,
+                "k": k,
+                "mode": result.mode,
+                "fusion": result.fusion,
+                "rerank": result.rerank,
+                "filters": result.filters,
+            },
             result_summary=result.to_dict(),
         )
         return result
@@ -1642,10 +1682,14 @@ class Session:
         qrels: Any,
         *,
         k: int = 5,
+        relevance_mode: str = "document",
+        mode: str | None = None,
+        retrieve_config: Any | None = None,
     ) -> Any:
-        """Score retrieval with gold qrels (recall@k, MRR). Requires ``buildml[rag]``.
+        """Score retrieval with gold qrels (recall@k, MRR, nDCG@k, hit-rate@k).
 
-        Document-level relevance: a chunk hit counts via its parent ``doc_id``.
+        ``relevance_mode="document"`` (default) scores parent ``doc_id`` hits;
+        ``"chunk"`` scores ``chunk_id`` labels. Requires ``buildml[rag]``.
         """
         from buildml.rag.evaluate import evaluate_retrieval
         from buildml.rag.extras import require_rag_stack
@@ -1653,15 +1697,100 @@ class Session:
         require_rag_stack(feature="RAG evaluate")
         if self._rag_index is None:
             raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-        result = evaluate_retrieval(self._rag_index, qrels, k=k)
+        result = evaluate_retrieval(
+            self._rag_index,
+            qrels,
+            k=k,
+            relevance_mode=relevance_mode,  # type: ignore[arg-type]
+            retrieve_config=retrieve_config,
+            mode=mode,
+        )
         self._rag_eval_result = result
         self._record(
             "rag_evaluate",
-            {"k": k, "n_queries": result.n_queries},
+            {
+                "k": k,
+                "n_queries": result.n_queries,
+                "relevance_mode": result.relevance_mode,
+                "retrieve_mode": result.retrieve_mode,
+            },
             result_summary=result.to_dict(),
             warnings=tuple(result.warnings),
         )
         return result
+
+    def rag_upsert(
+        self,
+        documents: Sequence[Any] | None = None,
+        *,
+        chunks: Sequence[Any] | None = None,
+        chunk: bool = True,
+    ) -> Session:
+        """Upsert documents or chunks into the active RAG index without a full rebuild.
+
+        Replaces existing ``chunk_id`` rows and re-embeds only new/changed text.
+        """
+        from buildml.rag.extras import require_rag_stack
+
+        require_rag_stack(feature="RAG upsert")
+        if self._rag_index is None:
+            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
+        if chunks is not None:
+            result = self._rag_index.upsert_chunks(chunks)
+        elif documents is not None:
+            result = self._rag_index.upsert_documents(documents, chunk=chunk)
+        else:
+            raise ValidationError("rag_upsert requires documents= or chunks=.")
+        self._rag_index_result = result
+        from buildml.rag.results import ChunkResult
+
+        self._rag_chunks = ChunkResult(
+            chunks=self._rag_index.chunks,
+            config=self._rag_index.chunk_config.to_dict(),
+            n_documents=self._rag_index.n_documents,
+        )
+        self._record(
+            "rag_upsert",
+            {
+                "n_chunks": result.n_chunks,
+                "n_documents": result.n_documents,
+                "chunk": chunk,
+            },
+            result_summary=result.to_dict(),
+            warnings=tuple(result.warnings),
+        )
+        return self
+
+    def rag_delete(
+        self,
+        *,
+        chunk_ids: Sequence[str] | None = None,
+        doc_ids: Sequence[str] | None = None,
+    ) -> Session:
+        """Delete chunks by id and/or parent document id from the active RAG index."""
+        from buildml.rag.extras import require_rag_stack
+        from buildml.rag.results import ChunkResult
+
+        require_rag_stack(feature="RAG delete")
+        if self._rag_index is None:
+            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
+        result = self._rag_index.delete(chunk_ids=chunk_ids, doc_ids=doc_ids)
+        self._rag_index_result = result
+        self._rag_chunks = ChunkResult(
+            chunks=self._rag_index.chunks,
+            config=self._rag_index.chunk_config.to_dict(),
+            n_documents=self._rag_index.n_documents,
+        )
+        self._record(
+            "rag_delete",
+            {
+                "chunk_ids": list(chunk_ids or ()),
+                "doc_ids": list(doc_ids or ()),
+                "n_chunks": result.n_chunks,
+            },
+            result_summary=result.to_dict(),
+        )
+        return self
 
     @property
     def rag_index_result(self) -> Any | None:
@@ -2679,6 +2808,7 @@ class Session:
         )
         from buildml.session.walkthrough import (
             preprocess_scope_status,
+            rag_status_for_walkthrough,
             torch_training_status_for_walkthrough,
             warm_start_studies_status,
         )
@@ -2695,6 +2825,7 @@ class Session:
             last_nested_cv=self._last_nested_cv,
         )
         report.overview["torch_training_status"] = torch_training_status_for_walkthrough(self)
+        report.overview["rag_status"] = rag_status_for_walkthrough(self)
         self._last_eda = report
         self._record(
             "eda",

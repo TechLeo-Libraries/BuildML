@@ -25,10 +25,21 @@ with pre-release tags for alpha (`aN`) builds.
 - Richer `dry_run` / `summarize_history` audit UX (ranked risks, prerequisite
   graph summary, suggested next ops) surfaced on walkthrough HTML.
 
-### Known limits (RAG M1)
+### Added (RAG M2)
 
-- Retrieve + eval + bundle only; no generate, hybrid, rerank, or Studio redesign.
+- Hybrid retrieve: dense + in-process BM25 with RRF (default) or weighted fusion;
+  `rag_retrieve(mode="dense"|"bm25"|"hybrid", ...)`.
+- Optional cross-encoder rerank behind `buildml[rag]` (`MissingExtraError` when absent).
+- Index upsert/delete (`rag_upsert` / `rag_delete`) and metadata equality filters.
+- Eval depth: `relevance_mode` document|chunk, nDCG@k, hit-rate@k,
+  `compare_retrieval_configs`.
+- Walkthrough / workflow `rag_status` disclosures for index, embedder, store, last eval.
+
+### Known limits (RAG M2)
+
+- Retrieve + eval + bundle; generate / LLM operator still deferred (M3→L).
 - Default hashing embedder is lexical/hashed, not semantic.
+- No Teaching Studio RAG cockpit redesign; structured results + walkthrough status only.
 - RAG alpha version line remains `2.2.0a1` (M3); package version unchanged.
 
 ## [2.1.0a1] — DL alpha — 2026-08-01

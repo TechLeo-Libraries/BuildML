@@ -334,11 +334,11 @@ and do not embed dataset rows; Session checkpoints never embed Torch weights.
 Design lock: [docs/dl-m0-lock.md](docs/dl-m0-lock.md). Quickstart:
 [docs/quickstart-dl-alpha.md](docs/quickstart-dl-alpha.md).
 
-### Retrieval (optional RAG, M1 slice)
+### Retrieval (optional RAG, M2 depth)
 
-The M1 hashing default uses core numpy/sklearn. Install `buildml[rag]` for the
-optional sentence-transformers backend and the declared extra contract. Core
-`import buildml` never requires RAG extras. Design lock:
+The hashing default uses core numpy/sklearn. Install `buildml[rag]` for the
+optional sentence-transformers / cross-encoder backends and the declared extra
+contract. Core `import buildml` never requires RAG extras. Design lock:
 [docs/rag-m0-lock.md](docs/rag-m0-lock.md). Phase plan:
 [docs/rag-phase-plan.md](docs/rag-phase-plan.md).
 
@@ -346,14 +346,17 @@ optional sentence-transformers backend and the declared extra contract. Core
 session.rag_ingest_corpus(["doc text ...", ...])  # or path= / text_column=
 session.rag_chunk(size=512, overlap=64)
 session.rag_embed_and_index()  # default: buildml.hashing_embed.v1
-session.rag_retrieve("query", k=5)
-session.rag_evaluate({"query": ["doc_id"]}, k=5)
+session.rag_retrieve("query", k=5)  # mode="dense"|"bm25"|"hybrid"
+session.rag_evaluate({"query": ["doc_id"]}, k=5)  # + nDCG / chunk mode
+session.rag_upsert([{"doc_id": "new", "text": "..."}])
+session.rag_delete(doc_ids=["stale"])
 session.save_rag_bundle("artifacts/rag_bundle")
 ```
 
 Bundles use schema `buildml.rag_bundle.v1` (not a Session checkpoint or Torch
 bundle). Default embedder is lexical hashing (CPU, no model download), not a
-semantic sentence model. No generate/LLM operator in this slice.
+semantic sentence model. Hybrid defaults to RRF; cross-encoder rerank is opt-in
+behind `buildml[rag]`. Generate/LLM operator remains deferred.
 
 ### Known limits (do not claim as done)
 
@@ -365,8 +368,8 @@ semantic sentence model. No generate/LLM operator in this slice.
 - Torch path: CPU CI merge gate; tabular numeric features first; no model zoo;
   materialized tensors (no Polars/DuckDB zero-copy); no auto classical prep
   before loaders; no fold-local Torch CV / DDP / AMP product path.
-- RAG M1: retrieve + eval + bundle only; no hybrid/rerank/generate; no Studio
-  redesign; hashing default is not semantic retrieval quality.
+- RAG M2: hybrid/BM25/rerank/upsert/filters/eval depth shipped; no generate;
+  no Studio redesign; hashing default is not semantic retrieval quality.
 - LLM operator, fairness, and SHAP-style explainability remain later.
 
 ### Local smoke
@@ -399,6 +402,7 @@ pip install -e ".[rag]"
 pip install pytest
 pytest \
   tests/unit/test_rag_slice.py \
+  tests/unit/test_rag_m2_depth.py \
   tests/integration/test_rag_smoke.py \
   -q
 ```

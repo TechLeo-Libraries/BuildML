@@ -2269,33 +2269,38 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
         _note(
             key="rag-retrieval-metrics",
             title="RAG retrieval metrics",
-            summary="recall@k and MRR measure ranking quality against gold docs; they are not classification accuracy.",
+            summary=(
+                "recall@k, MRR, nDCG@k, and hit-rate@k measure ranking quality against gold labels; "
+                "they are not classification accuracy."
+            ),
             definition=(
-                "Retrieval metrics score whether relevant documents appear in the top-k ranked hits for "
-                "each evaluation query, using gold relevance labels (qrels)."
+                "Retrieval metrics score whether relevant documents or chunks appear in the top-k ranked "
+                "hits for each evaluation query, using gold relevance labels (qrels)."
             ),
             intuition=(
                 "Ask whether the right book showed up near the top of the search results—not whether a "
                 "classifier predicted a class label."
             ),
             formal_idea=(
-                "For query q with relevant set R_q, recall@k = |{docs in top-k} ∩ R_q| / |R_q|. "
-                "MRR averages 1/rank of the first relevant hit (0 if none in the list)."
+                "For query q with relevant set R_q, recall@k = |{ids in top-k} ∩ R_q| / |R_q|. "
+                "MRR averages 1/rank of the first relevant hit. nDCG@k discounts later ranks; "
+                "hit-rate@k is the fraction of queries with at least one relevant hit."
             ),
             why_it_matters=(
                 "A single unlabeled 'accuracy' hides k, relevance mode, and corpus identity.",
                 "Document-level vs chunk-level relevance change what a hit means.",
             ),
             how_buildml_uses=(
-                "rag_evaluate computes document-level recall@k and MRR (chunk hits count via parent doc_id).",
-                "RagEvalResult.disclosures name k, relevance_mode, and embedder_id.",
+                "rag_evaluate supports relevance_mode=document (default) or chunk, plus retrieve mode overrides.",
+                "RagEvalResult exposes recall_at_k, mrr, ndcg_at_k, hit_rate_at_k, and disclosures.",
+                "compare_retrieval_configs rebuilds indexes per config row for side-by-side metrics.",
             ),
             interpretation_rules=(
-                "Always read metrics with k and relevance_mode.",
+                "Always read metrics with k, relevance_mode, and retrieve_mode.",
                 "Do not call recall@k 'accuracy'.",
             ),
             assumptions=(
-                "Qrels use document ids present in the indexed corpus.",
+                "Qrels ids match the claimed relevance_mode (doc_id or chunk_id).",
                 "The same embedder/index pair is used for every eval query in the run.",
             ),
             failure_modes=(
@@ -2306,7 +2311,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Reporting only top-1 hit rate as proof the RAG system is production-ready.",
             ),
             worked_example_pattern=(
-                "rag_embed_and_index → rag_evaluate(qrels, k=5) → read recall_at_k and mrr with disclosures.",
+                "rag_embed_and_index → rag_evaluate(qrels, k=5) → read recall_at_k, mrr, and ndcg_at_k.",
             ),
             related_concepts=("rag-eval-contamination", "rag-chunk-index-boundary", "evaluation-partitions"),
         ),

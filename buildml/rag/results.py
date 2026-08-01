@@ -158,13 +158,18 @@ class IndexResult:
 
 @dataclass(slots=True)
 class RetrieveResult:
-    """Dense top-k retrieval for one query."""
+    """Top-k retrieval for one query (dense, BM25, or hybrid)."""
 
     query: str
     k: int
     hits: tuple[Hit, ...]
     embedder_id: str
+    mode: str = "dense"
+    fusion: str | None = None
+    filters: dict[str, Any] | None = None
+    rerank: bool = False
     disclosures: tuple[str, ...] = ()
+    config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -173,7 +178,12 @@ class RetrieveResult:
             "n_hits": len(self.hits),
             "hits": [h.to_dict() for h in self.hits],
             "embedder_id": self.embedder_id,
+            "mode": self.mode,
+            "fusion": self.fusion,
+            "filters": None if self.filters is None else dict(self.filters),
+            "rerank": self.rerank,
             "disclosures": list(self.disclosures),
+            "config": dict(self.config),
         }
 
 
@@ -185,8 +195,11 @@ class RagEvalResult:
     k: int
     recall_at_k: float
     mrr: float
+    ndcg_at_k: float = 0.0
+    hit_rate_at_k: float = 0.0
     per_query: tuple[dict[str, Any], ...] = ()
     relevance_mode: str = "document"
+    retrieve_mode: str = "dense"
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
@@ -196,8 +209,29 @@ class RagEvalResult:
             "k": self.k,
             "recall_at_k": self.recall_at_k,
             "mrr": self.mrr,
+            "ndcg_at_k": self.ndcg_at_k,
+            "hit_rate_at_k": self.hit_rate_at_k,
             "relevance_mode": self.relevance_mode,
+            "retrieve_mode": self.retrieve_mode,
             "per_query": list(self.per_query),
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
+        }
+
+
+@dataclass(slots=True)
+class ConfigCompareResult:
+    """Side-by-side retrieval metrics for multiple configs."""
+
+    rows: tuple[dict[str, Any], ...]
+    k: int
+    relevance_mode: str
+    disclosures: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "rows": list(self.rows),
+            "k": self.k,
+            "relevance_mode": self.relevance_mode,
+            "disclosures": list(self.disclosures),
         }

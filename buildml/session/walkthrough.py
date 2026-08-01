@@ -37,6 +37,7 @@ class WorkflowWalkthroughReport:
     warm_start_status: dict[str, Any] = field(default_factory=dict)
     preprocess_scope_status: dict[str, Any] = field(default_factory=dict)
     torch_training_status: dict[str, Any] = field(default_factory=dict)
+    rag_status: dict[str, Any] = field(default_factory=dict)
     audit_summary: dict[str, Any] = field(default_factory=dict)
     html_path: str | None = None
 
@@ -53,6 +54,7 @@ class WorkflowWalkthroughReport:
             "warm_start_status": dict(self.warm_start_status),
             "preprocess_scope_status": dict(self.preprocess_scope_status),
             "torch_training_status": dict(self.torch_training_status),
+            "rag_status": dict(self.rag_status),
             "audit_summary": dict(self.audit_summary),
             "html_path": self.html_path,
         }
@@ -109,6 +111,7 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
             last_nested_cv=getattr(session, "last_nested_cv", None),
         ),
         torch_training_status=torch_training_status_for_walkthrough(session),
+        rag_status=rag_status_for_walkthrough(session),
         audit_summary={
             "n_operations": audit.n_operations,
             "warning_count": audit.warning_count,
@@ -129,6 +132,13 @@ def torch_training_status_for_walkthrough(session: Any) -> dict[str, Any]:
         train_result=getattr(session, "dl_train_result", None),
         history=list(getattr(session, "history", []) or []),
     )
+
+
+def rag_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual RAG index / embedder / store / eval disclosure."""
+    from buildml.rag.explain_hooks import rag_status_for_session
+
+    return rag_status_for_session(session)
 
 
 def warm_start_studies_status(
@@ -525,7 +535,8 @@ def _risks_and_concepts(
 
 def _engine_status(session: Any) -> dict[str, Any]:
     """Factual engine / lazy-native disclosure for orientation surfaces."""
-    dataset = getattr(session, "dataset", None)
+    # Prefer the private slot so RAG-only Sessions (no tabular ingest) do not raise.
+    dataset = getattr(session, "_dataset", None)
     if dataset is None:
         return {
             "engine": None,
@@ -581,10 +592,12 @@ def _orientation(report: dict[str, Any]) -> ReportSection:
     warm = report.get("warm_start_status") or {}
     scope = report.get("preprocess_scope_status") or {}
     torch_status = report.get("torch_training_status") or {}
+    rag_status = report.get("rag_status") or {}
     body = _frame(
         "Resolver statuses, engine/lazy-native status, nested-CV warm-start disclosure, "
         "fold-local vs Session-global preprocess scope, Torch training-curve disclosure "
-        "when a trainer exists, and the complete versioned Session history.",
+        "when a trainer exists, RAG index/embedder/eval disclosure when an index exists, "
+        "and the complete versioned Session history.",
         ", ".join(f"{key}={value}" for key, value in sorted(counts.items())),
         "The resolver separates operations already done from valid, blocked, and intentionally skipped paths.",
         "Availability proves API prerequisites only; it does not prove domain appropriateness.",
@@ -664,6 +677,30 @@ def _orientation(report: dict[str, Any]) -> ReportSection:
         for note in torch_status.get("disclosures") or []:
             body += f"<p>{escape(note)}</p>"
         for note in (torch_status.get("limitations") or [])[:3]:
+            body += f"<p>{escape(note)}</p>"
+    if rag_status.get("enabled"):
+        index = rag_status.get("index") or {}
+        last_eval = rag_status.get("eval") or {}
+        body += render_table(
+            [
+                {
+                    "n_documents": index.get("n_documents"),
+                    "n_chunks": index.get("n_chunks"),
+                    "embedder_id": index.get("embedder_id"),
+                    "dim": index.get("dim"),
+                    "store_backend": index.get("store_backend"),
+                    "eval_recall_at_k": last_eval.get("recall_at_k"),
+                    "eval_mrr": last_eval.get("mrr"),
+                    "eval_ndcg_at_k": last_eval.get("ndcg_at_k"),
+                    "relevance_mode": last_eval.get("relevance_mode"),
+                }
+            ],
+            caption="RAG index / embedder / last eval",
+        )
+        for note in rag_status.get("disclosures") or []:
+            body += f"<p>{escape(note)}</p>"
+    elif rag_status.get("present"):
+        for note in rag_status.get("disclosures") or []:
             body += f"<p>{escape(note)}</p>"
     return ReportSection("orientation", "Workflow orientation", body)
 

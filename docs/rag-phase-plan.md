@@ -7,7 +7,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [classical-ml-capability-map.md](./classical-ml-capability-map.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** M0 locked · M1 complete.  
+**Status:** M0 locked · M1 complete · M2 complete · M3 next.  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
 **North star:** flexibility · depth · functionality.  
 **M0 lock artifact:** [rag-m0-lock.md](./rag-m0-lock.md).
@@ -187,7 +187,7 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | Load text files / folder corpus | M1 | UTF-8; clear encoding errors |
 | Load tabular text column → documents | M1 | Bridge from Session/Dataset rows |
 | Chunk with size + overlap config | M1 | Deterministic IDs for resume/update |
-| Structure-aware chunk (markdown / headings) | M2 | When fixtures prove value |
+| Structure-aware chunk (markdown / headings) | L | Deferred — fixtures did not justify M2 inclusion |
 | PDF / OCR / HTML boilerplate cleanup product | L/X | Document limits; adapters later |
 | Multi-tenant ACL / redaction product | X | Out of library scope |
 
@@ -197,7 +197,7 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | --- | --- | --- |
 | Local default embedder behind protocol | M1 | Batch encode; dim recorded in bundle |
 | Caller-supplied embed callable | M1 | Escape hatch; contract = list[str] → ndarray |
-| GPU device for local embedder | M2 | Explicit device; CPU fallback with warning (mirror DL) |
+| GPU device for local embedder | M2 ✓ | `device=` on ST path; hashing remains CPU-only |
 | Remote API embedder | L | Optional `rag-api`; never block offline path |
 | Train / fine-tune embedder in BuildML | X | Use DL or external tools |
 
@@ -207,8 +207,8 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | --- | --- | --- |
 | Build index from chunk embeddings | M1 | Typed `IndexResult` |
 | Persist / load index + chunk metadata | M1 | Schema `buildml.rag_bundle.v1` |
-| Delete / upsert by document or chunk id | M2 | Resume/update index |
-| Metadata filters on retrieve | M2 | Declared fields only |
+| Delete / upsert by document or chunk id | M2 ✓ | Resume/update index |
+| Metadata filters on retrieve | M2 ✓ | Declared fields only |
 | Distributed / hosted vector DB product | X | Protocol may allow adapters later |
 
 ### 3.4 Retrieve
@@ -216,8 +216,8 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | Capability | Tag | Notes |
 | --- | --- | --- |
 | Dense top-k retrieve with scores | M1 | Query embed → search → ranked chunks |
-| Hybrid dense + lexical (BM25-style) | M2 | Config-driven blend; document default |
-| Rerank pass | M2 | Optional cross-encoder or score fusion |
+| Hybrid dense + lexical (BM25-style) | M2 ✓ | Config-driven blend; RRF default |
+| Rerank pass | M2 ✓ | Optional cross-encoder behind `rag` extra |
 | Multi-query / HyDE-style expansion | L | After eval harness exists |
 | Agent tool loops | X | `buildml.ai` later |
 
@@ -225,18 +225,18 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 
 | Capability | Tag | Notes |
 | --- | --- | --- |
-| Grounded generate from retrieved context | M2→L | Optional; alpha can be retrieve-only |
-| Citation / source span attachments | M2 | When generate ships |
+| Grounded generate from retrieved context | M3→L | Deferred; alpha remains retrieve-only |
+| Citation / source span attachments | M3→L | When generate ships |
 | Require cloud LLM for RAG alpha | X | Explicit non-goal |
 
 ### 3.6 Evaluate retrieval quality
 
 | Capability | Tag | Notes |
 | --- | --- | --- |
-| Gold qrels → recall@k / MRR / nDCG@k | M1 | Minimal harness for the vertical slice |
-| Chunk-level vs doc-level relevance modes | M2 | Document which mode is claimed |
+| Gold qrels → recall@k / MRR / nDCG@k | M1/M2 ✓ | M1 recall/MRR; M2 adds nDCG + hit-rate |
+| Chunk-level vs doc-level relevance modes | M2 ✓ | `relevance_mode` document\|chunk |
 | Faithfulness / answer grading | L | Needs generate + careful methodology |
-| Compare embedders / chunk configs | M2 | Structured experiment table |
+| Compare embedders / chunk configs | M2 ✓ | `compare_retrieval_configs` |
 
 ### 3.7 Checkpoint / bundle artifacts
 
@@ -253,8 +253,8 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | --- | --- | --- |
 | Catalog entries for ingest/chunk/index/retrieve/eval/bundle | M1 | Prerequisites, leakage, result reading |
 | Concept notes: chunk leakage, eval contamination, embedding drift | M1 | Link from operations |
-| History + walkthrough awareness of RAG ops | M1–M2 | Status block when index attached |
-| Retrieval diagnostic panels (hit lists, score gaps) | M2 | Structured results first; Studio later |
+| History + walkthrough awareness of RAG ops | M1–M2 ✓ | `rag_status` when index attached |
+| Retrieval diagnostic panels (hit lists, score gaps) | M2 ✓ | Structured RetrieveResult / eval rows; Studio later |
 | Force classical EDA boards onto corpora | X | Teach retrieval/evals instead |
 
 ### 3.9 Leakage and data hygiene
@@ -264,7 +264,7 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | Separate index corpus vs eval query set | M1 | Config + tests; refuse silent reuse |
 | Refuse indexing labeled eval answers when declared | M1 | Catalog leakage field |
 | Document train/index vs test query contamination | M1 | Teaching copy + anti-patterns |
-| Time-aware corpus cutoff for queries | M2 | When timestamps exist |
+| Time-aware corpus cutoff for queries | L | Deferred until timestamped corpora are first-class |
 | PII redaction product | L | Warnings + guidance first |
 
 ---
@@ -408,9 +408,20 @@ rag_ingest_corpus (fixture docs)
 
 **Exit**
 
-- [ ] Capability map M2 rows green or explicitly deferred with reason
-- [ ] Teaching disclosures for corpus vs eval set + embedder/device
-- [ ] Quality bar: not “top-1 accuracy only”; structured retrieval diagnostics present
+- [x] Capability map M2 rows green or explicitly deferred with reason
+- [x] Teaching disclosures for corpus vs eval set + embedder/device
+- [x] Quality bar: not “top-1 accuracy only”; structured retrieval diagnostics present
+
+**M2 delivery notes**
+
+- Hybrid dense + BM25 with RRF (default) or weighted fusion; `RetrieveConfig.mode` /
+  Session `rag_retrieve(mode=...)`.
+- Optional cross-encoder rerank behind `buildml[rag]` (`MissingExtraError` when absent).
+- Upsert/delete by chunk/doc id; metadata equality filters on retrieve.
+- Eval: `relevance_mode` document|chunk; nDCG@k + hit-rate@k; `compare_retrieval_configs`.
+- Walkthrough / workflow `rag_status` disclosures (index, embedder, store, last eval).
+- Generate deferred to M3→L (retrieve-only alpha remains valid).
+- Structure-aware markdown chunking and time-aware corpus cutoffs remain later when fixtures warrant.
 
 ### M3 — Docs and RAG alpha gate
 
@@ -520,7 +531,7 @@ PDF/OCR productization, hosted vector DBs, Teaching Studio redesign, `buildml.ai
 | Default vector store | Locked | NumPy cosine top-k + `embeddings.npy` / `chunks.jsonl` sidecar |
 | Bundle schema id | Locked | `buildml.rag_bundle.v1` |
 | Bundle vs Session checkpoint vs Torch | Locked | Three distinct artifacts; see §2 and [rag-m0-lock.md](./rag-m0-lock.md) |
-| Generate in M1 vs M2+ | Locked | Retrieve+eval+bundle in M1; generate deferred (M2→L) |
+| Generate in M1 vs M2+ | Locked | Retrieve+eval+bundle in M1; generate deferred after M2 (M3→L) |
 | RAG CI Python versions | Locked | 3.11 + 3.12 (mirror `torch` job) |
 | Whether tabular text auto-ingests from current Session frame | Locked | Explicit `rag_ingest_corpus` only (no silent full-frame index) |
 

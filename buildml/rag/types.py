@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
 DEFAULT_CHUNK_SIZE = 512
@@ -11,6 +11,17 @@ DEFAULT_EMBED_DIM = 384
 DEFAULT_TOP_K = 5
 HASHING_EMBEDDER_ID = "buildml.hashing_embed.v1"
 DEFAULT_STORE_BACKEND = "numpy_cosine"
+DEFAULT_RETRIEVE_MODE: Literal["dense", "bm25", "hybrid"] = "dense"
+DEFAULT_FUSION: Literal["rrf", "weighted"] = "rrf"
+DEFAULT_RRF_K = 60
+DEFAULT_DENSE_WEIGHT = 0.5
+DEFAULT_BM25_K1 = 1.5
+DEFAULT_BM25_B = 0.75
+DEFAULT_RERANK_CANDIDATES = 20
+
+RetrieveMode = Literal["dense", "bm25", "hybrid"]
+FusionMethod = Literal["rrf", "weighted"]
+RelevanceMode = Literal["document", "chunk"]
 
 
 @dataclass(slots=True)
@@ -39,6 +50,7 @@ class EmbedConfig:
     dim: int = DEFAULT_EMBED_DIM
     backend: Literal["hashing", "sentence-transformers", "callable"] = "hashing"
     model_name: str | None = None
+    device: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -50,6 +62,7 @@ class EmbedConfig:
             dim=int(payload.get("dim") or DEFAULT_EMBED_DIM),
             backend=payload.get("backend") or "hashing",
             model_name=payload.get("model_name"),
+            device=payload.get("device"),
         )
 
 
@@ -69,13 +82,73 @@ class IndexConfig:
 
 @dataclass(slots=True)
 class RetrieveConfig:
-    """Dense retrieval knobs."""
+    """Retrieval knobs for dense, BM25, and hybrid modes.
+
+    Defaults
+    --------
+    - ``mode="dense"`` — cosine top-k over the NumPy store (M1 behavior).
+    - ``fusion="rrf"`` with ``rrf_k=60`` when ``mode="hybrid"``.
+    - ``rerank=False`` — no cross-encoder pass unless explicitly requested.
+    - ``filters=None`` — no metadata equality filter.
+    """
 
     k: int = DEFAULT_TOP_K
+    mode: RetrieveMode = DEFAULT_RETRIEVE_MODE
+    fusion: FusionMethod = DEFAULT_FUSION
+    rrf_k: int = DEFAULT_RRF_K
+    dense_weight: float = DEFAULT_DENSE_WEIGHT
+    bm25_k1: float = DEFAULT_BM25_K1
+    bm25_b: float = DEFAULT_BM25_B
+    filters: dict[str, Any] | None = None
+    rerank: bool | str = False
+    rerank_model: str | None = None
+    rerank_candidates: int = DEFAULT_RERANK_CANDIDATES
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        payload["filters"] = None if self.filters is None else dict(self.filters)
+        return payload
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> RetrieveConfig:
-        return cls(k=int(payload.get("k") or DEFAULT_TOP_K))
+        filters = payload.get("filters")
+        return cls(
+            k=int(payload.get("k") or DEFAULT_TOP_K),
+            mode=payload.get("mode") or DEFAULT_RETRIEVE_MODE,
+            fusion=payload.get("fusion") or DEFAULT_FUSION,
+            rrf_k=int(payload.get("rrf_k") or DEFAULT_RRF_K),
+            dense_weight=float(payload.get("dense_weight", DEFAULT_DENSE_WEIGHT)),
+            bm25_k1=float(payload.get("bm25_k1", DEFAULT_BM25_K1)),
+            bm25_b=float(payload.get("bm25_b", DEFAULT_BM25_B)),
+            filters=None if filters is None else dict(filters),
+            rerank=payload.get("rerank", False),
+            rerank_model=payload.get("rerank_model"),
+            rerank_candidates=int(
+                payload.get("rerank_candidates") or DEFAULT_RERANK_CANDIDATES
+            ),
+        )
+
+
+@dataclass(slots=True)
+class EvalConfig:
+    """Retrieval evaluation knobs."""
+
+    k: int = DEFAULT_TOP_K
+    relevance_mode: RelevanceMode = "document"
+    retrieve: RetrieveConfig = field(default_factory=RetrieveConfig)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "k": self.k,
+            "relevance_mode": self.relevance_mode,
+            "retrieve": self.retrieve.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> EvalConfig:
+        retrieve_payload = payload.get("retrieve") or {}
+        return cls(
+            k=int(payload.get("k") or DEFAULT_TOP_K),
+            relevance_mode=payload.get("relevance_mode") or "document",
+            retrieve=RetrieveConfig.from_dict(retrieve_payload),
+        )

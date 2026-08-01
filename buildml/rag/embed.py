@@ -83,12 +83,21 @@ class CallableEmbedder:
 class SentenceTransformerEmbedder:
     """Optional local sentence-transformer backend (requires ``buildml[rag]``)."""
 
-    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2") -> None:
+    def __init__(
+        self,
+        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+        *,
+        device: str | None = None,
+    ) -> None:
         from buildml.rag.extras import require_sentence_transformers
 
         st = require_sentence_transformers(feature="Sentence-transformer embeddings")
-        self._model = st.SentenceTransformer(model_name)
+        kwargs: dict[str, Any] = {}
+        if device is not None:
+            kwargs["device"] = device
+        self._model = st.SentenceTransformer(model_name, **kwargs)
         self.model_name = model_name
+        self.device = device
         self.embedder_id = f"sentence-transformers:{model_name}"
         # Probe dim with an empty-safe encode of a single token.
         probe = np.asarray(self._model.encode(["probe"], convert_to_numpy=True))
@@ -108,14 +117,19 @@ def resolve_embedder(
     embedder: Embedder | EmbedFn | str | None = None,
     *,
     dim: int = DEFAULT_EMBED_DIM,
+    device: str | None = None,
 ) -> tuple[Any, EmbedConfig]:
     """Resolve the public embedder argument into an object + config."""
     if embedder is None or embedder == "hashing":
+        if device is not None:
+            # Hashing is CPU-only; record the request without claiming GPU use.
+            pass
         resolved = HashingEmbedder(n_features=dim)
         cfg = EmbedConfig(
             embedder_id=resolved.embedder_id,
             dim=resolved.dim,
             backend="hashing",
+            device=None,
         )
         return resolved, cfg
     if isinstance(embedder, str):
@@ -123,12 +137,13 @@ def resolve_embedder(
             model = "sentence-transformers/all-MiniLM-L6-v2"
         else:
             model = embedder
-        resolved = SentenceTransformerEmbedder(model_name=model)
+        resolved = SentenceTransformerEmbedder(model_name=model, device=device)
         cfg = EmbedConfig(
             embedder_id=resolved.embedder_id,
             dim=resolved.dim,
             backend="sentence-transformers",
             model_name=resolved.model_name,
+            device=device,
         )
         return resolved, cfg
     if callable(embedder) and not hasattr(embedder, "encode"):
@@ -137,6 +152,7 @@ def resolve_embedder(
             embedder_id=resolved.embedder_id,
             dim=resolved.dim,
             backend="callable",
+            device=device,
         )
         return resolved, cfg
     # Protocol / object with encode
@@ -152,5 +168,6 @@ def resolve_embedder(
         embedder_id=embedder_id,
         dim=resolved_dim,
         backend="callable",
+        device=device or getattr(resolved, "device", None),
     )
     return resolved, cfg

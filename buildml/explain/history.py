@@ -18,6 +18,8 @@ _EMPTY_STATE: dict[str, Any] = {
     "split_kind": None,
     "has_fit": False,
     "has_dl_train": False,
+    "has_rag_corpus": False,
+    "has_rag_index": False,
     "has_impute_plan": False,
     "has_encode_plan": False,
     "has_scale_plan": False,
