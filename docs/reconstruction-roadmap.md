@@ -8,6 +8,7 @@ Decision-oriented planning map for a full system rewrite · grounded in the 1 Au
 > - [ingest-engine-checkpoint-design.md](./ingest-engine-checkpoint-design.md)  
 > - [phase-1-build-plan.md](./phase-1-build-plan.md)  
 > - [deep-learning-phase-plan.md](./deep-learning-phase-plan.md)  
+> - [rag-phase-plan.md](./rag-phase-plan.md)  
 > - [development-environment.md](./development-environment.md)  
 > Canvas twin:  
 > `C:/Users/leona/.cursor/projects/c-Users-leona-Desktop-Github-Projects-BuildML/canvases/buildml-reconstruction-roadmap.canvas.tsx`
