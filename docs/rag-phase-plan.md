@@ -7,10 +7,10 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [classical-ml-capability-map.md](./classical-ml-capability-map.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** planning / awaiting M0 approval.  
+**Status:** M0 locked · M1 in progress.  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
 **North star:** flexibility · depth · functionality.  
-**M0 lock artifact (to write after approval):** `docs/rag-m0-lock.md` (same shape as [dl-m0-lock.md](./dl-m0-lock.md)).
+**M0 lock artifact:** [rag-m0-lock.md](./rag-m0-lock.md).
 
 ---
 
@@ -356,12 +356,12 @@ every core matrix cell.
 
 **Exit**
 
-- [ ] Public API sketch agreed (method names + result types)
-- [ ] Default embedder + store backend chosen; protocol written
-- [ ] Bundle vs Session checkpoint vs Torch bundle boundary written and accepted
-- [ ] Extra pins + CI Python subset chosen
-- [ ] Version line locked (proposed: `2.2.0a1`)
-- [ ] No production RAG code required beyond optional spikes in a branch
+- [x] Public API sketch agreed (method names + result types)
+- [x] Default embedder + store backend chosen; protocol written
+- [x] Bundle vs Session checkpoint vs Torch bundle boundary written and accepted
+- [x] Extra pins + CI Python subset chosen
+- [x] Version line locked (`2.2.0a1` at M3)
+- [x] Lock file written (`docs/rag-m0-lock.md`); M1 implementation follows
 
 ### M1 — Thin vertical slice
 
@@ -509,20 +509,20 @@ PDF/OCR productization, hosted vector DBs, Teaching Studio redesign, `buildml.ai
 
 ---
 
-## Decision log (open until M0)
+## Decision log (locked in M0)
 
 | Topic | Status | Notes |
 | --- | --- | --- |
-| Public method prefix (`rag_*` vs `*_rag`) | Open | Prefer `rag_*` Session methods for clarity vs `*_torch` |
-| Version line for RAG alpha | Proposed | `2.2.0a1` (confirm in M0) |
-| Extra name canonical | Proposed | `rag` = deps; optional later `rag-gpu` / `rag-api` |
-| Default embedder + pin | Open | Local sentence-transformer (or equivalent); pin in M0 |
-| Default vector store | Open | Protocol + one default from FAISS / Chroma / NumPy-kNN |
-| Bundle schema id | Proposed | `buildml.rag_bundle.v1` |
-| Bundle vs Session checkpoint vs Torch | Proposed | Three distinct artifacts; see §2 |
-| Generate in M1 vs M2+ | Proposed | Retrieve+eval+bundle in M1; generate optional M2→L |
-| RAG CI Python versions | Open | Likely 3.11 + 3.12 (mirror `torch` job) |
-| Whether tabular text auto-ingests from current Session frame | Open | Prefer explicit `rag_ingest_*` (no silent full-frame index) |
+| Public method prefix (`rag_*` vs `*_rag`) | Locked | `rag_*` Session methods; result slots `rag_index_result` / `rag_retrieve_result` / `rag_eval_result` |
+| Version line for RAG alpha | Locked | `2.2.0a1` at M3 (classical `2.0.0a1`, DL `2.1.0a1`) |
+| Extra name canonical | Locked | `rag` = deps; optional later `rag-gpu` / `rag-api` |
+| Default embedder + pin | Locked | Default `buildml.hashing_embed.v1` (HashingVectorizer, dim=384); extra pins `sentence-transformers>=2.2` for gate + optional ST backend |
+| Default vector store | Locked | NumPy cosine top-k + `embeddings.npy` / `chunks.jsonl` sidecar |
+| Bundle schema id | Locked | `buildml.rag_bundle.v1` |
+| Bundle vs Session checkpoint vs Torch | Locked | Three distinct artifacts; see §2 and [rag-m0-lock.md](./rag-m0-lock.md) |
+| Generate in M1 vs M2+ | Locked | Retrieve+eval+bundle in M1; generate deferred (M2→L) |
+| RAG CI Python versions | Locked | 3.11 + 3.12 (mirror `torch` job) |
+| Whether tabular text auto-ingests from current Session frame | Locked | Explicit `rag_ingest_corpus` only (no silent full-frame index) |
 
 ---
 

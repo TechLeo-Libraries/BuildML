@@ -21,6 +21,8 @@ ARCHIVAL_DOCS = {
     "docs/history.rst",
     "docs/ingest-engine-checkpoint-design.md",
     "docs/phase-1-build-plan.md",
+    "docs/rag-m0-lock.md",
+    "docs/rag-phase-plan.md",
     "docs/reconstruction-roadmap.md",
 }
 QUOTED_EXAMPLE_DOCS = {"docs/editorial-standards.md"}
