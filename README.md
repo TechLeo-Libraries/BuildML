@@ -26,6 +26,7 @@ pip install "buildml[eda]"          # viz + reports
 pip install "buildml[dashboard]"    # local EDA Teaching Studio (FastAPI + Plotly)
 pip install "buildml[engines]"      # Polars and DuckDB adapters
 pip install "buildml[optuna]"       # Optuna hyperparameter search
+pip install "buildml[torch]"        # tabular Torch thin slice (alias: buildml[dl])
 pip install "buildml[imbalanced]"   # imbalanced-learn samplers
 pip install "buildml[excel]"        # Excel input support
 pip install "buildml[all-classical]"
@@ -320,8 +321,9 @@ formats may change before stable 2.0. Release readiness is defined by the
   in-memory design matrix (not out-of-core fitting).
 - Hashing text features are not invertible; PCA explained variance is
   unsupervised.
-- Deep learning / RAG / LLM operator, fairness, and SHAP-style explainability
-  are out of classical alpha scope.
+- RAG / LLM operator, fairness, and SHAP-style explainability remain out of
+  classical alpha scope. A tabular Torch thin slice is available behind
+  `buildml[torch]` (see below); it is separate from classical `Session.fit`.
 
 ### Local smoke
 
@@ -334,12 +336,21 @@ pytest tests/integration/test_classical_alpha_smoke.py -q
 pytest --cov=buildml --cov-report=term-missing
 ```
 
-Optional engines / Optuna:
+Optional engines / Optuna / Torch:
 
 ```bash
 pip install -e ".[dev,engines,optuna]"
 pytest tests/unit/test_engine_aggregate.py tests/unit/test_nested_cv_optuna.py -q
+
+pip install -e ".[torch]"
+pip install pytest
+pytest tests/unit/test_dl_torch_slice.py tests/integration/test_dl_torch_smoke.py -q
 ```
+
+Tabular Torch slice (optional): after split, `make_torch_loaders` → `fit_torch` →
+`evaluate_torch` → `save_torch_bundle`. Core `import buildml` never requires Torch.
+Trainer bundles (`buildml.torch_bundle.v1`) are not Session checkpoints. Design lock:
+[docs/dl-m0-lock.md](docs/dl-m0-lock.md).
 
 Tag only after remote CI is green on the release candidate push. See
 [docs/release-checklist-a1.md](docs/release-checklist-a1.md).

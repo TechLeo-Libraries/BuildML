@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ARCHIVAL_DOCS = {
     "docs/architecture-review.md",
     "docs/classical-ml-capability-map.md",
+    "docs/deep-learning-phase-plan.md",
+    "docs/dl-m0-lock.md",
     "docs/history.rst",
     "docs/ingest-engine-checkpoint-design.md",
     "docs/phase-1-build-plan.md",

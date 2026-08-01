@@ -113,6 +113,37 @@ jobs:
             tests/unit/test_nested_cv_warm_start.py \
             -q
 
+  torch:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package with torch + lean test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[torch]"
+          pip install pytest pytest-cov ruff
+
+      - name: Core import smoke without relying on classical extras
+        run: python -c "import buildml; print(buildml.__version__)"
+
+      - name: Torch DL thin-slice tests
+        run: |
+          pytest \
+            tests/unit/test_dl_torch_slice.py \
+            tests/integration/test_dl_torch_smoke.py \
+            -q
+
   extras:
     runs-on: ubuntu-latest
     strategy:

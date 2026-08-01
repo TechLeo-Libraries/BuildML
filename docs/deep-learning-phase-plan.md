@@ -7,9 +7,10 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [ingest-engine-checkpoint-design.md](./ingest-engine-checkpoint-design.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** Planning only — no implementation until this document is approved.  
+**Status:** M0 locked · M1 in progress (thin tabular Torch slice).  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
-**North star:** flexibility · depth · functionality.
+**North star:** flexibility · depth · functionality.  
+**M0 lock artifact:** [dl-m0-lock.md](./dl-m0-lock.md).
 
 ---
 
@@ -299,10 +300,10 @@ core matrix cell.
 
 **Exit**
 
-- [ ] Public API sketch agreed (method names + result types)
-- [ ] Bundle vs Session checkpoint boundary written and accepted
-- [ ] Torch pin + CI Python subset chosen
-- [ ] No production code required beyond optional spikes in a branch
+- [x] Public API sketch agreed (method names + result types)
+- [x] Bundle vs Session checkpoint boundary written and accepted
+- [x] Torch pin + CI Python subset chosen
+- [x] No production code required beyond optional spikes in a branch
 
 ### M1 — Thin vertical slice
 
@@ -328,11 +329,11 @@ Session.ingest → set_roles → split
 
 **Exit**
 
-- [ ] Core CI unchanged (no Torch required)
-- [ ] DL smoke green on CI CPU job
-- [ ] Leakage tests: test partition never shuffled into train loader; normalize fit train-only
-- [ ] `MissingExtraError` path tested without Torch installed
-- [ ] Typed results + docstrings for public delegates
+- [x] Core CI unchanged (no Torch required)
+- [x] DL smoke green on CI CPU job (`torch` job; 3.11–3.12)
+- [x] Leakage tests: test partition never shuffled into train loader; normalize fit train-only
+- [x] `MissingExtraError` path tested without Torch installed
+- [x] Typed results + docstrings for public delegates
 
 ### M2 — Depth
 
@@ -439,17 +440,18 @@ EDA Studio redesign, ONNX export, RAG embeddings.
 
 ---
 
-## Decision log (open → lock in M0)
+## Decision log (locked in M0)
 
 | Topic | Status | Notes |
 | --- | --- | --- |
-| Public method prefix (`fit_torch` vs `dl_fit`) | Open | Prefer clarity vs classical `fit` |
-| Version line for DL alpha | Open | `2.1.0a1` vs `3.0.0a1` |
-| Extra name canonical (`torch` vs `dl` vs both) | Lean both | `torch` = deps; `dl` = alias |
-| Minimum Torch version | Open | Set from wheel + Python matrix evidence |
-| DL CI Python versions | Open | Default proposal: 3.11 + 3.12 |
-| Whether classical preprocess plans auto-apply before loaders | Open | Safer default: explicit opt-in |
-| Trainer bundle serializer | Open | `torch.save` dict + JSON sidecar metadata preferred over bare pickle of Session |
+| Public method prefix (`fit_torch` vs `dl_fit`) | Locked | `*_torch` Session methods; result slot `dl_train_result` |
+| Version line for DL alpha | Locked | `2.1.0a1` (classical remains `2.0.0a1`) — apply at M3 |
+| Extra name canonical (`torch` vs `dl` vs both) | Locked | `torch` = deps; `dl` = alias meta-extra |
+| Minimum Torch version | Locked | `torch>=2.2` in `pyproject.toml` |
+| DL CI Python versions | Locked | 3.11 + 3.12 (`torch` CI job) |
+| Whether classical preprocess plans auto-apply before loaders | Locked | No auto-apply; call classical prep explicitly first |
+| Trainer bundle serializer | Locked | `torch.save` (`trainer.pt`) + JSON `meta.json`; schema `buildml.torch_bundle.v1` |
+| Bundle vs Session checkpoint | Locked | See [dl-m0-lock.md](./dl-m0-lock.md) |
 
 ---
 

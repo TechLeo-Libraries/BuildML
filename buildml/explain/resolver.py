@@ -28,6 +28,8 @@ _PROVIDERS: dict[str, tuple[str, ...]] = {
         "grid_search",
         "randomized_search",
     ),
+    "fit_torch": ("fit_torch", "load_torch_bundle"),
+    "torch-extra": (),
     "viz-extra": (),
 }
 
@@ -46,15 +48,19 @@ _REPEATABLE = {
     "error_slices",
     "eval_plots",
     "evaluate",
+    "evaluate_torch",
     "explain",
     "extract_dates",
     "feature_importance",
+    "fit_torch",
     "grid_search",
     "handle_outliers",
     "head",
     "impute",
     "learning_curve",
     "list_transforms",
+    "load_torch_bundle",
+    "make_torch_loaders",
     "metadata",
     "nested_cv_score",
     "partition",
@@ -68,6 +74,7 @@ _REPEATABLE = {
     "resample_strategies",
     "save_model",
     "save_pipeline",
+    "save_torch_bundle",
     "scale",
     "select_features",
     "summarize_history",
@@ -133,6 +140,22 @@ def _prerequisite_state(session: Any, key: str) -> tuple[bool, str]:
             "An active fitted estimator exists."
             if present
             else "No active fitted estimator exists.",
+        )
+    if key == "fit_torch":
+        present = getattr(session, "_dl_train_result", None) is not None
+        return (
+            present,
+            "An active Torch trainer exists."
+            if present
+            else "No active Torch trainer exists.",
+        )
+    if key == "torch-extra":
+        present = find_spec("torch") is not None
+        return (
+            present,
+            "Torch dependencies are installed."
+            if present
+            else "Torch is not installed; install buildml[torch] for DL methods.",
         )
     if key == "viz-extra":
         present = find_spec("matplotlib") is not None

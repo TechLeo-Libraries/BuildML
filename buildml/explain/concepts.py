@@ -2032,6 +2032,97 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             related_concepts=("reproducibility", "leakage-boundary", "dry-run-plans"),
         ),
+        _note(
+            key="batch-leakage",
+            title="Batch and loader leakage",
+            summary="Train-only shuffling and train-fit batch transforms must not remix evaluation rows into learning.",
+            definition=(
+                "Batch leakage occurs when evaluation-partition rows influence training batches—through "
+                "shared shuffling, oversampling, or statistics (normalize/augment) fit on more than train."
+            ),
+            intuition=(
+                "If the DataLoader that updates weights can see test rows, or if batch normalize peeks at "
+                "holdout values, the network practices on the exam."
+            ),
+            formal_idea=(
+                "Let partitions be disjoint. A train DataLoader may shuffle within train only. Any transform "
+                "parameters θ_batch = L(train) apply frozen to validation/test loaders."
+            ),
+            why_it_matters=(
+                "Loader mistakes create optimistic Torch metrics that classical split discipline alone cannot catch.",
+                "Normalize fit on all partitions is the neural analogue of scaling before train_test_split.",
+            ),
+            how_buildml_uses=(
+                "Session.make_torch_loaders shuffles the train loader only.",
+                "Optional standardize fits mean/std on train and freezes them on validation/test.",
+                "Catalog leakage notes call out shuffle and normalize scope for Torch ops.",
+            ),
+            interpretation_rules=(
+                "If shuffle was enabled on validation/test loaders, treat subsequent scores as contaminated.",
+                "Empty holdout loaders are a data issue, not a reason to merge partitions.",
+            ),
+            assumptions=(
+                "Split membership is defined before loader construction.",
+                "Feature matrices are prepared without refitting on evaluation rows.",
+            ),
+            failure_modes=(
+                "Concatenating partitions into one Dataset with a single shuffle flag.",
+                "Global StandardScaler fit before building partition loaders.",
+            ),
+            anti_patterns=(
+                "Building one shuffled DataLoader over the full table, then slicing batches by index later.",
+            ),
+            worked_example_pattern=(
+                "Split → make_torch_loaders(shuffle_train=True) → assert validation/test loaders do not shuffle.",
+                "Compare train-fit normalize versus full-table normalize on the same holdout.",
+            ),
+            related_concepts=("leakage-boundary", "evaluation-partitions", "data-splitting"),
+        ),
+        _note(
+            key="early-stopping-partition",
+            title="Early-stopping partition",
+            summary="Stopping rules may read validation metrics; the test partition remains a final estimate only.",
+            definition=(
+                "Early stopping selects a training epoch using a monitor partition—almost always validation—"
+                "so that test metrics stay out of the stopping decision."
+            ),
+            intuition=(
+                "Validation tells you when to put the pencil down. If you watch the official test score to "
+                "decide when to stop, the official score is no longer independent."
+            ),
+            formal_idea=(
+                "Choose epoch t* = argmin_t M(validation_t). Report generalization with M(test_{t*}) only after "
+                "t* is fixed. Using M(test) inside the argmin biases the reported score."
+            ),
+            why_it_matters=(
+                "Neural nets overfit easily; stopping on test hides that overfitting.",
+                "Teaching and model cards need the monitor partition named beside the selected epoch.",
+            ),
+            how_buildml_uses=(
+                "M1 records optional validation loss each epoch but does not auto-stop yet (M2).",
+                "evaluate_torch defaults to partition='test' for final scoring after training choices freeze.",
+                "Catalog anti-patterns warn against test-tuned stopping.",
+            ),
+            interpretation_rules=(
+                "Read every curve with its partition tag.",
+                "If stopping used test, treat the test metric as optimistic.",
+            ),
+            assumptions=(
+                "A validation partition exists when early stopping will be enabled.",
+                "Train/val/test membership stays fixed across the run.",
+            ),
+            failure_modes=(
+                "Selecting the best test epoch after the fact and reporting that test score.",
+                "Retuning patience repeatedly against the same test split.",
+            ),
+            anti_patterns=(
+                "Using test loss as the early-stopping monitor.",
+            ),
+            worked_example_pattern=(
+                "Train with val_loss history; pick an epoch on validation; call evaluate_torch(partition='test') once.",
+            ),
+            related_concepts=("evaluation-partitions", "leakage-boundary", "batch-leakage"),
+        ),
     )
 }
 
