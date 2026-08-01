@@ -17,6 +17,42 @@ with pre-release tags for alpha (`aN`) builds.
 - Richer `dry_run` / `summarize_history` audit UX (ranked risks, prerequisite
   graph summary, suggested next ops) surfaced on walkthrough HTML.
 
+## [2.1.0a1] — DL alpha — 2026-08-01
+
+First deep-learning alpha on the BuildML 2.x `Session` API. Exit criteria and
+known limits are defined in [`docs/dl-alpha-gate.md`](docs/dl-alpha-gate.md).
+Classical alpha remains documented at `2.0.0a1`; this line adds optional Torch.
+
+### Added
+
+- Optional `buildml.dl` domain behind `buildml[torch]` (alias `buildml[dl]`):
+  tabular partition → DataLoaders → train loop → evaluate → trainer bundle.
+- Session delegates: `make_torch_loaders`, `fit_torch`, `evaluate_torch`,
+  `torch_training_curve`, `save_torch_bundle`, `load_torch_bundle`; result slot
+  `dl_train_result`.
+- Trainer bundle schema `buildml.torch_bundle.v1` (distinct from Session
+  checkpoints and classical pipeline bundles).
+- M2 depth: early stopping, grad clip, LR schedulers, group/time split honor,
+  resume training, structured training-curve report, walkthrough Torch status.
+- Explain catalog/concept coverage for Torch ops; DL quickstart, glossary terms,
+  alpha gate, and release checklist.
+- CI `torch` job (Python 3.11–3.12) with unit, integration, and DL alpha smoke.
+
+### Known limits (DL alpha)
+
+- CPU merge gate; no GPU CI on every PR. Tabular numeric features first.
+- No built-in model zoo; caller supplies `nn.Module`.
+- Materialized Pandas/NumPy tensors; no Polars/DuckDB zero-copy into loaders.
+- Classical preprocess is not auto-applied before loaders.
+- No fold-local Torch CV, DDP, mixed precision, or ONNX/TorchScript product path.
+- RAG / LLM operator remain out of scope.
+- Public Torch APIs and bundle formats may change before a stable DL release.
+
+### Verification
+
+- Gate checklist: `docs/dl-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `docs/release-checklist-dl-a1.md`).
+
 ## [2.0.0a1] — classical alpha — 2026-08-01
 
 First classical-ML alpha of the BuildML 2.x `Session` API. Exit criteria and

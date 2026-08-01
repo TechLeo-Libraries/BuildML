@@ -137,13 +137,17 @@ jobs:
       - name: Core import smoke without relying on classical extras
         run: python -c "import buildml; print(buildml.__version__)"
 
-      - name: Torch DL slice + M2 depth tests
+      - name: Torch DL slice + M2 depth + DL alpha-gate smoke
         run: |
           pytest \
             tests/unit/test_dl_torch_slice.py \
             tests/unit/test_dl_m2_depth.py \
             tests/integration/test_dl_torch_smoke.py \
+            tests/integration/test_dl_alpha_smoke.py \
             -q
+
+      - name: DL alpha-gate smoke (explicit)
+        run: pytest tests/integration/test_dl_alpha_smoke.py -q
 
   extras:
     runs-on: ubuntu-latest

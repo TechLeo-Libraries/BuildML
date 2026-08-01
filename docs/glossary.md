@@ -32,9 +32,26 @@ The policy describing how BuildML intends to handle dataset scale, including mem
 Changing the mode after ingestion records policy metadata; it does not retroactively unload an
 already materialized frame.
 
+**DataLoader (Torch)**  
+A batched iterator over partition tensors built by `Session.make_torch_loaders`. Shuffle applies to
+the train loader only. Validation and test loaders stay unshuffled for evaluation honesty.
+
+**DeviceSpec**  
+Resolved compute device for Torch training (`cpu`, `cuda`, or `mps`) plus any fallback warning when
+the requested device was unavailable.
+
 **Decision origin**  
 One of `automatic`, `recommended`, or `explicit`, identifying whether BuildML selected a choice,
 suggested it without mutation, or received it from the caller.
+
+**dl_train_result**  
+The Session slot holding the last Torch `TrainResult`. Distinct from classical `fit_result`. Cleared
+only by a new Torch fit/load path; classical `fit` does not overwrite it.
+
+**Early stopping (Torch)**  
+Optional patience on a validation monitor (default `val_loss`) during `fit_torch`. Selecting the
+epoch on the test partition turns test into selection data; use validation for stopping and test
+once the recipe is fixed.
 
 **Engine**  
 The tabular execution/interchange implementation: currently Pandas, Polars, or DuckDB. Polars and
@@ -53,7 +70,9 @@ a finding. Evidence includes its source and limitations where relevant.
 
 **Feature contract**  
 The names, order, representation, and meaning of columns expected by a fitted estimator. Encoding,
-date extraction, dropping columns, and external transformations can change this contract.
+date extraction, dropping columns, and external transformations can change this contract. On the
+Torch path, the contract also records task, optional class labels, and train-fit normalize
+mean/std carried in the trainer bundle.
 
 **Finding**  
 An interpretation supported by evidence. A finding has severity and may identify affected columns;
@@ -138,6 +157,11 @@ A separately persisted fitted estimator and its recorded feature contract. It do
 Session dataset, partitions, or complete preprocessing workflow. Treat pickle-compatible model
 bundles as trusted-input artifacts.
 
+**Normalize (Torch loaders)**  
+Optional train-fit feature mean/std computed in `make_torch_loaders` when `normalize=True`. Stats
+are frozen on validation and test. This is not batch-norm inside the module and is not classical
+`Session.scale`.
+
 **Pipeline bundle**  
 A directory that stores a fitted estimator together with Session preprocess plans (impute, encode,
 scale, dates, outliers, binning, feature selection, and resample lineage) and a model card
@@ -184,6 +208,25 @@ without network access. The term describes packaging, not methodological complet
 **Test partition**  
 Rows reserved for estimating performance after feature, model, hyperparameter, and threshold
 choices are fixed. Repeatedly consulting test results makes them selection data.
+
+**Torch trainer bundle**  
+Directory schema `buildml.torch_bundle.v1` (`meta.json` + `trainer.pt`) holding module weights,
+optimizer (and optional scheduler) state, `TrainConfig`, epoch history, early-stop bookkeeping, and
+the feature/label contract. It is not a Session checkpoint and does not embed dataset rows or split
+indices.
+
+**TrainConfig**  
+Typed epoch-loop knobs for `fit_torch` (epochs, learning rate, device, grad clip, scheduler,
+early-stopping patience/monitor). Defaults are documented on `buildml.dl.types.TrainConfig`.
+
+**TrainingCurveReport**  
+Structured per-epoch series plus interpretation, limitations, and disclosures (device, early-stop
+partition, scheduler) from `Session.torch_training_curve`. It is teaching data, not a pass/fail
+verdict.
+
+**TrainResult**  
+Typed output of `fit_torch`: module, config, device, history, optional early-stop record, and
+feature contract. Stored on `session.dl_train_result`.
 
 **Train-fitted**  
 Learned exclusively from training rows and then applied with frozen parameters to other partitions.

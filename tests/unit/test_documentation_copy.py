@@ -53,7 +53,7 @@ def test_documented_v2_methods_exist() -> None:
 
 def test_readme_states_alpha_and_legacy_boundary() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "BuildML 2.0 alpha" in readme
+    assert "BuildML 2.1 alpha" in readme
     assert "public 2.x entry point is `buildml.Session`" in readme
     assert "BuildML 1.x legacy boundary" in readme
     assert "There is no compatibility shim" in readme

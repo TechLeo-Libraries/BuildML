@@ -1,13 +1,15 @@
-BuildML 2.0 alpha
+BuildML 2.1 alpha
 =================
 
-BuildML organizes a classical machine-learning workflow around
+BuildML organizes a machine-learning workflow around
 :class:`buildml.Session`. A Session owns data, column roles, partitions,
-train-fitted preparation plans, the active model, and operation history.
+train-fitted preparation plans, an optional classical estimator or Torch
+trainer, and operation history.
 
-The 2.0 release is alpha software. Public methods and serialized formats may
-change before the stable release. The 1.x API is archival and is not imported
-from the package root.
+The 2.1 line is alpha software (DL alpha ``2.1.0a1`` on the classical
+``2.0.0a1`` spine). Public methods and serialized formats may change before a
+stable release. The 1.x API is archival and is not imported from the package
+root.
 
 .. toctree::
    :maxdepth: 2

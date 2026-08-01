@@ -2,8 +2,9 @@ BuildML 2.x changelog
 ---------------------
 
 Active release notes for BuildML 2.x live in the repository root
-``CHANGELOG.md``. The classical alpha pre-release is ``2.0.0a1``; gate criteria
-are in ``docs/classical-alpha-gate.md``.
+``CHANGELOG.md``. Classical alpha is ``2.0.0a1``
+(``docs/classical-alpha-gate.md``); DL alpha is ``2.1.0a1``
+(``docs/dl-alpha-gate.md``).
 
 BuildML 1.x archived changelog
 ------------------------------

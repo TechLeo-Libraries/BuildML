@@ -7,7 +7,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [ingest-engine-checkpoint-design.md](./ingest-engine-checkpoint-design.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** M0 locked · M1 complete · M2 complete · M3 next (docs / DL alpha gate).  
+**Status:** M0 locked · M1 complete · M2 complete · M3 complete (docs / DL alpha gate).  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
 **North star:** flexibility · depth · functionality.  
 **M0 lock artifact:** [dl-m0-lock.md](./dl-m0-lock.md).
@@ -364,9 +364,9 @@ Session.ingest → set_roles → split
 
 **Exit**
 
-- [ ] DL alpha gate musts green
-- [ ] Editorial lint clean for new user-facing strings
-- [ ] Changelog + known limits do not claim RAG/LLM
+- [x] DL alpha gate musts green
+- [x] Editorial lint clean for new user-facing strings
+- [x] Changelog + known limits do not claim RAG/LLM
 
 ---
 

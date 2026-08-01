@@ -3,7 +3,7 @@
 Approved lock for the deep-learning thin slice.  
 Parent plan: [deep-learning-phase-plan.md](./deep-learning-phase-plan.md).
 
-**Status:** M0 locked · M1 complete · M2 complete · M3 next  
+**Status:** M0 locked · M1 complete · M2 complete · M3 complete (`2.1.0a1`)  
 **Approved:** 2026-08-01
 
 ---

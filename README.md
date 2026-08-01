@@ -1,13 +1,14 @@
-# BuildML 2.0 alpha
+# BuildML 2.1 alpha
 
-BuildML is a Python library for stateful classical machine-learning workflows. A
-`Session` owns the dataset, semantic column roles, partition membership, fitted
-preprocessing plans, the active estimator, and operation history. The 2.0 API
-also explains available operations and exports local HTML reports that do not
-depend on a network connection.
+BuildML is a Python library for stateful machine-learning workflows. A `Session`
+owns the dataset, semantic column roles, partition membership, fitted
+preprocessing plans, optional estimators or Torch trainers, and operation
+history. The API also explains available operations and exports local HTML
+reports that do not depend on a network connection.
 
-BuildML 2.0 is an alpha release. APIs and checkpoint formats may change before
-the stable 2.0 release.
+Version `2.1.0a1` is the deep-learning alpha (optional Torch path) on top of the
+classical `2.0.0a1` Session spine. APIs and serialized formats may change before
+a stable 2.x release.
 
 ## Install
 
@@ -298,21 +299,40 @@ For DuckDB, prefer `with Session.ingest(..., engine="duckdb") as session:` (or
 `with session.dataset:`) so owned connections close on exit. Simple portable
 filters: `from buildml.data import portable_filter_expr`.
 
-## Alpha status (2.0.0a1)
+## Alpha status (2.1.0a1)
 
-Version `2.0.0a1` is the classical-ML alpha. APIs and checkpoint/pipeline
-formats may change before stable 2.0. Release readiness is defined by the
-[classical alpha gate](docs/classical-alpha-gate.md); changelog notes are in
+Version `2.1.0a1` is the DL alpha. Classical readiness remains defined by the
+[classical alpha gate](docs/classical-alpha-gate.md) (`2.0.0a1` line). DL
+readiness is defined by the [DL alpha gate](docs/dl-alpha-gate.md). Changelog:
 [CHANGELOG.md](CHANGELOG.md).
 
-### What is gated
+### Classical (still gated)
 
 - Leakage-aware Session path: train-fitted preprocess, fold-local
   `PreprocessRecipe` inside CV/search, held-out Session test.
 - End-to-end smoke: ingest → roles → EDA → split → prep → CV/fit → evaluate →
   checkpoint + pipeline roundtrip → `predict_from_pipeline`.
-- Docs/catalog coverage for the learner path and editorial copy lint.
 - CI on Python 3.10–3.13 (core), plus optional engines / Optuna / extras jobs.
+
+### Deep learning (optional Torch)
+
+Install `buildml[torch]` (alias `buildml[dl]`). Core `import buildml` never
+requires Torch. After split:
+
+```python
+session.make_torch_loaders(batch_size=32, normalize=True, seed=0)
+session.fit_torch(module, epochs=5, device="cpu", early_stopping_patience=3)
+session.evaluate_torch(partition="test")
+session.torch_training_curve()
+session.save_torch_bundle("artifacts/torch_bundle")
+# Resume: load_torch_bundle(...) → make_torch_loaders → fit_torch(..., resume=True)
+```
+
+`session.dl_train_result` holds the Torch `TrainResult`. Classical `fit` /
+`fit_result` are unchanged. Trainer bundles use schema `buildml.torch_bundle.v1`
+and do not embed dataset rows; Session checkpoints never embed Torch weights.
+Design lock: [docs/dl-m0-lock.md](docs/dl-m0-lock.md). Quickstart:
+[docs/quickstart-dl-alpha.md](docs/quickstart-dl-alpha.md).
 
 ### Known limits (do not claim as done)
 
@@ -321,9 +341,10 @@ formats may change before stable 2.0. Release readiness is defined by the
   in-memory design matrix (not out-of-core fitting).
 - Hashing text features are not invertible; PCA explained variance is
   unsupervised.
-- RAG / LLM operator, fairness, and SHAP-style explainability remain out of
-  classical alpha scope. A tabular Torch thin slice is available behind
-  `buildml[torch]` (see below); it is separate from classical `Session.fit`.
+- Torch path: CPU CI merge gate; tabular numeric features first; no model zoo;
+  materialized tensors (no Polars/DuckDB zero-copy); no auto classical prep
+  before loaders; no fold-local Torch CV / DDP / AMP product path.
+- RAG / LLM operator, fairness, and SHAP-style explainability remain later.
 
 ### Local smoke
 
@@ -344,16 +365,17 @@ pytest tests/unit/test_engine_aggregate.py tests/unit/test_nested_cv_optuna.py -
 
 pip install -e ".[torch]"
 pip install pytest
-pytest tests/unit/test_dl_torch_slice.py tests/integration/test_dl_torch_smoke.py -q
+pytest \
+  tests/unit/test_dl_torch_slice.py \
+  tests/unit/test_dl_m2_depth.py \
+  tests/integration/test_dl_torch_smoke.py \
+  tests/integration/test_dl_alpha_smoke.py \
+  -q
 ```
 
-Tabular Torch slice (optional): after split, `make_torch_loaders` → `fit_torch` →
-`evaluate_torch` → `save_torch_bundle`. Core `import buildml` never requires Torch.
-Trainer bundles (`buildml.torch_bundle.v1`) are not Session checkpoints. Design lock:
-[docs/dl-m0-lock.md](docs/dl-m0-lock.md).
-
-Tag only after remote CI is green on the release candidate push. See
-[docs/release-checklist-a1.md](docs/release-checklist-a1.md).
+Tag classical or DL alphas only after remote CI is green on the release
+candidate push. See [docs/release-checklist-a1.md](docs/release-checklist-a1.md)
+and [docs/release-checklist-dl-a1.md](docs/release-checklist-dl-a1.md).
 
 ## Current scope and limitations
 
@@ -375,8 +397,10 @@ Tag only after remote CI is green on the release candidate push. See
 - The API, report schema, and serialized formats remain subject to alpha
   changes.
 
-See the [alpha quickstart](docs/quickstart-alpha.md),
+See the [classical alpha quickstart](docs/quickstart-alpha.md),
+[DL alpha quickstart](docs/quickstart-dl-alpha.md),
 [classical alpha gate](docs/classical-alpha-gate.md),
+[DL alpha gate](docs/dl-alpha-gate.md),
 [workflow guide](docs/workflow-guide.rst), [concept guide](docs/concepts.rst),
 and [glossary](docs/glossary.md).
 
