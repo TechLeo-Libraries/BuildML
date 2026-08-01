@@ -142,7 +142,7 @@ class MockProvider:
                 content="",
                 tool_calls=tool_calls,
                 finish_reason="tool_calls",
-                usage={"prompt_tokens": 100, "completion_tokens": 50},
+                usage={"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
                 model="mock-model",
             )
 
@@ -150,7 +150,7 @@ class MockProvider:
             content=self.default_response,
             tool_calls=(),
             finish_reason="stop",
-            usage={"prompt_tokens": 100, "completion_tokens": 50},
+            usage={"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
             model="mock-model",
         )
 

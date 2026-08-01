@@ -340,6 +340,8 @@ Recent history: {digest.history_summary}
 
     response = provider.chat(messages)
 
+    usage = dict(response.usage) if response.usage else {}
+
     try:
         plan_data = json.loads(response.content)
     except json.JSONDecodeError:
@@ -351,6 +353,7 @@ Recent history: {digest.history_summary}
             limitations=("Response was not valid JSON.",),
             egress_manifest=manifest,
             raw_response=response.content,
+            usage=usage,
         )
 
     steps = tuple(
@@ -375,6 +378,7 @@ Recent history: {digest.history_summary}
         alternatives=tuple(plan_data.get("alternatives") or []),
         egress_manifest=manifest,
         raw_response=response.content,
+        usage=usage,
     )
 
 

@@ -673,6 +673,29 @@ class TestM2BudgetEnforcement:
         assert session._ai_budget_tracker.max_tokens == 1000
         assert session._ai_budget_tracker.max_cost_usd == 5.0
 
+    def test_ai_plan_records_budget_usage(self) -> None:
+        """ai_plan records token usage to budget tracker (security-critical)."""
+        df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "target": [0, 1, 0]})
+        session = Session.ingest(df)
+        session.ai_configure(provider="mock", max_tokens=1000)
+
+        assert session._ai_budget_tracker.tokens_used == 0
+
+        session.ai_plan("Build a model")
+
+        assert session._ai_budget_tracker.tokens_used > 0
+
+    def test_ai_plan_respects_budget_limit(self) -> None:
+        """ai_plan raises BudgetExceeded when budget is exhausted."""
+        from buildml.ai.planner import BudgetExceeded
+
+        df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "target": [0, 1, 0]})
+        session = Session.ingest(df)
+        session.ai_configure(provider="mock", max_tokens=10)
+
+        with pytest.raises(BudgetExceeded, match="budget exceeded"):
+            session.ai_plan("Build a model")
+
 
 class TestM2MultiStepPlanner:
     """Tests for M2 multi-step plan execution."""

@@ -2258,6 +2258,10 @@ class Session:
         self._ai_result = result
         self._ai_plan_result = result
 
+        if self._ai_budget_tracker is not None and result.usage:
+            total_tokens = result.usage.get("total_tokens", 0)
+            self._ai_budget_tracker.record_usage(total_tokens, operation="ai_plan")
+
         if self._ai_transcript is not None:
             from buildml.ai.types import Message
 

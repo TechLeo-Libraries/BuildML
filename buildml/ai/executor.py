@@ -215,6 +215,87 @@ def _dispatch_tool(
         result = session.dry_run(plan)
         return result, ()
 
+    elif call.tool_name == "split":
+        test_size = call.arguments.get("test_size", 0.2)
+        validation_size = call.arguments.get("validation_size", 0.0)
+        stratify = call.arguments.get("stratify", True)
+        random_state = call.arguments.get("random_state")
+        session.split(
+            test_size=test_size,
+            validation_size=validation_size,
+            stratify=stratify,
+            random_state=random_state,
+        )
+        state_changes.append(f"Created train/test split (test_size={test_size})")
+        if validation_size > 0:
+            state_changes.append(f"Created validation split (validation_size={validation_size})")
+        return {"split_created": True}, tuple(state_changes)
+
+    elif call.tool_name == "impute":
+        numeric_strategy = call.arguments.get("numeric_strategy", "mean")
+        categorical_strategy = call.arguments.get("categorical_strategy", "most_frequent")
+        session.impute(
+            numeric_strategy=numeric_strategy,
+            categorical_strategy=categorical_strategy,
+        )
+        state_changes.append(f"Imputed missing values (numeric={numeric_strategy}, categorical={categorical_strategy})")
+        return {"imputed": True}, tuple(state_changes)
+
+    elif call.tool_name == "encode":
+        method = call.arguments.get("method", "onehot")
+        columns = call.arguments.get("columns")
+        session.encode(method=method, columns=columns)
+        state_changes.append(f"Encoded categorical columns (method={method})")
+        return {"encoded": True}, tuple(state_changes)
+
+    elif call.tool_name == "scale":
+        method = call.arguments.get("method", "standard")
+        columns = call.arguments.get("columns")
+        session.scale(method=method, columns=columns)
+        state_changes.append(f"Scaled numeric features (method={method})")
+        return {"scaled": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit":
+        estimator = call.arguments.get("estimator")
+        hyperparameters = call.arguments.get("hyperparameters", {})
+        session.fit(estimator=estimator, **hyperparameters)
+        state_changes.append(f"Fitted model (estimator={estimator})")
+        return {"fitted": True, "estimator": estimator}, tuple(state_changes)
+
+    elif call.tool_name == "evaluate":
+        partition = call.arguments.get("partition", "test")
+        result = session.evaluate(partition=partition)
+        return result, ()
+
+    elif call.tool_name == "walkthrough":
+        result = session.walkthrough()
+        return result, ()
+
+    elif call.tool_name == "head":
+        n = call.arguments.get("n", 5)
+        result = session.head(n=n)
+        return result, ()
+
+    elif call.tool_name == "drop_columns":
+        columns = call.arguments.get("columns", [])
+        if not columns:
+            raise ValidationError("drop_columns requires a non-empty columns argument.")
+        session.drop_columns(columns)
+        state_changes.append(f"DROPPED columns: {columns}")
+        return {"dropped": columns}, tuple(state_changes)
+
+    elif call.tool_name == "checkpoint_save":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("checkpoint_save requires a path argument.")
+        result = session.checkpoint_save(path)
+        state_changes.append(f"Saved checkpoint to: {path}")
+        return {"checkpoint_path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "ai_status":
+        result = session.ai_status()
+        return result, ()
+
     else:
         raise ValidationError(f"No dispatch handler for tool: {call.tool_name}")
 
@@ -229,9 +310,37 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
             changes.append(f"Column '{col}' will be assigned role '{role}'.")
 
     elif tool_name in (
-        "describe_dataset", "explain_operation", "workflow_status", "eda_summary", "dry_run_plan"
+        "describe_dataset", "explain_operation", "workflow_status", "eda_summary",
+        "dry_run_plan", "evaluate", "walkthrough", "head", "ai_status"
     ):
         changes.append("No state changes (read-only operation).")
+
+    elif tool_name == "split":
+        test_size = arguments.get("test_size", 0.2)
+        changes.append(f"Will create train/test split with test_size={test_size}.")
+
+    elif tool_name == "impute":
+        changes.append("Will impute missing values in numeric and categorical columns.")
+
+    elif tool_name == "encode":
+        method = arguments.get("method", "onehot")
+        changes.append(f"Will encode categorical columns using {method} encoding.")
+
+    elif tool_name == "scale":
+        method = arguments.get("method", "standard")
+        changes.append(f"Will scale numeric features using {method} scaling.")
+
+    elif tool_name == "fit":
+        estimator = arguments.get("estimator", "auto")
+        changes.append(f"Will fit model with estimator={estimator}.")
+
+    elif tool_name == "drop_columns":
+        columns = arguments.get("columns", [])
+        changes.append(f"DESTRUCTIVE: Will permanently drop columns {columns}.")
+
+    elif tool_name == "checkpoint_save":
+        path = arguments.get("path", "")
+        changes.append(f"Will save checkpoint to {path}.")
 
     return tuple(changes) if changes else ("Unknown state changes.",)
 

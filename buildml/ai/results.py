@@ -113,6 +113,7 @@ class PlanResult:
     alternatives: tuple[str, ...] = ()
     egress_manifest: EgressManifest | None = None
     raw_response: str = ""
+    usage: dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -123,4 +124,5 @@ class PlanResult:
             "limitations": list(self.limitations),
             "alternatives": list(self.alternatives),
             "egress_manifest": self.egress_manifest.to_dict() if self.egress_manifest else None,
+            "usage": dict(self.usage),
         }
