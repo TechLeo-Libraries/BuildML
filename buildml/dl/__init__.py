@@ -9,18 +9,22 @@ __all__ = [
     "CHECKPOINT_BOUNDARY",
     "DLEvaluateResult",
     "DeviceSpec",
+    "EarlyStopInfo",
     "FeatureContract",
     "LoaderConfig",
     "LoaderReport",
     "TorchLoaderBundle",
     "TrainConfig",
     "TrainResult",
+    "TrainingCurveReport",
+    "build_training_curve",
     "evaluate_module",
     "load_torch_bundle",
     "make_loaders",
     "require_torch",
     "save_torch_bundle",
     "torch_available",
+    "torch_training_status",
     "train_supervised_module",
 ]
 
@@ -41,13 +45,19 @@ def __getattr__(name: str) -> Any:
         return getattr(types_mod, name)
     if name in {
         "DLEvaluateResult",
+        "EarlyStopInfo",
         "LoaderReport",
         "TorchLoaderBundle",
         "TrainResult",
+        "TrainingCurveReport",
     }:
         from buildml.dl import results
 
         return getattr(results, name)
+    if name in {"build_training_curve", "torch_training_status"}:
+        from buildml.dl import curves
+
+        return getattr(curves, name)
     if name == "make_loaders":
         from buildml.dl.loaders import make_loaders
 

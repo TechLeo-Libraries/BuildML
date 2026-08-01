@@ -39,6 +39,10 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
     scope_notes = list(scope.get("disclosures") or [])
     fold_scope = scope.get("fold_local") or {}
     session_scope = scope.get("session_global") or {}
+    torch_status = overview.get("torch_training_status") or {}
+    torch_enabled = bool(torch_status.get("enabled"))
+    torch_notes = list(torch_status.get("disclosures") or [])
+    torch_early = torch_status.get("early_stop") or {}
     lazy_line = (
         "has_lazy_native=True: collect-on-promote applies; sklearn still needs RAM for the design matrix."
         if has_lazy
@@ -72,6 +76,16 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
         "Preprocess scope recorded: " + "; ".join(scope_bits) + "."
         if scope_bits
         else "No fold-local text/PCA or Session-global custom/resample/text/PCA plans are attached."
+    )
+    torch_line = (
+        f"Torch trainer present: device="
+        f"{(torch_status.get('device') or {}).get('resolved')}; "
+        f"n_epochs_ran={torch_status.get('n_epochs_ran')}; "
+        f"early_stop_monitor={torch_early.get('monitor')}; "
+        f"early_stop_partition={torch_early.get('partition')}; "
+        f"triggered={torch_early.get('triggered')}."
+        if torch_enabled
+        else "No live Torch dl_train_result is attached to this report."
     )
     interpretation = [
         "Read sampling and row-scope disclosure before trusting tail behavior or rare categories.",
@@ -122,6 +136,17 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
         practice.append(
             "When fold-local text/PCA or Session-global custom/resample appear, record which "
             "scope applied before interpreting CV scores."
+        )
+    if torch_enabled:
+        insert_at = 2 + int(warm_enabled) + int(scope_enabled)
+        interpretation.insert(insert_at, torch_line)
+        pitfalls.append(
+            "Reading validation early-stopping curves as test performance; "
+            "evaluate_torch(partition='test') is a separate final estimate."
+        )
+        practice.append(
+            "When a Torch trainer is attached, note device, early-stop partition, and "
+            "whether stopping triggered before claiming holdout metrics."
         )
     return {
         "domain": "cockpit",
@@ -175,6 +200,14 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
                 if scope_enabled
                 else []
             ),
+            *(
+                [
+                    "torch_training_status.enabled → early-stop monitor is validation-scoped; "
+                    "test metrics remain a final estimate after stopping decisions freeze."
+                ]
+                if torch_enabled
+                else []
+            ),
         ],
         "assumptions": [
             "Analyzer outputs and finding keys in the current report are complete and consistent with this Session.",
@@ -198,6 +231,14 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
                 if scope_enabled
                 else []
             ),
+            *(
+                [
+                    "When torch_training_status.enabled is True, Session.dl_train_result "
+                    "carries epoch history, device, and early-stop bookkeeping."
+                ]
+                if torch_enabled
+                else []
+            ),
         ],
         "pitfalls": pitfalls,
         "worked_example": {
@@ -207,7 +248,8 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
                 f"{overview.get('n_columns', 0):,} columns "
                 f"(engine={overview.get('engine')}, has_lazy_native={has_lazy}"
                 f"{', warm_start_studies=True' if warm_enabled else ''}"
-                f"{', preprocess_scope' if scope_enabled else ''})."
+                f"{', preprocess_scope' if scope_enabled else ''}"
+                f"{', torch_trainer' if torch_enabled else ''})."
             ),
             "values": {
                 "analysis_rows": overview.get("analysis_rows"),
@@ -226,17 +268,23 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
                 "fold_local_text": fold_scope.get("text"),
                 "fold_local_reduce": fold_scope.get("reduce"),
                 "preprocess_scope_disclosures": scope_notes,
+                "torch_training": torch_status if torch_enabled else {"enabled": False},
+                "torch_training_disclosures": torch_notes,
             },
             "reading": (
                 f"{high} finding(s) are marked high or critical. Start with those before "
                 "comparing estimators. "
                 + (
-                    scope_notes[0]
-                    if scope_notes
+                    torch_notes[0]
+                    if torch_notes
                     else (
-                        warm_notes[0]
-                        if warm_notes
-                        else (engine_notes[0] if engine_notes else lazy_line)
+                        scope_notes[0]
+                        if scope_notes
+                        else (
+                            warm_notes[0]
+                            if warm_notes
+                            else (engine_notes[0] if engine_notes else lazy_line)
+                        )
                     )
                 )
             ),

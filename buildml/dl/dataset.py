@@ -10,7 +10,7 @@ import pandas as pd
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
-from buildml.data.splits import SplitPlan, frame_for_partition
+from buildml.data.splits import SplitPlan
 from buildml.dl.extras import require_torch
 from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
 from buildml.dl.types import FeatureContract, TaskSpec
@@ -54,7 +54,14 @@ def partition_arrays(
     target_column: str,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Materialize numeric feature/target arrays for one partition."""
-    frame = frame_for_partition(dataset, split_plan, partition)
+    indices = split_plan.indices_for(partition)
+    if not indices:
+        return (
+            np.empty((0, len(feature_columns)), dtype=np.float64),
+            np.empty((0,), dtype=np.float64),
+        )
+    # Index membership only — avoid frame_for_partition's empty-validation raise.
+    frame = dataset._ensure_pandas().iloc[list(indices)].copy()
     if frame.empty:
         return (
             np.empty((0, len(feature_columns)), dtype=np.float64),

@@ -1,4 +1,4 @@
-"""Typed configuration for the Torch thin slice."""
+"""Typed configuration for the Torch supervised path."""
 
 from __future__ import annotations
 
@@ -7,6 +7,24 @@ from typing import Any, Literal
 
 TaskSpec = Literal["classification", "regression", "auto"]
 DeviceName = Literal["cpu", "cuda", "mps", "auto"]
+SchedulerName = Literal["none", "step", "plateau", "cosine"]
+EarlyStopMode = Literal["min", "max"]
+
+# Documented TrainConfig defaults (M2). Change with care — tests and catalog cite these.
+DEFAULT_EPOCHS = 5
+DEFAULT_LEARNING_RATE = 1e-3
+DEFAULT_BATCH_SIZE = 32
+DEFAULT_GRAD_CLIP_NORM: float | None = None  # disabled
+DEFAULT_SCHEDULER: SchedulerName = "none"
+DEFAULT_EARLY_STOPPING_PATIENCE: int | None = None  # disabled
+DEFAULT_EARLY_STOPPING_MONITOR = "val_loss"
+DEFAULT_EARLY_STOPPING_MODE: EarlyStopMode = "min"
+DEFAULT_RESTORE_BEST_WEIGHTS = True
+DEFAULT_SCHEDULER_STEP_SIZE = 10
+DEFAULT_SCHEDULER_GAMMA = 0.1
+DEFAULT_SCHEDULER_PATIENCE = 5
+DEFAULT_SCHEDULER_FACTOR = 0.1
+DEFAULT_SCHEDULER_THRESHOLD = 1e-4
 
 
 @dataclass(slots=True)
@@ -23,11 +41,24 @@ class DeviceSpec:
 
 @dataclass(slots=True)
 class TrainConfig:
-    """Epoch-loop knobs for :func:`buildml.dl.train.train_supervised_module`."""
+    """Epoch-loop knobs for :func:`buildml.dl.train.train_supervised_module`.
 
-    epochs: int = 5
-    learning_rate: float = 1e-3
-    batch_size: int = 32
+    Defaults
+    --------
+    - ``epochs=5``, ``learning_rate=1e-3``, Adam when no optimizer factory is passed.
+    - ``grad_clip_norm=None`` (no clipping). When set, applies
+      ``clip_grad_norm_`` after ``backward`` and before ``optimizer.step``.
+    - ``scheduler="none"``. ``step`` → StepLR; ``plateau`` → ReduceLROnPlateau on
+      the early-stop monitor (or ``val_loss`` / ``train_loss``); ``cosine`` →
+      CosineAnnealingLR over ``scheduler_t_max`` (default: ``epochs``).
+    - ``early_stopping_patience=None`` (disabled). When set, monitors
+      ``early_stopping_monitor`` on the validation loader (requires a validation
+      partition). ``restore_best_weights=True`` reloads the best monitored epoch.
+    """
+
+    epochs: int = DEFAULT_EPOCHS
+    learning_rate: float = DEFAULT_LEARNING_RATE
+    batch_size: int = DEFAULT_BATCH_SIZE
     num_workers: int = 0
     pin_memory: bool = False
     shuffle_train: bool = True
@@ -35,8 +66,20 @@ class TrainConfig:
     normalize: bool = True
     seed: int = 0
     device: DeviceName = "auto"
-    grad_clip_norm: float | None = None
+    grad_clip_norm: float | None = DEFAULT_GRAD_CLIP_NORM
     log_every: int = 1
+    early_stopping_patience: int | None = DEFAULT_EARLY_STOPPING_PATIENCE
+    early_stopping_monitor: str = DEFAULT_EARLY_STOPPING_MONITOR
+    early_stopping_mode: EarlyStopMode = DEFAULT_EARLY_STOPPING_MODE
+    early_stopping_min_delta: float = 0.0
+    restore_best_weights: bool = DEFAULT_RESTORE_BEST_WEIGHTS
+    scheduler: SchedulerName = DEFAULT_SCHEDULER
+    scheduler_step_size: int = DEFAULT_SCHEDULER_STEP_SIZE
+    scheduler_gamma: float = DEFAULT_SCHEDULER_GAMMA
+    scheduler_t_max: int | None = None
+    scheduler_factor: float = DEFAULT_SCHEDULER_FACTOR
+    scheduler_patience: int = DEFAULT_SCHEDULER_PATIENCE
+    scheduler_threshold: float = DEFAULT_SCHEDULER_THRESHOLD
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -3,7 +3,7 @@
 Approved lock for the deep-learning thin slice.  
 Parent plan: [deep-learning-phase-plan.md](./deep-learning-phase-plan.md).
 
-**Status:** M0 locked · M1 in progress  
+**Status:** M0 locked · M1 complete · M2 complete · M3 next  
 **Approved:** 2026-08-01
 
 ---
@@ -13,14 +13,17 @@ Parent plan: [deep-learning-phase-plan.md](./deep-learning-phase-plan.md).
 | Method | Role |
 | --- | --- |
 | `Session.make_torch_loaders(...)` | Build train / validation / test `DataLoader`s from current roles + split |
-| `Session.fit_torch(module, ...)` | Train a caller-supplied `nn.Module` on the train loader |
+| `Session.fit_torch(module, ...)` | Train a caller-supplied `nn.Module` on the train loader (early stop / schedulers / `resume=True`) |
 | `Session.evaluate_torch(partition=...)` | Metrics on a named partition using the last Torch trainer |
-| `Session.save_torch_bundle(path)` | Persist trainer bundle (weights, opt, config, history, contract) |
+| `Session.torch_training_curve()` | Structured curve series + interpretation / limitations / disclosures |
+| `Session.save_torch_bundle(path)` | Persist trainer bundle (weights, opt, scheduler, config, history, contract) |
 | `Session.load_torch_bundle(path)` | Restore a trainer bundle into the Session |
 
 Result slot: `session.dl_train_result` (typed `TrainResult`). Classical `fit_result` is unchanged.
 
 Prefix rule: `*_torch` keeps classical `fit` / `evaluate` unambiguous.
+
+Resume recipe (M2): `load_torch_bundle` → `make_torch_loaders` → `fit_torch(..., resume=True)` (additional epochs; optimizer/scheduler state restored when compatible).
 
 ---
 
@@ -29,9 +32,9 @@ Prefix rule: `*_torch` keeps classical `fit` / `evaluate` unambiguous.
 | Artifact | Schema id | Contains | Does not contain |
 | --- | --- | --- | --- |
 | Session checkpoint | existing checkpoint formats | data, roles, splits, history, optional classical plans | Torch weights / optimizer |
-| Torch trainer bundle | `buildml.torch_bundle.v1` | module state, optimizer state, `TrainConfig`, epoch history, feature/label contract, device used | dataset rows, split indices, Session history |
+| Torch trainer bundle | `buildml.torch_bundle.v1` | module state, optimizer (+ scheduler) state, `TrainConfig`, epoch history, early-stop bookkeeping, feature/label contract, device used | dataset rows, split indices, Session history |
 
-Resume recipe: `checkpoint_load` (or keep Session) → `load_torch_bundle` → continue with `evaluate_torch` / further training (resume-train is M2).
+Data resume: `checkpoint_load` (or keep Session) → `load_torch_bundle` → `evaluate_torch` and/or `fit_torch(..., resume=True)`.
 
 Layout:
 

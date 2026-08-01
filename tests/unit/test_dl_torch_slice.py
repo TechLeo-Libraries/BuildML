@@ -71,10 +71,12 @@ def test_catalog_covers_torch_operations() -> None:
         "evaluate_torch",
         "save_torch_bundle",
         "load_torch_bundle",
+        "torch_training_curve",
     ):
         assert name in OPERATION_CATALOG
     assert "batch-leakage" in OPERATION_CATALOG["make_torch_loaders"].concept_links
     assert "early-stopping-partition" in OPERATION_CATALOG["fit_torch"].concept_links
+    assert "training-curves" in OPERATION_CATALOG["torch_training_curve"].concept_links
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")

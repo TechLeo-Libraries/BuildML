@@ -53,6 +53,7 @@ _REPEATABLE = {
     "extract_dates",
     "feature_importance",
     "fit_torch",
+    "torch_training_curve",
     "grid_search",
     "handle_outliers",
     "head",

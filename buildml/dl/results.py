@@ -1,4 +1,4 @@
-"""Typed results for the Torch thin slice."""
+"""Typed results for the Torch supervised path."""
 
 from __future__ import annotations
 
@@ -6,6 +6,88 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from buildml.dl.types import DeviceSpec, FeatureContract, TrainConfig
+
+
+@dataclass(slots=True)
+class EarlyStopInfo:
+    """Why training stopped and which validation monitor drove the decision."""
+
+    enabled: bool
+    triggered: bool
+    monitor: str
+    mode: str
+    patience: int | None
+    best_epoch: int | None
+    best_value: float | None
+    stopped_epoch: int
+    restore_best_weights: bool
+    partition: str
+    reason: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "triggered": self.triggered,
+            "monitor": self.monitor,
+            "mode": self.mode,
+            "patience": self.patience,
+            "best_epoch": self.best_epoch,
+            "best_value": self.best_value,
+            "stopped_epoch": self.stopped_epoch,
+            "restore_best_weights": self.restore_best_weights,
+            "partition": self.partition,
+            "reason": self.reason,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> EarlyStopInfo:
+        return cls(
+            enabled=bool(payload.get("enabled", False)),
+            triggered=bool(payload.get("triggered", False)),
+            monitor=str(payload.get("monitor") or "val_loss"),
+            mode=str(payload.get("mode") or "min"),
+            patience=payload.get("patience"),
+            best_epoch=payload.get("best_epoch"),
+            best_value=payload.get("best_value"),
+            stopped_epoch=int(payload.get("stopped_epoch") or 0),
+            restore_best_weights=bool(payload.get("restore_best_weights", True)),
+            partition=str(payload.get("partition") or "validation"),
+            reason=str(payload.get("reason") or ""),
+        )
+
+
+@dataclass(slots=True)
+class TrainingCurveReport:
+    """Structured epoch curves plus interpretation and honesty limits."""
+
+    epochs: list[int]
+    train_loss: list[float]
+    val_loss: list[float | None]
+    learning_rates: list[float | None]
+    monitor: str | None
+    monitor_values: list[float | None]
+    early_stop_epoch: int | None
+    device_resolved: str
+    early_stop_partition: str | None
+    interpretation: list[str] = field(default_factory=list)
+    limitations: list[str] = field(default_factory=list)
+    disclosures: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "epochs": list(self.epochs),
+            "train_loss": list(self.train_loss),
+            "val_loss": list(self.val_loss),
+            "learning_rates": list(self.learning_rates),
+            "monitor": self.monitor,
+            "monitor_values": list(self.monitor_values),
+            "early_stop_epoch": self.early_stop_epoch,
+            "device_resolved": self.device_resolved,
+            "early_stop_partition": self.early_stop_partition,
+            "interpretation": list(self.interpretation),
+            "limitations": list(self.limitations),
+            "disclosures": list(self.disclosures),
+        }
 
 
 @dataclass(slots=True)
@@ -23,6 +105,11 @@ class LoaderReport:
     n_test: int
     class_labels: tuple[Any, ...] = ()
     warnings: list[str] = field(default_factory=list)
+    split_kind: str | None = None
+    group_column: str | None = None
+    time_column: str | None = None
+    groups_disjoint: bool | None = None
+    time_order_ok: bool | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -37,6 +124,11 @@ class LoaderReport:
             "n_test": self.n_test,
             "class_labels": list(self.class_labels),
             "warnings": list(self.warnings),
+            "split_kind": self.split_kind,
+            "group_column": self.group_column,
+            "time_column": self.time_column,
+            "groups_disjoint": self.groups_disjoint,
+            "time_order_ok": self.time_order_ok,
         }
 
 
@@ -70,6 +162,11 @@ class TrainResult:
     n_train_rows: int
     n_epochs_ran: int
     warnings: list[str] = field(default_factory=list)
+    early_stop: EarlyStopInfo | None = None
+    scheduler_name: str = "none"
+    scheduler_state: dict[str, Any] | None = None
+    resumed_from_epochs: int = 0
+    training_curve: TrainingCurveReport | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -83,6 +180,13 @@ class TrainResult:
             "n_epochs_ran": self.n_epochs_ran,
             "warnings": list(self.warnings),
             "has_optimizer_state": self.optimizer_state is not None,
+            "early_stop": None if self.early_stop is None else self.early_stop.to_dict(),
+            "scheduler_name": self.scheduler_name,
+            "has_scheduler_state": self.scheduler_state is not None,
+            "resumed_from_epochs": self.resumed_from_epochs,
+            "training_curve": None
+            if self.training_curve is None
+            else self.training_curve.to_dict(),
         }
 
 
@@ -96,6 +200,9 @@ class DLEvaluateResult:
     n_rows: int = 0
     device: str = "cpu"
     recommendations: list[str] = field(default_factory=list)
+    confusion_matrix: list[list[int]] | None = None
+    class_labels: tuple[Any, ...] = ()
+    residuals_summary: dict[str, float] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -105,6 +212,9 @@ class DLEvaluateResult:
             "n_rows": self.n_rows,
             "device": self.device,
             "recommendations": list(self.recommendations),
+            "confusion_matrix": self.confusion_matrix,
+            "class_labels": list(self.class_labels),
+            "residuals_summary": self.residuals_summary,
         }
 
     def show(self) -> None:

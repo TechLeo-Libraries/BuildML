@@ -36,6 +36,7 @@ class WorkflowWalkthroughReport:
     engine_status: dict[str, Any] = field(default_factory=dict)
     warm_start_status: dict[str, Any] = field(default_factory=dict)
     preprocess_scope_status: dict[str, Any] = field(default_factory=dict)
+    torch_training_status: dict[str, Any] = field(default_factory=dict)
     audit_summary: dict[str, Any] = field(default_factory=dict)
     html_path: str | None = None
 
@@ -51,6 +52,7 @@ class WorkflowWalkthroughReport:
             "engine_status": dict(self.engine_status),
             "warm_start_status": dict(self.warm_start_status),
             "preprocess_scope_status": dict(self.preprocess_scope_status),
+            "torch_training_status": dict(self.torch_training_status),
             "audit_summary": dict(self.audit_summary),
             "html_path": self.html_path,
         }
@@ -106,6 +108,7 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
             last_cv=getattr(session, "last_cv", None),
             last_nested_cv=getattr(session, "last_nested_cv", None),
         ),
+        torch_training_status=torch_training_status_for_walkthrough(session),
         audit_summary={
             "n_operations": audit.n_operations,
             "warning_count": audit.warning_count,
@@ -115,6 +118,16 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
             "has_split": audit.has_split,
             "has_fit": audit.has_fit,
         },
+    )
+
+
+def torch_training_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual Torch training-curve / early-stop / device disclosure."""
+    from buildml.dl.curves import torch_training_status
+
+    return torch_training_status(
+        train_result=getattr(session, "dl_train_result", None),
+        history=list(getattr(session, "history", []) or []),
     )
 
 
@@ -567,10 +580,11 @@ def _orientation(report: dict[str, Any]) -> ReportSection:
     engine = report.get("engine_status") or {}
     warm = report.get("warm_start_status") or {}
     scope = report.get("preprocess_scope_status") or {}
+    torch_status = report.get("torch_training_status") or {}
     body = _frame(
         "Resolver statuses, engine/lazy-native status, nested-CV warm-start disclosure, "
-        "fold-local vs Session-global preprocess scope, and the complete versioned "
-        "Session history.",
+        "fold-local vs Session-global preprocess scope, Torch training-curve disclosure "
+        "when a trainer exists, and the complete versioned Session history.",
         ", ".join(f"{key}={value}" for key, value in sorted(counts.items())),
         "The resolver separates operations already done from valid, blocked, and intentionally skipped paths.",
         "Availability proves API prerequisites only; it does not prove domain appropriateness.",
@@ -630,6 +644,26 @@ def _orientation(report: dict[str, Any]) -> ReportSection:
             caption="Preprocess scope (fold-local vs Session-global)",
         )
         for note in scope.get("disclosures") or []:
+            body += f"<p>{escape(note)}</p>"
+    if torch_status.get("enabled"):
+        early = torch_status.get("early_stop") or {}
+        body += render_table(
+            [
+                {
+                    "n_epochs_ran": torch_status.get("n_epochs_ran"),
+                    "scheduler": torch_status.get("scheduler_name"),
+                    "device": (torch_status.get("device") or {}).get("resolved"),
+                    "early_stop_triggered": early.get("triggered"),
+                    "early_stop_monitor": early.get("monitor"),
+                    "early_stop_partition": early.get("partition"),
+                    "resumed_from_epochs": torch_status.get("resumed_from_epochs"),
+                }
+            ],
+            caption="Torch training (curves / early stop / device)",
+        )
+        for note in torch_status.get("disclosures") or []:
+            body += f"<p>{escape(note)}</p>"
+        for note in (torch_status.get("limitations") or [])[:3]:
             body += f"<p>{escape(note)}</p>"
     return ReportSection("orientation", "Workflow orientation", body)
 

@@ -948,6 +948,7 @@ _OPERATIONS = (
         failures=("Missing Torch extra, empty train, non-numeric columns, or NaNs in the design matrix.",),
         leakage=(
             "Fitting normalize on all rows, or shuffling validation/test into train batches, leaks evaluation signal.",
+            "Ignoring group/time SplitPlan membership when building tensors outside make_torch_loaders.",
         ),
         anti_patterns=(
             "Treating loader construction as permission to skip a declared split.",
@@ -955,10 +956,11 @@ _OPERATIONS = (
         ),
         state_changes=("Stores torch loaders on the Session and appends loader metadata to history.",),
         result_reading=(
-            "Check n_train/n_validation/n_test, normalize flag, and warnings for empty holdout partitions.",
+            "Check n_train/n_validation/n_test, split_kind, groups_disjoint/time_order_ok, "
+            "normalize flag, and warnings for empty holdout partitions.",
         ),
         next_steps=("Call fit_torch with a caller-supplied nn.Module.",),
-        concepts=("leakage-boundary", "batch-leakage", "evaluation-partitions"),
+        concepts=("leakage-boundary", "batch-leakage", "evaluation-partitions", "data-splitting"),
     ),
     _operation(
         "fit_torch",
@@ -969,17 +971,31 @@ _OPERATIONS = (
         (
             "Require or build Torch loaders.",
             "Resolve device with explicit CPU fallback when CUDA/MPS are unavailable.",
-            "Run epoch steps with optional validation loss; record history.",
+            "Run epoch steps with optional validation loss, scheduler, grad clip, and early stopping.",
+            "When resume=True, restore optimizer/scheduler state from dl_train_result and append history.",
         ),
         parameters=(
             _p("module", "torch.nn.Module", "Caller-supplied network.", required=True),
             _p("loss_fn", "callable | None", "Optional (module, xb, yb) -> loss."),
             _p("optimizer_factory", "callable | None", "Optional params -> optimizer factory."),
-            _p("epochs", "int", "Training epochs when config is omitted.", 5),
+            _p("epochs", "int", "Epochs when config omitted; additional epochs if resume=True.", 5),
             _p("learning_rate", "float", "Adam learning rate when config is omitted.", 1e-3),
             _p("device", "cpu | cuda | mps | auto", "Preferred device.", "auto"),
-            _p("grad_clip_norm", "float | None", "Optional gradient-norm clip."),
+            _p("grad_clip_norm", "float | None", "Optional gradient-norm clip (default None=off)."),
             _p("log_every", "int", "Record history every N epochs.", 1),
+            _p(
+                "early_stopping_patience",
+                "int | None",
+                "Stop after N non-improving validation epochs (default None=off).",
+            ),
+            _p("early_stopping_monitor", "str", "Metric key for early stop (default val_loss).", "val_loss"),
+            _p(
+                "scheduler",
+                "none | step | plateau | cosine",
+                "LR schedule (default none).",
+                "none",
+            ),
+            _p("resume", "bool", "Continue from dl_train_result / loaded bundle.", False),
             _p("config", "TrainConfig | None", "Optional full train config overriding scalar knobs."),
         ),
         inputs=("TorchLoaderBundle, nn.Module, and optional loss/optimizer factories.",),
@@ -989,7 +1005,10 @@ _OPERATIONS = (
         alternatives=("Use Session.fit for sklearn estimators; do not mix result slots silently.",),
         rationale=("Choose Torch when the model is an nn.Module rather than a sklearn estimator.",),
         assumptions=("Train loader rows match the intended supervised task and feature contract.",),
-        failures=("Missing Torch extra, empty train loader, shape mismatches, or optimizer/loss errors.",),
+        failures=(
+            "Missing Torch extra, empty train loader, early stop without validation, "
+            "shape mismatches, or optimizer/loss errors.",
+        ),
         leakage=("Training without a split, or using test batches inside the train loop, invalidates holdout claims.",),
         anti_patterns=(
             "Reporting train loss as expected production performance.",
@@ -997,10 +1016,52 @@ _OPERATIONS = (
         ),
         state_changes=("Stores dl_train_result; classical fit_result is unchanged.",),
         result_reading=(
-            "Inspect device.resolved, epoch history, feature contract, and warnings for device fallback.",
+            "Inspect device.resolved, early_stop reason/partition, scheduler_name, "
+            "training_curve disclosures, and epoch history.",
         ),
-        next_steps=("evaluate_torch on validation or test; save_torch_bundle for weights.",),
-        concepts=("leakage-boundary", "batch-leakage", "early-stopping-partition", "evaluation-partitions"),
+        next_steps=(
+            "torch_training_curve for structured teaching data; evaluate_torch on validation or test; "
+            "save_torch_bundle for weights.",
+        ),
+        concepts=(
+            "leakage-boundary",
+            "batch-leakage",
+            "early-stopping-partition",
+            "training-curves",
+            "evaluation-partitions",
+        ),
+    ),
+    _operation(
+        "torch_training_curve",
+        OperationKind.DIAGNOSTIC,
+        "Return structured Torch epoch curves with interpretation and limits.",
+        "Read training history as teaching evidence, not as a deployment scorecard.",
+        "Torch training-curve disclosure.",
+        (
+            "Require dl_train_result.",
+            "Build epoch/train_loss/val_loss/lr series.",
+            "Attach interpretation, limitations, and early-stop/device disclosures.",
+        ),
+        parameters=(),
+        inputs=("Active dl_train_result with epoch history.",),
+        outputs=("TrainingCurveReport with series, interpretation, limitations, disclosures.",),
+        prerequisites=(FIT_TORCH, TORCH),
+        ordering=("After fit_torch or load_torch_bundle; beside evaluate_torch for holdout metrics.",),
+        alternatives=("Inspect TrainResult.history directly when a compact table is enough.",),
+        rationale=("Curves need partition and device tags before anyone claims generalization.",),
+        assumptions=("History rows were logged by fit_torch under the current TrainConfig.",),
+        failures=("No Torch trainer on the Session.",),
+        leakage=("Using test loss as the plotted early-stop monitor contaminates the final claim.",),
+        anti_patterns=(
+            "Treating the last train_loss point as expected production performance.",
+            "Ignoring limitations about batch noise and validation vs test scope.",
+        ),
+        state_changes=("Appends a history record; trainer weights are unchanged.",),
+        result_reading=(
+            "Read disclosures for device and early-stop partition; treat interpretation as review cues.",
+        ),
+        next_steps=("evaluate_torch(partition='test') once stopping choices are frozen.",),
+        concepts=("training-curves", "early-stopping-partition", "evaluation-partitions"),
     ),
     _operation(
         "evaluate_torch",
@@ -1095,8 +1156,11 @@ _OPERATIONS = (
         anti_patterns=("Passing a Session checkpoint path to load_torch_bundle.",),
         state_changes=("Replaces dl_train_result; classical fit_result is unchanged.",),
         result_reading=("Confirm task, feature columns, and epoch history before scoring.",),
-        next_steps=("make_torch_loaders if needed, then evaluate_torch on a holdout partition.",),
-        concepts=("reproducibility", "feature-schema", "leakage-boundary"),
+        next_steps=(
+            "make_torch_loaders if needed; evaluate_torch on a holdout partition; "
+            "or fit_torch(..., resume=True) to continue training from the restored state.",
+        ),
+        concepts=("reproducibility", "feature-schema", "leakage-boundary", "training-curves"),
     ),
     _operation(
         "evaluate",

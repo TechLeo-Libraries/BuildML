@@ -2099,7 +2099,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Teaching and model cards need the monitor partition named beside the selected epoch.",
             ),
             how_buildml_uses=(
-                "M1 records optional validation loss each epoch but does not auto-stop yet (M2).",
+                "fit_torch early_stopping_patience monitors validation (default monitor=val_loss).",
+                "TrainResult.early_stop records triggered/best_epoch/reason and restore_best_weights.",
                 "evaluate_torch defaults to partition='test' for final scoring after training choices freeze.",
                 "Catalog anti-patterns warn against test-tuned stopping.",
             ),
@@ -2119,9 +2120,57 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Using test loss as the early-stopping monitor.",
             ),
             worked_example_pattern=(
-                "Train with val_loss history; pick an epoch on validation; call evaluate_torch(partition='test') once.",
+                "fit_torch(..., early_stopping_patience=3) → read early_stop.reason → "
+                "evaluate_torch(partition='test') once.",
             ),
-            related_concepts=("evaluation-partitions", "leakage-boundary", "batch-leakage"),
+            related_concepts=("evaluation-partitions", "leakage-boundary", "batch-leakage", "training-curves"),
+        ),
+        _note(
+            key="training-curves",
+            title="Training curves",
+            summary="Epoch loss/metric trajectories need device, monitor partition, and honesty limits beside the plot.",
+            definition=(
+                "A training curve is the time series of train (and optional validation) losses or "
+                "metrics across epochs, optionally with learning-rate steps from a scheduler."
+            ),
+            intuition=(
+                "Curves show whether the network is still learning, plateauing, or memorizing. "
+                "Without naming the validation monitor and device, the picture is incomplete."
+            ),
+            formal_idea=(
+                "For epochs t=1..T, record L_train(t) and optionally L_val(t). Early stopping "
+                "selects t* from L_val. Claims about generalization require a separate held-out "
+                "estimate after t* is fixed."
+            ),
+            why_it_matters=(
+                "Batch losses are noisy; epoch aggregates are the teaching default.",
+                "Validation improvement is not a test result; curves alone do not prove deployment risk.",
+            ),
+            how_buildml_uses=(
+                "TrainResult.history and TrainingCurveReport store epoch series plus disclosures.",
+                "Session.torch_training_curve() and walkthrough torch_training_status surface limits.",
+                "Teaching Studio cockpit discloses early-stop partition and resolved device when a trainer exists.",
+            ),
+            interpretation_rules=(
+                "Prefer epoch aggregates over batch spikes when comparing runs.",
+                "If train falls while validation rises, treat later epochs as overfitting risk.",
+                "Read early_stop.partition before quoting a selected epoch.",
+            ),
+            assumptions=(
+                "History was logged under a fixed split and feature contract.",
+                "Scheduler and clipping settings are part of the run identity.",
+            ),
+            failure_modes=(
+                "Comparing curves from different devices or normalize contracts without disclosure.",
+                "Reading resume-appended history as a single uninterrupted LR schedule when the scheduler changed.",
+            ),
+            anti_patterns=(
+                "Publishing a loss plot without stating validation vs test scope.",
+            ),
+            worked_example_pattern=(
+                "fit_torch → torch_training_curve → read disclosures → evaluate_torch(partition='test').",
+            ),
+            related_concepts=("early-stopping-partition", "evaluation-partitions", "batch-leakage"),
         ),
     )
 }

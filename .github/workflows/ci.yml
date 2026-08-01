@@ -137,10 +137,11 @@ jobs:
       - name: Core import smoke without relying on classical extras
         run: python -c "import buildml; print(buildml.__version__)"
 
-      - name: Torch DL thin-slice tests
+      - name: Torch DL slice + M2 depth tests
         run: |
           pytest \
             tests/unit/test_dl_torch_slice.py \
+            tests/unit/test_dl_m2_depth.py \
             tests/integration/test_dl_torch_smoke.py \
             -q
 

@@ -7,7 +7,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [ingest-engine-checkpoint-design.md](./ingest-engine-checkpoint-design.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** M0 locked · M1 in progress (thin tabular Torch slice).  
+**Status:** M0 locked · M1 complete · M2 complete · M3 next (docs / DL alpha gate).  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
 **North star:** flexibility · depth · functionality.  
 **M0 lock artifact:** [dl-m0-lock.md](./dl-m0-lock.md).
@@ -152,8 +152,8 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | Partition → TensorDataset from feature/target roles | M1 | Numeric tabular first; dtype/contract checks |
 | Train / val / test DataLoaders | M1 | Shuffle **train only**; seeded generators |
 | Batch size / num_workers / pin_memory config | M1 | Sensible CPU defaults; document CUDA knobs |
-| Class / sample weights into sampler or loss | M2 | Align with classical imbalance intent; train-only |
-| Custom collate / user Dataset injection | M2 | Validated against roles/schema |
+| Class / sample weights into sampler or loss | M2→L | Deferred: classical imbalance path remains primary; DL weighted sampling later |
+| Custom collate / user Dataset injection | M2→L | Deferred: tabular TensorDataset path is the tested v1 contract |
 | Image / sequence / multimodal loaders | L | After tabular spine |
 | Streaming / IterableDataset for huge tables | L | Honest materialization gates first |
 | Automatic Polars→Torch zero-copy | X/L | Not required for v1; Pandas/NumPy bridge OK |
@@ -165,8 +165,8 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | Caller-supplied `nn.Module` + loss + optimizer factory | M1 | BuildML does not invent mystery architectures |
 | Epoch loop with train + optional val metrics | M1 | Typed `TrainResult` |
 | Device selection (`cpu` / `cuda` / `mps`) with clear fallback | M1 | No silent wrong-device claims |
-| Early stopping on val metric | M2 | Patience / mode / restore-best |
-| Gradient clipping, LR schedulers | M2 | Config-driven, documented |
+| Early stopping on val metric | M2 | Patience / mode / restore-best — done |
+| Gradient clipping, LR schedulers | M2 | Config-driven (`none`/`step`/`plateau`/`cosine`); defaults documented — done |
 | Mixed precision | L | After stable CPU/CUDA path |
 | DistributedDataParallel | X | Explicit non-goal for DL alpha |
 | Built-in model zoo as product identity | X | Optional examples in docs only |
@@ -177,7 +177,7 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | --- | --- | --- |
 | Classification / regression metric suites on a partition | M1 | Reuse classical metric names where comparable |
 | Per-epoch history tables | M1 | For plots and Teaching Studio later |
-| Confusion / residual-style diagnostics | M2 | Structured, not plot-only |
+| Confusion / residual-style diagnostics | M2 | Structured confusion matrix + residual summary on evaluate_torch — done |
 | Calibration / threshold tools for net probabilities | L | After predict_proba-equivalent path is solid |
 | Compare Torch run vs sklearn `FitResult` | L | Nice teaching feature; not alpha-blocking |
 
@@ -186,7 +186,7 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | Capability | Tag | Notes |
 | --- | --- | --- |
 | Save/load trainer bundle (weights, opt, config, history) | M1 | Distinct schema id, e.g. `buildml.torch_bundle.v1` |
-| Resume interrupted training | M2 | Same bundle; validate config hash / schema |
+| Resume interrupted training | M2 | `fit_torch(..., resume=True)` after bundle load; contract + opt/sched restore — done |
 | Session checkpoint mid-loop (data only) | M1 | Existing API; document DL resume recipe |
 | Export TorchScript / ONNX | L | Escape hatch after bundle round-trip |
 | Pickle arbitrary Python into Session checkpoint | X | Keep checkpoint trust model |
@@ -197,9 +197,9 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | --- | --- | --- |
 | Catalog entries for loader / fit_torch / evaluate_torch / save bundle | M1 | Prerequisites, leakage, result reading |
 | Concept notes: overfitting, early stop, batch leakage, device | M1 | Link from operations |
-| History + walkthrough awareness of DL ops | M1–M2 | Same resolver; DL-specific status fields |
-| Loss/metric curves in offline HTML or Studio panel | M2 | New board — not classical EDA domains |
-| Concept Academy notes for backprop / generalization | M2 | Editorial standards apply |
+| History + walkthrough awareness of DL ops | M1–M2 | `torch_training_status` on walkthrough + EDA overview — done |
+| Loss/metric curves in offline HTML or Studio panel | M2 | Structured `TrainingCurveReport` + light cockpit disclosure (no full Studio redesign) — done |
+| Concept Academy notes for backprop / generalization | M2 | `training-curves` + updated early-stopping concept — done; full backprop Academy later |
 | SHAP / saliency productization | L | Careful deps; classical map already marks SHAP later |
 
 ### 3.6 Leakage and split discipline
@@ -210,8 +210,8 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | Train-only fit for normalize / target encode used before tensors | M1 | Frozen stats on val/test |
 | No test rows in DataLoader shuffle or oversampling | M1 | Tests must prove it |
 | Validation-only early stopping; test once at end | M1 | Document anti-pattern of test-tuned early stop |
-| Fold-local DL CV | M2/L | Depth item; do not fake it in M1 |
-| Group / time split compatibility | M2 | Reuse `group_split` / `time_split`; loaders honor membership |
+| Fold-local DL CV | M2→L | Deferred: no fake sklearn-style Torch CV; holdout + early-stop on validation is the tested discipline |
+| Group / time split compatibility | M2 | Loaders honor membership; group disjoint + time order checks — done |
 | Injected external partitions | M1 | `inject_split` remains valid source of membership |
 
 ---
@@ -348,9 +348,9 @@ Session.ingest → set_roles → split
 
 **Exit**
 
-- [ ] Capability map M2 rows green or explicitly deferred with reason
-- [ ] Teaching disclosures for early-stop partition + device
-- [ ] Quality bar: not “accuracy-only”; structured diagnostics present
+- [x] Capability map M2 rows green or explicitly deferred with reason
+- [x] Teaching disclosures for early-stop partition + device
+- [x] Quality bar: not “accuracy-only”; structured diagnostics present
 
 ### M3 — Docs and DL alpha gate
 

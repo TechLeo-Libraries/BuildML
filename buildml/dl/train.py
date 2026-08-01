@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
+from copy import deepcopy
 from typing import Any
 
 from buildml.core.errors import ValidationError
+from buildml.dl.curves import build_training_curve
 from buildml.dl.extras import require_torch
 from buildml.dl.metrics import resolve_device
-from buildml.dl.results import TorchLoaderBundle, TrainResult
+from buildml.dl.results import EarlyStopInfo, TorchLoaderBundle, TrainResult
 from buildml.dl.types import TrainConfig
 
 OptimizerFactory = Callable[[Iterable[Any]], Any]
@@ -74,6 +76,75 @@ def _epoch_loss(
     return total / max(n, 1)
 
 
+def _current_lr(optimizer: Any) -> float:
+    groups = getattr(optimizer, "param_groups", None) or []
+    if not groups:
+        return float("nan")
+    return float(groups[0].get("lr", float("nan")))
+
+
+def _build_scheduler(optimizer: Any, cfg: TrainConfig, *, epochs_this_call: int) -> Any | None:
+    torch = require_torch(feature="Torch training")
+    name = (cfg.scheduler or "none").lower()
+    if name == "none":
+        return None
+    if name == "step":
+        return torch.optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=max(1, int(cfg.scheduler_step_size)),
+            gamma=float(cfg.scheduler_gamma),
+        )
+    if name == "cosine":
+        if cfg.scheduler_t_max is not None:
+            t_max = int(cfg.scheduler_t_max)
+        else:
+            t_max = max(1, epochs_this_call)
+        return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=t_max)
+    if name == "plateau":
+        mode = cfg.early_stopping_mode if cfg.early_stopping_patience else "min"
+        return torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode=mode,
+            factor=float(cfg.scheduler_factor),
+            patience=max(0, int(cfg.scheduler_patience)),
+            threshold=float(cfg.scheduler_threshold),
+        )
+    raise ValidationError(
+        f"Unknown scheduler {cfg.scheduler!r}. Use none, step, plateau, or cosine."
+    )
+
+
+def _is_improvement(
+    value: float,
+    best: float | None,
+    *,
+    mode: str,
+    min_delta: float,
+) -> bool:
+    if best is None:
+        return True
+    if mode == "min":
+        return value < (best - min_delta)
+    if mode == "max":
+        return value > (best + min_delta)
+    raise ValidationError(f"Unknown early_stopping_mode {mode!r}; use min or max.")
+
+
+def _validate_resume(prior: TrainResult, loader_bundle: TorchLoaderBundle) -> None:
+    if prior.contract.feature_columns != loader_bundle.contract.feature_columns:
+        raise ValidationError(
+            "Resume refused: feature columns differ from the saved trainer contract."
+        )
+    if prior.contract.target_column != loader_bundle.contract.target_column:
+        raise ValidationError(
+            "Resume refused: target column differs from the saved trainer contract."
+        )
+    if prior.task != loader_bundle.contract.task:
+        raise ValidationError(
+            f"Resume refused: task mismatch ({prior.task} vs {loader_bundle.contract.task})."
+        )
+
+
 def train_supervised_module(
     module: Any,
     loader_bundle: TorchLoaderBundle,
@@ -81,8 +152,17 @@ def train_supervised_module(
     config: TrainConfig | None = None,
     loss_fn: LossFn | None = None,
     optimizer_factory: OptimizerFactory | None = None,
+    resume_from: TrainResult | None = None,
 ) -> TrainResult:
-    """Run a supervised epoch loop on the train loader; optional val loss each epoch."""
+    """Run a supervised epoch loop on the train loader; optional val metrics / early stop.
+
+    Parameters
+    ----------
+    resume_from:
+        Optional prior :class:`TrainResult` (e.g. from ``load_torch_bundle``). Restores
+        module weights, optimizer state, scheduler state when present, and appends
+        history. ``config.epochs`` is treated as **additional** epochs to run.
+    """
     torch = require_torch(feature="Torch training")
     if "train" not in loader_bundle.loaders:
         raise ValidationError("TorchLoaderBundle has no train loader")
@@ -96,16 +176,76 @@ def train_supervised_module(
     if device_spec.fallback_warning:
         warnings.append(device_spec.fallback_warning)
 
+    prior = resume_from
+    if prior is not None:
+        _validate_resume(prior, loader_bundle)
+        module.load_state_dict(prior.module.state_dict())
+        if prior.device.resolved != device_spec.resolved:
+            warnings.append(
+                f"Resume device {device_spec.resolved!r} differs from prior "
+                f"{prior.device.resolved!r}; optimizer state was remapped via load."
+            )
+
     module = module.to(torch.device(device_spec.resolved))
     resolved_loss = loss_fn or _default_loss(task)
     factory = optimizer_factory or _default_optimizer_factory(cfg.learning_rate)
     optimizer = factory(module.parameters())
+    if prior is not None and prior.optimizer_state is not None:
+        try:
+            optimizer.load_state_dict(prior.optimizer_state)
+        except Exception as exc:  # noqa: BLE001 — surface as ValidationError
+            raise ValidationError(
+                f"Could not restore optimizer state for resume: {exc}"
+            ) from exc
 
-    history: list[dict[str, float]] = []
+    scheduler = _build_scheduler(optimizer, cfg, epochs_this_call=cfg.epochs)
+    if prior is not None and prior.scheduler_state is not None and scheduler is not None:
+        if (prior.scheduler_name or "none") == (cfg.scheduler or "none"):
+            try:
+                scheduler.load_state_dict(prior.scheduler_state)
+            except Exception as exc:  # noqa: BLE001
+                warnings.append(f"Could not restore scheduler state; continuing fresh: {exc}")
+        else:
+            warnings.append(
+                f"Scheduler changed from {prior.scheduler_name!r} to {cfg.scheduler!r}; "
+                "starting a new scheduler."
+            )
+
+    history: list[dict[str, float]] = list(prior.history) if prior is not None else []
+    start_epoch = int(prior.n_epochs_ran) if prior is not None else 0
     train_loader = loader_bundle.loaders["train"]
     val_loader = loader_bundle.loaders.get("validation")
 
-    for epoch in range(1, cfg.epochs + 1):
+    patience = cfg.early_stopping_patience
+    early_enabled = patience is not None
+    if early_enabled and val_loader is None:
+        raise ValidationError(
+            "early_stopping_patience requires a validation DataLoader. "
+            "Create a validation partition (split/group_split/time_split) before fit_torch."
+        )
+    if early_enabled and patience is not None and patience < 1:
+        raise ValidationError("early_stopping_patience must be >= 1 when enabled")
+
+    monitor = cfg.early_stopping_monitor
+    mode = cfg.early_stopping_mode
+    min_delta = float(cfg.early_stopping_min_delta)
+    best_value: float | None = None
+    best_epoch: int | None = None
+    best_state: dict[str, Any] | None = None
+    wait = 0
+    triggered = False
+    stop_reason = f"completed_epochs:{cfg.epochs}"
+    stopped_epoch = start_epoch + cfg.epochs
+
+    # Seed best from prior early-stop bookkeeping when resuming.
+    if prior is not None and prior.early_stop is not None and prior.early_stop.enabled:
+        best_value = prior.early_stop.best_value
+        best_epoch = prior.early_stop.best_epoch
+        if cfg.restore_best_weights:
+            best_state = deepcopy(prior.module.state_dict())
+
+    for offset in range(1, cfg.epochs + 1):
+        epoch = start_epoch + offset
         train_loss = _epoch_loss(
             module,
             train_loader,
@@ -114,7 +254,11 @@ def train_supervised_module(
             optimizer=optimizer,
             grad_clip_norm=cfg.grad_clip_norm,
         )
-        row: dict[str, float] = {"epoch": float(epoch), "train_loss": train_loss}
+        row: dict[str, float] = {
+            "epoch": float(epoch),
+            "train_loss": train_loss,
+            "lr": _current_lr(optimizer),
+        }
         if val_loader is not None:
             row["val_loss"] = _epoch_loss(
                 module,
@@ -123,10 +267,71 @@ def train_supervised_module(
                 device=device_spec.resolved,
                 optimizer=None,
             )
-        if cfg.log_every <= 1 or epoch % cfg.log_every == 0 or epoch == cfg.epochs:
+
+        if early_enabled:
+            if monitor not in row:
+                raise ValidationError(
+                    f"early_stopping_monitor {monitor!r} missing from epoch metrics "
+                    f"(available: {sorted(k for k in row if k != 'epoch')}). "
+                    "Use val_loss when a validation loader exists."
+                )
+            metric_value = float(row[monitor])
+            if _is_improvement(metric_value, best_value, mode=mode, min_delta=min_delta):
+                best_value = metric_value
+                best_epoch = epoch
+                wait = 0
+                if cfg.restore_best_weights:
+                    best_state = deepcopy(module.state_dict())
+            else:
+                wait += 1
+
+        if scheduler is not None:
+            if cfg.scheduler == "plateau":
+                if monitor in row:
+                    plateau_metric = row[monitor]
+                else:
+                    plateau_metric = row.get("val_loss", train_loss)
+                scheduler.step(float(plateau_metric))
+            else:
+                scheduler.step()
+
+        if cfg.log_every <= 1 or epoch % cfg.log_every == 0 or offset == cfg.epochs:
             history.append(row)
 
-    return TrainResult(
+        if early_enabled and wait >= int(patience or 0):
+            triggered = True
+            stopped_epoch = epoch
+            stop_reason = (
+                f"early_stopping: no improvement in {monitor} for {patience} epoch(s) "
+                f"(best={best_value} at epoch {best_epoch} on validation)"
+            )
+            break
+    else:
+        stopped_epoch = start_epoch + cfg.epochs
+        if early_enabled:
+            stop_reason = (
+                f"completed_epochs:{cfg.epochs} without early-stop trigger "
+                f"(best {monitor}={best_value} at epoch {best_epoch})"
+            )
+
+    if early_enabled and cfg.restore_best_weights and best_state is not None:
+        module.load_state_dict(best_state)
+
+    early_info = EarlyStopInfo(
+        enabled=bool(early_enabled),
+        triggered=triggered,
+        monitor=monitor,
+        mode=mode,
+        patience=patience,
+        best_epoch=best_epoch,
+        best_value=best_value,
+        stopped_epoch=stopped_epoch,
+        restore_best_weights=bool(cfg.restore_best_weights) if early_enabled else False,
+        partition="validation",
+        reason=stop_reason,
+    )
+
+    result = TrainResult(
         module=module,
         task=task,
         config=cfg,
@@ -135,6 +340,12 @@ def train_supervised_module(
         optimizer_state=optimizer.state_dict(),
         history=history,
         n_train_rows=loader_bundle.report.n_train,
-        n_epochs_ran=cfg.epochs,
+        n_epochs_ran=stopped_epoch,
         warnings=warnings,
+        early_stop=early_info,
+        scheduler_name=str(cfg.scheduler or "none"),
+        scheduler_state=None if scheduler is None else scheduler.state_dict(),
+        resumed_from_epochs=start_epoch,
     )
+    result.training_curve = build_training_curve(result)
+    return result

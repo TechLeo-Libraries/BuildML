@@ -1283,6 +1283,10 @@ class Session:
         device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
         grad_clip_norm: float | None = None,
         log_every: int = 1,
+        early_stopping_patience: int | None = None,
+        early_stopping_monitor: str = "val_loss",
+        scheduler: Literal["none", "step", "plateau", "cosine"] = "none",
+        resume: bool = False,
         config: Any | None = None,
     ) -> Session:
         """Train a caller-supplied ``nn.Module`` on the train Torch loader.
@@ -1294,14 +1298,22 @@ class Session:
         Parameters
         ----------
         module:
-            Unfitted (or warm) ``torch.nn.Module``.
+            Unfitted (or warm) ``torch.nn.Module``. When ``resume=True``, weights
+            are restored from :attr:`dl_train_result` before continuing.
         loss_fn:
             Optional ``(module, xb, yb) -> loss``. Defaults to CrossEntropy
             (classification) or MSE (regression).
         optimizer_factory:
             Optional ``callable(params) -> optimizer``. Defaults to Adam.
         epochs / learning_rate / device / grad_clip_norm / log_every:
-            Train-loop knobs used when ``config`` is omitted.
+            Train-loop knobs used when ``config`` is omitted. With ``resume=True``,
+            ``epochs`` are **additional** epochs.
+        early_stopping_patience / early_stopping_monitor / scheduler:
+            M2 knobs when ``config`` is omitted. Patience requires a validation
+            loader. Scheduler defaults to ``none`` (see :class:`~buildml.dl.types.TrainConfig`).
+        resume:
+            When True, continue from :attr:`dl_train_result` (e.g. after
+            :meth:`load_torch_bundle`), restoring optimizer/scheduler state.
         config:
             Optional :class:`~buildml.dl.types.TrainConfig` overriding the
             scalar knobs above.
@@ -1320,15 +1332,27 @@ class Session:
                 device=device,
                 grad_clip_norm=grad_clip_norm,
                 log_every=log_every,
+                early_stopping_patience=early_stopping_patience,
+                early_stopping_monitor=early_stopping_monitor,
+                scheduler=scheduler,
                 batch_size=getattr(self._torch_loaders.report, "batch_size", 32),
                 normalize=getattr(self._torch_loaders.report, "normalize", True),
             )
+        prior = None
+        if resume:
+            if self._dl_train_result is None:
+                raise ValidationError(
+                    "resume=True requires dl_train_result. "
+                    "Call load_torch_bundle(...) or fit_torch(...) first."
+                )
+            prior = self._dl_train_result
         result = train_supervised_module(
             module,
             self._torch_loaders,
             config=config,
             loss_fn=loss_fn,
             optimizer_factory=optimizer_factory,
+            resume_from=prior,
         )
         self._dl_train_result = result
         self._record(
@@ -1338,6 +1362,9 @@ class Session:
                 "epochs": result.n_epochs_ran,
                 "device": result.device.to_dict(),
                 "task": result.task,
+                "resume": resume,
+                "scheduler": result.scheduler_name,
+                "early_stopping_patience": result.config.early_stopping_patience,
             },
             result_summary=result.to_dict(),
             warnings=tuple(result.warnings),
@@ -1348,6 +1375,29 @@ class Session:
     def dl_train_result(self) -> Any | None:
         """Last Torch :class:`~buildml.dl.results.TrainResult`, if any."""
         return self._dl_train_result
+
+    def torch_training_curve(self) -> Any:
+        """Return structured training-curve teaching data for the last Torch run.
+
+        Requires a prior :meth:`fit_torch` / :meth:`load_torch_bundle`. Torch-free
+        to read once :attr:`dl_train_result` exists.
+        """
+        from buildml.dl.curves import build_training_curve
+
+        if self._dl_train_result is None:
+            raise ValidationError(
+                "No Torch trainer. Call fit_torch(...) or load_torch_bundle(...) first."
+            )
+        curve = self._dl_train_result.training_curve
+        if curve is None:
+            curve = build_training_curve(self._dl_train_result)
+            self._dl_train_result.training_curve = curve
+        self._record(
+            "torch_training_curve",
+            {},
+            result_summary=curve.to_dict(),
+        )
+        return curve
 
     def evaluate_torch(
         self,
@@ -2386,6 +2436,7 @@ class Session:
         )
         from buildml.session.walkthrough import (
             preprocess_scope_status,
+            torch_training_status_for_walkthrough,
             warm_start_studies_status,
         )
 
@@ -2400,6 +2451,7 @@ class Session:
             last_cv=self._last_cv,
             last_nested_cv=self._last_nested_cv,
         )
+        report.overview["torch_training_status"] = torch_training_status_for_walkthrough(self)
         self._last_eda = report
         self._record(
             "eda",

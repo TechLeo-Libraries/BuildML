@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
+    confusion_matrix,
     f1_score,
     mean_absolute_error,
     mean_squared_error,
@@ -107,6 +108,10 @@ def evaluate_module(
     )
     tips: list[str] = []
     metrics: dict[str, float] = {}
+    cm_list: list[list[int]] | None = None
+    labels = train_result.contract.class_labels
+    residuals: dict[str, float] | None = None
+
     if len(y_true) == 0:
         tips.append("Partition produced no rows; metrics are empty.")
         return DLEvaluateResult(
@@ -116,6 +121,7 @@ def evaluate_module(
             n_rows=0,
             device=device_name,
             recommendations=tips,
+            class_labels=labels,
         )
 
     if train_result.task == "regression":
@@ -123,6 +129,15 @@ def evaluate_module(
         metrics["mse"] = float(mean_squared_error(y_true, y_pred))
         metrics["rmse"] = float(np.sqrt(metrics["mse"]))
         metrics["r2"] = float(r2_score(y_true, y_pred))
+        resid = np.asarray(y_true, dtype=float) - np.asarray(y_pred, dtype=float)
+        residuals = {
+            "mean": float(np.mean(resid)),
+            "std": float(np.std(resid)),
+            "p05": float(np.quantile(resid, 0.05)),
+            "p50": float(np.quantile(resid, 0.50)),
+            "p95": float(np.quantile(resid, 0.95)),
+            "max_abs": float(np.max(np.abs(resid))),
+        }
         if metrics["r2"] < 0:
             tips.append("Negative R² — model underperforms a mean baseline on this partition.")
     else:
@@ -132,11 +147,24 @@ def evaluate_module(
             f1_score(y_true, y_pred, average="weighted", zero_division=0)
         )
         metrics["f1_macro"] = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
+        if labels:
+            label_values = list(labels)
+        else:
+            label_values = sorted(set(np.unique(y_true)).union(set(np.unique(y_pred))))
+        cm = confusion_matrix(y_true, y_pred, labels=label_values)
+        cm_list = cm.astype(int).tolist()
 
+    early = train_result.early_stop
+    if early and early.enabled:
+        tips.append(
+            f"Early stopping used monitor={early.monitor} on partition={early.partition} "
+            f"(triggered={early.triggered}). Metrics below are for partition '{partition}'."
+        )
     tips.append(
         f"Metrics are for partition '{partition}'. "
-        "Do not tune on test; use validation for early decisions (M2 early stopping)."
+        "Do not tune on test; use validation for early stopping and model choices."
     )
+    tips.append(f"Evaluation device={device_name}.")
     return DLEvaluateResult(
         partition=partition,
         task=train_result.task,
@@ -144,4 +172,7 @@ def evaluate_module(
         n_rows=int(len(y_true)),
         device=device_name,
         recommendations=tips,
+        confusion_matrix=cm_list,
+        class_labels=labels,
+        residuals_summary=residuals,
     )
