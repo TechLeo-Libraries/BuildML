@@ -194,6 +194,13 @@ class Session:
         self._rag_index_result: Any | None = None
         self._rag_retrieve_result: Any | None = None
         self._rag_eval_result: Any | None = None
+        self._ai_provider: Any | None = None
+        self._ai_egress_config: Any | None = None
+        self._ai_transcript: Any | None = None
+        self._ai_result: Any | None = None
+        self._ai_advisor_result: Any | None = None
+        self._ai_executor_result: Any | None = None
+        self._ai_registry: Any | None = None
 
     def close_native(self) -> None:
         """Close an owned DuckDB connection on the session dataset, if any.
@@ -1848,6 +1855,511 @@ class Session:
             result_summary=self._rag_index_result.to_dict(),
         )
         return self
+
+    def ai_configure(
+        self,
+        *,
+        provider: str = "openai",
+        model: str = "gpt-4o-mini",
+        api_key: str | None = None,
+        api_key_env: str = "BUILDML_OPENAI_API_KEY",
+        egress_level: str = "stats_only",
+        max_iterations: int = 10,
+    ) -> Session:
+        """Configure an AI provider for LLM-assisted workflow guidance.
+
+        API keys are read from environment variables by default. Keys are never
+        logged, persisted in transcripts/checkpoints, or echoed in errors.
+
+        Parameters
+        ----------
+        provider
+            Provider name (currently ``"openai"`` for OpenAI-compatible APIs).
+        model
+            Model identifier for the provider.
+        api_key
+            API key (if None, reads from ``api_key_env`` environment variable).
+        api_key_env
+            Environment variable name for the API key.
+        egress_level
+            Default egress level: ``"schema_only"``, ``"stats_only"`` (default),
+            ``"redacted_sample"``, or ``"full_sample"``.
+        max_iterations
+            Maximum tool iterations per AI call (default 10).
+
+        Returns
+        -------
+        Session
+            Self for chaining.
+        """
+        from buildml.ai.privacy import EgressConfig, EgressLevel
+        from buildml.ai.provider import MockProvider, OpenAIProvider, ProviderConfig
+        from buildml.ai.tools import ToolRegistry
+        from buildml.ai.transcript import TranscriptStore
+
+        level_map = {
+            "schema_only": EgressLevel.SCHEMA_ONLY,
+            "stats_only": EgressLevel.STATS_ONLY,
+            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
+            "full_sample": EgressLevel.FULL_SAMPLE,
+        }
+        egress = level_map.get(egress_level, EgressLevel.STATS_ONLY)
+
+        config = ProviderConfig(
+            provider=provider,
+            model=model,
+            api_key=api_key,
+            api_key_env=api_key_env,
+        )
+
+        if provider == "mock":
+            self._ai_provider = MockProvider()
+        else:
+            self._ai_provider = OpenAIProvider(config)
+
+        self._ai_egress_config = EgressConfig(level=egress)
+        self._ai_transcript = TranscriptStore()
+        self._ai_registry = ToolRegistry()
+
+        self._record(
+            "ai_configure",
+            {
+                "provider": provider,
+                "model": model,
+                "egress_level": egress_level,
+                "max_iterations": max_iterations,
+            },
+        )
+        return self
+
+    def ai_egress_preview(
+        self,
+        *,
+        level: str | None = None,
+        allow_columns: Sequence[str] | None = None,
+        deny_columns: Sequence[str] | None = None,
+    ) -> Any:
+        """Preview what data will leave the machine before an LLM call.
+
+        Returns an :class:`~buildml.ai.privacy.EgressManifest` showing columns,
+        row counts, and estimated tokens that would be sent to the provider.
+
+        Parameters
+        ----------
+        level
+            Override egress level for this preview (``"schema_only"``,
+            ``"stats_only"``, ``"redacted_sample"``, ``"full_sample"``).
+        allow_columns
+            Explicit allowlist of columns to include.
+        deny_columns
+            Explicit denylist of columns to exclude.
+
+        Returns
+        -------
+        EgressManifest
+            What would leave the machine at this egress level.
+        """
+        from buildml.ai.privacy import EgressConfig, EgressLevel, build_egress_payload
+
+        base_config = self._ai_egress_config
+        if base_config is None:
+            base_config = EgressConfig(level=EgressLevel.STATS_ONLY)
+
+        level_map = {
+            "schema_only": EgressLevel.SCHEMA_ONLY,
+            "stats_only": EgressLevel.STATS_ONLY,
+            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
+            "full_sample": EgressLevel.FULL_SAMPLE,
+        }
+
+        config = EgressConfig(
+            level=level_map.get(level, base_config.level) if level else base_config.level,
+            allow_columns=tuple(allow_columns) if allow_columns else base_config.allow_columns,
+            deny_columns=tuple(deny_columns) if deny_columns else base_config.deny_columns,
+        )
+
+        import pandas as pd
+        df: pd.DataFrame | None = None
+        if self._dataset is not None:
+            df = self._dataset.frame
+
+        _, manifest = build_egress_payload(df, config)
+        return manifest
+
+    def ai_dry_run(
+        self,
+        question: str,
+        *,
+        level: str | None = None,
+    ) -> dict[str, Any]:
+        """Preview the full prompt payload without calling the provider.
+
+        Returns the system prompt, user message, tools, and egress manifest
+        that would be sent to the LLM.
+
+        Parameters
+        ----------
+        question
+            The question or goal to preview.
+        level
+            Override egress level for this preview.
+
+        Returns
+        -------
+        dict
+            Prompt payload including messages, tools, and egress manifest.
+        """
+        from buildml.ai.advisor import build_advisor_context, build_state_digest
+        from buildml.ai.privacy import EgressConfig, EgressLevel
+        from buildml.ai.tools import ToolRegistry
+
+        base_config = self._ai_egress_config
+        if base_config is None:
+            base_config = EgressConfig(level=EgressLevel.STATS_ONLY)
+
+        level_map = {
+            "schema_only": EgressLevel.SCHEMA_ONLY,
+            "stats_only": EgressLevel.STATS_ONLY,
+            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
+            "full_sample": EgressLevel.FULL_SAMPLE,
+        }
+
+        config = EgressConfig(
+            level=level_map.get(level, base_config.level) if level else base_config.level,
+            allow_columns=base_config.allow_columns,
+            deny_columns=base_config.deny_columns,
+        )
+
+        registry = self._ai_registry or ToolRegistry()
+        messages, manifest = build_advisor_context(self, config, question, registry)
+
+        return {
+            "messages": [m.to_dict() for m in messages],
+            "tools": registry.to_openai_tools(),
+            "egress_manifest": manifest.to_dict(),
+            "state_digest": build_state_digest(self).to_dict(),
+        }
+
+    def ai_advisor(
+        self,
+        question: str,
+        *,
+        level: str | None = None,
+        confirm: bool = False,
+    ) -> Any:
+        """Get advisory Q&A guidance about the current workflow (read-only).
+
+        The advisor can describe data, explain operations, and suggest next
+        steps, but cannot execute state-changing operations.
+
+        Parameters
+        ----------
+        question
+            The question to ask about the workflow.
+        level
+            Override egress level for this call.
+        confirm
+            Required True for FULL_SAMPLE egress (raw data). REDACTED_SAMPLE
+            also requires explicit confirmation.
+
+        Returns
+        -------
+        AdvisorResult
+            Advisory response with evidence and recommendations.
+
+        Raises
+        ------
+        ValidationError
+            If FULL_SAMPLE or REDACTED_SAMPLE egress is requested without
+            confirm=True.
+        """
+        from buildml.ai.advisor import run_advisor
+        from buildml.ai.explain_hooks import advisor_result_summary
+        from buildml.ai.privacy import EgressConfig, EgressLevel
+        from buildml.ai.tools import ToolRegistry
+
+        if self._ai_provider is None:
+            raise ValidationError(
+                "No AI provider configured. Call ai_configure() first."
+            )
+
+        base_config = self._ai_egress_config
+        if base_config is None:
+            base_config = EgressConfig(level=EgressLevel.STATS_ONLY)
+
+        level_map = {
+            "schema_only": EgressLevel.SCHEMA_ONLY,
+            "stats_only": EgressLevel.STATS_ONLY,
+            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
+            "full_sample": EgressLevel.FULL_SAMPLE,
+        }
+
+        resolved_level = level_map.get(level, base_config.level) if level else base_config.level
+
+        if resolved_level == EgressLevel.FULL_SAMPLE and not confirm:
+            raise ValidationError(
+                "FULL_SAMPLE egress sends raw data to the provider and requires "
+                "explicit confirmation. Pass confirm=True to proceed, or use a "
+                "safer egress level (stats_only, schema_only, redacted_sample)."
+            )
+        if resolved_level == EgressLevel.REDACTED_SAMPLE and not confirm:
+            raise ValidationError(
+                "REDACTED_SAMPLE egress sends sample rows (with PII masked) to the "
+                "provider and requires explicit confirmation. Pass confirm=True to "
+                "proceed, or use stats_only or schema_only."
+            )
+
+        config = EgressConfig(
+            level=resolved_level,
+            allow_columns=base_config.allow_columns,
+            deny_columns=base_config.deny_columns,
+        )
+
+        registry = self._ai_registry or ToolRegistry()
+
+        result = run_advisor(
+            self,
+            question,
+            self._ai_provider,
+            egress_config=config,
+            registry=registry,
+        )
+
+        self._ai_result = result
+        self._ai_advisor_result = result
+
+        if self._ai_transcript is not None:
+            from buildml.ai.types import Message
+
+            self._ai_transcript.add_message(Message(role="user", content=question))
+            self._ai_transcript.add_message(Message(role="assistant", content=result.answer))
+            if result.egress_manifest:
+                self._ai_transcript.add_egress_manifest(result.egress_manifest)
+
+        self._record(
+            "ai_advisor",
+            {"question": question[:100], "egress_level": config.level.value},
+            result_summary=advisor_result_summary(result),
+        )
+
+        return result
+
+    def ai_plan(
+        self,
+        goal: str,
+        *,
+        level: str | None = None,
+        confirm: bool = False,
+    ) -> Any:
+        """Generate a structured workflow plan for a goal (read-only).
+
+        Returns a plan with steps, prerequisites, and expected changes based
+        on the current Session state.
+
+        Parameters
+        ----------
+        goal
+            The workflow goal to plan for.
+        level
+            Override egress level for this call.
+        confirm
+            Required True for FULL_SAMPLE or REDACTED_SAMPLE egress levels.
+
+        Returns
+        -------
+        PlanResult
+            Structured plan with steps, rationale, and limitations.
+
+        Raises
+        ------
+        ValidationError
+            If FULL_SAMPLE or REDACTED_SAMPLE egress is requested without
+            confirm=True.
+        """
+        from buildml.ai.advisor import run_plan
+        from buildml.ai.explain_hooks import plan_result_summary
+        from buildml.ai.privacy import EgressConfig, EgressLevel
+
+        if self._ai_provider is None:
+            raise ValidationError(
+                "No AI provider configured. Call ai_configure() first."
+            )
+
+        base_config = self._ai_egress_config
+        if base_config is None:
+            base_config = EgressConfig(level=EgressLevel.STATS_ONLY)
+
+        level_map = {
+            "schema_only": EgressLevel.SCHEMA_ONLY,
+            "stats_only": EgressLevel.STATS_ONLY,
+            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
+            "full_sample": EgressLevel.FULL_SAMPLE,
+        }
+
+        resolved_level = level_map.get(level, base_config.level) if level else base_config.level
+
+        if resolved_level == EgressLevel.FULL_SAMPLE and not confirm:
+            raise ValidationError(
+                "FULL_SAMPLE egress sends raw data to the provider and requires "
+                "explicit confirmation. Pass confirm=True to proceed, or use a "
+                "safer egress level (stats_only, schema_only, redacted_sample)."
+            )
+        if resolved_level == EgressLevel.REDACTED_SAMPLE and not confirm:
+            raise ValidationError(
+                "REDACTED_SAMPLE egress sends sample rows (with PII masked) to the "
+                "provider and requires explicit confirmation. Pass confirm=True to "
+                "proceed, or use stats_only or schema_only."
+            )
+
+        config = EgressConfig(
+            level=resolved_level,
+            allow_columns=base_config.allow_columns,
+            deny_columns=base_config.deny_columns,
+        )
+
+        result = run_plan(self, goal, self._ai_provider, egress_config=config)
+
+        self._ai_result = result
+
+        if self._ai_transcript is not None:
+            from buildml.ai.types import Message
+
+            self._ai_transcript.add_message(Message(role="user", content=f"Plan: {goal}"))
+            self._ai_transcript.add_message(
+                Message(role="assistant", content=result.raw_response)
+            )
+            if result.egress_manifest:
+                self._ai_transcript.add_egress_manifest(result.egress_manifest)
+
+        self._record(
+            "ai_plan",
+            {"goal": goal[:100], "egress_level": config.level.value},
+            result_summary=plan_result_summary(result),
+        )
+
+        return result
+
+    def ai_execute(
+        self,
+        tool: str,
+        params: dict[str, Any] | None = None,
+        *,
+        confirm: bool = False,
+    ) -> Any:
+        """Execute a single tool with propose-confirm-execute flow.
+
+        Proposes the tool execution and requires explicit confirmation for
+        write operations. Read-only tools may auto-confirm.
+
+        Parameters
+        ----------
+        tool
+            Name of the tool to execute (must be in the allowed registry).
+        params
+            Tool arguments as a dictionary.
+        confirm
+            If True, confirms and executes; otherwise returns a proposal.
+
+        Returns
+        -------
+        ExecutorProposal or ExecutorResult
+            Proposal (if not confirmed) or execution result (if confirmed).
+        """
+        from buildml.ai.executor import execute_tool, propose_tool_execution
+        from buildml.ai.explain_hooks import executor_result_summary
+        from buildml.ai.tools import ToolRegistry
+
+        registry = self._ai_registry or ToolRegistry()
+
+        proposal = propose_tool_execution(tool, params or {}, registry)
+
+        if not confirm and proposal.requires_confirmation:
+            return proposal
+
+        result = execute_tool(self, proposal, confirm or not proposal.requires_confirmation, registry)
+
+        self._ai_result = result
+        self._ai_executor_result = result
+
+        if self._ai_transcript is not None:
+            self._ai_transcript.add_tool_call(proposal.tool_call, confirmed=result.confirmed)
+            if result.executed:
+                self._ai_transcript.add_tool_result(
+                    proposal.tool_call, result.result_summary
+                )
+            if result.error:
+                self._ai_transcript.add_error(result.error, proposal.tool_call)
+
+        self._record(
+            "ai_execute",
+            {
+                "tool": tool,
+                "params": params,
+                "confirmed": result.confirmed,
+                "executed": result.executed,
+            },
+            result_summary=executor_result_summary(result),
+        )
+
+        return result
+
+    def save_ai_transcript(self, path: str | Path, *, redact: bool = True) -> Path:
+        """Save the AI transcript to a JSON file (secrets redacted by default).
+
+        Transcripts record conversation history, tool calls, and egress
+        manifests. API keys and raw data are redacted before saving.
+
+        Parameters
+        ----------
+        path
+            Output file path.
+        redact
+            If True (default), redact potential secrets before saving.
+
+        Returns
+        -------
+        Path
+            The resolved output path.
+        """
+        from buildml.ai.transcript import TranscriptStore, save_transcript
+
+        transcript = self._ai_transcript
+        if transcript is None:
+            transcript = TranscriptStore()
+
+        destination = save_transcript(transcript, path, redact=redact)
+
+        self._record("save_ai_transcript", {"path": str(destination), "redact": redact})
+        return destination
+
+    def load_ai_transcript(self, path: str | Path) -> Session:
+        """Load an AI transcript for resume or audit.
+
+        Parameters
+        ----------
+        path
+            Input file path.
+
+        Returns
+        -------
+        Session
+            Self for chaining.
+        """
+        from buildml.ai.transcript import load_transcript
+
+        self._ai_transcript = load_transcript(path)
+        self._record("load_ai_transcript", {"path": str(path)})
+        return self
+
+    @property
+    def ai_result(self) -> Any | None:
+        """Last AI result (AdvisorResult, PlanResult, or ExecutorResult)."""
+        return self._ai_result
+
+    @property
+    def ai_transcript(self) -> Any | None:
+        """Active AI transcript store, if any."""
+        return self._ai_transcript
 
     def eval_plots(
         self,

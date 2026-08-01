@@ -9,6 +9,7 @@ Decision-oriented planning map for a full system rewrite · grounded in the 1 Au
 > - [phase-1-build-plan.md](./phase-1-build-plan.md)  
 > - [deep-learning-phase-plan.md](./deep-learning-phase-plan.md)  
 > - [rag-phase-plan.md](./rag-phase-plan.md)  
+> - [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) *(draft — pending M0 approval)*  
 > - [development-environment.md](./development-environment.md)  
 > Canvas twin:  
 > `C:/Users/leona/.cursor/projects/c-Users-leona-Desktop-Github-Projects-BuildML/canvases/buildml-reconstruction-roadmap.canvas.tsx`
@@ -23,9 +24,9 @@ Decision-oriented planning map for a full system rewrite · grounded in the 1 Au
 | Backends | Multi-option (auto-default + override); both Polars and DuckDB |
 | Packaging | Lean core + expanding extras |
 | Python | 3.10–3.13 |
-| Expansion | Classical ML → Deep Learning → RAG / modern methods |
+| Expansion | Classical ML → Deep Learning → RAG → LLM operator (last) |
 | Docs bar | Extensive docstrings + guides for every public method |
-| LLM assistant | Designed later; not blocking core |
+| LLM operator | Draft plan pending M0 approval ([llm-operator-phase-plan.md](./llm-operator-phase-plan.md)); not blocking core |
 | Phase 0 | **Closed** |
 
 **Plan before build:** Incremental patching cannot fix duplicated facade logic, leakage-by-default workflows, broken paths, and packaging/import failure.
@@ -47,7 +48,7 @@ Decision-oriented planning map for a full system rewrite · grounded in the 1 Au
 9. **Platform, not a single technique.** Start with complete classical ML; architect domains for deep learning, RAG, and future methods.
 10. **Core + extras expand capability.** Lean installable core; extras unlock depth without forcing every dependency on every user. Missing an extra yields a clear install hint — never a silent dead end.
 11. **Documentation is release-critical.** Every public method ships with purpose, args, returns, examples, leakage notes, scale notes, and related methods.
-12. **AI operator is optional and later.** Natural-language control maps to real methods; core library must work without an LLM.
+12. **AI operator is optional and last in sequence.** Natural-language control maps to real methods via tool-calling; core library must work without an LLM. See [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) for full design (draft pending M0 approval).
 13. **Depth is mandatory — no thin wrappers.** Every capability (EDA, preprocess, model, eval, dates, persistence, future domains) must be extensive: cover the full professional surface, adaptive behavior, creative high-impact UX where visual, and honest scale handling. “Core-only” means install weight, not shallow functionality.
 
 ---
@@ -127,14 +128,20 @@ BuildML Session
 
 ## D. Domain roadmap
 
-| Horizon | Domain | Goal |
-| --- | --- | --- |
-| **v2 foundation** | Ingest, session, checkpoints, leakage-safe classical ML spine | Importable, tested, documented core |
-| **v2 depth** | Complete classical ML turns (probs, calibration, thresholds, CV/search, persistence, rich eval) | Professionals not limited |
-| **v3** | Deep learning domain | Session-attached trainers/eval/export |
-| **v3 / v4** | RAG / retrieval domain | Document → chunk → embed → index → retrieve → generate (+ eval) |
-| **Ongoing** | New methodologies as domains | Expand without rewriting the spine |
-| **Later design** | LLM assistant operator | Tool-calling over real BuildML methods |
+| Horizon | Domain | Goal | Status |
+| --- | --- | --- | --- |
+| **v2 foundation** | Ingest, session, checkpoints, leakage-safe classical ML spine | Importable, tested, documented core | `2.0.0a1` |
+| **v2 depth** | Complete classical ML turns (probs, calibration, thresholds, CV/search, persistence, rich eval) | Professionals not limited | `2.0.0a1` |
+| **v3 (DL)** | Deep learning domain | Session-attached trainers/eval/export | `2.1.0a1` |
+| **v3 (RAG)** | RAG / retrieval domain | Document → chunk → embed → index → retrieve → generate (+ eval) | `2.2.0a1` |
+| **v3 (LLM operator)** | LLM operator domain | Tool-calling over real BuildML methods; E2E ML pipeline orchestration | Draft plan — [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) |
+| **Ongoing** | New methodologies as domains | Expand without rewriting the spine | — |
+
+**Locked sequencing:** Classical ML → Deep Learning → RAG → **LLM operator last**.
+
+**LLM operator plan:** See [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) for the
+full phase plan (M0–M3 milestones, API sketch, security/privacy requirements, open questions).
+Status: draft pending M0 approval; proposed version `2.3.0a1` at M3 gate.
 
 **Expansion rule:** New tools attach as domain packages + extras. Do not grow a second mega-facade.
 
@@ -190,8 +197,8 @@ BuildML Session
 | 2 · Classical parity (correct) | Reimplement v1 capabilities with correct semantics | Parity checklist + P0/P1 regressions green |
 | 3 · Classical depth | Probabilities, calibration, thresholds, rich eval, search, persistence | Capability map “v2 depth” items green |
 | 4 · Scale hardening | Lazy/out-of-core paths, materialization gates | Engine modes tested; docs honest about limits |
-| 5 · Platform expansion | DL domain, then RAG / modern methods | Per-domain validation + docs bar |
-| 6 · AI operator | Optional LLM method orchestration | Dry-run/execute, audit trail, no core dependency |
+| 5 · Platform expansion | DL domain (`2.1.0a1`), then RAG (`2.2.0a1`) | Per-domain validation + docs bar |
+| 6 · LLM operator | Optional LLM method orchestration (proposed `2.3.0a1`) | Tool-calling, security, privacy — see [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) |
 
 ---
 
@@ -260,7 +267,7 @@ BuildML Session
 | Report privacy | **Locked** | Local-only defaults, warnings, opt-in sample/redaction guidance |
 | Checkpoint format | **Locked** | Data files + sidecar metadata bundle |
 | Phase-1 entry order | **Locked** | Types → Dataset(memory) → Session → splits → checkpoint → CI → engine adapters → classical depth |
-| LLM assistant | **Deferred** | Design after core method surface is solid |
+| LLM operator | **Draft plan** | [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) pending M0 approval; sequenced after RAG |
 | Split membership storage | Open (impl) | Row IDs vs positions vs recipe+seed — decide at implementation |
 | Artifact serializer | Open (impl) | joblib vs skops vs directory — decide at implementation |
 
