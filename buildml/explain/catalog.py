@@ -1421,12 +1421,19 @@ _OPERATIONS = (
         rationale=("Use when documents leave the index corpus and a full rebuild is unnecessary.",),
         assumptions=("Ids refer to currently indexed chunks or documents.",),
         failures=("No index, or neither chunk_ids nor doc_ids provided.",),
-        leakage=(),
+        leakage=(
+            "Deleting answer documents after a contaminated index build does not undo "
+            "metric-driven tuning already done on those scores; re-run rag_evaluate on a clean index.",
+            "Removing only some chunk_ids for an eval answer while sibling chunks remain "
+            "leaves answer text searchable and still contaminates retrieval metrics.",
+            "Choosing which documents to drop after inspecting per-query qrel failures "
+            "is label-informed corpus editing and invalidates held-out retrieval claims.",
+        ),
         anti_patterns=("Deleting eval evidence after contaminating metrics without re-running eval.",),
         state_changes=("Updates rag_index / rag_index_result / rag_chunks.",),
         result_reading=("Confirm n_chunks decreased and deleted_chunks disclosure.",),
         next_steps=("rag_retrieve; rag_evaluate; save_rag_bundle.",),
-        concepts=("rag-chunk-index-boundary", "leakage-boundary"),
+        concepts=("rag-chunk-index-boundary", "rag-eval-contamination", "leakage-boundary"),
     ),
     _operation(
         "save_rag_bundle",
