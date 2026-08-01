@@ -1,14 +1,13 @@
-# BuildML 2.1 alpha
+# BuildML 2.2 alpha
 
 BuildML is a Python library for stateful machine-learning workflows. A `Session`
 owns the dataset, semantic column roles, partition membership, fitted
-preprocessing plans, optional estimators or Torch trainers, and operation
-history. The API also explains available operations and exports local HTML
-reports that do not depend on a network connection.
+preprocessing plans, optional estimators or Torch trainers, optional RAG index
+state, and operation history. The API also explains available operations and
+exports local HTML reports that do not depend on a network connection.
 
-Version `2.1.0a1` is the deep-learning alpha (optional Torch path) on top of the
-classical `2.0.0a1` Session spine. APIs and serialized formats may change before
-a stable 2.x release.
+Version `2.2.0a1` is the retrieval (RAG) alpha on top of classical `2.0.0a1` and
+DL `2.1.0a1`. APIs and serialized formats may change before a stable 2.x release.
 
 ## Install
 
@@ -28,6 +27,7 @@ pip install "buildml[dashboard]"    # local EDA Teaching Studio (FastAPI + Plotl
 pip install "buildml[engines]"      # Polars and DuckDB adapters
 pip install "buildml[optuna]"       # Optuna hyperparameter search
 pip install "buildml[torch]"        # tabular Torch thin slice (alias: buildml[dl])
+pip install "buildml[rag]"          # optional ST/rerank backends; hashing path uses core
 pip install "buildml[imbalanced]"   # imbalanced-learn samplers
 pip install "buildml[excel]"        # Excel input support
 pip install "buildml[all-classical]"
@@ -299,12 +299,13 @@ For DuckDB, prefer `with Session.ingest(..., engine="duckdb") as session:` (or
 `with session.dataset:`) so owned connections close on exit. Simple portable
 filters: `from buildml.data import portable_filter_expr`.
 
-## Alpha status (2.1.0a1)
+## Alpha status (2.2.0a1)
 
-Version `2.1.0a1` is the DL alpha. Classical readiness remains defined by the
+Version `2.2.0a1` is the RAG alpha. Classical readiness remains defined by the
 [classical alpha gate](docs/classical-alpha-gate.md) (`2.0.0a1` line). DL
-readiness is defined by the [DL alpha gate](docs/dl-alpha-gate.md). Changelog:
-[CHANGELOG.md](CHANGELOG.md).
+readiness is defined by the [DL alpha gate](docs/dl-alpha-gate.md)
+(`2.1.0a1` line). RAG readiness is defined by the
+[RAG alpha gate](docs/rag-alpha-gate.md). Changelog: [CHANGELOG.md](CHANGELOG.md).
 
 ### Classical (still gated)
 
@@ -334,29 +335,34 @@ and do not embed dataset rows; Session checkpoints never embed Torch weights.
 Design lock: [docs/dl-m0-lock.md](docs/dl-m0-lock.md). Quickstart:
 [docs/quickstart-dl-alpha.md](docs/quickstart-dl-alpha.md).
 
-### Retrieval (optional RAG, M2 depth)
+### Retrieval (optional RAG)
 
 The hashing default uses core numpy/sklearn. Install `buildml[rag]` for the
 optional sentence-transformers / cross-encoder backends and the declared extra
 contract. Core `import buildml` never requires RAG extras. Design lock:
-[docs/rag-m0-lock.md](docs/rag-m0-lock.md). Phase plan:
-[docs/rag-phase-plan.md](docs/rag-phase-plan.md).
+[docs/rag-m0-lock.md](docs/rag-m0-lock.md). Quickstart:
+[docs/quickstart-rag-alpha.md](docs/quickstart-rag-alpha.md). Gate:
+[docs/rag-alpha-gate.md](docs/rag-alpha-gate.md).
 
 ```python
 session.rag_ingest_corpus(["doc text ...", ...])  # or path= / text_column=
 session.rag_chunk(size=512, overlap=64)
 session.rag_embed_and_index()  # default: buildml.hashing_embed.v1
 session.rag_retrieve("query", k=5)  # mode="dense"|"bm25"|"hybrid"
-session.rag_evaluate({"query": ["doc_id"]}, k=5)  # + nDCG / chunk mode
+session.rag_evaluate({"query": ["doc_id"]}, k=5)  # recall@k / MRR / nDCG / hit-rate
 session.rag_upsert([{"doc_id": "new", "text": "..."}])
 session.rag_delete(doc_ids=["stale"])
 session.save_rag_bundle("artifacts/rag_bundle")
+# Reload: Session().load_rag_bundle(...)
 ```
 
-Bundles use schema `buildml.rag_bundle.v1` (not a Session checkpoint or Torch
-bundle). Default embedder is lexical hashing (CPU, no model download), not a
-semantic sentence model. Hybrid defaults to RRF; cross-encoder rerank is opt-in
-behind `buildml[rag]`. Generate/LLM operator remains deferred.
+`session.rag_index_result` / `rag_retrieve_result` / `rag_eval_result` hold typed
+RAG results. Classical `fit` / Torch `*_torch` are unchanged. Bundles use schema
+`buildml.rag_bundle.v1` (not a Session checkpoint or Torch bundle). Default
+embedder is lexical hashing (CPU, no model download), not a semantic sentence
+model. Hybrid defaults to RRF; cross-encoder rerank is opt-in behind
+`buildml[rag]`. This alpha is retrieve + evaluate + bundle — no `rag_generate`
+and no LLM operator.
 
 ### Known limits (do not claim as done)
 
@@ -368,8 +374,9 @@ behind `buildml[rag]`. Generate/LLM operator remains deferred.
 - Torch path: CPU CI merge gate; tabular numeric features first; no model zoo;
   materialized tensors (no Polars/DuckDB zero-copy); no auto classical prep
   before loaders; no fold-local Torch CV / DDP / AMP product path.
-- RAG M2: hybrid/BM25/rerank/upsert/filters/eval depth shipped; no generate;
-  no Studio redesign; hashing default is not semantic retrieval quality.
+- RAG alpha: hybrid/BM25/rerank/upsert/filters/eval depth shipped; hashing
+  default is lexical not semantic; local NumPy store; no generate / LLM
+  operator; no Studio RAG cockpit redesign.
 - LLM operator, fairness, and SHAP-style explainability remain later.
 
 ### Local smoke
@@ -404,12 +411,14 @@ pytest \
   tests/unit/test_rag_slice.py \
   tests/unit/test_rag_m2_depth.py \
   tests/integration/test_rag_smoke.py \
+  tests/integration/test_rag_alpha_smoke.py \
   -q
 ```
 
-Tag classical or DL alphas only after remote CI is green on the release
-candidate push. See [docs/release-checklist-a1.md](docs/release-checklist-a1.md)
-and [docs/release-checklist-dl-a1.md](docs/release-checklist-dl-a1.md).
+Tag classical, DL, or RAG alphas only after remote CI is green on the release
+candidate push. See [docs/release-checklist-a1.md](docs/release-checklist-a1.md),
+[docs/release-checklist-dl-a1.md](docs/release-checklist-dl-a1.md), and
+[docs/release-checklist-rag-a1.md](docs/release-checklist-rag-a1.md).
 
 ## Current scope and limitations
 
@@ -433,8 +442,10 @@ and [docs/release-checklist-dl-a1.md](docs/release-checklist-dl-a1.md).
 
 See the [classical alpha quickstart](docs/quickstart-alpha.md),
 [DL alpha quickstart](docs/quickstart-dl-alpha.md),
+[RAG alpha quickstart](docs/quickstart-rag-alpha.md),
 [classical alpha gate](docs/classical-alpha-gate.md),
 [DL alpha gate](docs/dl-alpha-gate.md),
+[RAG alpha gate](docs/rag-alpha-gate.md),
 [workflow guide](docs/workflow-guide.rst), [concept guide](docs/concepts.rst),
 and [glossary](docs/glossary.md).
 

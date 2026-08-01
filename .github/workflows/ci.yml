@@ -173,13 +173,17 @@ jobs:
       - name: Core import smoke without relying on RAG internals
         run: python -c "import buildml; print(buildml.__version__)"
 
-      - name: RAG unit + integration smoke (M1/M2)
+      - name: RAG unit + integration + alpha-gate smoke
         run: |
           pytest \
             tests/unit/test_rag_slice.py \
             tests/unit/test_rag_m2_depth.py \
             tests/integration/test_rag_smoke.py \
+            tests/integration/test_rag_alpha_smoke.py \
             -q
+
+      - name: RAG alpha-gate smoke (explicit)
+        run: pytest tests/integration/test_rag_alpha_smoke.py -q
 
   extras:
     runs-on: ubuntu-latest

@@ -7,7 +7,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [classical-ml-capability-map.md](./classical-ml-capability-map.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** M0 locked · M1 complete · M2 complete · M3 next.  
+**Status:** M0 locked · M1 complete · M2 complete · M3 complete (RAG alpha `2.2.0a1`).  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
 **North star:** flexibility · depth · functionality.  
 **M0 lock artifact:** [rag-m0-lock.md](./rag-m0-lock.md).
@@ -434,9 +434,18 @@ rag_ingest_corpus (fixture docs)
 
 **Exit**
 
-- [ ] RAG alpha gate musts green
-- [ ] Editorial lint clean for new user-facing strings
-- [ ] Changelog + known limits do not claim LLM operator / agent product
+- [x] RAG alpha gate musts green
+- [x] Editorial lint clean for new user-facing strings
+- [x] Changelog + known limits do not claim LLM operator / agent product
+
+**M3 delivery notes**
+
+- Quickstart: [quickstart-rag-alpha.md](./quickstart-rag-alpha.md).
+- Gate: [rag-alpha-gate.md](./rag-alpha-gate.md); release checklist:
+  [release-checklist-rag-a1.md](./release-checklist-rag-a1.md).
+- Version line `2.2.0a1`; generate / LLM operator remain deferred (no claims).
+- Alpha smoke: ingest → chunk → embed/index → dense + hybrid retrieve → evaluate →
+  upsert/delete → bundle save/load → `explain("rag_retrieve")`.
 
 ---
 

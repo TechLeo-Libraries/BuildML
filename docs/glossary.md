@@ -83,6 +83,15 @@ An operation that learns from values, including imputing, encoding, scaling, res
 training, calibrator fitting, and threshold selection. Its learned part belongs on training or
 validation data according to the decision being made.
 
+**Hashing embedder**  
+Default RAG embedder id `buildml.hashing_embed.v1`: sklearn `HashingVectorizer`
+(`n_features=384`, L2-normalized). Deterministic and CPU-only; lexical/hashed,
+not a semantic sentence model. Disclosures and catalog copy must say so.
+
+**Hit-rate@k**  
+Fraction of evaluation queries for which at least one relevant document (or
+chunk, under chunk relevance mode) appears in the top-k retrieved results.
+
 **Holdout**  
 Rows excluded from estimator fitting. In BuildML this usually means validation or test, but the
 purpose of the partition must still be stated.
@@ -90,6 +99,15 @@ purpose of the partition must still be stated.
 **Ingest report**  
 Structured output describing source detection, estimated scale, selected mode/engine, and loading
 warnings. A dry run can produce this report without a materialized Dataset.
+
+**Hybrid retrieve**  
+Retrieval mode that blends dense vector ranking with lexical BM25 over chunk
+text. Default fusion is reciprocal rank fusion (RRF, `rrf_k=60`); weighted
+fusion is optional via retrieve config.
+
+**IndexResult**  
+Typed summary of a built RAG index: chunk/document counts, embedder id and
+dimension, store backend, and disclosures. Stored on `session.rag_index_result`.
 
 **Injected split**  
 Train, validation, and test membership supplied as positional indices by the caller. Use it for
@@ -100,6 +118,10 @@ Information reaching model development that would not be available at the predic
 simulated. BuildML's train-fit guards prevent some partition leakage but cannot detect semantic
 target proxies or misuse in external code.
 
+**MRR (mean reciprocal rank)**  
+Mean, over evaluation queries, of `1 / rank` of the first relevant hit (0 when
+no relevant hit appears). Reported by `Session.rag_evaluate`.
+
 **Manifest**  
 The checkpoint file that records bundle members and integrity information. Removing the manifest or
 moving only part of a checkpoint makes reliable reattachment impossible.
@@ -109,6 +131,11 @@ A soft or hard check at Pandas/sklearn design-matrix boundaries. Soft gates warn
 hard gates refuse when `hard_limit_bytes` or `BUILDML_MATERIALIZATION_HARD_LIMIT_BYTES` is set.
 `prepare_design_matrix` projects requested columns (and may sample on Polars/DuckDB) before those
 gates; it does not provide out-of-core sklearn training.
+
+**nDCG@k**  
+Normalized discounted cumulative gain at cutoff k for retrieval evaluation.
+Uses graded or binary relevance from gold qrels; reported alongside recall@k
+and MRR by `Session.rag_evaluate`.
 
 **Native sidecar**  
 Optional Parquet snapshot written beside checkpoint `frame.parquet` so Polars/DuckDB handles can
@@ -123,6 +150,11 @@ An outer loop that scores configurations chosen by an inner CV search on each ou
 evidence; outer mean±std is the post-selection estimate. Optional `warm_start_studies=True` shares
 Optuna trial history across outer folds only; Teaching Studio / walkthrough surfaces that policy when
 present in history.
+
+**Qrels**  
+Gold relevance judgments for retrieval evaluation: query → relevant `doc_id`
+(document mode) or `chunk_id` (chunk mode) labels. Index corpus and qrel/query
+sets must stay separate to avoid evaluation contamination.
 
 **Pipeline bundle format**  
 Directory layout for fitted plans plus an estimator. Current labels are
@@ -188,6 +220,28 @@ reattach deliberately discards prior workflow semantics.
 **Result reading**  
 Catalog guidance on how to interpret an operation's output, including context and limitations. It is
 not an automatic pass/fail verdict.
+
+**RAG bundle**  
+Directory schema `buildml.rag_bundle.v1` (`meta.json` + `chunks.jsonl` +
+`embeddings.npy`) holding chunk config, embedder id/dim, embeddings, chunk
+metadata, and optional eval snapshot. It is not a Session checkpoint and does
+not embed dataset rows or Torch weights.
+
+**rag_eval_result / rag_index_result / rag_retrieve_result**  
+Session slots for the last RAG evaluate, index, and retrieve typed results.
+Distinct from classical `fit_result` and Torch `dl_train_result`.
+
+**RagEvalResult**  
+Typed output of `rag_evaluate`: recall@k, MRR, nDCG@k, hit-rate@k, relevance
+mode, retrieve mode, per-query rows, and disclosures/warnings.
+
+**Recall@k**  
+Fraction of relevant labels recovered in the top-k hits for a query (averaged
+over the eval set). It is not classification accuracy.
+
+**RetrieveResult**  
+Typed ranked-hit list from `rag_retrieve`: mode (`dense` / `bm25` / `hybrid`),
+fusion/rerank flags, filters, scores, and disclosures.
 
 **Role**  
 The semantic use assigned to a column, such as feature, target, identifier, or ignored. Role is not

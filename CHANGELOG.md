@@ -10,14 +10,6 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
-- RAG M0 lock ([`docs/rag-m0-lock.md`](docs/rag-m0-lock.md)) and M1 thin
-  vertical slice behind `buildml[rag]`: corpus ingest → chunk → embed/index →
-  retrieve → recall@k/MRR eval → `buildml.rag_bundle.v1` save/load.
-- Session delegates: `rag_ingest_corpus`, `rag_chunk`, `rag_embed_and_index`,
-  `rag_retrieve`, `rag_evaluate`, `save_rag_bundle`, `load_rag_bundle`; result
-  slots `rag_index_result` / `rag_retrieve_result` / `rag_eval_result`.
-- Default embedder `buildml.hashing_embed.v1` (CPU hashing) and NumPy cosine
-  store; explain catalog/concept coverage; CI `rag` job (Python 3.11–3.12).
 - Cost-sensitive `tune_threshold(fp_cost=..., fn_cost=...)` with recommended
   threshold, expected cost, and structured operating points.
 - Stronger `error_slices`: multi-column segments, richer metrics, small-n
@@ -25,22 +17,45 @@ with pre-release tags for alpha (`aN`) builds.
 - Richer `dry_run` / `summarize_history` audit UX (ranked risks, prerequisite
   graph summary, suggested next ops) surfaced on walkthrough HTML.
 
-### Added (RAG M2)
+## [2.2.0a1] — RAG alpha — 2026-08-01
 
-- Hybrid retrieve: dense + in-process BM25 with RRF (default) or weighted fusion;
-  `rag_retrieve(mode="dense"|"bm25"|"hybrid", ...)`.
-- Optional cross-encoder rerank behind `buildml[rag]` (`MissingExtraError` when absent).
-- Index upsert/delete (`rag_upsert` / `rag_delete`) and metadata equality filters.
-- Eval depth: `relevance_mode` document|chunk, nDCG@k, hit-rate@k,
-  `compare_retrieval_configs`.
-- Walkthrough / workflow `rag_status` disclosures for index, embedder, store, last eval.
+First retrieval (RAG) alpha on the BuildML 2.x `Session` API. Exit criteria and
+known limits are defined in [`docs/rag-alpha-gate.md`](docs/rag-alpha-gate.md).
+Classical alpha remains at `2.0.0a1`; DL alpha remains at `2.1.0a1`. This line
+adds optional retrieve / evaluate / bundle — **not** generate or an LLM operator.
 
-### Known limits (RAG M2)
+### Added
 
-- Retrieve + eval + bundle; generate / LLM operator still deferred (M3→L).
-- Default hashing embedder is lexical/hashed, not semantic.
-- No Teaching Studio RAG cockpit redesign; structured results + walkthrough status only.
-- RAG alpha version line remains `2.2.0a1` (M3); package version unchanged.
+- Optional `buildml.rag` domain: corpus ingest → chunk → embed/index → retrieve →
+  evaluate → upsert/delete → `buildml.rag_bundle.v1` save/load.
+- Session delegates: `rag_ingest_corpus`, `rag_chunk`, `rag_embed_and_index`,
+  `rag_retrieve`, `rag_evaluate`, `rag_upsert`, `rag_delete`, `save_rag_bundle`,
+  `load_rag_bundle`; result slots `rag_index_result` / `rag_retrieve_result` /
+  `rag_eval_result`.
+- Default embedder `buildml.hashing_embed.v1` (CPU hashing) and NumPy cosine
+  store; optional sentence-transformers / cross-encoder behind `buildml[rag]`.
+- Hybrid retrieve (dense + BM25, RRF or weighted), metadata filters, eval depth
+  (recall@k, MRR, nDCG@k, hit-rate@k, document|chunk relevance,
+  `compare_retrieval_configs`), walkthrough `rag_status`.
+- Explain catalog/concept coverage; RAG quickstart, glossary terms, alpha gate,
+  and release checklist.
+- CI `rag` job (Python 3.11–3.12) with unit, integration, and RAG alpha smoke.
+
+### Known limits (RAG alpha)
+
+- Hashing default is lexical/hashed, not semantic retrieval quality.
+- Local-first NumPy store; no hosted vector-DB product path.
+- **No generate (`rag_generate`) and no LLM operator / agent product
+  (`buildml.ai`).**
+- No Teaching Studio RAG cockpit redesign; structured results + `rag_status` only.
+- CPU merge gate for RAG CI; GPU embed/rerank optional when available.
+- Session checkpoints never embed the vector index.
+- Public RAG APIs and bundle formats may change before a stable RAG release.
+
+### Verification
+
+- Gate checklist: `docs/rag-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `docs/release-checklist-rag-a1.md`).
 
 ## [2.1.0a1] — DL alpha — 2026-08-01
 
