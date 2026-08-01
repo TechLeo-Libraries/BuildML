@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/css/tokens.css" />
+  <link rel="stylesheet" href="/static/css/app.css" />
+  <script src="/vendor/plotly/plotly.min.js" defer></script>
+  <script type="module" src="/static/js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="app-shell" id="app">
+    <aside class="sidebar" aria-label="Primary">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="8" fill="var(--accent)"/>
+            <path d="M8 20.5L13.2 11l4.1 7.2L20.8 13 24 20.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">{{ app_name }}</div>
+          <div class="brand-sub">Teaching Studio</div>
+        </div>
+      </div>
+      <nav class="nav" id="domain-nav" aria-label="Analysis domains"></nav>
+      <div class="sidebar-foot">
+        <button type="button" class="ghost-btn" id="theme-toggle" aria-pressed="false" title="Toggle theme">
+          <span data-icon="moon" aria-hidden="true"></span>
+          <span>Theme</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-column">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-btn mobile-nav" id="nav-toggle" aria-label="Open navigation">
+            <span data-icon="menu"></span>
+          </button>
+          <div>
+            <h1 class="page-title" id="page-title">Command cockpit</h1>
+            <p class="page-sub" id="page-sub">Readiness, severity map, next actions</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <label class="search-field" aria-label="Search findings and concepts">
+            <span data-icon="search" aria-hidden="true"></span>
+            <input id="global-search" type="search" placeholder="Search findings, domains, concepts" autocomplete="off" />
+          </label>
+          <a
+            class="btn btn-secondary"
+            id="offline-html-download"
+            href="/api/export/html"
+            title="Download an offline Teaching Studio snapshot (same SPA boards, Plotly, teaching, Concept Academy)."
+          >
+            <span data-icon="download" aria-hidden="true"></span>
+            Offline HTML
+          </a>
+          <a
+            class="btn btn-secondary"
+            id="pdf-download"
+            href="/api/export/pdf?view=briefing"
+            title="Download a PDF briefing with metrics, findings, teaching notes, and static Plotly chart stills (PNG via kaleido). Interactive hover/zoom stays in the Studio."
+          >
+            <span data-icon="file-down" aria-hidden="true"></span>
+            PDF briefing
+          </a>
+        </div>
+      </header>
+
+      <div class="filter-bar" id="filter-bar" hidden>
+        <label>
+          Severity
+          <select id="severity-filter">
+            <option value="all">All</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+            <option value="info">Info</option>
+          </select>
+        </label>
+        <label>
+          Section filter
+          <input id="section-filter" type="search" placeholder="Filter tables and cards" />
+        </label>
+      </div>
+
+      <main id="main" class="content" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <div class="mobile-nav-scrim" id="mobile-nav-scrim" hidden></div>
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="drawer" id="concept-drawer" aria-hidden="true" aria-label="Concept detail">
+    <div class="drawer-head">
+      <h2 id="drawer-title">Concept</h2>
+      <button type="button" class="icon-btn" id="drawer-close" aria-label="Close concept panel">
+        <span data-icon="x"></span>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+
+  <dialog class="modal" id="figure-modal" aria-label="Expanded figure">
+    <form method="dialog" class="modal-head">
+      <h2 id="modal-title">Figure</h2>
+      <button type="submit" class="icon-btn" aria-label="Close figure">
+        <span data-icon="x"></span>
+      </button>
+    </form>
+    <div id="modal-figure" class="modal-figure"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

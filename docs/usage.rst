@@ -1,104 +1,158 @@
-Usage
------
+Quickstart
+==========
 
-**Example 1**
+The order matters: ingest, assign semantic roles, define evaluation
+partitions, fit preprocessing on training rows, fit a baseline, and then
+evaluate.
 
-.. code:: bash
+.. code-block:: python
 
-   # Import Libraries
-   import numpy as np
    import pandas as pd
    from sklearn.linear_model import LogisticRegression
-   from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
-   from sklearn.snm import SVC
-   from buildml import SupervisedLearning
 
-   # Get Dataset
-   dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
-   data = SupervisedLearning(dataset)
+   from buildml import Session
 
-   # Exploratory Data Analysis
-   eda = data.eda()
-   eda_visual = data.eda_visual()
+   frame = pd.DataFrame(
+       {
+           "age": [21, None, 35, 40, 29, 33, 52, 47],
+           "income": [40, 55, 60, 80, 50, 70, 90, 65],
+           "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+       }
+   )
 
-   # Build and Evaluate Classifier
-   classifiers = [
-       "LogisticRegression(random_state = 0)", 
-       "RandomForestClassifier(random_state = 0)", 
-       "DecisionTreeClassifier(random_state = 0)", 
-       "SVC()"
-       ]
-   build_model = data.build_multiple_classifiers(classifiers, 
-                                             kfold=5, 
-                                             cross_validation=True, 
-                                             graph=True, 
-                                             length=8, 
-                                             width=12)
-   
-**Example 2: Working on a dataset with train and test data given.**
+   session = Session.ingest(frame)
+   session.set_roles(
+       {"age": "feature", "income": "feature", "approved": "target"}
+   )
+   session.split(test_size=0.25, stratify=True, random_state=42)
 
-.. code:: bash
+   # These plans are learned from train and then applied to every partition.
+   session.impute(strategy="median")
+   session.scale(method="standard")
+   session.fit(LogisticRegression(max_iter=500), task="classification")
 
-    # Import Libraries
-    import pandas as pd
-    import numpy as np
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.svm import SVC
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.tree import DecisionTreeClassifier
-    from xgboost import XGBClassifier
-    from buildml import SupervisedLearning
+   result = session.evaluate(partition="test")
+   print(result.metrics)
 
-    # Get Dataset
-    training_data = pd.read_csv("train.csv")
-    test_data = pd.read_csv("test.csv")
+Use a validation partition when model, feature, calibration, or threshold
+choices will be repeated:
 
-    dataset = pd.concat([training_data, test_data], axis = 0)
+.. code-block:: python
 
-    # BuildML on Dataset
-    automate_training = SupervisedLearning(training_data)
-    automate_test = SupervisedLearning(test_data)
+   session.split(
+       test_size=0.2,
+       validation_size=0.2,
+       stratify=True,
+       random_state=42,
+   )
 
-    automate = [automate_training, automate_test]
+Do not use a random split for related entities or future prediction when it
+would mix groups or time periods. Compute valid positional memberships and
+call ``session.inject_split(...)``.
 
-    # Exploratory Data Analysis
-    training_eda = automate_training.eda()
-    test_eda = automate_test.eda()
+Explain choices before and after
+--------------------------------
 
-    # Data Cleaning and Transformation 
-    training_eda_visual = automate_training.eda_visual( 
-                                        figsize_barchart = (55, 10), 
-                                        figsize_heatmap = (15, 10), 
-                                        figsize_histogram=(35, 20)
-                                        )
+.. code-block:: python
 
-    for data in automate:
-        data.reduce_data_memory_useage()
-        data.drop_columns("Drop irrelevant columns")
-        data.categorical_to_numerical() # If your data has categorical features
+   before = session.explain("feature_importance", moment="before")
+   workflow = session.workflow()
 
-    select_variables = automate_training.select_dependent_and_independent(predict = "Loan Status")
+   importance = session.feature_importance(partition="test", n_repeats=8)
+   after = session.explain("feature_importance", moment="after")
 
-    # Further Data Preparation and Segregation
-    unbalanced_dataset_check = automate_training.count_column_categories(column = "Specify what you are predicting")
-    split_data = automate_training.split_data()
-    fix_unbalanced_data = automate_training.fix_unbalanced_dataset(
-                                                sampler = "RandomOverSampler", 
-                                                random_state = 0
-                                                )
+``before`` reports prerequisites, alternatives, assumptions, and leakage
+risks. ``after`` joins those notes to the latest recorded call and its state
+transition. An explanation reports what BuildML knows; it cannot prove that
+the chosen partition represents deployment.
 
-    # Model Building 
-    classifiers = [
-            LogisticRegression(random_state = 0), 
-            RandomForestClassifier(random_state = 0), 
-            DecisionTreeClassifier(random_state = 0), 
-            XGBClassifier(random_state = 0)
-            ]
-            
-    build_model = automate_training.build_multiple_classifiers(
-                                            classifiers = classifiers, 
-                                            kfold = 10, 
-                                            cross_validation = True, 
-                                            graph = True
-                                            )
-                                            
+Use ``session.dry_run(...)`` to preview intended operations without mutating
+state, and ``session.summarize_history()`` for operation counts and unresolved
+risk cues. Train-fitted text features, PCA, and registered custom transforms
+are available as ``text_features``, ``reduce_dimensions``, and
+``apply_custom_transform``. For CV selection, prefer fold-local
+``PreprocessRecipe(text=..., reduce='pca')``; custom transforms remain
+Session-global. ``Dataset.project`` / ``Dataset.aggregate`` prefer native
+Polars/DuckDB ops when an engine handle is attached.
+
+Reports and walkthroughs
+------------------------
+
+.. code-block:: python
+
+   # Offline Teaching Studio snapshot (default; needs buildml[dashboard])
+   eda = session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
+   # Optional layered research shell with matplotlib embeds
+   research = session.eda(
+       include_plots=True,
+       export_html="artifacts/eda_research.html",
+       html_format="research",
+       export_figures="artifacts/eda-figures",
+   )
+   # Live Teaching Studio (requires: pip install "buildml[dashboard]")
+   handle = session.eda_app(port=8765)  # or session.open_eda_dashboard()
+   # If port 8765 is busy: session.eda_app(port=8766)
+   # PDF briefing embeds static Plotly PNG stills (kaleido); interactive charts stay in Studio.
+   evaluation = session.evaluate(
+       partition="test",
+       include_plots=True,
+       export_html="artifacts/evaluation.html",
+   )
+   walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
+
+``eda_app()`` opens interactive Plotly domain boards with Teaching Studio pages
+and Concept Academy notes. The SPA light/dark theme restyles Plotly ink, grids,
+series, heatmaps, and annotations. CSV downloads cover major evidence tables;
+**Offline HTML** downloads a self-contained snapshot of the same Studio SPA;
+the PDF briefing includes metrics, findings, teaching notes, and static chart
+stills (not interactive Plotly). ``session.eda(export_html=...)`` defaults to
+that Studio offline snapshot; use ``html_format="research"`` for the layered
+research shell.
+
+HTML artifacts embed required styles and assets so they can be opened without a
+network connection. EDA recommendations do not mutate the Session. Inspect the
+evidence, population, sample size, and stated limits before acting.
+
+Checkpoint and resume
+---------------------
+
+.. code-block:: python
+
+   session.checkpoint_save(
+       "artifacts/checkpoint",
+       sidecar_layout="auto",
+       sidecar_partition_rows=25_000,
+       sidecar_compression="zstd",
+   )
+   restored = Session.checkpoint_load("artifacts/checkpoint")
+   print(restored.reattach_result.status)
+
+A checkpoint restores data, roles, partitions, history, and optional preprocess
+plan objects. Native sidecars default to ``zstd`` compression and ``auto``
+layout (single-file below 50k rows; partitioned at or above). Force
+``sidecar_layout='single'`` or ``'partitioned'`` when needed. It does not
+restore a fitted model; use ``save_model`` / ``load_model`` for estimator-only
+artifacts, or ``save_pipeline`` / ``load_pipeline`` for plans plus estimator and
+a model card. Pipeline bundles and checkpoints are complementary: neither
+embeds the other. Bundle metadata uses ``buildml.pipeline_bundle.v2`` /
+``buildml.plans.v2`` (older flat plan dicts still load). Replay restored plans
+with ``session.apply_preprocess_plans()`` or
+``buildml.preprocess.apply_preprocess_plans``; resample plans are lineage-only
+and are not reapplied at score time.
+
+DuckDB connection ownership and portable filters
+------------------------------------------------
+
+.. code-block:: python
+
+   from buildml import Session
+   from buildml.data import portable_filter_expr
+
+   with Session.ingest("data.csv", engine="duckdb") as session:
+       narrowed = session.dataset.filter_expr(
+           portable_filter_expr("amount", ">", 100)
+       )
+
+``with session:`` / ``with dataset:`` call ``close_native`` on exit so owned
+DuckDB connections are not leaked. ``portable_filter_expr`` builds simple
+quoted comparisons for Polars and DuckDB; complex SQL remains engine-specific.

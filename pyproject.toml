@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "buildml"
+version = "2.0.0a1"
+description = "BuildML — a flexible, depth-first toolkit for building ML workflows."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Leonard Onyiriuba", email = "leonard.c.onyiriuba@gmail.com" },
+]
+keywords = [
+  "machine learning",
+  "data science",
+  "data preprocessing",
+  "supervised learning",
+  "ML toolkit",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "numpy>=1.23",
+  "pandas>=2.0",
+  "pyarrow>=14.0",
+  "scikit-learn>=1.3",
+]
+
+[project.optional-dependencies]
+polars = ["polars>=0.20"]
+duckdb = ["duckdb>=0.10"]
+engines = ["buildml[polars,duckdb]"]
+optuna = ["optuna>=3.4"]
+imbalanced = ["imbalanced-learn>=0.11"]
+viz = ["matplotlib>=3.7", "seaborn>=0.13"]
+reports = ["sweetviz>=2.3", "ydata-profiling>=4.6"]
+eda = ["buildml[viz,reports]"]
+dashboard = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "plotly>=5.18",
+  "kaleido>=0.2.1",
+  "reportlab>=4.0",
+  "jinja2>=3.1",
+  "python-multipart>=0.0.9",
+]
+excel = ["openpyxl>=3.1"]
+all-classical = ["buildml[engines,imbalanced,eda,excel,dashboard,optuna]"]
+docs = ["sphinx", "sphinx-rtd-theme"]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.4",
+  "mypy>=1.8",
+  "build>=1.0",
+  "pandas-stubs>=2.0",
+  "httpx>=0.27",
+  "sphinx",
+  "sphinx-rtd-theme",
+  "buildml[dashboard]",
+]
+
+[project.urls]
+Homepage = "https://github.com/TechLeo-Dev/BuildML"
+Documentation = "https://buildml.readthedocs.io/"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["buildml*"]
+exclude = ["buildml._legacy*"]
+
+[tool.setuptools.package-data]
+buildml = [
+  "py.typed",
+  "dashboard/static/**/*",
+  "dashboard/templates/**/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--basetemp=tests/.pytest_tmp"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["buildml/_legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = ["buildml/_legacy/", "build/", "docs/"]
+
+[[tool.mypy.overrides]]
+module = "buildml._legacy.*"
+ignore_errors = true

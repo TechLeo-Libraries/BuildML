@@ -1,24 +1,29 @@
-.. BuildML documentation master file, created by
-   sphinx-quickstart on Sun Jan 14 23:56:43 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+BuildML 2.0 alpha
+=================
 
-Welcome to BuildML's documentation!
-===================================
+BuildML organizes a classical machine-learning workflow around
+:class:`buildml.Session`. A Session owns data, column roles, partitions,
+train-fitted preparation plans, the active model, and operation history.
+
+The 2.0 release is alpha software. Public methods and serialized formats may
+change before the stable release. The 1.x API is archival and is not imported
+from the package root.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
-   
+   :caption: Guide
+
    readme
    installation
-   features
    usage
+   concepts
+   workflow-guide
+   features
+   legacy
    modules
    authors
    history
    sponsor
-
 
 Indices and tables
 ==================

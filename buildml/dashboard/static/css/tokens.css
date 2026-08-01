@@ -1,0 +1,61 @@
+:root {
+  /* Distinctive local stack (no network font dependency). */
+  --font-sans: "Segoe UI Variable", "Segoe UI", "Avenir Next", "Helvetica Neue", sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-mono: "Cascadia Mono", "Sarasa Mono", "Consolas", ui-monospace, monospace;
+
+  --bg: #eef1f5;
+  --bg-elev: #ffffff;
+  --bg-soft: #f5f7fa;
+  --ink: #121820;
+  --ink-soft: #4a5563;
+  --line: #d5dde8;
+  --line-strong: #b7c2d0;
+  --accent: #0b6e4f;
+  --accent-soft: #dff3ea;
+  --accent-ink: #064e38;
+  --info: #1d4e89;
+  --info-soft: #e7f0fa;
+  --warn: #b45309;
+  --warn-soft: #fff1e0;
+  --danger: #b91c1c;
+  --danger-soft: #fde8e8;
+  --ok: #0f766e;
+  --shadow: 0 10px 30px rgba(18, 24, 32, 0.08);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --sidebar-w: 272px;
+  --topbar-h: 76px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --focus: 0 0 0 3px rgba(11, 110, 79, 0.28);
+  --chart-ink: #1c2430;
+}
+
+html[data-theme="dark"] {
+  --bg: #0e1218;
+  --bg-elev: #171c24;
+  --bg-soft: #1d2430;
+  --ink: #e8eef5;
+  --ink-soft: #9aa8b8;
+  --line: #2a3340;
+  --line-strong: #3a4658;
+  --accent: #3ddc97;
+  --accent-soft: #163528;
+  --accent-ink: #d7ffe9;
+  --info: #7db4f0;
+  --info-soft: #173049;
+  --warn: #f0a35a;
+  --warn-soft: #3a2716;
+  --danger: #f07178;
+  --danger-soft: #3a1719;
+  --ok: #5eead4;
+  --shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  --focus: 0 0 0 3px rgba(61, 220, 151, 0.28);
+  --chart-ink: #e8eef5;
+}

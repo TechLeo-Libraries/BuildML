@@ -1,344 +1,397 @@
-[![Downloads](https://static.pepy.tech/badge/buildml)](https://pepy.tech/project/buildml)
+# BuildML 2.0 alpha
 
-# BuildML
+BuildML is a Python library for stateful classical machine-learning workflows. A
+`Session` owns the dataset, semantic column roles, partition membership, fitted
+preprocessing plans, the active estimator, and operation history. The 2.0 API
+also explains available operations and exports local HTML reports that do not
+depend on a network connection.
 
-BuildML is a Python machine-learning library designed to simplify the process of data preparation, feature engineering, model building, and evaluation. It provides a collection of tools for both classification and regression tasks, as well as functionalities for data exploration and manipulation. BuildML is a distribution of the [TechLeo](https://www.linkedin.com/company/techleo/) community to make complex machine-learning processes, easy.
+BuildML 2.0 is an alpha release. APIs and checkpoint formats may change before
+the stable 2.0 release.
 
-## Author
+## Install
 
-**TechLeo**
-
-- **Email:** techleo.ng@outlook.com
-- **GitHub:** [TechLeo GitHub](https://github.com/TechLeoo)
-- **LinkedIn:** [TechLeo LinkedIn](https://www.linkedin.com/company/techleo/)
-
-## Contact
-
-For inquiries, suggestions, or feedback, please feel free to reach out to the author:
-
-- **Team Lead:** [Onyiriuba Leonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/)
-- **Personal Email:** workwithtechleo@gmail.com
-- **Company Email:** techleo.ng@outlook.com
-- **GitHub Issues:** [BuildML Issues](https://github.com/TechLeo-Libraries/BuildML/issues)
-- **LinkedIn Messages:** [TechLeo LinkedIn](https://www.linkedin.com/company/techleo/)
-
-Your feedback is valuable and contributes to the continuous improvement of BuildML. The author welcomes collaboration and looks forward to hearing from the users of MLwiz.
-
-
-## Features
-Features from the current release.
-
-### Data Loading and Handling
-- `get_dataset`: Load a dataset.
-- `get_training_test_data`: Split the dataset into training and test sets.
-- `load_large_dataset`: Load a large dataset efficiently.
-- `reduce_data_memory_useage`: Reduce memory usage of the dataset.
-
-### Data Cleaning and Manipulation
-- `drop_columns`: Drop specified columns from the dataset.
-- `fix_missing_values`: Handle missing values in the dataset.
-- `fix_unbalanced_dataset`: Address class imbalance in a classification dataset.
-- `filter_data`: Filter data based on specified conditions.
-- `remove_duplicates`: Remove duplicate rows from the dataset.
-- `rename_columns`: Rename columns in the dataset.
-- `replace_values`: Replace specified values in the dataset.
-- `reset_index`: Reset the index of the dataset.
-- `set_index`: Set a specific column as the index.
-- `sort_index`: Sort the index of the dataset.
-- `sort_values`: Sort the values of the dataset.
-
-### Data Formatting and Transformation
-- `categorical_to_datetime`: Convert categorical columns to datetime format.
-- `categorical_to_numerical`: Convert categorical columns to numerical format.
-- `numerical_to_categorical`: Convert numerical columns to categorical format.
-- `column_binning`: Bin values in a column into specified bins.
-
-### Exploratory Data Analysis
-- `eda`: Perform exploratory data analysis on the dataset.
-- `eda_visual`: Visualize exploratory data analysis results.
-- `pandas_profiling`: Generate a Pandas Profiling report for the dataset.
-- `sweetviz_profile_report`: Generate a Sweetviz Profile Report for the dataset.
-- `count_column_categories`: Count the categories in a categorical column.
-- `unique_elements_in_columns`: Get the unique elements that exist in each column in the dataset.
-
-### Feature Engineering
-- `extract_date_features`: Extract date-related features from a datetime column.
-- `polyreg_x`: Get the polynomial regression x for independent variables after specifying the degree.
-- `select_features`: Select relevant features for modeling.
-- `select_dependent_and_independent`: Select dependent and independent variables.
-
-### Data Preprocessing
-- `scale_independent_variables`: Scale independent variables in the dataset.
-- `remove_outlier`: Remove outliers from the dataset.
-- `split_data`: Split the dataset into training and test sets.
-
-### Model Building and Evaluation
-- `poly_get_optimal_degree`: Find the best degree for polynomial regression.
-- `get_bestK_KNNregressor`: Find the best K value for KNN regression.
-- `train_model_regressor`: Train a regression model.
-- `regressor_predict`: Make predictions using a regression model.
-- `regressor_evaluation`: Evaluate the performance of a regression model.
-- `regressor_model_testing`: Test a regression model.
-- `polyreg_graph`: Visualize a polynomial regression graph.
-- `simple_linregres_graph`: Visualize a regression graph.
-- `build_multiple_regressors`: Build multiple regression models.
-- `build_multiple_regressors_from_features`: Build regression models using selected features.
-- `build_single_regressor_from_features`: Build a single regression model using selected features.
-- `get_bestK_KNNclassifier`: Find the best K value for KNN classification.
-- `train_model_classifier`: Train a classification model.
-- `classifier_predict`: Make predictions using a classification model.
-- `classifier_evaluation`: Evaluate the performance of a classification model.
-- `classifier_model_testing`: Test a classification model.
-- `classifier_graph`: Visualize a classification graph.
-- `build_multiple_classifiers`: Build multiple classification models.
-- `build_multiple_classifiers_from_features`: Build classification models using selected features.
-- `build_single_classifier_from_features`: Build a single classification model using selected features.
-
-### Data Aggregation and Summarization
-- `group_data`: Group and summarize data based on specified conditions.
-
-### Data Type Handling
-- `select_datatype`: Select columns of a specific datatype in the dataset.
-
-## Installation
-
-You can install BuildML using pip:
+BuildML supports Python 3.10 through 3.13.
 
 ```bash
 pip install buildml
 ```
 
-## Example Usage
-Example 1
+Optional dependencies are grouped by use:
+
 ```bash
-import numpy as np
-import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
-from sklearn.snm import SVC
-from buildml import SupervisedLearning
-
-
-dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
-data = SupervisedLearning(dataset)
-
-# Exploratory Data Analysis
-eda = data.eda()
-eda_visual = data.eda_visual()
-
-# Build and Evaluate Classifier
-classifiers = [
-    "LogisticRegression(random_state = 0)", 
-    "RandomForestClassifier(random_state = 0)", 
-    "DecisionTreeClassifier(random_state = 0)", 
-    "SVC()"
-    ]
-    
-build_model = data.build_multiple_classifiers(classifiers, 
-                                          kfold=5, 
-                                          cross_validation=True, 
-                                          graph=True, 
-                                          length=8, 
-                                          width=12)
+pip install "buildml[viz]"          # matplotlib and seaborn
+pip install "buildml[reports]"      # Sweetviz and ydata-profiling
+pip install "buildml[eda]"          # viz + reports
+pip install "buildml[dashboard]"    # local EDA Teaching Studio (FastAPI + Plotly)
+pip install "buildml[engines]"      # Polars and DuckDB adapters
+pip install "buildml[optuna]"       # Optuna hyperparameter search
+pip install "buildml[imbalanced]"   # imbalanced-learn samplers
+pip install "buildml[excel]"        # Excel input support
+pip install "buildml[all-classical]"
 ```
 
-Example 2: Working on a dataset with train and test data given.
+For a source checkout:
+
 ```bash
-# Import Libraries
+pip install -e ".[dev]"
+```
+
+## A leakage-aware first workflow
+
+Split before any operation that learns values. BuildML fits its imputer,
+encoder, scaler, outlier fences, bin edges, feature selectors, sampler, and
+estimator on the training partition. Validation and test rows receive frozen
+transformations.
+
+```python
 import pandas as pd
-import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = Session.ingest(frame)
+session.set_roles(
+    {"age": "feature", "income": "feature", "approved": "target"}
+)
+session.split(test_size=0.25, stratify=True, random_state=42)
+session.impute(strategy="median")
+session.handle_outliers(method="iqr", action="cap")
+session.scale(method="standard")
+session.fit(LogisticRegression(max_iter=500), task="classification")
+
+result = session.evaluate(partition="test")
+print(result.metrics)
+```
+
+Deeper train-fitted preparation options:
+
+```python
+# Detect / cap / drop using train-only fences
+session.handle_outliers(columns=["income"], method="iqr", action="detect")
+
+# Quantile or uniform bins with frozen edges
+session.bin(columns=["age"], strategy="quantile", n_bins=4)
+
+# Encoding beyond one-hot / ordinal
+session.encode(columns=["city"], method="infrequent", min_frequency=0.05)
+# Target encoding uses out-of-fold values on train; prefer fold-local
+# recipes inside cv_score when the encoding itself is tuned.
+session.encode(columns=["city"], method="target", n_folds=5)
+
+# Variance / univariate / model-based selection (numeric features)
+session.select_features(strategy="univariate", k=20)
+print(session.last_preprocess.findings)  # evidence-linked result
+
+# Text → numeric features (train-fitted count / TF-IDF / hashing)
+session.text_features(columns=["review"], method="tfidf", max_features=128)
+
+# PCA with explained-variance reporting (scale first when magnitudes differ)
+session.reduce_dimensions(method="pca", n_components=0.95)
+
+# Registered custom transform (fit on train only; serialize when picklable)
+Session.register_transform(
+    "clip_deciles",
+    fit=lambda train, params: {
+        "lo": float(train.iloc[:, 0].quantile(0.1)),
+        "hi": float(train.iloc[:, 0].quantile(0.9)),
+    },
+    transform=lambda frame, art: frame.clip(art["lo"], art["hi"]),
+    description="Clip the first column to train deciles",
+)
+session.apply_custom_transform("clip_deciles", columns=["income"])
+
+# Preview and audit without mutating state
+session.dry_run(["impute", "scale", "fit"]).show()
+session.summarize_history().show()
+```
+
+Random splitting assumes rows are exchangeable. Prefer first-class helpers when
+that assumption fails:
+
+```python
+session.group_split(test_size=0.2, validation_size=0.2)  # requires role "group"
+session.time_split(test_size=0.2, validation_size=0.2)   # requires role "time"
+```
+
+For externally governed memberships, use `session.inject_split(...)`. BuildML
+checks that indices are disjoint and in bounds; it cannot infer whether the
+domain boundary itself is valid or detect semantic target proxies.
+
+## Cross-validation and search
+
+`cv_score`, `grid_search`, and `randomized_search` score folds drawn only from
+the train partition. The Session test holdout is not used for fold membership
+or ranking. Pass a `PreprocessRecipe` to refit dates/text/impute/scale/
+encode(infrequent|target)/binning/reduce(PCA)/select/outliers inside each fold;
+custom transforms and resample stay Session-global. If Session preprocess
+already ran on full train, the result records that limitation.
+
+```python
 from sklearn.tree import DecisionTreeClassifier
-from xgboost import XGBClassifier
-from buildml import SupervisedLearning
 
-# Get Dataset
-training_data = pd.read_csv("train.csv")
-test_data = pd.read_csv("test.csv")
+from buildml.preprocess import PreprocessRecipe
 
-dataset = pd.concat([training_data, test_data], axis = 0)
+cv = session.cv_score(
+    LogisticRegression(max_iter=500),
+    cv=5,
+    preprocess=PreprocessRecipe(
+        impute="median",
+        scale="standard",
+        encode="infrequent",
+        select="model",  # or variance / univariate; fold-train only
+        outliers="iqr",  # optional fold-local fences (cap/detect)
+    ),
+)
+print(cv.mean_metrics, cv.std_metrics)
 
-# BuildML on Dataset
-automate_training = SupervisedLearning(training_data)
-automate_test = SupervisedLearning(test_data)
-
-automate = [automate_training, automate_test]
-
-# Exploratory Data Analysis
-training_eda = automate_training.eda()
-test_eda = automate_test.eda()
-
-# Data Cleaning and Transformation 
-training_eda_visual = automate_training.eda_visual(
-                            figsize_barchart = (55, 10), 
-                            figsize_heatmap = (15, 10), 
-                            figsize_histogram=(35, 20)
-                            )
-
-for data in automate:
-    data.reduce_data_memory_useage()
-    data.drop_columns("Drop irrelevant columns")
-    data.categorical_to_numerical() # If your data has categorical features
-
-select_variables = automate_training.select_dependent_and_independent(predict = "Loan Status")
-
-# Further Data Preparation and Segregation
-training_data_clean = automate_training.get_dataset()
-test_data_clean = automate_test.get_dataset()
-
-unbalanced_dataset_check = automate_training.count_column_categories(column = "Specify what you are predicting")
-split_data = automate_training.split_data()
-fix_unbalanced_data = automate_training.fix_unbalanced_dataset(
-                                        sampler = "RandomOverSampler", 
-                                        random_state = 0
-                                        )
-
-check_unbalanced_data_fix = automate_training.count_column_categories(
-                                    column = "Specify what you are predicting", 
-                                    test_data = True
-                                    )
-
-# Model Building 
-classifiers = [LogisticRegression(random_state = 0),
-                SVC(),
-                RandomForestClassifier(random_state = 0),
-                DecisionTreeClassifier(random_state = 0),
-                XGBClassifier(random_state = 0)
-                ]
-
-build_model = automate_training.build_multiple_classifiers(classifiers = classifiers,
-                                                            kfold = 10,
-                                                            cross_validation = True,
-                                                            graph = True
-                                                            )
+search = session.grid_search(
+    DecisionTreeClassifier(random_state=0),
+    param_grid={"max_depth": [2, 4, 6], "min_samples_leaf": [1, 5]},
+    cv=5,
+)
+print(search.best_params, search.best_score)
+session.evaluate(partition="test")  # confirm once after selection
 ```
 
-## Acknowledgments
-BuildML relies on several open-source libraries to provide its functionality. We would like to express our gratitude to the developers and contributors of the following libraries:
+## Pipeline bundles and model cards
 
-- [NumPy](https://numpy.org/)
-- [Pandas](https://pandas.pydata.org/)
-- [Matplotlib](https://matplotlib.org/)
-- [Seaborn](https://seaborn.pydata.org/)
-- [yData Profiling](https://github.com/ydataai/ydata-profiling)
-- [Sweetviz](https://github.com/fbdesignpro/sweetviz)
-- [Imbalanced-Learn (imblearn)](https://imbalanced-learn.org/)
-- [Scikit-learn](https://scikit-learn.org/)
-- [Warnings](https://docs.python.org/3/library/warnings.html)
-- [Datatable](https://datatable.readthedocs.io/en/latest/)
+`save_model` stores the estimator and feature contract. `save_pipeline` stores
+fitted preprocess plans (impute, encode, scale, dates, outliers, binning,
+feature selection, and resample lineage), the estimator, and a model card
+(schema, metrics, history summary, lineage). A pipeline bundle is not a
+checkpoint; keep data resume and model recipes as separate artifacts.
+Checkpoints may also restore optional plan objects for mid-loop resume, but
+never embed the estimator. Bundle metadata uses `buildml.pipeline_bundle.v2`
+and `plans.joblib` uses `buildml.plans.v2`; older flat plan dicts still load.
 
-The BuildML library builds upon the functionality provided by these excellent tools, We sincerely thank the maintainers and contributors of these libraries for their valuable contributions to the open-source community.
+`apply_preprocess_plans` / `Session.apply_preprocess_plans` replay fitted plans
+in score-time order (dates → impute → outliers → encode → binning → scale →
+feature_select). Resample plans are lineage-only and are not reapplied at score
+time. Soft materialization gates warn near ~250 MiB; set
+`BUILDML_MATERIALIZATION_HARD_LIMIT_BYTES` or `hard_limit_bytes` to refuse
+oversized copies.
 
+```python
+session.save_pipeline("artifacts/pipeline", evaluate_partition="test")
+restored = Session.ingest(frame).load_pipeline("artifacts/pipeline")
+print(restored.model_card.title if restored.model_card else None)
+print(restored.model_card.lineage.get("plans_present"))
+restored.apply_preprocess_plans()  # rebuild feature contract from restored plans
+```
 
-## ❤️ Support [BuildML](https://github.com/TechLeo-Libraries/BuildML)
+## Explanations and workflow state
 
-If you find BuildML helpful and would like to support its development, there are several ways you can contribute:
+The operation catalog documents prerequisites, alternatives, ordering,
+assumptions, leakage risks, state changes, and how to read each result.
+Explanations are read-only.
 
-### ☕ Buy Me a Coffee
+```python
+before = session.explain("feature_importance", moment="before")
+workflow = session.workflow()
+walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
+```
 
-You can show your appreciation by [buying me a coffee](https://ko-fi.com/techleo#). Every little bit helps and goes directly towards keeping this project maintained and improving.
+`workflow()` identifies operations that are done, available, blocked, or
+skipped for the current state. `walkthrough()` joins those statuses to recorded
+history and writes a self-contained HTML file when `export_html` is supplied.
+Availability means API prerequisites are satisfied; it does not establish that
+an operation is appropriate for the data-generating process.
 
-[![Buy Me a Coffee](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/techleo#)
+## EDA and model reports
 
-### 🌟 Sponsorship
+```python
+# Offline Teaching Studio snapshot (same SPA surface as eda_app; needs dashboard)
+eda = session.eda(
+    export_html="artifacts/eda_studio.html",
+    html_format="studio",  # default
+)
+# Layered research HTML shell (matplotlib embeds; needs viz)
+research = session.eda(
+    include_plots=True,
+    export_html="artifacts/eda_research.html",
+    html_format="research",
+    export_figures="artifacts/eda-figures",
+)
 
-Consider becoming a sponsor to provide ongoing support. Sponsors receive special recognition and exclusive perks:
+# Live product UI: domain boards, Teaching Studio, Concept Academy, PDF/CSV/offline HTML
+# Requires: pip install "buildml[dashboard]"  (includes plotly, reportlab, kaleido)
+handle = session.eda_app(port=8765)   # or session.open_eda_dashboard()
+# handle.url -> http://127.0.0.1:8765/
+# If the port is busy: session.eda_app(port=8766)
+# handle.stop() when finished
 
-- 🎉 Exclusive updates on the latest features and developments.
-- 🚀 Early access to pre-releases and beta versions.
-- 📢 Special mention in the project documentation and README.
+evaluation = session.evaluate(
+    partition="test",
+    include_plots=True,
+    export_html="artifacts/evaluation.html",
+)
+```
 
-Become a sponsor by clicking on the "Sponsor" button on the [BuildML repository](https://github.com/TechLeo-Libraries/BuildML).
+`eda_app()` starts a local FastAPI Teaching Studio with interactive Plotly
+boards, long-form per-domain Teaching Studio panels (thresholds, pitfalls,
+dataset-specific worked examples, practice checklists), a searchable Concept
+Academy with structured notes (definition through anti-patterns), CSV evidence
+exports (including Pearson/Spearman pairs and Cramér's V when present), an
+**offline HTML** snapshot of the same Studio SPA, and a structured **PDF
+briefing** with cover/meta, contents, findings, domain evidence, captioned
+Plotly PNG stills (via kaleido), Teaching Studio excerpts, and
+methods/limitations. Interactive hover/zoom stays in the live app or offline
+Studio HTML. Plotly figures follow the SPA light/dark theme (ink, grid,
+annotations, heatmaps, gauges, series). Missing dashboard dependencies raise
+an install hint for `pip install 'buildml[dashboard]'`; an occupied port raises
+a clear alternate-port message.
 
-### 👩‍💻 Contribute
+`session.eda(export_html=...)` defaults to that same Teaching Studio offline
+snapshot (`html_format="studio"`). Use `html_format="research"` for the layered
+research HTML shell (restyled typography, sticky nav, severity-aware cards, and
+responsive tables; matplotlib embeds when `include_plots=True`). EDA findings
+are screening evidence, not causal conclusions. Small samples, repeated review
+of test results, related rows across partitions, and collection changes can make
+apparently strong patterns misleading.
 
-If you're a developer, you can contribute directly by:
+Focused diagnostics include `calibration`, `tune_threshold`,
+`learning_curve`, `feature_importance`, and `eval_plots`. Choose thresholds on
+validation data and assess the fixed choice once on test data. Permutation
+importance describes fitted-model reliance for a chosen score and partition;
+it is not causal importance.
 
-- 🐛 Reporting bugs or suggesting improvements by opening [issues](https://github.com/TechLeo-Libraries/BuildML/issues).
-- 🛠 Submitting pull requests to enhance the codebase.
+## Checkpoints and model artifacts
 
-No contribution is too small, and your involvement is highly appreciated!
+```python
+session.checkpoint_save("artifacts/checkpoint")
+# Native sidecar knobs (optional; defaults keep prior behavior):
+# session.checkpoint_save(
+#     "artifacts/checkpoint",
+#     sidecar_layout="auto",          # or "single" / "partitioned"
+#     sidecar_partition_rows=25_000,
+#     sidecar_compression="zstd",
+# )
+restored = Session.checkpoint_load("artifacts/checkpoint")
 
-Thank you for considering supporting BuildML! Your generosity keeps the project alive and thriving. 🚀
+session.save_model("artifacts/model")
+restored.load_model("artifacts/model")
+```
 
+A checkpoint contains canonical data, roles, partition membership, operation
+history, and an integrity manifest. Optional Polars/DuckDB native sidecars use
+zstd and auto layout by default (partition at ≥50k rows). It does not contain
+the fitted estimator. A model bundle contains the fitted estimator and feature
+contract. Only load model bundles from trusted sources because estimator
+serialization is pickle-compatible.
 
-## License
-BuildML is distributed under the MIT License. Feel free to use, modify, and distribute it according to the terms of the license.
+For DuckDB, prefer `with Session.ingest(..., engine="duckdb") as session:` (or
+`with session.dataset:`) so owned connections close on exit. Simple portable
+filters: `from buildml.data import portable_filter_expr`.
 
+## Alpha status (2.0.0a1)
 
-## Changelog
+Version `2.0.0a1` is the classical-ML alpha. APIs and checkpoint/pipeline
+formats may change before stable 2.0. Release readiness is defined by the
+[classical alpha gate](docs/classical-alpha-gate.md); changelog notes are in
+[CHANGELOG.md](CHANGELOG.md).
 
-### v1.0.0 (January 2024):
+### What is gated
 
-- First release
+- Leakage-aware Session path: train-fitted preprocess, fold-local
+  `PreprocessRecipe` inside CV/search, held-out Session test.
+- End-to-end smoke: ingest → roles → EDA → split → prep → CV/fit → evaluate →
+  checkpoint + pipeline roundtrip → `predict_from_pipeline`.
+- Docs/catalog coverage for the learner path and editorial copy lint.
+- CI on Python 3.10–3.13 (core), plus optional engines / Optuna / extras jobs.
 
-### v1.0.1 (January 2024):
+### Known limits (do not claim as done)
 
-- Removed boxplot graph from `eda_visual`.
-- Added new parameters for `eda_visual`.
-- Removed `user_guide` from SupervisedLearning parameter in documentation.
-- Improved documentation.
+- Custom transforms and resample stay Session-global (not fold-local).
+- Polars/DuckDB help project/filter/sample/aggregate; sklearn still needs an
+  in-memory design matrix (not out-of-core fitting).
+- Hashing text features are not invertible; PCA explained variance is
+  unsupervised.
+- Deep learning / RAG / LLM operator, fairness, and SHAP-style explainability
+  are out of classical alpha scope.
 
-### v1.0.2 (January 2024):
+### Local smoke
 
-- Improved documentation.
-- Fix for building all models without splitting the data.
-- Updated `requirements.txt` file.
-- Fixed dependency error in installation.
+```bash
+pip install -e ".[dev]"
+ruff check buildml tests scripts docs/conf.py
+python scripts/lint_user_copy.py
+pytest tests/integration/test_classical_alpha_smoke.py -q
+# Full suite (what CI `test` runs):
+pytest --cov=buildml --cov-report=term-missing
+```
 
-### v1.0.3 (January 2024):
+Optional engines / Optuna:
 
-- Allow the method `count_column_categories` to work for split_data.
-- Improved documentation.
+```bash
+pip install -e ".[dev,engines,optuna]"
+pytest tests/unit/test_engine_aggregate.py tests/unit/test_nested_cv_optuna.py -q
+```
 
-### v1.0.4 (January 2024):
+Tag only after remote CI is green on the release candidate push. See
+[docs/release-checklist-a1.md](docs/release-checklist-a1.md).
 
-- Improved documentation.
+## Current scope and limitations
 
-### v1.0.5 (January 2024):
+- The public 2.x entry point is `buildml.Session`.
+- Pandas is the canonical sklearn materialization path. Selecting Polars or
+  DuckDB supports conversion and engine-aware paths; it does not make every
+  Session operation lazy or out-of-core.
+- Classification and regression accept sklearn-compatible estimators.
+- Random, stratified, grouped, and temporal splits are built in; use
+  `inject_split` for externally governed memberships.
+- Learned preprocessing requires a split and is fitted on training rows.
+  Outlier, binning, encoding, and feature-selection plans expose structured
+  evidence through `session.last_preprocess`.
+- Checkpoints validate bundle integrity and structural compatibility, not
+  semantic equivalence or complete source-data provenance.
+- Reports explain computed evidence and known limits. They do not validate
+  business costs, causal claims, fairness, deployment constraints, or row
+  independence.
+- The API, report schema, and serialized formats remain subject to alpha
+  changes.
 
-- Improved documentation.
-- Created external documentation for BuildML.
+See the [alpha quickstart](docs/quickstart-alpha.md),
+[classical alpha gate](docs/classical-alpha-gate.md),
+[workflow guide](docs/workflow-guide.rst), [concept guide](docs/concepts.rst),
+and [glossary](docs/glossary.md).
 
-### v1.0.6 (January 2024):
+## BuildML 1.x legacy boundary
 
-- Fixed polynomial regression graph
-- Updated documentation on build_single_regressor_from_features
-- Updated documentation on build_single_classifier_from_features
-- Imporved documentation for `polyreg_graph`
-- Imporved documentation for `split_data`
-- Added option to specify the test_size in `split_data` but default parameter remains 0.2
-- Created method `poly_get_optimal_degree` to find the best degree for polynomial regression. 
-- Updated `README.md` file.
+The 1.x `SupervisedLearning` facade and its old module layout are not part of
+the 2.x public API. Reference source is isolated under `buildml/_legacy/` and is
+excluded from the package build. There is no compatibility shim. Historical
+release notes and architecture records remain in the repository as archival
+material and must not be used as 2.x usage guidance.
 
-### v1.0.7 (January 2024):
+## Author
 
-- Fixed `self.__polynomial_regression` not defined.
-- Improved documentation for `build_single_classifier_from_features`.
-- Improved documentation for `build_single_regressor_from_features`.
-- Improved documentation for `build_multiple_classifier_from_features`.
-- Improved documentation for `build_multiple_regressor_from_features`.
+**Leonard Onyiriuba**
 
-### v1.0.8 (January 2024):
+- **Email:** leonard.c.onyiriuba@gmail.com
+- **LinkedIn:** [Leonard Onyiriuba](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/)
 
-- Fixed unstable release v1.0.7.
+## Contact
 
-### v1.0.9 (January 2024):
-
-- Fixed unstable release v1.0.8.
-
+- **Author:** Leonard Onyiriuba
+- **Email:** leonard.c.onyiriuba@gmail.com
+- **GitHub Issues:** [BuildML Issues](https://github.com/TechLeo-Dev/BuildML/issues)
 
 ## Contributors
-We'd like to express our gratitude to the following contributors who have influenced and supported BuildML:
 
-- [Onyiriuba Leonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/): for overseeing the entire project development lifecycle.
-- Role: Project Lead and Maintainer.
-- Email: workwithtechleo@gmail.com.
-<br>
+- [Onyiriuba Leonard](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/)
+  — project lead and maintainer; workwithtechleo@gmail.com
+- [The TechLeo Community](https://www.linkedin.com/company/techleo/)
+  — testers; techleo.ng@gmail.com
 
+## License
 
-- [The TechLeo Community](https://www.linkedin.com/company/techleo/): for allowing the use of this project as a way to explain, learn, test, understand, and make easy, the machine learning process. 
-- Role: Testers.
-- Email: techleo.ng@gmail.com.
+BuildML is distributed under the MIT License.

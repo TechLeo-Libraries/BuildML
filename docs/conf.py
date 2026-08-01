@@ -10,18 +10,19 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
+import importlib
 import sys
-# sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('..'))
-import buildml
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+buildml = importlib.import_module("buildml")
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'BuildML'
-copyright = '2024, TechLeo'
-author = 'TechLeo (Onyiriuba Leonard)'
+project = "BuildML"
+copyright = "2024-2026, Leonard Onyiriuba"
+author = "Leonard Onyiriuba"
 
 
 # -- General configuration ---------------------------------------------------
@@ -32,12 +33,12 @@ author = 'TechLeo (Onyiriuba Leonard)'
 extensions = ["sphinx.ext.viewcode", "sphinx.ext.autodoc", "sphinx_rtd_theme"]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -69,7 +70,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -107,8 +108,8 @@ latex_documents = [
     (
         master_doc,
         "buildml.tex",
-        u"BuildML Documentation",
-        u"TechLeo",
+        "BuildML Documentation",
+        "Leonard Onyiriuba",
         "manual",
     ),
 ]
@@ -118,7 +119,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "buildml", u"BuildML Documentation", [author], 1)]
+man_pages = [(master_doc, "buildml", "BuildML Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------
@@ -130,10 +131,10 @@ texinfo_documents = [
     (
         master_doc,
         "buildml",
-        u"BuildML Documentation",
+        "BuildML Documentation",
         author,
         "buildml",
-        "Let's make building machine learning models the complex way, easy.",
+        "Stateful classical machine-learning workflows.",
         "Miscellaneous",
     ),
 ]

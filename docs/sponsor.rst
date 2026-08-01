@@ -27,7 +27,7 @@ Become a sponsor by clicking on the “Sponsor” button on the `BuildML
 repository <https://github.com/TechLeo-Libraries/BuildML>`__.
 
 👩‍💻 Contribute
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 If you’re a developer, you can contribute directly by:
 

@@ -1,30 +1,23 @@
 """
-Machine Learning Toolkit for Python
-===================================
+BuildML 2.x
+===========
 
-BuildML is a comprehensive Python toolkit designed to simplify and streamline the machine learning workflow. It provides a set of tools and utilities that cover various aspects of building machine learning models.
+A flexible, depth-first toolkit for building machine-learning workflows.
 
-Key Features:
-- Data Exploration and Analysis: Perform exploratory data analysis to gain insights into your datasets.
-- Data Preprocessing and Cleaning: Easily handle data preprocessing and cleaning tasks to ensure high-quality input for your models.
-- Model Training and Prediction: Train machine learning models effortlessly and make predictions with ease.
-- Regression and Classification: Support for both regression and classification tasks to address diverse machine learning needs.
-- Supervised Learning: Built to support various supervised learning scenarios, making it versatile for different use cases.
-- Model Evaluation: Evaluate the performance of your models using comprehensive metrics.
-
-BuildML is built on top of popular scientific Python packages such as numpy, scipy, and matplotlib, ensuring seamless integration with the broader Python ecosystem.
-
-Visit our documentation at https://buildml.readthedocs.io/ for detailed information on how to use BuildML and unleash the power of machine learning in your projects.
+Phase-1 public surface is the :class:`~buildml.session.Session` API. Legacy 1.x
+modules are parked under ``buildml._legacy`` and are not part of the supported
+import graph.
 """
 
-from .automate import SupervisedLearning
+from buildml._version import __version__
+from buildml.session import Session
 
-__author__ = "TechLeo"
-__email__ = "techleo.ng@outlook.com"
-__copyright__ = "Copyright (c) 2023 TechLeo"
+__author__ = "Leonard Onyiriuba"
+__email__ = "leonard.c.onyiriuba@gmail.com"
+__copyright__ = "Copyright (c) 2023-2026 Leonard Onyiriuba"
 __license__ = "MIT"
-__version__ = "1.0.9"
 
 __all__ = [
-    'SupervisedLearning',
+    "Session",
+    "__version__",
 ]

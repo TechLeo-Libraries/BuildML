@@ -1,0 +1,12 @@
+{
+  "findings": [
+    "8 cells are missing; observed cell completeness is 95.833%.",
+    "Constant columns contain no observed variation in this dataset. Observed columns: constant.",
+    "Identifier-like columns have near-unique observed values and are not valid default predictors. Observed columns: customer_id."
+  ],
+  "recommendation_titles": [
+    "Define a train-fitted missing-data strategy",
+    "Exclude constant columns",
+    "Keep identifiers outside feature matrices"
+  ]
+}

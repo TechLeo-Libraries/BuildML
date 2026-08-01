@@ -1,0 +1,32 @@
+{
+  "analysis_column_count": 4,
+  "analysis_rows": 40,
+  "case": "regression",
+  "drift_available": false,
+  "drift_flag_count": 0,
+  "has_sampling_disclosure": false,
+  "has_skipped_disclosure": true,
+  "quality_flags": {
+    "constant_columns": [],
+    "high_cardinality_columns": [],
+    "id_like_columns": ["target", "x", "x2"],
+    "mixed_type_suspect_columns": []
+  },
+  "recommendations": [
+    {"based_on": ["quality.identifiers"], "key": "next.exclude_ids"}
+  ],
+  "section_ids": [
+    "orientation",
+    "quality",
+    "features",
+    "relationships",
+    "target-validation",
+    "figures",
+    "next-steps",
+    "methods",
+    "degraded",
+    "appendix"
+  ],
+  "shape": [40, 4],
+  "target_type": "regression_target"
+}

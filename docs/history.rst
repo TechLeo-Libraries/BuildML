@@ -1,5 +1,16 @@
-Changelog
----------
+BuildML 2.x changelog
+---------------------
+
+Active release notes for BuildML 2.x live in the repository root
+``CHANGELOG.md``. The classical alpha pre-release is ``2.0.0a1``; gate criteria
+are in ``docs/classical-alpha-gate.md``.
+
+BuildML 1.x archived changelog
+------------------------------
+
+This page records the retired 1.x release line. Names below are historical and
+are not available from the BuildML 2.x package root. See :doc:`legacy` for the
+migration boundary.
 
 v1.0.0 (January 2024):
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -1,6 +1,8 @@
 # Distribution / packaging
 .Python
 env/
+.venv/
+venv/
 build/
 develop-eggs/
 dist/
@@ -35,3 +37,13 @@ docs/_build/
 test.ipynb
 notebooks/
 notebook.ipynb
+
+# Tests / tooling
+tests/.pytest_tmp/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.buildml-artifacts/
+__pycache__/
+*.py[cod]

@@ -1,17 +1,6 @@
-"""
-Perform Exploratory Data Analysis with the BuildML libraray.
-"""
+"""Exploratory data analysis."""
 
-from ._eda import eda, eda_visual, sweet_viz, pandas_profiling
+from buildml.eda.profile import explore_dataset, summarize_dataset
+from buildml.eda.report import EDAReport
 
-__author__ = "TechLeo"
-__email__ = "techleo.ng@outlook.com"
-__copyright__ = "Copyright (c) 2023 TechLeo"
-__license__ = "MIT"
-
-__all__ = [
-    "eda",
-    "eda_visual",
-    "sweet_viz",
-    "pandas_profiling"
-    ]
+__all__ = ["EDAReport", "explore_dataset", "summarize_dataset"]

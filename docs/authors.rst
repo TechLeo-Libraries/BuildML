@@ -5,9 +5,9 @@ Credits
 Development Lead
 ----------------
 
-* Onyiriuba Leonard Chukwubuikem <workwithtechleo@gmail.com>
+* Leonard Onyiriuba <leonard.c.onyiriuba@gmail.com>
 
 Contributors
 ------------
 
-* TechLeo Community <techleo.ng@outlook.com>
+* Community contributors welcome

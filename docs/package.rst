@@ -1,58 +1,25 @@
-Modules
-=======
+API reference
+=============
 
-buildml.automate module
------------------------
+Session
+-------
 
-.. automodule:: buildml.automate
+.. autoclass:: buildml.Session
    :members:
    :undoc-members:
-   :show-inheritance:
 
-buildml.date\_features module
+Explanation catalog
 -------------------
 
-.. automodule:: buildml.date_features
+.. automodule:: buildml.explain
    :members:
    :undoc-members:
-   :show-inheritance:
 
-buildml.eda module
-------------------
+Result and type objects
+-----------------------
 
-.. automodule:: buildml.eda
+.. automodule:: buildml.core.results
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-buildml.build\_model module
---------------------
-
-.. automodule:: buildml.build_model
+.. automodule:: buildml.core.types
    :members:
-   :undoc-members:
-   :show-inheritance:
-
-buildml.output\_dataset module
-------------------------------
-
-.. automodule:: buildml.output_dataset
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-buildml.preprocessing module
-----------------------------
-
-.. automodule:: buildml.preprocessing
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: buildml
-   :members:
-   :undoc-members:
-   :show-inheritance:
