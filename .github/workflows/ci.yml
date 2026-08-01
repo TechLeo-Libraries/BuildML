@@ -149,6 +149,37 @@ jobs:
       - name: DL alpha-gate smoke (explicit)
         run: pytest tests/integration/test_dl_alpha_smoke.py -q
 
+  rag:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package with rag + lean test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[rag]"
+          pip install pytest pytest-cov ruff
+
+      - name: Core import smoke without relying on RAG internals
+        run: python -c "import buildml; print(buildml.__version__)"
+
+      - name: RAG thin slice unit + integration smoke
+        run: |
+          pytest \
+            tests/unit/test_rag_slice.py \
+            tests/integration/test_rag_smoke.py \
+            -q
+
   extras:
     runs-on: ubuntu-latest
     strategy:

@@ -63,6 +63,8 @@ def session_state(session: Any) -> dict[str, Any]:
         "split_kind": None if split is None else split.kind,
         "has_fit": getattr(session, "_fit_result", None) is not None,
         "has_dl_train": getattr(session, "_dl_train_result", None) is not None,
+        "has_rag_corpus": getattr(session, "_rag_corpus", None) is not None,
+        "has_rag_index": getattr(session, "_rag_index_result", None) is not None,
         "has_impute_plan": getattr(session, "_impute_plan", None) is not None,
         "has_encode_plan": getattr(session, "_encode_plan", None) is not None,
         "has_scale_plan": getattr(session, "_scale_plan", None) is not None,

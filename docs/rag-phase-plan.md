@@ -7,7 +7,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [classical-ml-capability-map.md](./classical-ml-capability-map.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** M0 locked · M1 in progress.  
+**Status:** M0 locked · M1 complete.  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
 **North star:** flexibility · depth · functionality.  
 **M0 lock artifact:** [rag-m0-lock.md](./rag-m0-lock.md).
@@ -388,12 +388,12 @@ rag_ingest_corpus (fixture docs)
 
 **Exit**
 
-- [ ] Core CI unchanged (no RAG required)
-- [ ] RAG smoke green on CI CPU job
-- [ ] Hygiene tests: eval queries/answers not silently indexed when marked eval-only
-- [ ] `MissingExtraError` path tested without RAG installed
-- [ ] Typed results + docstrings for public delegates
-- [ ] Bundle schema id stable for the alpha line
+- [x] Core CI unchanged (no RAG required)
+- [x] RAG smoke green on CI CPU job
+- [x] Hygiene tests: eval queries/answers not silently indexed when marked eval-only
+- [x] `MissingExtraError` path tested without RAG installed
+- [x] Typed results + docstrings for public delegates
+- [x] Bundle schema id stable for the alpha line (`buildml.rag_bundle.v1`)
 
 ### M2 — Depth
 
@@ -516,7 +516,7 @@ PDF/OCR productization, hosted vector DBs, Teaching Studio redesign, `buildml.ai
 | Public method prefix (`rag_*` vs `*_rag`) | Locked | `rag_*` Session methods; result slots `rag_index_result` / `rag_retrieve_result` / `rag_eval_result` |
 | Version line for RAG alpha | Locked | `2.2.0a1` at M3 (classical `2.0.0a1`, DL `2.1.0a1`) |
 | Extra name canonical | Locked | `rag` = deps; optional later `rag-gpu` / `rag-api` |
-| Default embedder + pin | Locked | Default `buildml.hashing_embed.v1` (HashingVectorizer, dim=384); extra pins `sentence-transformers>=2.2` for gate + optional ST backend |
+| Default embedder + pin | Locked | Default `buildml.hashing_embed.v1` (HashingVectorizer, dim=384); extra pins `sentence-transformers>=2.2` for optional ST backend (hashing path uses core sklearn) |
 | Default vector store | Locked | NumPy cosine top-k + `embeddings.npy` / `chunks.jsonl` sidecar |
 | Bundle schema id | Locked | `buildml.rag_bundle.v1` |
 | Bundle vs Session checkpoint vs Torch | Locked | Three distinct artifacts; see §2 and [rag-m0-lock.md](./rag-m0-lock.md) |

@@ -10,12 +10,26 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- RAG M0 lock ([`docs/rag-m0-lock.md`](docs/rag-m0-lock.md)) and M1 thin
+  vertical slice behind `buildml[rag]`: corpus ingest → chunk → embed/index →
+  retrieve → recall@k/MRR eval → `buildml.rag_bundle.v1` save/load.
+- Session delegates: `rag_ingest_corpus`, `rag_chunk`, `rag_embed_and_index`,
+  `rag_retrieve`, `rag_evaluate`, `save_rag_bundle`, `load_rag_bundle`; result
+  slots `rag_index_result` / `rag_retrieve_result` / `rag_eval_result`.
+- Default embedder `buildml.hashing_embed.v1` (CPU hashing) and NumPy cosine
+  store; explain catalog/concept coverage; CI `rag` job (Python 3.11–3.12).
 - Cost-sensitive `tune_threshold(fp_cost=..., fn_cost=...)` with recommended
   threshold, expected cost, and structured operating points.
 - Stronger `error_slices`: multi-column segments, richer metrics, small-n
   handling, optional HTML export.
 - Richer `dry_run` / `summarize_history` audit UX (ranked risks, prerequisite
   graph summary, suggested next ops) surfaced on walkthrough HTML.
+
+### Known limits (RAG M1)
+
+- Retrieve + eval + bundle only; no generate, hybrid, rerank, or Studio redesign.
+- Default hashing embedder is lexical/hashed, not semantic.
+- RAG alpha version line remains `2.2.0a1` (M3); package version unchanged.
 
 ## [2.1.0a1] — DL alpha — 2026-08-01
 

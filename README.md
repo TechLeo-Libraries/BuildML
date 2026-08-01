@@ -334,6 +334,27 @@ and do not embed dataset rows; Session checkpoints never embed Torch weights.
 Design lock: [docs/dl-m0-lock.md](docs/dl-m0-lock.md). Quickstart:
 [docs/quickstart-dl-alpha.md](docs/quickstart-dl-alpha.md).
 
+### Retrieval (optional RAG, M1 slice)
+
+The M1 hashing default uses core numpy/sklearn. Install `buildml[rag]` for the
+optional sentence-transformers backend and the declared extra contract. Core
+`import buildml` never requires RAG extras. Design lock:
+[docs/rag-m0-lock.md](docs/rag-m0-lock.md). Phase plan:
+[docs/rag-phase-plan.md](docs/rag-phase-plan.md).
+
+```python
+session.rag_ingest_corpus(["doc text ...", ...])  # or path= / text_column=
+session.rag_chunk(size=512, overlap=64)
+session.rag_embed_and_index()  # default: buildml.hashing_embed.v1
+session.rag_retrieve("query", k=5)
+session.rag_evaluate({"query": ["doc_id"]}, k=5)
+session.save_rag_bundle("artifacts/rag_bundle")
+```
+
+Bundles use schema `buildml.rag_bundle.v1` (not a Session checkpoint or Torch
+bundle). Default embedder is lexical hashing (CPU, no model download), not a
+semantic sentence model. No generate/LLM operator in this slice.
+
 ### Known limits (do not claim as done)
 
 - Custom transforms and resample stay Session-global (not fold-local).
@@ -344,7 +365,9 @@ Design lock: [docs/dl-m0-lock.md](docs/dl-m0-lock.md). Quickstart:
 - Torch path: CPU CI merge gate; tabular numeric features first; no model zoo;
   materialized tensors (no Polars/DuckDB zero-copy); no auto classical prep
   before loaders; no fold-local Torch CV / DDP / AMP product path.
-- RAG / LLM operator, fairness, and SHAP-style explainability remain later.
+- RAG M1: retrieve + eval + bundle only; no hybrid/rerank/generate; no Studio
+  redesign; hashing default is not semantic retrieval quality.
+- LLM operator, fairness, and SHAP-style explainability remain later.
 
 ### Local smoke
 
@@ -357,7 +380,7 @@ pytest tests/integration/test_classical_alpha_smoke.py -q
 pytest --cov=buildml --cov-report=term-missing
 ```
 
-Optional engines / Optuna / Torch:
+Optional engines / Optuna / Torch / RAG:
 
 ```bash
 pip install -e ".[dev,engines,optuna]"
@@ -370,6 +393,13 @@ pytest \
   tests/unit/test_dl_m2_depth.py \
   tests/integration/test_dl_torch_smoke.py \
   tests/integration/test_dl_alpha_smoke.py \
+  -q
+
+pip install -e ".[rag]"
+pip install pytest
+pytest \
+  tests/unit/test_rag_slice.py \
+  tests/integration/test_rag_smoke.py \
   -q
 ```
 

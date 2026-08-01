@@ -30,6 +30,9 @@ _PROVIDERS: dict[str, tuple[str, ...]] = {
     ),
     "fit_torch": ("fit_torch", "load_torch_bundle"),
     "torch-extra": (),
+    "rag-corpus": ("rag_ingest_corpus",),
+    "rag-index": ("rag_embed_and_index", "load_rag_bundle"),
+    "rag-extra": (),
     "viz-extra": (),
 }
 
@@ -68,6 +71,11 @@ _REPEATABLE = {
     "predict",
     "predict_from_pipeline",
     "prepare_design_matrix",
+    "rag_chunk",
+    "rag_embed_and_index",
+    "rag_evaluate",
+    "rag_ingest_corpus",
+    "rag_retrieve",
     "randomized_search",
     "reduce_dimensions",
     "register_transform",
@@ -75,8 +83,10 @@ _REPEATABLE = {
     "resample_strategies",
     "save_model",
     "save_pipeline",
+    "save_rag_bundle",
     "save_torch_bundle",
     "scale",
+    "load_rag_bundle",
     "select_features",
     "summarize_history",
     "text_features",
@@ -157,6 +167,30 @@ def _prerequisite_state(session: Any, key: str) -> tuple[bool, str]:
             "Torch dependencies are installed."
             if present
             else "Torch is not installed; install buildml[torch] for DL methods.",
+        )
+    if key == "rag-corpus":
+        present = getattr(session, "_rag_corpus", None) is not None
+        return (
+            present,
+            "A RAG corpus is attached."
+            if present
+            else "No RAG corpus is attached.",
+        )
+    if key == "rag-index":
+        present = getattr(session, "_rag_index_result", None) is not None
+        return (
+            present,
+            "An active RAG index exists."
+            if present
+            else "No active RAG index exists.",
+        )
+    if key == "rag-extra":
+        present = find_spec("sentence_transformers") is not None
+        return (
+            present,
+            "RAG dependencies are installed."
+            if present
+            else "RAG is not installed; install buildml[rag] for retrieval methods.",
         )
     if key == "viz-extra":
         present = find_spec("matplotlib") is not None

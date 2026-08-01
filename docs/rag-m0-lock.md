@@ -3,7 +3,7 @@
 Approved lock for the retrieval thin slice.  
 Parent plan: [rag-phase-plan.md](./rag-phase-plan.md).
 
-**Status:** M0 locked · M1 in progress  
+**Status:** M0 locked · M1 complete  
 **Approved:** 2026-08-01
 
 ---
@@ -83,13 +83,14 @@ M1 chooses the lightest stack that meets save/load + dense kNN. Hashing embeddin
 | Decision | Lock |
 | --- | --- |
 | Canonical extra | `rag` → `pip install 'buildml[rag]'` |
-| Extra pins (M1) | `sentence-transformers>=2.2` (install gate + optional semantic embedder; hashing path still requires the extra so the install contract is uniform) |
+| Extra pins (M1) | `sentence-transformers>=2.2` (optional semantic embedder + CI install contract). Default hashing + NumPy path uses core numpy/sklearn and does not import sentence-transformers. |
 | Later extras | `rag-gpu` / `rag-api` — docs-first; not M1 blockers |
 | RAG CI Python | 3.11 and 3.12 (mirror `torch` job) |
 | Core import | Must succeed without RAG extras; no eager `buildml.rag` imports in `buildml/__init__.py` or Session module top-level |
 | Version line for RAG alpha (M3) | `2.2.0a1` (classical `2.0.0a1`, DL `2.1.0a1`) — do not bump package version until the M3 gate |
 
-Missing stack → `MissingExtraError("rag", feature=...)` with `pip install 'buildml[rag]'`.
+Missing semantic stack → `MissingExtraError("rag", feature=...)` with
+`pip install 'buildml[rag]'` when a sentence-transformers backend is requested.
 
 ---
 

@@ -188,6 +188,12 @@ class Session:
         self._model_card: ModelCard | None = None
         self._torch_loaders: Any | None = None
         self._dl_train_result: Any | None = None
+        self._rag_corpus: Any | None = None
+        self._rag_chunks: Any | None = None
+        self._rag_index: Any | None = None
+        self._rag_index_result: Any | None = None
+        self._rag_retrieve_result: Any | None = None
+        self._rag_eval_result: Any | None = None
 
     def close_native(self) -> None:
         """Close an owned DuckDB connection on the session dataset, if any.
@@ -1474,6 +1480,243 @@ class Session:
             "load_torch_bundle",
             {"path": str(path), "module": type(module).__name__, "map_location": map_location},
             result_summary=self._dl_train_result.to_dict(),
+        )
+        return self
+
+    def rag_ingest_corpus(
+        self,
+        source: str | Path | Sequence[Any] | None = None,
+        *,
+        text_column: str | None = None,
+        id_column: str | None = None,
+        glob: str = "*.txt",
+        encoding: str = "utf-8",
+        role: Literal["index", "eval_only"] = "index",
+    ) -> Session:
+        """Load a text corpus for the RAG path (requires ``buildml[rag]``).
+
+        Provide a file/directory ``source``, an in-memory document sequence, or
+        ``text_column`` to bridge the current Session frame. Never silently
+        indexes every column.
+
+        Delegates to :mod:`buildml.rag.corpus`. Distinct from classical ingest.
+        """
+        from buildml.rag.corpus import (
+            corpus_from_documents,
+            corpus_from_frame,
+            load_text_corpus,
+        )
+        from buildml.rag.extras import require_rag_stack
+
+        require_rag_stack(feature="RAG corpus ingest")
+        if text_column is not None:
+            if self._dataset is None:
+                raise ValidationError(
+                    "text_column requires an attached dataset. "
+                    "Call Session.ingest(...) first or pass source= documents/path."
+                )
+            corpus = corpus_from_frame(
+                self._dataset.frame,
+                text_column=text_column,
+                id_column=id_column,
+                role=role,
+                source=f"session[{text_column}]",
+            )
+        elif source is None:
+            raise ValidationError(
+                "rag_ingest_corpus requires source= (path or documents) or text_column=."
+            )
+        elif isinstance(source, (str, Path)):
+            corpus = load_text_corpus(source, glob=glob, encoding=encoding, role=role)
+        else:
+            corpus = corpus_from_documents(source, source="memory", default_role=role)
+
+        self._rag_corpus = corpus
+        self._rag_chunks = None
+        self._rag_index = None
+        self._rag_index_result = None
+        self._rag_retrieve_result = None
+        self._rag_eval_result = None
+        self._record(
+            "rag_ingest_corpus",
+            {
+                "source": corpus.source,
+                "role": role,
+                "text_column": text_column,
+                "id_column": id_column,
+            },
+            result_summary=corpus.to_dict(),
+        )
+        return self
+
+    def rag_chunk(
+        self,
+        *,
+        size: int = 512,
+        overlap: int = 64,
+    ) -> Session:
+        """Chunk the active RAG corpus with size + overlap (requires ``buildml[rag]``)."""
+        from buildml.rag.chunk import chunk_documents
+        from buildml.rag.extras import require_rag_stack
+        from buildml.rag.types import ChunkConfig
+
+        require_rag_stack(feature="RAG chunking")
+        if self._rag_corpus is None:
+            raise ValidationError("No RAG corpus. Call rag_ingest_corpus(...) first.")
+        result = chunk_documents(
+            self._rag_corpus,
+            config=ChunkConfig(size=size, overlap=overlap),
+        )
+        self._rag_chunks = result
+        self._record(
+            "rag_chunk",
+            {"size": size, "overlap": overlap},
+            result_summary=result.to_dict(),
+        )
+        return self
+
+    def rag_embed_and_index(
+        self,
+        *,
+        embedder: Any | None = None,
+        chunk_size: int | None = None,
+        chunk_overlap: int | None = None,
+    ) -> Session:
+        """Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
+
+        Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
+        Default embedder is ``buildml.hashing_embed.v1`` (lexical/hashed, not semantic).
+        """
+        from buildml.rag.extras import require_rag_stack
+        from buildml.rag.index import build_index
+        from buildml.rag.results import ChunkResult
+
+        require_rag_stack(feature="RAG embed and index")
+        if self._rag_corpus is None:
+            raise ValidationError("No RAG corpus. Call rag_ingest_corpus(...) first.")
+        index = build_index(
+            self._rag_corpus,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            embedder=embedder,
+            chunks=self._rag_chunks,
+        )
+        self._rag_index = index
+        self._rag_index_result = index.to_index_result()
+        self._rag_chunks = ChunkResult(
+            chunks=index.chunks,
+            config=index.chunk_config.to_dict(),
+            n_documents=index.n_documents,
+        )
+        self._record(
+            "rag_embed_and_index",
+            {
+                "embedder_id": index.embed_config.embedder_id,
+                "dim": index.embed_config.dim,
+                "store_backend": index.index_config.store_backend,
+            },
+            result_summary=self._rag_index_result.to_dict(),
+            warnings=tuple(index.warnings),
+        )
+        return self
+
+    def rag_retrieve(self, query: str, *, k: int = 5) -> Any:
+        """Dense top-k retrieve against the active RAG index (requires ``buildml[rag]``)."""
+        from buildml.rag.extras import require_rag_stack
+        from buildml.rag.retrieve import retrieve
+
+        require_rag_stack(feature="RAG retrieve")
+        if self._rag_index is None:
+            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
+        result = retrieve(self._rag_index, query, k=k)
+        self._rag_retrieve_result = result
+        self._record(
+            "rag_retrieve",
+            {"query": query, "k": k},
+            result_summary=result.to_dict(),
+        )
+        return result
+
+    def rag_evaluate(
+        self,
+        qrels: Any,
+        *,
+        k: int = 5,
+    ) -> Any:
+        """Score retrieval with gold qrels (recall@k, MRR). Requires ``buildml[rag]``.
+
+        Document-level relevance: a chunk hit counts via its parent ``doc_id``.
+        """
+        from buildml.rag.evaluate import evaluate_retrieval
+        from buildml.rag.extras import require_rag_stack
+
+        require_rag_stack(feature="RAG evaluate")
+        if self._rag_index is None:
+            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
+        result = evaluate_retrieval(self._rag_index, qrels, k=k)
+        self._rag_eval_result = result
+        self._record(
+            "rag_evaluate",
+            {"k": k, "n_queries": result.n_queries},
+            result_summary=result.to_dict(),
+            warnings=tuple(result.warnings),
+        )
+        return result
+
+    @property
+    def rag_index_result(self) -> Any | None:
+        """Last :class:`~buildml.rag.results.IndexResult`, if any."""
+        return self._rag_index_result
+
+    @property
+    def rag_retrieve_result(self) -> Any | None:
+        """Last :class:`~buildml.rag.results.RetrieveResult`, if any."""
+        return self._rag_retrieve_result
+
+    @property
+    def rag_eval_result(self) -> Any | None:
+        """Last :class:`~buildml.rag.results.RagEvalResult`, if any."""
+        return self._rag_eval_result
+
+    def save_rag_bundle(self, path: str | Path) -> Path:
+        """Persist the active RAG index as ``buildml.rag_bundle.v1``.
+
+        Distinct from Session checkpoints and Torch trainer bundles.
+        See :data:`buildml.rag.checkpoint.CHECKPOINT_BOUNDARY`.
+        """
+        from buildml.rag.checkpoint import save_rag_bundle
+        from buildml.rag.extras import require_rag_stack
+
+        require_rag_stack(feature="RAG bundle save")
+        if self._rag_index is None:
+            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
+        destination = save_rag_bundle(
+            path,
+            self._rag_index,
+            eval_result=self._rag_eval_result,
+        )
+        self._record("save_rag_bundle", {"path": str(destination)})
+        return destination
+
+    def load_rag_bundle(self, path: str | Path) -> Session:
+        """Load a RAG bundle into this Session (requires ``buildml[rag]``)."""
+        from buildml.rag.checkpoint import load_rag_bundle
+        from buildml.rag.extras import require_rag_stack
+        from buildml.rag.results import ChunkResult
+
+        require_rag_stack(feature="RAG bundle load")
+        index = load_rag_bundle(path)
+        self._rag_index = index
+        self._rag_index_result = index.to_index_result()
+        self._rag_chunks = ChunkResult(
+            chunks=index.chunks,
+            config=index.chunk_config.to_dict(),
+            n_documents=index.n_documents,
+        )
+        self._record(
+            "load_rag_bundle",
+            {"path": str(path)},
+            result_summary=self._rag_index_result.to_dict(),
         )
         return self
 
