@@ -132,22 +132,45 @@ def test_dry_run_and_summarize_history_do_not_mutate() -> None:
     assert preview.steps
     assert preview.steps[0].operation == "split"
     assert preview.steps[0].available is True
+    assert isinstance(preview.ranked_risks, list)
+    assert isinstance(preview.suggested_next_ops, list)
+    assert preview.prerequisite_graph.to_dict()["n_nodes"] >= 1
     assert len(session.history) == before_history
 
     blocked = session.dry_run("fit")
     assert blocked.steps[0].available is False
     assert blocked.steps[0].blocked_reasons
+    assert blocked.prerequisite_graph.missing_required or blocked.steps[0].blocked_reasons
 
     session.split(test_size=0.25, stratify=True, random_state=1)
     summary = session.summarize_history()
     assert summary.n_operations >= 2
     assert "split" in summary.operation_counts
     assert session.last_history_summary is not None
+    assert summary.suggested_next_ops
+    assert all("operation" in item for item in summary.suggested_next_ops)
+    assert summary.prerequisite_graph.to_dict()["n_nodes"] >= 1
     # summarize_history / dry_run do not append history records
     assert all(
         record.get("operation_id") not in {"dry_run", "summarize_history"}
         for record in session.history
     )
+
+
+def test_walkthrough_includes_audit_summary() -> None:
+    frame = _text_frame(32)
+    session = (
+        Session.ingest(frame)
+        .set_roles({"review": "ignore", "x": "feature", "seg": "ignore", "y": "target"})
+        .split(test_size=0.25, stratify=True, random_state=4)
+        .fit(LogisticRegression(max_iter=300), task="classification")
+    )
+    report = session.walkthrough()
+    assert report.audit_summary
+    assert report.audit_summary["has_fit"] is True
+    assert "ranked_risks" in report.audit_summary
+    assert "suggested_next_ops" in report.audit_summary
+    assert report.next_actions
 
 
 def test_text_and_pca_roundtrip_through_pipeline(tmp_path) -> None:
@@ -177,11 +200,30 @@ def test_error_slices_by_segment() -> None:
         .split(test_size=0.25, stratify=True, random_state=3)
         .fit(LogisticRegression(max_iter=300), task="classification")
     )
-    report = session.error_slices(by="seg", partition="test")
+    report = session.error_slices(by="seg", partition="test", min_segment_n=2)
     assert report.kind == "segment_errors"
     assert report.payload["by"] == "seg"
+    assert report.payload["by_columns"] == ["seg"]
     assert report.payload["segments"]
+    assert "precision" in report.payload["segments"][0]
+    assert "small_segments" in report.payload
     assert any(record.get("operation_id") == "error_slices" for record in session.history)
+
+    multi = session.error_slices(
+        by=["seg", "y"],
+        partition="test",
+        min_segment_n=1,
+        max_segments=10,
+    )
+    assert multi.payload["by_columns"] == ["seg", "y"]
+    assert multi.payload["segments"] or multi.payload["small_segments"]
+    rows = multi.payload["segments"] or multi.payload["small_segments"]
+    assert all("seg=" in row["segment"] and "y=" in row["segment"] for row in rows)
+
+    tiny = session.error_slices(by="seg", partition="test", min_segment_n=10_000)
+    assert tiny.payload["segments"] == []
+    assert tiny.payload["small_segments"]
+    assert any("min_segment_n" in tip for tip in tiny.interpretation)
 
 
 def test_unknown_custom_transform_raises() -> None:

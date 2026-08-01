@@ -75,6 +75,7 @@ _REPEATABLE = {
     "to_engine",
     "to_pandas",
     "to_parquet",
+    "tune_threshold",
     "workflow",
     "with_engine",
     "with_mode",

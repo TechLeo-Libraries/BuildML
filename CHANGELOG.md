@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 with pre-release tags for alpha (`aN`) builds.
 
+## [Unreleased]
+
+### Added
+
+- Cost-sensitive `tune_threshold(fp_cost=..., fn_cost=...)` with recommended
+  threshold, expected cost, and structured operating points.
+- Stronger `error_slices`: multi-column segments, richer metrics, small-n
+  handling, optional HTML export.
+- Richer `dry_run` / `summarize_history` audit UX (ranked risks, prerequisite
+  graph summary, suggested next ops) surfaced on walkthrough HTML.
+
 ## [2.0.0a1] — classical alpha — 2026-08-01
 
 First classical-ML alpha of the BuildML 2.x `Session` API. Exit criteria and

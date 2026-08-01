@@ -110,8 +110,11 @@ Session.register_transform(
 session.apply_custom_transform("clip_deciles", columns=["income"])
 
 # Preview and audit without mutating state
-session.dry_run(["impute", "scale", "fit"]).show()
-session.summarize_history().show()
+preview = session.dry_run(["impute", "scale", "fit"])
+preview.show()  # ranked risks, prerequisite gaps, suggested next ops
+summary = session.summarize_history()
+summary.show()
+# walkthrough.audit_summary repeats the same ranked audit cues for offline HTML
 ```
 
 Random splitting assumes rows are exchangeable. Prefer first-class helpers when
@@ -258,9 +261,11 @@ are screening evidence, not causal conclusions. Small samples, repeated review
 of test results, related rows across partitions, and collection changes can make
 apparently strong patterns misleading.
 
-Focused diagnostics include `calibration`, `tune_threshold`,
+Focused diagnostics include `calibration`, `tune_threshold`, `error_slices`,
 `learning_curve`, `feature_importance`, and `eval_plots`. Choose thresholds on
-validation data and assess the fixed choice once on test data. Permutation
+validation data (`fp_cost` / `fn_cost` for expected-cost minimization) and
+assess the fixed choice once on test data. `error_slices` supports multi-column
+segments and keeps small-n rows out of the primary ranking. Permutation
 importance describes fitted-model reliance for a chosen score and partition;
 it is not causal importance.
 

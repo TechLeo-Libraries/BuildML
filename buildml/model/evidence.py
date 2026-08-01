@@ -179,25 +179,84 @@ def evidence_for_diagnostic(
             limits.append("Binary calibration curves and a single threshold policy are not applicable to multiclass output.")
     elif kind == "threshold_sweep":
         best = dict(payload.get("best_f1_threshold") or {})
+        recommended = dict(payload.get("recommended_threshold") or best)
+        cost_model = payload.get("cost_model")
+        basis = str(payload.get("recommendation_basis") or "best_f1")
         findings.append(
             diagnostic_finding(
                 "threshold-tradeoff",
                 "Candidate operating points were compared",
-                f"The highest observed F1 occurred at threshold {_fmt(best.get('threshold'))}; this is not a cost-optimality claim.",
+                (
+                    f"Recommended threshold={_fmt(recommended.get('threshold'))} "
+                    f"(basis={basis}) on partition={partition}; "
+                    f"highest observed F1 was at {_fmt(best.get('threshold'))}."
+                ),
                 evidence=(
+                    metric_evidence(
+                        "recommended-threshold",
+                        "Recommended operating point",
+                        recommended,
+                        source=source,
+                    ),
                     metric_evidence("best-f1-point", "Highest observed F1 row", best, source=source),
-                    metric_evidence("ranking-quality", "ROC-AUC and average precision", {"roc_auc": payload.get("roc_auc"), "average_precision": payload.get("average_precision")}, source=source),
+                    metric_evidence(
+                        "ranking-quality",
+                        "ROC-AUC and average precision",
+                        {
+                            "roc_auc": payload.get("roc_auc"),
+                            "average_precision": payload.get("average_precision"),
+                        },
+                        source=source,
+                    ),
                 ),
             )
         )
+        if cost_model:
+            findings.append(
+                diagnostic_finding(
+                    "threshold-expected-cost",
+                    "Expected cost was minimized under supplied FP/FN costs",
+                    (
+                        f"Minimum observed expected cost total="
+                        f"{_fmt(payload.get('expected_cost_at_recommended'))} "
+                        f"at threshold {_fmt(recommended.get('threshold'))}."
+                    ),
+                    evidence=(
+                        metric_evidence(
+                            "cost-model",
+                            "Cost/benefit coefficients",
+                            dict(cost_model),
+                            source=source,
+                            limitations=(
+                                "Costs are caller-supplied and assumed constant across the partition.",
+                                "Expected cost on this partition is not a deployment guarantee.",
+                            ),
+                        ),
+                    ),
+                )
+            )
+            limits.append(
+                "Cost-optimal thresholds inherit validation prevalence and the supplied cost ratios."
+            )
         recommendations.append(
             diagnostic_recommendation(
                 "validate-threshold-policy",
                 "Validate a threshold against explicit error costs",
-                "The sweep exposes precision, recall, F1, and predicted workload; choose from those observed rows using domain costs.",
-                finding_keys=("threshold-tradeoff",),
+                (
+                    "Use fp_cost/fn_cost on validation to select a policy, then confirm the fixed "
+                    "cutoff once on untouched test."
+                ),
+                finding_keys=(
+                    ("threshold-tradeoff", "threshold-expected-cost")
+                    if cost_model
+                    else ("threshold-tradeoff",)
+                ),
                 operation="tune_threshold",
-                parameters={"partition": "validation"},
+                parameters={
+                    "partition": "validation",
+                    "fp_cost": (cost_model or {}).get("fp_cost"),
+                    "fn_cost": (cost_model or {}).get("fn_cost"),
+                },
                 caveats=("Selecting on test biases the final estimate.",),
             )
         )
@@ -247,27 +306,36 @@ def evidence_for_diagnostic(
         )
     elif kind == "segment_errors":
         segments = list(payload.get("segments") or [])
-        worst = segments[0] if segments else {}
+        small = list(payload.get("small_segments") or [])
+        worst = segments[0] if segments else (small[0] if small else {})
+        by_columns = payload.get("by_columns") or payload.get("by")
         findings.append(
             diagnostic_finding(
                 "segment-error-gaps",
                 "Prediction errors were sliced by segment",
                 (
-                    f"Errors on {partition} were grouped by '{payload.get('by')}'; "
-                    f"the highest-error reported segment was {worst.get('segment', 'not available')!r} "
-                    f"(n={worst.get('n', 0)})."
+                    f"Errors on {partition} were grouped by {by_columns!r}; "
+                    f"the highest-error primary segment was {worst.get('segment', 'not available')!r} "
+                    f"(n={worst.get('n', 0)}; primary={len(segments)}, small_n={len(small)})."
                 ),
                 severity=FindingSeverity.MEDIUM if segments else FindingSeverity.INFO,
                 evidence=(
                     metric_evidence(
                         "segment-error-table",
-                        "Per-segment error aggregates",
+                        "Primary per-segment error aggregates",
                         segments,
                         source=source,
                         limitations=(
                             "Only the most frequent segments are shown; small-n rates are unstable.",
                             "Segment gaps are observational, not fairness or causal proof.",
                         ),
+                    ),
+                    metric_evidence(
+                        "small-segment-table",
+                        "Segments below min_segment_n",
+                        small,
+                        source=source,
+                        limitations=("Rates with tiny support are unstable review hints only.",),
                     ),
                 ),
             )
@@ -279,11 +347,19 @@ def evidence_for_diagnostic(
                 "Confirm sample size and label quality in the worst segment before treating the gap as a modeling failure.",
                 finding_keys=("segment-error-gaps",),
                 operation="error_slices",
-                parameters={"by": payload.get("by"), "partition": partition},
+                parameters={
+                    "by": payload.get("by"),
+                    "partition": partition,
+                    "min_segment_n": payload.get("min_segment_n"),
+                },
                 caveats=("Do not tune on test solely to close a segment gap.",),
             )
         )
         limits.append("Segment analysis is not a fairness audit and does not adjust for confounders.")
+        if not segments and small:
+            limits.append(
+                "No segment met min_segment_n; only small_segments were available for review."
+            )
 
     methods = _methods(kind, payload)
     return findings, recommendations, limits, methods
@@ -394,15 +470,26 @@ def _methods(kind: str, payload: Mapping[str, Any]) -> list[str]:
     if kind == "calibration":
         return ["Quantile reliability bins; Brier score and bin-mean absolute calibration gap.", "Multiclass output uses one-vs-rest Brier scores."]
     if kind == "threshold_sweep":
-        return ["Thresholds from 0.05 to 0.95; precision, recall, F1, ROC-AUC, and average precision."]
+        methods = [
+            "Thresholds from 0.05 to 0.95; precision, recall, F1, confusion counts, ROC-AUC, and average precision."
+        ]
+        if payload.get("cost_model"):
+            methods.append(
+                "Expected cost = fp_cost*FP + fn_cost*FN - tp_benefit*TP - tn_benefit*TN on the scored partition."
+            )
+        return methods
     if kind == "learning_curve":
         return [f"scikit-learn learning_curve with {payload.get('cv_folds')} folds and scoring={payload.get('scoring')}."]
     if kind == "permutation_importance":
         return [f"Permutation importance with {payload.get('n_repeats')} repeats and scoring={payload.get('scoring')}."]
     if kind == "segment_errors":
+        by_columns = payload.get("by_columns") or payload.get("by")
         return [
-            f"Group predictions by column '{payload.get('by')}' on partition={payload.get('partition')}; "
-            "aggregate accuracy or MAE for the most frequent segments."
+            (
+                f"Group predictions by {by_columns!r} on partition={payload.get('partition')}; "
+                "aggregate classification or regression error metrics for the most frequent segments; "
+                f"exclude n < {payload.get('min_segment_n', 5)} from primary ranking."
+            )
         ]
     return ["Task-appropriate diagnostic calculation."]
 

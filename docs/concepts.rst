@@ -127,8 +127,11 @@ Calibration asks whether predicted probabilities match observed frequencies;
 it is separate from ranking quality. Fit calibrators on validation or
 cross-validation data and assess them elsewhere. Threshold selection is a
 decision-policy choice tied to false-positive and false-negative costs.
-``tune_threshold`` reports a sweep but does not change estimator prediction
+``tune_threshold`` reports a sweep (and optional expected-cost minimization
+via ``fp_cost`` / ``fn_cost``) but does not change estimator prediction
 behavior; choose on validation and confirm the fixed threshold on test.
+``error_slices`` localizes holdout errors by one or more segment columns and
+keeps small-n segments out of the primary ranking.
 
 Permutation importance measures score change when a feature is shuffled. It
 can split reliance among correlated features and is unstable on small

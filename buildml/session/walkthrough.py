@@ -36,6 +36,7 @@ class WorkflowWalkthroughReport:
     engine_status: dict[str, Any] = field(default_factory=dict)
     warm_start_status: dict[str, Any] = field(default_factory=dict)
     preprocess_scope_status: dict[str, Any] = field(default_factory=dict)
+    audit_summary: dict[str, Any] = field(default_factory=dict)
     html_path: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -50,6 +51,7 @@ class WorkflowWalkthroughReport:
             "engine_status": dict(self.engine_status),
             "warm_start_status": dict(self.warm_start_status),
             "preprocess_scope_status": dict(self.preprocess_scope_status),
+            "audit_summary": dict(self.audit_summary),
             "html_path": self.html_path,
         }
 
@@ -62,6 +64,8 @@ class WorkflowWalkthroughReport:
 
 def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
     """Resolve statuses and join them to the session's versioned history."""
+    from buildml.session.audit import summarize_history
+
     workflow = tuple(session.workflow())
     history = list(session.history)
     timeline = [_timeline_row(record) for record in history]
@@ -71,7 +75,8 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
     }
     unusual = _unusual_order(history)
     risks, concepts = _risks_and_concepts(workflow, history)
-    next_actions = [
+    audit = summarize_history(session)
+    next_actions = list(audit.suggested_next_ops) or [
         {
             "operation": step.operation,
             "status": step.status.value,
@@ -101,6 +106,15 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
             last_cv=getattr(session, "last_cv", None),
             last_nested_cv=getattr(session, "last_nested_cv", None),
         ),
+        audit_summary={
+            "n_operations": audit.n_operations,
+            "warning_count": audit.warning_count,
+            "ranked_risks": [item.to_dict() for item in audit.ranked_risks],
+            "prerequisite_graph": audit.prerequisite_graph.to_dict(),
+            "suggested_next_ops": list(audit.suggested_next_ops),
+            "has_split": audit.has_split,
+            "has_fit": audit.has_fit,
+        },
     )
 
 
@@ -385,6 +399,7 @@ def export_walkthrough_html(report: dict[str, Any], path: str | Path) -> Path:
         _timeline(report),
         _workflow(report),
         _choices(report),
+        _audit(report),
         _risks(report),
         _concepts(report),
         _next_actions(report),
@@ -676,6 +691,57 @@ def _choices(report: dict[str, Any]) -> ReportSection:
     )
     body += render_table(unusual, caption="Unusual operation order")
     return ReportSection("choices", "Choices and unusual order", body)
+
+
+def _audit(report: dict[str, Any]) -> ReportSection:
+    audit = report.get("audit_summary") or {}
+    ranked = list(audit.get("ranked_risks") or [])
+    suggestions = list(audit.get("suggested_next_ops") or [])
+    graph = dict(audit.get("prerequisite_graph") or {})
+    body = _frame(
+        "History counts, ranked unresolved risks, prerequisite gaps, and suggested next operations.",
+        (
+            f"{audit.get('n_operations', 0)} recorded operation(s); "
+            f"{audit.get('warning_count', 0)} warning(s); "
+            f"{len(ranked)} ranked risk(s); "
+            f"{len(suggestions)} suggested next op(s)."
+        ),
+        "The audit summary ranks review cues and links them to concrete Session follow-ups.",
+        "Ranked risks are heuristic; they are not proof of leakage, fairness failure, or invalid scores.",
+        "Explain a suggested operation before executing it.",
+    )
+    body += render_table(
+        [
+            {
+                "rank": item.get("rank"),
+                "severity": item.get("severity"),
+                "message": item.get("message"),
+                "suggested_operation": item.get("suggested_operation"),
+                "source": item.get("source"),
+            }
+            for item in ranked
+        ],
+        caption="Ranked unresolved risks",
+    )
+    body += render_table(
+        [
+            {
+                "operation": item.get("operation"),
+                "status": item.get("status"),
+                "reason": item.get("reason"),
+                "api_action": item.get("api_action"),
+            }
+            for item in suggestions
+        ],
+        caption="Suggested next operations",
+    )
+    missing = list(graph.get("missing_required") or [])
+    if missing:
+        body += render_table(
+            [{"missing_required": item} for item in missing],
+            caption="Missing required prerequisites for suggested operations",
+        )
+    return ReportSection("audit", "Audit summary", body)
 
 
 def _risks(report: dict[str, Any]) -> ReportSection:

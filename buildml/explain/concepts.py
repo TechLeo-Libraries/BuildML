@@ -885,8 +885,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Imbalance makes useful t often far from 0.5 even when calibrated.",
             ),
             how_buildml_uses=(
-                "Diagnostics expose confusion matrices and curves that support threshold review.",
-                "Concept Academy links thresholds to calibration and imbalance teaching.",
+                "Session.tune_threshold sweeps cutoffs and can minimize expected cost via fp_cost/fn_cost.",
+                "Diagnostics expose confusion matrices, operating points, and optional HTML boards.",
                 "Session workflows expect threshold choices after a scorer is fixed on validation.",
                 "Explain notes warn against mining test for the prettiest confusion matrix.",
             ),

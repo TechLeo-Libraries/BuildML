@@ -54,10 +54,14 @@ def export_diagnostics_html(
     findings = report.get("findings") or []
     recommendations = report.get("recommendation_details") or []
     skipped = report.get("skipped") or []
-    task = report.get("task") or (
-        "classification"
-        if report.get("kind") in {"calibration", "threshold_sweep"}
-        else "model"
+    task = (
+        report.get("task")
+        or payload.get("task")
+        or (
+            "classification"
+            if report.get("kind") in {"calibration", "threshold_sweep"}
+            else "model"
+        )
     )
     sections = [
         _summary_section(report, findings, skipped),
@@ -125,15 +129,32 @@ def _metrics_section(metrics: Mapping[str, Any], payload: Mapping[str, Any]) -> 
         next_step="Compare values with the stated method and limitation before making a model choice.",
     )
     body += render_table(rows, caption="Exact metrics")
-    for key in ("calibration_curve", "rows", "per_class_brier"):
+    for key in (
+        "calibration_curve",
+        "rows",
+        "per_class_brier",
+        "segments",
+        "small_segments",
+        "operating_points",
+    ):
         value = payload.get(key)
         if isinstance(value, list):
             body += render_table(value[:100], caption=f"{key.replace('_', ' ').title()}")
         elif isinstance(value, Mapping):
-            body += (
-                f"<details><summary>{escape(key.replace('_', ' ').title())}</summary>"
-                f"{_json(value)}</details>"
-            )
+            if key == "operating_points":
+                point_rows = [
+                    {"name": name, **(dict(point) if isinstance(point, Mapping) else {"value": point})}
+                    for name, point in value.items()
+                ]
+                body += render_table(point_rows, caption="Operating points")
+            else:
+                body += (
+                    f"<details><summary>{escape(key.replace('_', ' ').title())}</summary>"
+                    f"{_json(value)}</details>"
+                )
+    recommended = payload.get("recommended_threshold")
+    if isinstance(recommended, Mapping):
+        body += render_table([dict(recommended)], caption="Recommended threshold")
     if "train_sizes" in payload:
         curve_rows = [
             {

@@ -3,22 +3,22 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 from buildml import Session
-from buildml.core.errors import MissingExtraError
+from buildml.core.errors import MissingExtraError, ValidationError
 
 
 def test_calibration_threshold_importance_learning_curve() -> None:
     frame = pd.DataFrame(
         {
-            "x1": list(range(40)),
-            "x2": [i * 0.5 for i in range(40)],
-            "y": [0] * 20 + [1] * 20,
+            "x1": list(range(60)),
+            "x2": [i * 0.5 for i in range(60)],
+            "y": [0] * 30 + [1] * 30,
         }
     )
     est = LogisticRegression(max_iter=500)
     session = (
         Session.ingest(frame)
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
-        .split(test_size=0.25, stratify=True, random_state=0)
+        .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
         .scale(method="standard")
         .fit(est, task="classification")
     )
@@ -29,7 +29,17 @@ def test_calibration_threshold_importance_learning_curve() -> None:
     thr = session.tune_threshold()
     assert thr.payload["best_f1_threshold"]["threshold"] > 0
     assert "roc_auc" in thr.payload
+    assert thr.payload["recommendation_basis"] == "best_f1"
+    assert "operating_points" in thr.payload
     assert thr.interpretation
+    cost = session.tune_threshold(partition="validation", fp_cost=1.0, fn_cost=5.0)
+    assert cost.payload["recommendation_basis"] == "min_expected_cost"
+    assert cost.payload["cost_model"]["fn_cost"] == 5.0
+    assert cost.payload["expected_cost_at_recommended"] is not None
+    assert cost.payload["recommended_threshold"]["threshold"] > 0
+    assert any("expected cost" in tip.lower() or "fp_cost" in tip for tip in cost.recommendations)
+    with pytest.raises(ValidationError, match="both fp_cost and fn_cost"):
+        session.tune_threshold(fp_cost=1.0)
     imp = session.feature_importance(n_repeats=3)
     assert imp.payload["rows"]
     assert imp.interpretation

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -242,13 +243,21 @@ def threshold_report(
     fit_result: FitResult,
     *,
     partition: Literal["train", "validation", "test"] = "test",
+    fp_cost: float | None = None,
+    fn_cost: float | None = None,
+    tp_benefit: float = 0.0,
+    tn_benefit: float = 0.0,
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
     """Sweep decision thresholds for binary classifiers.
 
-    Returns full precision/recall/F1 rows, ROC/PR curve samples, best-F1 and
-    high-recall/high-precision operating points, plus interpretation tips.
+    Returns precision/recall/F1 rows, ROC/PR samples, named operating points,
+    and optional expected-cost minimization when ``fp_cost``/``fn_cost`` are set.
+
+    Cost model (per predicted row):
+    ``fp_cost * FP + fn_cost * FN - tp_benefit * TP - tn_benefit * TN``,
+    reported as total and mean expected cost on the scored partition.
     """
     if fit_result.task != "classification" or not hasattr(fit_result.estimator, "predict_proba"):
         raise ValidationError(
@@ -257,6 +266,25 @@ def threshold_report(
         )
     if split_plan is None:
         raise ValidationError("Split required")
+    cost_mode = fp_cost is not None or fn_cost is not None
+    if cost_mode and (fp_cost is None or fn_cost is None):
+        raise ValidationError(
+            "Cost-sensitive threshold tuning requires both fp_cost and fn_cost "
+            "(optional tp_benefit / tn_benefit default to 0)."
+        )
+    if cost_mode:
+        for name, value in (
+            ("fp_cost", fp_cost),
+            ("fn_cost", fn_cost),
+            ("tp_benefit", tp_benefit),
+            ("tn_benefit", tn_benefit),
+        ):
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise ValidationError(f"{name} must be a finite number")
+            if not np.isfinite(float(value)):
+                raise ValidationError(f"{name} must be a finite number")
+            if name in {"fp_cost", "fn_cost"} and float(value) < 0:
+                raise ValidationError(f"{name} must be >= 0")
 
     x, y, _, _ = _feature_target_frames(dataset, split_plan, partition)
     x = x[list(fit_result.feature_columns)]
@@ -274,67 +302,159 @@ def threshold_report(
     fpr, tpr, roc_thr = roc_curve(y_true, prob)
     roc_auc = float(roc_auc_score(y_true, prob))
     ap = float(average_precision_score(y_true, prob))
+    n_rows = int(len(y_true))
 
-    rows = []
+    rows: list[dict[str, Any]] = []
     for t in np.linspace(0.05, 0.95, 19):
         pred = (prob >= t).astype(int)
-        rows.append(
-            {
-                "threshold": float(t),
-                "precision": float(precision_score(y_true, pred, zero_division=0)),
-                "recall": float(recall_score(y_true, pred, zero_division=0)),
-                "f1": float(f1_score(y_true, pred, zero_division=0)),
-                "predicted_positive_rate": float(pred.mean()),
-            }
-        )
+        tp = int(((pred == 1) & (y_true == 1)).sum())
+        fp = int(((pred == 1) & (y_true == 0)).sum())
+        tn = int(((pred == 0) & (y_true == 0)).sum())
+        fn = int(((pred == 0) & (y_true == 1)).sum())
+        row: dict[str, Any] = {
+            "threshold": float(t),
+            "precision": float(precision_score(y_true, pred, zero_division=0)),
+            "recall": float(recall_score(y_true, pred, zero_division=0)),
+            "f1": float(f1_score(y_true, pred, zero_division=0)),
+            "predicted_positive_rate": float(pred.mean()),
+            "tp": tp,
+            "fp": fp,
+            "tn": tn,
+            "fn": fn,
+        }
+        if cost_mode:
+            assert fp_cost is not None and fn_cost is not None
+            total_cost = (
+                float(fp_cost) * fp
+                + float(fn_cost) * fn
+                - float(tp_benefit) * tp
+                - float(tn_benefit) * tn
+            )
+            row["expected_cost_total"] = float(total_cost)
+            row["expected_cost_mean"] = float(total_cost / n_rows) if n_rows else float("nan")
+        rows.append(row)
+
     best_f1 = max(rows, key=lambda item: item["f1"])
-    # High-recall point: max recall with precision >= 0.5 if possible
     high_recall = max(rows, key=lambda item: (item["recall"], item["precision"]))
     constrained = [r for r in rows if r["precision"] >= 0.5]
     high_recall_prec = (
         max(constrained, key=lambda item: item["recall"]) if constrained else high_recall
     )
     high_precision = max(rows, key=lambda item: (item["precision"], item["recall"]))
+    min_cost_point: dict[str, Any] | None = None
+    if cost_mode:
+        min_cost_point = min(
+            rows,
+            key=lambda item: (
+                item["expected_cost_total"],
+                -item["f1"],
+                item["threshold"],
+            ),
+        )
+
+    recommended = min_cost_point if min_cost_point is not None else best_f1
+    recommendation_basis = "min_expected_cost" if min_cost_point is not None else "best_f1"
+    operating_points = {
+        "best_f1": best_f1,
+        "high_recall": high_recall,
+        "high_precision": high_precision,
+        "precision_constrained_high_recall": high_recall_prec,
+    }
+    if min_cost_point is not None:
+        operating_points["min_expected_cost"] = min_cost_point
+
+    cost_model = None
+    if cost_mode:
+        assert fp_cost is not None and fn_cost is not None
+        cost_model = {
+            "fp_cost": float(fp_cost),
+            "fn_cost": float(fn_cost),
+            "tp_benefit": float(tp_benefit),
+            "tn_benefit": float(tn_benefit),
+            "formula": (
+                "fp_cost*FP + fn_cost*FN - tp_benefit*TP - tn_benefit*TN "
+                "(totals over the scored partition)"
+            ),
+        }
 
     interpretation = [
-        f"ROC-AUC={roc_auc:.3f}; PR-AUC (AP)={ap:.3f}; prevalence={float(y_true.mean()):.3f}.",
+        f"ROC-AUC={roc_auc:.3f}; PR-AUC (AP)={ap:.3f}; prevalence={float(y_true.mean()):.3f}; "
+        f"partition={partition}; n={n_rows}.",
+        (
+            f"Recommended threshold={recommended['threshold']:.2f} "
+            f"(basis={recommendation_basis}): "
+            f"P={recommended['precision']:.3f}, R={recommended['recall']:.3f}, "
+            f"F1={recommended['f1']:.3f}."
+        ),
         (
             f"Best F1 @ threshold={best_f1['threshold']:.2f}: "
             f"P={best_f1['precision']:.3f}, R={best_f1['recall']:.3f}, "
             f"F1={best_f1['f1']:.3f}."
         ),
-        (
+    ]
+    if min_cost_point is not None:
+        interpretation.append(
+            f"Minimum expected cost @ threshold={min_cost_point['threshold']:.2f}: "
+            f"total={min_cost_point['expected_cost_total']:.4f}, "
+            f"mean={min_cost_point['expected_cost_mean']:.6f}."
+        )
+    else:
+        interpretation.append(
             f"Precision≥0.5 operating point: threshold={high_recall_prec['threshold']:.2f} "
             f"(P={high_recall_prec['precision']:.3f}, R={high_recall_prec['recall']:.3f})."
-        ),
-    ]
+        )
+
     recommendations = [
-        "Choose threshold from business cost/benefit, not F1 alone.",
         (
-            f"If false negatives are costly, consider threshold≈"
+            "Select the decision threshold on validation (or an explicit policy set), "
+            "then confirm the fixed cutoff once on untouched test."
+        ),
+        (
+            f"If false negatives dominate cost, consider threshold≈"
             f"{high_recall['threshold']:.2f} (recall={high_recall['recall']:.3f})."
         ),
         (
-            f"If false positives are costly, consider threshold≈"
+            f"If false positives dominate cost, consider threshold≈"
             f"{high_precision['threshold']:.2f} "
             f"(precision={high_precision['precision']:.3f})."
         ),
     ]
+    if cost_mode:
+        recommendations.insert(
+            0,
+            (
+                "Expected-cost minimization used the supplied FP/FN costs "
+                f"(and benefits) on partition={partition}; re-run when prevalence or costs change."
+            ),
+        )
+    else:
+        recommendations.insert(
+            0,
+            "Pass fp_cost and fn_cost for explicit expected-cost minimization instead of F1 alone.",
+        )
 
     report = DiagnosticReport(
         kind="threshold_sweep",
         payload={
             "partition": partition,
             "positive_class": positive,
-            "n_rows": int(len(y_true)),
+            "n_rows": n_rows,
             "prevalence": float(y_true.mean()),
             "roc_auc": roc_auc,
             "average_precision": ap,
             "rows": rows,
+            "operating_points": operating_points,
+            "recommended_threshold": recommended,
+            "recommendation_basis": recommendation_basis,
+            "expected_cost_at_recommended": (
+                recommended.get("expected_cost_total") if cost_mode else None
+            ),
+            "cost_model": cost_model,
             "best_f1_threshold": best_f1,
             "high_recall_threshold": high_recall,
             "high_precision_threshold": high_precision,
             "precision_constrained_high_recall": high_recall_prec,
+            "min_expected_cost_threshold": min_cost_point,
             "pr_curve": {
                 "precision": _downsample(precision),
                 "recall": _downsample(recall),
@@ -585,22 +705,26 @@ def segment_error_report(
     split_plan: SplitPlan | None,
     fit_result: FitResult,
     *,
-    by: str,
+    by: str | Sequence[str],
     partition: Literal["train", "validation", "test"] = "test",
     max_segments: int = 20,
+    min_segment_n: int = 5,
+    export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Slice prediction errors by a column's values on one partition.
+    """Slice prediction errors by one or more columns on a partition.
 
-    For classification, reports accuracy and error rate per segment. For
-    regression, reports MAE and mean residual per segment. Segments are the
-    most frequent values on the scored partition (capped by ``max_segments``).
+    Classification reports accuracy, error rate, precision/recall/F1 (binary),
+    and predicted-positive rate. Regression reports MAE, RMSE, median absolute
+    error, and residual summary. Segments below ``min_segment_n`` are retained
+    separately so small-n rates are not ranked as primary findings.
     """
     if split_plan is None:
         raise ValidationError("Split required for segment error analysis")
-    if by not in dataset.columns:
-        raise ValidationError(f"Segment column '{by}' is not in the dataset")
+    by_columns = _normalize_segment_columns(by, dataset.columns)
     if max_segments < 1:
         raise ValidationError("max_segments must be >= 1")
+    if min_segment_n < 1:
+        raise ValidationError("min_segment_n must be >= 1")
 
     frame = dataset._ensure_pandas()
     if partition == "train":
@@ -615,86 +739,215 @@ def segment_error_report(
     x = part[list(fit_result.feature_columns)]
     y = part[fit_result.target_column]
     preds = fit_result.estimator.predict(x)
-    segment_values = part[by]
+    segment_labels = _segment_label_series(part, by_columns)
 
-    # Prefer the most common segments for a stable, bounded table.
-    top = (
-        segment_values.astype("string")
-        .fillna("<NA>")
-        .value_counts()
-        .head(max_segments)
-        .index.tolist()
-    )
-    rows: list[dict[str, Any]] = []
+    counts = segment_labels.value_counts(dropna=False)
+    if counts.empty:
+        raise ValidationError(
+            f"No segment values available for columns {by_columns!r} on partition '{partition}'"
+        )
+    top = counts.head(max_segments).index.tolist()
+    binary_positive: str | None = None
+    if fit_result.task == "classification" and hasattr(fit_result.estimator, "classes_"):
+        classes = [str(c) for c in fit_result.estimator.classes_]
+        if len(classes) == 2:
+            binary_positive = classes[1]
+
+    primary: list[dict[str, Any]] = []
+    small: list[dict[str, Any]] = []
     if fit_result.task == "classification":
         y_true = y.astype(str).to_numpy()
         y_pred = pd.Series(preds).astype(str).to_numpy()
         for value in top:
-            mask = segment_values.astype("string").fillna("<NA>").to_numpy() == value
+            mask = segment_labels.to_numpy() == value
             n = int(mask.sum())
             if n == 0:
                 continue
-            correct = int((y_true[mask] == y_pred[mask]).sum())
-            rows.append(
-                {
-                    "segment": value,
-                    "n": n,
-                    "accuracy": correct / n,
-                    "error_rate": 1.0 - (correct / n),
-                }
+            row = _classification_segment_metrics(
+                value=str(value),
+                y_true=y_true[mask],
+                y_pred=y_pred[mask],
+                positive=binary_positive,
             )
-        rows.sort(key=lambda item: item["error_rate"], reverse=True)
-        metric_note = "Segments ranked by classification error rate."
+            (primary if n >= min_segment_n else small).append(row)
+        primary.sort(key=lambda item: (item["error_rate"], item["n"]), reverse=True)
+        small.sort(key=lambda item: (item["error_rate"], item["n"]), reverse=True)
+        metric_note = (
+            "Primary segments ranked by classification error rate "
+            f"(n >= {min_segment_n})."
+        )
     else:
         y_true = pd.to_numeric(y, errors="coerce").to_numpy(dtype=float)
         y_pred = np.asarray(preds, dtype=float)
         for value in top:
-            mask = segment_values.astype("string").fillna("<NA>").to_numpy() == value
+            mask = segment_labels.to_numpy() == value
             n = int(mask.sum())
             if n == 0:
                 continue
-            resid = y_true[mask] - y_pred[mask]
-            rows.append(
-                {
-                    "segment": value,
-                    "n": n,
-                    "mae": float(np.mean(np.abs(resid))),
-                    "mean_residual": float(np.mean(resid)),
-                }
+            row = _regression_segment_metrics(
+                value=str(value),
+                y_true=y_true[mask],
+                y_pred=y_pred[mask],
             )
-        rows.sort(key=lambda item: item["mae"], reverse=True)
-        metric_note = "Segments ranked by mean absolute error."
+            (primary if n >= min_segment_n else small).append(row)
+        primary.sort(key=lambda item: item["mae"], reverse=True)
+        small.sort(key=lambda item: item["mae"], reverse=True)
+        metric_note = (
+            f"Primary segments ranked by mean absolute error (n >= {min_segment_n})."
+        )
 
+    n_unique = int(counts.shape[0])
+    n_omitted = max(0, n_unique - len(top))
     payload = {
         "partition": partition,
-        "by": by,
+        "by": by_columns[0] if len(by_columns) == 1 else list(by_columns),
+        "by_columns": list(by_columns),
         "task": fit_result.task,
         "n_rows": int(len(part)),
-        "n_segments_reported": len(rows),
+        "n_segments_reported": len(primary),
+        "n_small_segments": len(small),
+        "n_unique_segments": n_unique,
+        "n_omitted_segments": n_omitted,
         "max_segments": max_segments,
-        "segments": rows,
+        "min_segment_n": min_segment_n,
+        "segments": primary,
+        "small_segments": small,
+        "binary_positive_class": binary_positive,
     }
     interpretation = [
-        f"Sliced {fit_result.task} errors on '{partition}' by column '{by}'.",
+        (
+            f"Sliced {fit_result.task} errors on '{partition}' by "
+            f"{', '.join(repr(c) for c in by_columns)}."
+        ),
         metric_note,
-        f"Reported {len(rows)} segment(s) covering the most frequent values.",
+        (
+            f"Reported {len(primary)} primary segment(s) and {len(small)} small-n "
+            f"segment(s); {n_omitted} less-frequent segment(s) omitted by max_segments."
+        ),
     ]
+    if not primary and small:
+        interpretation.append(
+            "No segment met min_segment_n; inspect small_segments only as unstable hints."
+        )
+    elif not primary and not small:
+        interpretation.append("No segment rows were produced for the requested columns.")
+
     tips = [
         "Segment gaps are observational; they do not prove unfairness or causality.",
-        "Small-n segments have unstable rates — check n before acting.",
+        (
+            f"Treat segments with n < {min_segment_n} as unstable; they are listed under "
+            "small_segments and excluded from primary ranking."
+        ),
+        "Prefer validation while exploring slices; reserve test for a fixed final estimate.",
     ]
-    if rows:
-        worst = rows[0]
+    if primary:
+        worst = primary[0]
         tips.append(
-            f"Highest-error segment preview: {worst.get('segment')!r} "
+            f"Highest-error primary segment: {worst.get('segment')!r} "
             f"(n={worst.get('n')})."
         )
-    return DiagnosticReport(
+    elif small:
+        tips.append(
+            f"No primary segments; highest-error small-n preview: "
+            f"{small[0].get('segment')!r} (n={small[0].get('n')})."
+        )
+
+    report = DiagnosticReport(
         kind="segment_errors",
         payload=payload,
         recommendations=tips,
         interpretation=interpretation,
     )
+    if export_html is not None:
+        report.export_html(export_html)
+    return report
+
+
+def _normalize_segment_columns(by: str | Sequence[str], columns: Sequence[str]) -> list[str]:
+    if isinstance(by, str):
+        names = [by]
+    else:
+        names = [str(item) for item in by]
+    if not names:
+        raise ValidationError("by must name at least one segment column")
+    missing = [name for name in names if name not in columns]
+    if missing:
+        raise ValidationError(
+            f"Segment column(s) not in the dataset: {', '.join(repr(m) for m in missing)}"
+        )
+    # Preserve order, drop duplicates.
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for name in names:
+        if name not in seen:
+            ordered.append(name)
+            seen.add(name)
+    return ordered
+
+
+def _segment_label_series(frame: pd.DataFrame, columns: Sequence[str]) -> pd.Series:
+    parts: list[pd.Series] = []
+    for column in columns:
+        series = frame[column].astype("string").fillna("<NA>")
+        parts.append(series.map(lambda value, col=column: f"{col}={value}"))
+    if len(parts) == 1:
+        return parts[0]
+    joined = parts[0]
+    for part in parts[1:]:
+        joined = joined + " | " + part
+    return joined
+
+
+def _classification_segment_metrics(
+    *,
+    value: str,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    positive: str | None,
+) -> dict[str, Any]:
+    n = int(len(y_true))
+    correct = int((y_true == y_pred).sum())
+    row: dict[str, Any] = {
+        "segment": value,
+        "n": n,
+        "accuracy": correct / n if n else float("nan"),
+        "error_rate": 1.0 - (correct / n) if n else float("nan"),
+        "n_correct": correct,
+        "n_incorrect": n - correct,
+    }
+    if positive is not None:
+        y_bin = (y_true == positive).astype(int)
+        p_bin = (y_pred == positive).astype(int)
+        row.update(
+            {
+                "precision": float(precision_score(y_bin, p_bin, zero_division=0)),
+                "recall": float(recall_score(y_bin, p_bin, zero_division=0)),
+                "f1": float(f1_score(y_bin, p_bin, zero_division=0)),
+                "support_positive": int(y_bin.sum()),
+                "predicted_positive_rate": float(p_bin.mean()) if n else float("nan"),
+            }
+        )
+    return row
+
+
+def _regression_segment_metrics(
+    *,
+    value: str,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+) -> dict[str, Any]:
+    n = int(len(y_true))
+    resid = y_true - y_pred
+    abs_resid = np.abs(resid)
+    return {
+        "segment": value,
+        "n": n,
+        "mae": float(np.mean(abs_resid)) if n else float("nan"),
+        "rmse": float(np.sqrt(np.mean(resid**2))) if n else float("nan"),
+        "median_ae": float(np.median(abs_resid)) if n else float("nan"),
+        "mean_residual": float(np.mean(resid)) if n else float("nan"),
+        "max_abs_error": float(np.max(abs_resid)) if n else float("nan"),
+    }
 
 
 def _maybe_export_diagnostic_board(

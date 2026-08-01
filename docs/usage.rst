@@ -67,9 +67,11 @@ transition. An explanation reports what BuildML knows; it cannot prove that
 the chosen partition represents deployment.
 
 Use ``session.dry_run(...)`` to preview intended operations without mutating
-state, and ``session.summarize_history()`` for operation counts and unresolved
-risk cues. Train-fitted text features, PCA, and registered custom transforms
-are available as ``text_features``, ``reduce_dimensions``, and
+state, and ``session.summarize_history()`` for operation counts, ranked
+unresolved risks, prerequisite-graph gaps, and suggested next operations.
+``session.walkthrough()`` repeats the same audit summary in its offline HTML.
+Train-fitted text features, PCA, and registered custom transforms are
+available as ``text_features``, ``reduce_dimensions``, and
 ``apply_custom_transform``. For CV selection, prefer fold-local
 ``PreprocessRecipe(text=..., reduce='pca')``; custom transforms remain
 Session-global. ``Dataset.project`` / ``Dataset.aggregate`` prefer native

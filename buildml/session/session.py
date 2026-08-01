@@ -2353,10 +2353,26 @@ class Session:
         self,
         *,
         partition: Literal["train", "validation", "test"] = "test",
+        fp_cost: float | None = None,
+        fn_cost: float | None = None,
+        tp_benefit: float = 0.0,
+        tn_benefit: float = 0.0,
         export_figures: str | Path | None = None,
         export_html: str | Path | None = None,
     ) -> DiagnosticReport:
-        """Sweep binary decision thresholds with precision/recall/F1 tradeoffs."""
+        """Sweep binary decision thresholds with precision/recall/F1 and optional costs.
+
+        Parameters
+        ----------
+        partition:
+            Rows used for the sweep. Prefer ``validation`` when selecting a
+            policy; use ``test`` only to confirm a fixed threshold.
+        fp_cost, fn_cost:
+            Non-negative false-positive / false-negative costs. Provide both to
+            minimize expected cost on the scored partition.
+        tp_benefit, tn_benefit:
+            Optional benefits subtracted from cost for true positives / negatives.
+        """
         if self._fit_result is None:
             raise ValidationError("No fitted estimator. Call fit(...) first.")
         report = threshold_report(
@@ -2364,6 +2380,10 @@ class Session:
             self._split_plan,
             self._fit_result,
             partition=partition,
+            fp_cost=fp_cost,
+            fn_cost=fn_cost,
+            tp_benefit=tp_benefit,
+            tn_benefit=tn_benefit,
             export_figures=export_figures,
             export_html=export_html,
         )
@@ -2372,6 +2392,10 @@ class Session:
             "tune_threshold",
             {
                 "partition": partition,
+                "fp_cost": fp_cost,
+                "fn_cost": fn_cost,
+                "tp_benefit": tp_benefit,
+                "tn_benefit": tn_benefit,
                 "export_figures": export_figures,
                 "export_html": export_html,
             },
@@ -2448,16 +2472,19 @@ class Session:
     def error_slices(
         self,
         *,
-        by: str,
+        by: str | Sequence[str],
         partition: Literal["train", "validation", "test"] = "test",
         max_segments: int = 20,
+        min_segment_n: int = 5,
+        export_html: str | Path | None = None,
     ) -> DiagnosticReport:
-        """Slice prediction errors by a column's values on one partition.
+        """Slice prediction errors by one or more columns on a partition.
 
         Notes
         -----
         Observational only: segment gaps are not fairness proof. Prefer
         validation for exploration and keep test for a final estimate.
+        Segments with ``n < min_segment_n`` are listed under ``small_segments``.
         """
         if self._fit_result is None:
             raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -2468,11 +2495,19 @@ class Session:
             by=by,
             partition=partition,
             max_segments=max_segments,
+            min_segment_n=min_segment_n,
+            export_html=export_html,
         )
         self._last_diagnostic = report
         self._record(
             "error_slices",
-            {"by": by, "partition": partition, "max_segments": max_segments},
+            {
+                "by": by if isinstance(by, str) else list(by),
+                "partition": partition,
+                "max_segments": max_segments,
+                "min_segment_n": min_segment_n,
+                "export_html": export_html,
+            },
             result_summary=report.to_dict(),
         )
         return report
