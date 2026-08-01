@@ -143,13 +143,33 @@ def execute_tool(
         )
 
     except Exception as e:
-        error_msg = str(e)
+        error_msg = _redact_exception_message(str(e))
         return ExecutorResult(
             tool_call=call,
             confirmed=confirmed,
             executed=False,
             error=f"Execution failed: {error_msg}",
         )
+
+
+def _redact_exception_message(msg: str, max_length: int = 200) -> str:
+    """Redact and truncate exception messages before surfacing/storing."""
+    import re
+
+    key_patterns = (
+        re.compile(r"sk-[a-zA-Z0-9_-]{10,}"),
+        re.compile(r"api[_-]?key[\"']?\s*[:=]\s*[\"'][^\"']+[\"']", re.IGNORECASE),
+        re.compile(r"bearer\s+[a-zA-Z0-9._-]+", re.IGNORECASE),
+    )
+
+    result = msg
+    for pattern in key_patterns:
+        result = pattern.sub("***REDACTED***", result)
+
+    if len(result) > max_length:
+        result = result[:max_length] + "... [truncated]"
+
+    return result
 
 
 def _dispatch_tool(

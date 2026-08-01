@@ -13,10 +13,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from buildml.ai.advisor import AdvisorResult
     from buildml.ai.executor import ExecutorProposal, ExecutorResult
+    from buildml.ai.planner import BudgetExceeded, BudgetTracker, PlanExecutionResult, PlanStepExecution
     from buildml.ai.privacy import EgressConfig, EgressLevel, EgressManifest
     from buildml.ai.provider import MockProvider, OpenAIProvider, ProviderConfig, ProviderProtocol
     from buildml.ai.results import PlanResult, TranscriptEntry
-    from buildml.ai.tools import ConfirmPolicy, ToolRegistry, ToolSpec
+    from buildml.ai.tools import ConfirmPolicy, ToolRegistry, ToolSpec, build_default_registry
     from buildml.ai.transcript import TranscriptStore
 
 
@@ -85,11 +86,33 @@ def __getattr__(name: str) -> object:
         from buildml.ai.transcript import TranscriptStore
 
         return TranscriptStore
+    if name == "BudgetTracker":
+        from buildml.ai.planner import BudgetTracker
+
+        return BudgetTracker
+    if name == "BudgetExceeded":
+        from buildml.ai.planner import BudgetExceeded
+
+        return BudgetExceeded
+    if name == "PlanExecutionResult":
+        from buildml.ai.planner import PlanExecutionResult
+
+        return PlanExecutionResult
+    if name == "PlanStepExecution":
+        from buildml.ai.planner import PlanStepExecution
+
+        return PlanStepExecution
+    if name == "build_default_registry":
+        from buildml.ai.tools import build_default_registry
+
+        return build_default_registry
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [
     "AdvisorResult",
+    "BudgetExceeded",
+    "BudgetTracker",
     "ConfirmPolicy",
     "EgressConfig",
     "EgressLevel",
@@ -98,11 +121,14 @@ __all__ = [
     "ExecutorResult",
     "MockProvider",
     "OpenAIProvider",
+    "PlanExecutionResult",
     "PlanResult",
+    "PlanStepExecution",
     "ProviderConfig",
     "ProviderProtocol",
     "ToolRegistry",
     "ToolSpec",
     "TranscriptEntry",
     "TranscriptStore",
+    "build_default_registry",
 ]

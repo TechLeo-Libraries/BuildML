@@ -164,6 +164,270 @@ def _build_m1_tools() -> tuple[ToolSpec, ...]:
     )
 
 
+def _build_m2_tools() -> tuple[ToolSpec, ...]:
+    """Build M2 expanded tool allowlist for E2E classical pipeline."""
+    return _build_m1_tools() + (
+        ToolSpec(
+            name="split",
+            description=(
+                "Create train/validation/test splits from the dataset. "
+                "Requires roles to be set with at least a target column. "
+                "This is a write operation that modifies Session state."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "test_size": {
+                        "type": "number",
+                        "description": "Fraction of data for test set (default 0.2).",
+                    },
+                    "validation_size": {
+                        "type": "number",
+                        "description": "Fraction of data for validation set (default 0.0).",
+                    },
+                    "stratify": {
+                        "type": "boolean",
+                        "description": "Stratify by target column (default True for classification).",
+                    },
+                    "random_state": {
+                        "type": "integer",
+                        "description": "Random seed for reproducibility.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="split",
+            read_only=False,
+            catalog_operation="split",
+        ),
+        ToolSpec(
+            name="impute",
+            description=(
+                "Impute missing values in numeric and categorical columns. "
+                "Fits on train, applies to all partitions."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "numeric_strategy": {
+                        "type": "string",
+                        "description": "Strategy for numeric columns: mean, median, constant.",
+                    },
+                    "categorical_strategy": {
+                        "type": "string",
+                        "description": "Strategy for categorical: most_frequent, constant.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="impute",
+            read_only=False,
+            catalog_operation="impute",
+        ),
+        ToolSpec(
+            name="encode",
+            description=(
+                "Encode categorical columns using one-hot or ordinal encoding. "
+                "Fits encoder on train, applies to all partitions."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "type": "string",
+                        "description": "Encoding method: onehot, ordinal, target.",
+                    },
+                    "columns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Columns to encode (default: categorical features).",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="encode",
+            read_only=False,
+            catalog_operation="encode",
+        ),
+        ToolSpec(
+            name="scale",
+            description=(
+                "Scale numeric features using standardization or normalization. "
+                "Fits scaler on train, applies to all partitions."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "type": "string",
+                        "description": "Scaling method: standard, minmax, robust.",
+                    },
+                    "columns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Columns to scale (default: numeric features).",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="scale",
+            read_only=False,
+            catalog_operation="scale",
+        ),
+        ToolSpec(
+            name="fit",
+            description=(
+                "Fit an ML model on the training data. Requires split to exist. "
+                "This is a write operation that creates fit_result on the Session."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "estimator": {
+                        "type": "string",
+                        "description": "Estimator name or sklearn class path.",
+                    },
+                    "hyperparameters": {
+                        "type": "object",
+                        "description": "Estimator hyperparameters.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="fit",
+            read_only=False,
+            catalog_operation="fit",
+        ),
+        ToolSpec(
+            name="evaluate",
+            description=(
+                "Evaluate the fitted model on a partition (train/validation/test). "
+                "Returns metrics appropriate for the task type."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "type": "string",
+                        "description": "Partition to evaluate: train, validation, test.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="evaluate",
+            read_only=True,
+            catalog_operation="evaluate",
+        ),
+        ToolSpec(
+            name="walkthrough",
+            description=(
+                "Get a teaching walkthrough of the current workflow state, "
+                "including what's done, what's next, and recommendations."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="walkthrough",
+            read_only=True,
+            catalog_operation="walkthrough",
+        ),
+        ToolSpec(
+            name="head",
+            description=(
+                "Preview the first N rows of the dataset. "
+                "Read-only inspection, does not modify state."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "n": {
+                        "type": "integer",
+                        "description": "Number of rows to preview (default 5).",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="head",
+            read_only=True,
+            catalog_operation="head",
+        ),
+        ToolSpec(
+            name="drop_columns",
+            description=(
+                "Drop specified columns from the dataset. "
+                "This is a DESTRUCTIVE operation that cannot be undone."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "columns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Column names to drop.",
+                    },
+                },
+                "required": ["columns"],
+            },
+            confirm_policy=ConfirmPolicy.ALWAYS_CONFIRM,
+            session_method="drop_columns",
+            read_only=False,
+            destructive=True,
+            catalog_operation="drop_columns",
+        ),
+        ToolSpec(
+            name="checkpoint_save",
+            description=(
+                "Save the current Session state to a checkpoint bundle. "
+                "Write operation but non-destructive (creates new files)."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Output directory path for checkpoint.",
+                    },
+                },
+                "required": ["path"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="checkpoint_save",
+            read_only=False,
+            catalog_operation="checkpoint_save",
+        ),
+        ToolSpec(
+            name="ai_status",
+            description=(
+                "Get the current AI operator status including provider config, "
+                "egress level, transcript entries, and confirmation mode."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            read_only=True,
+            catalog_operation="ai_status",
+        ),
+    )
+
+
+def build_default_registry() -> ToolRegistry:
+    """Build the default M2 tool registry."""
+    return ToolRegistry(tools=_build_m2_tools())
+
+
 class ToolRegistry:
     """Registry of allowed tools for the AI operator.
 

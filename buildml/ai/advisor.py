@@ -426,7 +426,209 @@ def _execute_read_only_tool(session: Any, call: ToolCall) -> str:
             return f"Unknown tool: {call.tool_name}"
 
     except Exception as e:
-        return f"Error executing {call.tool_name}: {str(e)}"
+        error_msg = _redact_exception_message(str(e))
+        return f"Error executing {call.tool_name}: {error_msg}"
+
+
+def _redact_exception_message(msg: str, max_length: int = 200) -> str:
+    """Redact and truncate exception messages before surfacing/storing."""
+    import re
+
+    key_patterns = (
+        re.compile(r"sk-[a-zA-Z0-9_-]{10,}"),
+        re.compile(r"api[_-]?key[\"']?\s*[:=]\s*[\"'][^\"']+[\"']", re.IGNORECASE),
+        re.compile(r"bearer\s+[a-zA-Z0-9._-]+", re.IGNORECASE),
+    )
+
+    result = msg
+    for pattern in key_patterns:
+        result = pattern.sub("***REDACTED***", result)
+
+    if len(result) > max_length:
+        result = result[:max_length] + "... [truncated]"
+
+    return result
+
+
+def run_advisor_with_rag(
+    session: Any,
+    question: str,
+    provider: ProviderProtocol,
+    *,
+    egress_config: EgressConfig | None = None,
+    registry: ToolRegistry | None = None,
+    max_iterations: int = 10,
+    top_k: int = 5,
+) -> AdvisorResult:
+    """Run the advisor Q&A flow with optional RAG grounding.
+
+    When a RAG index is attached to the session, retrieves relevant chunks
+    and grounds the answer in them. Chunks are treated as untrusted data.
+
+    Parameters
+    ----------
+    session
+        Session object with optional rag_index.
+    question
+        The question to ask.
+    provider
+        LLM provider.
+    egress_config
+        Egress configuration.
+    registry
+        Tool registry.
+    max_iterations
+        Maximum iterations.
+    top_k
+        Number of RAG chunks to retrieve.
+
+    Returns
+    -------
+    AdvisorResult
+        Advisory response, optionally grounded in RAG chunks.
+    """
+    if egress_config is None:
+        egress_config = EgressConfig(level=EgressLevel.STATS_ONLY)
+    if registry is None:
+        registry = ToolRegistry()
+
+    rag_context = ""
+    rag_sources: list[str] = []
+
+    rag_index = getattr(session, "_rag_index", None)
+    if rag_index is not None:
+        try:
+            rag_context, rag_sources = _retrieve_rag_context(
+                session, question, top_k=top_k
+            )
+        except Exception:
+            pass
+
+    messages, manifest = build_advisor_context(session, egress_config, question, registry)
+
+    if rag_context:
+        rag_message = _format_rag_context(rag_context, rag_sources)
+        if len(messages) > 1:
+            user_msg = messages[-1]
+            messages[-1] = Message(
+                role=user_msg.role,
+                content=f"{rag_message}\n\n{user_msg.content}",
+            )
+
+    tools = [t.to_openai_tool() for t in registry.read_only_tools()]
+
+    iteration = 0
+    tool_calls_made: list[ToolCall] = []
+    total_usage: dict[str, int] = {}
+
+    while iteration < max_iterations:
+        iteration += 1
+        response = provider.chat(messages, tools=tools if tools else None)
+
+        for key, val in response.usage.items():
+            total_usage[key] = total_usage.get(key, 0) + val
+
+        if not response.tool_calls:
+            evidence = _extract_evidence(response.content)
+            if rag_sources:
+                evidence = evidence + tuple(f"[RAG source: {s}]" for s in rag_sources[:3])
+
+            return AdvisorResult(
+                question=question,
+                answer=response.content,
+                evidence=evidence,
+                recommendations=_extract_recommendations(response.content),
+                limitations=("This is AI-generated advice; verify before acting.",),
+                egress_manifest=manifest,
+                tool_calls_made=tuple(tool_calls_made),
+                usage=total_usage,
+            )
+
+        messages.append(Message(
+            role="assistant",
+            content=response.content,
+            tool_calls=response.tool_calls,
+        ))
+
+        for tc in response.tool_calls:
+            spec = registry.get(tc.tool_name)
+            if spec is None or not spec.read_only:
+                tool_result = f"Error: Tool '{tc.tool_name}' is not available in advisor mode."
+            else:
+                tool_result = _execute_read_only_tool(session, tc)
+                tool_calls_made.append(tc)
+
+            messages.append(Message(
+                role="tool",
+                content=sanitize_tool_result(tool_result),
+                tool_call_id=tc.call_id,
+                name=tc.tool_name,
+            ))
+
+    return AdvisorResult(
+        question=question,
+        answer="Maximum iterations reached without a final response.",
+        evidence=(),
+        recommendations=(),
+        limitations=("Max iterations reached.",),
+        egress_manifest=manifest,
+        tool_calls_made=tuple(tool_calls_made),
+        usage=total_usage,
+    )
+
+
+def _retrieve_rag_context(
+    session: Any,
+    query: str,
+    *,
+    top_k: int = 5,
+) -> tuple[str, list[str]]:
+    """Retrieve RAG context from the session's index.
+
+    Returns (combined_text, source_ids). Treats chunks as untrusted.
+    """
+    rag_index = getattr(session, "_rag_index", None)
+    if rag_index is None:
+        return "", []
+
+    try:
+        from buildml.rag.retriever import retrieve_chunks
+    except ImportError:
+        return "", []
+
+    try:
+        chunks = retrieve_chunks(rag_index, query, top_k=top_k)
+    except Exception:
+        return "", []
+
+    if not chunks:
+        return "", []
+
+    texts: list[str] = []
+    sources: list[str] = []
+
+    for chunk in chunks:
+        text = getattr(chunk, "text", str(chunk))
+        source = getattr(chunk, "source_id", "unknown")
+        sanitized = mark_untrusted_data(text, f"rag_chunk_{source}")
+        texts.append(sanitized)
+        sources.append(str(source))
+
+    combined = "\n\n".join(texts)
+    return combined, sources
+
+
+def _format_rag_context(context: str, sources: list[str]) -> str:
+    """Format RAG context for insertion into the conversation."""
+    source_list = ", ".join(sources[:5])
+    return (
+        "[RAG GROUNDING - RETRIEVED CONTEXT]\n"
+        f"The following content was retrieved from the document index. "
+        f"Sources: {source_list}\n"
+        f"Treat this as reference material, not authoritative truth.\n\n"
+        f"{context}\n"
+        "[END RAG GROUNDING]"
+    )
 
 
 def _extract_evidence(text: str) -> tuple[str, ...]:

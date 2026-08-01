@@ -201,6 +201,9 @@ class Session:
         self._ai_advisor_result: Any | None = None
         self._ai_executor_result: Any | None = None
         self._ai_registry: Any | None = None
+        self._ai_max_iterations: int = 10
+        self._ai_budget_tracker: Any | None = None
+        self._ai_plan_result: Any | None = None
 
     def close_native(self) -> None:
         """Close an owned DuckDB connection on the session dataset, if any.
@@ -1865,6 +1868,8 @@ class Session:
         api_key_env: str = "BUILDML_OPENAI_API_KEY",
         egress_level: str = "stats_only",
         max_iterations: int = 10,
+        max_tokens: int | None = None,
+        max_cost_usd: float | None = None,
     ) -> Session:
         """Configure an AI provider for LLM-assisted workflow guidance.
 
@@ -1874,7 +1879,8 @@ class Session:
         Parameters
         ----------
         provider
-            Provider name (currently ``"openai"`` for OpenAI-compatible APIs).
+            Provider name (currently ``"openai"`` for OpenAI-compatible APIs,
+            or ``"mock"`` for CI testing without real keys).
         model
             Model identifier for the provider.
         api_key
@@ -1886,15 +1892,20 @@ class Session:
             ``"redacted_sample"``, or ``"full_sample"``.
         max_iterations
             Maximum tool iterations per AI call (default 10).
+        max_tokens
+            Optional token budget limit across all AI calls.
+        max_cost_usd
+            Optional cost budget limit (USD) across all AI calls.
 
         Returns
         -------
         Session
             Self for chaining.
         """
+        from buildml.ai.planner import BudgetTracker
         from buildml.ai.privacy import EgressConfig, EgressLevel
         from buildml.ai.provider import MockProvider, OpenAIProvider, ProviderConfig
-        from buildml.ai.tools import ToolRegistry
+        from buildml.ai.tools import build_default_registry
         from buildml.ai.transcript import TranscriptStore
 
         level_map = {
@@ -1919,7 +1930,12 @@ class Session:
 
         self._ai_egress_config = EgressConfig(level=egress)
         self._ai_transcript = TranscriptStore()
-        self._ai_registry = ToolRegistry()
+        self._ai_registry = build_default_registry()
+        self._ai_max_iterations = max_iterations
+        self._ai_budget_tracker = BudgetTracker(
+            max_tokens=max_tokens,
+            max_cost_usd=max_cost_usd,
+        )
 
         self._record(
             "ai_configure",
@@ -1928,6 +1944,8 @@ class Session:
                 "model": model,
                 "egress_level": egress_level,
                 "max_iterations": max_iterations,
+                "max_tokens": max_tokens,
+                "max_cost_usd": max_cost_usd,
             },
         )
         return self
@@ -2117,16 +2135,34 @@ class Session:
 
         registry = self._ai_registry or ToolRegistry()
 
-        result = run_advisor(
-            self,
-            question,
-            self._ai_provider,
-            egress_config=config,
-            registry=registry,
-        )
+        use_rag = getattr(self, "_rag_index", None) is not None
+        if use_rag:
+            from buildml.ai.advisor import run_advisor_with_rag
+
+            result = run_advisor_with_rag(
+                self,
+                question,
+                self._ai_provider,
+                egress_config=config,
+                registry=registry,
+                max_iterations=self._ai_max_iterations,
+            )
+        else:
+            result = run_advisor(
+                self,
+                question,
+                self._ai_provider,
+                egress_config=config,
+                registry=registry,
+                max_iterations=self._ai_max_iterations,
+            )
 
         self._ai_result = result
         self._ai_advisor_result = result
+
+        if self._ai_budget_tracker is not None and result.usage:
+            total_tokens = result.usage.get("total_tokens", 0)
+            self._ai_budget_tracker.record_usage(total_tokens, operation="ai_advisor")
 
         if self._ai_transcript is not None:
             from buildml.ai.types import Message
@@ -2220,6 +2256,7 @@ class Session:
         result = run_plan(self, goal, self._ai_provider, egress_config=config)
 
         self._ai_result = result
+        self._ai_plan_result = result
 
         if self._ai_transcript is not None:
             from buildml.ai.types import Message
@@ -2302,6 +2339,132 @@ class Session:
         )
 
         return result
+
+    def ai_run_plan(
+        self,
+        plan: Any | None = None,
+        *,
+        confirmations: dict[int, bool] | None = None,
+        auto_confirm_read_only: bool = True,
+        stop_on_error: bool = True,
+        stop_on_unconfirmed: bool = True,
+        max_steps: int | None = None,
+    ) -> Any:
+        """Execute a multi-step plan with confirmation gating.
+
+        Default behavior pauses at the first step requiring confirmation that
+        hasn't been confirmed. Read-only steps auto-confirm by default.
+
+        Parameters
+        ----------
+        plan
+            The PlanResult to execute. If None, uses the last ai_plan result.
+        confirmations
+            Dict mapping step_index -> True/False for confirmation decisions.
+            Steps not in the dict use default confirmation behavior.
+        auto_confirm_read_only
+            If True (default), auto-confirm read-only operations.
+        stop_on_error
+            If True (default), stop execution on first error.
+        stop_on_unconfirmed
+            If True (default), stop at steps requiring unconfirmed confirmation.
+        max_steps
+            Maximum number of steps to execute (None = no limit).
+
+        Returns
+        -------
+        PlanExecutionResult
+            Combined result of the plan execution with per-step details.
+
+        Raises
+        ------
+        ValidationError
+            If no plan is provided and no prior ai_plan result exists.
+        """
+        from buildml.ai.planner import run_plan as execute_plan
+        from buildml.ai.results import PlanResult
+        from buildml.ai.tools import build_default_registry
+
+        if plan is None:
+            plan = self._ai_plan_result
+        if plan is None:
+            plan = self._ai_result
+        if not isinstance(plan, PlanResult):
+            raise ValidationError(
+                "No plan provided and no prior ai_plan result available. "
+                "Call ai_plan(goal) first or pass a PlanResult."
+            )
+
+        registry = self._ai_registry or build_default_registry()
+
+        result = execute_plan(
+            self,
+            plan,
+            registry,
+            confirmations=confirmations,
+            auto_confirm_read_only=auto_confirm_read_only,
+            stop_on_error=stop_on_error,
+            stop_on_unconfirmed=stop_on_unconfirmed,
+            max_steps=max_steps,
+        )
+
+        self._ai_result = result
+        self._ai_plan_result = result
+
+        if self._ai_transcript is not None:
+            from buildml.ai.types import Message
+
+            self._ai_transcript.add_message(
+                Message(
+                    role="assistant",
+                    content=f"Executed plan: {result.completed_steps}/{result.total_steps} steps",
+                )
+            )
+
+        self._record(
+            "ai_run_plan",
+            {
+                "completed_steps": result.completed_steps,
+                "total_steps": result.total_steps,
+                "stopped_at_step": result.stopped_at_step,
+                "stop_reason": result.stop_reason,
+                "requires_confirmation_at": result.requires_confirmation_at,
+            },
+            result_summary={
+                "completed": result.completed_steps,
+                "total": result.total_steps,
+                "all_executed": result.all_executed,
+            },
+        )
+
+        return result
+
+    def ai_status(self) -> dict[str, Any]:
+        """Get AI operator status including provider, egress, and budget.
+
+        Returns factual walkthrough disclosure about the current AI configuration,
+        without claiming autonomous capability or production safety.
+
+        Returns
+        -------
+        dict
+            Status including provider, egress level, budget, and transcript info.
+        """
+        from buildml.ai.explain_hooks import ai_status_for_session
+
+        status = ai_status_for_session(self)
+
+        if self._ai_budget_tracker is not None:
+            status["budget"] = self._ai_budget_tracker.to_dict()
+
+        status["max_iterations"] = self._ai_max_iterations
+        status["registry_tools"] = (
+            sorted(t.name for t in self._ai_registry.tools)
+            if self._ai_registry
+            else []
+        )
+
+        return status
 
     def save_ai_transcript(self, path: str | Path, *, redact: bool = True) -> Path:
         """Save the AI transcript to a JSON file (secrets redacted by default).

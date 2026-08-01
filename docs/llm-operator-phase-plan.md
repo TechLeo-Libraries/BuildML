@@ -6,7 +6,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [rag-phase-plan.md](./rag-phase-plan.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** M0 LOCKED · M1 in progress.  
+**Status:** M0 LOCKED · M1 COMPLETE · M2 COMPLETE.  
 **M0 lock artifact:** [llm-m0-lock.md](./llm-m0-lock.md).  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → **LLM operator last**.  
 **North star:** flexibility · depth · functionality.  
