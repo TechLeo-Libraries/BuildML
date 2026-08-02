@@ -8,6 +8,21 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pass U process residuals:** Read the Docs install path now uses
+  `.readthedocs.yaml` `path: .` + `extra_requirements: [docs]` (no longer
+  relies on RTD installing via `docs/requirements.txt` alone). Guides add
+  GitHub-first install honesty; `guides/README.md` no longer implies hosted
+  RTD is already 2.x-complete.
+
+### Changed
+
+- **Post-`v2.4.0a1` HEAD:** `e142f0d` removed the private `maintainers/` tree and
+  refreshed public doc hygiene. Version remains **`2.4.0a1`** (no `a2` bump);
+  the existing tag is not moved. GitHub release `v2.4.0a1` should be marked
+  **prerelease**. Still not published to PyPI — honesty banner only.
+
 ## [2.4.0a1] — post-depth / process closure — 2026-08-02
 
 ### Summary

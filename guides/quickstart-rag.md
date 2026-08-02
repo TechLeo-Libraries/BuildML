@@ -1,12 +1,18 @@
 # RAG quickstart
 
+> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
+> install Session 2.x. Install 2.x from GitHub (or an editable checkout), then
+> the RAG extra. See [installation](../docs/installation.rst).
+
 Optional retrieval path on the same `Session` as classical ML and Torch: history,
 explain catalog, and distinct artifact kinds. The default hashing embedder uses
 core numpy/sklearn. Install the RAG extra for optional sentence-transformer /
 cross-encoder backends.
 
 ```bash
+# After a GitHub / editable 2.x install:
 pip install "buildml[rag]"
+# or: pip install "buildml[rag] @ git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
 
 Classical `Session.fit` and Torch `*_torch` stay unchanged. RAG methods use the

@@ -1,12 +1,18 @@
 # Torch quickstart
 
+> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
+> install Session 2.x. Install 2.x from GitHub (or an editable checkout), then
+> the Torch extra. See [installation](../docs/installation.rst).
+
 Optional Torch path on the same `Session` as classical ML: tabular loaders,
 built-in MLP, text/sequence loaders, fold-local CV, history, and explain.
 Install the Torch extra; core `import buildml` never requires it.
 
 ```bash
+# After a GitHub / editable 2.x install:
 pip install "buildml[torch]"
 # alias: pip install "buildml[dl]"
+# or: pip install "buildml[torch] @ git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
 
 Classical `Session.fit` stays the default sklearn path. Torch methods use the

@@ -1,5 +1,10 @@
 # Classical quickstart
 
+> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
+> install Session 2.x. Use
+> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> (or an editable checkout). See [installation](../docs/installation.rst).
+
 BuildML centers on a `Session` that keeps data, column roles, partition
 membership, fitted preparation, model state, and operation history together.
 This guide walks from a first classification example through regression,

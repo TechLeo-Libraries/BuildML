@@ -1,9 +1,13 @@
 # BuildML guides
 
 User-facing tutorials and reference copy for BuildML 2.x. These Markdown files
-are the canonical source for quickstarts and the glossary. They are readable
-directly on GitHub and included in the published Sphinx site at
+are the canonical source for quickstarts and the glossary. Prefer reading them
+on GitHub until the Read the Docs build for the 2.x line is confirmed green;
+Sphinx also includes them when the hosted site is up to date at
 [buildml.readthedocs.io](https://buildml.readthedocs.io/).
+
+**Install honesty:** PyPI `buildml` is still legacy 1.x. Use a GitHub or
+editable install for Session 2.x (see [installation](../docs/installation.rst)).
 
 ## Suggested learning path
 
