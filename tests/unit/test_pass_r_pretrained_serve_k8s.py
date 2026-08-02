@@ -98,7 +98,7 @@ def test_k8s_torchrun_job_render(tmp_path: Path) -> None:
         yaml = None
     if yaml is not None:
         docs = [d for d in yaml.safe_load_all(with_sa) if d is not None]
-        assert [d["kind"] for d in docs] == ["Job", "Service"]
+        assert [d["kind"] for d in docs] == ["Job", "Service", "ConfigMap"]
         assert docs[0]["spec"]["template"]["spec"]["serviceAccountName"] == "buildml-trainer"
     session = Session.ingest(_tiny_frame()).set_roles({"a": "feature", "y": "target"})
     result = session.emit_k8s_ddp_job(tmp_path / "session-job.yaml", nnodes=2)

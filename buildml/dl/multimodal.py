@@ -379,8 +379,11 @@ def _looks_like_text_column(series: pd.Series) -> bool:
     return media_hits < max(1, len(sample) // 2)
 
 
+FusionMode = Literal["concat", "gated"]
+
+
 def build_multimodal_fusion(
-    n_numeric: int = 0,
+    n_numeric: int | MultimodalContract = 0,
     vocab_size: int = 0,
     *,
     image_channels: int = 0,
@@ -397,8 +400,31 @@ def build_multimodal_fusion(
     fusion_hidden: int = 64,
     dropout: float = 0.1,
     padding_idx: int = 0,
+    fusion: FusionMode | None = None,
+    fusion_type: FusionMode | None = None,
+    fusion_mode: FusionMode = "concat",
 ) -> Any:
-    """Late-fusion module over any mix of tabular / text / image / audio branches."""
+    """Late-fusion module over any mix of tabular / text / image / audio branches.
+
+    Accepts either explicit sizes or a :class:`MultimodalContract` as the first
+    positional argument. ``fusion`` / ``fusion_type`` / ``fusion_mode`` select
+    ``concat`` (default) or ``gated`` late fusion.
+    """
+    if isinstance(n_numeric, MultimodalContract):
+        contract = n_numeric
+        n_numeric = len(contract.numeric_columns)
+        vocab_size = int((contract.vocab or {}).get("vocab_size") or 0)
+        if vocab_size < 2 and contract.text_column:
+            vocab_size = max(2, len((contract.vocab or {}).get("id_to_token") or ()))
+        image_channels = int(contract.image_channels) if contract.image_column else 0
+        image_size = contract.image_size
+        audio_channels = 1 if contract.audio_column else 0
+        audio_samples = int(contract.audio_max_samples)
+        task = contract.task
+        n_classes = max(2, len(contract.class_labels) or 2)
+    mode = fusion or fusion_type or fusion_mode or "concat"
+    if mode not in {"concat", "gated"}:
+        raise ValidationError("fusion mode must be 'concat' or 'gated'")
     torch = require_torch(feature="MultimodalFusion")
     has_numeric = int(n_numeric) > 0
     has_text = int(vocab_size) >= 2
@@ -518,6 +544,12 @@ def build_multimodal_fusion(
                 self.audio_net = None
 
             out = int(n_classes) if task == "classification" else 1
+            self.fusion_mode = mode
+            self.gates = None
+            if mode == "gated":
+                self.gates = torch.nn.ParameterList(
+                    [torch.nn.Parameter(torch.zeros(1)) for _ in range(n_mods)]
+                )
             self.head = torch.nn.Sequential(
                 torch.nn.Linear(fused_in, int(fusion_hidden)),
                 torch.nn.ReLU(),
@@ -557,6 +589,11 @@ def build_multimodal_fusion(
                     pieces.append(self.audio_net(tensor))
                 else:
                     raise ValidationError(f"Unknown modality in layout: {name}")
+            if self.gates is not None:
+                pieces = [
+                    piece * torch.sigmoid(gate)
+                    for piece, gate in zip(pieces, self.gates, strict=True)
+                ]
             return self.head(torch.cat(pieces, dim=1))
 
     return _MultimodalFusion()
@@ -572,6 +609,7 @@ def make_multimodal_loaders(
     audio_column: str | None = None,
     config: MultimodalLoaderConfig | None = None,
     task: Literal["classification", "regression", "auto"] = "auto",
+    preprocess: MultimodalContract | dict[str, Any] | None = None,
 ) -> TorchLoaderBundle:
     """Build fused multimodal DataLoaders with train-only fit stats.
 
@@ -591,13 +629,28 @@ def make_multimodal_loaders(
     if cfg.audio_sample_rate < 1 or cfg.audio_max_samples < 1:
         raise ValidationError("audio_sample_rate and audio_max_samples must be positive")
 
+    frozen: MultimodalContract | None = None
+    if preprocess is not None:
+        frozen = (
+            preprocess
+            if isinstance(preprocess, MultimodalContract)
+            else MultimodalContract.from_dict(preprocess)
+        )
+
     numeric_cols, text_col, image_col, audio_col, target = _resolve_multimodal_columns(
         dataset,
-        text_column=text_column,
-        numeric_columns=numeric_columns,
-        image_column=image_column,
-        audio_column=audio_column,
+        text_column=text_column if frozen is None else frozen.text_column,
+        numeric_columns=numeric_columns if frozen is None else list(frozen.numeric_columns),
+        image_column=image_column if frozen is None else frozen.image_column,
+        audio_column=audio_column if frozen is None else frozen.audio_column,
     )
+    if frozen is not None:
+        numeric_cols = list(frozen.numeric_columns)
+        text_col = frozen.text_column
+        image_col = frozen.image_column
+        audio_col = frozen.audio_column
+        target = frozen.target_column
+
     frame = dataset._ensure_pandas()
     train_idx = list(split_plan.indices_for("train"))
     if not train_idx:
@@ -609,8 +662,12 @@ def make_multimodal_loaders(
             f"Target '{target}' must be numeric for the multimodal Torch path "
             "(encode labels to integers first)."
         )
-    resolved_task = infer_task(y_train, task)
-    class_labels = fit_class_labels(y_train) if resolved_task == "classification" else ()
+    if frozen is not None:
+        resolved_task = frozen.task
+        class_labels = frozen.class_labels
+    else:
+        resolved_task = infer_task(y_train, task)
+        class_labels = fit_class_labels(y_train) if resolved_task == "classification" else ()
 
     has_numeric = bool(numeric_cols)
     has_text = text_col is not None
@@ -635,50 +692,89 @@ def make_multimodal_loaders(
     vocab = None
     if has_text:
         assert text_col is not None
-        train_texts = frame.iloc[train_idx][text_col].astype(str).tolist()
-        vocab = fit_vocab(
-            train_texts,
-            max_vocab=cfg.max_vocab,
-            min_freq=cfg.min_freq,
-            max_len=cfg.max_len,
-        )
+        if frozen is not None and frozen.vocab:
+            from buildml.dl.text import TextVocab
+
+            payload = frozen.vocab
+            token_to_id = dict(payload.get("token_to_id") or {})
+            id_to_token = tuple(payload.get("id_to_token") or ())
+            if not token_to_id or not id_to_token:
+                raise ValidationError(
+                    "Frozen multimodal_preprocess vocab needs token_to_id and id_to_token."
+                )
+            vocab = TextVocab(
+                token_to_id=token_to_id,
+                id_to_token=id_to_token,
+                pad_id=int(payload.get("pad_id") or 0),
+                unk_id=int(payload.get("unk_id") or 1),
+                max_len=int(payload.get("max_len") or cfg.max_len),
+            )
+        else:
+            train_texts = frame.iloc[train_idx][text_col].astype(str).tolist()
+            vocab = fit_vocab(
+                train_texts,
+                max_vocab=cfg.max_vocab,
+                min_freq=cfg.min_freq,
+                max_len=cfg.max_len,
+            )
 
     mean = std = None
-    if has_numeric and cfg.normalize:
-        x_train = frame_to_numeric_matrix(frame.iloc[train_idx], numeric_cols)
-        mean, std = fit_standardize(x_train)
+    if has_numeric and (cfg.normalize or (frozen is not None and frozen.normalize_mean is not None)):
+        if frozen is not None and frozen.normalize_mean is not None:
+            mean = np.asarray(frozen.normalize_mean, dtype=np.float64)
+            std = np.asarray(frozen.normalize_std, dtype=np.float64)
+        else:
+            x_train = frame_to_numeric_matrix(frame.iloc[train_idx], numeric_cols)
+            mean, std = fit_standardize(x_train)
 
     img_mean = img_std = None
-    if has_image and cfg.normalize_images:
-        assert image_col is not None
-        train_images = stack_image_column(
-            frame.iloc[train_idx][image_col].tolist(),
-            size=cfg.image_size,
-            channels=cfg.image_channels,
-        )
-        img_mean, img_std = fit_image_channel_stats(train_images)
+    if has_image and (
+        cfg.normalize_images or (frozen is not None and frozen.image_mean is not None)
+    ):
+        if frozen is not None and frozen.image_mean is not None:
+            img_mean = np.asarray(frozen.image_mean, dtype=np.float64)
+            img_std = np.asarray(frozen.image_std, dtype=np.float64)
+        else:
+            assert image_col is not None
+            train_images = stack_image_column(
+                frame.iloc[train_idx][image_col].tolist(),
+                size=cfg.image_size,
+                channels=cfg.image_channels,
+            )
+            img_mean, img_std = fit_image_channel_stats(train_images)
 
     aud_mean = aud_std = None
-    if has_audio and cfg.normalize_audio:
-        assert audio_col is not None
-        train_audio, train_audio_lengths = stack_audio_column(
-            frame.iloc[train_idx][audio_col].tolist(),
-            sample_rate=cfg.audio_sample_rate,
-            max_samples=cfg.audio_max_samples,
-            source_sample_rate=cfg.audio_source_sample_rate,
-            return_lengths=True,
-        )
-        aud_mean, aud_std = fit_audio_waveform_stats(
-            train_audio, lengths=train_audio_lengths
-        )
+    if has_audio and (
+        cfg.normalize_audio or (frozen is not None and frozen.audio_mean is not None)
+    ):
+        if frozen is not None and frozen.audio_mean is not None:
+            aud_mean = np.asarray(frozen.audio_mean, dtype=np.float64)
+            aud_std = np.asarray(frozen.audio_std, dtype=np.float64)
+        else:
+            assert audio_col is not None
+            train_audio, train_audio_lengths = stack_audio_column(
+                frame.iloc[train_idx][audio_col].tolist(),
+                sample_rate=cfg.audio_sample_rate,
+                max_samples=cfg.audio_max_samples,
+                source_sample_rate=cfg.audio_source_sample_rate,
+                return_lengths=True,
+            )
+            aud_mean, aud_std = fit_audio_waveform_stats(
+                train_audio, lengths=train_audio_lengths
+            )
 
     torch = require_torch(feature="Multimodal Torch DataLoaders")
     generator = torch.Generator()
     generator.manual_seed(int(cfg.seed))
     loaders: dict[str, Any] = {}
     warnings: list[str] = [
-        f"Multimodal fusion ({modality}): fit stats use train only; "
-        f"batch layout is ({', '.join(layout)}, y).",
+        f"Multimodal fusion ({modality}): "
+        + (
+            "reapplied frozen multimodal_preprocess stats; "
+            if frozen is not None
+            else "fit stats use train only; "
+        )
+        + f"batch layout is ({', '.join(layout)}, y).",
     ]
     if has_image:
         warnings.append(

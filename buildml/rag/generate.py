@@ -11,10 +11,20 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
+import re
+
 from buildml.core.errors import ValidationError
-from buildml.rag.results import Citation, GenerateResult, Hit, RetrieveResult
+from buildml.rag.results import (
+    Citation,
+    FaithfulnessReport,
+    GenerateResult,
+    Hit,
+    RetrieveResult,
+)
 from buildml.rag.retrieve import retrieve
 from buildml.rag.types import GenerateConfig, RetrieveConfig
+
+_SOURCE_MARKER_RE = re.compile(r"\[source:(\d+)\]")
 
 _SYSTEM_TEMPLATE = """\
 You are a retrieval-grounded assistant. Answer ONLY using the CONTEXT passages \
@@ -147,11 +157,54 @@ def _response_model(response: Any) -> str | None:
     return None if model is None else str(model)
 
 
+def _tokenize(text: str) -> set[str]:
+    return {t for t in re.findall(r"[A-Za-z0-9_]+", str(text).lower()) if t}
+
+
+def score_faithfulness(
+    answer: str,
+    citations: Sequence[Citation],
+    *,
+    context: str = "",
+    min_overlap: float = 0.05,
+) -> FaithfulnessReport:
+    """Cheap grounding heuristics: citation markers + answer↔context token overlap."""
+    available = {int(c.source_id) for c in citations}
+    cited = tuple(sorted({int(m) for m in _SOURCE_MARKER_RE.findall(answer)}))
+    missing = tuple(sorted(available - set(cited)))
+    coverage = 0.0 if not available else float(len(set(cited) & available) / len(available))
+    if context:
+        ctx_tokens = _tokenize(context)
+    else:
+        ctx_tokens: set[str] = set()
+        for cite in citations:
+            ctx_tokens |= _tokenize(cite.text)
+    ans_tokens = _tokenize(answer)
+    overlap = (
+        0.0
+        if not ans_tokens or not ctx_tokens
+        else float(len(ans_tokens & ctx_tokens) / len(ans_tokens))
+    )
+    return FaithfulnessReport(
+        citation_marker_coverage=coverage,
+        cited_source_ids=cited,
+        missing_source_ids=missing,
+        answer_context_token_overlap=overlap,
+        grounded=bool(cited) and overlap >= float(min_overlap),
+        disclosures=(
+            "Faithfulness uses citation-marker coverage + lexical token overlap.",
+            "Cheap heuristic — not a learned NLI / LLM-as-judge product.",
+        ),
+        limitations=("High overlap does not prove factual correctness.",),
+    )
+
+
 def generate_from_retrieve(
     retrieve_result: RetrieveResult,
     provider: ChatProvider,
     *,
     config: GenerateConfig | None = None,
+    score_grounding: bool = True,
 ) -> GenerateResult:
     """Generate a grounded answer from an existing :class:`RetrieveResult`."""
     cfg = config or GenerateConfig()
@@ -184,6 +237,9 @@ def generate_from_retrieve(
     if not answer.strip():
         raise ValidationError("RAG generate provider returned an empty answer.")
 
+    faithfulness = (
+        score_faithfulness(answer, citations, context=context) if score_grounding else None
+    )
     disclosures = (
         "Answer is grounded in retrieved CONTEXT chunks; verify citations before trusting claims.",
         "Provider errors and empty retrieval are hard failures (no silent hallucinated fallback).",
@@ -199,6 +255,7 @@ def generate_from_retrieve(
         prompt_context=context,
         disclosures=disclosures,
         config=cfg.to_dict(),
+        faithfulness=faithfulness,
     )
 
 

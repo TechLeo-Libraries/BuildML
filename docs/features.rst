@@ -73,34 +73,41 @@ Optional extras (same Session)
   ``onnx`` checker package. ``soundfile`` is included in ``buildml[torch]``
   (also via ``buildml[audio]``) for audio path cells.
 * **Speech** (``buildml[speech]``): ASR transcription
-  (``transcribe_speech``, stub CI-safe or transformers Whisper-class) and
-  speech classify finetune-lite (``make_speech_torch_loaders`` /
-  ``fit_speech_torch`` / ``domain_adapt_speech_torch``). Integration path —
-  not training a Whisper-scale foundation model from scratch
+  (``transcribe_speech``, stub CI-safe or transformers Whisper-class),
+  ``evaluate_asr`` WER/CER scoring, and speech classify finetune-lite
+  (``make_speech_torch_loaders`` / ``fit_speech_torch`` /
+  ``domain_adapt_speech_torch``). Integration path — not training a
+  Whisper-scale foundation model from scratch
   (``refuse_speech_foundation_pretrain`` states that explicitly).
 * **Pretrained backbones** (``buildml[vision]`` / ``buildml[speech]`` /
-  ``buildml[pretrained]``): curated ResNet/ViT, Wav2Vec2, and Whisper-encoder
-  hooks via ``load_pretrained_backbone`` with ``weights=none|mock|pretrained``
-  (mock is CI-safe). Not a full HF/TorchVision zoo product.
+  ``buildml[pretrained]``): expanded curated ResNet/ViT/audio/speech encoder
+  hooks via ``load_pretrained_backbone`` / ``list_pretrained_backbones`` with
+  ``weights=none|mock|pretrained`` (mock is CI-safe), plus
+  ``attach_backbone_head`` for classify/probe heads. Not a full HF/TorchVision
+  zoo product.
 * **Serve** (``buildml[serve]``): managed local FastAPI serving
   (``buildml-serve`` / ``python -m buildml.serving`` /
   ``Session.serve_bundle``) for classical pipeline bundles and TorchScript
-  artifacts. Localhost bind by default; optional API-key/Bearer middleware —
-  still not a managed cloud IAM product. Prefer TLS at a reverse proxy for
-  non-local exposure. TorchServe directory packaging
-  (``pack_torchserve``) and TensorRT ``trtexec`` plans
-  (``prepare_tensorrt_export``) are recipe helpers only.
-* **K8s DDP templates** (``emit_k8s_ddp_job`` / ``deploy/k8s``): example
-  Indexed Job + torchrun YAML emitters — not live multi-cluster orchestration.
+  artifacts, with ``/health``, ``/metadata``, ``/predict``, ``/predict/batch``,
+  and OpenAPI docs. Localhost bind by default; optional API-key/Bearer
+  middleware and optional local SSL cert/key pair — still not a managed cloud
+  IAM / cert product. Prefer TLS at a reverse proxy for non-local exposure.
+  TorchServe directory packaging (``pack_torchserve``) and TensorRT
+  ``trtexec`` plans (``prepare_tensorrt_export``) are recipe helpers only.
+* **K8s templates** (``emit_k8s_ddp_job`` / ``emit_k8s_serve_deployment`` /
+  ``deploy/k8s``): Indexed Job + Service (+ optional ConfigMap) torchrun DDP
+  emitters and serve Deployment templates — not live multi-cluster
+  orchestration or a Helm/control-plane product.
 * **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, grounded
-  ``rag_generate`` with citations, evaluate, upsert/delete, and bundle
-  save/load. Hashing embeddings are the CI-safe default; semantic embedders are
-  optional behind the same API.
+  ``rag_generate`` with citations and cheap faithfulness hooks, evaluate,
+  upsert/delete, and bundle save/load. Hashing embeddings are the CI-safe
+  default; semantic embedders are optional behind the same API. Not a hosted
+  vector-DB product.
 * **AI operator** (``buildml[ai]``): advisor, multi-step plan, confirmed execute
   (default), and explicit ``ai_run_autonomous`` operator automation under hard
   caps (allowlist, max steps, blocked sample egress, transcript audit). Tool
   allowlist spans classical, RAG, and Torch (including nested search,
-  multimodal loaders, and speech).
+  multimodal loaders, speech, zoo heads, ASR eval, and K8s emitters).
 
 Boundaries
 ----------
@@ -112,11 +119,17 @@ sklearn-facing operation out-of-core. Checkpoints do not contain fitted models,
 and model bundles do not contain the Session dataset or split history. The AI
 operator defaults to propose→confirm→execute; autonomy is opt-in automation
 inside an allowlist, not unconstrained agency, and does not replace domain
-review of roles, splits, or metrics. Image/audio multimodal fusion and a
-separate speech ASR/finetune-lite path are shipped; torchrun multi-node DDP,
-K8s Job templates, local managed serving (optional API keys), TorchServe
-packaging, and TensorRT plans are alpha library helpers (not multi-cluster
-orchestration, not a managed cloud, not Whisper-scale FM training from scratch).
+review of roles, splits, or metrics.
+
+**Shipped vs scope:** image/audio multimodal fusion (including preprocess
+restore), speech ASR/finetune-lite + WER/CER, curated pretrained backbone hooks
+with attachable heads, torchrun multi-node DDP, K8s Job/Deployment templates,
+local managed serving (API keys, metadata/batch/OpenAPI, optional local SSL),
+TorchServe/TRT recipes, and local RAG generate/faithfulness are real library
+paths. The matching honesty lines (“not a full zoo”, “not managed cloud IAM”,
+“not live multi-cluster”, “not FM-from-scratch”, “not a hosted vector DB”) are
+product-scope boundaries around those shipped paths — not stubs for missing
+APIs.
 
 Where to read more
 ------------------

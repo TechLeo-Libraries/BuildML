@@ -148,6 +148,8 @@ class Session:
         self._dl_ddp_result: Any | None = None
         self._dl_speech_result: Any | None = None
         self._dl_backbone: Any | None = None
+        self._dl_backbone_head: Any | None = None
+        self._dl_asr_eval: Any | None = None
         self._dl_packaging_result: Any | None = None
         self._dl_k8s_result: Any | None = None
         self._serve_handle: Any | None = None
@@ -1058,8 +1060,14 @@ class Session:
         shuffle_train: bool = True,
         seed: int = 0,
         task: Literal["classification", "regression", "auto"] = "auto",
+        preprocess: Any | None = None,
+        use_saved_preprocess: bool = False,
     ) -> TorchLoaderBundle:
-        """Build fused multimodal DataLoaders (tabular/text/image/audio; train-only stats)."""
+        """Build fused multimodal DataLoaders (tabular/text/image/audio; train-only stats).
+
+        Pass ``preprocess=`` or ``use_saved_preprocess=True`` to restore frozen
+        multimodal fit stats from a prior trainer bundle.
+        """
         return dl_ops.make_multimodal_torch_loaders(
             self,
             text_column=text_column,
@@ -1081,6 +1089,8 @@ class Session:
             shuffle_train=shuffle_train,
             seed=seed,
             task=task,
+            preprocess=preprocess,
+            use_saved_preprocess=use_saved_preprocess,
         )
 
     def make_image_multimodal_torch_loaders(
@@ -1438,11 +1448,14 @@ class Session:
         blocking: bool = False,
         api_keys: str | list[str] | tuple[str, ...] | None = None,
         allow_insecure_public_bind: bool = False,
+        ssl_certfile: str | Path | None = None,
+        ssl_keyfile: str | Path | None = None,
     ) -> Any:
         """Launch managed local serving (``buildml[serve]``; optional API-key auth).
 
         Non-loopback binds require ``api_keys`` unless
-        ``allow_insecure_public_bind=True``. Not an AI tool (CLI/Session-primary).
+        ``allow_insecure_public_bind=True``. Optional ``ssl_certfile`` /
+        ``ssl_keyfile`` enable local HTTPS. Not an AI tool (CLI/Session-primary).
         """
         return dl_ops.serve_bundle(
             self,
@@ -1454,6 +1467,8 @@ class Session:
             blocking=blocking,
             api_keys=api_keys,
             allow_insecure_public_bind=allow_insecure_public_bind,
+            ssl_certfile=ssl_certfile,
+            ssl_keyfile=ssl_keyfile,
         )
 
     def load_pretrained_backbone(
@@ -1475,6 +1490,38 @@ class Session:
             freeze=freeze,
             seed=seed,
             model_id=model_id,
+        )
+
+    def attach_backbone_head(
+        self,
+        n_classes: int,
+        *,
+        freeze_backbone: bool | None = None,
+    ) -> Any:
+        """Attach a classification head to the last :meth:`load_pretrained_backbone` result."""
+        return dl_ops.attach_backbone_head(
+            self,
+            n_classes,
+            freeze_backbone=freeze_backbone,
+        )
+
+    def evaluate_asr(
+        self,
+        *,
+        hypotheses: list[str] | None = None,
+        references: list[str],
+        lowercase: bool = True,
+    ) -> Any:
+        """Score ASR hypotheses vs references (WER/CER).
+
+        When ``hypotheses`` is omitted, reuses texts from the last
+        :meth:`transcribe_speech` result.
+        """
+        return dl_ops.evaluate_asr(
+            self,
+            hypotheses=hypotheses,
+            references=references,
+            lowercase=lowercase,
         )
 
     def pack_torchserve(
@@ -1519,6 +1566,12 @@ class Session:
         nnodes: int = 2,
         nproc_per_node: int = 2,
         script_path: str = "/workspace/train.py",
+        cpu_request: str = "2",
+        memory_request: str = "4Gi",
+        gpu_limit: int = 1,
+        gpu_request: int | None = None,
+        service_account: str | None = None,
+        include_configmap: bool = True,
     ) -> Any:
         """Emit a Kubernetes Job YAML for torchrun DDP (template; not live orchestration)."""
         return dl_ops.emit_k8s_ddp_job(
@@ -1530,6 +1583,41 @@ class Session:
             nnodes=nnodes,
             nproc_per_node=nproc_per_node,
             script_path=script_path,
+            cpu_request=cpu_request,
+            memory_request=memory_request,
+            gpu_limit=gpu_limit,
+            gpu_request=gpu_request,
+            service_account=service_account,
+            include_configmap=include_configmap,
+        )
+
+    def emit_k8s_serve_deployment(
+        self,
+        path: str | Path,
+        *,
+        name: str = "buildml-serve",
+        namespace: str = "default",
+        image: str = "python:3.12-slim",
+        replicas: int = 1,
+        port: int = 8080,
+        cpu_request: str = "1",
+        memory_request: str = "2Gi",
+        gpu_limit: int | None = None,
+        service_account: str | None = None,
+    ) -> Any:
+        """Emit a Kubernetes Deployment+Service YAML for managed serve (template only)."""
+        return dl_ops.emit_k8s_serve_deployment(
+            self,
+            path,
+            name=name,
+            namespace=namespace,
+            image=image,
+            replicas=replicas,
+            port=port,
+            cpu_request=cpu_request,
+            memory_request=memory_request,
+            gpu_limit=gpu_limit,
+            service_account=service_account,
         )
 
     def domain_adapt_speech_torch(
@@ -1573,6 +1661,21 @@ class Session:
     def dl_speech_result(self) -> Any | None:
         """Last :meth:`transcribe_speech` result, if any."""
         return self._dl_speech_result
+
+    @property
+    def dl_backbone(self) -> Any | None:
+        """Last :meth:`load_pretrained_backbone` result, if any."""
+        return self._dl_backbone
+
+    @property
+    def dl_backbone_head(self) -> Any | None:
+        """Last :meth:`attach_backbone_head` result, if any."""
+        return self._dl_backbone_head
+
+    @property
+    def dl_asr_eval(self) -> Any | None:
+        """Last :meth:`evaluate_asr` result, if any."""
+        return self._dl_asr_eval
 
     @property
     def dl_train_result(self) -> TrainResult | None:

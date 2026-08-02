@@ -10,6 +10,14 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- **Pass V capability depth:** Deepens real library paths for Torch multimodal
+  (gated fusion + frozen ``multimodal_preprocess`` restore), speech
+  (``evaluate_asr`` WER/CER, ``SpeechContract`` round-trip), pretrained zoo
+  (ResNet34/50, ViT-B/32, HuBERT, Whisper-base encoder; ``attach_backbone_head`` /
+  ``list_pretrained_backbones``), local serve (``/metadata``, ``/predict/batch``,
+  optional local HTTPS), K8s emitters (ConfigMap + GPU requests, serve
+  Deployment template), TorchServe compose example, and RAG cheap faithfulness
+  hooks. Teaching sync + AI tools for new Session APIs. CI stays mock-safe.
 - **Pass W guides depth:** Exhaustive user guide system under ``guides/`` with
   Session-domain → guide map, learning path, and deep tutorials for classical
   E2E, leakage/fold-local recipes/weights/hard-refuse CV, preprocess depth,
@@ -18,6 +26,13 @@ with pre-release tags for alpha (`aN`) builds.
   RAG, AI safety + tool patterns, and serve/deploy recipes. Sphinx
   ``docs/guides.rst`` / ``usage.rst`` / ``features.rst`` / ``index.rst`` point
   at the expanded set; optional ``examples/`` scripts mirror key snippets.
+
+### Clarified
+
+- **Honesty limits = product scope, not stubs.** Docs “not a full zoo / not
+  managed cloud IAM / not live multi-cluster / not FM-from-scratch / not hosted
+  vector DB” statements describe intentional product boundaries around shipped
+  library paths — not unfinished placeholder APIs.
 
 ### Fixed
 

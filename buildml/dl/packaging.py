@@ -16,6 +16,13 @@ from buildml.core.errors import ValidationError
 
 PackKind = Literal["torchserve", "tensorrt_plan"]
 
+TORCHSERVE_COMPOSE_EXAMPLE = (
+    Path(__file__).resolve().parents[2]
+    / "deploy"
+    / "torchserve"
+    / "docker-compose.example.yml"
+)
+
 
 @dataclass(slots=True)
 class PackagingResult:

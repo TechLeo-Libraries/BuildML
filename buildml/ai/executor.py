@@ -698,6 +698,46 @@ def _dispatch_tool(
         )
         return result, tuple(state_changes)
 
+    elif call.tool_name == "attach_backbone_head":
+        n_classes = call.arguments.get("n_classes")
+        if n_classes is None:
+            raise ValidationError("attach_backbone_head requires n_classes.")
+        head_kwargs: dict[str, Any] = {}
+        if "freeze_backbone" in call.arguments:
+            head_kwargs["freeze_backbone"] = call.arguments.get("freeze_backbone")
+        result = session.attach_backbone_head(int(n_classes), **head_kwargs)
+        state_changes.append("Attached classification head to pretrained backbone.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "evaluate_asr":
+        references = call.arguments.get("references")
+        if references is None:
+            raise ValidationError("evaluate_asr requires references.")
+        asr_kwargs: dict[str, Any] = {
+            "references": list(references),
+            "lowercase": bool(call.arguments.get("lowercase", True)),
+        }
+        if call.arguments.get("hypotheses") is not None:
+            asr_kwargs["hypotheses"] = list(call.arguments["hypotheses"])
+        result = session.evaluate_asr(**asr_kwargs)
+        state_changes.append("Scored ASR hypotheses (WER/CER).")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "emit_k8s_serve_deployment":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("emit_k8s_serve_deployment requires path.")
+        serve_k8s_kwargs: dict[str, Any] = {}
+        if call.arguments.get("name") is not None:
+            serve_k8s_kwargs["name"] = str(call.arguments["name"])
+        if call.arguments.get("replicas") is not None:
+            serve_k8s_kwargs["replicas"] = int(call.arguments["replicas"])
+        if call.arguments.get("port") is not None:
+            serve_k8s_kwargs["port"] = int(call.arguments["port"])
+        result = session.emit_k8s_serve_deployment(str(path), **serve_k8s_kwargs)
+        state_changes.append(f"Emitted K8s serve Deployment YAML at {path}.")
+        return result, tuple(state_changes)
+
     else:
         raise ValidationError(f"No dispatch handler for tool: {call.tool_name}")
 
@@ -724,6 +764,7 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         "rag_retrieve",
         "rag_generate",
         "evaluate_torch",
+        "evaluate_asr",
     ):
         changes.append("No state changes (read-only operation).")
 
@@ -827,6 +868,13 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
 
     elif tool_name == "domain_adapt_speech_torch":
         changes.append("Will domain-adapt speech classify (finetune-lite; not FM pretrain).")
+
+    elif tool_name == "attach_backbone_head":
+        changes.append("Will attach a classification head to the Session pretrained backbone.")
+
+    elif tool_name == "emit_k8s_serve_deployment":
+        path = arguments.get("path", "")
+        changes.append(f"Will emit a K8s serve Deployment YAML at {path}.")
 
     return tuple(changes) if changes else ("Unknown state changes.",)
 

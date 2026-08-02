@@ -45,6 +45,9 @@ REQUIRED_AI_TOOL_SESSION_METHODS: frozenset[str] = frozenset(
         "prepare_tensorrt_export",
         "emit_k8s_ddp_job",
         "domain_adapt_speech_torch",
+        "attach_backbone_head",
+        "evaluate_asr",
+        "emit_k8s_serve_deployment",
     }
 )
 

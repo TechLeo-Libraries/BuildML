@@ -146,6 +146,12 @@ def create_serving_app(
     if auth_enabled:
         app.add_middleware(APIKeyAuthMiddleware, api_keys=keys)
 
+    def _run_predict(payload: dict[str, Any]) -> dict[str, Any]:
+        st = get_serving_state()
+        if st.kind == "pipeline":
+            return _predict_pipeline(st, payload)
+        return _predict_torchscript(st, payload)
+
     @app.get("/health")
     def health() -> dict[str, Any]:
         st = get_serving_state()
@@ -159,17 +165,61 @@ def create_serving_app(
             "auth_mode": "api_key_bearer" if auth_enabled else None,
             "bind_recommendation": "127.0.0.1",
             "tls_note": (
-                "Terminate TLS at a reverse proxy; this process does not manage certificates."
+                "Prefer TLS at a reverse proxy. Optional local HTTPS via "
+                "ssl_certfile/ssl_keyfile is library-owned — still not managed certs."
+            ),
+            "endpoints": ["/health", "/metadata", "/predict", "/predict/batch", "/docs"],
+            "predict_contract": (
+                "pipeline: {rows|instances:[...]} | torchscript: {inputs:[[...],...]}"
             ),
         }
 
+    @app.get("/metadata")
+    def metadata() -> dict[str, Any]:
+        st = get_serving_state()
+        body: dict[str, Any] = {
+            "ok": True,
+            "kind": st.kind,
+            "path": str(st.path),
+            "title": st.title,
+            "auth": auth_enabled,
+            "disclosures": (
+                "Metadata endpoint for local managed serve completeness.",
+                "Still not a managed model registry or cloud IAM product.",
+            ),
+        }
+        if st.kind == "pipeline" and st.pipeline_bundle is not None:
+            card = getattr(st.pipeline_bundle, "model_card", None)
+            if card is not None and hasattr(card, "to_dict"):
+                body["model_card"] = card.to_dict()
+            card_json = Path(st.path) / "model_card.json"
+            if "model_card" not in body and card_json.is_file():
+                import json
+
+                try:
+                    body["model_card"] = json.loads(card_json.read_text(encoding="utf-8"))
+                except Exception as exc:  # noqa: BLE001
+                    body["model_card_warning"] = str(exc)
+            contract = getattr(st.pipeline_bundle, "contract", None)
+            if contract is not None and hasattr(contract, "to_dict"):
+                body["schema_contract"] = contract.to_dict()
+        return body
+
     @app.post("/predict")
     def predict(payload: dict[str, Any]) -> Any:
-        st = get_serving_state()
         try:
-            if st.kind == "pipeline":
-                return _predict_pipeline(st, payload)
-            return _predict_torchscript(st, payload)
+            return _run_predict(payload)
+        except ValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    @app.post("/predict/batch")
+    def predict_batch(payload: dict[str, Any]) -> Any:
+        try:
+            result = _run_predict(payload)
+            result["batch"] = True
+            return result
         except ValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:  # noqa: BLE001
