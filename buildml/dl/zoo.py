@@ -164,10 +164,10 @@ def attach_backbone_head(
     feature_dim = int(backbone.feature_dim)
     head = torch.nn.Linear(feature_dim, int(n_classes))
     encoder = backbone.module
-    modality = backbone.modality
+    modality_name = f"{backbone.modality}_backbone_classify"
 
     class _BackboneClassifier(torch.nn.Module):
-        modality = f"{modality}_backbone_classify"
+        modality = modality_name
 
         def __init__(self) -> None:
             super().__init__()

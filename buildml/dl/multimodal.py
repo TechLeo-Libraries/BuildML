@@ -719,7 +719,8 @@ def make_multimodal_loaders(
             )
 
     mean = std = None
-    if has_numeric and (cfg.normalize or (frozen is not None and frozen.normalize_mean is not None)):
+    use_norm = cfg.normalize or (frozen is not None and frozen.normalize_mean is not None)
+    if has_numeric and use_norm:
         if frozen is not None and frozen.normalize_mean is not None:
             mean = np.asarray(frozen.normalize_mean, dtype=np.float64)
             std = np.asarray(frozen.normalize_std, dtype=np.float64)

@@ -7,11 +7,10 @@ pass a provider explicitly or reuse the Session AI provider.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
-
-import re
 
 from buildml.core.errors import ValidationError
 from buildml.rag.results import (

@@ -49,7 +49,11 @@ def test_list_pretrained_backbones_expanded() -> None:
     catalog = list_pretrained_backbones()
     assert isinstance(catalog, (list, tuple))
     archs = {
-        str(item.get("architecture") if isinstance(item, dict) else getattr(item, "architecture", item))
+        str(
+            item.get("architecture")
+            if isinstance(item, dict)
+            else getattr(item, "architecture", item)
+        )
         for item in catalog
     }
     # Expanded curated set beyond Pass R defaults.

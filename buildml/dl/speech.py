@@ -228,8 +228,14 @@ def evaluate_asr(
     n_ref_chars = 0
     per: list[dict[str, Any]] = []
     for hyp_raw, ref_raw in zip(hypotheses, references, strict=True):
-        hyp = " ".join(str(hyp_raw or "").strip().lower().split()) if lowercase else " ".join(str(hyp_raw).split())
-        ref = " ".join(str(ref_raw or "").strip().lower().split()) if lowercase else " ".join(str(ref_raw).split())
+        if lowercase:
+            hyp = " ".join(str(hyp_raw or "").strip().lower().split())
+        else:
+            hyp = " ".join(str(hyp_raw).split())
+        if lowercase:
+            ref = " ".join(str(ref_raw or "").strip().lower().split())
+        else:
+            ref = " ".join(str(ref_raw).split())
         hyp_words, ref_words = hyp.split(), ref.split()
         hyp_chars, ref_chars = list(hyp.replace(" ", "")), list(ref.replace(" ", ""))
         w_ed = _edit_distance(ref_words, hyp_words)
@@ -238,7 +244,14 @@ def evaluate_asr(
         char_edits += c_ed
         n_ref_words += max(len(ref_words), 1)
         n_ref_chars += max(len(ref_chars), 1)
-        per.append({"hypothesis": hyp, "reference": ref, "wer": w_ed / max(len(ref_words), 1), "cer": c_ed / max(len(ref_chars), 1)})
+        per.append(
+            {
+                "hypothesis": hyp,
+                "reference": ref,
+                "wer": w_ed / max(len(ref_words), 1),
+                "cer": c_ed / max(len(ref_chars), 1),
+            }
+        )
     return AsrEvalResult(
         n_utterances=len(hypotheses),
         wer=float(word_edits / n_ref_words),

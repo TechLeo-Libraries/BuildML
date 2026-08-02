@@ -918,7 +918,7 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                     "hypotheses": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Hypothesis transcripts (optional if Session has ASR texts).",
+                        "description": "Hypothesis transcripts (optional if Session has ASR).",
                     },
                     "references": {
                         "type": "array",

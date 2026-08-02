@@ -187,7 +187,7 @@ def write_torchrun_ddp_job(path: str | Path, **kwargs: Any) -> K8sJobRenderResul
         nnodes=int(kwargs.get("nnodes", 2)),
         nproc_per_node=int(kwargs.get("nproc_per_node", 2)),
         disclosures=(
-            f"Wrote Kubernetes Job+Service"
+            "Wrote Kubernetes Job+Service"
             + ("+ConfigMap" if kwargs.get("include_configmap", True) else "")
             + f" YAML to {destination}.",
         ),
