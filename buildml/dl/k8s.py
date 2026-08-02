@@ -64,9 +64,9 @@ def render_torchrun_ddp_job(
         raise ValidationError("nproc_per_node must be >= 1")
     if not job_name or not job_name.replace("-", "").isalnum():
         raise ValidationError("job_name must be a simple DNS-1123 label")
-    sa_block = ""
-    if service_account:
-        sa_block = f"\n      serviceAccountName: {service_account}"
+    # Placeholder kept indent-aligned with sibling pod-spec keys so textwrap.dedent
+    # cannot be poisoned by a shorter injected serviceAccountName line.
+    sa_placeholder = "__BUILDML_SERVICE_ACCOUNT_LINE__"
     # Indexed job: each pod gets JOB_COMPLETION_INDEX as node rank.
     yaml_text = textwrap.dedent(
         f"""\
@@ -90,7 +90,8 @@ def render_torchrun_ddp_job(
             metadata:
               labels:
                 app.kubernetes.io/name: buildml-torchrun-ddp
-            spec:{sa_block}
+            spec:
+              {sa_placeholder}
               restartPolicy: Never
               containers:
                 - name: trainer
@@ -142,6 +143,13 @@ def render_torchrun_ddp_job(
               targetPort: {master_port}
         """
     )
+    if service_account:
+        yaml_text = yaml_text.replace(sa_placeholder, f"serviceAccountName: {service_account}")
+    else:
+        # Drop the whole placeholder line (indent + marker + newline).
+        yaml_text = "\n".join(
+            line for line in yaml_text.splitlines() if sa_placeholder not in line
+        ) + ("\n" if yaml_text.endswith("\n") else "")
     return yaml_text
 
 

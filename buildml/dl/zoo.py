@@ -82,8 +82,7 @@ def _require_torchvision() -> Any:
     except ImportError as exc:
         raise MissingExtraError(
             "torch",
-            "Vision backbones need torchvision "
-            "(pip install torchvision alongside buildml[torch])",
+            "Vision backbones need torchvision (pip install torchvision alongside buildml[torch])",
         ) from exc
     return torchvision
 
@@ -94,8 +93,7 @@ def _require_transformers() -> Any:
     except ImportError as exc:
         raise MissingExtraError(
             "speech",
-            "Audio/speech transformer backbones need transformers "
-            "(pip install 'buildml[speech]')",
+            "Audio/speech transformer backbones need transformers (pip install 'buildml[speech]')",
         ) from exc
     return transformers
 
@@ -137,8 +135,7 @@ def load_vision_backbone(
         model.heads.head = torch.nn.Identity()
     else:
         raise ValidationError(
-            f"Unsupported vision architecture {architecture!r}; "
-            "expected 'resnet18' or 'vit_b_16'."
+            f"Unsupported vision architecture {architecture!r}; expected 'resnet18' or 'vit_b_16'."
         )
 
     if weights == "mock":
@@ -185,8 +182,7 @@ def load_audio_backbone(
     warnings: list[str] = []
     if architecture != "wav2vec2_base":
         raise ValidationError(
-            f"Unsupported audio architecture {architecture!r}; "
-            "expected 'wav2vec2_base'."
+            f"Unsupported audio architecture {architecture!r}; expected 'wav2vec2_base'."
         )
     resolved_id = model_id or "facebook/wav2vec2-base"
     if weights == "pretrained":
@@ -197,9 +193,7 @@ def load_audio_backbone(
             config = transformers.Wav2Vec2Config.from_pretrained(resolved_id)
         except Exception:  # noqa: BLE001
             config = transformers.Wav2Vec2Config()
-            warnings.append(
-                "Could not fetch Wav2Vec2Config remotely; used local default config."
-            )
+            warnings.append("Could not fetch Wav2Vec2Config remotely; used local default config.")
         model = transformers.Wav2Vec2Model(config)
         if weights == "mock":
             _apply_mock_weights(model, seed=seed)
@@ -242,8 +236,7 @@ def load_speech_backbone(
     warnings: list[str] = []
     if architecture != "whisper_tiny_encoder":
         raise ValidationError(
-            f"Unsupported speech architecture {architecture!r}; "
-            "expected 'whisper_tiny_encoder'."
+            f"Unsupported speech architecture {architecture!r}; expected 'whisper_tiny_encoder'."
         )
     # Default to HF tiny-random for mock/none; openai whisper-tiny for pretrained.
     if weights == "pretrained":
@@ -257,9 +250,7 @@ def load_speech_backbone(
             config = transformers.WhisperConfig.from_pretrained(resolved_id)
         except Exception:  # noqa: BLE001
             config = transformers.WhisperConfig()
-            warnings.append(
-                "Could not fetch WhisperConfig remotely; used local default config."
-            )
+            warnings.append("Could not fetch WhisperConfig remotely; used local default config.")
         model = transformers.WhisperModel(config)
         if weights == "mock":
             _apply_mock_weights(model, seed=seed)
@@ -292,6 +283,14 @@ def load_speech_backbone(
     )
 
 
+def _validate_weight_mode(weights: str) -> WeightMode:
+    if weights not in {"none", "mock", "pretrained"}:
+        raise ValidationError(
+            f"Unsupported weights mode {weights!r}; expected 'none', 'mock', or 'pretrained'."
+        )
+    return weights  # type: ignore[return-value]
+
+
 def load_pretrained_backbone(
     modality: Literal["vision", "audio", "speech"],
     architecture: str | None = None,
@@ -302,6 +301,7 @@ def load_pretrained_backbone(
     model_id: str | None = None,
 ) -> PretrainedBackbone:
     """Dispatch helper for vision / audio / speech backbone loads."""
+    weights = _validate_weight_mode(weights)
     if modality == "vision":
         arch: VisionArch = "resnet18"  # type: ignore[assignment]
         if architecture is not None:
@@ -310,6 +310,10 @@ def load_pretrained_backbone(
             arch = architecture  # type: ignore[assignment]
         return load_vision_backbone(arch, weights=weights, freeze=freeze, seed=seed)
     if modality == "audio":
+        if architecture is not None and architecture != "wav2vec2_base":
+            raise ValidationError(
+                f"Unknown audio architecture {architecture!r}; expected 'wav2vec2_base'."
+            )
         return load_audio_backbone(
             "wav2vec2_base",
             weights=weights,
@@ -318,6 +322,10 @@ def load_pretrained_backbone(
             model_id=model_id,
         )
     if modality == "speech":
+        if architecture is not None and architecture != "whisper_tiny_encoder":
+            raise ValidationError(
+                f"Unknown speech architecture {architecture!r}; expected 'whisper_tiny_encoder'."
+            )
         return load_speech_backbone(
             "whisper_tiny_encoder",
             weights=weights,

@@ -85,16 +85,38 @@ def test_k8s_torchrun_job_render(tmp_path: Path) -> None:
     assert "kind: Job" in yaml_text
     assert "torchrun" in yaml_text
     assert "Indexed" in yaml_text
+    assert not yaml_text.startswith(" ")
     out = write_torchrun_ddp_job(tmp_path / "job.yaml", nnodes=3, nproc_per_node=1)
     assert out.path is not None and out.path.is_file()
     assert out.nnodes == 3
+    # serviceAccountName must not break YAML indentation via dedent poisoning.
+    with_sa = render_torchrun_ddp_job(nnodes=2, service_account="buildml-trainer")
+    assert "serviceAccountName: buildml-trainer" in with_sa
+    try:
+        import yaml  # type: ignore[import-untyped]
+    except ImportError:
+        yaml = None
+    if yaml is not None:
+        docs = [d for d in yaml.safe_load_all(with_sa) if d is not None]
+        assert [d["kind"] for d in docs] == ["Job", "Service"]
+        assert docs[0]["spec"]["template"]["spec"]["serviceAccountName"] == "buildml-trainer"
     session = Session.ingest(_tiny_frame()).set_roles({"a": "feature", "y": "target"})
     result = session.emit_k8s_ddp_job(tmp_path / "session-job.yaml", nnodes=2)
     assert result.path.is_file()
     assert any(
-        "multi-cluster" in lim.lower() or "not live" in lim.lower()
-        for lim in result.limitations
+        "multi-cluster" in lim.lower() or "not live" in lim.lower() for lim in result.limitations
     )
+
+
+def test_backbone_dispatch_rejects_unknown_architecture() -> None:
+    from buildml.dl.zoo import load_pretrained_backbone
+
+    with pytest.raises(ValidationError, match="Unknown audio architecture"):
+        load_pretrained_backbone("audio", "not-a-real-arch", weights="none")
+    with pytest.raises(ValidationError, match="Unknown speech architecture"):
+        load_pretrained_backbone("speech", "whisper-large", weights="none")
+    with pytest.raises(ValidationError, match="Unsupported weights mode"):
+        load_pretrained_backbone("vision", "resnet18", weights="imagenet")  # type: ignore[arg-type]
 
 
 @pytest.mark.skipif(not _FASTAPI_SPEC, reason="fastapi not installed")
@@ -138,6 +160,23 @@ def test_serving_api_key_auth(tmp_path: Path) -> None:
         headers={"X-API-Key": "secret-key"},
     )
     assert ok2.status_code == 200
+    wrong = client.post(
+        "/predict",
+        json={"rows": [{"x1": 0.1, "x2": 0.9}]},
+        headers={"Authorization": "Bearer wrong-key"},
+    )
+    assert wrong.status_code == 401
+
+    open_app = create_serving_app(bundle_dir, kind="pipeline")
+    open_client = TestClient(open_app)
+    open_health = open_client.get("/health")
+    assert open_health.status_code == 200
+    assert open_health.json()["auth"] is False
+    open_ok = open_client.post(
+        "/predict",
+        json={"rows": [{"x1": 0.1, "x2": 0.9}]},
+    )
+    assert open_ok.status_code == 200
 
 
 def _require_torch_or_skip() -> None:

@@ -975,7 +975,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Raise ValidationError with pointers to finetune-lite / pretrained hooks.",
         ),
         parameters=(),
-        inputs=(),
+        inputs=(
+            "A caller request for Whisper-scale / foundation speech pretrain or "
+            "large continued pretrain (no dataset mutation required).",
+        ),
         outputs=("Always raises ValidationError after recording history.",),
         prerequisites=(),
         ordering=("Anytime a caller asks for FM-from-scratch / large continued pretrain.",),
