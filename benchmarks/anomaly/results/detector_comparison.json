@@ -19,7 +19,7 @@
         "score_calibration": "sklearn score_samples / decision_function inverted"
       },
       "pyod": {
-        "available": false,
+        "available": true,
         "extra": "anomaly-industry",
         "methods": [
           "hbos",
@@ -36,7 +36,7 @@
         "notes": "deepsvdd may require torch inside PyOD; install buildml[torch] when DeepSVDD training fails on CPU-only stacks."
       },
       "torch": {
-        "available": true,
+        "available": false,
         "extra": "torch",
         "methods": [
           "autoencoder"
@@ -79,7 +79,7 @@
       "decision_zero",
       "validation_tuned"
     ],
-    "default_backend_when_installed": "torch",
+    "default_backend_when_installed": "pyod",
     "default_supervised_when_installed": "supervised_xgb",
     "install_hints": {
       "anomaly-industry": "pip install 'buildml[anomaly-industry]'  # PyOD (HBOS/COPOD/ECOD/DeepSVDD) + XGBoost/LightGBM fraud scorers",
@@ -92,7 +92,7 @@
       "Full PyOD algorithm zoo beyond catalog methods"
     ],
     "torch_spec_present": true,
-    "torch_import_honesty": "torch backend 'available' reflects package install (find_spec). Broken wheels may still fail at require_torch \u2014 same policy as buildml.dl.",
+    "torch_import_honesty": "torch backend 'available' uses a real import probe (torch_available). torch_spec_present is the cheap find_spec signal only.",
     "industry_extra_present": true
   },
   "runs": [
@@ -119,6 +119,39 @@
       "test_alert_rate": 0.45454545454545453
     },
     {
+      "backend": "pyod",
+      "method": "hbos",
+      "mode": "unsupervised",
+      "train_alert_rate": 0.10426540284360189,
+      "threshold": 7.822141057452415,
+      "validation_average_precision": 1.0,
+      "validation_f1": 1.0,
+      "test_average_precision": 1.0,
+      "test_alert_rate": 0.07575757575757576
+    },
+    {
+      "backend": "pyod",
+      "method": "copod",
+      "mode": "unsupervised",
+      "train_alert_rate": 0.10426540284360189,
+      "threshold": 6.657578758548183,
+      "validation_average_precision": 1.0,
+      "validation_f1": 1.0,
+      "test_average_precision": 1.0,
+      "test_alert_rate": 0.09090909090909091
+    },
+    {
+      "backend": "pyod",
+      "method": "ecod",
+      "mode": "unsupervised",
+      "train_alert_rate": 0.10426540284360189,
+      "threshold": 10.924526566136535,
+      "validation_average_precision": 0.9028571428571428,
+      "validation_f1": 0.8333333333333334,
+      "test_average_precision": 1.0,
+      "test_alert_rate": 0.10606060606060606
+    },
+    {
       "backend": "sklearn",
       "method": "supervised_hgb",
       "mode": "supervised",
@@ -126,6 +159,6 @@
       "test_precision_at_k": 0.4
     }
   ],
-  "pyod_available": false,
+  "pyod_available": true,
   "torch_available": false
 }

@@ -41,7 +41,7 @@
         "pruning": true
       },
       "flaml": {
-        "available": false,
+        "available": true,
         "extra": "automl-industry",
         "methods": [
           "flaml"
@@ -60,7 +60,7 @@
         "notes": "FLAML runs internal model selection on train-only data; fold-local PreprocessRecipe search is bypassed. Session test never enters FLAML fit."
       },
       "autogluon": {
-        "available": false,
+        "available": true,
         "extra": "automl-industry",
         "methods": [
           "autogluon"
@@ -82,9 +82,9 @@
     "optional_gbdt_families": {
       "lightgbm": true,
       "xgboost": true,
-      "catboost": false
+      "catboost": true
     },
-    "default_backend_when_installed": "optuna",
+    "default_backend_when_installed": "flaml",
     "install_hints": {
       "automl": "pip install 'buildml[automl]'  # Optuna-backed search",
       "automl-industry": "pip install 'buildml[automl-industry]'  # FLAML and/or AutoGluon + LightGBM/XGBoost/CatBoost families"
@@ -98,7 +98,9 @@
   },
   "backends_tested": [
     "native",
-    "optuna"
+    "optuna",
+    "flaml",
+    "autogluon"
   ],
   "n_trials": 8,
   "time_budget": null,
@@ -130,6 +132,14 @@
         "Backend=optuna, method=optuna, selection=cv, ranking_metric=f1_weighted, n_trials_scored=8.",
         "Families searched: ['logistic', 'random_forest', 'gradient_boosting']; recipe strategies: ['passthrough', 'impute_median', 'impute_mean', 'impute_scale', 'impute_most_frequent_scale', 'impute_minmax', 'impute_scale_onehot', 'impute_scale_ordinal', 'impute_encode_onehot', 'impute_scale_select', 'impute_scale_select_k20', 'impute_scale_variance', 'impute_minmax_onehot']."
       ]
+    },
+    {
+      "backend": "flaml",
+      "error": "could not convert string to float: 'b'"
+    },
+    {
+      "backend": "autogluon",
+      "error": "'TabularPredictor' object has no attribute 'get_model_best'"
     }
   ]
 }

@@ -24,7 +24,7 @@
         "notes": "Iterative pseudo-labeling with XGBoost/LightGBM when installed. Falls back to sklearn self_training when industry extra missing."
       },
       "torch": {
-        "available": true,
+        "available": false,
         "extra": "torch",
         "methods": [
           "fixmatch_tabular",
@@ -34,7 +34,7 @@
         "notes": "FixMatch/MixMatch-style consistency + pseudo-label training for numeric tabular features (buildml[torch])."
       },
       "hf": {
-        "available": false,
+        "available": true,
         "extra": "ssl",
         "methods": [
           "text_pseudo_label"
@@ -65,7 +65,7 @@
       ],
       "holdout_rule": "labeled rows only; unlabeled holdout never scored as truth"
     },
-    "default_backend_when_installed": "torch",
+    "default_backend_when_installed": "industry",
     "default_method_when_installed": "pseudo_label_xgb",
     "install_hints": {
       "semisupervised-industry": "pip install 'buildml[semisupervised-industry]'  # XGBoost/LightGBM pseudo-label paths",
@@ -82,7 +82,7 @@
     "industry_extra_present": true,
     "xgboost_present": true,
     "lightgbm_present": true,
-    "hf_text_present": false
+    "hf_text_present": true
   },
   "results": [
     {

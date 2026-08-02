@@ -21,7 +21,7 @@
         "notes": "Core sklearn partial_fit family (SGD, PA, Perceptron, NB). Optional init-chunk mean-shift disclosure on updates."
       },
       "industry": {
-        "available": false,
+        "available": true,
         "extra": "online-industry",
         "estimators": [
           "river_logistic",
@@ -39,7 +39,7 @@
         "notes": "River streaming sklearn-compatible models with ADWIN / Page-Hinkley drift hooks on updates and evaluate (buildml[online-industry])."
       },
       "torch": {
-        "available": true,
+        "available": false,
         "extra": "torch",
         "estimators": [
           "replay_mlp",
@@ -71,8 +71,8 @@
       "holdout_rule": "validation/test never used for partial_fit updates",
       "drift_hooks": "River ADWIN/Page-Hinkley on holdout error stream when backend=industry; mean_shift disclosure on all backends."
     },
-    "default_backend_when_installed": "torch",
-    "default_estimator_when_installed": "replay_mlp",
+    "default_backend_when_installed": "industry",
+    "default_estimator_when_installed": "river_logistic",
     "install_hints": {
       "online-industry": "pip install 'buildml[online-industry]'  # River streaming models + ADWIN/Page-Hinkley drift",
       "torch": "pip install 'buildml[torch]'  # replay / EWC tabular continual MLP"
@@ -83,9 +83,9 @@
       "Silent full refits (allow_refit_fallback must disclose)",
       "Using holdout rows for incremental updates"
     ],
-    "river_present": false,
+    "river_present": true,
     "torch_spec_present": true,
-    "industry_extra_present": false
+    "industry_extra_present": true
   },
   "full_refit_test_accuracy": 0.9222222222222223,
   "runs": [

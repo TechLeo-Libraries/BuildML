@@ -19,7 +19,7 @@
         "notes": "Always-available fallback: classical threshold sweep, multiclass Bayes cost matrix, top-K, knapsack-lite, scipy LP."
       },
       "pulp": {
-        "available": false,
+        "available": true,
         "extra": "optimize-industry",
         "methods": [
           "knapsack"
@@ -83,7 +83,7 @@
       "test_tuning": "requires allow_test_tuning=True + disclosure"
     },
     "default_backend_when_installed": "xgb",
-    "default_knapsack_backend_when_installed": "ortools",
+    "default_knapsack_backend_when_installed": "pulp",
     "default_lp_backend_when_installed": "native",
     "default_threshold_backend_when_installed": "xgb",
     "install_hints": {
@@ -96,7 +96,7 @@
       "Production fleet scheduling"
     ],
     "industry_extra_present": true,
-    "pulp_present": false,
+    "pulp_present": true,
     "ortools_present": true,
     "cvxpy_present": true,
     "cvxpy_import_honesty": "cvxpy backend 'available' reflects package install (find_spec). Broken wheels may fail at require_cvxpy \u2014 prefer native linprog unless convex hooks are explicitly needed.",

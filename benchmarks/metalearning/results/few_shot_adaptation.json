@@ -13,7 +13,7 @@
         "notes": "Nearest-centroid prototypical and warm-start sklearn adapt \u2014 always available; honest fallback when torch/industry extras are missing."
       },
       "torch": {
-        "available": true,
+        "available": false,
         "extra": "torch",
         "methods": [
           "prototypical_torch"
@@ -22,14 +22,14 @@
         "notes": "PyTorch MLP encoder + episodic prototype loss for tabular ProtoNet-style few-shot (buildml[torch]). Small-scale, not image/foundation-model meta-learning."
       },
       "industry": {
-        "available": true,
+        "available": false,
         "extra": "metalearning-industry",
         "methods": [
           "maml",
           "reptile"
         ],
         "modality": "tabular",
-        "notes": "First-order tabular MAML/Reptile via learn2learn when buildml[metalearning-industry] and buildml[torch] are installed. Honest small-scale task adaptation \u2014 not second-order MAML-at-scale or EconML-style causal meta."
+        "notes": "First-order tabular MAML/Reptile when buildml[torch] imports cleanly. Uses learn2learn when installed (buildml[metalearning-industry]); otherwise an honest native first-order SGD meta-loop. Not second-order MAML-at-scale."
       }
     },
     "episodic_protocol": {
@@ -49,8 +49,8 @@
       ],
       "holdout_rule": "validation/test never used for meta-train; prefer novel task ids on holdout partitions."
     },
-    "default_backend_when_installed": "industry",
-    "default_method_when_installed": "maml",
+    "default_backend_when_installed": "sklearn",
+    "default_method_when_installed": "prototypical",
     "install_hints": {
       "torch": "pip install 'buildml[torch]'  # deep tabular prototypical encoder",
       "metalearning-industry": "pip install 'buildml[metalearning-industry,torch]'  # learn2learn MAML/Reptile tabular adapters"
@@ -63,7 +63,7 @@
     ],
     "learn2learn_present": false,
     "torch_spec_present": true,
-    "industry_extra_present": true
+    "industry_extra_present": false
   },
   "k_shot": 3,
   "results": [

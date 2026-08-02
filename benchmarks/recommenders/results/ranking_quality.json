@@ -32,7 +32,7 @@
       },
       "lightfm": {
         "available": false,
-        "extra": "recommenders-industry",
+        "extra": "recommenders-lightfm",
         "methods": [
           "lightfm"
         ],
@@ -59,7 +59,8 @@
     },
     "default_backend_when_installed": "implicit",
     "install_hints": {
-      "recommenders-industry": "pip install 'buildml[recommenders-industry]'  # implicit (ALS/BPR) + LightFM hybrid recommenders"
+      "recommenders-industry": "pip install 'buildml[recommenders-industry]'  # implicit (ALS/BPR)",
+      "recommenders-lightfm": "pip install 'buildml[recommenders-lightfm]'  # LightFM hybrid (skipped on Win/Py3.13 \u2014 no reliable wheels)"
     },
     "non_goals": [
       "Netflix-scale feature store / multi-stage cascade",
@@ -147,10 +148,10 @@
       "n_users": 50,
       "n_items": 40,
       "metrics": {
-        "precision_at_k": 0.04888888888888889,
-        "recall_at_k": 0.28962962962962957,
-        "ndcg_at_k": 0.14578771348751074,
-        "map_at_k": 0.08266519694297472
+        "precision_at_k": 0.046666666666666676,
+        "recall_at_k": 0.2711111111111111,
+        "ndcg_at_k": 0.13752631530731163,
+        "map_at_k": 0.07879100529100529
       },
       "n_users_scored": 45
     },

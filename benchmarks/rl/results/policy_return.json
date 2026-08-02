@@ -15,7 +15,7 @@
         "notes": "Behavioral cloning from demonstration tables on train only \u2014 always available sklearn fallback."
       },
       "industry": {
-        "available": false,
+        "available": true,
         "extra": "rl-industry",
         "methods": [
           "bc_mlp",
@@ -53,7 +53,7 @@
         "notes": "REINFORCE-lite linear softmax on small discrete Gymnasium envs (buildml[rl])."
       },
       "industry": {
-        "available": false,
+        "available": true,
         "extra": "rl-industry",
         "modes": [
           "gym_sb3"
@@ -92,9 +92,9 @@
       "holdout_rule": "BC/bandit fit on train only; bandit holdout is offline DM/IPS.",
       "offline_rl_disclosure": "BuildML does not ship batch offline RL (CQL/IQL/Decision Transformer). Bandit IPS/DM and imitation-from-demos are disclosed offline paths."
     },
-    "default_imitation_backend_when_installed": "sklearn",
-    "default_rl_backend_when_installed": "native",
-    "default_rl_mode_when_installed": "gym_reinforce",
+    "default_imitation_backend_when_installed": "industry",
+    "default_rl_backend_when_installed": "industry",
+    "default_rl_mode_when_installed": "gym_sb3",
     "install_hints": {
       "rl": "pip install 'buildml[rl]'  # Gymnasium REINFORCE-lite teaching loop",
       "rl-industry": "pip install 'buildml[rl-industry]'  # SB3 PPO/DQN/A2C + imitation BC/GAIL-lite"
@@ -107,8 +107,8 @@
     ],
     "gymnasium_present": true,
     "stable_baselines3_present": true,
-    "imitation_present": false,
-    "rl_industry_extra_present": false
+    "imitation_present": true,
+    "rl_industry_extra_present": true
   },
   "env_id": "CartPole-v1",
   "results": [

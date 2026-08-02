@@ -25,7 +25,7 @@
         "notes": "XGBoost/LightGBM/CatBoost multi-target estimators when installed. Regression uses native multi-target where supported; classification uses honest MultiOutputClassifier wrappers. Same-type targets only."
       },
       "torch": {
-        "available": true,
+        "available": false,
         "extra": "torch",
         "methods": [
           "shared_trunk_multihead"
@@ -64,7 +64,7 @@
     "industry_extra_present": true,
     "xgboost_present": true,
     "lightgbm_present": true,
-    "catboost_present": false
+    "catboost_present": true
   },
   "results": [
     {

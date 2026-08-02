@@ -27,7 +27,7 @@
         "notes": "CoreSet + QBC KL/variation-ratio query strategies via native numpy/sklearn scoring. Optional scikit-activeml in buildml[activelearning-industry] for enhanced hosts."
       },
       "torch": {
-        "available": true,
+        "available": false,
         "extra": "torch",
         "strategies": [
           "bald",
@@ -55,8 +55,8 @@
       ],
       "holdout_rule": "labeled holdout rows only; pool never scored as truth"
     },
-    "default_backend_when_installed": "torch",
-    "default_strategy_when_installed": "bald",
+    "default_backend_when_installed": "industry",
+    "default_strategy_when_installed": "core_set",
     "install_hints": {
       "activelearning-industry": "pip install 'buildml[activelearning-industry]'  # scikit-activeml CoreSet / QBC enhancements",
       "torch": "pip install 'buildml[torch]'  # BALD / MC-dropout deep query strategies"
@@ -75,8 +75,7 @@
     0,
     5,
     10,
-    20,
-    30
+    20
   ],
   "results": [
     {
@@ -106,15 +105,9 @@
           "labels_used": 20,
           "test_accuracy": 1.0,
           "test_f1_macro": 1.0
-        },
-        {
-          "label_budget": 30,
-          "labels_used": 30,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
         }
       ],
-      "final_accuracy": 0.9875
+      "final_accuracy": 1.0
     },
     {
       "backend": "sklearn",
@@ -143,91 +136,21 @@
           "labels_used": 20,
           "test_accuracy": 1.0,
           "test_f1_macro": 1.0
-        },
-        {
-          "label_budget": 30,
-          "labels_used": 30,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
         }
       ],
-      "final_accuracy": 0.9875
+      "final_accuracy": 1.0
     },
     {
       "backend": "industry",
-      "strategy": "core_set",
-      "curve": [
-        {
-          "label_budget": 0,
-          "labels_used": 0,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
-        },
-        {
-          "label_budget": 5,
-          "labels_used": 5,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
-        },
-        {
-          "label_budget": 10,
-          "labels_used": 10,
-          "test_accuracy": 1.0,
-          "test_f1_macro": 1.0
-        },
-        {
-          "label_budget": 20,
-          "labels_used": 20,
-          "test_accuracy": 1.0,
-          "test_f1_macro": 1.0
-        },
-        {
-          "label_budget": 30,
-          "labels_used": 30,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
-        }
-      ],
-      "final_accuracy": 0.9875
+      "skipped": true,
+      "reason": "Windows smoke skips industry AL; set BUILDML_BENCH_AL_INDUSTRY=1"
     },
     {
-      "backend": "industry",
-      "strategy": "qbc_kl",
-      "curve": [
-        {
-          "label_budget": 0,
-          "labels_used": 0,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
-        },
-        {
-          "label_budget": 5,
-          "labels_used": 5,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
-        },
-        {
-          "label_budget": 10,
-          "labels_used": 10,
-          "test_accuracy": 0.975,
-          "test_f1_macro": 0.975
-        },
-        {
-          "label_budget": 20,
-          "labels_used": 20,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
-        },
-        {
-          "label_budget": 30,
-          "labels_used": 30,
-          "test_accuracy": 0.9875,
-          "test_f1_macro": 0.9874980465697765
-        }
-      ],
-      "final_accuracy": 0.9875
+      "backend": "torch",
+      "skipped": true,
+      "reason": "Windows torch path skipped; set BUILDML_BENCH_TORCH=1"
     }
   ],
-  "sklearn_baseline_final_accuracy": 0.9875,
+  "sklearn_baseline_final_accuracy": 1.0,
   "floor_note": "Industry/torch backends should track or beat sklearn margin/entropy on this synthetic query-efficiency curve when extras are installed."
 }

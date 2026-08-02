@@ -14,9 +14,12 @@
         "notes": "Native rule induction: sklearn DecisionTree path export and sequential-covering decision lists. Always available."
       },
       "industry": {
-        "available": false,
+        "available": true,
         "extra": "symbolic-industry",
-        "methods": [],
+        "methods": [
+          "rulefit",
+          "boosted_rules"
+        ],
         "modality": "tabular",
         "notes": "Interpretable-model rule export via skope-rules (SkopeRules) and imodels (RuleFit, BoostedRules) when installed."
       }
@@ -39,7 +42,7 @@
         "notes": "sklearn base + symbolic rule hybrid (core fallback)."
       },
       "torch": {
-        "available": true,
+        "available": false,
         "extra": "torch",
         "spec_present": true,
         "modes": [
@@ -55,7 +58,7 @@
       }
     },
     "constraint_verification": {
-      "available": false,
+      "available": true,
       "extra": "symbolic-industry",
       "scope": "Optional SAT check on hard constraint rule antecedents via Z3 (verify_constraints=True on fit). Not a full SMT product."
     },
@@ -74,9 +77,9 @@
         "repaired"
       ]
     },
-    "default_symbolic_backend_when_installed": "sklearn",
-    "default_industry_method_when_installed": "skope_rules",
-    "default_neuro_backend_when_installed": "torch",
+    "default_symbolic_backend_when_installed": "industry",
+    "default_industry_method_when_installed": "rulefit",
+    "default_neuro_backend_when_installed": "sklearn",
     "install_hints": {
       "symbolic-industry": "pip install 'buildml[symbolic-industry]'  # skope-rules + imodels + optional Z3 constraint checks",
       "torch": "pip install 'buildml[torch]'  # concept-bottleneck / neural-additive neuro-symbolic bases"
@@ -89,10 +92,10 @@
       "Complete Z3 SMT solver product (verification is optional lite check)"
     ],
     "skope_rules_present": false,
-    "imodels_present": false,
-    "z3_present": false,
-    "torch_spec_present": true,
-    "industry_extra_present": false
+    "imodels_present": true,
+    "z3_present": true,
+    "torch_spec_present": false,
+    "industry_extra_present": true
   },
   "runs": [
     {
@@ -116,6 +119,12 @@
       "blackbox_accuracy": 0.925,
       "fidelity_ratio": 1.0,
       "rule_coverage": 0.875
+    },
+    {
+      "backend": "industry",
+      "method": "rulefit",
+      "skipped": true,
+      "error": "'list' object has no attribute 'head'"
     }
   ]
 }

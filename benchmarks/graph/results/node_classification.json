@@ -16,7 +16,7 @@
         "notes": "Requires buildml[graph] (NetworkX). Degree, clustering, PageRank, avg neighbor degree; betweenness when n\u2264200."
       },
       "gcn": {
-        "available": true,
+        "available": false,
         "extra": "torch",
         "methods": [
           "gcn"
@@ -52,7 +52,7 @@
       "f1_macro",
       "roc_auc"
     ],
-    "default_backend_when_installed": "gcn",
+    "default_backend_when_installed": "classical",
     "default_pyg_model_when_installed": "gcn",
     "install_hints": {
       "graph": "pip install 'buildml[graph]'  # NetworkX classical node features + sklearn",
@@ -68,9 +68,9 @@
     ],
     "graph_extra_present": true,
     "torch_spec_present": true,
-    "pyg_extra_present": false,
+    "pyg_extra_present": true,
     "pyg_runtime_present": false,
-    "pyg_import_honesty": "pyg backend 'available' reflects torch-geometric install (find_spec). Training also requires a working torch \u2014 broken wheels may fail at require_pyg / require_torch.",
+    "pyg_import_honesty": "pyg backend 'available' requires torch-geometric install AND a working torch import (pyg_runtime_available). pyg_extra_present is find_spec only.",
     "train_only_honesty": "All backends fit with train-node labels only. Inductive fit uses train\u2013train edges; transductive uses full topology with disclosed train-label-only supervision."
   },
   "runs": [
@@ -92,8 +92,16 @@
       "skipped": "[WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading \"C:\\Users\\leona\\AppData\\Roaming\\Python\\Python313\\site-packages\\torch\\lib\\c10.dll\" or one of its dependencies."
     },
     {
-      "label": "pyg",
-      "skipped": "torch-geometric missing"
+      "label": "pyg:gcn",
+      "skipped": "Graph PyG gcn node classification (PyG requires torch) requires the optional extra 'torch'. Install it with: pip install 'buildml[torch]'"
+    },
+    {
+      "label": "pyg:graphsage",
+      "skipped": "Graph PyG graphsage node classification (PyG requires torch) requires the optional extra 'torch'. Install it with: pip install 'buildml[torch]'"
+    },
+    {
+      "label": "pyg:gat",
+      "skipped": "Graph PyG gat node classification (PyG requires torch) requires the optional extra 'torch'. Install it with: pip install 'buildml[torch]'"
     }
   ]
 }

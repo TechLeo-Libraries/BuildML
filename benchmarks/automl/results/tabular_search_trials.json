@@ -3,32 +3,53 @@
   "backend": "native",
   "method": "randomized",
   "selection": "cv",
-  "best_family": "knn",
-  "best_score": 0.836429901495261,
+  "best_family": "catboost",
+  "best_score": 0.8363745102047341,
   "outer_score_mean": null,
   "trials": [
     {
       "trial": 0,
       "kind": "single",
-      "family": "knn",
-      "recipe_strategy": "impute_scale",
-      "mean_score": 0.836429901495261,
-      "std_score": 0.07429985455237209,
+      "family": "catboost",
+      "recipe_strategy": "impute_scale_select",
+      "mean_score": 0.8363745102047341,
+      "std_score": 0.056603674775990466,
       "mean_metrics": {
         "accuracy": 0.8366013071895425,
         "balanced_accuracy": 0.8366666666666666,
-        "f1_macro": 0.8363643092564662,
-        "f1_weighted": 0.836429901495261
+        "f1_macro": 0.8362988917009582,
+        "f1_weighted": 0.8363745102047341
       },
       "params": {
-        "n_neighbors": 11
+        "learning_rate": 0.1,
+        "iterations": 60,
+        "depth": 4
       }
     },
     {
       "trial": 1,
       "kind": "single",
+      "family": "lightgbm",
+      "recipe_strategy": "impute_scale_variance",
+      "mean_score": 0.8166953216088085,
+      "std_score": 0.08804732628722746,
+      "mean_metrics": {
+        "accuracy": 0.8169934640522875,
+        "balanced_accuracy": 0.8174358974358974,
+        "f1_macro": 0.8166653951657105,
+        "f1_weighted": 0.8166953216088085
+      },
+      "params": {
+        "num_leaves": 63,
+        "n_estimators": 100,
+        "learning_rate": 0.1
+      }
+    },
+    {
+      "trial": 2,
+      "kind": "single",
       "family": "xgboost",
-      "recipe_strategy": "impute_scale_select",
+      "recipe_strategy": "impute_encode_onehot",
       "mean_score": 0.8100189644923891,
       "std_score": 0.04945987248084403,
       "mean_metrics": {
@@ -44,7 +65,7 @@
       }
     },
     {
-      "trial": 2,
+      "trial": 3,
       "kind": "single",
       "family": "random_forest",
       "recipe_strategy": "impute_scale_select_k20",
@@ -63,56 +84,38 @@
       }
     },
     {
-      "trial": 3,
-      "kind": "single",
-      "family": "lightgbm",
-      "recipe_strategy": "impute_encode_onehot",
-      "mean_score": 0.8025625653155516,
-      "std_score": 0.03759329235560179,
-      "mean_metrics": {
-        "accuracy": 0.8039215686274509,
-        "balanced_accuracy": 0.8048717948717948,
-        "f1_macro": 0.8026605057352184,
-        "f1_weighted": 0.8025625653155516
-      },
-      "params": {
-        "num_leaves": 63,
-        "n_estimators": 60,
-        "learning_rate": 0.03
-      }
-    },
-    {
       "trial": 4,
       "kind": "single",
-      "family": "knn",
-      "recipe_strategy": "impute_scale_ordinal",
-      "mean_score": 0.7707126759392319,
-      "std_score": 0.03002031145036289,
+      "family": "decision_tree",
+      "recipe_strategy": "impute_scale",
+      "mean_score": 0.7826223907294051,
+      "std_score": 0.051421129609579445,
       "mean_metrics": {
-        "accuracy": 0.7712418300653594,
-        "balanced_accuracy": 0.771025641025641,
-        "f1_macro": 0.7706116863237259,
-        "f1_weighted": 0.7707126759392319
+        "accuracy": 0.784313725490196,
+        "balanced_accuracy": 0.7848717948717949,
+        "f1_macro": 0.7826504605925712,
+        "f1_weighted": 0.7826223907294051
       },
       "params": {
-        "n_neighbors": 3
+        "min_samples_leaf": 4,
+        "max_depth": 3
       }
     },
     {
       "trial": 5,
       "kind": "single",
       "family": "decision_tree",
-      "recipe_strategy": "impute_scale_variance",
-      "mean_score": 0.7644942554419677,
-      "std_score": 0.038988752670179844,
+      "recipe_strategy": "impute_scale_ordinal",
+      "mean_score": 0.7761908593417628,
+      "std_score": 0.09868622027819575,
       "mean_metrics": {
-        "accuracy": 0.7647058823529411,
-        "balanced_accuracy": 0.7646153846153846,
-        "f1_macro": 0.7644135802469135,
-        "f1_weighted": 0.7644942554419677
+        "accuracy": 0.7777777777777778,
+        "balanced_accuracy": 0.7774358974358974,
+        "f1_macro": 0.7759461672049746,
+        "f1_weighted": 0.7761908593417628
       },
       "params": {
-        "min_samples_leaf": 2,
+        "min_samples_leaf": 4,
         "max_depth": 8
       }
     }
@@ -120,7 +123,7 @@
   "disclosures": [
     "AutoML searches a finite disclosed catalog of model families and fold-local preprocess strategies \u2014 not neural architecture search (NAS), not causal discovery, and not a fully automated AI scientist.",
     "Backend=native, method=randomized, selection=cv, ranking_metric=f1_weighted, n_trials_scored=6.",
-    "Families searched: ['logistic', 'random_forest', 'gradient_boosting', 'knn', 'decision_tree', 'lightgbm', 'xgboost']; recipe strategies: ['passthrough', 'impute_median', 'impute_mean', 'impute_scale', 'impute_most_frequent_scale', 'impute_minmax', 'impute_scale_onehot', 'impute_scale_ordinal', 'impute_encode_onehot', 'impute_scale_select', 'impute_scale_select_k20', 'impute_scale_variance', 'impute_minmax_onehot'].",
+    "Families searched: ['logistic', 'random_forest', 'gradient_boosting', 'knn', 'decision_tree', 'lightgbm', 'xgboost', 'catboost']; recipe strategies: ['passthrough', 'impute_median', 'impute_mean', 'impute_scale', 'impute_most_frequent_scale', 'impute_minmax', 'impute_scale_onehot', 'impute_scale_ordinal', 'impute_encode_onehot', 'impute_scale_select', 'impute_scale_select_k20', 'impute_scale_variance', 'impute_minmax_onehot'].",
     "Session test never enters selection scoring or fold membership.",
     "Fold-local PreprocessRecipe steps refit on fold-train (or full train for validation selection / final refit) only.",
     "trial_budget=8 cap disclosed."

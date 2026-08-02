@@ -1,6 +1,6 @@
 {
   "benchmark": "unsupervised_cluster_quality",
-  "hdbscan_available": false,
+  "hdbscan_available": true,
   "torch_available": false,
   "results": [
     {
@@ -59,6 +59,15 @@
     },
     {
       "method": "mean_shift",
+      "silhouette": 0.7459947557321501,
+      "davies_bouldin": 0.3489048303917577,
+      "calinski_harabasz": 803.3806894512838,
+      "adjusted_rand_index": 0.9789980239493364,
+      "n_clusters_observed": 3,
+      "stability_ari_mean": null
+    },
+    {
+      "method": "hdbscan",
       "silhouette": 0.7459947557321501,
       "davies_bouldin": 0.3489048303917577,
       "calinski_harabasz": 803.3806894512838,

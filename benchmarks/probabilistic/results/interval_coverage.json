@@ -161,10 +161,10 @@
       "n_fit_rows": 96,
       "n_conformal_calib_rows": 24,
       "validation_interval_coverage": 0.9,
-      "validation_nll": 7.509259574722124,
-      "validation_crps": 0.36448627076747164,
-      "test_interval_coverage": 0.88,
-      "test_mean_interval_width": 1.8525624899982966,
+      "validation_nll": 7.447511859375199,
+      "validation_crps": 0.3590625603593212,
+      "test_interval_coverage": 0.84,
+      "test_mean_interval_width": 1.7367638692684682,
       "interval_method": "split_conformal"
     }
   ]

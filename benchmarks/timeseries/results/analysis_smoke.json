@@ -2,6 +2,6 @@
   "n_points": 130,
   "decompose_method": "stl",
   "adf_pvalue": 0.7265109260682965,
-  "n_changepoints": 72,
+  "n_changepoints": 1,
   "statsmodels": true
 }
