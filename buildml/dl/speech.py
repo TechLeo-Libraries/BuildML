@@ -458,7 +458,10 @@ def transcribe_audio_values(
         )
 
     # transformers path
-    resolved_model = resolved_model or "hf-internal-testing/tiny-random-WhisperForConditionalGeneration"
+    resolved_model = (
+        resolved_model
+        or "hf-internal-testing/tiny-random-WhisperForConditionalGeneration"
+    )
     asr = _load_transformers_asr(resolved_model)
     for value in values:
         wave = decode_audio_cell(

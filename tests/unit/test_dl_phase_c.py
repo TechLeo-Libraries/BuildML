@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 from buildml import Session
-from buildml.core.errors import LeakageError, MissingExtraError, ValidationError
+from buildml.core.errors import LeakageError, MissingExtraError
 from buildml.explain.catalog import OPERATION_CATALOG
 
 _TORCH_SPEC = importlib.util.find_spec("torch") is not None
