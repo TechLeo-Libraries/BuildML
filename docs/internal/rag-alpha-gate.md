@@ -5,7 +5,7 @@ Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md) and
 [dl-alpha-gate.md](./dl-alpha-gate.md). This is a release checklist, not a
 capability wishlist.
 
-Related docs: [quickstart-rag-alpha.md](./quickstart-rag-alpha.md) ·
+Related docs: [quickstart-rag-alpha.md](../quickstart-rag-alpha.md) ·
 [rag-m0-lock.md](./rag-m0-lock.md) · [rag-phase-plan.md](./rag-phase-plan.md) ·
 [glossary.md](../glossary.md) · [editorial-standards.md](./editorial-standards.md)
 

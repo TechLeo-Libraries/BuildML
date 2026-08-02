@@ -4,7 +4,7 @@ Concrete exit criteria for declaring BuildML **2.1.0a1** deep-learning alpha.
 Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md). This is a
 release checklist, not a capability wishlist.
 
-Related docs: [quickstart-dl-alpha.md](./quickstart-dl-alpha.md) ·
+Related docs: [quickstart-dl-alpha.md](../quickstart-dl-alpha.md) ·
 [dl-m0-lock.md](./dl-m0-lock.md) · [deep-learning-phase-plan.md](./deep-learning-phase-plan.md) ·
 [glossary.md](../glossary.md) · [editorial-standards.md](./editorial-standards.md)
 

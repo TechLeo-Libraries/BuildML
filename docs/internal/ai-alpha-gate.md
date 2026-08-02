@@ -6,7 +6,7 @@ Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md),
 [rag-alpha-gate.md](./rag-alpha-gate.md). This is a release checklist, not a
 capability wishlist.
 
-Related docs: [quickstart-ai-alpha.md](./quickstart-ai-alpha.md) ·
+Related docs: [quickstart-ai-alpha.md](../quickstart-ai-alpha.md) ·
 [llm-m0-lock.md](./llm-m0-lock.md) · [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) ·
 [glossary.md](../glossary.md) · [editorial-standards.md](./editorial-standards.md)
 

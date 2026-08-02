@@ -4,8 +4,8 @@ Concrete exit criteria for declaring BuildML 2.x classical ML **alpha-ready**.
 This is a release checklist, not a capability wishlist. Items are either met by
 CI/tests/docs today or listed as known limits.
 
-Related docs: [quickstart-alpha.md](./quickstart-alpha.md) ·
-[glossary.md](./glossary.md) · [workflow-guide.rst](./workflow-guide.rst) ·
+Related docs: [quickstart-alpha.md](../quickstart-alpha.md) ·
+[glossary.md](../glossary.md) · [workflow-guide.rst](../workflow-guide.rst) ·
 [editorial-standards.md](./editorial-standards.md)
 
 ---
