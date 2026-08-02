@@ -18,7 +18,7 @@ silent gaps (no weights in a checkpoint, no dataset in a pipeline).
 | Estimator model bundle | `save_model` / `load_model` | estimator + feature contract | Preprocess plans, dataset, splits |
 | Pipeline bundle | `save_pipeline` / `load_pipeline` | plans + estimator + model card + schema contract | Dataset rows, full history, Torch/RAG |
 | Score helper | `predict_from_pipeline` | one-shot inference | Does not mutate Session |
-| Torch trainer bundle | `save_torch_bundle` / `load_torch_bundle` | weights, optimizer (+ scheduler), config, history, feature contract, optional multimodal_preprocess meta | Dataset, split indices; **load does not rebuild DataLoaders** |
+| Torch trainer bundle | `save_torch_bundle` / `load_torch_bundle` | weights, optimizer (+ scheduler), config, history, feature contract, optional multimodal_preprocess meta | Dataset, split indices; **load does not rebuild DataLoaders** (rebuild with `make_multimodal_torch_loaders(..., use_saved_preprocess=True)` or `preprocess=`) |
 | RAG bundle | `save_rag_bundle` / `load_rag_bundle` | embeddings, index, chunk config | Tabular Session data, Torch weights |
 | AI transcript | `save_ai_transcript` / `load_ai_transcript` | conversation, tool calls, egress manifests | API keys; raw rows unless FULL_SAMPLE opt-in |
 | TorchServe pack | `pack_torchserve` | directory recipe for operator-owned TorchServe | Running server |

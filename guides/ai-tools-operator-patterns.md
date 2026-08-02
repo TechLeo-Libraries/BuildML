@@ -83,7 +83,7 @@ print(registered_tool_names())
 | `make_speech_torch_loaders` / `fit_speech_torch` / `domain_adapt_speech_torch` | Speech classify |
 | `transcribe_speech` / `evaluate_asr` | ASR path |
 | `load_pretrained_backbone` / `attach_backbone_head` | Curated backbones |
-| `pack_torchserve` / `prepare_tensorrt_export` / `emit_k8s_ddp_job` | Operator recipes / YAML templates |
+| `pack_torchserve` / `prepare_tensorrt_export` / `emit_k8s_ddp_job` / `emit_k8s_serve_deployment` | Operator recipes / YAML templates |
 
 **Note:** `serve_bundle` is Session/CLI-primary (not an AI tool) — localhost
 serving stays out of the LLM allowlist by design. See

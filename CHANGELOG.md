@@ -10,6 +10,13 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- **Pass X guides sync:** Refresh ``guides/`` (and Sphinx includes) so Pass W
+  tutorials cover Pass V surfaces without inventing APIs — gated multimodal
+  fusion + frozen ``multimodal_preprocess`` restore, ``evaluate_asr`` /
+  ``SpeechContract``, ``list_pretrained_backbones`` / ``attach_backbone_head``,
+  serve ``/metadata`` + ``/predict/batch`` + optional local HTTPS, TorchServe
+  compose + K8s ConfigMap/GPU + ``emit_k8s_serve_deployment``, and RAG
+  faithfulness hooks. Install honesty (GitHub 2.x vs PyPI 1.x) unchanged.
 - **Pass V capability depth:** Deepens real library paths for Torch multimodal
   (gated fusion + frozen ``multimodal_preprocess`` restore), speech
   (``evaluate_asr`` WER/CER, ``SpeechContract`` round-trip), pretrained zoo

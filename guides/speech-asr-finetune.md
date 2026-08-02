@@ -30,12 +30,13 @@ stacks, and months of compute. BuildML’s job here is:
 
 ---
 
-## Use case A — Stub ASR (CI-safe)
+## Use case A — Stub ASR (CI-safe) + WER/CER
 
 ```python
 import pandas as pd
 
 from buildml import Session
+from buildml.dl.speech import evaluate_asr
 
 # In real projects, audio cells are paths or arrays; stub backend tolerates demos.
 df = pd.DataFrame(
@@ -53,7 +54,26 @@ speech = (
 
 asr = speech.transcribe_speech(audio_column="audio", backend="stub")
 print(asr)
+
+# Score hypotheses vs gold references (string edit distance — not a MOS product).
+# Session path reuses last transcribe_speech texts when hypotheses= is omitted:
+scored = speech.evaluate_asr(
+    references=["hello world", "good morning", "approved", "denied"],
+)
+print(scored.wer, scored.cer)
+assert speech.dl_asr_eval is scored
+
+# Standalone helper (same metrics, no Session required):
+standalone = evaluate_asr(
+    hypotheses=["hello world", "good night"],
+    references=["hello world", "good morning"],
+    lowercase=True,
+)
+print(standalone.wer, standalone.cer)
 ```
+
+`evaluate_asr` returns `AsrEvalResult` with corpus WER/CER plus optional
+per-utterance rows. It does not download ASR models.
 
 ---
 
@@ -73,9 +93,11 @@ Treat downloaded weights as an operator concern (license, cache, GPU).
 
 ---
 
-## Use case C — Speech classify finetune-lite
+## Use case C — Speech classify finetune-lite + `SpeechContract`
 
 ```python
+from buildml.dl.speech import SpeechContract
+
 speech.make_speech_torch_loaders(
     audio_column="audio",
     sample_rate=16000,
@@ -84,10 +106,24 @@ speech.make_speech_torch_loaders(
 )
 speech.fit_speech_torch(epochs=5, freeze_encoder=True, device="cpu")
 print(speech.dl_speech_result)
+
+# Contract round-trip for bundle / meta persistence:
+contract = SpeechContract(
+    audio_column="audio",
+    target_column="y",
+    class_labels=(0, 1),
+    sample_rate=16_000,
+    max_samples=8_000,
+    encoder_dim=32,
+)
+restored = SpeechContract.from_dict(contract.to_dict())
+assert restored.audio_column == "audio"
 ```
 
 `freeze_encoder=True` is the common domain-adapt pattern: train a light head
-without claiming full ASR FM training.
+without claiming full ASR FM training. `SpeechContract.to_dict` /
+`from_dict` keep sample rate, max samples, amp stats, and class labels aligned
+across save/load paths.
 
 ---
 
@@ -143,6 +179,7 @@ See [pretrained-backbones](pretrained-backbones.md). `weights="mock"` is CI-safe
 | Missing files in path cells | Loader/transcribe errors — validate paths |
 | Transformers backend | Needs `buildml[speech]` + download |
 | Bundle load | Torch speech loaders are not rebuilt by `load_torch_bundle` |
+| `evaluate_asr` | String WER/CER only — not speech quality / MOS |
 
 ---
 

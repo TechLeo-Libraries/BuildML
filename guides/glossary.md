@@ -53,6 +53,12 @@ Optional patience on a validation monitor (default `val_loss`) during `fit_torch
 epoch on the test partition turns test into selection data; use validation for stopping and test
 once the recipe is fixed.
 
+**evaluate_asr / WER / CER**  
+`Session.evaluate_asr` (and `buildml.dl.speech.evaluate_asr`) scores ASR
+hypotheses against references with word and character error rates via
+Levenshtein edit distance. String metrics only — not a speech quality / MOS
+product. Omitting `hypotheses=` reuses texts from the last `transcribe_speech`.
+
 **Engine**  
 The tabular execution/interchange implementation: currently Pandas, Polars, or DuckDB. Polars and
 DuckDB support is optional and lazily imported. DuckDB connections are owned by root Dataset
@@ -68,6 +74,12 @@ Simple comparisons that should work on both engines can be built with
 A traceable observation, metric, statistical test, artifact, or configuration value used to support
 a finding. Evidence includes its source and limitations where relevant.
 
+**Faithfulness (RAG)**  
+Cheap grounding heuristic attached to `GenerateResult.faithfulness`
+(`FaithfulnessReport`): citation-marker coverage plus answer↔context token
+overlap. Not an NLI / LLM-as-judge product; high overlap does not prove
+factual correctness. See `buildml.rag.generate.score_faithfulness`.
+
 **Feature contract**  
 The names, order, representation, and meaning of columns expected by a fitted estimator. Encoding,
 date extraction, dropping columns, and external transformations can change this contract. On the
@@ -82,6 +94,12 @@ it is distinct from the recommendation that may follow.
 An operation that learns from values, including imputing, encoding, scaling, resampling, estimator
 training, calibrator fitting, and threshold selection. Its learned part belongs on training or
 validation data according to the decision being made.
+
+**Gated fusion (Torch multimodal)**  
+Late-fusion mode (`fusion="gated"`) for `build_multimodal_fusion` that gates
+modality branches before combining them. Default built-in `fit_torch` fusion
+(when a module is omitted) remains concat; pass an explicit gated module to
+opt in.
 
 **Hashing embedder**  
 Default RAG embedder id `buildml.hashing_embed.v1`: sklearn `HashingVectorizer`
@@ -121,6 +139,13 @@ target proxies or misuse in external code.
 **MRR (mean reciprocal rank)**  
 Mean, over evaluation queries, of `1 / rank` of the first relevant hit (0 when
 no relevant hit appears). Reported by `Session.rag_evaluate`.
+
+**multimodal_preprocess**  
+Frozen multimodal fit meta (normalize stats, vocab, image/audio rates/layout)
+optionally stored on Torch trainer bundles. `load_torch_bundle` restores it for
+inspection; rebuild loaders with
+`make_multimodal_torch_loaders(..., use_saved_preprocess=True)` or
+`preprocess=`.
 
 **Manifest**  
 The checkpoint file that records bundle members and integrity information. Removing the manifest or
