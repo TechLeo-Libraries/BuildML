@@ -7,10 +7,9 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [ingest-engine-checkpoint-design.md](./ingest-engine-checkpoint-design.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** M0 locked · M1 complete · M2 complete · M3 complete (docs / DL alpha gate).  
+**Status:** Shipped in 2.1.0a1.  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
-**North star:** flexibility · depth · functionality.  
-**M0 lock artifact:** [dl-m0-lock.md](./dl-m0-lock.md).
+**M0 lock:** [dl-m0-lock.md](./dl-m0-lock.md).
 
 ---
 

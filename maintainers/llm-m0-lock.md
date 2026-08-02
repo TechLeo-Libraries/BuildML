@@ -3,7 +3,7 @@
 Approved lock for the LLM operator phase.  
 Parent plan: [llm-operator-phase-plan.md](./llm-operator-phase-plan.md).
 
-**Status:** M0 LOCKED · M1 COMPLETE · M2 COMPLETE · M3 COMPLETE  
+**Status:** Locked and shipped in 2.3.0a1.  
 **Approved:** 2026-08-02
 
 ---

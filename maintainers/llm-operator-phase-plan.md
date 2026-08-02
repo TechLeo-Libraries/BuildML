@@ -6,11 +6,8 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [rag-phase-plan.md](./rag-phase-plan.md) ·
 [quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
-**Status:** M0 LOCKED · M1 COMPLETE · M2 COMPLETE · M3 COMPLETE.  
-**M0 lock artifact:** [llm-m0-lock.md](./llm-m0-lock.md).  
-**Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → **LLM operator last**.  
-**North star:** flexibility · depth · functionality.  
-**Proposed version line:** `2.3.0a1` at M3 gate (after RAG `2.2.0a1`).
+**Status:** Shipped in 2.3.0a1 (M0–M3 complete).  
+**Lock artifact:** [llm-m0-lock.md](./llm-m0-lock.md).
 
 ---
 
@@ -617,25 +614,24 @@ integration, `buildml.ai.multi_turn`.
 
 ---
 
-## 10. Decision log (M0 lock checklist — UNLOCKED)
+## 10. Decision log (M0 — locked in 2.3.0a1)
 
-| Topic | Status | Notes |
-| --- | --- | --- |
-| Public method prefix (`ai_*` vs `llm_*`) | Open | Propose `ai_*`; awaiting approval |
-| Version line for AI alpha | Open | Propose `2.3.0a1` at M3 |
-| Extra name canonical (`ai` vs `llm` vs both) | Open | Propose `ai` = deps; `llm` = alias |
-| Provider protocol shape | Open | Propose OpenAI-compatible callable |
-| Default egress level | Open | Propose `STATS_ONLY` |
-| Confirmation policy matrix | Open | Propose read=auto, write=confirm, destructive=always |
-| Transcript schema id | Open | Propose `buildml.ai_transcript.v1` |
-| Transcript vs checkpoint vs bundle | Open | Propose three distinct artifacts |
-| AI CI Python versions | Open | Propose 3.11 + 3.12 (mirror torch/rag) |
-| Injection test categories | Open | Propose malicious columns, prompts, RAG chunks, nested |
-| Max tool iterations default | Open | Propose 10 |
-| Token budget default | Open | Propose no default (user sets) |
+| Topic | Decision |
+| --- | --- |
+| Public method prefix | `ai_*` on Session |
+| Version line for AI alpha | `2.3.0a1` |
+| Extra name | `ai` canonical; `llm` alias |
+| Provider protocol | OpenAI-compatible callable behind a protocol |
+| Default egress level | `STATS_ONLY` |
+| Confirmation policy | read-only auto; write requires confirm; destructive always confirm |
+| Transcript schema id | `buildml.ai_transcript.v1` |
+| Transcript vs checkpoint vs bundle | three distinct artifacts; no keys in any bundle |
+| AI CI Python versions | 3.11 and 3.12 (mirror torch/rag) |
+| Max tool iterations default | 10 |
+| Token budget default | user-configured; no silent unlimited default |
 
-**Status:** All items open pending user M0 approval. Once approved, this section becomes the
-locked decision log.
+These choices are recorded in [llm-m0-lock.md](./llm-m0-lock.md). Change them
+only with an explicit lock revision, not ad hoc in implementation PRs.
 
 ---
 

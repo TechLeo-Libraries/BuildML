@@ -3,7 +3,7 @@
 Approved lock for the retrieval thin slice.  
 Parent plan: [rag-phase-plan.md](./rag-phase-plan.md).
 
-**Status:** M0 locked · M1 complete · M2 complete · M3 complete (RAG alpha `2.2.0a1`)  
+**Status:** Locked and shipped in 2.2.0a1.  
 **Approved:** 2026-08-01
 
 ---
