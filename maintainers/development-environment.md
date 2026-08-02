@@ -1,4 +1,4 @@
-# Development environment
+﻿# Development environment
 
 BuildML 2.x development uses a project-local virtual environment so dependency pins stay reproducible.
 

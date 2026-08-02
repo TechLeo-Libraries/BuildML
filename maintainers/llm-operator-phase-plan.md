@@ -1,4 +1,4 @@
-# LLM operator phase plan
+﻿# LLM operator phase plan
 
 Next-phase plan after classical alpha `2.0.0a1`, DL alpha `2.1.0a1`, and RAG alpha `2.2.0a1`.  
 Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·

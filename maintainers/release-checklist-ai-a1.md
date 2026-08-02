@@ -1,4 +1,4 @@
-# Release checklist — 2.3.0a1 (AI alpha)
+﻿# Release checklist — 2.3.0a1 (AI alpha)
 
 Use this when cutting the first AI operator alpha tag. Do **not** tag until
 remote CI is green on the commit you intend to release.

@@ -63,7 +63,7 @@ dashboard = [
 ]
 excel = ["openpyxl>=3.1"]
 all-classical = ["buildml[engines,imbalanced,eda,excel,dashboard,optuna]"]
-docs = ["sphinx", "sphinx-rtd-theme"]
+docs = ["sphinx", "sphinx-rtd-theme", "myst-parser"]
 dev = [
   "pytest>=7.4",
   "pytest-cov>=4.1",
@@ -74,6 +74,7 @@ dev = [
   "httpx2>=2.0",
   "sphinx",
   "sphinx-rtd-theme",
+  "myst-parser",
   "buildml[dashboard]",
 ]
 

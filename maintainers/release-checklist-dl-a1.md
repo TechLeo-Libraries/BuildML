@@ -1,4 +1,4 @@
-# Release checklist — 2.1.0a1 (DL alpha)
+﻿# Release checklist — 2.1.0a1 (DL alpha)
 
 Use this when cutting the first deep-learning alpha tag. Do **not** tag until
 remote CI is green on the commit you intend to release.

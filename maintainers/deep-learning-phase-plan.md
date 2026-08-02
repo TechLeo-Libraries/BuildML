@@ -1,4 +1,4 @@
-# Deep learning phase plan
+﻿# Deep learning phase plan
 
 Next-phase plan after classical alpha `2.0.0a1`.  
 Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·

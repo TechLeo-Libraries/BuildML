@@ -1,4 +1,4 @@
-# Classical ML capability map
+﻿# Classical ML capability map
 
 Planning inventory of workflow turns BuildML v2 should account for.  
 Goal: professionals are not limited; learners get a simple path through the same surface.

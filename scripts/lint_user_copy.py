@@ -12,8 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 # These paths are maintainer records or quote prohibited copy examples.
-# docs/internal/ holds phase plans, gates, and design locks (not user guidance).
-ARCHIVAL_DOC_PREFIXES = ("docs/internal/",)
+# maintainers/ holds phase plans, gates, and design locks (not user guidance).
+ARCHIVAL_DOC_PREFIXES = ("maintainers/",)
 ARCHIVAL_DOCS: set[str] = set()
 QUOTED_EXAMPLE_DOCS: set[str] = set()
 
@@ -75,7 +75,7 @@ def _relative(path: Path) -> str:
 def iter_targets() -> Iterable[Path]:
     """Yield current docs and Python sources in stable order."""
     docs = [ROOT / "README.md"]
-    docs.extend((ROOT / "docs").rglob("*.md"))
+    docs.extend((ROOT / "guides").rglob("*.md"))
     docs.extend((ROOT / "docs").rglob("*.rst"))
     python = (ROOT / "buildml").rglob("*.py")
 

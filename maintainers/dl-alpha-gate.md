@@ -1,12 +1,12 @@
-# DL alpha gate
+﻿# DL alpha gate
 
 Concrete exit criteria for declaring BuildML **2.1.0a1** deep-learning alpha.
 Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md). This is a
 release checklist, not a capability wishlist.
 
-Related docs: [quickstart-dl-alpha.md](../quickstart-dl-alpha.md) ·
+Related docs: [quickstart-torch.md](../guides/quickstart-torch.md) ·
 [dl-m0-lock.md](./dl-m0-lock.md) · [deep-learning-phase-plan.md](./deep-learning-phase-plan.md) ·
-[glossary.md](../glossary.md) · [editorial-standards.md](./editorial-standards.md)
+[glossary.md](../guides/glossary.md) · [editorial-standards.md](./editorial-standards.md)
 
 ---
 
@@ -48,8 +48,8 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | ID | Criterion | Evidence |
 | --- | --- | --- |
 | TD1 | Public Session Torch methods have catalog entries | `buildml.explain.catalog` + DL unit tests |
-| TD2 | Quickstart covers loaders → fit → evaluate → bundle → resume/curve and known limits | `docs/quickstart-dl-alpha.md` |
-| TD3 | Glossary covers Torch/DL terms used in the alpha path | `docs/glossary.md` |
+| TD2 | Quickstart covers loaders → fit → evaluate → bundle → resume/curve and known limits | `guides/quickstart-torch.md` |
+| TD3 | Glossary covers Torch/DL terms used in the alpha path | `guides/glossary.md` |
 | TD4 | Editorial / user-copy lint clean | `scripts/lint_user_copy.py` in CI |
 | TD5 | README documents `torch` / `dl` extras and Session Torch APIs without claiming RAG/LLM | `README.md` |
 

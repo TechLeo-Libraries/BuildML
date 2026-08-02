@@ -123,4 +123,4 @@ Layout: `<path>/meta.json` + `<path>/trainer.pt`.
   is the tested discipline; do not tune early stop on test.
 - **Not RAG / LLM.** Those domains are sequenced after DL.
 
-See [glossary.md](./glossary.md).
+See [glossary](glossary.md).

@@ -1,13 +1,13 @@
-# RAG alpha gate
+﻿# RAG alpha gate
 
 Concrete exit criteria for declaring BuildML **2.2.0a1** retrieval alpha.
 Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md) and
 [dl-alpha-gate.md](./dl-alpha-gate.md). This is a release checklist, not a
 capability wishlist.
 
-Related docs: [quickstart-rag-alpha.md](../quickstart-rag-alpha.md) ·
+Related docs: [quickstart-rag.md](../guides/quickstart-rag.md) ·
 [rag-m0-lock.md](./rag-m0-lock.md) · [rag-phase-plan.md](./rag-phase-plan.md) ·
-[glossary.md](../glossary.md) · [editorial-standards.md](./editorial-standards.md)
+[glossary.md](../guides/glossary.md) · [editorial-standards.md](./editorial-standards.md)
 
 ---
 
@@ -48,8 +48,8 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | ID | Criterion | Evidence |
 | --- | --- | --- |
 | RD1 | Public Session `rag_*` methods have catalog entries | `buildml.explain.catalog` + RAG unit tests |
-| RD2 | Quickstart covers ingest → retrieve/eval → upsert/delete → bundle and known limits | `docs/quickstart-rag-alpha.md` |
-| RD3 | Glossary covers RAG terms used in the alpha path | `docs/glossary.md` |
+| RD2 | Quickstart covers ingest → retrieve/eval → upsert/delete → bundle and known limits | `guides/quickstart-rag.md` |
+| RD3 | Glossary covers RAG terms used in the alpha path | `guides/glossary.md` |
 | RD4 | Editorial / user-copy lint clean | `scripts/lint_user_copy.py` in CI |
 | RD5 | README documents `buildml[rag]` and Session `rag_*` APIs without claiming generate/LLM | `README.md` |
 

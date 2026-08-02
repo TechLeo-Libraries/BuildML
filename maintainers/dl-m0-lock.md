@@ -1,4 +1,4 @@
-# DL M0 design lock
+﻿# DL M0 design lock
 
 Approved lock for the deep-learning thin slice.  
 Parent plan: [deep-learning-phase-plan.md](./deep-learning-phase-plan.md).

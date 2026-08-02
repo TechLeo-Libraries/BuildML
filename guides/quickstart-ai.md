@@ -279,4 +279,4 @@ them. The operator is not a substitute for domain expertise.
 - **Provider sees approved egress.** BuildML cannot protect against a
   compromised provider.
 
-See [glossary.md](./glossary.md).
+See [glossary](glossary.md).

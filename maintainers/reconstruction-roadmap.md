@@ -1,4 +1,4 @@
-# BuildML reconstruction roadmap
+﻿# BuildML reconstruction roadmap
 
 Decision-oriented planning map for a full system rewrite · grounded in the 1 Aug 2026 architecture audit · updated with owner planning decisions (Aug 2026).
 

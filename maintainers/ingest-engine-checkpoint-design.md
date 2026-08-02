@@ -1,4 +1,4 @@
-# Ingest, engine, and checkpoint design
+﻿# Ingest, engine, and checkpoint design
 
 Shared spine for BuildML v2. Designed from day one so classical ML, deep learning, and RAG domains can share one data contract.
 

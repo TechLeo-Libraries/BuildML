@@ -30,8 +30,8 @@ materialization path. Polars and DuckDB support conversion and engine-aware
 paths; they do not make every Session operation lazy or out-of-core.
 
 Optional Torch, RAG, and AI operator paths install as extras and attach to the
-same Session. See the repository README and the quickstarts in ``docs/`` for
-runnable examples.
+same Session. See the repository README, the :doc:`guides` section, and the
+Markdown quickstarts in ``guides/`` for runnable examples.
 
 Author
 ------

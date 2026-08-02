@@ -1,4 +1,4 @@
-# BuildML architecture review
+﻿# BuildML architecture review
 
 Read-only audit of repository HEAD `3d4ccae` · source release 1.0.9 · audited 1 Aug 2026.
 
@@ -66,7 +66,9 @@ The facade does **not** delegate to the functional modules. It reimplements them
 | `output_dataset/_output_dataset.py` | File export | CSV/XLSX; not connected to root facade. |
 | Six package `__init__.py` files | Namespace exports | Only `SupervisedLearning` is available from `buildml`. |
 | `setup.py` + `requirements.txt` | Distribution | Setuptools 1.0.9; unpinned dependency list. |
-| `docs/` | Sphinx documentation | RTD for Python 3.11; duplicated README/features/usage/history. |
+| `docs/` | Sphinx site source (RTD) | Published HTML at buildml.readthedocs.io |
+| `guides/` | User quickstarts and glossary (Markdown) | Included in Sphinx via MyST |
+| `maintainers/` | Phase plans, gates, checklists | Git only |
 | `.spyproject/` | Editor metadata | Tracked Spyder prefs; not runtime configuration. |
 
 ## Risk register

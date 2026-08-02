@@ -163,7 +163,7 @@ or deployment readiness on their own.
 
 Target encoding, PCA, feature selection, calibration, threshold tuning,
 learning curves, and permutation importance are covered in the
-[classical quickstart](docs/quickstart-alpha.md) and
+[classical quickstart](guides/quickstart-classical.md) and
 [workflow guide](docs/workflow-guide.rst).
 
 ## Optional extras
@@ -181,10 +181,10 @@ unchanged.
 
 Runnable quickstarts:
 
-- [Classical](docs/quickstart-alpha.md)
-- [Torch](docs/quickstart-dl-alpha.md)
-- [RAG](docs/quickstart-rag-alpha.md)
-- [AI operator](docs/quickstart-ai-alpha.md)
+- [Classical](guides/quickstart-classical.md)
+- [Torch](guides/quickstart-torch.md)
+- [RAG](guides/quickstart-rag.md)
+- [AI operator](guides/quickstart-ai.md)
 
 Torch training in this alpha is a tabular numeric slice without fold-local CV.
 RAG defaults to hashing embeddings, not downloaded sentence models, and has no
@@ -197,10 +197,11 @@ This is pre-release software. Bundle schema version strings, report layouts,
 and method signatures may change. There is no out-of-core sklearn training,
 first-class SHAP or fairness reporting, autonomous LLM agents, or RAG answer
 generation yet. See [CHANGELOG.md](CHANGELOG.md) for release notes and
-[docs/glossary.md](docs/glossary.md) for terminology.
+[guides/glossary.md](guides/glossary.md) for terminology.
 
 ## Documentation
 
+- [Guides](guides/README.md) — quickstarts and glossary (Markdown)
 - [Concepts](docs/concepts.rst) — roles, partitions, train-fitted plans
 - [Workflow guide](docs/workflow-guide.rst) — ordering, leakage, diagnostics
 - [Sphinx docs](docs/index.rst) — installation, API reference, legacy boundary

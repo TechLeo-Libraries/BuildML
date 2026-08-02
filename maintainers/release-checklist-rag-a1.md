@@ -1,4 +1,4 @@
-# Release checklist — 2.2.0a1 (RAG alpha)
+﻿# Release checklist — 2.2.0a1 (RAG alpha)
 
 Use this when cutting the first retrieval alpha tag. Do **not** tag until
 remote CI is green on the commit you intend to release.

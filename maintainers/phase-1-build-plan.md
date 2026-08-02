@@ -1,4 +1,4 @@
-# Phase 1 build plan — Foundation
+﻿# Phase 1 build plan — Foundation
 
 Implementation plan for BuildML 2.0 foundation.  
 Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) · [ingest-engine-checkpoint-design.md](./ingest-engine-checkpoint-design.md) · [classical-ml-capability-map.md](./classical-ml-capability-map.md)

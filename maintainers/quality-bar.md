@@ -1,4 +1,4 @@
-# BuildML quality bar (locked)
+﻿# BuildML quality bar (locked)
 
 Applies to every capability created so far and going forward.
 

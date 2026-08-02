@@ -20,7 +20,7 @@ with pre-release tags for alpha (`aN`) builds.
 ## [2.3.0a1] — AI operator alpha — 2026-08-02
 
 First AI operator alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`docs/internal/ai-alpha-gate.md`](docs/internal/ai-alpha-gate.md).
+known limits are defined in [`maintainers/ai-alpha-gate.md`](maintainers/ai-alpha-gate.md).
 Classical alpha remains at `2.0.0a1`; DL alpha at `2.1.0a1`; RAG alpha at
 `2.2.0a1`. This line adds optional LLM-assisted workflow guidance — **not**
 autonomous agents or auto-execution.
@@ -68,13 +68,13 @@ autonomous agents or auto-execution.
 
 ### Verification
 
-- Gate checklist: `docs/internal/ai-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `docs/internal/release-checklist-ai-a1.md`).
+- Gate checklist: `maintainers/ai-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `maintainers/release-checklist-ai-a1.md`).
 
 ## [2.2.0a1] — RAG alpha — 2026-08-01
 
 First retrieval (RAG) alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`docs/internal/rag-alpha-gate.md`](docs/internal/rag-alpha-gate.md).
+known limits are defined in [`maintainers/rag-alpha-gate.md`](maintainers/rag-alpha-gate.md).
 Classical alpha remains at `2.0.0a1`; DL alpha remains at `2.1.0a1`. This line
 adds optional retrieve / evaluate / bundle — **not** generate or an LLM operator.
 
@@ -108,13 +108,13 @@ adds optional retrieve / evaluate / bundle — **not** generate or an LLM operat
 
 ### Verification
 
-- Gate checklist: `docs/internal/rag-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `docs/internal/release-checklist-rag-a1.md`).
+- Gate checklist: `maintainers/rag-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `maintainers/release-checklist-rag-a1.md`).
 
 ## [2.1.0a1] — DL alpha — 2026-08-01
 
 First deep-learning alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`docs/internal/dl-alpha-gate.md`](docs/internal/dl-alpha-gate.md).
+known limits are defined in [`maintainers/dl-alpha-gate.md`](maintainers/dl-alpha-gate.md).
 Classical alpha remains documented at `2.0.0a1`; this line adds optional Torch.
 
 ### Added
@@ -144,13 +144,13 @@ Classical alpha remains documented at `2.0.0a1`; this line adds optional Torch.
 
 ### Verification
 
-- Gate checklist: `docs/internal/dl-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `docs/internal/release-checklist-dl-a1.md`).
+- Gate checklist: `maintainers/dl-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `maintainers/release-checklist-dl-a1.md`).
 
 ## [2.0.0a1] — classical alpha — 2026-08-01
 
 First classical-ML alpha of the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`docs/internal/classical-alpha-gate.md`](docs/internal/classical-alpha-gate.md).
+known limits are defined in [`maintainers/classical-alpha-gate.md`](maintainers/classical-alpha-gate.md).
 
 ### Added
 
@@ -180,9 +180,9 @@ known limits are defined in [`docs/internal/classical-alpha-gate.md`](docs/inter
 
 ### Verification
 
-- Local gate checklist: see `docs/internal/classical-alpha-gate.md` sign-off section.
+- Local gate checklist: see `maintainers/classical-alpha-gate.md` sign-off section.
 - Tag only after remote CI is green on the push that includes this release
-  candidate (see `docs/internal/release-checklist-a1.md`).
+  candidate (see `maintainers/release-checklist-a1.md`).
 
 ## [1.x]
 

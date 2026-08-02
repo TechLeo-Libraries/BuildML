@@ -1,4 +1,4 @@
-# LLM Operator M0 Design Lock
+﻿# LLM Operator M0 Design Lock
 
 Approved lock for the LLM operator phase.  
 Parent plan: [llm-operator-phase-plan.md](./llm-operator-phase-plan.md).

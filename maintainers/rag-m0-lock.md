@@ -1,4 +1,4 @@
-# RAG M0 design lock
+﻿# RAG M0 design lock
 
 Approved lock for the retrieval thin slice.  
 Parent plan: [rag-phase-plan.md](./rag-phase-plan.md).

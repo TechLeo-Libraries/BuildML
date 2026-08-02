@@ -1,4 +1,4 @@
-# RAG phase plan
+﻿# RAG phase plan
 
 Next-phase plan after classical alpha `2.0.0a1` and DL alpha `2.1.0a1`.  
 Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
@@ -440,7 +440,7 @@ rag_ingest_corpus (fixture docs)
 
 **M3 delivery notes**
 
-- Quickstart: [quickstart-rag-alpha.md](../quickstart-rag-alpha.md).
+- Quickstart: [quickstart-rag.md](../guides/quickstart-rag.md).
 - Gate: [rag-alpha-gate.md](./rag-alpha-gate.md); release checklist:
   [release-checklist-rag-a1.md](./release-checklist-rag-a1.md).
 - Version line `2.2.0a1`; generate / LLM operator remain deferred (no claims).

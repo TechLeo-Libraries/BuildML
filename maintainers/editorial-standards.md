@@ -1,4 +1,4 @@
-# BuildML editorial standards
+﻿# BuildML editorial standards
 
 These rules apply to operation explanations, findings, recommendations, console text, and HTML
 reports. They are a product contract: a report should help a reader decide what to inspect or do
@@ -19,7 +19,7 @@ next without overstating what the data establishes.
 - A `self-contained report` has no network dependency. It is not necessarily a complete account of
   external work.
 
-The canonical definitions are in [glossary.md](../glossary.md). Catalog concept keys live in
+The canonical definitions are in [glossary.md](../guides/glossary.md). Catalog concept keys live in
 `buildml.explain.CONCEPT_NOTES`; documentation should name the matching key when it expands one.
 
 ## Voice and structure

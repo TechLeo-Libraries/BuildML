@@ -1,4 +1,4 @@
-# AI alpha gate
+﻿# AI alpha gate
 
 Concrete exit criteria for declaring BuildML **2.3.0a1** AI operator alpha.
 Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md),
@@ -6,9 +6,9 @@ Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md),
 [rag-alpha-gate.md](./rag-alpha-gate.md). This is a release checklist, not a
 capability wishlist.
 
-Related docs: [quickstart-ai-alpha.md](../quickstart-ai-alpha.md) ·
+Related docs: [quickstart-ai.md](../guides/quickstart-ai.md) ·
 [llm-m0-lock.md](./llm-m0-lock.md) · [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) ·
-[glossary.md](../glossary.md) · [editorial-standards.md](./editorial-standards.md)
+[glossary.md](../guides/glossary.md) · [editorial-standards.md](./editorial-standards.md)
 
 ---
 
@@ -63,7 +63,7 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | ID | Criterion | Evidence |
 | --- | --- | --- |
 | AD1 | Public Session `ai_*` methods have catalog entries | `buildml.explain.catalog` + AI unit tests |
-| AD2 | Quickstart covers configure → egress → advisor → plan → execute → transcript and known limits | `docs/quickstart-ai-alpha.md` |
+| AD2 | Quickstart covers configure → egress → advisor → plan → execute → transcript and known limits | `guides/quickstart-ai.md` |
 | AD3 | Concept notes exist for `ai-egress-privacy`, `ai-tool-trust`, `ai-prompt-injection` | Concept tests |
 | AD4 | Editorial / user-copy lint clean | `scripts/lint_user_copy.py` in CI |
 | AD5 | README documents `buildml[ai]` without claiming autonomous agent or production safety | `README.md` |

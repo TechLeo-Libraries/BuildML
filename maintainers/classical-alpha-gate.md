@@ -1,11 +1,11 @@
-# Classical alpha gate
+﻿# Classical alpha gate
 
 Concrete exit criteria for declaring BuildML 2.x classical ML **alpha-ready**.
 This is a release checklist, not a capability wishlist. Items are either met by
 CI/tests/docs today or listed as known limits.
 
-Related docs: [quickstart-alpha.md](../quickstart-alpha.md) ·
-[glossary.md](../glossary.md) · [workflow-guide.rst](../workflow-guide.rst) ·
+Related docs: [quickstart-classical.md](../guides/quickstart-classical.md) ·
+[glossary.md](../guides/glossary.md) · [workflow-guide.rst](../docs/workflow-guide.rst) ·
 [editorial-standards.md](./editorial-standards.md)
 
 ---
@@ -49,7 +49,7 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | --- | --- | --- |
 | D1 | Public Session methods used by the learner path have catalog entries | `buildml.explain.catalog` + explain tests |
 | D2 | Fold-local vs Session-global preprocess limits are documented and disclosed | glossary, workflow guide, `PreprocessRecipe` / `SESSION_GLOBAL_ONLY_STEPS`, walkthrough + Teaching Studio `preprocess_scope_status` |
-| D3 | Quickstart covers split → prep → fit → evaluate and CV with `PreprocessRecipe` | `docs/quickstart-alpha.md` |
+| D3 | Quickstart covers split → prep → fit → evaluate and CV with `PreprocessRecipe` | `guides/quickstart-classical.md` |
 | D4 | Editorial / user-copy lint clean | `scripts/lint_user_copy.py` in CI |
 
 ### CI and packaging

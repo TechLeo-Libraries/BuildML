@@ -1,4 +1,4 @@
-# Release checklist — 2.0.0a1 (classical alpha)
+﻿# Release checklist — 2.0.0a1 (classical alpha)
 
 Use this when cutting the first classical alpha tag. Do **not** tag until remote
 CI is green on the commit you intend to release.

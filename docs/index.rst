@@ -19,6 +19,7 @@ imported from the package root.
    usage
    concepts
    workflow-guide
+   guides
    features
    legacy
    modules
