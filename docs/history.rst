@@ -2,7 +2,7 @@ BuildML 2.x changelog
 ---------------------
 
 Active release notes for BuildML 2.x live in the repository root
-``CHANGELOG.md``. The current line is ``2.4.0a1`` (post-depth / process closure
+``CHANGELOG.md``. The current line is ``2.4.0a2`` (proof suite / preprocess harden
 on the AI ``2.3``, RAG ``2.2``, Torch ``2.1``, and classical ``2.0`` bases).
 
 BuildML 1.x archived changelog

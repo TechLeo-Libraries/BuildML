@@ -8,6 +8,16 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+## [2.4.0a2] — proof suite / preprocess harden — 2026-08-03
+
+### Summary
+
+Hardens Session preprocess role skipping, FLAML AutoML evaluate/bundle predict
+paths, production extras markers (Windows / Py3.13), availability probes, and
+benchmark skip discipline; ships the Tier A/B/C proof suite with docs/README
+linkage. Bumps the package line to **`2.4.0a2`**. **Not published to PyPI** —
+GitHub prerelease / honesty banner only.
+
 ### Added
 
 - **Proof suite (Tier A/B/C complete):** 25 single-domain Tier A projects, 6 Tier B
@@ -180,10 +190,10 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Changed
 
-- **Post-`v2.4.0a1` HEAD:** `e142f0d` removed the private `maintainers/` tree and
-  refreshed public doc hygiene. Version remains **`2.4.0a1`** (no `a2` bump);
-  the existing tag is not moved. GitHub release `v2.4.0a1` should be marked
-  **prerelease**. Still not published to PyPI — honesty banner only.
+- **Post-`v2.4.0a1` hygiene + `2.4.0a2` bump:** `e142f0d` removed the private
+  `maintainers/` tree and refreshed public doc hygiene. This cut bumps the
+  package line to **`2.4.0a2`**. GitHub release is **prerelease**. Still not
+  published to PyPI — honesty banner only.
 
 ## [2.4.0a1] — post-depth / process closure — 2026-08-02
 

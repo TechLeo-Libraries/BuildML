@@ -1,3 +1,3 @@
 """Single-source package version."""
 
-__version__ = "2.4.0a1"
+__version__ = "2.4.0a2"

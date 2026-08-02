@@ -24,7 +24,7 @@ memberships.
 Alpha status
 ------------
 
-Version ``2.4.0a1`` is under active development. Checkpoint layouts, report
+Version ``2.4.0a2`` is under active development. Checkpoint layouts, report
 schemas, and method signatures may change. Pandas remains the canonical
 sklearn-facing materialization path. Polars and DuckDB support conversion and
 engine-aware paths; they do not make every Session operation lazy or

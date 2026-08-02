@@ -7,7 +7,7 @@ estimator, and a record of every operation you run. Preprocessing learns from
 the training partition only; validation and test rows receive frozen
 transformations. That train-only boundary is enforced in the API.
 
-**BuildML 2.4 alpha** (`2.4.0a1`) is pre-release software. Public methods, report
+**BuildML 2.4 alpha** (`2.4.0a2`) is pre-release software. Public methods, report
 schemas, and serialized bundle formats may change before a stable 2.x release.
 The public 2.x entry point is `buildml.Session`.
 
