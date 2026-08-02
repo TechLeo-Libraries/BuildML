@@ -1,12 +1,18 @@
 # AI operator quickstart
 
+> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
+> install Session 2.x. Install 2.x from GitHub (or an editable checkout), then
+> the AI extra. See [installation](../docs/installation.rst).
+
 Optional LLM-assisted workflow guidance on the same `Session` as classical ML,
 Torch, and RAG: roles, splits, history, and explain. Install the AI extra;
 core `import buildml` never requires it.
 
 ```bash
+# After a GitHub / editable 2.x install:
 pip install "buildml[ai]"
 # alias: pip install "buildml[llm]"
+# or: pip install "buildml[ai] @ git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
 
 Classical `Session.fit`, Torch `*_torch`, and RAG `rag_*` stay unchanged. AI
