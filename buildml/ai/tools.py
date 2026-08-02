@@ -403,6 +403,21 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                         "type": "boolean",
                         "description": "Fit audio amplitude mean/std on train (default true).",
                     },
+                    "audio_sample_rate": {
+                        "type": "integer",
+                        "description": "Target audio sample rate (default 16000).",
+                    },
+                    "audio_max_samples": {
+                        "type": "integer",
+                        "description": (
+                            "Fixed waveform length; short clips are repeat-padded "
+                            "(default 16000)."
+                        ),
+                    },
+                    "audio_source_sample_rate": {
+                        "type": "integer",
+                        "description": "Optional source rate for array waveforms.",
+                    },
                 },
                 "required": [],
             },
@@ -437,6 +452,21 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                     "normalize_images": {
                         "type": "boolean",
                         "description": "Fit image channel mean/std on train (default true).",
+                    },
+                    "normalize_audio": {
+                        "type": "boolean",
+                        "description": "Fit audio amplitude mean/std on train (default true).",
+                    },
+                    "audio_sample_rate": {
+                        "type": "integer",
+                        "description": "Target audio sample rate (default 16000).",
+                    },
+                    "audio_max_samples": {
+                        "type": "integer",
+                        "description": (
+                            "Fixed waveform length; short clips are repeat-padded "
+                            "(default 16000)."
+                        ),
                     },
                 },
                 "required": ["image_column"],
@@ -473,6 +503,21 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                     "normalize_audio": {
                         "type": "boolean",
                         "description": "Fit audio amplitude mean/std on train (default true).",
+                    },
+                    "audio_sample_rate": {
+                        "type": "integer",
+                        "description": "Target audio sample rate (default 16000).",
+                    },
+                    "audio_max_samples": {
+                        "type": "integer",
+                        "description": (
+                            "Fixed waveform length; short clips are repeat-padded "
+                            "(default 16000)."
+                        ),
+                    },
+                    "audio_source_sample_rate": {
+                        "type": "integer",
+                        "description": "Optional source rate for array waveforms.",
                     },
                 },
                 "required": ["audio_column"],

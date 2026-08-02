@@ -474,6 +474,14 @@ def _dispatch_tool(
             kwargs["image_column"] = call.arguments["image_column"]
         if "audio_column" in call.arguments and call.arguments["audio_column"] is not None:
             kwargs["audio_column"] = call.arguments["audio_column"]
+        if call.arguments.get("audio_sample_rate") is not None:
+            kwargs["audio_sample_rate"] = int(call.arguments["audio_sample_rate"])
+        if call.arguments.get("audio_max_samples") is not None:
+            kwargs["audio_max_samples"] = int(call.arguments["audio_max_samples"])
+        if call.arguments.get("audio_source_sample_rate") is not None:
+            kwargs["audio_source_sample_rate"] = int(
+                call.arguments["audio_source_sample_rate"]
+            )
         session.make_multimodal_torch_loaders(**kwargs)
         state_changes.append(
             "Built multimodal Torch DataLoaders "
@@ -491,11 +499,16 @@ def _dispatch_tool(
             "image_column": str(image_column),
             "batch_size": int(call.arguments.get("batch_size", 16)),
             "normalize_images": bool(call.arguments.get("normalize_images", True)),
+            "normalize_audio": bool(call.arguments.get("normalize_audio", True)),
         }
         if "text_column" in call.arguments and call.arguments["text_column"] is not None:
             img_kwargs["text_column"] = call.arguments["text_column"]
         if "audio_column" in call.arguments and call.arguments["audio_column"] is not None:
             img_kwargs["audio_column"] = call.arguments["audio_column"]
+        if call.arguments.get("audio_sample_rate") is not None:
+            img_kwargs["audio_sample_rate"] = int(call.arguments["audio_sample_rate"])
+        if call.arguments.get("audio_max_samples") is not None:
+            img_kwargs["audio_max_samples"] = int(call.arguments["audio_max_samples"])
         session.make_image_multimodal_torch_loaders(**img_kwargs)
         state_changes.append(
             "Built image multimodal Torch DataLoaders (train-only image/channel stats)."
@@ -517,6 +530,14 @@ def _dispatch_tool(
             aud_kwargs["text_column"] = call.arguments["text_column"]
         if "image_column" in call.arguments and call.arguments["image_column"] is not None:
             aud_kwargs["image_column"] = call.arguments["image_column"]
+        if call.arguments.get("audio_sample_rate") is not None:
+            aud_kwargs["audio_sample_rate"] = int(call.arguments["audio_sample_rate"])
+        if call.arguments.get("audio_max_samples") is not None:
+            aud_kwargs["audio_max_samples"] = int(call.arguments["audio_max_samples"])
+        if call.arguments.get("audio_source_sample_rate") is not None:
+            aud_kwargs["audio_source_sample_rate"] = int(
+                call.arguments["audio_source_sample_rate"]
+            )
         session.make_audio_multimodal_torch_loaders(**aud_kwargs)
         state_changes.append(
             "Built audio multimodal Torch DataLoaders (train-only audio amplitude stats)."

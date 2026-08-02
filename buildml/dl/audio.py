@@ -4,7 +4,9 @@ Supports:
 - path cells (str / Path) via ``soundfile`` (included in ``buildml[torch]``)
 - waveform array cells (``numpy.ndarray`` / nested lists) without soundfile
 
-Tensors are mono ``(1, T)`` float32. Amplitude mean/std are fit on train only.
+Tensors are mono ``(1, T)`` float32. Short clips are **repeat-padded** to
+``max_samples`` (not zero-filled) so global pooling remains informative.
+Amplitude mean/std are fit on train only (optionally length-aware).
 
 This is an honest alpha fusion branch — not a speech foundation-model stack.
 """
@@ -39,55 +41,21 @@ def decode_audio_cell(
 
     Accepts file paths, ``Path`` objects, ``numpy`` arrays, or nested lists.
     Arrays may be ``(T,)``, ``(1, T)``, ``(C, T)``, or ``(T, C)`` with small C.
+    Short clips are repeat-padded to ``max_samples`` (not zero-filled).
     """
-    sr = int(sample_rate)
-    t_max = int(max_samples)
-    if sr < 1:
-        raise ValidationError("sample_rate must be positive")
-    if t_max < 1:
-        raise ValidationError("max_samples must be positive")
-
-    if isinstance(value, (str, Path)):
-        return _decode_path(Path(value), sample_rate=sr, max_samples=t_max)
-    if isinstance(value, np.ndarray):
-        return _normalize_waveform(
-            value,
-            sample_rate=sr,
-            max_samples=t_max,
-            source_sample_rate=source_sample_rate,
-        )
-    if isinstance(value, (list, tuple)):
-        return _normalize_waveform(
-            np.asarray(value),
-            sample_rate=sr,
-            max_samples=t_max,
-            source_sample_rate=source_sample_rate,
-        )
-    raise ValidationError(
-        "Audio cell must be a path string, Path, numpy array, or nested list; "
-        f"got {type(value).__name__}"
+    cell, _length = _decode_audio_cell_with_length(
+        value,
+        sample_rate=int(sample_rate),
+        max_samples=int(max_samples),
+        source_sample_rate=source_sample_rate,
     )
+    return cell
 
 
-def _decode_path(path: Path, *, sample_rate: int, max_samples: int) -> np.ndarray:
-    sf = require_soundfile(feature="Audio path multimodal loaders")
-    if not path.exists():
-        raise ValidationError(f"Audio path does not exist: {path}")
-    try:
-        data, file_sr = sf.read(str(path), always_2d=True, dtype="float32")
-    except Exception as exc:  # noqa: BLE001
-        raise ValidationError(f"Failed to read audio file {path}: {exc}") from exc
-    # soundfile returns (T, C)
-    wave = data.mean(axis=1).astype(np.float32, copy=False)
-    wave = _resample_mono(wave, src_sr=int(file_sr), dst_sr=sample_rate)
-    return _pad_or_truncate(wave, max_samples=max_samples)
-
-
-def _normalize_waveform(
+def _mono_wave_from_array(
     arr: np.ndarray,
     *,
     sample_rate: int,
-    max_samples: int,
     source_sample_rate: int | None,
 ) -> np.ndarray:
     arr = np.asarray(arr)
@@ -113,7 +81,7 @@ def _normalize_waveform(
         wave = _resample_mono(
             wave, src_sr=int(source_sample_rate), dst_sr=int(sample_rate)
         )
-    return _pad_or_truncate(wave, max_samples=max_samples)
+    return wave
 
 
 def _resample_mono(wave: np.ndarray, *, src_sr: int, dst_sr: int) -> np.ndarray:
@@ -129,12 +97,21 @@ def _resample_mono(wave: np.ndarray, *, src_sr: int, dst_sr: int) -> np.ndarray:
 
 
 def _pad_or_truncate(wave: np.ndarray, *, max_samples: int) -> np.ndarray:
+    """Pad/truncate to ``max_samples``.
+
+    Short clips are **repeat-padded** (tiled) rather than zero-padded so a
+    global ``AdaptiveAvgPool1d`` over the fixed window does not wash out the
+    signal when ``max_samples`` is much larger than the source clip.
+    Empty waveforms remain zeros.
+    """
     wave = np.asarray(wave, dtype=np.float32).reshape(-1)
     if wave.shape[0] >= max_samples:
         clipped = wave[:max_samples]
-    else:
+    elif wave.shape[0] == 0:
         clipped = np.zeros(max_samples, dtype=np.float32)
-        clipped[: wave.shape[0]] = wave
+    else:
+        reps = int(np.ceil(max_samples / float(wave.shape[0])))
+        clipped = np.tile(wave, reps)[:max_samples].astype(np.float32, copy=False)
     return clipped.reshape(1, max_samples)
 
 
@@ -144,30 +121,110 @@ def stack_audio_column(
     sample_rate: int = 16_000,
     max_samples: int = 16_000,
     source_sample_rate: int | None = None,
-) -> np.ndarray:
-    """Decode a Series/list of audio cells → ``(N, 1, T)`` float32."""
-    decoded = [
-        decode_audio_cell(
+    return_lengths: bool = False,
+) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
+    """Decode a Series/list of audio cells → ``(N, 1, T)`` float32.
+
+    When ``return_lengths=True``, also returns pre-pad/truncation lengths
+    ``(N,)`` (clamped to ``max_samples``) for length-aware normalize stats.
+    """
+    decoded: list[np.ndarray] = []
+    lengths: list[int] = []
+    for v in values:
+        cell, length = _decode_audio_cell_with_length(
             v,
             sample_rate=sample_rate,
             max_samples=max_samples,
             source_sample_rate=source_sample_rate,
         )
-        for v in values
-    ]
+        decoded.append(cell)
+        lengths.append(length)
     if not decoded:
-        return np.zeros((0, 1, max_samples), dtype=np.float32)
-    return np.stack(decoded, axis=0)
+        empty = np.zeros((0, 1, max_samples), dtype=np.float32)
+        if return_lengths:
+            return empty, np.zeros((0,), dtype=np.int64)
+        return empty
+    stacked = np.stack(decoded, axis=0)
+    if return_lengths:
+        return stacked, np.asarray(lengths, dtype=np.int64)
+    return stacked
 
 
-def fit_audio_waveform_stats(audio: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Fit amplitude mean/std on a train batch ``(N, 1, T)``."""
+def _decode_audio_cell_with_length(
+    value: Any,
+    *,
+    sample_rate: int,
+    max_samples: int,
+    source_sample_rate: int | None,
+) -> tuple[np.ndarray, int]:
+    """Decode one cell and report the unpadded (pre-tile) length in samples."""
+    sr = int(sample_rate)
+    t_max = int(max_samples)
+    if sr < 1:
+        raise ValidationError("sample_rate must be positive")
+    if t_max < 1:
+        raise ValidationError("max_samples must be positive")
+
+    if isinstance(value, (str, Path)):
+        sf = require_soundfile(feature="Audio path multimodal loaders")
+        path = Path(value)
+        if not path.exists():
+            raise ValidationError(f"Audio path does not exist: {path}")
+        try:
+            data, file_sr = sf.read(str(path), always_2d=True, dtype="float32")
+        except Exception as exc:  # noqa: BLE001
+            raise ValidationError(f"Failed to read audio file {path}: {exc}") from exc
+        # soundfile returns (T, C)
+        wave = data.mean(axis=1).astype(np.float32, copy=False)
+        wave = _resample_mono(wave, src_sr=int(file_sr), dst_sr=sr)
+    elif isinstance(value, np.ndarray):
+        wave = _mono_wave_from_array(
+            value, sample_rate=sr, source_sample_rate=source_sample_rate
+        )
+    elif isinstance(value, (list, tuple)):
+        wave = _mono_wave_from_array(
+            np.asarray(value), sample_rate=sr, source_sample_rate=source_sample_rate
+        )
+    else:
+        raise ValidationError(
+            "Audio cell must be a path string, Path, numpy array, or nested list; "
+            f"got {type(value).__name__}"
+        )
+    wave = np.asarray(wave, dtype=np.float32).reshape(-1)
+    raw_len = int(min(wave.shape[0], t_max))
+    return _pad_or_truncate(wave, max_samples=t_max), raw_len
+
+
+def fit_audio_waveform_stats(
+    audio: np.ndarray,
+    lengths: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Fit amplitude mean/std on a train batch ``(N, 1, T)``.
+
+    When ``lengths`` is provided, stats use only the pre-pad/truncation region
+    of each clip (avoids zero-pad domination if a caller still zero-fills).
+    """
     if audio.ndim != 3 or audio.shape[1] != 1:
         raise ValidationError(f"Expected N1T audio; got shape {audio.shape}")
     if audio.shape[0] < 1:
         raise ValidationError("Cannot fit audio normalize stats on empty train partition")
-    mean = np.array([float(audio.mean())], dtype=np.float64)
-    std = np.array([float(audio.std())], dtype=np.float64)
+    if lengths is None:
+        mean = np.array([float(audio.mean())], dtype=np.float64)
+        std = np.array([float(audio.std())], dtype=np.float64)
+    else:
+        lengths_a = np.asarray(lengths, dtype=np.int64).reshape(-1)
+        if lengths_a.shape[0] != audio.shape[0]:
+            raise ValidationError("audio lengths must align with batch dimension")
+        pieces: list[np.ndarray] = []
+        for i, length in enumerate(lengths_a.tolist()):
+            n = int(max(0, min(int(length), audio.shape[-1])))
+            if n > 0:
+                pieces.append(audio[i, 0, :n].astype(np.float64, copy=False).ravel())
+        if not pieces:
+            raise ValidationError("Cannot fit audio normalize stats on empty waveforms")
+        cat = np.concatenate(pieces)
+        mean = np.array([float(cat.mean())], dtype=np.float64)
+        std = np.array([float(cat.std())], dtype=np.float64)
     std = np.where(std < 1e-6, 1.0, std)
     return mean, std
 

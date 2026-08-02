@@ -179,7 +179,8 @@ aud.fit_torch(epochs=5, device="cpu")
 - **Tabular + text + image + audio multimodal in scope.** Built-in MLP, text
   classifier, and fusion (small CNN image branch + small 1D-CNN audio branch)
   cover the happy path; custom `nn.Module` still works. Audio is honest alpha
-  fusion — not a speech foundation-model product.
+  fusion — not a speech foundation-model product. Short clips are repeat-padded
+  to `audio_max_samples` (set it near your clip length when possible).
 - **Materialization.** Partition rows become tensors via the current Session
   frame (Pandas/NumPy bridge). No Polars/DuckDB zero-copy into DataLoaders.
 - **Classical plans.** Session impute/encode/scale mutate the frame and are

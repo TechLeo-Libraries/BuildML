@@ -277,6 +277,88 @@ def test_export_refuses_silent_tabular_rebuild_after_audio_fit(tmp_path: Path) -
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_evaluate_and_fit_refuse_silent_tabular_rebuild_after_audio_fit() -> None:
+    _require_torch_or_skip()
+    session = (
+        Session.ingest(_audio_tabular_frame(40))
+        .set_roles(
+            {"x1": "feature", "x2": "feature", "audio": "feature", "y": "target"}
+        )
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    )
+    session.make_audio_multimodal_torch_loaders(
+        audio_column="audio",
+        audio_sample_rate=_AUDIO_SR,
+        audio_max_samples=_AUDIO_LEN,
+        batch_size=8,
+        seed=0,
+    )
+    session.fit_torch(epochs=1, device="cpu")
+    session._torch_loaders = None
+    with pytest.raises(ValidationError, match="Refusing silent tabular loader rebuild"):
+        session.evaluate_torch(partition="validation")
+    with pytest.raises(ValidationError, match="Refusing silent tabular loader rebuild"):
+        session.fit_torch(epochs=1, device="cpu")
+
+
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_media_path_column_not_inferred_as_text() -> None:
+    _require_torch_or_skip()
+    n = 24
+    frame = pd.DataFrame(
+        {
+            "x1": np.random.default_rng(0).normal(size=n),
+            "audio": [f"clip_{i}.wav" for i in range(n)],
+            "y": [0, 1] * 12,
+        }
+    )
+    session = (
+        Session.ingest(frame)
+        .set_roles({"x1": "feature", "audio": "feature", "y": "target"})
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    )
+    with pytest.raises(ValidationError, match="audio_column=|image_column="):
+        session.make_multimodal_torch_loaders(batch_size=4)
+
+
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_short_clip_repeat_pad_preserves_pool_signal() -> None:
+    """Default-length windows must not wipe short waveforms via zero-pad+GAP."""
+    _require_torch_or_skip()
+    import torch
+    import torch.nn as nn
+
+    from buildml.dl.audio import (
+        apply_audio_waveform_stats,
+        decode_audio_cell,
+        fit_audio_waveform_stats,
+        stack_audio_column,
+    )
+
+    short = np.ones(256, dtype=np.float32) * 0.5
+    cell = decode_audio_cell(short, sample_rate=16_000, max_samples=16_000)
+    assert cell.shape == (1, 16_000)
+    # Repeat-pad: amplitude preserved across the window (not diluted by zeros).
+    assert float(np.abs(cell.mean() - 0.5)) < 1e-5
+    batch, lengths = stack_audio_column(
+        [short, short * 0.8],
+        sample_rate=16_000,
+        max_samples=16_000,
+        return_lengths=True,
+    )
+    assert lengths.tolist() == [256, 256]
+    mean, std = fit_audio_waveform_stats(batch, lengths=lengths)
+    # Length-aware stats match the short-clip region, not a zero-dominated window.
+    short_batch = np.stack([short.reshape(1, -1), (short * 0.8).reshape(1, -1)])
+    mean_s, std_s = fit_audio_waveform_stats(short_batch.reshape(2, 1, 256))
+    assert np.allclose(mean, mean_s)
+    assert np.allclose(std, std_s)
+    norm = apply_audio_waveform_stats(batch, mean, std)
+    pooled = nn.AdaptiveAvgPool1d(1)(torch.as_tensor(norm)).reshape(-1)
+    assert float(pooled.abs().min()) > 0.5
+
+
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_audio_alone_refused() -> None:
     _require_torch_or_skip()
     frame = pd.DataFrame(
@@ -322,6 +404,8 @@ def test_audio_multimodal_onnx_export(tmp_path: Path) -> None:
     assert result.path.exists()
     assert result.format == "onnx"
     assert result.path.stat().st_size > 0
+    assert result.meta.get("input_names") == ["numeric", "audio"]
+    assert result.meta.get("input_layout") == ["numeric", "audio"]
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -375,13 +459,14 @@ def test_ai_executor_dispatches_make_audio_multimodal_torch_loaders() -> None:
             "audio_column": "audio",
             "batch_size": 8,
             "normalize_audio": True,
+            "audio_sample_rate": _AUDIO_SR,
+            "audio_max_samples": _AUDIO_LEN,
         },
         registry,
     )
-    # Executor does not forward audio_max_samples; defaults are fine for short waves
-    # if we use default 16000 — pad our short arrays. Use Session API for short waves
-    # after confirming dispatch reaches Session (missing-only-arg smoke first).
     result = execute_tool(session, proposal, confirmed=True, registry=registry)
     assert result.error is None, result.error
     assert session._torch_loaders is not None
     assert session._torch_loaders.modality == "tabular_audio_fusion"
+    assert session._torch_loaders.multimodal_contract.audio_max_samples == _AUDIO_LEN
+    assert session._torch_loaders.multimodal_contract.audio_sample_rate == _AUDIO_SR

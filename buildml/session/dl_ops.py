@@ -27,6 +27,52 @@ def _attached_classical_plans(session) -> dict[str, Any]:
     return plans
 
 
+def _module_needs_non_tabular_loaders(module: Any) -> str | None:
+    """Return 'multimodal' / 'text' when auto tabular rebuild would be wrong."""
+    modality = getattr(module, "modality", None) or ""
+    layout = getattr(module, "input_layout", None)
+    if (
+        str(modality).endswith("_fusion")
+        or layout is not None
+        or (
+            hasattr(module, "n_numeric")
+            and (
+                hasattr(module, "embedding")
+                or hasattr(module, "image_net")
+                or hasattr(module, "audio_net")
+            )
+        )
+    ):
+        return "multimodal"
+    if hasattr(module, "vocab_size") and hasattr(module, "embedding"):
+        return "text"
+    return None
+
+
+def _refuse_silent_tabular_loader_rebuild(session, *, operation: str) -> None:
+    """Raise when loaders are missing after a non-tabular Torch fit."""
+    if session._torch_loaders is not None:
+        return
+    train_result = getattr(session, "_dl_train_result", None)
+    if train_result is None:
+        return
+    kind = _module_needs_non_tabular_loaders(train_result.module)
+    if kind == "multimodal":
+        raise ValidationError(
+            f"{operation} needs active multimodal loaders after multimodal fit. "
+            "Call make_multimodal_torch_loaders(...) / "
+            "make_image_multimodal_torch_loaders(...) / "
+            "make_audio_multimodal_torch_loaders(...) again. "
+            "Refusing silent tabular loader rebuild."
+        )
+    if kind == "text":
+        raise ValidationError(
+            f"{operation} needs active text loaders after text fit. "
+            "Call make_text_torch_loaders(...) again. "
+            "Refusing silent tabular loader rebuild."
+        )
+
+
 def make_torch_loaders(
     session,
     *,
@@ -181,6 +227,7 @@ def fit_torch(
     from buildml.dl.types import TrainConfig
 
     session.assert_can_fit("train")
+    _refuse_silent_tabular_loader_rebuild(session, operation="fit_torch")
     if session._torch_loaders is None:
         session.make_torch_loaders()
     assert session._torch_loaders is not None
@@ -382,6 +429,7 @@ def evaluate_torch(
         raise ValidationError(
             "No Torch trainer. Call fit_torch(...) or load_torch_bundle(...) first."
         )
+    _refuse_silent_tabular_loader_rebuild(session, operation="evaluate_torch")
     if session._torch_loaders is None:
         session.make_torch_loaders(
             normalize=session._dl_train_result.contract.normalize_mean is not None,
@@ -839,22 +887,8 @@ def export_torch(
     if session._dl_train_result is None:
         raise ValidationError("No Torch trainer. Call fit_torch(...) first.")
     if session._torch_loaders is None and example_input is None:
-        mod = session._dl_train_result.module
-        modality = getattr(mod, "modality", None) or ""
-        layout = getattr(mod, "input_layout", None)
-        is_multimodal = (
-            str(modality).endswith("_fusion")
-            or layout is not None
-            or (
-                hasattr(mod, "n_numeric")
-                and (
-                    hasattr(mod, "embedding")
-                    or hasattr(mod, "image_net")
-                    or hasattr(mod, "audio_net")
-                )
-            )
-        )
-        if is_multimodal:
+        kind = _module_needs_non_tabular_loaders(session._dl_train_result.module)
+        if kind == "multimodal":
             raise ValidationError(
                 "export_torch needs active multimodal loaders or an explicit "
                 "example_input matching the fusion input_layout after multimodal fit. "
@@ -863,7 +897,7 @@ def export_torch(
                 "make_audio_multimodal_torch_loaders(...) again or pass example_input=. "
                 "Refusing silent tabular loader rebuild."
             )
-        if hasattr(mod, "vocab_size") and hasattr(mod, "embedding"):
+        if kind == "text":
             raise ValidationError(
                 "export_torch needs active text loaders or an explicit example_input "
                 "after text fit. Call make_text_torch_loaders(...) again or pass "
@@ -912,6 +946,7 @@ def fit_torch_ddp(
     from buildml.dl.types import TrainConfig
 
     session.assert_can_fit("train")
+    _refuse_silent_tabular_loader_rebuild(session, operation="fit_torch_ddp")
     if session._torch_loaders is None:
         session.make_torch_loaders()
     assert session._torch_loaders is not None

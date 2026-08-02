@@ -23,6 +23,15 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Fixed
 
+- **Pass M adversarial re-audit after Pass L:** short audio clips are
+  repeat-padded (not zero-filled) so default `audio_max_samples` does not wipe
+  the 1D-CNN pool; train-only amp stats use pre-pad lengths; media path/array
+  columns are refused as inferred text without `audio_column=`/`image_column=`;
+  `fit_torch` / `evaluate_torch` / `fit_torch_ddp` refuse silent tabular loader
+  rebuild after multimodal/text fit (not only `export_torch`); ONNX export uses
+  multimodal `input_layout` names; AI tool schemas/executor forward
+  `audio_sample_rate` / `audio_max_samples` / `audio_source_sample_rate`;
+  `docs/features.rst` no longer falsely claims audio multimodal is deferred.
 - **Pass K adversarial re-audit after Pass J:** ONNX export broke on Torch ≥2.9
   (`dynamo=True` default requires `onnxscript`). Export now uses
   `dynamo=False` and requires `buildml[onnx]` up front. AI registry/executor

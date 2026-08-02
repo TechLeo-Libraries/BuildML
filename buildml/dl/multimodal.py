@@ -18,6 +18,7 @@ foundation-model product.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
@@ -214,14 +215,23 @@ def _resolve_multimodal_columns(
     # Prefer string-like columns for text inference; path/array media columns
     # are excluded when image_column / audio_column are set.
     if text_column is None and not media_cols:
-        if len(object_like) != 1:
+        textish = [c for c in object_like if _looks_like_text_column(frame[c])]
+        mediaish = [c for c in object_like if c not in textish]
+        if mediaish and not textish:
+            raise ValidationError(
+                "Object feature column(s) look like media paths/arrays "
+                f"({mediaish}); pass audio_column= / image_column= explicitly "
+                "(or text_column= if they are truly text). Refusing to tokenize "
+                "media paths as tabular⊕text fusion."
+            )
+        if len(textish) != 1:
             raise ValidationError(
                 "Multimodal path needs exactly one text feature column when "
-                f"text_column is omitted; found {object_like or 'none'}. "
+                f"text_column is omitted; found {textish or object_like or 'none'}. "
                 "Pass text_column= explicitly, or pass image_column=/audio_column= "
                 "for media multimodal."
             )
-        text_column = object_like[0]
+        text_column = textish[0]
     elif text_column is None and media_cols:
         # Optional text when media is present: infer only if exactly one
         # remaining string-like feature that looks like text (not media paths).
@@ -273,10 +283,14 @@ def _resolve_multimodal_columns(
     return list(numeric_columns), text_column, image_column, audio_column, target
 
 
-def _looks_like_text_column(series: pd.Series) -> bool:
-    """Heuristic: string cells that are not filesystem-looking media paths."""
-    sample = series.dropna().astype(str).head(8).tolist()
-    if not sample:
+def _looks_like_media_cell(value: Any) -> bool:
+    """True when a cell looks like an image/audio path or array payload."""
+    if isinstance(value, (np.ndarray, list, tuple, Path)):
+        return True
+    if not isinstance(value, str):
+        return False
+    text = value.strip().lower()
+    if not text:
         return False
     media_ext = (
         ".png",
@@ -294,10 +308,16 @@ def _looks_like_text_column(series: pd.Series) -> bool:
         ".aiff",
         ".aif",
     )
-    path_hits = sum(
-        1 for s in sample if s.lower().endswith(media_ext) or "/" in s or "\\" in s
-    )
-    return path_hits < max(1, len(sample) // 2)
+    return text.endswith(media_ext) or "/" in text or "\\" in text
+
+
+def _looks_like_text_column(series: pd.Series) -> bool:
+    """Heuristic: string cells that are not filesystem-looking media paths/arrays."""
+    sample = series.dropna().head(8).tolist()
+    if not sample:
+        return False
+    media_hits = sum(1 for v in sample if _looks_like_media_cell(v))
+    return media_hits < max(1, len(sample) // 2)
 
 
 def build_multimodal_fusion(
@@ -584,13 +604,16 @@ def make_multimodal_loaders(
     aud_mean = aud_std = None
     if has_audio and cfg.normalize_audio:
         assert audio_col is not None
-        train_audio = stack_audio_column(
+        train_audio, train_audio_lengths = stack_audio_column(
             frame.iloc[train_idx][audio_col].tolist(),
             sample_rate=cfg.audio_sample_rate,
             max_samples=cfg.audio_max_samples,
             source_sample_rate=cfg.audio_source_sample_rate,
+            return_lengths=True,
         )
-        aud_mean, aud_std = fit_audio_waveform_stats(train_audio)
+        aud_mean, aud_std = fit_audio_waveform_stats(
+            train_audio, lengths=train_audio_lengths
+        )
 
     torch = require_torch(feature="Multimodal Torch DataLoaders")
     generator = torch.Generator()
@@ -607,6 +630,7 @@ def make_multimodal_loaders(
     if has_audio:
         warnings.append(
             "Audio cells accept path strings (soundfile) or waveform arrays; "
+            "short clips are repeat-padded to audio_max_samples; "
             "fusion uses a small 1D-CNN branch (not a speech foundation model)."
         )
     n_counts: dict[str, int] = {"train": 0, "validation": 0, "test": 0}

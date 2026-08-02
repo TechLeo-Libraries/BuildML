@@ -251,6 +251,7 @@ def export_module(
     opset: int = 17,
     dynamic_batch: bool = True,
     torchscript_method: Literal["trace", "script"] = "trace",
+    input_names: list[str] | None = None,
 ) -> ExportResult:
     """Export ``module`` to TorchScript or ONNX."""
     if format == "torchscript":
@@ -264,8 +265,24 @@ def export_module(
             example_input=example_input,
             opset=opset,
             dynamic_batch=dynamic_batch,
+            input_names=input_names,
         )
     raise ValidationError(f"Unknown export format {format!r}; use torchscript or onnx")
+
+
+def _layout_input_names(module: Any, example: Any) -> list[str] | None:
+    """Prefer multimodal ``input_layout`` names for ONNX graph inputs."""
+    layout = getattr(module, "input_layout", None)
+    if not layout:
+        return None
+    names = [str(x) for x in layout]
+    if isinstance(example, (tuple, list)):
+        if len(names) != len(example):
+            return None
+        return names
+    if len(names) == 1:
+        return names
+    return None
 
 
 def export_train_result(
@@ -297,6 +314,14 @@ def export_train_result(
         return obj
 
     example = _cpu(example)
+    layout_names = _layout_input_names(module, example)
+    # Prefer bundle layout when module attribute is missing/mismatched.
+    if layout_names is None and loader_bundle is not None:
+        bundle_layout = getattr(loader_bundle, "input_layout", None)
+        if bundle_layout and isinstance(example, (tuple, list)):
+            names = [str(x) for x in bundle_layout]
+            if len(names) == len(example):
+                layout_names = names
     result = export_module(
         module,
         path,
@@ -304,9 +329,12 @@ def export_train_result(
         example_input=example,
         opset=opset,
         dynamic_batch=dynamic_batch,
+        input_names=layout_names,
     )
     result.meta["task"] = train_result.task
     result.meta["contract"] = train_result.contract.to_dict()
+    if layout_names is not None:
+        result.meta["input_layout"] = list(layout_names)
     return result
 
 
