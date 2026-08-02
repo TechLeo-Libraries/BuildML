@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 from buildml import Session
-from buildml.core.errors import MissingExtraError, ValidationError
+from buildml.core.errors import LeakageError, MissingExtraError, ValidationError
 from buildml.explain.catalog import OPERATION_CATALOG
 
 _TORCH_SPEC = importlib.util.find_spec("torch") is not None
@@ -117,5 +117,6 @@ def test_text_torch_path() -> None:
 def test_text_vocab_refuses_without_split() -> None:
     _require_torch_or_skip()
     session = Session.ingest(_text_frame()).set_roles({"text": "feature", "y": "target"})
-    with pytest.raises(ValidationError):
+    # Fit-capable guard raises LeakageError before modality ValidationError.
+    with pytest.raises(LeakageError, match="split"):
         session.make_text_torch_loaders(text_column="text")

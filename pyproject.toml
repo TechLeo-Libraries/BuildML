@@ -59,7 +59,7 @@ serve = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
   "python-multipart>=0.0.9",
-  "httpx>=2.0",
+  "httpx>=0.27",
 ]
 dashboard = [
   "fastapi>=0.110",
@@ -80,7 +80,7 @@ dev = [
   "mypy>=1.8",
   "build>=1.0",
   "pandas-stubs>=2.0",
-  "httpx>=2.0",
+  "httpx>=0.27",
   "sphinx",
   "sphinx-rtd-theme",
   "myst-parser",

@@ -149,11 +149,11 @@ def _resolve_text_target(dataset: Dataset, text_column: str | None) -> tuple[str
             raise ValidationError(f"text_column {text_column!r} not in dataset columns")
         return text_column, target
     feature_cols = dataset.role_columns(ColumnRole.FEATURE)
+    frame = dataset._ensure_pandas()
     object_like = [
         c
         for c in feature_cols
-        if dataset._ensure_pandas()[c].dtype == object
-        or str(dataset._ensure_pandas()[c].dtype).startswith("string")
+        if pd.api.types.is_object_dtype(frame[c]) or pd.api.types.is_string_dtype(frame[c])
     ]
     if len(object_like) == 1:
         return object_like[0], target

@@ -266,7 +266,10 @@ def _resolve_multimodal_columns(
         c
         for c in feature_cols
         if c not in media_cols
-        and (frame[c].dtype == object or str(frame[c].dtype).startswith("string"))
+        and (
+            pd.api.types.is_object_dtype(frame[c])
+            or pd.api.types.is_string_dtype(frame[c])
+        )
     ]
     # Prefer string-like columns for text inference; path/array media columns
     # are excluded when image_column / audio_column are set.
