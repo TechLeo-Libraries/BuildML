@@ -1,8 +1,8 @@
-# BuildML DL alpha quickstart (2.1.0a1)
+# Torch quickstart
 
-Optional tabular Torch path on the same `Session` spine as classical ML:
-roles, splits, history, and explain. Install the Torch extra; core
-`import buildml` never requires it.
+Optional tabular Torch path on the same `Session` as classical ML: roles,
+splits, history, and explain. Install the Torch extra; core `import buildml`
+never requires it.
 
 ```bash
 pip install "buildml[torch]"

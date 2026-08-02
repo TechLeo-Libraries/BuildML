@@ -148,8 +148,8 @@ remain readable. Engine query plans are not serialized.
 An outer loop that scores configurations chosen by an inner CV search on each outer-train subset.
 `Session.nested_cv_score` keeps Session test/validation out of both loops. Inner means are selection
 evidence; outer mean±std is the post-selection estimate. Optional `warm_start_studies=True` shares
-Optuna trial history across outer folds only; Teaching Studio / walkthrough surfaces that policy when
-present in history.
+Optuna trial history across outer folds only; the EDA dashboard and walkthrough
+surfaces that policy when present in history.
 
 **Qrels**  
 Gold relevance judgments for retrieval evaluation: query → relevant `doc_id`

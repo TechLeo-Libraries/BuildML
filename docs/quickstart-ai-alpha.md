@@ -1,8 +1,8 @@
-# BuildML AI operator alpha quickstart (2.3.0a1)
+# AI operator quickstart
 
-Optional LLM-assisted workflow guidance on the same `Session` spine as
-classical ML, Torch DL, and RAG: roles, splits, history, and explain.
-Install the AI extra; core `import buildml` never requires it.
+Optional LLM-assisted workflow guidance on the same `Session` as classical ML,
+Torch, and RAG: roles, splits, history, and explain. Install the AI extra;
+core `import buildml` never requires it.
 
 ```bash
 pip install "buildml[ai]"
@@ -271,7 +271,7 @@ them. The operator is not a substitute for domain expertise.
   arbitrary code or tools not in the registry.
 - **Transcript ≠ checkpoint.** AI conversation history is stored separately
   from Session data and model artifacts.
-- **Not a replacement for Teaching Studio.** The operator supplements, not
+- **Not a replacement for `eda_app()`.** The operator supplements, not
   replaces, the explain catalog and structured results.
 - **Not fine-tuning LLMs.** The operator guides BuildML workflows; it does not
   train or fine-tune language models.

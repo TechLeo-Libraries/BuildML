@@ -1,6 +1,6 @@
-# BuildML 2.0 alpha quickstart
+# Classical quickstart
 
-BuildML 2.x uses a `Session` to keep data, semantic roles, partition
+BuildML centers on a `Session` that keeps data, column roles, partition
 membership, fitted preparation, model state, and operation history together.
 
 ```python

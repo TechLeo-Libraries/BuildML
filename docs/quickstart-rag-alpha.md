@@ -1,9 +1,9 @@
-# BuildML RAG alpha quickstart (2.2.0a1)
+# RAG quickstart
 
-Optional retrieval path on the same `Session` spine as classical ML and Torch DL:
-history, explain catalog, and distinct artifact kinds. The default hashing
-embedder uses core numpy/sklearn. Install the RAG extra for optional
-sentence-transformer / cross-encoder backends and the declared install contract.
+Optional retrieval path on the same `Session` as classical ML and Torch: history,
+explain catalog, and distinct artifact kinds. The default hashing embedder uses
+core numpy/sklearn. Install the RAG extra for optional sentence-transformer /
+cross-encoder backends.
 
 ```bash
 pip install "buildml[rag]"
@@ -117,7 +117,7 @@ Layout: `<path>/meta.json` + `<path>/chunks.jsonl` + `<path>/embeddings.npy`.
   vector-DB product path in this alpha.
 - **No generate / LLM operator.** Retrieve, evaluate, upsert/delete, and bundle
   save/load are in scope. Grounded generation and `buildml.ai` are later.
-- **No Teaching Studio RAG cockpit.** Catalog, structured results, and
+- **No dedicated RAG dashboard UI.** Catalog, structured results, and
   walkthrough `rag_status` are the teaching surfaces.
 - **Eval hygiene is caller-owned.** Index corpus and gold query/qrel sets must
   stay separate; documents marked `eval_only` refuse indexing (`LeakageError`).

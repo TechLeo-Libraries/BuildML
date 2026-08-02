@@ -1,17 +1,17 @@
 # BuildML
 
-BuildML is a Python library for tabular machine-learning workflows where state
-matters. A `Session` holds the dataset, column roles, train/validation/test
-membership, fitted preprocessing plans, an optional estimator, and a record of
-every operation you run. Preprocessing learns from
+BuildML is a Python library for tabular machine-learning workflows built around
+a stateful `Session`. The Session holds the dataset, column roles,
+train/validation/test membership, fitted preprocessing plans, an optional
+estimator, and a record of every operation you run. Preprocessing learns from
 the training partition only; validation and test rows receive frozen
-transformations. That split-first discipline is enforced in the API, not left as
-documentation footnotes.
+transformations. That train-only boundary is enforced in the API, not buried in
+docstrings you might miss.
 
 Version **2.3.0a1** is alpha software. Public methods, report schemas, and
 serialized bundle formats may change before a stable 2.x release. Classical
-tabular ML is the core path; deep learning, retrieval, and LLM-assisted
-operations ship as optional extras on the same Session.
+tabular ML is the main path; deep learning, retrieval, and LLM-assisted
+operations are optional extras on the same Session.
 
 ## Install
 
@@ -27,7 +27,7 @@ Common optional groups:
 pip install "buildml[viz]"        # matplotlib, seaborn
 pip install "buildml[reports]"    # Sweetviz, ydata-profiling
 pip install "buildml[eda]"        # viz + reports
-pip install "buildml[dashboard]"  # local EDA Teaching Studio (FastAPI + Plotly)
+pip install "buildml[dashboard]"  # local interactive EDA dashboard
 pip install "buildml[engines]"    # Polars and DuckDB adapters
 pip install "buildml[optuna]"     # Optuna hyperparameter search
 pip install "buildml[torch]"      # tabular Torch path (alias: buildml[dl])
@@ -135,9 +135,8 @@ steps = session.workflow()
 walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 ```
 
-`workflow()` marks operations as done, available, blocked, or skipped based on
-API prerequisites. That is not a recommendation engine—it does not judge whether
-a random split fits your domain.
+`workflow()` marks operations as done, available, blocked, or skipped from API
+prerequisites. It does not judge whether your split or model fits the domain.
 
 ## EDA and reports
 
@@ -159,12 +158,12 @@ session.evaluate(
 )
 ```
 
-Findings in EDA and evaluation reports are screening evidence. They do not
-establish causality, fairness, or deployment readiness.
+Reports surface screening evidence. They do not establish causality, fairness,
+or deployment readiness on their own.
 
-Further preparation and diagnostics—target encoding, PCA, feature selection,
-calibration, threshold tuning, learning curves, permutation importance—are
-documented in the [classical quickstart](docs/quickstart-alpha.md) and Sphinx
+Target encoding, PCA, feature selection, calibration, threshold tuning,
+learning curves, and permutation importance are covered in the
+[classical quickstart](docs/quickstart-alpha.md) and
 [workflow guide](docs/workflow-guide.rst).
 
 ## Optional extras
@@ -178,41 +177,27 @@ unchanged.
 | Torch | `buildml[torch]` | `make_torch_loaders`, `fit_torch`, `evaluate_torch`, bundle save/load |
 | RAG | `buildml[rag]` | Corpus ingest, chunk, embed, retrieve, evaluate; default embedder is lexical hashing |
 | AI | `buildml[ai]` | Advisor, plan, and confirmed execute against real Session methods; BYO API key |
-| Dashboard | `buildml[dashboard]` | Interactive local Teaching Studio via `eda_app()` |
+| Dashboard | `buildml[dashboard]` | Interactive local EDA via `eda_app()` |
 
-Quickstarts with runnable examples:
+Runnable quickstarts:
 
 - [Classical](docs/quickstart-alpha.md)
 - [Torch](docs/quickstart-dl-alpha.md)
 - [RAG](docs/quickstart-rag-alpha.md)
 - [AI operator](docs/quickstart-ai-alpha.md)
 
-Known limits worth reading before you depend on an extra: Torch training is a
-tabular numeric slice without fold-local CV in this alpha; RAG defaults to
-hashing embeddings rather than downloaded sentence models and has no generation
-path; the AI operator proposes and executes only registered tools after
-explicit confirmation—advice still needs your verification.
+Torch training in this alpha is a tabular numeric slice without fold-local CV.
+RAG defaults to hashing embeddings, not downloaded sentence models, and has no
+generation path. The AI operator proposes and executes only registered tools
+after explicit confirmation.
 
-## Alpha scope
+## Alpha status
 
-What is in scope for 2.x alpha:
-
-- Stateful Session API with train-fitted preprocessing and partition-aware
-  evaluation
-- Sklearn-compatible classifiers and regressors, CV/search with optional
-  fold-local recipes
-- Checkpoints, pipeline bundles, model cards, and offline HTML reports
-- Optional Polars/DuckDB ingest paths (sklearn still materializes in memory)
-
-What is not promised yet:
-
-- Out-of-core or lazy sklearn training
-- SHAP-style explainability and fairness tooling as first-class reports
-- Autonomous LLM agents or RAG answer generation
-- Stable serialized formats (bundle schema version strings may change)
-
-See [CHANGELOG.md](CHANGELOG.md) for release notes. Terminology and report
-voice are defined in [docs/glossary.md](docs/glossary.md).
+This is pre-release software. Bundle schema version strings, report layouts,
+and method signatures may change. There is no out-of-core sklearn training,
+first-class SHAP or fairness reporting, autonomous LLM agents, or RAG answer
+generation yet. See [CHANGELOG.md](CHANGELOG.md) for release notes and
+[docs/glossary.md](docs/glossary.md) for terminology.
 
 ## Documentation
 

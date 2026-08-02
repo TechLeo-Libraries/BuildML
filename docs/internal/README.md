@@ -1,9 +1,8 @@
 # Maintainer documentation
 
-These files record build plans, release gates, design locks, and reconstruction
-notes for BuildML maintainers. They are kept in git for project history but are
-not part of the public Sphinx site or primary user-facing documentation.
+Engineering notes for BuildML maintainers: phase plans, release gates, design
+locks, and reconstruction records. Versioned in git for project history; **not**
+part of the Sphinx toctree or primary user documentation.
 
-For usage guidance, start with the repository [README](../../README.md),
-[quickstart-alpha.md](../quickstart-alpha.md), and the Sphinx docs under
-[docs/](../).
+For usage, start with the public [README](../../README.md),
+[classical quickstart](../quickstart-alpha.md), and [Sphinx docs](../index.rst).

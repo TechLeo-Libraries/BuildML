@@ -1,7 +1,7 @@
 Overview
 ========
 
-BuildML provides a stateful API for tabular classification and regression.
+BuildML is a stateful Python library for tabular classification and regression.
 The public entry point is :class:`buildml.Session`.
 
 A Session records:
@@ -30,8 +30,8 @@ materialization path. Polars and DuckDB support conversion and engine-aware
 paths; they do not make every Session operation lazy or out-of-core.
 
 Optional Torch, RAG, and AI operator paths install as extras and attach to the
-same Session. See the repository README and the alpha quickstarts in ``docs/``
-for runnable examples.
+same Session. See the repository README and the quickstarts in ``docs/`` for
+runnable examples.
 
 Author
 ------

@@ -82,7 +82,7 @@ Reports and walkthroughs
 
 .. code-block:: python
 
-   # Offline Teaching Studio snapshot (default; needs buildml[dashboard])
+   # Offline dashboard snapshot (default; needs buildml[dashboard])
    eda = session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
    # Optional layered research shell with matplotlib embeds
    research = session.eda(
@@ -91,10 +91,10 @@ Reports and walkthroughs
        html_format="research",
        export_figures="artifacts/eda-figures",
    )
-   # Live Teaching Studio (requires: pip install "buildml[dashboard]")
+   # Live dashboard (requires: pip install "buildml[dashboard]")
    handle = session.eda_app(port=8765)  # or session.open_eda_dashboard()
    # If port 8765 is busy: session.eda_app(port=8766)
-   # PDF briefing embeds static Plotly PNG stills (kaleido); interactive charts stay in Studio.
+   # PDF briefing embeds static Plotly PNG stills (kaleido); interactive charts stay in the dashboard.
    evaluation = session.evaluate(
        partition="test",
        include_plots=True,
@@ -102,13 +102,13 @@ Reports and walkthroughs
    )
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
-``eda_app()`` opens interactive Plotly domain boards with Teaching Studio pages
-and Concept Academy notes. The SPA light/dark theme restyles Plotly ink, grids,
+``eda_app()`` opens interactive Plotly domain boards with teaching notes and
+concept references. The SPA light/dark theme restyles Plotly ink, grids,
 series, heatmaps, and annotations. CSV downloads cover major evidence tables;
-**Offline HTML** downloads a self-contained snapshot of the same Studio SPA;
+**Offline HTML** downloads a self-contained snapshot of the same dashboard SPA;
 the PDF briefing includes metrics, findings, teaching notes, and static chart
 stills (not interactive Plotly). ``session.eda(export_html=...)`` defaults to
-that Studio offline snapshot; use ``html_format="research"`` for the layered
+that offline dashboard snapshot; use ``html_format="research"`` for the layered
 research shell.
 
 HTML artifacts embed required styles and assets so they can be opened without a
