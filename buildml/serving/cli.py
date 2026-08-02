@@ -51,7 +51,18 @@ def build_parser() -> argparse.ArgumentParser:
         dest="api_keys",
         help=(
             "Optional API key (repeatable). Enables Bearer / X-API-Key auth on "
-            "/predict. Still not a managed IAM product; prefer TLS at a reverse proxy."
+            "/predict. Required for non-loopback binds unless "
+            "--allow-insecure-public-bind is set. Still not a managed IAM product; "
+            "prefer TLS at a reverse proxy."
+        ),
+    )
+    parser.add_argument(
+        "--allow-insecure-public-bind",
+        action="store_true",
+        default=False,
+        help=(
+            "Dangerous override: allow binding 0.0.0.0 / other non-loopback hosts "
+            "without --api-key. Prefer --api-key + reverse-proxy TLS instead."
         ),
     )
     return parser
@@ -76,6 +87,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         title=args.title,
         blocking=True,
         api_keys=args.api_keys,
+        allow_insecure_public_bind=args.allow_insecure_public_bind,
     )
     return 0
 

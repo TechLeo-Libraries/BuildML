@@ -6,6 +6,11 @@ Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md),
 [rag-alpha-gate.md](./rag-alpha-gate.md). This is a release checklist, not a
 capability wishlist.
 
+> **Tag-lock / HEAD truth:** Gate IDs below are locked to the historical
+> **`v2.3.0a1` AI operator** cut. Current HEAD (`2.4.0a1`) still includes that
+> surface **plus** allowlisted `ai_run_autonomous` and later depth tools.
+> Version pin AC4 is historical; do not “fail” HEAD for being past `2.3.0a1`.
+
 Related docs: [quickstart-ai.md](../guides/quickstart-ai.md) ·
 [llm-m0-lock.md](./llm-m0-lock.md) · [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) ·
 [glossary.md](../guides/glossary.md) · [editorial-standards.md](./editorial-standards.md)
@@ -75,7 +80,7 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | AC1 | `import buildml` succeeds without AI extras | Core CI import smoke |
 | AC2 | Dedicated `ai` CI job on Python 3.11–3.12 with AI unit tests (MockProvider only) | `.github/workflows/ci.yml` |
 | AC3 | Missing openai raises `MissingExtraError("ai", ...)` with install hint | Missing-extra unit tests |
-| AC4 | Version is `2.3.0a1` in `pyproject.toml` and `buildml/_version.py` | Packaging files |
+| AC4 | Version was `2.3.0a1` in packaging files at the AI alpha cut (HEAD is now `2.4.0a1`) | Historical packaging pin |
 
 ---
 
@@ -145,7 +150,7 @@ Copy into a release note when cutting an AI alpha tag (see also
 - [ ] AD1–AD5 green
 - [ ] AC1–AC4 green
 - [ ] Known limits reviewed; README/quickstart/`CHANGELOG.md` do not contradict them
-- [ ] Version is `2.3.0a1` in `pyproject.toml` and `buildml/_version.py`
+- [ ] Version was `2.3.0a1` at the AI alpha cut (current HEAD package is `2.4.0a1`)
 - [ ] Changelog / history notes name this gate document
 - [ ] Docs do not claim autonomous agent, auto-execution, or production safety
 

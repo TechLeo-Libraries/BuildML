@@ -1,7 +1,7 @@
 Current capabilities
 ====================
 
-BuildML 2.3.0a1 centers on :class:`buildml.Session` for tabular workflows.
+BuildML 2.4.0a1 centers on :class:`buildml.Session` for tabular workflows.
 Optional Torch, RAG, and AI operator paths reuse the same Session state, history,
 and explain catalog.
 

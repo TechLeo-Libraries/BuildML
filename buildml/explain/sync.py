@@ -20,7 +20,7 @@ OPERATION_INDEX_PATH = GENERATED_DIR / "operation_index.json"
 
 # AI tools are an intentional allowlist, not a full Session mirror.
 # Every tool must still resolve to a real Session method / catalog op.
-# Teaching-critical Phase C surfaces must appear in the default registry.
+# Teaching-critical Phase C + Pass R surfaces must appear in the default registry.
 REQUIRED_AI_TOOL_SESSION_METHODS: frozenset[str] = frozenset(
     {
         "rag_retrieve",
@@ -40,11 +40,20 @@ REQUIRED_AI_TOOL_SESSION_METHODS: frozenset[str] = frozenset(
         "workflow",
         "eda",
         "walkthrough",
+        "load_pretrained_backbone",
+        "pack_torchserve",
+        "prepare_tensorrt_export",
+        "emit_k8s_ddp_job",
+        "domain_adapt_speech_torch",
     }
 )
 
 # Tools that intentionally have no Session method (builtins / status helpers).
 AI_TOOL_BUILTINS: frozenset[str] = frozenset({"describe_dataset", "ai_status"})
+
+# Session methods that must NOT appear in the AI tool registry.
+# serve_bundle starts a network listener — CLI / Session-primary only.
+EXPLICITLY_NON_AI_SESSION_METHODS: frozenset[str] = frozenset({"serve_bundle"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -374,6 +383,22 @@ def check_ai_tools_vs_catalog(
             "Default AI registry missing teaching-critical Session methods: "
             f"{missing_required}"
         )
+    leaked_non_ai = sorted(EXPLICITLY_NON_AI_SESSION_METHODS & tool_session_methods)
+    if leaked_non_ai:
+        report.errors.append(
+            "Default AI registry must not include CLI/Session-primary methods: "
+            f"{leaked_non_ai}"
+        )
+    for name in sorted(EXPLICITLY_NON_AI_SESSION_METHODS):
+        if name not in session_names:
+            report.errors.append(
+                f"EXPLICITLY_NON_AI_SESSION_METHODS lists missing Session.{name}"
+            )
+        elif name not in catalog_names:
+            report.errors.append(
+                f"EXPLICITLY_NON_AI Session.{name} missing from catalog "
+                "(still needs teaching overlay)"
+            )
     return report
 
 

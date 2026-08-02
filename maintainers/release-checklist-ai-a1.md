@@ -1,5 +1,11 @@
 ﻿# Release checklist — 2.3.0a1 (AI alpha)
 
+> **Historical tag checklist** for the first AI operator alpha cut
+> (`v2.3.0a1`). Current HEAD is **`2.4.0a1`** — see [CONTRIBUTING.md](../CONTRIBUTING.md)
+> and [CHANGELOG.md](../CHANGELOG.md) for the living process. HEAD truth includes
+> allowlisted `ai_run_autonomous` (hard caps; not unconstrained agency) and
+> later Pass R tools; do not rewrite this file as if autonomy never shipped.
+
 Use this when cutting the first AI operator alpha tag. Do **not** tag until
 remote CI is green on the commit you intend to release.
 
@@ -12,8 +18,9 @@ Related: [ai-alpha-gate.md](./ai-alpha-gate.md) ·
 ## Pre-tag
 
 1. [ ] Version strings agree: `pyproject.toml`, `buildml/_version.py` → `2.3.0a1`
-2. [ ] `CHANGELOG.md` has a `2.3.0a1` section with known limits (**no autonomous
-   agent / auto-execute / production safety claims**)
+2. [ ] `CHANGELOG.md` has a `2.3.0a1` section with known limits (**no unconstrained
+   autonomous agent / silent production autopilot / production safety claims**;
+   allowlisted opt-in autonomy with hard caps may be documented honestly)
 3. [ ] README AI alpha status matches gate known limits
 4. [ ] `ai-alpha-gate.md` sign-off criteria reviewed against current APIs
 5. [ ] Local verification green:
@@ -38,6 +45,8 @@ git push origin v2.3.0a1
 Optional follow-ups (not required for the alpha gate):
 
 - [ ] Build and upload wheel/sdist to the intended index (`python -m build`, then Twine)
+  — only when credentials are available and intentional; otherwise keep the
+  GitHub-install honesty banner (PyPI may still be legacy 1.x)
 - [ ] GitHub Release notes: paste gate summary + link to CHANGELOG + known limits
 - [ ] Announce that AI APIs/transcript formats may still change before a stable AI line
 
@@ -51,7 +60,8 @@ Optional follow-ups (not required for the alpha gate):
 
 ## Do not claim at tag time
 
-- Autonomous agent, auto-execution, or autopilot mode
+- Unconstrained autonomous agent or silent production autopilot
+  (allowlisted `ai_run_autonomous` with hard caps is a separate, opt-in surface)
 - Production-ready safety or security guarantees
 - That the operator replaces Teaching Studio as the primary teaching surface
 - Training or fine-tuning LLMs inside BuildML

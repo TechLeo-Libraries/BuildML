@@ -625,6 +625,79 @@ def _dispatch_tool(
         state_changes.append("Transcribed speech audio column (ASR integration path).")
         return result, tuple(state_changes)
 
+    elif call.tool_name == "load_pretrained_backbone":
+        modality = call.arguments.get("modality")
+        if not modality:
+            raise ValidationError("load_pretrained_backbone requires modality.")
+        bb_kwargs: dict[str, Any] = {
+            "weights": call.arguments.get("weights", "mock"),
+            "freeze": bool(call.arguments.get("freeze", True)),
+            "seed": int(call.arguments.get("seed", 0)),
+        }
+        if call.arguments.get("architecture") is not None:
+            bb_kwargs["architecture"] = str(call.arguments["architecture"])
+        if call.arguments.get("model_id") is not None:
+            bb_kwargs["model_id"] = str(call.arguments["model_id"])
+        result = session.load_pretrained_backbone(str(modality), **bb_kwargs)
+        state_changes.append(f"Loaded pretrained {modality} backbone hook.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "pack_torchserve":
+        output_dir = call.arguments.get("output_dir")
+        if not output_dir:
+            raise ValidationError("pack_torchserve requires output_dir.")
+        pack_kwargs: dict[str, Any] = {}
+        if call.arguments.get("torchscript_path") is not None:
+            pack_kwargs["torchscript_path"] = str(call.arguments["torchscript_path"])
+        if call.arguments.get("model_name") is not None:
+            pack_kwargs["model_name"] = str(call.arguments["model_name"])
+        result = session.pack_torchserve(str(output_dir), **pack_kwargs)
+        state_changes.append(f"Packed TorchServe directory at {output_dir}.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "prepare_tensorrt_export":
+        output_dir = call.arguments.get("output_dir")
+        if not output_dir:
+            raise ValidationError("prepare_tensorrt_export requires output_dir.")
+        trt_kwargs: dict[str, Any] = {
+            "fp16": bool(call.arguments.get("fp16", True)),
+        }
+        if call.arguments.get("onnx_path") is not None:
+            trt_kwargs["onnx_path"] = str(call.arguments["onnx_path"])
+        if call.arguments.get("engine_name") is not None:
+            trt_kwargs["engine_name"] = str(call.arguments["engine_name"])
+        result = session.prepare_tensorrt_export(str(output_dir), **trt_kwargs)
+        state_changes.append(f"Wrote TensorRT plan under {output_dir}.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "emit_k8s_ddp_job":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("emit_k8s_ddp_job requires path.")
+        k8s_kwargs: dict[str, Any] = {
+            "nnodes": int(call.arguments.get("nnodes", 2)),
+            "nproc_per_node": int(call.arguments.get("nproc_per_node", 1)),
+        }
+        if call.arguments.get("script_path") is not None:
+            k8s_kwargs["script_path"] = str(call.arguments["script_path"])
+        result = session.emit_k8s_ddp_job(str(path), **k8s_kwargs)
+        state_changes.append(f"Emitted K8s torchrun Job YAML at {path}.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "domain_adapt_speech_torch":
+        adapt_kwargs: dict[str, Any] = {
+            "epochs": int(call.arguments.get("epochs", 5)),
+            "freeze_encoder": bool(call.arguments.get("freeze_encoder", True)),
+            "batch_size": int(call.arguments.get("batch_size", 8)),
+        }
+        if call.arguments.get("audio_column") is not None:
+            adapt_kwargs["audio_column"] = str(call.arguments["audio_column"])
+        result = session.domain_adapt_speech_torch(**adapt_kwargs)
+        state_changes.append(
+            "Domain-adapted speech classifier (finetune-lite; not FM pretrain)."
+        )
+        return result, tuple(state_changes)
+
     else:
         raise ValidationError(f"No dispatch handler for tool: {call.tool_name}")
 
@@ -735,6 +808,25 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
 
     elif tool_name == "transcribe_speech":
         changes.append("Will transcribe an audio column via stub or transformers ASR.")
+
+    elif tool_name == "load_pretrained_backbone":
+        modality = arguments.get("modality", "vision")
+        changes.append(f"Will load a curated {modality} pretrained backbone hook.")
+
+    elif tool_name == "pack_torchserve":
+        path = arguments.get("output_dir", "")
+        changes.append(f"Will pack a TorchServe directory at {path}.")
+
+    elif tool_name == "prepare_tensorrt_export":
+        path = arguments.get("output_dir", "")
+        changes.append(f"Will write a TensorRT trtexec plan under {path}.")
+
+    elif tool_name == "emit_k8s_ddp_job":
+        path = arguments.get("path", "")
+        changes.append(f"Will emit a K8s torchrun Job YAML at {path}.")
+
+    elif tool_name == "domain_adapt_speech_torch":
+        changes.append("Will domain-adapt speech classify (finetune-lite; not FM pretrain).")
 
     return tuple(changes) if changes else ("Unknown state changes.",)
 

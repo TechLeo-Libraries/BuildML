@@ -41,7 +41,7 @@ stamps, and process theater.
 | `classical-ml-capability-map.md` | Classical feature inventory |
 | `ingest-engine-checkpoint-design.md` | Ingest, engine, and checkpoint design |
 | `phase-1-build-plan.md` | Classical 2.x reconstruction plan |
-| `reconstruction-roadmap.md` | Rebuild sequencing; domains through AI `2.3.0a1` shipped |
+| `reconstruction-roadmap.md` | Rebuild sequencing; HEAD `2.4.0a1` (AI `2.3` shipped; depth Passes L–R) |
 | `deep-learning-phase-plan.md` | Torch rollout plan |
 | `dl-m0-lock.md` | Locked Torch public API |
 | `dl-alpha-gate.md` | Torch alpha sign-off criteria |

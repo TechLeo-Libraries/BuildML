@@ -717,6 +717,172 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             read_only=True,
             catalog_operation="transcribe_speech",
         ),
+        ToolSpec(
+            name="load_pretrained_backbone",
+            description=(
+                "Load a curated vision/audio/speech pretrained backbone hook "
+                "(weights=none|mock|pretrained). mock is CI-safe. Not a full zoo product. "
+                "Requires buildml[torch] (+ vision/speech extras for some modalities)."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "modality": {
+                        "type": "string",
+                        "enum": ["vision", "audio", "speech"],
+                        "description": "Backbone modality.",
+                    },
+                    "architecture": {
+                        "type": "string",
+                        "description": "Optional architecture id (defaults per modality).",
+                    },
+                    "weights": {
+                        "type": "string",
+                        "enum": ["none", "mock", "pretrained"],
+                        "description": "Weight mode (default mock).",
+                    },
+                    "freeze": {
+                        "type": "boolean",
+                        "description": "Freeze backbone parameters (default true).",
+                    },
+                    "seed": {"type": "integer", "description": "Seed for mock init."},
+                    "model_id": {
+                        "type": "string",
+                        "description": "Optional Hugging Face model id for audio/speech.",
+                    },
+                },
+                "required": ["modality"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="load_pretrained_backbone",
+            read_only=False,
+            catalog_operation="load_pretrained_backbone",
+        ),
+        ToolSpec(
+            name="pack_torchserve",
+            description=(
+                "Pack a TorchScript file into a TorchServe-ready directory "
+                "(model.pt, handler, config, manifest). Does not run TorchServe."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "output_dir": {
+                        "type": "string",
+                        "description": "Destination directory.",
+                    },
+                    "torchscript_path": {
+                        "type": "string",
+                        "description": "TorchScript file (or last export_torch).",
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "description": "TorchServe model name (default buildml_model).",
+                    },
+                },
+                "required": ["output_dir"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="pack_torchserve",
+            read_only=False,
+            catalog_operation="pack_torchserve",
+        ),
+        ToolSpec(
+            name="prepare_tensorrt_export",
+            description=(
+                "Write a TensorRT trtexec plan next to an ONNX artifact. "
+                "Does not build TensorRT engines."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "output_dir": {
+                        "type": "string",
+                        "description": "Destination directory.",
+                    },
+                    "onnx_path": {
+                        "type": "string",
+                        "description": "ONNX file (or last export_torch).",
+                    },
+                    "engine_name": {
+                        "type": "string",
+                        "description": "Suggested engine filename (default model.engine).",
+                    },
+                    "fp16": {
+                        "type": "boolean",
+                        "description": "Include --fp16 in the example trtexec command.",
+                    },
+                },
+                "required": ["output_dir"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="prepare_tensorrt_export",
+            read_only=False,
+            catalog_operation="prepare_tensorrt_export",
+        ),
+        ToolSpec(
+            name="emit_k8s_ddp_job",
+            description=(
+                "Emit a Kubernetes Job YAML template for torchrun multi-node DDP. "
+                "Not live multi-cluster orchestration."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Output YAML path.",
+                    },
+                    "nnodes": {
+                        "type": "integer",
+                        "description": "Number of nodes (default 2).",
+                    },
+                    "nproc_per_node": {
+                        "type": "integer",
+                        "description": "Processes per node (default 1).",
+                    },
+                    "script_path": {
+                        "type": "string",
+                        "description": "Training script path inside the container.",
+                    },
+                },
+                "required": ["path"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="emit_k8s_ddp_job",
+            read_only=False,
+            catalog_operation="emit_k8s_ddp_job",
+        ),
+        ToolSpec(
+            name="domain_adapt_speech_torch",
+            description=(
+                "Domain-adapt / finetune-lite speech classify (alias path of fit_speech_torch "
+                "with stronger disclosures). Not FM continued pretrain from scratch. "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio column when loaders must be built.",
+                    },
+                    "epochs": {"type": "integer", "description": "Training epochs (default 5)."},
+                    "freeze_encoder": {
+                        "type": "boolean",
+                        "description": "Train head only when true (default true).",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 8)."},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="domain_adapt_speech_torch",
+            read_only=False,
+            catalog_operation="domain_adapt_speech_torch",
+        ),
+        # serve_bundle intentionally omitted: network listener is CLI/Session-primary
+        # (see EXPLICITLY_NON_AI_SESSION_METHODS in buildml.explain.sync).
     )
 
 

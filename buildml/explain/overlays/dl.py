@@ -748,10 +748,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         OperationKind.EXPORT,
         "Launch BuildML managed local model serving for a pipeline or TorchScript artifact.",
         "Expose /health and /predict via FastAPI (optional API-key/Bearer middleware).",
-        "Managed serving boundary.",
+        "Managed serving boundary (CLI/Session-primary; intentionally not an AI tool).",
         (
             "Load classical pipeline bundle or TorchScript file.",
             "Optionally attach API-key/Bearer middleware when api_keys is set.",
+            "Refuse non-loopback binds without api_keys unless allow_insecure_public_bind.",
             "Bind FastAPI/uvicorn (default 127.0.0.1).",
             "Serve /health and /predict until stopped.",
         ),
@@ -762,24 +763,39 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("port", "int", "Bind port.", 8080),
             _p("title", "str", "Service title.", "BuildML Serve"),
             _p("blocking", "bool", "Block current thread when True.", False),
-            _p("api_keys", "str | list[str] | None", "Optional API key(s) for Bearer / X-API-Key auth."),
+            _p("api_keys", "str | list[str] | None", "API key(s) for Bearer / X-API-Key; required off-loopback."),
+            _p(
+                "allow_insecure_public_bind",
+                "bool",
+                "Dangerous override to bind non-loopback without api_keys.",
+                False,
+            ),
         ),
         inputs=("Saved pipeline bundle directory or TorchScript file.",),
         outputs=("ServeHandle with url; process-local server thread.",),
         prerequisites=(),
         ordering=("After save_pipeline or export_torch TorchScript; deployment-adjacent.",),
         alternatives=("buildml-serve CLI / python -m buildml.serving; reverse-proxy in front.",),
-        rationale=("Use for local/demo managed serving of BuildML artifacts.",),
+        rationale=(
+            "Use for local/demo managed serving of BuildML artifacts. "
+            "Not registered in the AI tool allowlist (network listener / CLI-primary)."
+        ),
         assumptions=(
             "Optional API-key middleware is library-local auth — not managed IAM/cloud identity.",
             "Prefer TLS termination at a reverse proxy for non-local exposure.",
+            "Localhost defaults stay open-with-honesty; public binds need keys or a loud override.",
         ),
-        failures=("Missing buildml[serve], bad bundle path, or port already in use.",),
+        failures=(
+            "Missing buildml[serve], bad bundle path, port in use, or non-loopback bind "
+            "without api_keys / allow_insecure_public_bind.",
+        ),
         leakage=("Serving trained weights can retain training-data patterns; control access.",),
         anti_patterns=(
-            "Exposing bare 0.0.0.0 without a reverse proxy and auth.",
+            "Exposing bare 0.0.0.0 without api_keys or a reverse proxy.",
+            "Using allow_insecure_public_bind in production.",
             "Claiming a managed cloud product from this local server.",
             "Claiming Kubernetes multi-cluster orchestration from this local server.",
+            "Expecting the AI operator to call serve_bundle — use CLI/Session instead.",
         ),
         state_changes=("Stores serve handle; starts a background (or blocking) server.",),
         result_reading=("Read url/kind and /health auth flag before clients call /predict.",),

@@ -3,17 +3,38 @@ Installation
 
 BuildML supports Python 3.10 through 3.13.
 
-Core installation
------------------
+.. important::
+
+   **Install honesty (2.x):** PyPI ``buildml`` currently publishes the legacy
+   **1.x** line (``1.0.9``, MIT). It does **not** install Session 2.x.
+   Until a 2.x wheel is published, install from GitHub (or a source checkout).
+
+Install BuildML 2.x (GitHub)
+----------------------------
+
+.. code-block:: console
+
+   pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+
+Optional extras append the same way as for a local checkout, for example
+``pip install "buildml[torch] @ git+https://github.com/TechLeo-Libraries/BuildML.git"``
+or install extras after an editable checkout (below).
+
+Core installation from PyPI (legacy 1.x only)
+---------------------------------------------
 
 .. code-block:: console
 
    pip install buildml
 
-Optional dependencies
----------------------
+That command installs **BuildML 1.x** from PyPI. Prefer the GitHub install above
+for Session 2.x.
 
-Install only the capabilities the workflow uses:
+Optional dependencies (2.x)
+---------------------------
+
+Install only the capabilities the workflow uses (after a GitHub / editable
+install of 2.x):
 
 .. code-block:: console
 
@@ -25,6 +46,14 @@ Install only the capabilities the workflow uses:
    pip install "buildml[optuna]"       # Optuna hyperparameter search
    pip install "buildml[imbalanced]"   # imbalanced-learn
    pip install "buildml[excel]"        # Excel input
+   pip install "buildml[torch]"        # Torch DL path (alias: buildml[dl])
+   pip install "buildml[speech]"       # ASR + speech finetune-lite (+ transformers)
+   pip install "buildml[vision]"       # torchvision pretrained vision hooks
+   pip install "buildml[pretrained]"   # vision + speech pretrained extras
+   pip install "buildml[serve]"        # managed local FastAPI model serving
+   pip install "buildml[onnx]"         # optional ONNX checker for export_torch
+   pip install "buildml[rag]"          # optional dense/rerank backends
+   pip install "buildml[ai]"           # LLM operator (alias: buildml[llm])
    pip install "buildml[all-classical]"
 
 The core install includes NumPy, Pandas, PyArrow, and scikit-learn. Plotting
@@ -46,7 +75,7 @@ Source checkout
 
 .. code-block:: console
 
-   git clone https://github.com/TechLeo-Dev/BuildML.git
+   git clone https://github.com/TechLeo-Libraries/BuildML.git
    cd BuildML
    pip install -e ".[dev]"
 

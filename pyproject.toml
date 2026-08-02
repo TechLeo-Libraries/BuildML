@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "buildml"
-version = "2.3.0a1"
+version = "2.4.0a1"
 description = "BuildML — a flexible, depth-first toolkit for building ML workflows."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -93,7 +93,7 @@ dev = [
 buildml-serve = "buildml.serving.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/TechLeo-Dev/BuildML"
+Homepage = "https://github.com/TechLeo-Libraries/BuildML"
 Documentation = "https://buildml.readthedocs.io/"
 
 [tool.setuptools.packages.find]
