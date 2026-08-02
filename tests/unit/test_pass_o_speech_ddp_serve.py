@@ -134,6 +134,66 @@ def test_speech_ai_tools_registered() -> None:
     assert "transcribe_speech" in names
 
 
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_speech_executor_dispatch() -> None:
+    """AI executor must dispatch speech tools to real Session methods."""
+    _require_torch_or_skip()
+    from buildml.ai.executor import execute_tool, propose_tool_execution
+    from buildml.ai.tools import build_default_registry
+
+    session = (
+        Session.ingest(_speech_frame(32, seed=7))
+        .set_roles({"audio": "feature", "y": "target"})
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=7)
+    )
+    session.ai_configure(provider="mock")
+    registry = build_default_registry()
+
+    loaders = execute_tool(
+        session,
+        propose_tool_execution(
+            "make_speech_torch_loaders",
+            {
+                "audio_column": "audio",
+                "batch_size": 8,
+                "sample_rate": _AUDIO_SR,
+                "max_samples": _AUDIO_LEN,
+            },
+            registry,
+        ),
+        confirmed=True,
+        registry=registry,
+    )
+    assert loaders.executed and loaders.error is None
+
+    fitted = execute_tool(
+        session,
+        propose_tool_execution(
+            "fit_speech_torch",
+            {"epochs": 1, "audio_column": "audio"},
+            registry,
+        ),
+        confirmed=True,
+        registry=registry,
+    )
+    assert fitted.executed and fitted.error is None
+    assert session.dl_train_result is not None
+
+    transcribed = execute_tool(
+        session,
+        propose_tool_execution(
+            "transcribe_speech",
+            {"audio_column": "audio", "backend": "stub"},
+            registry,
+        ),
+        confirmed=True,
+        registry=registry,
+    )
+    assert transcribed.executed and transcribed.error is None
+    assert session.dl_speech_result is not None
+    assert session.dl_speech_result.backend == "stub"
+
+
 def test_speech_stack_missing_extra_message() -> None:
     if importlib.util.find_spec("transformers") is not None:
         pytest.skip("transformers installed")
@@ -178,6 +238,29 @@ def test_parse_torchrun_env_missing_and_bad_rank() -> None:
                 "MASTER_PORT": "29500",
             }
         )
+
+
+def test_parse_torchrun_env_multi_node_requires_local_rank() -> None:
+    with pytest.raises(ValidationError, match="LOCAL_RANK"):
+        parse_torchrun_env(
+            {
+                "WORLD_SIZE": "4",
+                "RANK": "3",
+                "MASTER_ADDR": "10.0.0.2",
+                "MASTER_PORT": "29501",
+            },
+            require_local_rank=True,
+        )
+    # Convenience path still defaults LOCAL_RANK → RANK when not required.
+    env = parse_torchrun_env(
+        {
+            "WORLD_SIZE": "2",
+            "RANK": "1",
+            "MASTER_ADDR": "127.0.0.1",
+            "MASTER_PORT": "29500",
+        }
+    )
+    assert env.local_rank == 1
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -301,3 +384,16 @@ def test_serve_missing_extra_message() -> None:
     with pytest.raises(MissingExtraError) as exc:
         create_serving_app("unused", kind="pipeline")
     assert "serve" in str(exc.value).lower() or "buildml[serve]" in str(exc.value)
+
+
+def test_serve_cli_defaults_localhost_no_auth() -> None:
+    from buildml.serving.cli import build_parser
+
+    parser = build_parser()
+    args = parser.parse_args(["--bundle", "bundle/"])
+    assert args.host == "127.0.0.1"
+    assert args.port == 8080
+    assert args.kind == "pipeline"
+    help_text = parser.format_help()
+    assert "127.0.0.1" in help_text
+    assert "no authentication" in help_text.lower() or "no auth" in help_text.lower()

@@ -594,7 +594,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         failures=(
             "Fewer than two CUDA devices without allow_cpu_ddp (single-node).",
-            "Missing WORLD_SIZE/RANK/MASTER_ADDR/MASTER_PORT when multi_node=True.",
+            "Missing WORLD_SIZE/RANK/LOCAL_RANK/MASTER_ADDR/MASTER_PORT when multi_node=True.",
             "Spawn/pickle errors on single-node.",
         ),
         leakage=("Same split/normalize rules as fit_torch; DDP does not invent holdouts.",),
@@ -713,11 +713,14 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         inputs=("Dataset with an audio feature column; SplitPlan when partition != all.",),
         outputs=("SpeechTranscribeResult stored as dl_speech_result.",),
-        prerequisites=(DATASET, TORCH),
+        prerequisites=(DATASET,),
         ordering=("Anytime after ingest; often beside speech classify training.",),
         alternatives=("External ASR services; make_speech_torch_loaders for classify finetune.",),
         rationale=("Use when you need ASR text from Session audio cells.",),
-        assumptions=("transformers backend may download weights; stub is not real ASR quality.",),
+        assumptions=(
+            "stub backend needs no Torch/transformers; transformers backend needs buildml[speech] "
+            "and may download weights; stub is not real ASR quality.",
+        ),
         failures=("Missing speech extra for transformers, bad audio cells, incomplete split for partition.",),
         leakage=("Transcribing holdout audio is fine; do not refit classify stats on those texts without a plan.",),
         anti_patterns=("Treating stub transcripts as production ASR; claiming FM-from-scratch training.",),

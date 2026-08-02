@@ -8,6 +8,16 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pass P after Pass O:** CI torch job now runs Pass O speech/DDP/serve tests;
+  extras matrix covers `buildml[serve]`; multi-node DDP requires `LOCAL_RANK`
+  (no silent global-rank→device mapping) and writes parsed `MASTER_*` into the
+  process env; DDP rank bundles retain speech/multimodal modality metadata;
+  executor speech dispatch + serve CLI localhost/no-auth defaults covered by
+  tests; teaching overlay honesty for ASR stub (Torch not required) and
+  multi-node `LOCAL_RANK` failures.
+
 ### Changed
 
 - **Pass O license:** project license switched from MIT to **Apache-2.0**

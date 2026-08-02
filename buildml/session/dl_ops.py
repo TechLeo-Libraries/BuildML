@@ -971,7 +971,8 @@ def fit_torch_ddp(
       ``torch.cuda.device_count() >= 2`` unless ``allow_cpu_ddp=True`` (gloo smoke).
     * Multi-node: ``multi_node=True`` joins a ``torchrun`` rendezvous
       (``WORLD_SIZE`` / ``RANK`` / ``LOCAL_RANK`` / ``MASTER_ADDR`` /
-      ``MASTER_PORT``). Not a Kubernetes multi-cluster orchestrator.
+      ``MASTER_PORT``; ``LOCAL_RANK`` is required — global rank is not used as a
+      local CUDA index). Not a Kubernetes multi-cluster orchestrator.
     """
     from buildml.dl.ddp import DDPConfig, train_supervised_module_ddp
     from buildml.dl.types import TrainConfig

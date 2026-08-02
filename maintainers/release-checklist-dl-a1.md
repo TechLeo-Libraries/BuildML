@@ -54,9 +54,10 @@ HEAD deepened several of these — do not paste this list onto current docs:
 - For **2.1.0a1 only:** no text/sequence loaders, no built-in MLP zoo, no
   fold-local Torch CV (those ship in Phase C — see `dl-m0-lock.md` / CHANGELOG)
 - Multi-node cluster DDP as of **2.1.0a1** only (single-node DDP / AMP / export
-  shipped in Pass G; torchrun multi-node join ships later in Pass O on HEAD)
+  shipped in Pass G; torchrun multi-node join is on later HEAD via Pass O —
+  still not Kubernetes multi-cluster orchestration)
 - Polars/DuckDB zero-copy into DataLoaders (still out of scope)
 - RAG / LLM operator as shipped features of the **2.1.0a1** tag (later lines)
 - That Session checkpoints contain Torch weights
 - Speech foundation models / Whisper-scale ASR as of **2.1.0a1** / Pass L only
-  (Pass O later adds ASR integration + finetune-lite — still not FM-from-scratch)
+  (later HEAD Pass O adds ASR integration + finetune-lite — still not FM-from-scratch)

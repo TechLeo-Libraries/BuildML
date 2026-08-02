@@ -121,11 +121,18 @@ def resolve_ddp_backend(requested: str, *, use_cuda: bool) -> str:
     return requested
 
 
-def parse_torchrun_env(environ: Mapping[str, str] | None = None) -> DistributedEnv:
+def parse_torchrun_env(
+    environ: Mapping[str, str] | None = None,
+    *,
+    require_local_rank: bool = False,
+) -> DistributedEnv:
     """Parse torchrun-compatible distributed environment variables.
 
     Required: ``WORLD_SIZE``, ``RANK``, ``MASTER_ADDR``, ``MASTER_PORT``.
-    ``LOCAL_RANK`` defaults to ``RANK`` when unset (single-node multi-proc).
+    ``LOCAL_RANK`` defaults to ``RANK`` when unset (single-node multi-proc
+    convenience). Multi-node join paths must pass ``require_local_rank=True``
+    so a missing ``LOCAL_RANK`` cannot silently map global rank onto the wrong
+    local CUDA device.
     """
     env = dict(os.environ if environ is None else environ)
     missing = [
@@ -136,14 +143,21 @@ def parse_torchrun_env(environ: Mapping[str, str] | None = None) -> DistributedE
     if missing:
         raise ValidationError(
             "Multi-node / torchrun DDP requires environment variables "
-            f"{missing} (also recommended: LOCAL_RANK). "
+            f"{missing} (also required for multi-node: LOCAL_RANK). "
             "Launch with torchrun --nnodes ... --nproc_per_node ... "
             "or export WORLD_SIZE/RANK/LOCAL_RANK/MASTER_ADDR/MASTER_PORT."
+        )
+    local_raw = str(env.get("LOCAL_RANK", "")).strip()
+    if not local_raw and require_local_rank:
+        raise ValidationError(
+            "Multi-node DDP requires LOCAL_RANK (torchrun sets this per process). "
+            "Omitting LOCAL_RANK is unsafe: global RANK must not be used as a "
+            "local CUDA device index across nodes."
         )
     try:
         world_size = int(env["WORLD_SIZE"])
         rank = int(env["RANK"])
-        local_rank = int(env["LOCAL_RANK"]) if str(env.get("LOCAL_RANK", "")).strip() else rank
+        local_rank = int(local_raw) if local_raw else rank
     except (TypeError, ValueError) as exc:
         raise ValidationError(
             "WORLD_SIZE, RANK, and LOCAL_RANK must be integers for torchrun DDP"
@@ -202,7 +216,6 @@ def _run_rank_training(
     use_cuda: bool,
 ) -> TrainResult | None:
     torch = require_torch(feature="DDP worker")
-    import torch.distributed as dist
     from torch.nn.parallel import DistributedDataParallel as DDP
 
     from buildml.dl.train import train_supervised_module
@@ -238,6 +251,12 @@ def _run_rank_training(
         loaders=sharded,
         contract=loader_bundle.contract,
         report=loader_bundle.report,
+        text_vocab=getattr(loader_bundle, "text_vocab", None),
+        text_contract=getattr(loader_bundle, "text_contract", None),
+        multimodal_contract=getattr(loader_bundle, "multimodal_contract", None),
+        speech_contract=getattr(loader_bundle, "speech_contract", None),
+        modality=getattr(loader_bundle, "modality", None),
+        input_layout=getattr(loader_bundle, "input_layout", None),
     )
     cfg = TrainConfig(**{**config.to_dict(), "device": device})  # type: ignore[arg-type]
     result = train_supervised_module(module, local_bundle, config=cfg)
@@ -392,7 +411,7 @@ def _train_multi_node(
     torch = require_torch(feature="Multi-node DDP training")
     import torch.distributed as dist
 
-    dist_env = parse_torchrun_env(environ)
+    dist_env = parse_torchrun_env(environ, require_local_rank=True)
     n_cuda = ddp_cuda_device_count()
     use_cuda = n_cuda >= 1 and torch.cuda.is_available()
     if not use_cuda and not dcfg.allow_cpu_ddp:
@@ -414,10 +433,10 @@ def _train_multi_node(
             "(debug/smoke only)."
         )
 
-    # Honour env rendezvous; optionally overlay explicit master from DDPConfig
-    # when callers set non-default values (env still wins if already set).
-    os.environ.setdefault("MASTER_ADDR", dist_env.master_addr)
-    os.environ.setdefault("MASTER_PORT", dist_env.master_port)
+    # Honour the parsed torchrun rendezvous (explicit environ wins over stale
+    # process-level MASTER_* leftovers from prior launches).
+    os.environ["MASTER_ADDR"] = dist_env.master_addr
+    os.environ["MASTER_PORT"] = dist_env.master_port
 
     if use_cuda:
         torch.cuda.set_device(dist_env.local_rank)
