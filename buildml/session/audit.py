@@ -90,9 +90,7 @@ class DryRunReport:
     steps: list[DryRunStep]
     unresolved_risks: list[str] = field(default_factory=list)
     ranked_risks: list[RankedRisk] = field(default_factory=list)
-    prerequisite_graph: PrerequisiteGraphSummary = field(
-        default_factory=PrerequisiteGraphSummary
-    )
+    prerequisite_graph: PrerequisiteGraphSummary = field(default_factory=PrerequisiteGraphSummary)
     suggested_next_ops: list[dict[str, Any]] = field(default_factory=list)
     would_mutate: bool = False
     notes: list[str] = field(default_factory=list)
@@ -147,9 +145,7 @@ class HistorySummary:
     recent_operations: list[str]
     unresolved_risks: list[str]
     ranked_risks: list[RankedRisk] = field(default_factory=list)
-    prerequisite_graph: PrerequisiteGraphSummary = field(
-        default_factory=PrerequisiteGraphSummary
-    )
+    prerequisite_graph: PrerequisiteGraphSummary = field(default_factory=PrerequisiteGraphSummary)
     suggested_next_ops: list[dict[str, Any]] = field(default_factory=list)
     decision_origins: dict[str, int] = field(default_factory=dict)
     has_split: bool = False
@@ -172,8 +168,7 @@ class HistorySummary:
 
     def show(self) -> None:
         print(
-            f"History summary · {self.n_operations} operation(s), "
-            f"{self.warning_count} warning(s)"
+            f"History summary · {self.n_operations} operation(s), {self.warning_count} warning(s)"
         )
         print("Recent:", ", ".join(self.recent_operations) or "(empty)")
         if self.ranked_risks:
@@ -265,10 +260,7 @@ def summarize_history(session: Any) -> HistorySummary:
         origin = str(record.get("decision_origin") or "explicit")
         origins[origin] = origins.get(origin, 0) + 1
         warning_count += len(record.get("warnings") or [])
-    recent = [
-        str(record.get("operation_id") or record.get("action"))
-        for record in history[-8:]
-    ]
+    recent = [str(record.get("operation_id") or record.get("action")) for record in history[-8:]]
     split = getattr(session, "_split_plan", None) is not None
     fit = getattr(session, "_fit_result", None) is not None
     ranked = rank_unresolved_risks(session)
@@ -304,18 +296,22 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
     history = normalize_history(getattr(session, "_history", None))
     ops = {str(r.get("operation_id") or r.get("action")) for r in history}
 
-    if dataset is not None and split is None and any(
-        name in ops
-        for name in (
-            "impute",
-            "encode",
-            "scale",
-            "bin",
-            "select_features",
-            "text_features",
-            "reduce_dimensions",
-            "apply_custom_transform",
-            "fit",
+    if (
+        dataset is not None
+        and split is None
+        and any(
+            name in ops
+            for name in (
+                "impute",
+                "encode",
+                "scale",
+                "bin",
+                "select_features",
+                "text_features",
+                "reduce_dimensions",
+                "apply_custom_transform",
+                "fit",
+            )
         )
     ):
         raw.append(
@@ -434,9 +430,7 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
             suggested_operation=suggested,
             rationale=rationale,
         )
-        for index, (_priority, severity, message, source, suggested, rationale) in enumerate(
-            unique
-        )
+        for index, (_priority, severity, message, source, suggested, rationale) in enumerate(unique)
     ]
 
 
@@ -445,9 +439,7 @@ def suggest_next_operations(session: Any, *, limit: int = 8) -> list[dict[str, A
     workflow = resolve_workflow(session)
     suggestions: list[dict[str, Any]] = []
     for step in workflow:
-        status = (
-            step.status.value if hasattr(step.status, "value") else str(step.status)
-        )
+        status = step.status.value if hasattr(step.status, "value") else str(step.status)
         if status not in {
             WorkflowStepStatus.AVAILABLE.value,
             WorkflowStepStatus.READY.value,
@@ -571,13 +563,8 @@ def build_prerequisite_graph_summary(
                     provider_step = workflow.get(provider)
                     provider_status = (
                         provider_step.status.value
-                        if provider_step is not None
-                        and hasattr(provider_step.status, "value")
-                        else (
-                            str(provider_step.status)
-                            if provider_step is not None
-                            else "catalog"
-                        )
+                        if provider_step is not None and hasattr(provider_step.status, "value")
+                        else (str(provider_step.status) if provider_step is not None else "catalog")
                     )
                     nodes.append(
                         {
@@ -656,10 +643,7 @@ def _preview_step(
         if status in {WorkflowStepStatus.BLOCKED.value, "blocked"}:
             available = False
 
-    prereq = [
-        f"{item.key}: {item.description}"
-        for item in spec.prerequisites
-    ]
+    prereq = [f"{item.key}: {item.description}" for item in spec.prerequisites]
     effects = list(spec.state_changes) + list(spec.outputs)[:2]
     if parameters:
         effects = [f"Requested parameters: {dict(parameters)}", *effects]

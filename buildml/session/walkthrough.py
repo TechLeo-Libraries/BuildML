@@ -183,8 +183,12 @@ def warm_start_studies_status(
 
     if last_nested_cv is not None and bool(getattr(last_nested_cv, "warm_start_studies", False)):
         enabled = True
-        search_method = str(getattr(last_nested_cv, "search_method", None) or search_method or "") or None
-        n_outer = int(getattr(last_nested_cv, "n_outer_splits", n_outer or 0) or n_outer or 0) or n_outer
+        search_method = (
+            str(getattr(last_nested_cv, "search_method", None) or search_method or "") or None
+        )
+        n_outer = (
+            int(getattr(last_nested_cv, "n_outer_splits", n_outer or 0) or n_outer or 0) or n_outer
+        )
         held_out = [str(x) for x in (getattr(last_nested_cv, "held_out_partitions", None) or [])]
         limitations = [
             str(x)

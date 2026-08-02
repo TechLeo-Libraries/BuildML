@@ -2,7 +2,7 @@
 
 **Status:** Supersedes the 1 Aug 2026 audit of legacy 1.0.9 / `SupervisedLearning`.  
 **Package line:** `2.3.0a1` (AI operator alpha on classical `2.0`, Torch `2.1`, RAG `2.2` bases).  
-**Updated:** Phase A correctness pass (Aug 2026).
+**Updated:** Phase B thin-Session pass (Aug 2026).
 
 > Historical 1.x god-object findings remain useful only as the reason the rewrite happened.
 > Do not treat the tables below as a description of HEAD.
@@ -12,7 +12,7 @@
 | Metric | Value |
 | --- | --- |
 | Public root class | `buildml.Session` |
-| Architecture | Session orchestrates; domain packages own implementations |
+| Architecture | **Thin Session facade** → `buildml.session.*_ops` + domain packages |
 | Classical spine | Ingest → roles → split → preprocess / fold recipes → fit → evaluate → CV/search |
 | Optional domains | `buildml.dl` (Torch), `buildml.rag`, `buildml.ai` (operator) |
 | Packaging | `pyproject.toml` + extras (`engines`, `torch`, `rag`, `ai`, `dashboard`, …) |
@@ -20,13 +20,19 @@
 
 **Product in one sentence:** BuildML is a hybrid build session for tabular (and attached domain) ML workflows: method-simple Session API, leakage-safe fit scope, honest scale modes, and progressive depth via extras.
 
-**Data flow:** Source → ingest (`Dataset` + engine/mode) → `Session` methods → domain helpers → typed results / checkpoints / pipeline bundles / domain bundles.
+**Data flow:** Source → ingest (`Dataset` + engine/mode) → Session method (thin wrapper) → session ops / domain helpers → typed results / checkpoints / pipeline bundles / domain bundles.
 
 ## Layering
 
 | Layer | Responsibility |
 | --- | --- |
-| `buildml.session` | Orchestration, history, walkthrough, public method surface |
+| `buildml.session.session` | Public method surface, history slot ownership, thin delegation |
+| `buildml.session.state` | `WorkflowState` docs + plan/history helpers |
+| `buildml.session.data_ops` | Ingest, roles, splits, engines, checkpoints |
+| `buildml.session.preprocess_ops` | Session-global preprocess / resample orchestration |
+| `buildml.session.classical_ops` | Fit / evaluate / CV / search / pipeline / diagnostics |
+| `buildml.session.dl_ops` / `rag_ops` / `ai_ops` | Thin facades over optional domains (no Phase C depth) |
+| `buildml.session.eda_ops` / `workflow_ops` / `audit` | EDA, dashboard entry, dry-run, walkthrough |
 | `buildml.data` / `ingest` | Dataset handle, splits, engines, materialization gates |
 | `buildml.preprocess` | Session plans + fold-local `PreprocessRecipe` |
 | `buildml.model` | Classical fit/evaluate/CV/search/diagnostics |
@@ -36,19 +42,19 @@
 ## Locked honesty rules (current)
 
 1. **Split before fit-capable work** — `LeakageError` on full-data fit paths.
-2. **Session-global preprocess + CV** — refuse by default without fold-local `PreprocessRecipe`; opt-in only via `allow_session_global_preprocess=True`.
+2. **Session-global preprocess + CV** — refuse whenever Session-global plans already poisoned the frame, **even if** a fold-local `PreprocessRecipe` is passed (recipes do not rebuild from raw data). Opt-in only via `allow_session_global_preprocess=True`.
 3. **`ColumnRole.WEIGHT`** — wired as sklearn `sample_weight` on classical fit/evaluate/CV/search; unsupported estimators raise.
 4. **`DataMode`** — `memory` | `lazy` only. Legacy `out_of_core` coerces to `lazy`. There is no out-of-core sklearn fit mode.
 5. **Domain bundles ≠ Session checkpoints** — Torch/RAG/AI artifacts stay in their own schemas.
 
 ## Related maintainer docs
 
-- [reconstruction-roadmap.md](./reconstruction-roadmap.md) — sequencing (domains shipped through AI alpha)
+- [reconstruction-roadmap.md](./reconstruction-roadmap.md) — sequencing (domains shipped through AI alpha; Phase B Session thinness)
 - [classical-ml-capability-map.md](./classical-ml-capability-map.md)
 - [quality-bar.md](./quality-bar.md)
 - Domain plans / M0 locks / alpha gates in this folder
 
 ## What this file is not
 
-- Not a capability wishlist for Phase B/C/D.
+- Not a capability wishlist for Phase C/D.
 - Not a re-litigation of 1.x `SupervisedLearning` APIs (removed/rewritten).

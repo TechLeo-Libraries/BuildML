@@ -39,7 +39,7 @@ architecture audit · **status updated for shipped HEAD `2.3.0a1`** (Aug 2026).
 
 1. **Dual audience.** Simple enough for learners; deep enough for professionals. Progressive disclosure, not a shallow subset.
 2. **Method-simple session API.** Users call methods on a session/dataset object (`drop_columns`, `eda`, `split`, `fit`, …) instead of assembling ad-hoc library glue.
-3. **Delegate, don’t duplicate.** The session orchestrates; real implementations live in domain packages. No 6,600-line god object.
+3. **Delegate, don’t duplicate.** The session orchestrates; real implementations live in domain packages / `buildml.session.*_ops`. Session is a thin facade (Phase B), not a god object.
 4. **Leakage safety is non-negotiable.** Fit on train (or declared partitions) only; transforms apply to other partitions; invalid orders fail clearly.
 5. **Scale-ready ingest from day one.** Dataset is a handle over engines (Arrow/Parquet interchange; Polars **and** DuckDB for large ops; Pandas as a materialization bridge). Modes: `memory` / `lazy` (sklearn fit still materializes a design matrix).
 6. **Multi-option flexibility.** When two approaches are both useful and efficient, support **both** behind one API — auto-select a sensible default, let users override. Do not artificially lock the product to a single backend/choice.
@@ -104,7 +104,7 @@ BuildML Session
 | `buildml.model` | Classical fit / evaluate / compare / probabilities | Honest validation for sweeps |
 | `buildml.eda` | Summaries and plots | Lazy optional backends; sample-aware for large data |
 | `buildml.pipeline` | Recipe + fitted artifact bundle | Persist preprocess + model together |
-| `buildml.session` | OOP method API | Delegates only |
+| `buildml.session` | OOP method API + `*_ops` / `state` orchestration | Thin facade; domain packages own logic |
 | `buildml.dl` | Deep learning domain (later) | Same session language, separate extras |
 | `buildml.rag` | RAG / retrieval domain (later) | Same session language, separate extras |
 | `buildml.ai` | LLM operator (later) | Maps NL → allowed methods; optional |
@@ -297,4 +297,8 @@ M0 lock in [llm-m0-lock.md](./llm-m0-lock.md); gate in [ai-alpha-gate.md](./ai-a
 - Date feature extraction, model persistence, multi-model compare
 - Quality bar locked: [quality-bar.md](./quality-bar.md)
 
-**Next implementation:** calibration/threshold tools, richer plot extras for eval, imbalance strategies, learning curves.
+**Correctness / architecture refresh (Aug 2026):**
+
+- **Phase A** (`d0ad2d5`): weights, CV hard-refuse for Session-global prep, `OUT_OF_CORE` removal, httpx, maintainer honesty.
+- **Phase B** (this pass): Session decomposed into `data_ops` / `preprocess_ops` / `classical_ops` / `dl_ops` / `rag_ops` / `ai_ops` / `eda_ops` / `workflow_ops` / `state`; CV also refuses poisoned data + recipe without opt-in.
+- **Phase C / D:** not started — do not deepen DL/RAG/AI autonomy or rewrite explain generation yet.

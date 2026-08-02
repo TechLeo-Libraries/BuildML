@@ -335,19 +335,36 @@ def _refuse_session_global_cv_leakage(
     preprocess: PreprocessRecipe | None,
     allow_session_global_preprocess: bool,
 ) -> None:
-    """Hard-refuse CV/search when Session-global prep would soft-leak into folds."""
+    """Hard-refuse CV/search when Session-global prep already poisoned the frame.
+
+    A fold-local :class:`~buildml.preprocess.fold.PreprocessRecipe` does **not**
+    undo Session-global transforms — recipes run on the current (already
+    transformed) design matrix unless the caller re-ingests / reattaches
+    unpoisoned data. Opt in only via ``allow_session_global_preprocess=True``.
+    """
     if not session_preprocess_applied:
-        return
-    if preprocess is not None and not preprocess.is_empty():
         return
     if allow_session_global_preprocess:
         return
+    recipe_note = ""
+    if preprocess is not None and not preprocess.is_empty():
+        recipe_note = (
+            " A fold-local PreprocessRecipe was provided, but Session data is already "
+            "transformed with train-global statistics — the recipe cannot rebuild from "
+            "raw/unpoisoned rows. Re-ingest or checkpoint_load an unpoisoned frame, then "
+            "use fold-local recipes without Session-global impute/encode/scale/select/…"
+            " first."
+        )
+    else:
+        recipe_note = (
+            " Pass preprocess=PreprocessRecipe(...) on unpoisoned data for fold-local "
+            "refits, or set allow_session_global_preprocess=True to override explicitly "
+            "(scores remain leakage-biased)."
+        )
     raise LeakageError(
         "Refusing CV/search because Session-global preprocess plans were already "
         "fitted on the full train partition (fold-eval rows influenced those frozen "
-        "statistics). Pass preprocess=PreprocessRecipe(...) for fold-local refits, "
-        "or set allow_session_global_preprocess=True to override explicitly "
-        "(scores remain leakage-biased)."
+        f"statistics).{recipe_note}"
     )
 
 
@@ -374,9 +391,10 @@ def cv_score(
     fold's training rows only. ``recipe_knobs`` override safe fold-local
     controls (for example ``select_k``, ``n_bins``) on that recipe copy.
 
-    When Session-global fit-capable plans already exist and no fold-local
-    ``preprocess`` is provided, this refuses with :class:`~buildml.core.errors.LeakageError`
-    unless ``allow_session_global_preprocess=True``.
+    When Session-global fit-capable plans already exist, this refuses with
+    :class:`~buildml.core.errors.LeakageError` unless
+    ``allow_session_global_preprocess=True``. A fold-local ``preprocess`` recipe
+    alone is not enough — Session data may already be poisoned.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -492,11 +510,7 @@ def cv_score(
 
     mean_metrics, std_metrics = _aggregate_metrics(metric_rows)
     recorded_params = {**est_params, **{f"recipe__{k}": v for k, v in knob_params.items()}}
-    session_global_override = bool(
-        session_preprocess_applied
-        and allow_session_global_preprocess
-        and (active_recipe is None or active_recipe.is_empty())
-    )
+    session_global_override = bool(session_preprocess_applied and allow_session_global_preprocess)
     return CVScoreResult(
         task=resolved_task,
         scoring_metric=metric,
@@ -1142,11 +1156,7 @@ def nested_cv_score(
     summary = _inner_selection_summary(
         selected_params, outer_folds, metric, selected_recipe_knobs=selected_recipe_knobs
     )
-    session_global_override = bool(
-        session_preprocess_applied
-        and allow_session_global_preprocess
-        and (preprocess is None or preprocess.is_empty())
-    )
+    session_global_override = bool(session_preprocess_applied and allow_session_global_preprocess)
     limitations = _nested_limitations(
         session_preprocess_applied=session_global_override,
         preprocess=preprocess,
@@ -1195,7 +1205,8 @@ def nested_cv_score(
     if session_global_override:
         recommendations.append(
             "allow_session_global_preprocess=True was set; Session-global preprocess "
-            "poisoned folds. Prefer preprocess=PreprocessRecipe(...) next time."
+            "poisoned folds. Re-ingest unpoisoned data before fold-local "
+            "PreprocessRecipe CV next time."
         )
     elif preprocess is not None and not preprocess.is_empty():
         recommendations.append(
@@ -1398,11 +1409,7 @@ def _finalize_search_result(
     study: Any | None = None,
 ) -> SearchResult:
     best = trials[0]
-    session_global_override = bool(
-        session_preprocess_applied
-        and allow_session_global_preprocess
-        and (preprocess is None or preprocess.is_empty())
-    )
+    session_global_override = bool(session_preprocess_applied and allow_session_global_preprocess)
 
     refit_result = None
     if refit:
@@ -1464,7 +1471,8 @@ def _finalize_search_result(
     if session_global_override:
         recommendations.append(
             "allow_session_global_preprocess=True was set; Session preprocess was "
-            "train-global. Prefer a fold-local PreprocessRecipe before Session.impute/scale."
+            "train-global. Re-ingest unpoisoned data, then use fold-local "
+            "PreprocessRecipe without Session.impute/scale before search."
         )
     if best.std_score > abs(best.mean_score) * 0.15 and abs(best.mean_score) > 1e-9:
         recommendations.append(
@@ -1835,7 +1843,7 @@ def _cv_limitations(
         f"Scores summarize {n_folds} folds drawn only from the train partition.",
         "The Session test partition is not used for fold membership or fold scoring.",
     ]
-    if session_preprocess_applied and (preprocess is None or preprocess.is_empty()):
+    if session_preprocess_applied:
         tips.append(
             "allow_session_global_preprocess=True: Session-global preprocess plans "
             "(impute/encode/scale/outliers/binning/feature_select/dates/text/reduce/"
@@ -1845,9 +1853,16 @@ def _cv_limitations(
         tips.append(
             "Session-global target encoding uses out-of-fold values on train, but still "
             "freezes full-train category maps before CV; prefer fold-local "
-            "PreprocessRecipe(encode='target') when selection itself uses CV."
+            "PreprocessRecipe(encode='target') on unpoisoned data when selection itself "
+            "uses CV."
         )
-    if preprocess is not None and not preprocess.is_empty():
+        if preprocess is not None and not preprocess.is_empty():
+            tips.append(
+                "A fold-local PreprocessRecipe was also provided, but Session data was "
+                "already transformed with train-global statistics — the recipe does not "
+                "rebuild from raw/unpoisoned rows."
+            )
+    if preprocess is not None and not preprocess.is_empty() and not session_preprocess_applied:
         tips.append(
             "Fold-local PreprocessRecipe statistics were refit on each fold's training rows only."
         )
@@ -1939,11 +1954,12 @@ def _cv_recommendations(
     std = std_metrics.get(metric, 0.0)
     if std > 0.05:
         tips.append("Consider more folds, grouped/time-aware splits, or a simpler estimator.")
-    if session_preprocess_applied and (preprocess is None or preprocess.is_empty()):
+    if session_preprocess_applied:
         tips.append(
             "This run used allow_session_global_preprocess=True. For honest selection, "
-            "pass preprocess=PreprocessRecipe(...) and avoid Session-global "
-            "impute/encode/scale/select/outliers/text/reduce before CV."
+            "re-ingest or reattach unpoisoned data, pass preprocess=PreprocessRecipe(...), "
+            "and avoid Session-global impute/encode/scale/select/outliers/text/reduce "
+            "before CV."
         )
     elif preprocess is not None:
         tips.append(

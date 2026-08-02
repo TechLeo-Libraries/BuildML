@@ -107,6 +107,11 @@ extend-exclude = ["buildml/_legacy"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.per-file-ignores]
+# Session ops modules share a deliberate star-import surface from `_imports`.
+"buildml/session/*_ops.py" = ["F403", "F405", "UP037", "E501"]
+"buildml/session/_imports.py" = ["F401"]
+
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
