@@ -1,0 +1,212 @@
+"""Typed results for AutoML pipeline / model-family search."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Literal
+
+import pandas as pd
+
+from buildml.automl.types import AutoMLMethod, AutoMLSelection, CandidateKind
+from buildml.model.supervised import FitResult
+
+
+@dataclass(slots=True)
+class AutoMLTrial:
+    """One AutoML candidate with selection evidence."""
+
+    trial: int
+    kind: CandidateKind
+    family: str
+    recipe_strategy: str
+    params: dict[str, Any] = field(default_factory=dict)
+    recipe: dict[str, Any] = field(default_factory=dict)
+    mean_score: float = float("nan")
+    std_score: float = float("nan")
+    mean_metrics: dict[str, float] = field(default_factory=dict)
+    std_metrics: dict[str, float] = field(default_factory=dict)
+    ensemble_bases: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "trial": self.trial,
+            "kind": self.kind,
+            "family": self.family,
+            "recipe_strategy": self.recipe_strategy,
+            "params": dict(self.params),
+            "recipe": dict(self.recipe),
+            "mean_score": self.mean_score,
+            "std_score": self.std_score,
+            "mean_metrics": dict(self.mean_metrics),
+            "std_metrics": dict(self.std_metrics),
+            "ensemble_bases": list(self.ensemble_bases),
+        }
+
+
+@dataclass(slots=True)
+class AutoMLPlan:
+    """Train-selected AutoML plan (best pipeline + disclosures).
+
+    The fitted sklearn-compatible estimator (often a Pipeline of fold-local
+    preprocess + model) also lives on Session ``FitResult`` so classical
+    ``evaluate`` / ``predict`` / ``save_pipeline`` keep working.
+    Persist via ``buildml.automl_bundle.v1``.
+    """
+
+    task: Literal["classification", "regression"]
+    method: AutoMLMethod
+    selection: AutoMLSelection
+    ranking_metric: str
+    best_family: str
+    best_recipe_strategy: str
+    best_kind: CandidateKind
+    best_params: dict[str, Any]
+    best_recipe: dict[str, Any]
+    best_score: float
+    best_std: float
+    feature_columns: tuple[str, ...]
+    target_column: str
+    n_train_rows: int
+    estimator_: Any = field(repr=False)
+    ensemble_bases: tuple[str, ...] = ()
+    n_trials: int = 0
+    families_searched: tuple[str, ...] = ()
+    recipe_strategies_searched: tuple[str, ...] = ()
+    outer_score_mean: float | None = None
+    outer_score_std: float | None = None
+    disclosures: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
+    config: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "task": self.task,
+            "method": self.method,
+            "selection": self.selection,
+            "ranking_metric": self.ranking_metric,
+            "best_family": self.best_family,
+            "best_recipe_strategy": self.best_recipe_strategy,
+            "best_kind": self.best_kind,
+            "best_params": dict(self.best_params),
+            "best_recipe": dict(self.best_recipe),
+            "best_score": self.best_score,
+            "best_std": self.best_std,
+            "feature_columns": list(self.feature_columns),
+            "target_column": self.target_column,
+            "n_train_rows": self.n_train_rows,
+            "estimator": type(self.estimator_).__name__,
+            "ensemble_bases": list(self.ensemble_bases),
+            "n_trials": self.n_trials,
+            "families_searched": list(self.families_searched),
+            "recipe_strategies_searched": list(self.recipe_strategies_searched),
+            "outer_score_mean": self.outer_score_mean,
+            "outer_score_std": self.outer_score_std,
+            "disclosures": list(self.disclosures),
+            "warnings": list(self.warnings),
+            "config": dict(self.config),
+        }
+
+
+@dataclass(slots=True)
+class AutoMLResult:
+    """Outcome of an AutoML search with ranked trials and disclosures."""
+
+    task: Literal["classification", "regression"]
+    method: AutoMLMethod
+    selection: AutoMLSelection
+    ranking_metric: str
+    trials: list[AutoMLTrial] = field(default_factory=list)
+    best_family: str = ""
+    best_recipe_strategy: str = ""
+    best_kind: CandidateKind = "single"
+    best_params: dict[str, Any] = field(default_factory=dict)
+    best_score: float | None = None
+    best_std: float | None = None
+    outer_score_mean: float | None = None
+    outer_score_std: float | None = None
+    families_searched: tuple[str, ...] = ()
+    recipe_strategies_searched: tuple[str, ...] = ()
+    n_train_rows: int = 0
+    feature_columns: tuple[str, ...] = ()
+    target_column: str = ""
+    ensemble_bases: tuple[str, ...] = ()
+    disclosures: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+    recommendations: tuple[str, ...] = ()
+    config: dict[str, Any] = field(default_factory=dict)
+
+    def to_frame(self) -> pd.DataFrame:
+        rows = [
+            {
+                "trial": t.trial,
+                "kind": t.kind,
+                "family": t.family,
+                "recipe_strategy": t.recipe_strategy,
+                "mean_score": t.mean_score,
+                "std_score": t.std_score,
+                **{f"param_{k}": v for k, v in t.params.items()},
+            }
+            for t in self.trials
+        ]
+        return pd.DataFrame(rows)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "task": self.task,
+            "method": self.method,
+            "selection": self.selection,
+            "ranking_metric": self.ranking_metric,
+            "trials": [t.to_dict() for t in self.trials],
+            "best_family": self.best_family,
+            "best_recipe_strategy": self.best_recipe_strategy,
+            "best_kind": self.best_kind,
+            "best_params": dict(self.best_params),
+            "best_score": self.best_score,
+            "best_std": self.best_std,
+            "outer_score_mean": self.outer_score_mean,
+            "outer_score_std": self.outer_score_std,
+            "families_searched": list(self.families_searched),
+            "recipe_strategies_searched": list(self.recipe_strategies_searched),
+            "n_train_rows": self.n_train_rows,
+            "feature_columns": list(self.feature_columns),
+            "target_column": self.target_column,
+            "ensemble_bases": list(self.ensemble_bases),
+            "disclosures": list(self.disclosures),
+            "warnings": list(self.warnings),
+            "limitations": list(self.limitations),
+            "recommendations": list(self.recommendations),
+            "config": dict(self.config),
+        }
+
+    def show(self) -> None:
+        print(
+            f"AutoML · {self.method}/{self.selection} · {self.task} · "
+            f"ranked by {self.ranking_metric} · trials={len(self.trials)}"
+        )
+        if self.best_score is not None:
+            std = "" if self.best_std is None else f" ± {self.best_std:.6f}"
+            print(
+                f"  best: {self.best_family}/{self.best_recipe_strategy} "
+                f"({self.best_kind}) = {self.best_score:.6f}{std}"
+            )
+        if self.outer_score_mean is not None:
+            std = (
+                ""
+                if self.outer_score_std is None
+                else f" ± {self.outer_score_std:.6f}"
+            )
+            print(f"  outer: {self.outer_score_mean:.6f}{std}")
+        for tip in self.disclosures[:6]:
+            print(f"  - {tip}")
+
+
+def fit_result_from_plan(plan: AutoMLPlan) -> FitResult:
+    """Build a classical FitResult from an AutoMLPlan estimator."""
+    return FitResult(
+        estimator=plan.estimator_,
+        task=plan.task,
+        feature_columns=plan.feature_columns,
+        target_column=plan.target_column,
+        n_train_rows=plan.n_train_rows,
+    )

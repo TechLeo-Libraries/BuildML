@@ -113,6 +113,18 @@ search = session.grid_search(
     cv=5,
 )
 print(search.best_params, search.best_score)
+
+# In-tree NumPy GA HPO (population/selection/crossover/mutation/elitism) —
+# not neuroevolution / NAS / swarm zoo. Same train-only CV contract.
+evo = session.evolutionary_search(
+    DecisionTreeClassifier(random_state=0),
+    param_space={"max_depth": {"type": "int", "low": 2, "high": 8}},
+    population_size=8,
+    n_generations=4,
+    cv=3,
+    random_state=0,
+)
+print(evo.best_params, evo.best_score)
 session.evaluate(partition="test")  # confirm once after selection
 ```
 
@@ -194,12 +206,39 @@ unchanged.
 | Pretrained | `buildml[pretrained]` | Combines `vision` + `speech` for curated backbone hooks |
 | Serve | `buildml[serve]` | Managed local FastAPI serving (`buildml-serve` / `Session.serve_bundle`) for pipeline + TorchScript |
 | RAG | `buildml[rag]` | Ingest → chunk → embed → retrieve → **generate** → evaluate; hashing default, semantic optional |
+| Graph | `buildml[graph]` | NetworkX classical node features for Graph ML (`fit_graph(method='classical')`); GCN uses `buildml[torch]` (no PyG) |
+| RL | `buildml[rl]` | Optional Gymnasium REINFORCE-lite for `fit_rl(mode='gym_reinforce')`; BC + contextual bandits stay core |
+| TDA | `buildml[tda]` | Persistent homology (ripser) + persistence images (persim); landscapes/silhouettes in-tree |
 | AI | `buildml[ai]` | Advisor, multi-step plan/execute, optional allowlisted autonomy; classical + RAG + Torch tools; BYO API key |
 | Dashboard | `buildml[dashboard]` | Interactive local EDA via `eda_app()` |
 
 Runnable quickstarts:
 
 - [Classical](guides/quickstart-classical.md)
+- [Unsupervised](guides/quickstart-unsupervised.md) (core clustering + PCA integration; no extra)
+- [Ensembles](guides/quickstart-ensemble.md) (voting / stacking / blending; no extra)
+- [AutoML](guides/quickstart-automl.md) (family + recipe search beyond HPO; Optuna optional)
+- [Forecasting](guides/quickstart-forecasting.md) (time_split lag/baseline forecasts; no extra)
+- [Anomaly / fraud](guides/quickstart-anomaly.md) (IsolationForest/LOF/OCSVM + supervised; no extra)
+- [Semi-supervised](guides/quickstart-semisupervised.md) (label propagation / spreading / self-training; no extra)
+- [Self-supervised](guides/quickstart-selfsupervised.md) (masked tabular pretext → embeddings → head; no extra)
+- [Active learning](guides/quickstart-active-learning.md) (train-pool query → human labels → refit; no extra)
+- [Online / continual](guides/quickstart-online-learning.md) (train-chunk `partial_fit` → eval; no extra)
+- [Multi-task](guides/quickstart-multi-task.md) (MultiOutput / Chain → per-task eval; no extra)
+- [Meta-learning](guides/quickstart-meta-learning.md) (episodic few-shot prototypical / warm_start; no extra)
+- [Federated](guides/quickstart-federated.md) (local FedAvg / FedProx simulation; no extra)
+- [Bayesian / probabilistic](guides/quickstart-probabilistic.md) (BayesianRidge / GP / NB + train-only conformal; no extra)
+- [Causal ML](guides/quickstart-causal.md) (assumption-declared backdoor ATE; no extra)
+- [Graph ML](guides/quickstart-graph.md) (node classify: NetworkX classical + pure-Torch GCN; `buildml[graph]` / `buildml[torch]`)
+- [Symbolic / neuro-symbolic](guides/quickstart-symbolic.md) (declared/tree rules + sklearn hybrid; no extra)
+- [Case-based reasoning](guides/quickstart-cbr.md) (train case memory → retrieve/reuse; ≠ RAG; no extra)
+- [Imitation + RL](guides/quickstart-imitation-rl.md) (BC + contextual bandit core; optional Gymnasium via `buildml[rl]`)
+- [TDA](guides/quickstart-tda.md) (local Vietoris–Rips + vectorization → sklearn; `buildml[tda]`)
+- [Recommenders](guides/quickstart-recommenders.md) (user/item CF + content; ranking metrics; core)
+- [Search / LTR](guides/quickstart-ranking.md) (query–item feature rows + relevance; pointwise / RankSVM-lite; core)
+- [Knowledge graphs](guides/quickstart-kg.md) (triples → TransE/DistMult + symbolic query; ≠ Graph ML / Neo4j / RAG; core)
+- [Optimisation / decisions](guides/quickstart-optimize.md) (thresholds / cost matrices / top-K / knapsack / LP; ≠ general OR; core)
+- [Synthetic data](guides/quickstart-synthetic.md) (bootstrap / Gaussian copula / SMOTE; fidelity + TSTR; ≠ DP / `resample`; core)
 - [Torch](guides/quickstart-torch.md)
 - [RAG](guides/quickstart-rag.md)
 - [AI operator](guides/quickstart-ai.md)

@@ -1,0 +1,204 @@
+# ruff: noqa: E501, F401
+"""AutoML Session operation overlays (human teaching prose)."""
+
+from __future__ import annotations
+
+from buildml.explain.overlays._common import (
+    DATASET,
+    FIT,
+    SPLIT,
+    OperationKind,
+    _operation,
+    _p,
+)
+from buildml.explain.schemas import OperationSpec, Prerequisite
+
+AUTOML_PLAN = Prerequisite(
+    "automl-plan",
+    "A train-selected AutoMLPlan is attached to the Session.",
+    check_hint="Session.automl_plan is not None.",
+)
+
+_OPERATIONS: tuple[OperationSpec, ...] = (
+    _operation(
+        "run_automl",
+        OperationKind.MODEL,
+        "Search model families and fold-local preprocess strategies on train.",
+        "Go beyond single-estimator HPO with a finite disclosed AutoML catalog.",
+        "AutoML family + recipe search.",
+        (
+            "Refuse when Session-global preprocess poisoned the frame (same as classical CV).",
+            "Sample or enumerate model families × recipe strategies × modest params.",
+            "Rank on train CV, nested outer folds, or Session validation — never test.",
+            "Optionally score voting ensembles of diverse top families.",
+            "Refit the winner on full train; store AutoMLPlan + FitResult.",
+        ),
+        parameters=(
+            _p("method", "randomized | grid | optuna", "Search engine.", "randomized"),
+            _p(
+                "selection",
+                "cv | nested | validation",
+                "How candidates are ranked (test never used).",
+                "cv",
+            ),
+            _p("n_trials", "int", "Trial budget for randomized/optuna.", 20),
+            _p("cv", "int | splitter", "Inner train folds for CV ranking.", 3),
+            _p("outer_cv", "int | splitter", "Outer folds when selection='nested'.", 3),
+            _p("ranking_metric", "str | None", "Metric maximized/minimized."),
+            _p("families", "sequence[str] | None", "Subset of catalog family names."),
+            _p(
+                "include_recipe_search",
+                "bool",
+                "Search discrete fold-local recipe strategies.",
+                True,
+            ),
+            _p(
+                "include_ensembles",
+                "bool",
+                "Also score voting ensembles of top diverse families.",
+                False,
+            ),
+            _p("preprocess", "PreprocessRecipe | None", "Fixed or base recipe."),
+            _p(
+                "allow_session_global_preprocess",
+                "bool",
+                "Explicit opt-in when Session-global prep already ran.",
+                False,
+            ),
+            _p("task", "classification | regression | auto", "Task type.", "auto"),
+            _p("refit", "bool", "Refit winner on full train.", True),
+            _p("random_state", "int | None", "Sampling seed.", 0),
+            _p("budget", "AutoMLBudget | None", "Hard caps on trials/families/recipes."),
+        ),
+        inputs=("Split Session with features + target (prefer unpoisoned frame).",),
+        outputs=("AutoMLResult; AutoMLPlan + FitResult stored on the Session.",),
+        prerequisites=(DATASET, SPLIT),
+        ordering=(
+            "After split; prefer fold-local recipes instead of Session-global prep before search.",
+        ),
+        alternatives=(
+            "grid_search / optuna_search for HPO on one fixed estimator.",
+            "compare_models for a small named holdout comparison.",
+            "fit_voting / fit_stacking when you already chose bases.",
+        ),
+        rationale=(
+            "Use when you need joint model-family + preprocess-strategy selection under leakage discipline.",
+        ),
+        assumptions=(
+            "Finite disclosed catalogs — not NAS.",
+            "No causal claims; association / predictive ranking only.",
+        ),
+        failures=(
+            "Missing split; Session-global preprocess without allow flag; "
+            "selection='validation' without a validation partition; empty catalog.",
+        ),
+        leakage=(
+            "Session test must not enter selection scoring.",
+            "Session-global impute/encode/scale before AutoML poisons fold honesty — refused by default.",
+        ),
+        anti_patterns=(
+            "Calling AutoML a fully automated AI scientist.",
+            "Treating train-CV AutoML ranks as final generalization without nested/validation/test confirm.",
+            "Claiming neural architecture search when only sklearn catalogs were searched.",
+        ),
+        state_changes=("Stores automl_plan, automl_result, and fit_result.",),
+        result_reading=(
+            "Read best_family, best_recipe_strategy, best_score, disclosures, limitations.",
+        ),
+        next_steps=("evaluate_automl; save_automl_bundle and/or save_pipeline.",),
+        concepts=(
+            "automl-beyond-hpo",
+            "automl-recipe-strategy-search",
+            "automl-selection-honesty",
+            "leakage-boundary",
+        ),
+    ),
+    _operation(
+        "evaluate_automl",
+        OperationKind.DIAGNOSTIC,
+        "Evaluate the last AutoML winner with classical supervised metrics.",
+        "Score the selected pipeline on a holdout partition with AutoML disclosures.",
+        "AutoML evaluation step.",
+        (
+            "Require FitResult from run_automl / load_automl_bundle.",
+            "Delegate to classical evaluate_estimator metrics.",
+            "Attach AutoMLPlan disclosures to recommendations/diagnostics.",
+        ),
+        parameters=(
+            _p("partition", "train | validation | test", "Partition to score.", "test"),
+        ),
+        inputs=("Fitted AutoML winner on the Session.",),
+        outputs=("EvaluateResult with automl diagnostics when AutoMLPlan is present.",),
+        prerequisites=(DATASET, SPLIT, FIT),
+        ordering=("After run_automl or load_automl_bundle.",),
+        alternatives=("Session.evaluate — same metrics without AutoML-specific tips.",),
+        rationale=("Use to confirm the winner on a holdout after selection.",),
+        assumptions=("Feature columns match the fitted contract.",),
+        failures=("No fit_result; missing partition.",),
+        leakage=("Train-partition scores are optimistic for model selection.",),
+        anti_patterns=("Treating train metrics as final generalization.",),
+        state_changes=("Records evaluate_automl in history; does not mutate the estimator.",),
+        result_reading=("Read metrics, diagnostics.automl, recommendations.",),
+        next_steps=("save_automl_bundle and/or save_pipeline.",),
+        concepts=(
+            "automl-selection-honesty",
+            "evaluation-partitions",
+            "automl-beyond-hpo",
+        ),
+    ),
+    _operation(
+        "save_automl_bundle",
+        OperationKind.PERSIST,
+        "Persist the active AutoMLPlan as buildml.automl_bundle.v1.",
+        "Save search disclosures and the fitted winner separately from checkpoints.",
+        "AutoML bundle save.",
+        (
+            "Require an attached AutoMLPlan.",
+            "Write meta.json + automl_plan.joblib.",
+        ),
+        parameters=(_p("path", "str | Path", "Destination directory."),),
+        inputs=("Active AutoMLPlan.",),
+        outputs=("Bundle directory path.",),
+        prerequisites=(AUTOML_PLAN,),
+        ordering=("After a successful run_automl.",),
+        alternatives=(
+            "save_pipeline when Session-global preprocess plans must travel with the estimator.",
+            "save_model for estimator-only without AutoML disclosures.",
+        ),
+        rationale=("Use when AutoMLPlan disclosures must round-trip.",),
+        assumptions=("Destination is writable.",),
+        failures=("No AutoML plan attached.",),
+        leakage=("Bundles do not embed Session test labels.",),
+        anti_patterns=("Treating the bundle as a Session checkpoint.",),
+        state_changes=("Writes files; records history.",),
+        result_reading=("Confirm format=buildml.automl_bundle.v1 in meta.json.",),
+        next_steps=("load_automl_bundle in a fresh Session, then evaluate_automl.",),
+        concepts=("automl-bundle-boundary",),
+    ),
+    _operation(
+        "load_automl_bundle",
+        OperationKind.PERSIST,
+        "Load a buildml.automl_bundle.v1 AutoMLPlan into the Session.",
+        "Restore a selected AutoML winner and feature contract.",
+        "AutoML bundle load.",
+        (
+            "Validate bundle format.",
+            "Attach AutoMLPlan and FitResult.",
+        ),
+        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        inputs=("AutoML bundle directory.",),
+        outputs=("Session with automl_plan and fit_result attached.",),
+        prerequisites=(DATASET,),
+        ordering=("After ingesting a frame with matching feature columns.",),
+        alternatives=("load_model / load_pipeline for classical artifacts.",),
+        rationale=("Use to restore AutoML disclosures + estimator without a full checkpoint.",),
+        assumptions=("Feature columns match the saved contract.",),
+        failures=("Incomplete or wrong-format bundle.",),
+        leakage=("Loading does not re-open Session test for refitting.",),
+        anti_patterns=("Expecting Session-global preprocess plans inside an AutoML bundle.",),
+        state_changes=("Sets automl_plan and fit_result; clears automl_result.",),
+        result_reading=("Read best_family and best_recipe_strategy from automl_plan.",),
+        next_steps=("evaluate_automl or predict.",),
+        concepts=("automl-bundle-boundary",),
+    ),
+)

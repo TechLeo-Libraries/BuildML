@@ -1,0 +1,251 @@
+"""Feature / client-column helpers for federated learning simulation."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
+from buildml.core.errors import ValidationError
+from buildml.core.types import ColumnRole
+from buildml.core.validation import validate_column_names
+from buildml.data.dataset import Dataset
+from buildml.semisupervised.features import (
+    matrix_from_frame as _matrix_from_frame,
+    resolve_semisupervised_columns,
+)
+
+__all__ = [
+    "matrix_from_frame",
+    "resolve_client_column",
+    "resolve_target_column",
+    "resolve_federated_columns",
+    "encode_labels",
+    "decode_predictions",
+    "client_ids_in_frame",
+    "frame_for_client",
+    "extract_linear_params",
+    "set_linear_params",
+    "average_linear_params",
+    "clone_estimator_with_params",
+]
+
+
+def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
+    """Build a float design matrix; refuse null features (federated wording)."""
+    try:
+        return _matrix_from_frame(frame, columns)
+    except ValidationError as exc:
+        msg = str(exc).replace("Semi-supervised learning", "Federated learning")
+        raise ValidationError(msg) from exc
+
+
+def resolve_client_column(
+    dataset: Dataset,
+    client_column: str | None,
+) -> tuple[str, list[str]]:
+    """Resolve the client / group column from roles or an explicit name."""
+    disclosures: list[str] = []
+    if client_column is not None:
+        name = validate_column_names([client_column], dataset.columns)[0]
+        disclosures.append(
+            f"Federated client column taken from explicit client_column={name!r}."
+        )
+        return name, disclosures
+
+    groups = list(dataset.role_columns(ColumnRole.GROUP))
+    if len(groups) == 1:
+        disclosures.append(
+            f"Federated client column taken from role='group' column: {groups[0]!r}."
+        )
+        return groups[0], disclosures
+    if len(groups) > 1:
+        raise ValidationError(
+            "Multiple role='group' columns found "
+            f"({groups}). Pass client_column= explicitly to select the "
+            "federated client identifier."
+        )
+    raise ValidationError(
+        "Federated learning needs a client/group column. Assign role='group' "
+        "to the client identifier column, or pass client_column=."
+    )
+
+
+def resolve_target_column(dataset: Dataset) -> tuple[str, list[str]]:
+    """Resolve exactly one target column."""
+    targets = list(dataset.role_columns(ColumnRole.TARGET))
+    if len(targets) != 1:
+        raise ValidationError(
+            "Federated learning requires exactly one role='target' column "
+            f"(found {targets!r}). Multi-target joint fitting belongs on "
+            "fit_multitask; federated simulation partitions by a client/group "
+            "column."
+        )
+    return targets[0], [
+        f"Federated target taken from role='target' column: {targets[0]!r}."
+    ]
+
+
+def resolve_federated_columns(
+    dataset: Dataset,
+    frame: pd.DataFrame,
+    columns: list[str] | None,
+    *,
+    reduce_plan: Any | None = None,
+    prefer_reduce_components: bool = True,
+    target_column: str,
+    client_column: str,
+) -> tuple[list[str], bool, list[str]]:
+    """Resolve numeric feature columns, excluding target and client columns."""
+    cols, used_reduce, disclosures = resolve_semisupervised_columns(
+        dataset,
+        frame,
+        columns,
+        reduce_plan=reduce_plan,
+        prefer_reduce_components=prefer_reduce_components,
+        target_column=target_column,
+    )
+    # Rephrase disclosures for federated context.
+    disclosures = [
+        d.replace("Semi-supervised learning", "Federated learning").replace(
+            "semi-supervised", "federated"
+        )
+        for d in disclosures
+    ]
+    if client_column in cols:
+        cols = [c for c in cols if c != client_column]
+        disclosures.append(
+            f"Excluded client column {client_column!r} from federated features "
+            "(client id must not be a model input)."
+        )
+    if not cols:
+        raise ValidationError(
+            "Federated learning needs at least one numeric feature column "
+            f"after excluding target={target_column!r} and "
+            f"client={client_column!r}."
+        )
+    return cols, used_reduce, disclosures
+
+
+def encode_labels(
+    series: pd.Series,
+    *,
+    label_encoder: LabelEncoder | None = None,
+) -> tuple[np.ndarray, LabelEncoder, tuple[Any, ...]]:
+    """Encode classification targets; reuse a fitted encoder when provided."""
+    if series.isna().any():
+        raise ValidationError(
+            "Federated learning classification targets contain nulls; "
+            "impute or drop before fit_federated."
+        )
+    values = series.to_numpy()
+    if label_encoder is None:
+        enc = LabelEncoder()
+        encoded = enc.fit_transform(values)
+    else:
+        enc = label_encoder
+        known = set(enc.classes_)
+        unseen = sorted({v for v in values if v not in known}, key=str)
+        if unseen:
+            raise ValidationError(
+                "Federated learning encountered unseen class labels "
+                f"{unseen} not present during fit class discovery "
+                f"(known={list(enc.classes_)})."
+            )
+        encoded = enc.transform(values)
+    classes = tuple(enc.classes_.tolist())
+    return np.asarray(encoded, dtype=int), enc, classes
+
+
+def decode_predictions(
+    encoded: np.ndarray,
+    label_encoder: LabelEncoder | None,
+) -> tuple[Any, ...]:
+    """Map encoded class indices back to original labels."""
+    if label_encoder is None:
+        return tuple(encoded.tolist())
+    return tuple(label_encoder.inverse_transform(np.asarray(encoded)).tolist())
+
+
+def client_ids_in_frame(frame: pd.DataFrame, client_column: str) -> list[Any]:
+    """Stable unique client ids present in a frame."""
+    if client_column not in frame.columns:
+        raise ValidationError(
+            f"Client column {client_column!r} missing from frame."
+        )
+    ids = pd.unique(frame[client_column])
+    return [x for x in ids.tolist() if pd.notna(x)]
+
+
+def frame_for_client(
+    frame: pd.DataFrame,
+    client_column: str,
+    client_id: Any,
+) -> pd.DataFrame:
+    """Rows belonging to one client id."""
+    return frame.loc[frame[client_column] == client_id].copy()
+
+
+def extract_linear_params(estimator: Any) -> dict[str, np.ndarray]:
+    """Extract ``coef_`` / ``intercept_`` for FedAvg aggregation."""
+    if not hasattr(estimator, "coef_") or not hasattr(estimator, "intercept_"):
+        raise ValidationError(
+            "Federated aggregation requires estimators with coef_ and "
+            f"intercept_ (got {type(estimator).__name__})."
+        )
+    return {
+        "coef_": np.asarray(estimator.coef_, dtype=float).copy(),
+        "intercept_": np.asarray(estimator.intercept_, dtype=float).copy(),
+    }
+
+
+def set_linear_params(estimator: Any, params: dict[str, np.ndarray]) -> None:
+    """Write aggregated linear parameters onto an estimator."""
+    estimator.coef_ = np.asarray(params["coef_"], dtype=float).copy()
+    estimator.intercept_ = np.asarray(params["intercept_"], dtype=float).copy()
+
+
+def average_linear_params(
+    param_list: list[dict[str, np.ndarray]],
+    weights: list[float],
+) -> dict[str, np.ndarray]:
+    """Weighted average of linear parameters (FedAvg / weighted-by-n)."""
+    if not param_list:
+        raise ValidationError("No client parameters to aggregate.")
+    if len(param_list) != len(weights):
+        raise ValidationError("param_list and weights length mismatch.")
+    total = float(sum(weights))
+    if total <= 0:
+        raise ValidationError("Aggregation weights must sum to a positive value.")
+    coef = np.zeros_like(param_list[0]["coef_"], dtype=float)
+    intercept = np.zeros_like(param_list[0]["intercept_"], dtype=float)
+    for params, w in zip(param_list, weights, strict=True):
+        coef = coef + (float(w) / total) * params["coef_"]
+        intercept = intercept + (float(w) / total) * params["intercept_"]
+    return {"coef_": coef, "intercept_": intercept}
+
+
+def clone_estimator_with_params(
+    template: Any,
+    params: dict[str, np.ndarray],
+    *,
+    classes: np.ndarray | None = None,
+) -> Any:
+    """Clone a template estimator and install linear parameters."""
+    from sklearn.base import clone
+
+    est = clone(template)
+    # Ensure attribute slots exist before assignment for partial_fit models.
+    if hasattr(template, "coef_"):
+        set_linear_params(est, params)
+    else:
+        set_linear_params(est, params)
+    if classes is not None and hasattr(est, "classes_"):
+        est.classes_ = np.asarray(classes)
+    # Copy sklearn bookkeeping when present so predict works after set.
+    for attr in ("n_features_in_", "feature_names_in_", "n_iter_", "t_"):
+        if hasattr(template, attr):
+            setattr(est, attr, getattr(template, attr))
+    return est

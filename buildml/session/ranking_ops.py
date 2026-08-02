@@ -1,0 +1,189 @@
+"""Thin Session facades over buildml.ranking (tabular LTR)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Literal, Sequence
+
+from buildml.core.errors import ValidationError
+from buildml.data.splits import PartitionName
+from buildml.ranking.checkpoint import load_ranker_bundle, save_ranker_bundle
+from buildml.ranking.evaluate import evaluate_ranker
+from buildml.ranking.explain_hooks import (
+    eval_result_summary,
+    fit_result_summary,
+    rank_result_summary,
+)
+from buildml.ranking.fit import fit_ranker
+from buildml.ranking.rank import rank
+from buildml.ranking.types import (
+    PairwiseEstimator,
+    PointwiseEstimator,
+    RankerMethod,
+)
+
+PartitionOrAll = PartitionName | Literal["all"]
+
+
+def fit_ranker_op(
+    session,
+    *,
+    method: RankerMethod = "pointwise",
+    query_column: str | None = None,
+    item_column: str | None = None,
+    relevance_column: str | None = None,
+    feature_columns: Sequence[str] | None = None,
+    pointwise_estimator: PointwiseEstimator = "ridge",
+    pairwise_estimator: PairwiseEstimator = "ranksvm",
+    max_pairs_per_query: int = 80,
+    relevance_threshold: float = 0.0,
+    alpha: float = 1.0,
+    C: float = 1.0,
+    random_state: int | None = 0,
+):
+    """Fit a tabular ranker on Session train rows only.
+
+    Notes
+    -----
+    **Leakage:** Requires a split. Prefer ``group_split`` on ``query_column``
+    so test queries' labels never appear in train. Distinct from RAG and from
+    recommender CF.
+    """
+    session.assert_can_fit("train")
+    plan, result = fit_ranker(
+        session.dataset,
+        session._split_plan,
+        method=method,
+        query_column=query_column,
+        item_column=item_column,
+        relevance_column=relevance_column,
+        feature_columns=feature_columns,
+        pointwise_estimator=pointwise_estimator,
+        pairwise_estimator=pairwise_estimator,
+        max_pairs_per_query=max_pairs_per_query,
+        relevance_threshold=relevance_threshold,
+        alpha=alpha,
+        C=C,
+        random_state=random_state,
+    )
+    session._ranker_plan = plan
+    session._ranker_fit_result = result
+    session._ranker_eval_result = None
+    session._ranker_rank_result = None
+    session._record(
+        "fit_ranker",
+        {
+            "method": method,
+            "query_column": query_column,
+            "item_column": item_column,
+            "relevance_column": relevance_column,
+            "feature_columns": (
+                None if feature_columns is None else list(feature_columns)
+            ),
+            "pointwise_estimator": pointwise_estimator,
+            "pairwise_estimator": pairwise_estimator,
+            "max_pairs_per_query": max_pairs_per_query,
+            "relevance_threshold": relevance_threshold,
+            "alpha": alpha,
+            "C": C,
+            "random_state": random_state,
+        },
+        warnings=tuple(result.warnings),
+        result_summary=fit_result_summary(result),
+    )
+    return result
+
+
+def rank_op(
+    session,
+    *,
+    partition: PartitionOrAll | None = None,
+    query_ids: Sequence[Any] | None = None,
+    k: int = 10,
+):
+    """Order items for queries in a partition or an explicit query id list."""
+    plan = getattr(session, "_ranker_plan", None)
+    if plan is None:
+        raise ValidationError("No RankerPlan. Call fit_ranker(...) first.")
+    if query_ids is None and partition is None:
+        partition = "test"
+    result = rank(
+        session.dataset,
+        plan,
+        session._split_plan,
+        partition=partition,
+        query_ids=query_ids,
+        k=k,
+    )
+    session._ranker_rank_result = result
+    session._record(
+        "rank",
+        {
+            "partition": partition,
+            "query_ids": None if query_ids is None else list(query_ids),
+            "k": k,
+        },
+        warnings=tuple(result.warnings),
+        result_summary=rank_result_summary(result),
+    )
+    return result
+
+
+def evaluate_ranker_op(
+    session,
+    *,
+    partition: PartitionOrAll = "test",
+    k: int = 10,
+):
+    """Evaluate per-query ranking metrics on a holdout partition."""
+    plan = getattr(session, "_ranker_plan", None)
+    if plan is None:
+        raise ValidationError("No RankerPlan. Call fit_ranker(...) first.")
+    result = evaluate_ranker(
+        session.dataset,
+        plan,
+        session._split_plan,
+        partition=partition,
+        k=k,
+    )
+    session._ranker_eval_result = result
+    session._record(
+        "evaluate_ranker",
+        {"partition": partition, "k": k},
+        warnings=tuple(result.warnings),
+        result_summary=eval_result_summary(result),
+    )
+    return result
+
+
+def save_ranker_bundle_op(session, path: str | Path) -> Path:
+    plan = getattr(session, "_ranker_plan", None)
+    if plan is None:
+        raise ValidationError("No RankerPlan. Call fit_ranker(...) first.")
+    out = save_ranker_bundle(
+        path,
+        plan,
+        fit_result=getattr(session, "_ranker_fit_result", None),
+        eval_result=getattr(session, "_ranker_eval_result", None),
+        rank_result=getattr(session, "_ranker_rank_result", None),
+    )
+    session._record(
+        "save_ranker_bundle",
+        {"path": str(path)},
+        result_summary={"path": str(out), "format": "buildml.ranker_bundle.v1"},
+    )
+    return out
+
+
+def load_ranker_bundle_op(session, path: str | Path):
+    plan = load_ranker_bundle(path)
+    session._ranker_plan = plan
+    session._ranker_fit_result = None
+    session._ranker_eval_result = None
+    session._ranker_rank_result = None
+    session._record(
+        "load_ranker_bundle",
+        {"path": str(path)},
+        result_summary={"path": str(path), "format": "buildml.ranker_bundle.v1"},
+    )
+    return session

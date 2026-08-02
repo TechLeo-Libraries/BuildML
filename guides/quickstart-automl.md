@@ -1,0 +1,127 @@
+# AutoML quickstart
+
+> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
+> install Session 2.x. Use
+> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> (or an editable checkout). Randomized/grid AutoML is core sklearn — no
+> optional extra. Optuna method reuses `buildml[optuna]`.
+> See [installation](../docs/installation.rst).
+
+Joint model-family + fold-local preprocess-strategy search on the Session —
+beyond tuning one fixed estimator with `grid_search` / `optuna_search`.
+
+**Go deeper:** [AutoML deep](automl-deep.md) ·
+[Leakage](leakage-cv-recipes.md) ·
+[Diagnostics & search](classical-diagnostics-search.md) ·
+[Artifacts](artifacts-checkpoints-bundles.md).
+
+---
+
+## First loop: randomized family + recipe search
+
+Prefer an **unpoisoned** frame (roles + split, no Session-global impute/scale
+before search). AutoML uses fold-local `PreprocessRecipe` strategies.
+
+```python
+import pandas as pd
+import numpy as np
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 200
+x1 = rng.normal(size=n)
+x2 = rng.normal(size=n)
+cat = rng.choice(["a", "b", "c"], size=n)
+y = (0.8 * x1 - 0.4 * x2 + rng.normal(scale=0.35, size=n) > 0).astype(int)
+frame = pd.DataFrame({"x1": x1, "x2": x2, "cat": cat, "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+
+result = session.run_automl(
+    method="randomized",
+    selection="cv",
+    n_trials=12,
+    cv=3,
+    include_recipe_search=True,
+    families=("logistic", "random_forest", "gradient_boosting"),
+    random_state=0,
+)
+result.show()
+
+validation = session.evaluate_automl(partition="validation")
+test = session.evaluate_automl(partition="test")
+print(validation.metrics, test.metrics)
+```
+
+`run_automl` sets classical `fit_result`, so `evaluate` / `predict` /
+`save_pipeline` also work.
+
+---
+
+## Nested selection (honest outer estimate)
+
+```python
+nested = session.run_automl(
+    method="randomized",
+    selection="nested",
+    n_trials=8,
+    cv=3,
+    outer_cv=3,
+    include_recipe_search=True,
+    random_state=1,
+)
+print(nested.outer_score_mean, nested.outer_score_std)
+print(session.evaluate_automl(partition="test").metrics)
+```
+
+Outer folds stay inside **train**. Session test never enters selection.
+
+---
+
+## Optional voting of top families
+
+```python
+session.run_automl(
+    method="randomized",
+    n_trials=10,
+    include_recipe_search=True,
+    include_ensembles=True,
+    max_ensemble_bases=3,
+    random_state=2,
+)
+print(session.automl_plan.best_kind, session.automl_plan.ensemble_bases)
+```
+
+Stacking/blending remain separate Session APIs (`fit_stacking` /
+`fit_blending`) when you want those strategies explicitly.
+
+---
+
+## Bundle
+
+```python
+session.save_automl_bundle(".buildml-artifacts/automl_bundle")
+```
+
+Distinct from Session checkpoints and classical pipelines. See
+[artifacts](artifacts-checkpoints-bundles.md).
+
+---
+
+## Honest scope
+
+| Is | Is not |
+| --- | --- |
+| Finite catalog of sklearn families + recipe strategies | Neural architecture search (NAS) |
+| Fold-local leakage-safe selection | Causal discovery |
+| Trial-budgeted search with disclosures | Fully automated AI scientist |
+| Optional voting of top families | Unbounded Autosklearn zoo |
+
+Session-global preprocess before AutoML is **refused** by default (same
+contract as `cv_score` / `grid_search`). Re-ingest unpoisoned data or set
+`allow_session_global_preprocess=True` explicitly (scores remain leakage-biased).

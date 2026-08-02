@@ -1,0 +1,196 @@
+# ruff: noqa: E501
+"""Recommendation systems concept notes."""
+
+from __future__ import annotations
+
+from buildml.explain.concepts._builder import _note
+from buildml.explain.schemas import ConceptNote
+
+RECOMMENDER_NOTES: dict[str, ConceptNote] = {
+    note.key: note
+    for note in (
+        _note(
+            key="recommender-collaborative-filtering",
+            title="Collaborative filtering (user/item interactions)",
+            summary=(
+                "fit_recommender learns from train user–item interactions "
+                "(neighborhood CF or matrix factorization) for top-K ranking."
+            ),
+            definition=(
+                "Collaborative filtering predicts preferences from the "
+                "interaction matrix alone: similar users or items, or latent "
+                "factors (SVD/NMF), without requiring side features."
+            ),
+            intuition=(
+                "People who liked the same things before will like similar "
+                "things next; similar items co-occur for the same users."
+            ),
+            formal_idea=(
+                "R ∈ R^{|U|×|I|} train-only; item_knn / user_knn via cosine; "
+                "SVD/NMF: R ≈ UVᵀ."
+            ),
+            why_it_matters=(
+                "Train-only matrix preserves holdout honesty.",
+                "Ranking metrics need a clear candidate catalog.",
+            ),
+            how_buildml_uses=(
+                "Session.fit_recommender(method='item_knn'|'user_knn'|'svd'|'nmf').",
+            ),
+            interpretation_rules=(
+                "Prefer holdout Precision@K / Recall@K / nDCG@K / MAP@K.",
+                "Known-item protocol: candidates ⊆ train items.",
+            ),
+            assumptions=(
+                "user_column + item_column present; split present; enough overlap.",
+            ),
+            failure_modes=(
+                "Cold users/items; tiny catalogs; popularity collapse.",
+            ),
+            anti_patterns=(
+                "Fitting on full-frame interactions including test.",
+                "Calling this a Netflix-scale recsys platform.",
+                "Confusing with RAG retrieve or EDA Recommendation Findings.",
+            ),
+            worked_example_pattern=(
+                "fit_recommender(method='item_knn', user_column=..., item_column=...) "
+                "→ evaluate_recommender(k=10).",
+            ),
+            related_concepts=(
+                "recommender-ranking-metrics",
+                "recommender-cold-start",
+                "recommender-bundle-boundary",
+                "leakage-boundary",
+            ),
+        ),
+        _note(
+            key="recommender-content-based",
+            title="Content-based item scoring",
+            summary=(
+                "method='content' builds rating-weighted user profiles from "
+                "numeric item features observed in train."
+            ),
+            definition=(
+                "Content-based recommenders score catalog items by similarity "
+                "between a user profile (aggregate of consumed item features) "
+                "and candidate item feature vectors."
+            ),
+            intuition=(
+                "If you liked fast red cars, recommend other items with similar "
+                "numeric descriptors — even without collaborative neighbors."
+            ),
+            formal_idea="u = Σ r_i x_i / Σ |r_i|; score(i) = cos(u, x_i).",
+            why_it_matters=(
+                "Helps when collaborative signal is thin but item features exist.",
+            ),
+            how_buildml_uses=(
+                "fit_recommender(method='content', item_feature_columns=[...]).",
+            ),
+            interpretation_rules=(
+                "Still restricted to the train item catalog (known-item).",
+            ),
+            assumptions=("Numeric item_feature_columns on train rows.",),
+            failure_modes=("Missing/non-numeric features; empty user history.",),
+            anti_patterns=("Fitting content scalers on holdout item rows.",),
+            worked_example_pattern=(
+                "fit_recommender(method='content', item_feature_columns=['f1','f2']).",
+            ),
+            related_concepts=(
+                "recommender-collaborative-filtering",
+                "recommender-cold-start",
+            ),
+        ),
+        _note(
+            key="recommender-ranking-metrics",
+            title="Precision@K, Recall@K, nDCG@K, MAP@K",
+            summary=(
+                "evaluate_recommender scores top-K lists against holdout "
+                "known-item positives for warm users."
+            ),
+            definition=(
+                "Precision@K = |hit∩topK|/K; Recall@K = |hit∩topK|/|relevant|; "
+                "nDCG@K discounts hits by log rank; MAP@K averages precision at "
+                "each hit rank."
+            ),
+            intuition=(
+                "Did the right items appear near the top of the list for each user?"
+            ),
+            formal_idea="Macro-average over warm holdout users with ≥1 known relevant item.",
+            why_it_matters=(
+                "Accuracy/RMSE on ratings is not the same as ranking quality.",
+            ),
+            how_buildml_uses=("Session.evaluate_recommender(partition=..., k=...).",),
+            interpretation_rules=(
+                "Cold-start users are excluded from averages and counted separately.",
+                "Holdout-only items are dropped from relevant sets (disclosed).",
+            ),
+            assumptions=("Frozen train plan; exclude train history from candidates.",),
+            failure_modes=("No warm users → zeros with disclosure.",),
+            anti_patterns=("Reporting train reconstruction error as ranking quality.",),
+            worked_example_pattern=("evaluate_recommender(partition='test', k=10).",),
+            related_concepts=(
+                "recommender-collaborative-filtering",
+                "recommender-cold-start",
+            ),
+        ),
+        _note(
+            key="recommender-cold-start",
+            title="Cold-start users/items and known-item protocol",
+            summary=(
+                "Users/items absent from train are disclosed; candidates are "
+                "always the train item catalog."
+            ),
+            definition=(
+                "Cold-start users have no train history; cold items never appear "
+                "in the train catalog. BuildML uses a known-item protocol: "
+                "recommend only train items; cold users use popularity or skip."
+            ),
+            intuition=(
+                "You cannot honestly score an item the model has never seen as "
+                "a collaborative candidate without an external side model."
+            ),
+            formal_idea="Candidates ⊆ I_train; cold users → popularity or ∅.",
+            why_it_matters=("Prevents silent leakage of holdout-only catalog ids.",),
+            how_buildml_uses=("cold_start='popularity'|'skip' on fit_recommender.",),
+            interpretation_rules=(
+                "n_cold_start_users on eval/recommend is a first-class disclosure.",
+            ),
+            assumptions=("Train catalog is the deployment candidate set for CF.",),
+            failure_modes=("Most users cold → ranking averages over few warm users.",),
+            anti_patterns=("Adding test-only items into the similarity graph.",),
+            worked_example_pattern=(
+                "fit_recommender(cold_start='popularity') → recommend(partition='test').",
+            ),
+            related_concepts=(
+                "recommender-ranking-metrics",
+                "recommender-bundle-boundary",
+            ),
+        ),
+        _note(
+            key="recommender-bundle-boundary",
+            title="Recommender bundle vs Session checkpoint vs RAG / EDA",
+            summary=(
+                "buildml.recommender_bundle.v1 stores RecommenderPlan; checkpoints "
+                "do not. Distinct from RAG bundles and EDA Recommendation Findings."
+            ),
+            definition=(
+                "A recommender bundle directory holds meta.json + "
+                "recommender_plan.joblib under schema buildml.recommender_bundle.v1."
+            ),
+            intuition="Save the CF model separately from workflow resume state.",
+            formal_idea="RecommenderPlan is not embedded in a Session checkpoint payload.",
+            why_it_matters=("Avoid silent gaps when reloading workflows.",),
+            how_buildml_uses=("save_recommender_bundle / load_recommender_bundle.",),
+            interpretation_rules=(
+                "Reload via load_recommender_bundle after checkpoint_load.",
+                "Do not confuse with rag_* or explain.schemas.Recommendation.",
+            ),
+            assumptions=("Bundle format matches buildml.recommender_bundle.v1.",),
+            failure_modes=("Mixing recommender bundles with RAG / TDA bundles.",),
+            anti_patterns=("Expecting checkpoint_load to restore RecommenderPlan.",),
+            worked_example_pattern=(
+                "save_recommender_bundle(path) → load_recommender_bundle(path).",
+            ),
+            related_concepts=("recommender-collaborative-filtering",),
+        ),
+    )
+}

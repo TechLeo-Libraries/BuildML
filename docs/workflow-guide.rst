@@ -83,7 +83,7 @@ uses ``to_pandas()``, manually select ``session.partition("train")`` for any
 fit-capable work; the full exported frame contains every partition.
 
 For selection-time honesty inside ``cv_score``, ``grid_search``,
-``optuna_search``, or ``nested_cv_score``, use a fold-local
+``optuna_search``, ``evolutionary_search``, or ``nested_cv_score``, use a fold-local
 ``PreprocessRecipe`` (dates, text, impute, encode, binning, scale, reduce/PCA,
 select, outliers) on **unpoisoned** data — do not fit Session-global plans on
 the full train partition first. When Session-global fit-capable plans already
@@ -108,8 +108,9 @@ payload when engine metadata allows (LazyFrame plans are not persisted).
 
 When hyperparameters or fold-local recipe knobs such as ``select_k`` /
 ``n_bins`` are tuned, pass ``recipe_grid`` / ``recipe_distributions`` /
-``recipe_space`` into ``nested_cv_score``, ``grid_search``, or
-``optuna_search`` with a ``PreprocessRecipe``. For nested Optuna, use
+``recipe_space`` into ``nested_cv_score``, ``grid_search``,
+``optuna_search``, or ``evolutionary_search`` with a ``PreprocessRecipe``.
+For nested Optuna, use
 ``inner_search='optuna'`` with ``param_space`` / ``recipe_space``. Outer
 folds record ``best_params`` / ``best_recipe_knobs`` without using Session
 test rows. Optuna requires ``pip install 'buildml[optuna]'``.

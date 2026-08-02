@@ -1,0 +1,102 @@
+{
+  "format": "buildml.probabilistic_bundle.v1",
+  "buildml_version": "2.4.0a1",
+  "compatibility": "Probabilistic bundles, federated bundles, online bundles, classical pipeline bundles, Torch trainer bundles, RAG bundles, and Session checkpoints are complementary, not interchangeable. A probabilistic bundle (buildml.probabilistic_bundle.v1) stores a ProbabilisticPlan (sklearn Bayesian/GP/NB estimator + optional split-conformal quantile + train carve indices). A Session checkpoint stores data, roles, splits, history, and optional classical preprocess plans; it does not embed the probabilistic learner. Reload tabular workflow via checkpoint_load; reload the learner via load_probabilistic_bundle. Honesty: sklearn uncertainty quantification \u2014 not a PyMC/Stan MCMC platform.",
+  "plan": {
+    "estimator_name": "bayesian_ridge",
+    "task": "regression",
+    "columns": [
+      "a",
+      "b"
+    ],
+    "target_column": "y",
+    "n_train_rows": 153,
+    "n_fit_rows": 122,
+    "n_conformal_calib_rows": 31,
+    "alpha": 0.1,
+    "conformal": true,
+    "interval_method": "both",
+    "classes": null,
+    "conformal_quantile": 0.6981506205310557,
+    "supports_return_std": true,
+    "supports_predict_proba": false,
+    "disclosures": [
+      "Split conformal calibration carved from train only: n_fit=122, n_calib=31 (fraction\u22480.2). Validation/test were never used for conformal calibration.",
+      "Regression split-conformal quantile q\u0302=0.698151 at alpha=0.1 (target coverage\u224890%).",
+      "Probabilistic path uses sklearn BayesianRidge / GaussianProcess* / GaussianNB \u2014 not PyMC/Stan MCMC or Bayesian deep nets.",
+      "Fit uses the Session train partition only (plus an optional train-only conformal carve).",
+      "Validation/test are evaluation / interval scoring only.",
+      "interval_method=both; alpha=0.1.",
+      "Estimator supports predict(..., return_std=True) for posterior predictive std under the model\u2019s Gaussian assumptions."
+    ],
+    "warnings": [],
+    "used_reduce_components": false,
+    "config": {
+      "estimator": "bayesian_ridge",
+      "task": "regression",
+      "columns": [
+        "a",
+        "b"
+      ],
+      "random_state": 0,
+      "alpha": 0.1,
+      "conformal": true,
+      "conformal_calibration_fraction": 0.2,
+      "interval_method": "both",
+      "prefer_reduce_components": true,
+      "n_restarts_optimizer": 0
+    }
+  },
+  "fit": {
+    "estimator_name": "bayesian_ridge",
+    "task": "regression",
+    "n_train_rows": 153,
+    "n_fit_rows": 122,
+    "n_conformal_calib_rows": 31,
+    "columns": [
+      "a",
+      "b"
+    ],
+    "target_column": "y",
+    "alpha": 0.1,
+    "conformal": true,
+    "interval_method": "both",
+    "classes": null,
+    "conformal_quantile": 0.6981506205310557,
+    "used_reduce_components": false,
+    "disclosures": [
+      "Split conformal calibration carved from train only: n_fit=122, n_calib=31 (fraction\u22480.2). Validation/test were never used for conformal calibration.",
+      "Regression split-conformal quantile q\u0302=0.698151 at alpha=0.1 (target coverage\u224890%).",
+      "Probabilistic path uses sklearn BayesianRidge / GaussianProcess* / GaussianNB \u2014 not PyMC/Stan MCMC or Bayesian deep nets.",
+      "Fit uses the Session train partition only (plus an optional train-only conformal carve).",
+      "Validation/test are evaluation / interval scoring only.",
+      "interval_method=both; alpha=0.1.",
+      "Estimator supports predict(..., return_std=True) for posterior predictive std under the model\u2019s Gaussian assumptions."
+    ],
+    "warnings": []
+  },
+  "eval": {
+    "partition": "validation",
+    "estimator_name": "bayesian_ridge",
+    "task": "regression",
+    "n_rows": 39,
+    "alpha": 0.1,
+    "metrics": {
+      "nll": 0.4927760811866132,
+      "mae": 0.30264261965885947,
+      "rmse": 0.3801275011201782,
+      "r2": 0.9257690920480316,
+      "interval_coverage": 0.9487179487179487,
+      "mean_interval_width": 1.3963012410621114,
+      "interval_score": 1.5395285807596693
+    },
+    "interval_coverage": 0.9487179487179487,
+    "mean_interval_width": 1.3963012410621114,
+    "disclosures": [
+      "Probabilistic evaluation scores a holdout partition; rows were never used for fit or conformal calibration.",
+      "estimator=bayesian_ridge, alpha=0.1, interval_method=both.",
+      "Classical Session.calibration() is unchanged and still targets classical fit(...) classifiers; this path reports NLL/Brier directly."
+    ],
+    "warnings": []
+  }
+}

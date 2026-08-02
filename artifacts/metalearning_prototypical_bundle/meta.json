@@ -1,0 +1,180 @@
+{
+  "format": "buildml.metalearning_bundle.v1",
+  "buildml_version": "2.4.0a1",
+  "compatibility": "Meta-learning bundles, multi-task bundles, online bundles, active-learning bundles, semi-supervised bundles, self-supervised bundles, anomaly bundles, unsupervised bundles, classical pipeline bundles, Torch trainer bundles, RAG bundles, and Session checkpoints are complementary, not interchangeable. A meta-learning bundle (buildml.metalearning_bundle.v1) stores a MetaLearningPlan (episodic few-shot protocol + feature/task contract + optional warm-start init estimator). A Session checkpoint stores data, roles, splits, history, and optional classical preprocess plans; it does not embed the meta-learner. Reload tabular workflow via checkpoint_load; reload the learner via load_metalearning_bundle. This is practical tabular few-shot / episodic meta-learning \u2014 not foundation-model MAML-at-scale.",
+  "plan": {
+    "method": "prototypical",
+    "columns": [
+      "x",
+      "y"
+    ],
+    "target_column": "label",
+    "task_column": "task_id",
+    "train_task_ids": [
+      "t1",
+      "t8",
+      "t3",
+      "t6",
+      "t7",
+      "t4",
+      "t9"
+    ],
+    "held_out_task_ids": [
+      "t5",
+      "t2",
+      "t0"
+    ],
+    "n_meta_train_tasks": 7,
+    "n_held_out_tasks": 3,
+    "classes": [
+      "0",
+      "1"
+    ],
+    "n_train_rows": 256,
+    "n_way": 2,
+    "k_shot": 3,
+    "n_query": 6,
+    "n_episodes": 20,
+    "meta_train_accuracy": 1.0,
+    "disclosures": [
+      "Meta-learning task column taken from role='group' column: 'task_id'.",
+      "Meta-learning target taken from role='target' column: 'label'.",
+      "Held out 3 train task id(s) for internal episodic checks (task_holdout_fraction=0.3): ['t5', 't2', 't0'].",
+      "Prototypical meta-train: episodic nearest-centroid on tabular features (no learned neural embedding).",
+      "Meta-train episodic mean query accuracy=1.0000 over 20 episode(s).",
+      "Meta-learning fits on the train partition only; validation/test are never used for meta-training.",
+      "Task identity comes from a task/group column; that column is excluded from features.",
+      "Honesty: practical tabular few-shot / episodic Session protocol \u2014 not foundation-model meta-learning or MAML-at-scale.",
+      "method=prototypical, n_meta_train_tasks=7, n_way=2, k_shot=3, n_episodes=20, n_train_rows=256."
+    ],
+    "warnings": [],
+    "used_reduce_components": false,
+    "config": {
+      "method": "prototypical",
+      "task_column": "task_id",
+      "columns": [
+        "x",
+        "y"
+      ],
+      "n_way": 2,
+      "k_shot": 3,
+      "n_query": 6,
+      "n_episodes": 20,
+      "base_estimator": "logistic_regression",
+      "random_state": 0,
+      "prefer_reduce_components": true,
+      "task_holdout_fraction": 0.3
+    }
+  },
+  "fit": {
+    "method": "prototypical",
+    "n_train_rows": 256,
+    "columns": [
+      "x",
+      "y"
+    ],
+    "target_column": "label",
+    "task_column": "task_id",
+    "n_meta_train_tasks": 7,
+    "n_held_out_tasks": 3,
+    "n_way": 2,
+    "k_shot": 3,
+    "n_episodes": 20,
+    "meta_train_accuracy": 1.0,
+    "used_reduce_components": false,
+    "disclosures": [
+      "Meta-learning task column taken from role='group' column: 'task_id'.",
+      "Meta-learning target taken from role='target' column: 'label'.",
+      "Held out 3 train task id(s) for internal episodic checks (task_holdout_fraction=0.3): ['t5', 't2', 't0'].",
+      "Prototypical meta-train: episodic nearest-centroid on tabular features (no learned neural embedding).",
+      "Meta-train episodic mean query accuracy=1.0000 over 20 episode(s).",
+      "Meta-learning fits on the train partition only; validation/test are never used for meta-training.",
+      "Task identity comes from a task/group column; that column is excluded from features.",
+      "Honesty: practical tabular few-shot / episodic Session protocol \u2014 not foundation-model meta-learning or MAML-at-scale.",
+      "method=prototypical, n_meta_train_tasks=7, n_way=2, k_shot=3, n_episodes=20, n_train_rows=256."
+    ],
+    "warnings": []
+  },
+  "eval": {
+    "partition": "train",
+    "method": "prototypical",
+    "n_tasks_evaluated": 3,
+    "n_query_rows": 18,
+    "metrics": {
+      "mean_accuracy": 1.0,
+      "mean_f1_macro": 1.0,
+      "n_tasks_scored": 3.0
+    },
+    "per_task_metrics": {
+      "t5": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0,
+        "n_support": 6.0,
+        "n_query": 6.0
+      },
+      "t2": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0,
+        "n_support": 6.0,
+        "n_query": 6.0
+      },
+      "t0": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0,
+        "n_support": 6.0,
+        "n_query": 6.0
+      }
+    },
+    "novel_task_ids": [
+      "t0",
+      "t5",
+      "t2"
+    ],
+    "overlapping_task_ids": [
+      "t7",
+      "t9",
+      "t8",
+      "t3",
+      "t1",
+      "t4",
+      "t6"
+    ],
+    "disclosures": [
+      "Meta-learning evaluation uses episodic support/query splits on a holdout partition; rows were never used for meta-training.",
+      "method=prototypical, partition=train, k_shot=3, n_query=6, n_way=2.",
+      "Evaluating 3 novel task id(s) absent from meta-train: ['t0', 't5', 't2'].",
+      "Overlapping task ids present but skipped (prefer_novel_tasks=True): ['t7', 't9', 't8', 't3', 't1', 't4', 't6'].",
+      "Using fit-time held_out_task_ids for train-partition episodic eval: ['t5', 't2', 't0']."
+    ],
+    "warnings": []
+  },
+  "adapt": {
+    "method": "prototypical",
+    "task_id": "t1",
+    "n_support": 6,
+    "n_classes_adapted": 2,
+    "classes": [
+      "0",
+      "1"
+    ],
+    "prototypes": {
+      "0": {
+        "dim": 2
+      },
+      "1": {
+        "dim": 2
+      }
+    },
+    "has_adapted_estimator": true,
+    "disclosures": [
+      "adapt_to_task freezes the meta-train plan and fits only on the provided support set (fast adapt).",
+      "method=prototypical.",
+      "Support taken from partition='train' for task_id='t1' (n=22).",
+      "Capped support at max_support_per_class=3.",
+      "Built 2 class prototype(s) from support (tabular nearest-centroid)."
+    ],
+    "warnings": [
+      "task_id='t1' appeared in meta-train task ids; adaptation is still valid but is not a novel-task few-shot test."
+    ]
+  }
+}

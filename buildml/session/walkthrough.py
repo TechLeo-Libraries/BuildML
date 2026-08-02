@@ -38,6 +38,31 @@ class WorkflowWalkthroughReport:
     preprocess_scope_status: dict[str, Any] = field(default_factory=dict)
     torch_training_status: dict[str, Any] = field(default_factory=dict)
     rag_status: dict[str, Any] = field(default_factory=dict)
+    unsupervised_status: dict[str, Any] = field(default_factory=dict)
+    ensemble_status: dict[str, Any] = field(default_factory=dict)
+    automl_status: dict[str, Any] = field(default_factory=dict)
+    forecasting_status: dict[str, Any] = field(default_factory=dict)
+    anomaly_status: dict[str, Any] = field(default_factory=dict)
+    semisupervised_status: dict[str, Any] = field(default_factory=dict)
+    selfsupervised_status: dict[str, Any] = field(default_factory=dict)
+    activelearning_status: dict[str, Any] = field(default_factory=dict)
+    online_status: dict[str, Any] = field(default_factory=dict)
+    multitask_status: dict[str, Any] = field(default_factory=dict)
+    metalearning_status: dict[str, Any] = field(default_factory=dict)
+    federated_status: dict[str, Any] = field(default_factory=dict)
+    probabilistic_status: dict[str, Any] = field(default_factory=dict)
+    causal_status: dict[str, Any] = field(default_factory=dict)
+    graph_status: dict[str, Any] = field(default_factory=dict)
+    symbolic_status: dict[str, Any] = field(default_factory=dict)
+    cbr_status: dict[str, Any] = field(default_factory=dict)
+    imitation_status: dict[str, Any] = field(default_factory=dict)
+    rl_status: dict[str, Any] = field(default_factory=dict)
+    tda_status: dict[str, Any] = field(default_factory=dict)
+    recommender_status: dict[str, Any] = field(default_factory=dict)
+    ranking_status: dict[str, Any] = field(default_factory=dict)
+    kg_status: dict[str, Any] = field(default_factory=dict)
+    decision_status: dict[str, Any] = field(default_factory=dict)
+    synthetic_status: dict[str, Any] = field(default_factory=dict)
     audit_summary: dict[str, Any] = field(default_factory=dict)
     html_path: str | None = None
 
@@ -55,6 +80,31 @@ class WorkflowWalkthroughReport:
             "preprocess_scope_status": dict(self.preprocess_scope_status),
             "torch_training_status": dict(self.torch_training_status),
             "rag_status": dict(self.rag_status),
+            "unsupervised_status": dict(self.unsupervised_status),
+            "ensemble_status": dict(self.ensemble_status),
+            "automl_status": dict(self.automl_status),
+            "forecasting_status": dict(self.forecasting_status),
+            "anomaly_status": dict(self.anomaly_status),
+            "semisupervised_status": dict(self.semisupervised_status),
+            "selfsupervised_status": dict(self.selfsupervised_status),
+            "activelearning_status": dict(self.activelearning_status),
+            "online_status": dict(self.online_status),
+            "multitask_status": dict(self.multitask_status),
+            "metalearning_status": dict(self.metalearning_status),
+            "federated_status": dict(self.federated_status),
+            "probabilistic_status": dict(self.probabilistic_status),
+            "causal_status": dict(self.causal_status),
+            "graph_status": dict(self.graph_status),
+            "symbolic_status": dict(self.symbolic_status),
+            "cbr_status": dict(self.cbr_status),
+            "imitation_status": dict(self.imitation_status),
+            "rl_status": dict(self.rl_status),
+            "tda_status": dict(self.tda_status),
+            "recommender_status": dict(self.recommender_status),
+            "ranking_status": dict(self.ranking_status),
+            "kg_status": dict(self.kg_status),
+            "decision_status": dict(self.decision_status),
+            "synthetic_status": dict(self.synthetic_status),
             "audit_summary": dict(self.audit_summary),
             "html_path": self.html_path,
         }
@@ -112,6 +162,31 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
         ),
         torch_training_status=torch_training_status_for_walkthrough(session),
         rag_status=rag_status_for_walkthrough(session),
+        unsupervised_status=unsupervised_status_for_walkthrough(session),
+        ensemble_status=ensemble_status_for_walkthrough(session),
+        automl_status=automl_status_for_walkthrough(session),
+        forecasting_status=forecasting_status_for_walkthrough(session),
+        anomaly_status=anomaly_status_for_walkthrough(session),
+        semisupervised_status=semisupervised_status_for_walkthrough(session),
+        selfsupervised_status=selfsupervised_status_for_walkthrough(session),
+        activelearning_status=activelearning_status_for_walkthrough(session),
+        online_status=online_status_for_walkthrough(session),
+        multitask_status=multitask_status_for_walkthrough(session),
+        metalearning_status=metalearning_status_for_walkthrough(session),
+        federated_status=federated_status_for_walkthrough(session),
+        probabilistic_status=probabilistic_status_for_walkthrough(session),
+        causal_status=causal_status_for_walkthrough(session),
+        graph_status=graph_status_for_walkthrough(session),
+        symbolic_status=symbolic_status_for_walkthrough(session),
+        cbr_status=cbr_status_for_walkthrough(session),
+        imitation_status=imitation_status_for_walkthrough(session),
+        rl_status=rl_status_for_walkthrough(session),
+        tda_status=tda_status_for_walkthrough(session),
+        recommender_status=recommender_status_for_walkthrough(session),
+        ranking_status=ranking_status_for_walkthrough(session),
+        kg_status=kg_status_for_walkthrough(session),
+        decision_status=decision_status_for_walkthrough(session),
+        synthetic_status=synthetic_status_for_walkthrough(session),
         audit_summary={
             "n_operations": audit.n_operations,
             "warning_count": audit.warning_count,
@@ -139,6 +214,181 @@ def rag_status_for_walkthrough(session: Any) -> dict[str, Any]:
     from buildml.rag.explain_hooks import rag_status_for_session
 
     return rag_status_for_session(session)
+
+
+def unsupervised_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual unsupervised ClusterPlan disclosure for walkthrough."""
+    from buildml.unsupervised.explain_hooks import unsupervised_status_for_session
+
+    return unsupervised_status_for_session(session)
+
+
+def ensemble_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual native EnsemblePlan disclosure for walkthrough."""
+    from buildml.ensemble.explain_hooks import ensemble_status_for_session
+
+    return ensemble_status_for_session(session)
+
+
+def automl_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual AutoMLPlan disclosure for walkthrough."""
+    from buildml.automl.explain_hooks import automl_status_for_session
+
+    return automl_status_for_session(session)
+
+
+def forecasting_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual ForecastPlan disclosure for walkthrough."""
+    from buildml.forecasting.explain_hooks import forecasting_status_for_session
+
+    return forecasting_status_for_session(session)
+
+
+def anomaly_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual AnomalyPlan disclosure for walkthrough."""
+    from buildml.anomaly.explain_hooks import anomaly_status_for_session
+
+    return anomaly_status_for_session(session)
+
+
+def semisupervised_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual SemiSupervisedPlan disclosure for walkthrough."""
+    from buildml.semisupervised.explain_hooks import semisupervised_status_for_session
+
+    return semisupervised_status_for_session(session)
+
+
+def selfsupervised_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual SelfSupervisedPlan disclosure for walkthrough."""
+    from buildml.selfsupervised.explain_hooks import selfsupervised_status_for_session
+
+    return selfsupervised_status_for_session(session)
+
+
+def activelearning_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual ActiveLearningPlan disclosure for walkthrough."""
+    from buildml.activelearning.explain_hooks import activelearning_status_for_session
+
+    return activelearning_status_for_session(session)
+
+
+def online_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual OnlinePlan disclosure for walkthrough."""
+    from buildml.online.explain_hooks import online_status_for_session
+
+    return online_status_for_session(session)
+
+
+def multitask_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual MultiTaskPlan disclosure for walkthrough."""
+    from buildml.multitask.explain_hooks import multitask_status_for_session
+
+    return multitask_status_for_session(session)
+
+
+def metalearning_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual MetaLearningPlan disclosure for walkthrough."""
+    from buildml.metalearning.explain_hooks import metalearning_status_for_session
+
+    return metalearning_status_for_session(session)
+
+
+def federated_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual FederatedPlan disclosure for walkthrough."""
+    from buildml.federated.explain_hooks import federated_status_for_session
+
+    return federated_status_for_session(session)
+
+
+def probabilistic_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual ProbabilisticPlan disclosure for walkthrough."""
+    from buildml.probabilistic.explain_hooks import probabilistic_status_for_session
+
+    return probabilistic_status_for_session(session)
+
+
+def causal_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual CausalPlan / CausalAssumptions disclosure for walkthrough."""
+    from buildml.causal.explain_hooks import causal_status_for_session
+
+    return causal_status_for_session(session)
+
+
+def graph_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual GraphSpec / GraphPlan disclosure for walkthrough."""
+    from buildml.graph.explain_hooks import graph_status_for_session
+
+    return graph_status_for_session(session)
+
+
+def symbolic_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual SymbolicPlan / NeuroSymbolicPlan disclosure for walkthrough."""
+    from buildml.symbolic.explain_hooks import symbolic_status_for_session
+
+    return symbolic_status_for_session(session)
+
+
+def cbr_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual CbrPlan disclosure for walkthrough."""
+    from buildml.cbr.explain_hooks import cbr_status_for_session
+
+    return cbr_status_for_session(session)
+
+
+def imitation_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual ImitationPlan disclosure for walkthrough."""
+    from buildml.rl.explain_hooks import imitation_status_for_session
+
+    return imitation_status_for_session(session)
+
+
+def rl_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual RlPlan disclosure for walkthrough."""
+    from buildml.rl.explain_hooks import rl_status_for_session
+
+    return rl_status_for_session(session)
+
+
+def tda_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual TdaPlan disclosure for walkthrough."""
+    from buildml.tda.explain_hooks import tda_status_for_session
+
+    return tda_status_for_session(session)
+
+
+def recommender_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual RecommenderPlan disclosure for walkthrough."""
+    from buildml.recommenders.explain_hooks import recommender_status_for_session
+
+    return recommender_status_for_session(session)
+
+
+def ranking_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual RankerPlan disclosure for walkthrough."""
+    from buildml.ranking.explain_hooks import ranking_status_for_session
+
+    return ranking_status_for_session(session)
+
+
+def kg_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual KgPlan disclosure for walkthrough."""
+    from buildml.kg.explain_hooks import kg_status_for_session
+
+    return kg_status_for_session(session)
+
+
+def decision_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual DecisionPlan disclosure for walkthrough."""
+    from buildml.optimize.explain_hooks import decision_status_for_session
+
+    return decision_status_for_session(session)
+
+
+def synthetic_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual SynthesizerPlan disclosure for walkthrough."""
+    from buildml.synthetic.explain_hooks import synthetic_status_for_session
+
+    return synthetic_status_for_session(session)
 
 
 def warm_start_studies_status(
@@ -243,8 +493,10 @@ _CV_OPS_WITH_FOLD_RECIPE = frozenset(
         "cv_score",
         "nested_cv_score",
         "grid_search",
-        "random_search",
+        "randomized_search",
         "optuna_search",
+        "evolutionary_search",
+        "run_automl",
     }
 )
 _SESSION_GLOBAL_PREPROCESS_OPS = frozenset(

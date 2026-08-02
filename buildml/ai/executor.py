@@ -33,6 +33,37 @@ _ESTIMATOR_REGISTRY: dict[str, tuple[str, str]] = {
 }
 
 
+def _resolve_estimator_map(estimator_names: Any) -> dict[str, Any]:
+    """Resolve a list/dict of estimator names into a named estimator map."""
+    if isinstance(estimator_names, dict):
+        items = [(str(k), v) for k, v in estimator_names.items()]
+    elif isinstance(estimator_names, (list, tuple)):
+        items = []
+        for raw in estimator_names:
+            if isinstance(raw, (list, tuple)) and len(raw) == 2:
+                items.append((str(raw[0]), raw[1]))
+            else:
+                name = str(raw)
+                items.append((name.lower(), name))
+    else:
+        raise ValidationError(
+            "estimators must be a list of estimator names or a name→estimator map."
+        )
+    if len(items) < 2:
+        raise ValidationError("Native ensembles require at least two estimators.")
+    resolved: dict[str, Any] = {}
+    for key, value in items:
+        est = _resolve_estimator(value, {})
+        base = key
+        name = base
+        suffix = 2
+        while name in resolved:
+            name = f"{base}_{suffix}"
+            suffix += 1
+        resolved[name] = est
+    return resolved
+
+
 def _resolve_estimator(estimator_arg: Any, hyperparameters: dict[str, Any]) -> Any:
     """Resolve an estimator from string name or pass through an instance.
 
@@ -381,6 +412,1651 @@ def _dispatch_tool(
     elif call.tool_name == "ai_status":
         result = session.ai_status()
         return result, ()
+
+    elif call.tool_name == "fit_clusters":
+        method = call.arguments.get("method", "kmeans")
+        kwargs: dict[str, Any] = {
+            "method": method,
+            "prefer_reduce_components": bool(
+                call.arguments.get("prefer_reduce_components", True)
+            ),
+        }
+        if "n_clusters" in call.arguments:
+            kwargs["n_clusters"] = call.arguments.get("n_clusters")
+        if "eps" in call.arguments:
+            kwargs["eps"] = float(call.arguments["eps"])
+        if "min_samples" in call.arguments:
+            kwargs["min_samples"] = int(call.arguments["min_samples"])
+        result = session.fit_clusters(**kwargs)
+        state_changes.append(f"Fitted clusters (method={method})")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "assign_clusters":
+        partition = call.arguments.get("partition", "test")
+        attach = bool(call.arguments.get("attach", False))
+        result = session.assign_clusters(partition=partition, attach=attach)
+        if attach:
+            state_changes.append(f"Attached cluster labels (partition={partition})")
+            return result, tuple(state_changes)
+        return result, ()
+
+    elif call.tool_name == "evaluate_clusters":
+        partition = call.arguments.get("partition", "validation")
+        result = session.evaluate_clusters(
+            partition=partition,
+            external_label_column=call.arguments.get("external_label_column"),
+        )
+        return result, ()
+
+    elif call.tool_name == "save_unsupervised_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_unsupervised_bundle requires a path argument.")
+        result = session.save_unsupervised_bundle(path)
+        state_changes.append(f"Saved unsupervised bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_unsupervised_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_unsupervised_bundle requires a path argument.")
+        session.load_unsupervised_bundle(path)
+        state_changes.append(f"Loaded unsupervised bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_voting":
+        estimators = _resolve_estimator_map(call.arguments.get("estimators"))
+        kwargs: dict[str, Any] = {
+            "estimators": estimators,
+            "voting": call.arguments.get("voting", "hard"),
+            "task": call.arguments.get("task", "auto"),
+        }
+        result = session.fit_voting(**kwargs)
+        state_changes.append(
+            f"Fitted voting ensemble (bases={list(estimators)})."
+        )
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "fit_stacking":
+        estimators = _resolve_estimator_map(call.arguments.get("estimators"))
+        kwargs = {
+            "estimators": estimators,
+            "task": call.arguments.get("task", "auto"),
+        }
+        if "cv" in call.arguments:
+            kwargs["cv"] = int(call.arguments["cv"])
+        result = session.fit_stacking(**kwargs)
+        state_changes.append(
+            f"Fitted stacking ensemble (bases={list(estimators)})."
+        )
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "fit_blending":
+        estimators = _resolve_estimator_map(call.arguments.get("estimators"))
+        kwargs = {
+            "estimators": estimators,
+            "task": call.arguments.get("task", "auto"),
+        }
+        if "holdout_fraction" in call.arguments:
+            kwargs["holdout_fraction"] = float(call.arguments["holdout_fraction"])
+        result = session.fit_blending(**kwargs)
+        state_changes.append(
+            f"Fitted blending ensemble (bases={list(estimators)})."
+        )
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "evaluate_ensemble":
+        partition = call.arguments.get("partition", "test")
+        result = session.evaluate_ensemble(partition=partition)
+        return result, ()
+
+    elif call.tool_name == "save_ensemble_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_ensemble_bundle requires a path argument.")
+        result = session.save_ensemble_bundle(path)
+        state_changes.append(f"Saved ensemble bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_ensemble_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_ensemble_bundle requires a path argument.")
+        session.load_ensemble_bundle(path)
+        state_changes.append(f"Loaded ensemble bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "evolutionary_search":
+        param_space = call.arguments.get("param_space")
+        if not isinstance(param_space, dict) or not param_space:
+            raise ValidationError("evolutionary_search requires a non-empty param_space dict.")
+        estimator_arg = call.arguments.get("estimator")
+        if not estimator_arg:
+            raise ValidationError("evolutionary_search requires an estimator name.")
+        estimator = _resolve_estimator(estimator_arg, {})
+        evo_kwargs: dict[str, Any] = {
+            "param_space": dict(param_space),
+            "population_size": int(call.arguments.get("population_size", 8)),
+            "n_generations": int(call.arguments.get("n_generations", 3)),
+            "cv": int(call.arguments.get("cv", 3)),
+            "random_state": 0,
+            "refit": bool(call.arguments.get("refit", True)),
+            "task": call.arguments.get("task", "auto"),
+        }
+        recipe_space = call.arguments.get("recipe_space")
+        if isinstance(recipe_space, dict) and recipe_space:
+            evo_kwargs["recipe_space"] = dict(recipe_space)
+        if call.arguments.get("max_evaluations") is not None:
+            evo_kwargs["max_evaluations"] = int(call.arguments["max_evaluations"])
+        if call.arguments.get("ranking_metric") is not None:
+            evo_kwargs["ranking_metric"] = call.arguments["ranking_metric"]
+        result = session.evolutionary_search(estimator, **evo_kwargs)
+        state_changes.append(
+            f"Evolutionary search on {type(estimator).__name__} selected "
+            f"params={result.best_params} (score={result.best_score})."
+        )
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "run_automl":
+        kwargs = {
+            "method": call.arguments.get("method", "randomized"),
+            "selection": call.arguments.get("selection", "cv"),
+            "task": call.arguments.get("task", "auto"),
+            "include_recipe_search": bool(
+                call.arguments.get("include_recipe_search", True)
+            ),
+            "include_ensembles": bool(call.arguments.get("include_ensembles", False)),
+            "n_trials": int(call.arguments.get("n_trials", 12)),
+            "cv": 3,
+            "random_state": 0,
+        }
+        families = call.arguments.get("families")
+        if families is not None:
+            kwargs["families"] = list(families)
+        result = session.run_automl(**kwargs)
+        state_changes.append(
+            f"AutoML selected family={result.best_family} "
+            f"recipe={result.best_recipe_strategy}."
+        )
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "evaluate_automl":
+        partition = call.arguments.get("partition", "test")
+        result = session.evaluate_automl(partition=partition)
+        return result, ()
+
+    elif call.tool_name == "save_automl_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_automl_bundle requires a path argument.")
+        result = session.save_automl_bundle(path)
+        state_changes.append(f"Saved AutoML bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_automl_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_automl_bundle requires a path argument.")
+        session.load_automl_bundle(path)
+        state_changes.append(f"Loaded AutoML bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_forecast":
+        kwargs: dict[str, Any] = {
+            "method": call.arguments.get("method", "lag_ridge"),
+            "horizon": int(call.arguments.get("horizon", 1)),
+            "random_state": 0,
+        }
+        if "lags" in call.arguments and call.arguments["lags"] is not None:
+            kwargs["lags"] = list(call.arguments["lags"])
+        if "seasonal_period" in call.arguments:
+            kwargs["seasonal_period"] = call.arguments.get("seasonal_period")
+        if "exog_columns" in call.arguments and call.arguments["exog_columns"] is not None:
+            kwargs["exog_columns"] = list(call.arguments["exog_columns"])
+        result = session.fit_forecast(**kwargs)
+        state_changes.append(
+            f"Fitted forecast method={result.method} horizon={result.horizon}."
+        )
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "generate_forecast":
+        kwargs = {
+            "origin": call.arguments.get("origin", "train_end"),
+        }
+        if "horizon" in call.arguments and call.arguments["horizon"] is not None:
+            kwargs["horizon"] = int(call.arguments["horizon"])
+        result = session.generate_forecast(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_forecast":
+        result = session.evaluate_forecast(
+            partition=call.arguments.get("partition", "test"),
+            strategy=call.arguments.get("strategy", "rolling_one_step"),
+        )
+        return result, ()
+
+    elif call.tool_name == "save_forecast_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_forecast_bundle requires a path argument.")
+        result = session.save_forecast_bundle(path)
+        state_changes.append(f"Saved forecast bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_forecast_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_forecast_bundle requires a path argument.")
+        session.load_forecast_bundle(path)
+        state_changes.append(f"Loaded forecast bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_anomaly":
+        kwargs: dict[str, Any] = {
+            "method": call.arguments.get("method", "isolation_forest"),
+            "mode": call.arguments.get("mode", "unsupervised"),
+            "random_state": 0,
+        }
+        if "contamination" in call.arguments and call.arguments["contamination"] is not None:
+            kwargs["contamination"] = float(call.arguments["contamination"])
+        if "threshold_policy" in call.arguments and call.arguments["threshold_policy"] is not None:
+            kwargs["threshold_policy"] = call.arguments["threshold_policy"]
+        if "normal_label_column" in call.arguments:
+            kwargs["normal_label_column"] = call.arguments.get("normal_label_column")
+        if "prefer_reduce_components" in call.arguments:
+            kwargs["prefer_reduce_components"] = bool(
+                call.arguments.get("prefer_reduce_components")
+            )
+        result = session.fit_anomaly(**kwargs)
+        state_changes.append(
+            f"Fitted anomaly method={result.method} mode={result.mode} "
+            f"threshold={result.threshold}."
+        )
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "score_anomalies":
+        partition = call.arguments.get("partition", "test")
+        attach = bool(call.arguments.get("attach", False))
+        kwargs: dict[str, Any] = {
+            "partition": partition,
+            "attach": attach,
+        }
+        if "override_threshold" in call.arguments:
+            kwargs["override_threshold"] = call.arguments.get("override_threshold")
+        result = session.score_anomalies(**kwargs)
+        if attach:
+            state_changes.append(f"Attached anomaly score/flag columns (partition={partition})")
+            return result, tuple(state_changes)
+        return result, ()
+
+    elif call.tool_name == "evaluate_anomaly":
+        kwargs = {
+            "partition": call.arguments.get("partition", "validation"),
+        }
+        if "label_column" in call.arguments:
+            kwargs["label_column"] = call.arguments.get("label_column")
+        if "k" in call.arguments and call.arguments["k"] is not None:
+            kwargs["k"] = int(call.arguments["k"])
+        result = session.evaluate_anomaly(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_anomaly_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_anomaly_bundle requires a path argument.")
+        result = session.save_anomaly_bundle(path)
+        state_changes.append(f"Saved anomaly bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_anomaly_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_anomaly_bundle requires a path argument.")
+        session.load_anomaly_bundle(path)
+        state_changes.append(f"Loaded anomaly bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_semisupervised":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "base_estimator",
+                "n_neighbors",
+                "prefer_reduce_components",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_semisupervised(**kwargs)
+        return (
+            f"Fitted semi-supervised method={result.method} "
+            f"n_labeled={result.n_labeled_train} n_unlabeled={result.n_unlabeled_train}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_semisupervised":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_semisupervised(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_semisupervised_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_semisupervised_bundle requires a path argument.")
+        result = session.save_semisupervised_bundle(path)
+        state_changes.append(f"Saved semi-supervised bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_semisupervised_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_semisupervised_bundle requires a path argument.")
+        session.load_semisupervised_bundle(path)
+        state_changes.append(f"Loaded semi-supervised bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_ssl_pretext":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "latent_dim",
+                "mask_ratio",
+                "prefer_reduce_components",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_ssl_pretext(**kwargs)
+        return (
+            f"Fitted SSL pretext method={result.method} "
+            f"latent_dim={result.latent_dim} mae={result.reconstruction_mae}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "finetune_ssl_head":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("estimator",)
+            if key in call.arguments
+        }
+        result = session.finetune_ssl_head(**kwargs)
+        return (
+            f"Fitted SSL head estimator={result.estimator_name} "
+            f"n_labeled={result.n_labeled_train}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_ssl":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_ssl(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_ssl_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_ssl_bundle requires a path argument.")
+        result = session.save_ssl_bundle(path)
+        state_changes.append(f"Saved SSL bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_ssl_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_ssl_bundle requires a path argument.")
+        session.load_ssl_bundle(path)
+        state_changes.append(f"Loaded SSL bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_active_learner":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "strategy",
+                "base_estimator",
+                "batch_size",
+                "label_budget",
+                "prefer_reduce_components",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_active_learner(**kwargs)
+        return (
+            f"Fitted active learner strategy={result.strategy} "
+            f"n_labeled={result.n_labeled_train} "
+            f"n_unlabeled_pool={result.n_unlabeled_pool}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "suggest_query":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("batch_size", "strategy")
+            if key in call.arguments
+        }
+        result = session.suggest_query(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_active_learning":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_active_learning(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_active_learning_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_active_learning_bundle requires a path argument.")
+        result = session.save_active_learning_bundle(path)
+        state_changes.append(f"Saved active-learning bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_active_learning_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_active_learning_bundle requires a path argument.")
+        session.load_active_learning_bundle(path)
+        state_changes.append(f"Loaded active-learning bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_online":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "estimator",
+                "chunk_size",
+                "n_init",
+                "prefer_reduce_components",
+                "allow_refit_fallback",
+                "drift_disclose",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_online(**kwargs)
+        return (
+            f"Fitted online learner estimator={result.estimator_name} "
+            f"n_init={result.n_init_rows} "
+            f"n_remaining={result.n_remaining_train}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "partial_fit_online":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("n_rows",)
+            if key in call.arguments
+        }
+        result = session.partial_fit_online(**kwargs)
+        return (
+            f"Online update mode={result.update_mode} "
+            f"n_chunk={result.n_chunk_rows} n_seen={result.n_seen_rows}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_online":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_online(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_online_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_online_bundle requires a path argument.")
+        result = session.save_online_bundle(path)
+        state_changes.append(f"Saved online bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_online_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_online_bundle requires a path argument.")
+        session.load_online_bundle(path)
+        state_changes.append(f"Loaded online bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_multitask":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "task",
+                "base_estimator",
+                "prefer_reduce_components",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_multitask(**kwargs)
+        return (
+            f"Fitted multi-task method={result.method} task={result.task} "
+            f"n_tasks={result.n_tasks} targets={list(result.target_columns)}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_multitask":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_multitask(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_multitask_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_multitask_bundle requires a path argument.")
+        result = session.save_multitask_bundle(path)
+        state_changes.append(f"Saved multi-task bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_multitask_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_multitask_bundle requires a path argument.")
+        session.load_multitask_bundle(path)
+        state_changes.append(f"Loaded multi-task bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_metalearning":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "task_column",
+                "k_shot",
+                "n_query",
+                "n_episodes",
+                "base_estimator",
+                "prefer_reduce_components",
+                "task_holdout_fraction",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_metalearning(**kwargs)
+        return (
+            f"Fitted meta-learning method={result.method} "
+            f"n_meta_train_tasks={result.n_meta_train_tasks} "
+            f"k_shot={result.k_shot} "
+            f"meta_train_accuracy={result.meta_train_accuracy}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "adapt_to_task":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "task_id",
+                "partition",
+                "max_support_per_class",
+            )
+            if key in call.arguments
+        }
+        result = session.adapt_to_task(**kwargs)
+        return (
+            f"Adapted to task_id={result.task_id} "
+            f"n_support={result.n_support} "
+            f"n_classes={result.n_classes_adapted}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_metalearning":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k_shot", "prefer_novel_tasks")
+            if key in call.arguments
+        }
+        result = session.evaluate_metalearning(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_metalearning_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError(
+                "save_metalearning_bundle requires a path argument."
+            )
+        result = session.save_metalearning_bundle(path)
+        state_changes.append(f"Saved meta-learning bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_metalearning_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError(
+                "load_metalearning_bundle requires a path argument."
+            )
+        session.load_metalearning_bundle(path)
+        state_changes.append(f"Loaded meta-learning bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_federated":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "estimator",
+                "client_column",
+                "n_rounds",
+                "local_epochs",
+                "client_fraction",
+                "mu",
+                "prefer_reduce_components",
+                "min_client_rows",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_federated(**kwargs)
+        return (
+            f"Fitted federated method={result.method} "
+            f"estimator={result.estimator_name} "
+            f"n_clients={result.n_clients} "
+            f"n_rounds={result.n_rounds} "
+            f"final_train_metric={result.final_train_metric}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_federated":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "per_client")
+            if key in call.arguments
+        }
+        result = session.evaluate_federated(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "predict_federated":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.predict_federated(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_federated_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError(
+                "save_federated_bundle requires a path argument."
+            )
+        result = session.save_federated_bundle(path)
+        state_changes.append(f"Saved federated bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_federated_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError(
+                "load_federated_bundle requires a path argument."
+            )
+        session.load_federated_bundle(path)
+        state_changes.append(f"Loaded federated bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_probabilistic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "estimator",
+                "task",
+                "alpha",
+                "conformal",
+                "conformal_calibration_fraction",
+                "interval_method",
+                "prefer_reduce_components",
+                "n_restarts_optimizer",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_probabilistic(**kwargs)
+        return (
+            f"Fitted probabilistic estimator={result.estimator_name} "
+            f"task={result.task} conformal={result.conformal} "
+            f"n_fit_rows={result.n_fit_rows} "
+            f"n_conformal_calib_rows={result.n_conformal_calib_rows}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_probabilistic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "alpha")
+            if key in call.arguments
+        }
+        result = session.evaluate_probabilistic(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "predict_probabilistic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "return_std", "return_proba")
+            if key in call.arguments
+        }
+        result = session.predict_probabilistic(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "predict_interval":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "alpha", "method")
+            if key in call.arguments
+        }
+        result = session.predict_interval(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_probabilistic_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError(
+                "save_probabilistic_bundle requires a path argument."
+            )
+        result = session.save_probabilistic_bundle(path)
+        state_changes.append(f"Saved probabilistic bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_probabilistic_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError(
+                "load_probabilistic_bundle requires a path argument."
+            )
+        session.load_probabilistic_bundle(path)
+        state_changes.append(f"Loaded probabilistic bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "declare_causal_assumptions":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "treatment",
+                "outcome",
+                "confounders",
+                "estimand",
+                "identification",
+                "acknowledge_unconfoundedness",
+                "acknowledge_positivity",
+                "allow_empty_confounders",
+            )
+            if key in call.arguments
+        }
+        result = session.declare_causal_assumptions(**kwargs)
+        state_changes.append(
+            f"Declared CausalAssumptions treatment={result.treatment} "
+            f"outcome={result.outcome} estimand={result.estimand}."
+        )
+        return result.to_dict(), tuple(state_changes)
+
+    elif call.tool_name == "fit_causal":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "bootstrap_samples",
+                "random_state",
+                "outcome_model",
+                "propensity_model",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_causal(**kwargs)
+        return (
+            f"Fitted causal method={result.method} ate={result.ate} "
+            f"n_train_rows={result.n_train_rows}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "estimate_causal":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "bootstrap_samples")
+            if key in call.arguments
+        }
+        result = session.estimate_causal(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_causal":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "bootstrap_samples")
+            if key in call.arguments
+        }
+        result = session.evaluate_causal(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "refute_causal":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("kind", "random_state")
+            if key in call.arguments
+        }
+        result = session.refute_causal(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_causal_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_causal_bundle requires a path argument.")
+        result = session.save_causal_bundle(path)
+        state_changes.append(f"Saved causal bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_causal_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_causal_bundle requires a path argument.")
+        session.load_causal_bundle(path)
+        state_changes.append(f"Loaded causal bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "set_graph":
+        edges = call.arguments.get("edges")
+        if edges is None:
+            raise ValidationError("set_graph requires an edges argument.")
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("source_col", "target_col", "node_id_col", "directed")
+            if key in call.arguments
+        }
+        result = session.set_graph(edges, **kwargs)
+        state_changes.append(
+            f"Attached GraphSpec n_edges={result.n_edges} "
+            f"node_id_col={result.node_id_col}."
+        )
+        return result.to_dict(), tuple(state_changes)
+
+    elif call.tool_name == "fit_graph":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "mode",
+                "classical_estimator",
+                "epochs",
+                "hidden_dim",
+                "random_state",
+                "include_graph_metrics",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_graph(**kwargs)
+        return (
+            f"Fitted graph method={result.method} mode={result.mode} "
+            f"train_accuracy={result.train_accuracy} "
+            f"n_train_nodes={result.n_train_nodes}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "predict_graph":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.predict_graph(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_graph":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_graph(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_graph_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_graph_bundle requires a path argument.")
+        result = session.save_graph_bundle(path)
+        state_changes.append(f"Saved graph bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_graph_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_graph_bundle requires a path argument.")
+        session.load_graph_bundle(path)
+        state_changes.append(f"Loaded graph bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_symbolic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "source",
+                "task",
+                "max_depth",
+                "min_samples_leaf",
+                "max_rules",
+                "random_state",
+                "prefer_reduce_components",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_symbolic(**kwargs)
+        return (
+            f"Fitted symbolic source={result.source} task={result.task} "
+            f"n_rules={result.n_rules} provenance={result.provenance}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_symbolic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_symbolic(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "predict_symbolic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "return_traces")
+            if key in call.arguments
+        }
+        result = session.predict_symbolic(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "fit_neuro_symbolic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "mode",
+                "base_estimator",
+                "task",
+                "rule_source",
+                "soft_strength",
+                "max_depth",
+                "max_rules",
+                "random_state",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_neuro_symbolic(**kwargs)
+        return (
+            f"Fitted neuro-symbolic mode={result.mode} "
+            f"base={result.base_estimator_name} n_rules={result.n_rules} "
+            f"rule_provenance={result.rule_provenance}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "evaluate_neuro_symbolic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_neuro_symbolic(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "predict_neuro_symbolic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "return_traces")
+            if key in call.arguments
+        }
+        result = session.predict_neuro_symbolic(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_symbolic_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_symbolic_bundle requires a path argument.")
+        result = session.save_symbolic_bundle(path)
+        state_changes.append(f"Saved symbolic bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_symbolic_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_symbolic_bundle requires a path argument.")
+        session.load_symbolic_bundle(path)
+        state_changes.append(f"Loaded symbolic bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_cbr":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "task",
+                "metric",
+                "reuse",
+                "adapt",
+                "k",
+                "standardize",
+                "distance_eps",
+                "random_state",
+                "prefer_reduce_components",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_cbr(**kwargs)
+        return (
+            f"Fitted CBR task={result.task} metric={result.metric} "
+            f"reuse={result.reuse} k={result.k} n_cases={result.n_cases}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "retrieve_cases":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k")
+            if key in call.arguments
+        }
+        result = session.retrieve_cases(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "predict_cbr":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k", "return_traces")
+            if key in call.arguments
+        }
+        result = session.predict_cbr(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_cbr":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k")
+            if key in call.arguments
+        }
+        result = session.evaluate_cbr(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "retain_cbr":
+        disclosure = call.arguments.get("source_disclosure")
+        if not disclosure:
+            raise ValidationError(
+                "retain_cbr requires source_disclosure (and typically "
+                "row_indices/labeled_frame via Session API)."
+            )
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "source_disclosure",
+                "solution_column",
+                "allow_overlap_with_train",
+                "row_indices",
+            )
+            if key in call.arguments
+        }
+        result = session.retain_cbr(**kwargs)
+        return (
+            f"Retained n_added={result.n_added} n_skipped={result.n_skipped} "
+            f"n_cases_after={result.n_cases_after}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "save_cbr_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_cbr_bundle requires a path argument.")
+        result = session.save_cbr_bundle(path)
+        state_changes.append(f"Saved CBR bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_cbr_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_cbr_bundle requires a path argument.")
+        session.load_cbr_bundle(path)
+        state_changes.append(f"Loaded CBR bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_imitation":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "task",
+                "estimator",
+                "action_column",
+                "random_state",
+                "prefer_reduce_components",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_imitation(**kwargs)
+        return (
+            f"Fitted imitation task={result.task} estimator={result.estimator} "
+            f"n_train_rows={result.n_train_rows} train_score={result.train_score}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "predict_imitation_action":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.predict_imitation_action(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_imitation":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_imitation(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_imitation_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_imitation_bundle requires a path argument.")
+        result = session.save_imitation_bundle(path)
+        state_changes.append(f"Saved imitation bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_imitation_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_imitation_bundle requires a path argument.")
+        session.load_imitation_bundle(path)
+        state_changes.append(f"Loaded imitation bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_rl":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "mode",
+                "algorithm",
+                "action_column",
+                "reward_column",
+                "alpha",
+                "epsilon",
+                "temperature",
+                "random_state",
+                "prefer_reduce_components",
+                "env_id",
+                "n_episodes",
+                "max_steps",
+                "learning_rate",
+                "gamma",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_rl(**kwargs)
+        return (
+            f"Fitted RL mode={result.mode} algorithm={result.algorithm} "
+            f"n_arms={result.n_arms} env_id={result.env_id}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "act_rl":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "deterministic", "random_state")
+            if key in call.arguments
+        }
+        result = session.act_rl(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_rl":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "partition",
+                "n_episodes",
+                "max_steps",
+                "random_state",
+                "deterministic",
+            )
+            if key in call.arguments
+        }
+        result = session.evaluate_rl(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_rl_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_rl_bundle requires a path argument.")
+        result = session.save_rl_bundle(path)
+        state_changes.append(f"Saved RL bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_rl_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_rl_bundle requires a path argument.")
+        session.load_rl_bundle(path)
+        state_changes.append(f"Loaded RL bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_tda":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "vectorization",
+                "knn",
+                "n_bins",
+                "n_layers",
+                "standardize",
+                "head",
+                "task",
+                "random_state",
+                "prefer_reduce_components",
+                "max_points_guard",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_tda(**kwargs)
+        return (
+            f"Fitted TDA vectorization={result.vectorization} "
+            f"feature_dim={result.feature_dim} head={result.head} "
+            f"n_train_rows={result.n_train_rows}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "transform_tda":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.transform_tda(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "predict_tda":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.predict_tda(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_tda":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_tda(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_tda_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_tda_bundle requires a path argument.")
+        result = session.save_tda_bundle(path)
+        state_changes.append(f"Saved TDA bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_tda_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_tda_bundle requires a path argument.")
+        session.load_tda_bundle(path)
+        state_changes.append(f"Loaded TDA bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_recommender":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "user_column",
+                "item_column",
+                "rating_column",
+                "feedback",
+                "n_neighbors",
+                "n_factors",
+                "min_rating",
+                "item_feature_columns",
+                "cold_start",
+                "random_state",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_recommender(**kwargs)
+        return (
+            f"Fitted recommender method={result.method} "
+            f"users={result.n_users} items={result.n_items} "
+            f"interactions={result.n_train_interactions}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "recommend":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k", "exclude_train_items")
+            if key in call.arguments
+        }
+        result = session.recommend(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_recommender":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k")
+            if key in call.arguments
+        }
+        result = session.evaluate_recommender(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_recommender_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_recommender_bundle requires a path argument.")
+        result = session.save_recommender_bundle(path)
+        state_changes.append(f"Saved recommender bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_recommender_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_recommender_bundle requires a path argument.")
+        session.load_recommender_bundle(path)
+        state_changes.append(f"Loaded recommender bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_ranker":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "query_column",
+                "item_column",
+                "relevance_column",
+                "feature_columns",
+                "pointwise_estimator",
+                "pairwise_estimator",
+                "max_pairs_per_query",
+                "relevance_threshold",
+                "alpha",
+                "C",
+                "random_state",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_ranker(**kwargs)
+        return (
+            f"Fitted ranker method={result.method} "
+            f"queries={result.n_train_queries} rows={result.n_train_rows} "
+            f"features={result.n_features}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "rank":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k")
+            if key in call.arguments
+        }
+        result = session.rank(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_ranker":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k")
+            if key in call.arguments
+        }
+        result = session.evaluate_ranker(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_ranker_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_ranker_bundle requires a path argument.")
+        result = session.save_ranker_bundle(path)
+        state_changes.append(f"Saved ranker bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_ranker_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_ranker_bundle requires a path argument.")
+        session.load_ranker_bundle(path)
+        state_changes.append(f"Loaded ranker bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_kg":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "head_column",
+                "relation_column",
+                "tail_column",
+                "embedding_dim",
+                "epochs",
+                "batch_size",
+                "learning_rate",
+                "margin",
+                "neg_ratio",
+                "norm",
+                "random_state",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_kg(**kwargs)
+        return (
+            f"Fitted KG method={result.method} "
+            f"entities={result.n_entities} relations={result.n_relations} "
+            f"triples={result.n_train_triples} dim={result.embedding_dim}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "score_triples":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.score_triples(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "predict_links":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("mode", "heads", "relations", "tails", "k", "filtered")
+            if key in call.arguments
+        }
+        result = session.predict_links(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "query_kg":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "mode",
+                "entity",
+                "source",
+                "target",
+                "relation",
+                "direction",
+                "max_hops",
+            )
+            if key in call.arguments
+        }
+        result = session.query_kg(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_kg":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "k")
+            if key in call.arguments
+        }
+        result = session.evaluate_kg(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_kg_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_kg_bundle requires a path argument.")
+        result = session.save_kg_bundle(path)
+        state_changes.append(f"Saved KG bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_kg_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_kg_bundle requires a path argument.")
+        session.load_kg_bundle(path)
+        state_changes.append(f"Loaded KG bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_decision_policy":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "partition",
+                "allow_test_tuning",
+                "fp_cost",
+                "fn_cost",
+                "tp_benefit",
+                "tn_benefit",
+                "cost_matrix",
+                "class_labels",
+                "capacity",
+                "budget",
+                "score_source",
+                "score_column",
+                "cost_column",
+                "value_column",
+                "id_column",
+                "knapsack_solver",
+                "objective",
+                "min_score",
+                "lp_max_fraction",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_decision_policy(**kwargs)
+        return (
+            f"Fitted decision policy method={result.method} "
+            f"partition={result.partition} n={result.n_rows} "
+            f"threshold={result.threshold}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "apply_decisions":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.apply_decisions(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_decisions":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition",)
+            if key in call.arguments
+        }
+        result = session.evaluate_decisions(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_decision_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_decision_bundle requires a path argument.")
+        result = session.save_decision_bundle(path)
+        state_changes.append(f"Saved decision bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_decision_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_decision_bundle requires a path argument.")
+        session.load_decision_bundle(path)
+        state_changes.append(f"Loaded decision bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_synthesizer":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "columns",
+                "random_state",
+                "smooth_sigma",
+                "correlation_ridge",
+                "target_column",
+                "k_neighbors",
+                "sampling_strategy",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_synthesizer(**kwargs)
+        return (
+            f"Fitted synthesizer method={result.method} "
+            f"partition={result.partition} n={result.n_rows} "
+            f"cols={result.n_columns}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "sample_synthetic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "n",
+                "random_state",
+                "merge_mode",
+                "provenance_column",
+            )
+            if key in call.arguments
+        }
+        result = session.sample_synthetic(**kwargs)
+        if result.merged:
+            state_changes.append(
+                f"Extended train with {result.n_rows} synthetic rows "
+                f"(provenance={result.provenance_column})."
+            )
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "evaluate_synthetic":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "mode",
+                "partition",
+                "n_synthetic",
+                "random_state",
+                "estimator",
+            )
+            if key in call.arguments
+        }
+        result = session.evaluate_synthetic(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_synthetic_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_synthetic_bundle requires a path argument.")
+        result = session.save_synthetic_bundle(path)
+        state_changes.append(f"Saved synthetic bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_synthetic_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_synthetic_bundle requires a path argument.")
+        session.load_synthetic_bundle(path)
+        state_changes.append(f"Loaded synthetic bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
 
     elif call.tool_name == "rag_retrieve":
         query = call.arguments.get("query", "")
@@ -758,6 +2434,17 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         "eda_summary",
         "dry_run_plan",
         "evaluate",
+        "evaluate_clusters",
+        "evaluate_anomaly",
+        "evaluate_semisupervised",
+        "evaluate_ssl",
+        "evaluate_active_learning",
+        "evaluate_online",
+        "evaluate_multitask",
+        "evaluate_metalearning",
+        "evaluate_federated",
+        "predict_federated",
+        "suggest_query",
         "walkthrough",
         "head",
         "ai_status",
@@ -767,6 +2454,15 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         "evaluate_asr",
     ):
         changes.append("No state changes (read-only operation).")
+
+    elif tool_name == "assign_clusters":
+        partition = arguments.get("partition", "test")
+        if arguments.get("attach"):
+            changes.append(
+                f"Will assign cluster labels and attach them to the frame (partition={partition})."
+            )
+        else:
+            changes.append("No state changes (read-only assign; labels returned only).")
 
     elif tool_name == "split":
         test_size = arguments.get("test_size", 0.2)
@@ -786,6 +2482,420 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
     elif tool_name == "fit":
         estimator = arguments.get("estimator", "auto")
         changes.append(f"Will fit model with estimator={estimator}.")
+
+    elif tool_name == "evolutionary_search":
+        estimator = arguments.get("estimator", "?")
+        changes.append(
+            f"Will run evolutionary GA HPO on estimator={estimator} "
+            "(train-fold CV only; may refit winner)."
+        )
+
+    elif tool_name == "fit_clusters":
+        method = arguments.get("method", "kmeans")
+        changes.append(f"Will fit unsupervised clusters with method={method}.")
+
+    elif tool_name == "save_unsupervised_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save unsupervised bundle to {path}.")
+
+    elif tool_name == "load_unsupervised_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load unsupervised bundle from {path}.")
+
+    elif tool_name == "fit_voting":
+        estimators = arguments.get("estimators", [])
+        changes.append(f"Will fit a voting ensemble with bases={estimators}.")
+
+    elif tool_name == "fit_stacking":
+        estimators = arguments.get("estimators", [])
+        changes.append(f"Will fit a stacking ensemble with bases={estimators}.")
+
+    elif tool_name == "fit_blending":
+        estimators = arguments.get("estimators", [])
+        changes.append(f"Will fit a blending ensemble with bases={estimators}.")
+
+    elif tool_name == "save_ensemble_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save ensemble bundle to {path}.")
+
+    elif tool_name == "load_ensemble_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load ensemble bundle from {path}.")
+
+    elif tool_name == "fit_forecast":
+        method = arguments.get("method", "lag_ridge")
+        changes.append(f"Will fit classical forecast with method={method}.")
+
+    elif tool_name == "generate_forecast":
+        changes.append("No Session mutation beyond history (forecast values returned).")
+
+    elif tool_name == "evaluate_forecast":
+        changes.append("No Session mutation beyond history (metrics returned).")
+
+    elif tool_name == "save_forecast_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save forecast bundle to {path}.")
+
+    elif tool_name == "load_forecast_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load forecast bundle from {path}.")
+
+    elif tool_name == "fit_anomaly":
+        method = arguments.get("method", "isolation_forest")
+        mode = arguments.get("mode", "unsupervised")
+        changes.append(f"Will fit anomaly detector method={method} mode={mode}.")
+
+    elif tool_name == "score_anomalies":
+        changes.append("No Session mutation beyond history (scores/flags returned).")
+
+    elif tool_name == "evaluate_anomaly":
+        changes.append("No Session mutation beyond history (metrics returned).")
+
+    elif tool_name == "save_anomaly_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save anomaly bundle to {path}.")
+
+    elif tool_name == "load_anomaly_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load anomaly bundle from {path}.")
+
+    elif tool_name == "fit_semisupervised":
+        method = arguments.get("method", "label_propagation")
+        changes.append(f"Will fit semi-supervised method={method} on train only.")
+
+    elif tool_name == "save_semisupervised_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save semi-supervised bundle to {path}.")
+
+    elif tool_name == "load_semisupervised_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load semi-supervised bundle from {path}.")
+
+    elif tool_name == "fit_ssl_pretext":
+        method = arguments.get("method", "masked_tabular")
+        changes.append(f"Will fit SSL pretext method={method} on train only.")
+
+    elif tool_name == "finetune_ssl_head":
+        estimator = arguments.get("estimator", "logistic_regression")
+        changes.append(f"Will fit SSL head estimator={estimator} on labeled train.")
+
+    elif tool_name == "save_ssl_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save SSL bundle to {path}.")
+
+    elif tool_name == "load_ssl_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load SSL bundle from {path}.")
+
+    elif tool_name == "fit_active_learner":
+        strategy = arguments.get("strategy", "margin")
+        changes.append(
+            f"Will fit active learner strategy={strategy} on labeled train only."
+        )
+
+    elif tool_name == "save_active_learning_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save active-learning bundle to {path}.")
+
+    elif tool_name == "load_active_learning_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load active-learning bundle from {path}.")
+
+    elif tool_name == "fit_online":
+        estimator = arguments.get("estimator", "sgd_classifier")
+        changes.append(
+            f"Will warm-start online learner estimator={estimator} on a train chunk."
+        )
+
+    elif tool_name == "partial_fit_online":
+        n_rows = arguments.get("n_rows")
+        changes.append(
+            "Will apply partial_fit_online on the next train chunk"
+            + (f" (n_rows={n_rows})" if n_rows is not None else "")
+            + "."
+        )
+
+    elif tool_name == "save_online_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save online bundle to {path}.")
+
+    elif tool_name == "load_online_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load online bundle from {path}.")
+
+    elif tool_name == "fit_multitask":
+        method = arguments.get("method", "multi_output")
+        changes.append(
+            f"Will fit multi-task learner method={method} on train targets."
+        )
+
+    elif tool_name == "save_multitask_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save multi-task bundle to {path}.")
+
+    elif tool_name == "load_multitask_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load multi-task bundle from {path}.")
+
+    elif tool_name == "fit_metalearning":
+        method = arguments.get("method", "prototypical")
+        changes.append(
+            f"Will meta-train few-shot learner method={method} on train tasks."
+        )
+
+    elif tool_name == "adapt_to_task":
+        task_id = arguments.get("task_id", "")
+        changes.append(f"Will adapt meta-learner to task_id={task_id}.")
+
+    elif tool_name == "save_metalearning_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save meta-learning bundle to {path}.")
+
+    elif tool_name == "load_metalearning_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load meta-learning bundle from {path}.")
+
+    elif tool_name == "fit_federated":
+        method = arguments.get("method", "fedavg")
+        estimator = arguments.get("estimator", "sgd_classifier")
+        changes.append(
+            f"Will simulate federated method={method} estimator={estimator} "
+            "on train clients (local FL simulation)."
+        )
+
+    elif tool_name == "save_federated_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save federated bundle to {path}.")
+
+    elif tool_name == "load_federated_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load federated bundle from {path}.")
+
+    elif tool_name == "fit_probabilistic":
+        estimator = arguments.get("estimator", "bayesian_ridge")
+        conformal = arguments.get("conformal", True)
+        changes.append(
+            f"Will fit probabilistic estimator={estimator} "
+            f"conformal={conformal} (train-only; not PyMC/Stan)."
+        )
+
+    elif tool_name == "save_probabilistic_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save probabilistic bundle to {path}.")
+
+    elif tool_name == "load_probabilistic_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load probabilistic bundle from {path}.")
+
+    elif tool_name == "declare_causal_assumptions":
+        changes.append(
+            "Will declare CausalAssumptions (required before fit_causal; "
+            "EDA is not a substitute)."
+        )
+
+    elif tool_name == "fit_causal":
+        method = arguments.get("method", "aipw")
+        changes.append(
+            f"Will fit causal method={method} under declared assumptions "
+            "(train-only nuisances; not DoWhy/EconML)."
+        )
+
+    elif tool_name == "save_causal_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save causal bundle to {path}.")
+
+    elif tool_name == "load_causal_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load causal bundle from {path}.")
+
+    elif tool_name == "set_graph":
+        changes.append(
+            "Will attach GraphSpec edge list (Session rows = nodes; "
+            "not a Neo4j/KG product)."
+        )
+
+    elif tool_name == "fit_graph":
+        method = arguments.get("method", "classical")
+        mode = arguments.get("mode", "inductive")
+        changes.append(
+            f"Will fit graph method={method} mode={mode} "
+            "(train labels only; classical needs buildml[graph], "
+            "gcn needs buildml[torch])."
+        )
+
+    elif tool_name == "save_graph_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save graph bundle to {path}.")
+
+    elif tool_name == "load_graph_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load graph bundle from {path}.")
+
+    elif tool_name == "fit_symbolic":
+        source = arguments.get("source", "decision_tree")
+        changes.append(
+            f"Will fit symbolic source={source} on train "
+            "(tabular rules; not Prolog/Z3/AGI)."
+        )
+
+    elif tool_name == "fit_neuro_symbolic":
+        mode = arguments.get("mode", "constraint_overlay")
+        changes.append(
+            f"Will fit neuro-symbolic mode={mode} "
+            "(sklearn + rules hybrid; train-only)."
+        )
+
+    elif tool_name == "save_symbolic_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save symbolic bundle to {path}.")
+
+    elif tool_name == "load_symbolic_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load symbolic bundle from {path}.")
+
+    elif tool_name == "fit_cbr":
+        metric = arguments.get("metric", "euclidean")
+        changes.append(
+            f"Will fit CBR metric={metric} on train "
+            "(tabular case memory; not RAG)."
+        )
+
+    elif tool_name == "retain_cbr":
+        changes.append(
+            "Will retain labeled cases into case memory "
+            "(refuses Session holdout indices)."
+        )
+
+    elif tool_name == "save_cbr_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save CBR bundle to {path}.")
+
+    elif tool_name == "load_cbr_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load CBR bundle from {path}.")
+
+    elif tool_name == "fit_imitation":
+        changes.append(
+            "Will fit behavioral cloning on train demonstrations "
+            "(state→action; not inverse RL / robotics)."
+        )
+
+    elif tool_name == "save_imitation_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save imitation bundle to {path}.")
+
+    elif tool_name == "load_imitation_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load imitation bundle from {path}.")
+
+    elif tool_name == "fit_rl":
+        mode = arguments.get("mode", "contextual_bandit")
+        changes.append(
+            f"Will fit RL mode={mode} "
+            "(bandit train-only or optional gym_reinforce; not MuJoCo/robotics)."
+        )
+
+    elif tool_name == "save_rl_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save RL bundle to {path}.")
+
+    elif tool_name == "load_rl_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load RL bundle from {path}.")
+
+    elif tool_name == "fit_tda":
+        changes.append(
+            "Will fit TDA on train (local Vietoris–Rips + vectorization; "
+            "requires buildml[tda]; not a Mapper suite)."
+        )
+
+    elif tool_name == "save_tda_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save TDA bundle to {path}.")
+
+    elif tool_name == "load_tda_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load TDA bundle from {path}.")
+
+    elif tool_name == "fit_recommender":
+        changes.append(
+            "Will fit a recommender on train interactions "
+            "(CF / SVD-NMF / content; not RAG; not EDA Recommendation Findings)."
+        )
+
+    elif tool_name == "save_recommender_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save recommender bundle to {path}.")
+
+    elif tool_name == "load_recommender_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load recommender bundle from {path}.")
+
+    elif tool_name == "fit_ranker":
+        changes.append(
+            "Will fit a tabular LTR ranker on train query–item rows "
+            "(pointwise or pairwise RankSVM-lite; not RAG; not recommender CF)."
+        )
+
+    elif tool_name == "save_ranker_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save ranker bundle to {path}.")
+
+    elif tool_name == "load_ranker_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load ranker bundle from {path}.")
+
+    elif tool_name == "fit_kg":
+        changes.append(
+            "Will fit KG embeddings on train triples "
+            "(TransE/DistMult; not Graph ML node-classify; not Neo4j; not RAG)."
+        )
+
+    elif tool_name == "save_kg_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save KG bundle to {path}.")
+
+    elif tool_name == "load_kg_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load KG bundle from {path}.")
+
+    elif tool_name == "fit_decision_policy":
+        method = arguments.get("method", "threshold")
+        partition = arguments.get("partition", "validation")
+        changes.append(
+            f"Will fit decision policy method={method} on partition={partition} "
+            "(ML score/cost/allocation helpers — not a general OR platform; "
+            "test tuning requires allow_test_tuning=True)."
+        )
+
+    elif tool_name == "save_decision_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save decision bundle to {path}.")
+
+    elif tool_name == "load_decision_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load decision bundle from {path}.")
+
+    elif tool_name == "fit_synthesizer":
+        method = arguments.get("method", "gaussian_copula")
+        changes.append(
+            f"Will fit synthesizer method={method} on train only "
+            "(not differential privacy; distinct from Session.resample)."
+        )
+
+    elif tool_name == "sample_synthetic":
+        merge_mode = arguments.get("merge_mode", "none")
+        changes.append(
+            f"Will sample synthetic rows (merge_mode={merge_mode})."
+        )
+
+    elif tool_name == "save_synthetic_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save synthetic bundle to {path}.")
+
+    elif tool_name == "load_synthetic_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load synthetic bundle from {path}.")
 
     elif tool_name == "drop_columns":
         columns = arguments.get("columns", [])

@@ -1,0 +1,101 @@
+{
+  "format": "buildml.recommender_bundle.v1",
+  "buildml_version": "2.4.0a1",
+  "compatibility": "Recommender bundles, classical pipeline bundles, Torch trainer bundles, RAG bundles, TDA bundles, and Session checkpoints are complementary, not interchangeable. A recommender bundle (buildml.recommender_bundle.v1) stores a train-fitted RecommenderPlan (user/item catalog, interaction matrix, similarities or factors). A Session checkpoint stores data, roles, splits, history, and optional classical preprocess plans; it does not embed the recommender. Reload tabular workflow via checkpoint_load; reload the recommender via load_recommender_bundle. Honesty: Session CF + optional content \u2014 not a Netflix-scale platform; distinct from RAG retrieve/generate and from EDA Recommendation Findings.",
+  "plan": {
+    "method": "item_knn",
+    "user_column": "user_id",
+    "item_column": "item_id",
+    "rating_column": "rating",
+    "feedback": "explicit",
+    "n_neighbors": 25,
+    "n_factors": 32,
+    "n_train_interactions": 272,
+    "n_users": 50,
+    "n_items": 40,
+    "n_user_ids": 50,
+    "n_item_ids": 40,
+    "item_feature_columns": [],
+    "cold_start": "popularity",
+    "min_rating": null,
+    "global_mean": 3.5441176470588234,
+    "disclosures": [
+      "rating_column defaulted to Session target 'rating'.",
+      "Recommenders are not RAG (document retrieve/generate) and not EDA Recommendation Findings (teaching advice objects).",
+      "item_knn: cosine item-item similarity on 40 train items; n_neighbors=25.",
+      "Known-item protocol: recommendations are restricted to items observed in train. Holdout-only items are never candidates.",
+      "Cold-start policy='popularity': users absent from train use popularity fallback over train items."
+    ],
+    "warnings": [],
+    "config": {
+      "method": "item_knn",
+      "user_column": "user_id",
+      "item_column": "item_id",
+      "rating_column": "rating",
+      "feedback": "explicit",
+      "n_neighbors": 25,
+      "n_factors": 32,
+      "k": 10,
+      "min_rating": null,
+      "item_feature_columns": null,
+      "cold_start": "popularity",
+      "random_state": 0
+    }
+  },
+  "fit": {
+    "method": "item_knn",
+    "n_train_interactions": 272,
+    "n_users": 50,
+    "n_items": 40,
+    "feedback": "explicit",
+    "user_column": "user_id",
+    "item_column": "item_id",
+    "rating_column": "rating",
+    "n_neighbors": 25,
+    "n_factors": null,
+    "disclosures": [
+      "rating_column defaulted to Session target 'rating'.",
+      "Recommenders are not RAG (document retrieve/generate) and not EDA Recommendation Findings (teaching advice objects).",
+      "item_knn: cosine item-item similarity on 40 train items; n_neighbors=25.",
+      "Known-item protocol: recommendations are restricted to items observed in train. Holdout-only items are never candidates.",
+      "Cold-start policy='popularity': users absent from train use popularity fallback over train items."
+    ],
+    "warnings": []
+  },
+  "eval": {
+    "partition": "test",
+    "method": "item_knn",
+    "k": 5,
+    "n_users_scored": 45,
+    "n_cold_start_users": 0,
+    "n_holdout_interactions": 80,
+    "metrics": {
+      "precision_at_k": 0.06222222222222223,
+      "recall_at_k": 0.14222222222222222,
+      "ndcg_at_k": 0.12019497342414366,
+      "map_at_k": 0.08825925925925925
+    },
+    "disclosures": [
+      "Holdout scored with frozen train recommender (no refit).",
+      "Known-item protocol: relevant set = holdout items \u2229 train catalog.",
+      "Cold-start users excluded from metric averages: 0."
+    ],
+    "warnings": []
+  },
+  "recommend": {
+    "k": 5,
+    "n_users": 45,
+    "method": "item_knn",
+    "n_recommendations": 225,
+    "n_cold_start_users": 0,
+    "excluded_train_items": true,
+    "disclosures": [
+      "rating_column defaulted to Session target 'rating'.",
+      "Recommenders are not RAG (document retrieve/generate) and not EDA Recommendation Findings (teaching advice objects).",
+      "item_knn: cosine item-item similarity on 40 train items; n_neighbors=25.",
+      "Known-item protocol: recommendations are restricted to items observed in train. Holdout-only items are never candidates.",
+      "Candidates restricted to train item catalog (known-item protocol)."
+    ],
+    "warnings": []
+  }
+}

@@ -556,7 +556,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "Complexity, latency, and monitoring load can outweigh small S gains.",
             ),
             how_buildml_uses=(
-                "Session.cv_score, grid_search, and randomized_search rank candidates on train-fold CV only.",
+                "Session.cv_score, grid_search, randomized_search, optuna_search, and "
+                "evolutionary_search rank candidates on train-fold CV only.",
                 "Session.compare_models ranks on a single holdout partition under shared transforms.",
                 "Explain and diagnostics attach partition-tagged metrics for comparison.",
                 "Baselines are first-class so 'better than nothing' is visible.",
@@ -622,11 +623,13 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "Optional PreprocessRecipe refits dates/text/impute/encode/binning/scale/"
                 "reduce(pca)/select(variance|univariate|model)/outliers(cap|detect) "
                 "on each fold-train. Custom transforms and resample stay Session-global.",
-                "grid_search and randomized_search nest train-fold CV for hyperparameter trials.",
+                "grid_search, randomized_search, optuna_search, and evolutionary_search "
+                "nest train-fold CV for hyperparameter trials.",
                 "Session.nested_cv_score adds an outer loop so post-selection estimates do not "
                 "reuse the same folds that chose estimator params or fold-local recipe knobs "
                 "(select_k, n_bins, and other SAFE_RECIPE_KNOBS). Inner search may be grid, "
-                "randomized, or Optuna (inner_search='optuna' with buildml[optuna]).",
+                "randomized, Optuna (inner_search='optuna' with buildml[optuna]), or "
+                "evolutionary (inner_search='evolutionary', in-tree NumPy GA).",
                 "cv_strategy selects stratified, group, stratified_group, or time fold builders.",
             ),
             interpretation_rules=(

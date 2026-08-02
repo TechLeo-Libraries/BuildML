@@ -1,0 +1,117 @@
+{
+  "format": "buildml.kg_bundle.v1",
+  "buildml_version": "2.4.0a1",
+  "compatibility": "KG bundles, Graph ML bundles, recommender bundles, RAG bundles, and Session checkpoints are complementary, not interchangeable. A KG bundle (buildml.kg_bundle.v1) stores a train-fitted KgPlan (entity/relation vocabularies, TransE/DistMult embeddings, train adjacency). A Session checkpoint stores data, roles, splits, and history; it does not embed the KG plan. Reload tabular workflow via checkpoint_load; reload the KG via load_kg_bundle. Honesty: Session KG learning/query \u2014 not Neo4j, not Graph ML node classification, not RAG.",
+  "plan": {
+    "method": "transe",
+    "head_column": "head",
+    "relation_column": "relation",
+    "tail_column": "tail",
+    "embedding_dim": 32,
+    "n_train_triples": 93,
+    "n_entities": 34,
+    "n_relations": 4,
+    "n_entity_ids": 34,
+    "n_relation_ids": 4,
+    "epochs_run": 50,
+    "final_loss": 0.7667217499019663,
+    "neg_ratio": 2,
+    "norm": "l1",
+    "margin": 1.0,
+    "disclosures": [
+      "KG path: Session rows are (head, relation, tail) triples. Distinct from Graph ML node classification and from RAG.",
+      "transe: trained on 93 unique train triples; entities=34, relations=4, dim=32, epochs=50.",
+      "Negative sampling: uniform head/tail corruption, neg_ratio=2 per positive; never uses holdout triples.",
+      "Filtered ranking at eval uses train true-triple set; holdout triples never update embeddings.",
+      "Symbolic query_kg (neighbors/path/typed) uses the train adjacency only \u2014 not an LLM and not a graph database.",
+      "TransE scoring: -||h+r-t||_l1; entity embeddings L2-normalized."
+    ],
+    "warnings": [],
+    "config": {
+      "method": "transe",
+      "head_column": "head",
+      "relation_column": "relation",
+      "tail_column": "tail",
+      "embedding_dim": 32,
+      "epochs": 50,
+      "batch_size": 64,
+      "learning_rate": 0.05,
+      "margin": 1.0,
+      "neg_ratio": 2,
+      "norm": "l1",
+      "random_state": 0
+    }
+  },
+  "fit": {
+    "method": "transe",
+    "n_train_triples": 93,
+    "n_entities": 34,
+    "n_relations": 4,
+    "embedding_dim": 32,
+    "head_column": "head",
+    "relation_column": "relation",
+    "tail_column": "tail",
+    "epochs_run": 50,
+    "final_loss": 0.7667217499019663,
+    "neg_ratio": 2,
+    "disclosures": [
+      "KG path: Session rows are (head, relation, tail) triples. Distinct from Graph ML node classification and from RAG.",
+      "transe: trained on 93 unique train triples; entities=34, relations=4, dim=32, epochs=50.",
+      "Negative sampling: uniform head/tail corruption, neg_ratio=2 per positive; never uses holdout triples.",
+      "Filtered ranking at eval uses train true-triple set; holdout triples never update embeddings.",
+      "Symbolic query_kg (neighbors/path/typed) uses the train adjacency only \u2014 not an LLM and not a graph database.",
+      "TransE scoring: -||h+r-t||_l1; entity embeddings L2-normalized."
+    ],
+    "warnings": []
+  },
+  "eval": {
+    "partition": "test",
+    "method": "transe",
+    "k": 5,
+    "n_triples_scored": 26,
+    "n_skipped_unknown": 0,
+    "metrics": {
+      "mrr": 0.20289578335421934,
+      "hits_at_1": 0.038461538461538464,
+      "hits_at_3": 0.2692307692307692,
+      "hits_at_5": 0.36538461538461536,
+      "mean_rank": 11.115384615384615
+    },
+    "disclosures": [
+      "Filtered ranking: train (+ holdout) true triples removed except the target fill-in.",
+      "MRR / Hits averaged over head and tail prediction per holdout triple.",
+      "Frozen train embeddings; holdout never used for fitting.",
+      "Not Graph ML node-classify accuracy; not RAG retrieve metrics."
+    ],
+    "warnings": []
+  },
+  "score": null,
+  "predict": {
+    "mode": "tail",
+    "method": "transe",
+    "k": 5,
+    "n_queries": 1,
+    "n_predictions": 5,
+    "filtered": true,
+    "disclosures": [
+      "Link prediction mode='tail' over train entity/relation catalog.",
+      "Filtered=True removes other train-known true triples from candidates.",
+      "Not Graph ML node classification; not RAG retrieve."
+    ],
+    "warnings": []
+  },
+  "query": {
+    "mode": "path",
+    "n_results": 1,
+    "source": "p0",
+    "target": "city0",
+    "relation": null,
+    "max_hops": 3,
+    "disclosures": [
+      "Symbolic query over train adjacency only (fit-time triples).",
+      "Not an LLM query, not Neo4j/Cypher, not RAG retrieve.",
+      "Holdout triples are never present in the query graph."
+    ],
+    "warnings": []
+  }
+}

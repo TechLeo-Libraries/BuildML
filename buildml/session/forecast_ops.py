@@ -1,0 +1,206 @@
+"""Thin Session facades over buildml.forecasting."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from buildml.core.errors import ValidationError
+from buildml.data.splits import PartitionName
+from buildml.forecasting.checkpoint import load_forecast_bundle, save_forecast_bundle
+from buildml.forecasting.evaluate import evaluate_forecast
+from buildml.forecasting.explain_hooks import (
+    eval_result_summary,
+    fit_result_summary,
+    generate_result_summary,
+)
+from buildml.forecasting.fit import fit_forecaster
+from buildml.forecasting.predict import generate_forecast, history_through_partition
+from buildml.forecasting.types import ForecastEvalStrategy, ForecastMethod
+
+
+def fit_forecast(
+    session,
+    *,
+    method: ForecastMethod = "lag_ridge",
+    horizon: int = 1,
+    lags: list[int] | tuple[int, ...] | None = None,
+    seasonal_period: int | None = None,
+    exog_columns: list[str] | None = None,
+    target_column: str | None = None,
+    time_column: str | None = None,
+    random_state: int | None = 0,
+    alpha: float = 1.0,
+    max_iter: int = 100,
+    max_depth: int | None = 3,
+    learning_rate: float = 0.1,
+) -> Any:
+    """Fit a classical forecaster on the train partition only.
+
+    Notes
+    -----
+    **Leakage:** Requires ``time_split`` (or chronologically ordered
+    ``inject_split``). Random/stratified/group splits are refused. Lag features
+    use only past target values.
+    """
+    session.assert_can_fit("train")
+    plan, result = fit_forecaster(
+        session.dataset,
+        session._split_plan,
+        method=method,
+        horizon=horizon,
+        lags=lags,
+        seasonal_period=seasonal_period,
+        exog_columns=exog_columns,
+        target_column=target_column,
+        time_column=time_column,
+        random_state=random_state,
+        alpha=alpha,
+        max_iter=max_iter,
+        max_depth=max_depth,
+        learning_rate=learning_rate,
+    )
+    session._forecast_plan = plan
+    session._forecast_fit_result = result
+    session._forecast_generate_result = None
+    session._forecast_eval_result = None
+    session._record(
+        "fit_forecast",
+        {
+            "method": method,
+            "horizon": horizon,
+            "lags": None if lags is None else list(lags),
+            "seasonal_period": seasonal_period,
+            "exog_columns": exog_columns,
+            "target_column": target_column,
+            "time_column": time_column,
+            "alpha": alpha,
+        },
+        warnings=tuple(result.warnings),
+        result_summary=fit_result_summary(result),
+    )
+    return result
+
+
+def generate_forecast_op(
+    session,
+    *,
+    horizon: int | None = None,
+    origin: str = "train_end",
+    future_exog: np.ndarray | pd.DataFrame | list[list[float]] | None = None,
+) -> Any:
+    """Generate an H-step forecast from the train-fitted ForecastPlan (no refit)."""
+    plan = getattr(session, "_forecast_plan", None)
+    if plan is None:
+        raise ValidationError("No forecast plan. Call fit_forecast(...) first.")
+    history = None
+    if origin == "train_end":
+        history = list(plan.last_train_values_)
+    elif origin in {"validation_end", "test_end"}:
+        through = "validation" if origin == "validation_end" else "test"
+        if session._split_plan is None:
+            raise ValidationError("origin beyond train_end requires a SplitPlan")
+        history = history_through_partition(
+            session.dataset, plan, session._split_plan, through=through
+        )
+    elif origin != "train_end":
+        raise ValidationError(
+            "origin must be one of: train_end, validation_end, test_end"
+        )
+
+    exog = future_exog
+    if isinstance(future_exog, list):
+        exog = np.asarray(future_exog, dtype=float)
+
+    result = generate_forecast(
+        plan,
+        horizon=horizon,
+        history=history,
+        future_exog=exog,
+        origin=origin,
+    )
+    session._forecast_generate_result = result
+    session._record(
+        "generate_forecast",
+        {"horizon": horizon, "origin": origin, "has_future_exog": future_exog is not None},
+        warnings=tuple(result.warnings),
+        result_summary=generate_result_summary(result),
+    )
+    return result
+
+
+def evaluate_forecast_op(
+    session,
+    *,
+    partition: PartitionName = "test",
+    strategy: ForecastEvalStrategy = "rolling_one_step",
+) -> Any:
+    """Evaluate the train-fitted ForecastPlan on a holdout partition."""
+    plan = getattr(session, "_forecast_plan", None)
+    if plan is None:
+        raise ValidationError("No forecast plan. Call fit_forecast(...) first.")
+    resolved: PartitionName = partition
+    split = session._split_plan
+    if (
+        partition == "validation"
+        and split is not None
+        and not split.validation_indices
+    ):
+        resolved = "test"
+    result = evaluate_forecast(
+        session.dataset,
+        plan,
+        session._split_plan,
+        partition=resolved,
+        strategy=strategy,
+    )
+    session._forecast_eval_result = result
+    session._record(
+        "evaluate_forecast",
+        {"partition": resolved, "strategy": strategy},
+        warnings=tuple(result.warnings),
+        result_summary=eval_result_summary(result),
+    )
+    return result
+
+
+def save_forecast_bundle_op(session, path: str | Path) -> Path:
+    """Persist the active ForecastPlan as ``buildml.forecast_bundle.v1``."""
+    plan = getattr(session, "_forecast_plan", None)
+    if plan is None:
+        raise ValidationError("No forecast plan. Call fit_forecast(...) first.")
+    out = save_forecast_bundle(
+        path,
+        plan,
+        fit_result=getattr(session, "_forecast_fit_result", None),
+        eval_result=getattr(session, "_forecast_eval_result", None),
+        generate_result=getattr(session, "_forecast_generate_result", None),
+    )
+    session._record(
+        "save_forecast_bundle",
+        {"path": str(out)},
+        result_summary={
+            "path": str(out),
+            "method": plan.method,
+            "horizon": plan.horizon,
+        },
+    )
+    return out
+
+
+def load_forecast_bundle_op(session, path: str | Path) -> Any:
+    """Load a forecast bundle into this Session."""
+    plan = load_forecast_bundle(path)
+    session._forecast_plan = plan
+    session._forecast_fit_result = None
+    session._forecast_generate_result = None
+    session._forecast_eval_result = None
+    session._record(
+        "load_forecast_bundle",
+        {"path": str(path), "method": plan.method, "horizon": plan.horizon},
+        result_summary=plan.to_dict(),
+    )
+    return session

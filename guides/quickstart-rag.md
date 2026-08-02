@@ -24,6 +24,10 @@ Classical `Session.fit` and Torch `*_torch` stay unchanged. RAG methods use the
 `session.rag_retrieve_result` / `session.rag_generate_result` /
 `session.rag_eval_result`.
 
+Distinct from tabular LTR (`fit_ranker` on labeled query–item feature rows) and
+from recommenders (`fit_recommender` user–item CF) — see
+[LTR quickstart](quickstart-ranking.md).
+
 The path is **ingest → chunk → embed/index → retrieve → generate → evaluate →
 bundle**. Grounded generate needs a chat provider (`ai_configure`, or pass
 `provider=` such as `EchoGroundedProvider` for offline demos). The AI operator

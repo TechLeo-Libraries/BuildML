@@ -53,6 +53,8 @@ install of 2.x):
    pip install "buildml[serve]"        # managed local FastAPI model serving
    pip install "buildml[onnx]"         # optional ONNX checker for export_torch
    pip install "buildml[rag]"          # optional dense/rerank backends
+   pip install "buildml[rl]"           # optional Gymnasium REINFORCE-lite
+   pip install "buildml[tda]"          # ripser + persim persistent homology
    pip install "buildml[ai]"           # LLM operator (alias: buildml[llm])
    pip install "buildml[all-classical]"
 

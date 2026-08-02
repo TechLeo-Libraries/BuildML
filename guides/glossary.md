@@ -19,6 +19,25 @@ Reports label its decision origin `automatic` and should expose the selection ru
 The Dataset-owned tabular state used by Session operations. In the current release, sklearn-facing
 materialization is Pandas even when another engine is configured.
 
+**Case base (CBR)**  
+Train-built tabular memory of cases (features + solution/label/outcome) used by
+`fit_cbr` / `retrieve_cases` / `predict_cbr`. Validation and test rows never enter
+the memory at fit time. Distinct from a RAG text corpus.
+
+**CaseTrace**  
+Per-query explanation from CBR retrieve/predict: neighbor case ids, distances,
+weights, neighbor solutions, and the reused prediction.
+
+**CBR bundle**  
+Directory schema `buildml.cbr_bundle.v1` (`meta.json` + `cbr_plan.joblib`) holding
+a `CbrPlan` (case memory + metric/reuse config). It is not a Session checkpoint
+and is not interchangeable with `buildml.rag_bundle.v1`.
+
+**Behavioral cloning (imitation)**  
+Supervised state→action policy fitted by `fit_imitation` on Session train
+demonstration rows only. Holdout `evaluate_imitation` compares predicted actions
+to demonstration actions. Not inverse RL and not a robotics stack.
+
 **Checkpoint**  
 A resumable directory containing data, roles/metadata, split membership, operation history, and an
 integrity manifest. It is not a fitted-model artifact.
@@ -238,7 +257,56 @@ returns a copy.
 
 **Recommendation**  
 Advice supported by findings or evidence. It includes rationale, priority, and caveats and does not
-change Session state.
+change Session state. Distinct from **recommendation systems** (`fit_recommender` /
+`recommend`), which rank catalog items from user–item interactions.
+
+**Recommendation systems (Session)**  
+`fit_recommender` learns from train user–item interactions (item/user kNN CF,
+TruncatedSVD / NMF, or content profiles). `recommend` returns top-K train-catalog
+items; `evaluate_recommender` scores Precision@K, Recall@K, nDCG@K, MAP@K under
+a known-item protocol with cold-start disclosure. Not RAG; not EDA Recommendation
+Findings; not a Netflix-scale platform.
+
+**Recommender bundle**  
+Directory schema `buildml.recommender_bundle.v1` (`meta.json` +
+`recommender_plan.joblib`) holding a `RecommenderPlan`. Distinct from Session
+checkpoints and from RAG / TDA bundles.
+
+**Learning-to-rank / Search ranking (Session)**  
+`fit_ranker` learns from train query–item (or query–document) feature rows
+with relevance labels (pointwise Ridge/HGB or pairwise RankSVM-lite).
+`rank` orders items per query; `evaluate_ranker` scores graded nDCG@K, MAP@K,
+MRR@K. Prefer `group_split` on the query id. Not a search-engine product; not
+RAG retrieve/generate; not recommender user–item CF.
+
+**Ranker bundle**  
+Directory schema `buildml.ranker_bundle.v1` (`meta.json` +
+`ranker_plan.joblib`) holding a `RankerPlan`. Distinct from Session
+checkpoints and from RAG / recommender bundles.
+
+**Reinforcement learning (Session)**  
+`fit_rl` covers contextual bandits on logged train tables (LinUCB / ε-greedy /
+softmax) and optional Gymnasium REINFORCE-lite behind `buildml[rl]`. Bandit
+holdout metrics are offline (DM/IPS). Not a MuJoCo / robotics / multi-agent
+platform.
+
+**RL bundle**  
+Directory schema `buildml.rl_bundle.v1` (`meta.json` + `rl_plan.joblib`) holding
+an `RlPlan`. Distinct from Session checkpoints and from imitation bundles.
+
+**Imitation bundle**  
+Directory schema `buildml.imitation_bundle.v1` (`meta.json` +
+`imitation_plan.joblib`) holding an `ImitationPlan` (behavioral cloning policy).
+
+**Topological Data Analysis (Session)**  
+`fit_tda` builds local Vietoris–Rips persistence diagrams (ripser) on kNN train
+neighborhoods, vectorizes them (persim images/landscapes or in-tree
+silhouettes), and optionally fits a sklearn head — all on train only. Requires
+`buildml[tda]`. Not a Mapper research suite.
+
+**TDA bundle**  
+Directory schema `buildml.tda_bundle.v1` (`meta.json` + `tda_plan.joblib`) holding
+a `TdaPlan` (frozen PH vectorizer ± head). Distinct from Session checkpoints.
 
 **Reattach**  
 Loading checkpoint state and validating that its data and metadata remain compatible. A `data_only`

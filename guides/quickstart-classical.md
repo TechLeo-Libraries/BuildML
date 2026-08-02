@@ -294,6 +294,15 @@ search = session.grid_search(
     cv=5,
 )
 
+# In-tree GA HPO (no extra) — not neuroevolution / NAS
+# evo = session.evolutionary_search(
+#     DecisionTreeClassifier(random_state=0),
+#     param_space={"max_depth": {"type": "int", "low": 2, "high": 6}},
+#     population_size=8,
+#     n_generations=3,
+#     cv=3,
+# )
+
 # Optional adaptive search (requires: pip install 'buildml[optuna]')
 # optuna_result = session.optuna_search(
 #     DecisionTreeClassifier(random_state=0),

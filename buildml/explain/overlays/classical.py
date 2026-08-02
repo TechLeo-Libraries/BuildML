@@ -921,7 +921,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Outer/inner nested cross-validation for classical selection.",
         (
             "Draw outer folds from the train partition only.",
-            "On each outer-train subset, run grid, randomized, or Optuna inner search with CV.",
+            "On each outer-train subset, run grid, randomized, Optuna, or evolutionary inner search with CV.",
             "Refit the inner winner on outer-train and score outer-eval rows.",
             "Aggregate outer metrics mean±std and summarize which params/knobs were selected.",
         ),
@@ -1080,7 +1080,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, ROLES, SPLIT),
         ordering=("After split; use validation/test only to confirm the frozen winner.",),
         alternatives=(
-            "Use randomized_search or optuna_search for large spaces; use cv_score for a single config.",
+            "Use randomized_search, optuna_search, or evolutionary_search for large spaces; "
+            "use cv_score for a single config.",
         ),
         rationale=("Prefer grids small enough that fold std remains interpretable across trials.",),
         assumptions=("All grid points are valid for the estimator; metric matches decision costs.",),
@@ -1141,7 +1142,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split; confirm the frozen winner on a held-out partition.",),
         alternatives=(
             "Use grid_search for small discrete grids; use optuna_search for adaptive TPE; "
-            "use cv_score for one configuration.",
+            "use evolutionary_search for GA/ES HPO; use cv_score for one configuration.",
         ),
         rationale=("Raise n_iter only while fold std still informs whether gaps are real.",),
         assumptions=("Sampled params are valid; the budget covers the interesting region roughly.",),
@@ -1201,7 +1202,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, ROLES, SPLIT),
         ordering=("After split; confirm the frozen winner on a held-out partition.",),
         alternatives=(
-            "Use grid_search for small discrete grids; use randomized_search when TPE is unnecessary.",
+            "Use grid_search for small discrete grids; use randomized_search when TPE is unnecessary; "
+            "use evolutionary_search for in-tree GA without the optuna extra.",
         ),
         rationale=(
             "Prefer Optuna when the space is continuous or mixed and fold std still informs gaps.",
@@ -1220,6 +1222,94 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Treating a short TPE run as exhaustive coverage of a huge space.",),
         state_changes=("Stores last_search; when refit=True, replaces active fit_result with the winner.",),
         result_reading=("Read best_params with mean±std and top-2 gap relative to fold noise.",),
+        next_steps=("Confirm once on holdout; persist via save_pipeline.",),
+        concepts=("cross-validation", "model-selection", "leakage-boundary", "overfitting"),
+    ),
+    _operation(
+        "evolutionary_search",
+        OperationKind.MODEL,
+        "Evolve estimator hyperparameters with a genetic algorithm under nested train-fold CV.",
+        "Population-based HPO backend (selection, crossover, mutation, elitism) with the same "
+        "leakage contract as grid_search.",
+        "Evolutionary hyperparameter search (in-tree NumPy GA).",
+        (
+            "Initialize a population from declare-style param_space / recipe_space.",
+            "Score unique genomes with cv_score on train folds only (budget-capped).",
+            "Apply tournament selection, uniform crossover, mutation, and elitism across generations.",
+            "Rank evaluated trials and optionally refit the winner on full train.",
+        ),
+        parameters=(
+            _p("estimator", "estimator", "Unfitted estimator whose params are searched.", required=True),
+            _p(
+                "param_space",
+                "dict | None",
+                "Declare-style float/int/categorical mapping (dicts only; no trial callables).",
+            ),
+            _p(
+                "recipe_space",
+                "dict | None",
+                "Fold-local recipe-knob space (requires preprocess).",
+            ),
+            _p("population_size", "int", "GA population size.", 12),
+            _p("n_generations", "int", "Number of GA generations.", 5),
+            _p("elite_size", "int", "Elites copied unchanged each generation.", 2),
+            _p("crossover_rate", "float", "Uniform crossover probability.", 0.7),
+            _p("mutation_rate", "float", "Per-gene mutation probability.", 0.2),
+            _p("tournament_size", "int", "Tournament selection size.", 3),
+            _p(
+                "max_evaluations",
+                "int | None",
+                "Hard cap on unique CV evaluations (default population_size * n_generations).",
+            ),
+            _p("random_state", "int | None", "RNG seed for reproducibility.", 42),
+            _p("task", "classification | regression | auto", "Task interpretation.", "auto"),
+            _p("cv", "int | splitter", "Fold count or splitter.", 5),
+            _p("cv_strategy", "str", "Fold builder when cv is an integer.", "auto"),
+            _p("ranking_metric", "str | None", "Metric used to rank trials."),
+            _p("groups", "Series | None", "Optional group labels aligned to train."),
+            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on unpoisoned data."),
+            _p(
+                "allow_session_global_preprocess",
+                "bool",
+                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                False,
+            ),
+            _p("refit", "bool", "Refit best params on full train and set fit_result.", True),
+        ),
+        inputs=("Dataset, SplitPlan, estimator, and a declare-style evolutionary search space.",),
+        outputs=(
+            "SearchResult with ranked trials, best params, generation history in study, "
+            "interpretation, optional refit.",
+        ),
+        prerequisites=(DATASET, ROLES, SPLIT),
+        ordering=("After split; confirm the frozen winner on a held-out partition.",),
+        alternatives=(
+            "Use grid_search for small discrete grids; use randomized_search for pure sampling; "
+            "use optuna_search for TPE when buildml[optuna] is available.",
+        ),
+        rationale=(
+            "Prefer evolutionary search when you want a real GA over mixed spaces without "
+            "an Optuna dependency; raise budget only while fold std still informs gaps.",
+        ),
+        assumptions=(
+            "Declare-style spaces are valid for the estimator; this is HPO, not neuroevolution/NAS.",
+        ),
+        failures=(
+            "Empty spaces, invalid GA knobs, budget < population_size, CV errors, or fit failures.",
+        ),
+        leakage=(
+            "Same train-only nested CV contract as grid_search; test remains untouched during search.",
+            "Session-global preprocess before search is refused even with a fold-local recipe "
+            "unless allow_session_global_preprocess=True.",
+        ),
+        anti_patterns=(
+            "Calling this neuroevolution or NAS when only estimator hyperparameters are evolved.",
+            "Treating a tiny population×generation budget as exhaustive coverage.",
+        ),
+        state_changes=("Stores last_search; when refit=True, replaces active fit_result with the winner.",),
+        result_reading=(
+            "Read best_params with mean±std, top-2 gap, and study['generation_best'] history.",
+        ),
         next_steps=("Confirm once on holdout; persist via save_pipeline.",),
         concepts=("cross-validation", "model-selection", "leakage-boundary", "overfitting"),
     ),
@@ -1464,7 +1554,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         prerequisites=(DATASET, SPLIT, FIT, VIZ),
         ordering=("After calibration review; select on validation and evaluate chosen threshold on test.",),
-        alternatives=("Use domain cost curves, constrained optimization, or abstention policies.",),
+        alternatives=(
+            "Session.fit_decision_policy(method='threshold') uses this same engine and "
+            "persists a DecisionPlan bundle; also domain cost curves or abstention policies.",
+        ),
         rationale=("Choose by explicit false-positive/false-negative costs or operating constraints, not peak F1 alone.",),
         assumptions=("Validation prevalence and costs resemble deployment.",),
         failures=(
@@ -1477,8 +1570,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         result_reading=(
             "Read recommended_threshold, recommendation_basis, operating_points, and cost_model together.",
         ),
-        next_steps=("Record the chosen policy separately and validate it on untouched data.",),
-        concepts=("thresholds", "probability-calibration", "evaluation-partitions"),
+        next_steps=(
+            "Prefer fit_decision_policy(method='threshold', partition='validation') to "
+            "persist the cutoff, then evaluate_decisions on untouched test.",
+        ),
+        concepts=(
+            "thresholds",
+            "probability-calibration",
+            "evaluation-partitions",
+            "decision-operating-point",
+        ),
     ),
     _operation(
         "learning_curve",
@@ -1549,16 +1650,24 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         outputs=("Session with resampled train rows, updated SplitPlan, and ResamplePlan.",),
         prerequisites=(DATASET, ROLES, SPLIT),
         ordering=("After split and numeric preparation required by sampler; before fit.",),
-        alternatives=("Use class weights, threshold policy, anomaly methods, or collect minority examples.",),
+        alternatives=(
+            "Use class weights, threshold policy, anomaly methods, or collect minority examples.",
+            "Session.fit_synthesizer for a reusable tabular generator (bootstrap/copula/SMOTE) "
+            "distinct from class-balance preprocess.",
+        ),
         rationale=("Start with weights/metrics; use synthetic sampling when neighborhood assumptions are credible.",),
         assumptions=("Synthetic neighbors or duplicated rows represent plausible training observations.",),
         failures=("Missing optional dependency, non-numeric SMOTE input, too few minority neighbors, or regression target.",),
         leakage=("Resampling before splitting creates synthetic relatives across train and test.",),
-        anti_patterns=("Balancing validation/test or reporting accuracy without original prevalence.",),
+        anti_patterns=(
+            "Balancing validation/test or reporting accuracy without original prevalence.",
+            "Treating resample as a general synthetic-data / privacy product "
+            "(use fit_synthesizer + disclosures instead).",
+        ),
         state_changes=("Replaces train rows and memberships, stores resample_plan, leaves holdouts unchanged.",),
         result_reading=("Compare class counts before/after and confirm evaluation counts are identical.",),
         next_steps=("Fit, assess precision-recall/calibration, and compare against weighted baselines.",),
-        concepts=("class-imbalance", "leakage-boundary", "thresholds"),
+        concepts=("class-imbalance", "leakage-boundary", "thresholds", "synthetic-vs-resample"),
     ),
     _operation(
         "resample_strategies",

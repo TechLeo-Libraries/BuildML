@@ -29,7 +29,8 @@ Related: [concepts](../docs/concepts.rst),
 ### Why recipes exist
 
 `PreprocessRecipe` describes **unfitted** steps. Inside `cv_score` /
-`grid_search` / `randomized_search` / `optuna_search` / `nested_cv_score`,
+`grid_search` / `randomized_search` / `optuna_search` /
+`evolutionary_search` / `nested_cv_score`,
 BuildML refits those steps on each fold’s training rows and applies the frozen
 fold plans to the fold’s eval rows. That is fold-local honesty.
 

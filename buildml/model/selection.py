@@ -51,9 +51,10 @@ from buildml.preprocess.fold import (
 )
 
 CvStrategy = Literal["auto", "kfold", "stratified", "group", "stratified_group", "time"]
-SearchMethod = Literal["grid", "randomized", "optuna"]
-InnerSearchMethod = Literal["auto", "grid", "randomized", "optuna"]
+SearchMethod = Literal["grid", "randomized", "optuna", "evolutionary"]
+InnerSearchMethod = Literal["auto", "grid", "randomized", "optuna", "evolutionary"]
 OptunaSpace = Callable[[Any], dict[str, Any]] | dict[str, Any]
+EvolutionarySpace = dict[str, Any]
 
 _LOWER_IS_BETTER = {"mae", "mse", "rmse", "log_loss", "median_ae", "mape"}
 
@@ -812,6 +813,274 @@ def optuna_search(
     )
 
 
+def evolutionary_search(
+    dataset: Dataset,
+    split_plan: SplitPlan | None,
+    estimator: Any,
+    *,
+    param_space: EvolutionarySpace | None = None,
+    recipe_space: EvolutionarySpace | None = None,
+    population_size: int = 12,
+    n_generations: int = 5,
+    elite_size: int = 2,
+    crossover_rate: float = 0.7,
+    mutation_rate: float = 0.2,
+    tournament_size: int = 3,
+    max_evaluations: int | None = None,
+    random_state: int | None = 42,
+    task: TaskType = "auto",
+    cv: int | Any = 5,
+    cv_strategy: CvStrategy = "auto",
+    ranking_metric: str | None = None,
+    groups: pd.Series | None = None,
+    preprocess: PreprocessRecipe | None = None,
+    session_preprocess_applied: bool = False,
+    allow_session_global_preprocess: bool = False,
+    refit: bool = True,
+) -> SearchResult:
+    """Genetic-algorithm hyperparameter search with leakage-safe train-fold CV.
+
+    Evolves a population of estimator hyperparameters (and optional fold-local
+    recipe knobs) using tournament selection, uniform crossover, per-gene
+    mutation, and elitism. Each unique genome is scored once via
+    :func:`cv_score` on the Session **train** partition only.
+
+    Parameters
+    ----------
+    param_space:
+        Declare-style mapping (same forms as Optuna declare spaces):
+
+        - ``{"type": "float", "low": ..., "high": ..., "log": bool}``
+        - ``{"type": "int", "low": ..., "high": ...}``
+        - ``{"type": "categorical", "choices": [...]}``
+        - plain list/tuple → categorical choices
+
+        Keys may use a ``recipe__`` prefix. Callables are not supported —
+        the GA needs an explicit gene encoding.
+    recipe_space:
+        Optional declare-style space for fold-local recipe knobs. Requires
+        ``preprocess``.
+    population_size / n_generations:
+        GA population and generation budget (before ``max_evaluations``).
+    elite_size:
+        Number of top individuals copied unchanged into the next generation.
+    crossover_rate / mutation_rate / tournament_size:
+        Standard GA operators (uniform crossover; per-gene resample/perturb).
+    max_evaluations:
+        Hard cap on unique CV evaluations. Defaults to
+        ``population_size * n_generations``.
+    ranking_metric:
+        Metric maximized (or minimized for loss-like names) via train-fold CV.
+
+    Notes
+    -----
+    This is an **HPO / search backend**, not neuroevolution-of-architectures,
+    NAS, or a swarm-intelligence zoo. Core dependency is NumPy only (no DEAP).
+    Folds stay inside the Session train partition; Session test/validation never
+    enter trial scoring.
+    """
+    if population_size < 2:
+        raise ValidationError("population_size must be >= 2")
+    if n_generations < 1:
+        raise ValidationError("n_generations must be >= 1")
+    if elite_size < 1:
+        raise ValidationError("elite_size must be >= 1")
+    if elite_size >= population_size:
+        raise ValidationError("elite_size must be < population_size")
+    if not 0.0 <= crossover_rate <= 1.0:
+        raise ValidationError("crossover_rate must be in [0, 1]")
+    if not 0.0 <= mutation_rate <= 1.0:
+        raise ValidationError("mutation_rate must be in [0, 1]")
+    if tournament_size < 2:
+        raise ValidationError("tournament_size must be >= 2")
+    if param_space is None and recipe_space is None:
+        raise ValidationError("Provide param_space and/or recipe_space")
+    if param_space is not None and not isinstance(param_space, dict):
+        raise ValidationError(
+            "evolutionary_search param_space must be a declare-style dict "
+            "(callables are not supported; use optuna_search for trial callables)"
+        )
+    if recipe_space is not None and not isinstance(recipe_space, dict):
+        raise ValidationError(
+            "evolutionary_search recipe_space must be a declare-style dict "
+            "(callables are not supported)"
+        )
+
+    budget = (
+        int(max_evaluations)
+        if max_evaluations is not None
+        else int(population_size) * int(n_generations)
+    )
+    if budget < 1:
+        raise ValidationError("max_evaluations must be >= 1")
+    if budget < population_size:
+        raise ValidationError(
+            f"max_evaluations ({budget}) must be >= population_size ({population_size})"
+        )
+
+    assert_fit_partition(split_plan, "train")
+    assert split_plan is not None
+    _x_train, y_train, _feature_cols, _target, _sample_weight = _feature_target_frames(
+        dataset, split_plan, "train"
+    )
+    resolved_task = _infer_task(y_train, task, estimator)
+    metric_name = ranking_metric or ("r2" if resolved_task == "regression" else "f1_weighted")
+    higher_is_better = metric_name not in _LOWER_IS_BETTER
+
+    genes = _parse_evolutionary_genes(param_space=param_space, recipe_space=recipe_space)
+    if not genes:
+        raise ValidationError("Evolutionary search space produced no genes")
+    needs_recipe = any(
+        g.name.startswith("recipe__") or g.name in SAFE_RECIPE_KNOBS for g in genes
+    )
+    _require_recipe_for_knobs(preprocess, needs_recipe)
+
+    rng = np.random.default_rng(random_state)
+    score_cache: dict[tuple[tuple[str, Any], ...], SearchTrial] = {}
+    trial_rows: list[SearchTrial] = []
+    generation_best: list[dict[str, Any]] = []
+
+    def _evaluate(individual: dict[str, Any]) -> SearchTrial:
+        key = _genome_key(individual)
+        cached = score_cache.get(key)
+        if cached is not None:
+            return cached
+        if len(score_cache) >= budget:
+            # Budget exhausted: return a sentinel-like worst score without CV.
+            worst = float("-inf") if higher_is_better else float("inf")
+            placeholder = SearchTrial(
+                trial=-1,
+                params={},
+                recipe_knobs={},
+                mean_score=worst,
+                std_score=float("nan"),
+            )
+            return placeholder
+
+        est_params, recipe_knobs = _split_trial_params(dict(individual))
+        cv_result = cv_score(
+            dataset,
+            split_plan,
+            estimator,
+            task=resolved_task,
+            cv=cv,
+            cv_strategy=cv_strategy,
+            scoring_metric=metric_name,
+            groups=groups,
+            preprocess=preprocess,
+            session_preprocess_applied=session_preprocess_applied,
+            allow_session_global_preprocess=allow_session_global_preprocess,
+            params=est_params,
+            recipe_knobs=recipe_knobs,
+        )
+        score = float(cv_result.mean_metrics[metric_name])
+        row = SearchTrial(
+            trial=len(trial_rows),
+            params=dict(est_params),
+            recipe_knobs=dict(recipe_knobs),
+            mean_score=score,
+            std_score=float(cv_result.std_metrics.get(metric_name, float("nan"))),
+            mean_metrics=dict(cv_result.mean_metrics),
+            std_metrics=dict(cv_result.std_metrics),
+            cv=cv_result,
+        )
+        score_cache[key] = row
+        trial_rows.append(row)
+        return row
+
+    population = [_sample_evolutionary_individual(genes, rng) for _ in range(population_size)]
+    fitness = [_evaluate(ind) for ind in population]
+
+    for generation in range(n_generations):
+        ranked_idx = sorted(
+            range(len(population)),
+            key=lambda i: fitness[i].mean_score,
+            reverse=higher_is_better,
+        )
+        best_i = ranked_idx[0]
+        generation_best.append(
+            {
+                "generation": generation,
+                "best_score": float(fitness[best_i].mean_score),
+                "best_params": dict(fitness[best_i].params),
+                "best_recipe_knobs": dict(fitness[best_i].recipe_knobs),
+                "n_evaluations": len(score_cache),
+            }
+        )
+        if generation + 1 >= n_generations or len(score_cache) >= budget:
+            break
+
+        next_pop: list[dict[str, Any]] = []
+        next_fit: list[SearchTrial] = []
+        for elite_rank in ranked_idx[:elite_size]:
+            next_pop.append(dict(population[elite_rank]))
+            next_fit.append(fitness[elite_rank])
+
+        while len(next_pop) < population_size:
+            slot = len(next_pop)
+            if len(score_cache) >= budget:
+                filler_i = ranked_idx[slot % len(ranked_idx)]
+                next_pop.append(dict(population[filler_i]))
+                next_fit.append(fitness[filler_i])
+                continue
+            p1 = _tournament_select(population, fitness, tournament_size, higher_is_better, rng)
+            p2 = _tournament_select(population, fitness, tournament_size, higher_is_better, rng)
+            if rng.random() < crossover_rate:
+                child, _sibling = _uniform_crossover(p1, p2, genes, rng)
+            else:
+                child = dict(p1)
+            child = _mutate_individual(child, genes, mutation_rate, rng)
+            next_pop.append(child)
+            next_fit.append(_evaluate(child))
+
+        population = next_pop[:population_size]
+        fitness = next_fit[:population_size]
+
+    if not trial_rows:
+        raise ValidationError("Evolutionary search produced no evaluated trials")
+
+    trials = sorted(trial_rows, key=lambda item: item.mean_score, reverse=higher_is_better)
+    ranked = [
+        SearchTrial(
+            trial=i,
+            params=dict(t.params),
+            recipe_knobs=dict(t.recipe_knobs),
+            mean_score=t.mean_score,
+            std_score=t.std_score,
+            mean_metrics=dict(t.mean_metrics),
+            std_metrics=dict(t.std_metrics),
+            cv=t.cv,
+        )
+        for i, t in enumerate(trials)
+    ]
+    history = {
+        "kind": "evolutionary",
+        "population_size": int(population_size),
+        "n_generations": int(n_generations),
+        "elite_size": int(elite_size),
+        "crossover_rate": float(crossover_rate),
+        "mutation_rate": float(mutation_rate),
+        "tournament_size": int(tournament_size),
+        "max_evaluations": int(budget),
+        "n_evaluations": len(score_cache),
+        "generation_best": generation_best,
+    }
+    return _finalize_search_result(
+        method="evolutionary",
+        resolved_task=resolved_task,
+        metric_name=metric_name,
+        trials=ranked,
+        estimator=estimator,
+        dataset=dataset,
+        split_plan=split_plan,
+        preprocess=preprocess,
+        session_preprocess_applied=session_preprocess_applied,
+        allow_session_global_preprocess=allow_session_global_preprocess,
+        refit=refit,
+        study=history,
+    )
+
+
 def nested_cv_score(
     dataset: Dataset,
     split_plan: SplitPlan | None,
@@ -826,6 +1095,8 @@ def nested_cv_score(
     inner_search: InnerSearchMethod = "auto",
     n_iter: int = 10,
     n_trials: int = 20,
+    population_size: int = 8,
+    n_generations: int = 3,
     random_state: int | None = 42,
     task: TaskType = "auto",
     outer_cv: int | Any = 5,
@@ -849,15 +1120,19 @@ def nested_cv_score(
         Fold-local recipe knob space (``select_k``, ``n_bins``, …). At most one
         may be set. Requires ``preprocess``.
     param_space / recipe_space:
-        Optuna declare-style or callable spaces for ``inner_search='optuna'``.
-        Require ``pip install 'buildml[optuna]'``.
+        Declare-style (or Optuna callable) spaces for ``inner_search='optuna'``
+        or declare-style dicts for ``inner_search='evolutionary'``.
+        Optuna requires ``pip install 'buildml[optuna]'``.
     inner_search:
-        ``auto`` (infer from provided spaces), ``grid``, ``randomized``, or
-        ``optuna``.
+        ``auto`` (infer from provided spaces), ``grid``, ``randomized``,
+        ``optuna``, or ``evolutionary``.
     n_iter:
         Randomized inner trials when using distributions.
     n_trials:
         Optuna inner trials when ``inner_search`` resolves to ``optuna``.
+        For ``evolutionary``, also used as ``max_evaluations`` budget.
+    population_size / n_generations:
+        Evolutionary GA knobs when ``inner_search='evolutionary'``.
     outer_cv / inner_cv:
         Outer and inner fold counts (or sklearn splitters).
     cv_strategy:
@@ -878,8 +1153,8 @@ def nested_cv_score(
     -----
     **Leakage:** Outer-eval rows never enter inner CV membership or inner
     ranking. Session test/validation partitions are never used for outer or
-    inner folds. Chosen recipe knobs are recorded per outer fold. Optuna trials
-    run only on each outer-train subset via :func:`optuna_search`.
+    inner folds. Chosen recipe knobs are recorded per outer fold. Optuna /
+    evolutionary trials run only on each outer-train subset.
 
     **Warm-start policy (``warm_start_studies=True``):** Shared study state
     carries only prior *inner*-CV trial scores from earlier outer-train
@@ -916,24 +1191,28 @@ def nested_cv_score(
         raise ValidationError(
             "nested_cv_score accepts at most one of recipe_grid or recipe_distributions"
         )
-    if search_method == "optuna":
+    if search_method in {"optuna", "evolutionary"}:
         if param_space is None and recipe_space is None:
-            raise ValidationError("inner_search='optuna' requires param_space and/or recipe_space")
+            raise ValidationError(
+                f"inner_search={search_method!r} requires param_space and/or recipe_space"
+            )
         if param_grid is not None or param_distributions is not None:
             raise ValidationError(
-                "inner_search='optuna' uses param_space; omit param_grid/param_distributions"
+                f"inner_search={search_method!r} uses param_space; "
+                "omit param_grid/param_distributions"
             )
         if recipe_grid is not None or recipe_distributions is not None:
             raise ValidationError(
-                "inner_search='optuna' uses recipe_space; omit recipe_grid/recipe_distributions"
+                f"inner_search={search_method!r} uses recipe_space; "
+                "omit recipe_grid/recipe_distributions"
             )
     if warm_start_studies and search_method != "optuna":
         raise ValidationError(
             "warm_start_studies=True requires Optuna inner search "
             "(inner_search='optuna' or auto with param_space/recipe_space)"
         )
-        if n_trials < 1:
-            raise ValidationError("n_trials must be >= 1")
+    if search_method in {"optuna", "evolutionary"} and n_trials < 1:
+        raise ValidationError("n_trials must be >= 1")
     if param_grid is not None and not param_grid:
         raise ValidationError("param_grid must not be empty when provided")
     if param_distributions is not None and not param_distributions:
@@ -1075,6 +1354,34 @@ def nested_cv_score(
             )
             if warm_start_studies:
                 shared_study = fold_search.study
+        elif search_method == "evolutionary":
+            if not isinstance(param_space, (dict, type(None))) or not isinstance(
+                recipe_space, (dict, type(None))
+            ):
+                raise ValidationError(
+                    "inner_search='evolutionary' requires declare-style dict "
+                    "param_space/recipe_space (not Optuna trial callables)"
+                )
+            fold_search = evolutionary_search(
+                dataset,
+                inner_plan,
+                estimator,
+                param_space=param_space,
+                recipe_space=recipe_space,
+                population_size=population_size,
+                n_generations=n_generations,
+                max_evaluations=n_trials,
+                random_state=None if random_state is None else int(random_state) + fold_id,
+                task=resolved_task,
+                cv=inner_cv,
+                cv_strategy=cv_strategy,
+                ranking_metric=metric,
+                groups=inner_groups,
+                preprocess=preprocess,
+                session_preprocess_applied=session_preprocess_applied,
+                allow_session_global_preprocess=allow_session_global_preprocess,
+                refit=False,
+            )
         else:
             fold_search = randomized_search(
                 dataset,
@@ -1484,6 +1791,12 @@ def _finalize_search_result(
             "Optuna TPE sampled this budget; raise n_trials only while fold std still "
             "informs whether gaps are real."
         )
+    if method == "evolutionary":
+        recommendations.append(
+            "Evolutionary search used a real GA (population, selection, crossover/mutation, "
+            "elitism) under a CV budget — not random search renamed. Raise population_size / "
+            "n_generations only while fold std still informs whether gaps are real."
+        )
 
     limitations = list(best.cv.limitations) if best.cv is not None else []
     limitations.append(
@@ -1600,14 +1913,16 @@ def _resolve_inner_search(
     recipe_space: OptunaSpace | None,
 ) -> SearchMethod:
     """Resolve nested-CV inner search method from explicit choice or spaces."""
-    has_optuna = param_space is not None or recipe_space is not None
+    has_space = param_space is not None or recipe_space is not None
     has_grid = param_grid is not None or recipe_grid is not None
     has_random = param_distributions is not None or recipe_distributions is not None
 
     if inner_search == "optuna":
         return "optuna"
+    if inner_search == "evolutionary":
+        return "evolutionary"
     if inner_search == "grid":
-        if has_optuna:
+        if has_space:
             raise ValidationError(
                 "inner_search='grid' cannot be combined with param_space/recipe_space"
             )
@@ -1615,16 +1930,16 @@ def _resolve_inner_search(
             raise ValidationError("inner_search='grid' requires param_grid and/or recipe_grid")
         return "grid"
     if inner_search == "randomized":
-        if has_optuna:
+        if has_space:
             raise ValidationError(
                 "inner_search='randomized' cannot be combined with param_space/recipe_space"
             )
         return "randomized"
-    # auto
-    if has_optuna:
+    # auto — declare/callable spaces default to Optuna (not evolutionary).
+    if has_space:
         if has_grid or has_random:
             raise ValidationError(
-                "Provide either Optuna spaces (param_space/recipe_space) or "
+                "Provide either Optuna/evolutionary spaces (param_space/recipe_space) or "
                 "grid/randomized spaces, not both; or set inner_search explicitly"
             )
         return "optuna"
@@ -1639,6 +1954,190 @@ def _resolve_inner_search(
         "(param_grid/param_distributions/param_space and/or "
         "recipe_grid/recipe_distributions/recipe_space)"
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _GeneSpec:
+    """One searchable gene in an evolutionary HPO genome."""
+
+    name: str
+    kind: Literal["float", "int", "categorical"]
+    low: float | None = None
+    high: float | None = None
+    log: bool = False
+    choices: tuple[Any, ...] | None = None
+
+
+def _parse_evolutionary_genes(
+    *,
+    param_space: EvolutionarySpace | None,
+    recipe_space: EvolutionarySpace | None,
+) -> list[_GeneSpec]:
+    genes: list[_GeneSpec] = []
+    if param_space:
+        for name, spec in param_space.items():
+            key = name if name.startswith("recipe__") else name
+            genes.append(_gene_from_spec(key, spec))
+    if recipe_space:
+        for name, spec in recipe_space.items():
+            if name in SAFE_RECIPE_KNOBS:
+                gene_name = name
+            elif name.startswith("recipe__"):
+                gene_name = name
+            else:
+                gene_name = f"recipe__{name}"
+            genes.append(_gene_from_spec(gene_name, spec))
+    # De-dupe by name (recipe_space wins on collision).
+    by_name: dict[str, _GeneSpec] = {g.name: g for g in genes}
+    return list(by_name.values())
+
+
+def _gene_from_spec(name: str, spec: Any) -> _GeneSpec:
+    if isinstance(spec, (list, tuple)):
+        choices = tuple(spec)
+        if not choices:
+            raise ValidationError(f"Evolutionary categorical space '{name}' needs non-empty choices")
+        return _GeneSpec(name=name, kind="categorical", choices=choices)
+    if not isinstance(spec, dict):
+        raise ValidationError(
+            f"Evolutionary space entry '{name}' must be a dict spec or a list of choices"
+        )
+    kind = str(spec.get("type", "")).lower()
+    if kind == "float":
+        low = float(spec["low"])
+        high = float(spec["high"])
+        if high < low:
+            raise ValidationError(f"Evolutionary float space '{name}' has high < low")
+        return _GeneSpec(
+            name=name,
+            kind="float",
+            low=low,
+            high=high,
+            log=bool(spec.get("log", False)),
+        )
+    if kind == "int":
+        low_i = int(spec["low"])
+        high_i = int(spec["high"])
+        if high_i < low_i:
+            raise ValidationError(f"Evolutionary int space '{name}' has high < low")
+        return _GeneSpec(name=name, kind="int", low=float(low_i), high=float(high_i))
+    if kind == "categorical":
+        choices = tuple(spec.get("choices") or [])
+        if not choices:
+            raise ValidationError(f"Evolutionary categorical space '{name}' needs non-empty choices")
+        return _GeneSpec(name=name, kind="categorical", choices=choices)
+    raise ValidationError(
+        f"Unsupported evolutionary space type '{kind}' for '{name}'. "
+        "Use float, int, or categorical."
+    )
+
+
+def _sample_evolutionary_individual(
+    genes: list[_GeneSpec],
+    rng: np.random.Generator,
+) -> dict[str, Any]:
+    individual: dict[str, Any] = {}
+    for gene in genes:
+        individual[gene.name] = _sample_gene(gene, rng)
+    return individual
+
+
+def _sample_gene(gene: _GeneSpec, rng: np.random.Generator) -> Any:
+    if gene.kind == "categorical":
+        assert gene.choices is not None
+        return gene.choices[int(rng.integers(0, len(gene.choices)))]
+    assert gene.low is not None and gene.high is not None
+    if gene.kind == "int":
+        return int(rng.integers(int(gene.low), int(gene.high) + 1))
+    if gene.log:
+        if gene.low <= 0 or gene.high <= 0:
+            raise ValidationError(f"Log-float gene '{gene.name}' requires low/high > 0")
+        log_low = float(np.log(gene.low))
+        log_high = float(np.log(gene.high))
+        return float(np.exp(rng.uniform(log_low, log_high)))
+    return float(rng.uniform(gene.low, gene.high))
+
+
+def _mutate_individual(
+    individual: dict[str, Any],
+    genes: list[_GeneSpec],
+    mutation_rate: float,
+    rng: np.random.Generator,
+) -> dict[str, Any]:
+    child = dict(individual)
+    for gene in genes:
+        if rng.random() >= mutation_rate:
+            continue
+        if gene.kind == "categorical":
+            child[gene.name] = _sample_gene(gene, rng)
+            continue
+        assert gene.low is not None and gene.high is not None
+        if gene.kind == "int":
+            # Small integer step, else full resample.
+            current = int(child.get(gene.name, int(gene.low)))
+            if rng.random() < 0.5:
+                step = int(rng.choice([-2, -1, 1, 2]))
+                child[gene.name] = int(np.clip(current + step, int(gene.low), int(gene.high)))
+            else:
+                child[gene.name] = _sample_gene(gene, rng)
+            continue
+        # Float: multiplicative/additive jitter in-range, else resample.
+        current_f = float(child.get(gene.name, gene.low))
+        if gene.log and current_f > 0:
+            factor = float(np.exp(rng.normal(0.0, 0.25)))
+            mutated = float(np.clip(current_f * factor, gene.low, gene.high))
+        else:
+            span = gene.high - gene.low
+            mutated = float(np.clip(current_f + rng.normal(0.0, 0.1 * span), gene.low, gene.high))
+        child[gene.name] = mutated
+    return child
+
+
+def _uniform_crossover(
+    parent1: dict[str, Any],
+    parent2: dict[str, Any],
+    genes: list[_GeneSpec],
+    rng: np.random.Generator,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    child1 = dict(parent1)
+    child2 = dict(parent2)
+    for gene in genes:
+        if rng.random() < 0.5:
+            child1[gene.name], child2[gene.name] = parent2[gene.name], parent1[gene.name]
+    return child1, child2
+
+
+def _tournament_select(
+    population: list[dict[str, Any]],
+    fitness: list[SearchTrial],
+    tournament_size: int,
+    higher_is_better: bool,
+    rng: np.random.Generator,
+) -> dict[str, Any]:
+    n = len(population)
+    k = min(tournament_size, n)
+    idxs = [int(i) for i in rng.choice(n, size=k, replace=False)]
+    best = idxs[0]
+    for idx in idxs[1:]:
+        if higher_is_better:
+            if fitness[idx].mean_score > fitness[best].mean_score:
+                best = idx
+        elif fitness[idx].mean_score < fitness[best].mean_score:
+            best = idx
+    return dict(population[best])
+
+
+def _genome_key(individual: dict[str, Any]) -> tuple[tuple[str, Any], ...]:
+    items: list[tuple[str, Any]] = []
+    for key in sorted(individual):
+        value = individual[key]
+        if isinstance(value, (float, np.floating)):
+            items.append((key, round(float(value), 12)))
+        elif isinstance(value, (int, np.integer)) and not isinstance(value, bool):
+            items.append((key, int(value)))
+        else:
+            items.append((key, value))
+    return tuple(items)
 
 
 def _require_recipe_for_knobs(preprocess: PreprocessRecipe | None, needs_recipe: bool) -> None:

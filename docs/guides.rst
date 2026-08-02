@@ -20,6 +20,30 @@ guides carry use cases, many examples, failure modes, and cross-links.
    :caption: Quickstarts
 
    quickstart-classical
+   quickstart-unsupervised
+   quickstart-ensemble
+   quickstart-automl
+   quickstart-forecasting
+   quickstart-anomaly
+   quickstart-semisupervised
+   quickstart-selfsupervised
+   quickstart-active-learning
+   quickstart-online-learning
+   quickstart-multi-task
+   quickstart-meta-learning
+   quickstart-federated
+   quickstart-probabilistic
+   quickstart-causal
+   quickstart-graph
+   quickstart-symbolic
+   quickstart-cbr
+   quickstart-imitation-rl
+   quickstart-tda
+   quickstart-recommenders
+   quickstart-ranking
+   quickstart-kg
+   quickstart-optimize
+   quickstart-synthetic
    quickstart-torch
    quickstart-rag
    quickstart-ai
@@ -35,6 +59,30 @@ guides carry use cases, many examples, failure modes, and cross-links.
    eda-teaching-studio
    classical-diagnostics-search
    artifacts-checkpoints-bundles
+   unsupervised-deep
+   ensemble-deep
+   automl-deep
+   forecasting-deep
+   anomaly-deep
+   semisupervised-deep
+   selfsupervised-deep
+   active-learning-deep
+   online-learning-deep
+   multi-task-deep
+   meta-learning-deep
+   federated-deep
+   probabilistic-deep
+   causal-deep
+   graph-deep
+   symbolic-deep
+   cbr-deep
+   imitation-rl-deep
+   tda-deep
+   recommenders-deep
+   ranking-deep
+   kg-deep
+   optimize-deep
+   synthetic-deep
 
 .. toctree::
    :maxdepth: 1

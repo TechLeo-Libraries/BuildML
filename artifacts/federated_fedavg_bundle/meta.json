@@ -1,0 +1,346 @@
+{
+  "format": "buildml.federated_bundle.v1",
+  "buildml_version": "2.4.0a1",
+  "compatibility": "Federated bundles, meta-learning bundles, multi-task bundles, online bundles, active-learning bundles, semi-supervised bundles, self-supervised bundles, anomaly bundles, unsupervised bundles, classical pipeline bundles, Torch trainer bundles, RAG bundles, and Session checkpoints are complementary, not interchangeable. A federated bundle (buildml.federated_bundle.v1) stores a FederatedPlan (global linear/SGD model + client partition contract + round history). A Session checkpoint stores data, roles, splits, history, and optional classical preprocess plans; it does not embed the federated global model. Reload tabular workflow via checkpoint_load; reload the learner via load_federated_bundle. This is a local FedAvg-style simulation \u2014 not a distributed FL network stack and not cryptographic secure aggregation.",
+  "plan": {
+    "method": "fedavg",
+    "estimator_name": "sgd_classifier",
+    "task": "classification",
+    "columns": [
+      "x",
+      "y"
+    ],
+    "target_column": "label",
+    "client_column": "client_id",
+    "client_ids": [
+      "c5",
+      "c4",
+      "c7",
+      "c1",
+      "c6",
+      "c0",
+      "c2",
+      "c3"
+    ],
+    "n_clients": 8,
+    "n_train_rows": 230,
+    "n_rounds": 6,
+    "local_epochs": 2,
+    "client_fraction": 1.0,
+    "mu": 0.0,
+    "classes": [
+      0,
+      1
+    ],
+    "n_rounds_completed": 6,
+    "round_history": [
+      {
+        "round": 1,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 2,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 3,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 4,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 5,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 6,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      }
+    ],
+    "disclosures": [
+      "Federated client column taken from role='group' column: 'client_id'.",
+      "Federated target taken from role='target' column: 'label'.",
+      "Classification class vocabulary discovered from the full train target column (labels only \u2014 client features used only during that client's local updates). classes=[0, 1].",
+      "Local updates used sklearn partial_fit for sgd_classifier (2 epoch(s) per selected client).",
+      "Federated fit uses the train partition only; validation/test are never used for local client updates.",
+      "Each client sees only its own train rows during local updates.",
+      "Aggregation is in-process weighted coefficient averaging (FedAvg / weighted-by-n) \u2014 not cryptographic secure aggregation.",
+      "Honesty: local FL simulation for research/teaching/workflows \u2014 not a distributed FL platform (not Flower/OpenFL).",
+      "method=fedavg, estimator=sgd_classifier, n_clients=8, n_rounds=6, local_epochs=2, client_fraction=1.0, mu=0.0, n_train_rows=230."
+    ],
+    "warnings": [],
+    "used_reduce_components": false,
+    "config": {
+      "method": "fedavg",
+      "estimator": "sgd_classifier",
+      "task": "classification",
+      "client_column": "client_id",
+      "columns": [
+        "x",
+        "y"
+      ],
+      "n_rounds": 6,
+      "local_epochs": 2,
+      "client_fraction": 1.0,
+      "mu": 0.0,
+      "random_state": 0,
+      "prefer_reduce_components": true,
+      "min_client_rows": 2
+    }
+  },
+  "fit": {
+    "method": "fedavg",
+    "estimator_name": "sgd_classifier",
+    "task": "classification",
+    "n_train_rows": 230,
+    "n_clients": 8,
+    "n_rounds": 6,
+    "local_epochs": 2,
+    "client_column": "client_id",
+    "columns": [
+      "x",
+      "y"
+    ],
+    "target_column": "label",
+    "final_train_metric": 1.0,
+    "n_rounds_completed": 6,
+    "round_history": [
+      {
+        "round": 1,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 2,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 3,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 4,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 5,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "round": 6,
+        "n_clients": 8,
+        "n_samples": 230,
+        "mean_client_train_metric": 1.0,
+        "client_ids": [
+          "c5",
+          "c4",
+          "c7",
+          "c1",
+          "c6",
+          "c0",
+          "c2",
+          "c3"
+        ]
+      }
+    ],
+    "used_reduce_components": false,
+    "disclosures": [
+      "Federated client column taken from role='group' column: 'client_id'.",
+      "Federated target taken from role='target' column: 'label'.",
+      "Classification class vocabulary discovered from the full train target column (labels only \u2014 client features used only during that client's local updates). classes=[0, 1].",
+      "Local updates used sklearn partial_fit for sgd_classifier (2 epoch(s) per selected client).",
+      "Federated fit uses the train partition only; validation/test are never used for local client updates.",
+      "Each client sees only its own train rows during local updates.",
+      "Aggregation is in-process weighted coefficient averaging (FedAvg / weighted-by-n) \u2014 not cryptographic secure aggregation.",
+      "Honesty: local FL simulation for research/teaching/workflows \u2014 not a distributed FL platform (not Flower/OpenFL).",
+      "method=fedavg, estimator=sgd_classifier, n_clients=8, n_rounds=6, local_epochs=2, client_fraction=1.0, mu=0.0, n_train_rows=230."
+    ],
+    "warnings": []
+  },
+  "eval": {
+    "partition": "validation",
+    "method": "fedavg",
+    "estimator_name": "sgd_classifier",
+    "task": "classification",
+    "n_rows": 58,
+    "metrics": {
+      "accuracy": 1.0,
+      "f1_macro": 1.0
+    },
+    "per_client_metrics": {
+      "c0": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "c1": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "c4": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "c6": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "c7": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "c5": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "c3": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "c2": {
+        "accuracy": 1.0,
+        "f1_macro": 1.0
+      }
+    },
+    "n_clients_evaluated": 8,
+    "disclosures": [
+      "Federated evaluation scores a holdout partition; rows were never used for local client updates during fit_federated.",
+      "Global model: method=fedavg, estimator=sgd_classifier, n_rounds_completed=6, n_clients_trained=8.",
+      "Honesty: local FL simulation metrics \u2014 not a networked FL benchmark.",
+      "Per-client holdout metrics reported for 8 client id(s) present on partition='validation'."
+    ],
+    "warnings": []
+  }
+}

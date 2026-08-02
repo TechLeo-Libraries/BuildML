@@ -56,6 +56,9 @@ from buildml.model.selection import (
     cv_score as run_cv_score,
 )
 from buildml.model.selection import (
+    evolutionary_search as run_evolutionary_search,
+)
+from buildml.model.selection import (
     grid_search as run_grid_search,
 )
 from buildml.model.selection import (

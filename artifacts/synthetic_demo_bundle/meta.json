@@ -1,0 +1,214 @@
+{
+  "format": "buildml.synthetic_bundle.v1",
+  "buildml_version": "2.4.0a1",
+  "compatibility": "Synthetic bundles and Session checkpoints are complementary, not interchangeable. A synthetic bundle (buildml.synthetic_bundle.v1) stores a fitted SynthesizerPlan (schema + generator state). A Session checkpoint stores data, roles, splits, history, and optionally a classical FitResult; it does not embed the SynthesizerPlan. Reload tabular workflow via checkpoint_load; reload the generator via load_synthetic_bundle. Honesty: train-fitted generators only \u2014 not differential privacy. Cross-link: Session.resample remains class-balance preprocessing (buildml[imbalanced]); this bundle is the reusable synthetic-data path.",
+  "plan": {
+    "method": "gaussian_copula",
+    "partition_fitted": "train",
+    "columns": [
+      "f0",
+      "f1",
+      "f2",
+      "f3",
+      "f4",
+      "f5",
+      "grp",
+      "y"
+    ],
+    "column_specs": [
+      {
+        "name": "f0",
+        "kind": "continuous",
+        "n_unique": 216,
+        "n_null": 0,
+        "categories": [],
+        "extras": {}
+      },
+      {
+        "name": "f1",
+        "kind": "continuous",
+        "n_unique": 216,
+        "n_null": 0,
+        "categories": [],
+        "extras": {}
+      },
+      {
+        "name": "f2",
+        "kind": "continuous",
+        "n_unique": 216,
+        "n_null": 0,
+        "categories": [],
+        "extras": {}
+      },
+      {
+        "name": "f3",
+        "kind": "continuous",
+        "n_unique": 216,
+        "n_null": 0,
+        "categories": [],
+        "extras": {}
+      },
+      {
+        "name": "f4",
+        "kind": "continuous",
+        "n_unique": 216,
+        "n_null": 0,
+        "categories": [],
+        "extras": {}
+      },
+      {
+        "name": "f5",
+        "kind": "continuous",
+        "n_unique": 216,
+        "n_null": 0,
+        "categories": [],
+        "extras": {}
+      },
+      {
+        "name": "grp",
+        "kind": "categorical",
+        "n_unique": 2,
+        "n_null": 0,
+        "categories": [
+          "low",
+          "high"
+        ],
+        "extras": {}
+      },
+      {
+        "name": "y",
+        "kind": "categorical",
+        "n_unique": 2,
+        "n_null": 0,
+        "categories": [
+          "0",
+          "1"
+        ],
+        "extras": {}
+      }
+    ],
+    "n_rows_fitted": 216,
+    "random_state": 0,
+    "config": {
+      "method": "gaussian_copula",
+      "partition": "train",
+      "columns": [
+        "f0",
+        "f1",
+        "f2",
+        "f3",
+        "f4",
+        "f5",
+        "grp",
+        "y"
+      ],
+      "random_state": 0,
+      "smooth_sigma": 0.0,
+      "correlation_ridge": 0.001,
+      "target_column": "y",
+      "k_neighbors": 5,
+      "sampling_strategy": "auto"
+    },
+    "disclosures": [
+      "method='gaussian_copula' fitted on partition='train' only (n=216).",
+      "Privacy honesty: synthetic generators are not a differential-privacy product. Bootstrap can emit near-duplicates of train rows; Gaussian copula and SMOTE can still memorize or leak training structure. Do not treat samples as anonymized releases without a dedicated privacy review.",
+      "Cross-link: Session.resample (buildml[imbalanced]) is class-balance preprocessing that mutates train membership in-place. The synthetic path (fit_synthesizer / sample_synthetic) fits a reusable generator and only merges when merge_mode='extend_train' is requested explicitly.",
+      "Holdout partitions are never used to fit the generator.",
+      "Gaussian copula models rank correlations via a multivariate normal latent; marginals use empirical CDFs (not a deep generative model / CTGAN)."
+    ],
+    "warnings": [],
+    "target_column": "y",
+    "roles_snapshot": {
+      "f0": "feature",
+      "f1": "feature",
+      "f2": "feature",
+      "f3": "feature",
+      "f4": "feature",
+      "f5": "feature",
+      "grp": "feature",
+      "y": "target"
+    },
+    "has_generator": true
+  },
+  "fit": {
+    "method": "gaussian_copula",
+    "partition": "train",
+    "n_rows": 216,
+    "n_columns": 8,
+    "column_kinds": {
+      "f0": "continuous",
+      "f1": "continuous",
+      "f2": "continuous",
+      "f3": "continuous",
+      "f4": "continuous",
+      "f5": "continuous",
+      "grp": "categorical",
+      "y": "categorical"
+    },
+    "disclosures": [
+      "method='gaussian_copula' fitted on partition='train' only (n=216).",
+      "Privacy honesty: synthetic generators are not a differential-privacy product. Bootstrap can emit near-duplicates of train rows; Gaussian copula and SMOTE can still memorize or leak training structure. Do not treat samples as anonymized releases without a dedicated privacy review.",
+      "Cross-link: Session.resample (buildml[imbalanced]) is class-balance preprocessing that mutates train membership in-place. The synthetic path (fit_synthesizer / sample_synthetic) fits a reusable generator and only merges when merge_mode='extend_train' is requested explicitly.",
+      "Holdout partitions are never used to fit the generator.",
+      "Gaussian copula models rank correlations via a multivariate normal latent; marginals use empirical CDFs (not a deep generative model / CTGAN)."
+    ],
+    "warnings": [],
+    "metrics": {
+      "n_rows_fitted": 216.0,
+      "n_columns": 8.0,
+      "n_continuous": 6.0,
+      "n_categorical": 2.0,
+      "n_integer": 0.0
+    }
+  },
+  "eval": {
+    "mode": "tstr",
+    "partition": "test",
+    "method": "gaussian_copula",
+    "n_real": 90,
+    "n_synthetic": 216,
+    "metrics": {
+      "score": 1.0,
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "task_is_classification": 1.0,
+      "trtr_score": 1.0,
+      "trtr_accuracy": 1.0,
+      "trtr_macro_f1": 1.0,
+      "trtr_task_is_classification": 1.0,
+      "tstr_gap_vs_trtr": 0.0
+    },
+    "per_column": {},
+    "disclosures": [
+      "mode='tstr' comparing synthetic(n=216) to real partition='test' (n=90).",
+      "Generator was fitted on train only (n=216).",
+      "Not a differential-privacy or membership-inference audit.",
+      "TSTR = train estimator on synthetic, evaluate on real holdout (utility proxy). Also reports TRTR baseline when train labels exist."
+    ],
+    "warnings": []
+  },
+  "sample": {
+    "method": "gaussian_copula",
+    "n_rows": 120,
+    "columns": [
+      "f0",
+      "f1",
+      "f2",
+      "f3",
+      "f4",
+      "f5",
+      "grp",
+      "y"
+    ],
+    "merged": false,
+    "merge_mode": "none",
+    "provenance_column": null,
+    "disclosures": [
+      "Sampled n=120 from method='gaussian_copula' (fitted on train n=216).",
+      "Frame returned without mutating Session roles/splits (merge_mode='none'). Pass merge_mode='extend_train' to append.",
+      "Synthetic rows are not real observations \u2014 provenance should be tracked."
+    ],
+    "warnings": [],
+    "has_frame": true
+  }
+}

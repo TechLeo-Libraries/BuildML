@@ -1,0 +1,297 @@
+{
+  "format": "buildml.symbolic_bundle.v1",
+  "buildml_version": "2.4.0a1",
+  "compatibility": "Symbolic bundles, classical pipeline bundles, Torch trainer bundles, RAG bundles, and Session checkpoints are complementary, not interchangeable. A symbolic bundle (buildml.symbolic_bundle.v1) stores a SymbolicPlan (rule knowledge base) and/or NeuroSymbolicPlan (sklearn base estimator + rules). A Session checkpoint stores data, roles, splits, history, and optional classical preprocess plans; it does not embed the symbolic / neuro-symbolic learner. Reload tabular workflow via checkpoint_load; reload the learner via load_symbolic_bundle. Honesty: structured tabular rules + optional sklearn hybrid \u2014 not Prolog/Z3/AGI.",
+  "kind": "symbolic",
+  "plan": {
+    "kind": "symbolic",
+    "source": "decision_tree",
+    "task": "classification",
+    "columns": [
+      "a",
+      "b"
+    ],
+    "target_column": "y",
+    "n_train_rows": 140,
+    "n_rules": 7,
+    "knowledge_base": {
+      "rules": [
+        {
+          "rule_id": "induced_tree_leaf_2",
+          "antecedents": [
+            {
+              "column": "a",
+              "op": "<=",
+              "value": -0.02693677879869938
+            },
+            {
+              "column": "b",
+              "op": "<=",
+              "value": 1.4595515727996826
+            }
+          ],
+          "consequent": "0",
+          "priority": 0,
+          "source": "induced_tree",
+          "strength": 1.0,
+          "hardness": "hard",
+          "kind": "classification",
+          "support": 65,
+          "confidence": 1.0
+        },
+        {
+          "rule_id": "induced_tree_leaf_3",
+          "antecedents": [
+            {
+              "column": "a",
+              "op": "<=",
+              "value": -0.02693677879869938
+            },
+            {
+              "column": "b",
+              "op": ">",
+              "value": 1.4595515727996826
+            }
+          ],
+          "consequent": "0",
+          "priority": 0,
+          "source": "induced_tree",
+          "strength": 1.0,
+          "hardness": "hard",
+          "kind": "classification",
+          "support": 5,
+          "confidence": 0.6
+        },
+        {
+          "rule_id": "induced_tree_leaf_6",
+          "antecedents": [
+            {
+              "column": "a",
+              "op": ">",
+              "value": -0.02693677879869938
+            },
+            {
+              "column": "b",
+              "op": "<=",
+              "value": -0.6905470490455627
+            },
+            {
+              "column": "a",
+              "op": "<=",
+              "value": 0.5553295761346817
+            }
+          ],
+          "consequent": "0",
+          "priority": 0,
+          "source": "induced_tree",
+          "strength": 1.0,
+          "hardness": "hard",
+          "kind": "classification",
+          "support": 8,
+          "confidence": 1.0
+        },
+        {
+          "rule_id": "induced_tree_leaf_7",
+          "antecedents": [
+            {
+              "column": "a",
+              "op": ">",
+              "value": -0.02693677879869938
+            },
+            {
+              "column": "b",
+              "op": "<=",
+              "value": -0.6905470490455627
+            },
+            {
+              "column": "a",
+              "op": ">",
+              "value": 0.5553295761346817
+            }
+          ],
+          "consequent": "1",
+          "priority": 0,
+          "source": "induced_tree",
+          "strength": 1.0,
+          "hardness": "hard",
+          "kind": "classification",
+          "support": 5,
+          "confidence": 0.8
+        },
+        {
+          "rule_id": "induced_tree_leaf_10",
+          "antecedents": [
+            {
+              "column": "a",
+              "op": ">",
+              "value": -0.02693677879869938
+            },
+            {
+              "column": "b",
+              "op": ">",
+              "value": -0.6905470490455627
+            },
+            {
+              "column": "a",
+              "op": "<=",
+              "value": 0.2233719378709793
+            },
+            {
+              "column": "b",
+              "op": "<=",
+              "value": 0.6143390834331512
+            }
+          ],
+          "consequent": "1",
+          "priority": 0,
+          "source": "induced_tree",
+          "strength": 1.0,
+          "hardness": "hard",
+          "kind": "classification",
+          "support": 5,
+          "confidence": 0.6
+        },
+        {
+          "rule_id": "induced_tree_leaf_11",
+          "antecedents": [
+            {
+              "column": "a",
+              "op": ">",
+              "value": -0.02693677879869938
+            },
+            {
+              "column": "b",
+              "op": ">",
+              "value": -0.6905470490455627
+            },
+            {
+              "column": "a",
+              "op": "<=",
+              "value": 0.2233719378709793
+            },
+            {
+              "column": "b",
+              "op": ">",
+              "value": 0.6143390834331512
+            }
+          ],
+          "consequent": "1",
+          "priority": 0,
+          "source": "induced_tree",
+          "strength": 1.0,
+          "hardness": "hard",
+          "kind": "classification",
+          "support": 5,
+          "confidence": 1.0
+        },
+        {
+          "rule_id": "induced_tree_leaf_12",
+          "antecedents": [
+            {
+              "column": "a",
+              "op": ">",
+              "value": -0.02693677879869938
+            },
+            {
+              "column": "b",
+              "op": ">",
+              "value": -0.6905470490455627
+            },
+            {
+              "column": "a",
+              "op": ">",
+              "value": 0.2233719378709793
+            }
+          ],
+          "consequent": "1",
+          "priority": 0,
+          "source": "induced_tree",
+          "strength": 1.0,
+          "hardness": "hard",
+          "kind": "classification",
+          "support": 47,
+          "confidence": 1.0
+        }
+      ],
+      "default_consequent": "0",
+      "columns_used": [
+        "a",
+        "b"
+      ],
+      "disclosures": [
+        "Rule provenance=induced_tree: sklearn DecisionTree fitted on Session train only, then exported as path rules. Not expert-declared.",
+        "Tree max_depth=4, min_samples_leaf=5."
+      ],
+      "provenance": "induced_tree",
+      "n_rules": 7
+    },
+    "classes": [
+      "0",
+      "1"
+    ],
+    "disclosures": [
+      "Rule provenance=induced_tree: sklearn DecisionTree fitted on Session train only, then exported as path rules. Not expert-declared.",
+      "Tree max_depth=4, min_samples_leaf=5.",
+      "Symbolic fit uses Session train only. Holdout is for evaluate_symbolic / predict_symbolic.",
+      "Honesty: structured tabular rules \u2014 not Prolog/Z3/AGI symbolic AI."
+    ],
+    "warnings": [],
+    "used_reduce_components": false,
+    "config": {
+      "source": "decision_tree",
+      "task": "classification",
+      "columns": [
+        "a",
+        "b"
+      ],
+      "random_state": 0,
+      "max_depth": 4,
+      "min_samples_leaf": 5,
+      "max_rules": 32,
+      "default_consequent": null,
+      "prefer_reduce_components": true
+    }
+  },
+  "fit": {
+    "source": "decision_tree",
+    "task": "classification",
+    "n_train_rows": 140,
+    "n_rules": 7,
+    "columns": [
+      "a",
+      "b"
+    ],
+    "target_column": "y",
+    "provenance": "induced_tree",
+    "classes": [
+      "0",
+      "1"
+    ],
+    "train_accuracy": 0.9642857142857143,
+    "disclosures": [
+      "Rule provenance=induced_tree: sklearn DecisionTree fitted on Session train only, then exported as path rules. Not expert-declared.",
+      "Tree max_depth=4, min_samples_leaf=5.",
+      "Symbolic fit uses Session train only. Holdout is for evaluate_symbolic / predict_symbolic.",
+      "Honesty: structured tabular rules \u2014 not Prolog/Z3/AGI symbolic AI."
+    ],
+    "warnings": []
+  },
+  "eval": {
+    "partition": "validation",
+    "path": "symbolic",
+    "task": "classification",
+    "n_rows": 36,
+    "metrics": {
+      "accuracy": 0.9166666666666666
+    },
+    "rule_coverage": 1.0,
+    "mean_rules_fired": 1.0,
+    "repair_rate": null,
+    "disclosures": [
+      "Holdout evaluation only \u2014 rules were not re-induced on this partition.",
+      "Rule provenance=induced_tree: sklearn DecisionTree fitted on Session train only, then exported as path rules. Not expert-declared.",
+      "Tree max_depth=4, min_samples_leaf=5."
+    ],
+    "warnings": []
+  }
+}

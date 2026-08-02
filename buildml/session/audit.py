@@ -310,6 +310,36 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
                 "text_features",
                 "reduce_dimensions",
                 "apply_custom_transform",
+                "fit_clusters",
+                "fit_voting",
+                "fit_stacking",
+                "fit_blending",
+                "run_automl",
+                "fit_forecast",
+                "fit_anomaly",
+                "fit_semisupervised",
+                "fit_ssl_pretext",
+                "finetune_ssl_head",
+                "fit_active_learner",
+                "fit_online",
+                "partial_fit_online",
+                "fit_multitask",
+                "fit_metalearning",
+                "fit_federated",
+                "fit_probabilistic",
+                "fit_causal",
+                "fit_graph",
+                "fit_symbolic",
+                "fit_neuro_symbolic",
+                "fit_cbr",
+                "fit_imitation",
+                "fit_rl",
+                "fit_tda",
+                "fit_recommender",
+                "fit_ranker",
+                "fit_kg",
+                "fit_decision_policy",
+                "fit_synthesizer",
                 "fit",
             )
         )
@@ -341,7 +371,15 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
         )
 
     if getattr(session, "_session_preprocess_applied", lambda: False)():
-        if "cv_score" in ops or "nested_cv_score" in ops or "grid_search" in ops:
+        if (
+            "cv_score" in ops
+            or "nested_cv_score" in ops
+            or "grid_search" in ops
+            or "randomized_search" in ops
+            or "optuna_search" in ops
+            or "evolutionary_search" in ops
+            or "run_automl" in ops
+        ):
             raw.append(
                 (
                     2,
@@ -395,7 +433,9 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
                     )
                 )
 
-    if getattr(session, "_fit_result", None) is not None and "tune_threshold" not in ops:
+    if getattr(session, "_fit_result", None) is not None and (
+        "tune_threshold" not in ops and "fit_decision_policy" not in ops
+    ):
         fit = getattr(session, "_fit_result", None)
         if getattr(fit, "task", None) == "classification":
             raw.append(
@@ -403,12 +443,13 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
                     4,
                     "low",
                     (
-                        "A classification fit exists without a recorded threshold sweep; "
-                        "default 0.5 may not match decision costs."
+                        "A classification fit exists without a recorded threshold / "
+                        "decision-policy step; default 0.5 may not match decision costs."
                     ),
                     "state.threshold_policy",
-                    "tune_threshold",
-                    "Use validation with explicit fp_cost/fn_cost when costs are known.",
+                    "fit_decision_policy",
+                    "Prefer fit_decision_policy(method='threshold', partition='validation', "
+                    "fp_cost=..., fn_cost=...) or classical tune_threshold on validation.",
                 )
             )
 
@@ -553,6 +594,8 @@ def build_prerequisite_graph_summary(
                     "load_pipeline",
                     "grid_search",
                     "randomized_search",
+                    "optuna_search",
+                    "evolutionary_search",
                 ),
             }.get(key, ())
             for provider in providers:
@@ -677,6 +720,95 @@ def _priority_order(names: Sequence[str]) -> list[str]:
         "select_features",
         "apply_custom_transform",
         "resample",
+        "fit_clusters",
+        "evaluate_clusters",
+        "fit_voting",
+        "fit_stacking",
+        "fit_blending",
+        "evaluate_ensemble",
+        "run_automl",
+        "evaluate_automl",
+        "fit_forecast",
+        "generate_forecast",
+        "evaluate_forecast",
+        "fit_anomaly",
+        "score_anomalies",
+        "evaluate_anomaly",
+        "fit_semisupervised",
+        "predict_semisupervised",
+        "evaluate_semisupervised",
+        "fit_ssl_pretext",
+        "transform_ssl",
+        "finetune_ssl_head",
+        "evaluate_ssl",
+        "fit_active_learner",
+        "suggest_query",
+        "label_rows",
+        "evaluate_active_learning",
+        "fit_online",
+        "partial_fit_online",
+        "predict_online",
+        "evaluate_online",
+        "fit_multitask",
+        "predict_multitask",
+        "evaluate_multitask",
+        "fit_metalearning",
+        "adapt_to_task",
+        "evaluate_metalearning",
+        "fit_federated",
+        "predict_federated",
+        "evaluate_federated",
+        "fit_probabilistic",
+        "predict_probabilistic",
+        "predict_interval",
+        "evaluate_probabilistic",
+        "declare_causal_assumptions",
+        "fit_causal",
+        "estimate_causal",
+        "evaluate_causal",
+        "refute_causal",
+        "set_graph",
+        "fit_graph",
+        "predict_graph",
+        "evaluate_graph",
+        "fit_symbolic",
+        "predict_symbolic",
+        "evaluate_symbolic",
+        "fit_neuro_symbolic",
+        "predict_neuro_symbolic",
+        "evaluate_neuro_symbolic",
+        "fit_cbr",
+        "retrieve_cases",
+        "predict_cbr",
+        "evaluate_cbr",
+        "retain_cbr",
+        "fit_imitation",
+        "predict_imitation_action",
+        "evaluate_imitation",
+        "fit_rl",
+        "act_rl",
+        "evaluate_rl",
+        "fit_tda",
+        "transform_tda",
+        "predict_tda",
+        "evaluate_tda",
+        "fit_recommender",
+        "recommend",
+        "evaluate_recommender",
+        "fit_ranker",
+        "rank",
+        "evaluate_ranker",
+        "fit_kg",
+        "score_triples",
+        "predict_links",
+        "query_kg",
+        "evaluate_kg",
+        "fit_decision_policy",
+        "apply_decisions",
+        "evaluate_decisions",
+        "fit_synthesizer",
+        "sample_synthetic",
+        "evaluate_synthetic",
         "fit",
         "evaluate",
         "calibration",

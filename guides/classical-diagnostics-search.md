@@ -80,7 +80,7 @@ iterative selection. Prefer validation until the recipe is frozen.
 
 ---
 
-## Use case — grid, randomized, and Optuna search
+## Use case — grid, randomized, Optuna, and evolutionary search
 
 ```python
 # Fold-local prep — do not Session-impute first
@@ -101,6 +101,22 @@ rand = session.randomized_search(
     preprocess=recipe,
 )
 print(rand.best_params)
+
+# In-tree NumPy GA (no extra). HPO backend — not neuroevolution / NAS.
+evo = session.evolutionary_search(
+    DecisionTreeClassifier(random_state=0),
+    param_space={
+        "max_depth": {"type": "int", "low": 2, "high": 8},
+        "min_samples_leaf": [1, 2, 3, 5],
+    },
+    population_size=8,
+    n_generations=4,
+    cv=3,
+    preprocess=recipe,
+    random_state=0,
+)
+print(evo.best_params, evo.best_score)
+# Generation history: evo.study["generation_best"]
 
 # Optional: pip install "buildml[optuna]"
 # opt = session.optuna_search(
@@ -142,6 +158,8 @@ session.fit(LogisticRegression(max_iter=500), task="classification")
 
 session.calibration(partition="validation")
 session.tune_threshold(partition="validation", fp_cost=1.0, fn_cost=5.0)
+# Persist the same operating point as a DecisionPlan (see guides/quickstart-optimize.md):
+# session.fit_decision_policy(method="threshold", partition="validation", fp_cost=1.0, fn_cost=5.0)
 session.feature_importance(partition="validation", n_repeats=8)
 session.learning_curve(
     LogisticRegression(max_iter=500),

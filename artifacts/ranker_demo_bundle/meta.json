@@ -1,0 +1,115 @@
+{
+  "format": "buildml.ranker_bundle.v1",
+  "buildml_version": "2.4.0a1",
+  "compatibility": "Ranker bundles, recommender bundles, RAG bundles, classical pipeline bundles, and Session checkpoints are complementary, not interchangeable. A ranker bundle (buildml.ranker_bundle.v1) stores a train-fitted RankerPlan (feature contract, standardization, pointwise or pairwise estimator). A Session checkpoint stores data, roles, splits, history, and optional classical preprocess plans; it does not embed the ranker. Reload tabular workflow via checkpoint_load; reload the ranker via load_ranker_bundle. Honesty: Session tabular LTR \u2014 not a search-engine product; distinct from RAG retrieve/generate and from recommender CF.",
+  "plan": {
+    "method": "pointwise",
+    "query_column": "query_id",
+    "item_column": "item_id",
+    "relevance_column": "relevance",
+    "feature_columns": [
+      "f1",
+      "f2",
+      "bm25"
+    ],
+    "pointwise_estimator": "ridge",
+    "pairwise_estimator": "ranksvm",
+    "n_train_rows": 300,
+    "n_train_queries": 30,
+    "n_features": 3,
+    "max_pairs_per_query": 80,
+    "relevance_threshold": 0.0,
+    "alpha": 1.0,
+    "C": 1.0,
+    "random_state": 0,
+    "group_split_disclosed": true,
+    "split_kind": "group",
+    "disclosures": [
+      "query_column='query_id' has role='group' (preferred for query-grouped splits).",
+      "relevance_column defaulted to Session target 'relevance'.",
+      "feature_columns defaulted to numeric feature roles: ['f1', 'f2', 'bm25'].",
+      "Tabular LTR: each row is a (query, item, features, relevance) judgment. Distinct from RAG chunk retrieve and from recommender user-item CF.",
+      "Split kind='group' with disjoint queries (train=30, test=12, validation=6).",
+      "pointwise: ridge regresses graded relevance on 3 standardized train features (30 queries, 300 rows).",
+      "Inference scores items within a query from frozen train features; holdout relevance labels are never used at fit."
+    ],
+    "warnings": [],
+    "config": {
+      "method": "pointwise",
+      "query_column": "query_id",
+      "item_column": "item_id",
+      "relevance_column": "relevance",
+      "feature_columns": [
+        "f1",
+        "f2",
+        "bm25"
+      ],
+      "pointwise_estimator": "ridge",
+      "pairwise_estimator": "ranksvm",
+      "k": 10,
+      "max_pairs_per_query": 80,
+      "relevance_threshold": 0.0,
+      "random_state": 0,
+      "alpha": 1.0,
+      "C": 1.0
+    }
+  },
+  "fit": {
+    "method": "pointwise",
+    "n_train_rows": 300,
+    "n_train_queries": 30,
+    "n_features": 3,
+    "query_column": "query_id",
+    "item_column": "item_id",
+    "relevance_column": "relevance",
+    "feature_columns": [
+      "f1",
+      "f2",
+      "bm25"
+    ],
+    "pointwise_estimator": "ridge",
+    "pairwise_estimator": null,
+    "n_pairwise_examples": null,
+    "disclosures": [
+      "query_column='query_id' has role='group' (preferred for query-grouped splits).",
+      "relevance_column defaulted to Session target 'relevance'.",
+      "feature_columns defaulted to numeric feature roles: ['f1', 'f2', 'bm25'].",
+      "Tabular LTR: each row is a (query, item, features, relevance) judgment. Distinct from RAG chunk retrieve and from recommender user-item CF.",
+      "Split kind='group' with disjoint queries (train=30, test=12, validation=6).",
+      "pointwise: ridge regresses graded relevance on 3 standardized train features (30 queries, 300 rows).",
+      "Inference scores items within a query from frozen train features; holdout relevance labels are never used at fit."
+    ],
+    "warnings": []
+  },
+  "eval": {
+    "partition": "test",
+    "method": "pointwise",
+    "k": 5,
+    "n_queries_scored": 12,
+    "n_holdout_rows": 120,
+    "metrics": {
+      "ndcg_at_k": 0.8403437691318293,
+      "map_at_k": 1.0,
+      "mrr_at_k": 1.0
+    },
+    "disclosures": [
+      "Holdout scored with frozen train ranker (no refit).",
+      "Per-query ranking: score all judgment rows for the query, then cut@K.",
+      "Binary relevance for MAP/MRR uses grade > 0.0.",
+      "Tabular LTR is not RAG nDCG/MRR on chunks; not recommender Precision@K CF."
+    ],
+    "warnings": []
+  },
+  "rank": {
+    "k": 5,
+    "n_queries": 12,
+    "method": "pointwise",
+    "n_ranked_items": 60,
+    "disclosures": [
+      "Ranked 12 query(ies) with frozen pointwise ranker.",
+      "Scores use train-fitted standardization; relevance labels are not used at rank time.",
+      "Tabular LTR is not RAG retrieve and not recommender CF."
+    ],
+    "warnings": []
+  }
+}

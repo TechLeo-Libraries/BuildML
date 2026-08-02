@@ -299,9 +299,11 @@ def nested_cv_score(
     recipe_distributions: dict[str, Any] | None = None,
     param_space: Any | None = None,
     recipe_space: Any | None = None,
-    inner_search: Literal['auto', 'grid', 'randomized', 'optuna'] = "auto",
+    inner_search: Literal['auto', 'grid', 'randomized', 'optuna', 'evolutionary'] = "auto",
     n_iter: int = 10,
     n_trials: int = 20,
+    population_size: int = 8,
+    n_generations: int = 3,
     random_state: int | None = 42,
     task: Literal['classification', 'regression', 'auto'] = "auto",
     outer_cv: int | Any = 5,
@@ -329,11 +331,14 @@ def nested_cv_score(
         Fold-local recipe knob space (at most one). Requires ``preprocess``.
     param_space / recipe_space:
         Optuna spaces when ``inner_search='optuna'`` (or ``auto`` with these
-        args). Requires ``pip install 'buildml[optuna]'``.
+        args). Declare-style dicts for ``inner_search='evolutionary'``.
+        Optuna requires ``pip install 'buildml[optuna]'``.
     inner_search:
-        ``auto``, ``grid``, ``randomized``, or ``optuna``.
+        ``auto``, ``grid``, ``randomized``, ``optuna``, or ``evolutionary``.
     n_trials:
-        Optuna inner trials per outer fold.
+        Optuna inner trials per outer fold; evolutionary ``max_evaluations``.
+    population_size / n_generations:
+        Evolutionary GA knobs when ``inner_search='evolutionary'``.
     outer_cv / inner_cv:
         Outer and inner fold counts or sklearn splitters.
     preprocess:
@@ -348,7 +353,7 @@ def nested_cv_score(
     post-selection generalization claim. Read ``mean_metrics`` /
     ``std_metrics`` for the outer estimate and
     ``outer_folds[*].best_params`` / ``best_recipe_knobs`` for chosen
-    configs (including Optuna winners).
+    configs (including Optuna / evolutionary winners).
     """
     session.assert_can_fit("train")
     result = run_nested_cv_score(
@@ -364,6 +369,8 @@ def nested_cv_score(
         inner_search=inner_search,
         n_iter=n_iter,
         n_trials=n_trials,
+        population_size=population_size,
+        n_generations=n_generations,
         random_state=random_state,
         task=task,
         outer_cv=outer_cv,
@@ -388,7 +395,11 @@ def nested_cv_score(
             "scoring_metric": scoring_metric,
             "search_method": result.search_method,
             "inner_search": inner_search,
-            "n_trials": n_trials if result.search_method == "optuna" else None,
+            "n_trials": n_trials if result.search_method in {"optuna", "evolutionary"} else None,
+            "population_size": population_size
+            if result.search_method == "evolutionary"
+            else None,
+            "n_generations": n_generations if result.search_method == "evolutionary" else None,
             "warm_start_studies": bool(warm_start_studies),
             "recipe_grid": None
             if recipe_grid is None
@@ -619,6 +630,99 @@ def optuna_search(
             "best_std": result.best_std,
             "ranking_metric": result.ranking_metric,
             "n_trials": len(result.trials),
+        },
+    )
+    return result
+
+
+def evolutionary_search(
+    session,
+    estimator: Any,
+    *,
+    param_space: dict[str, Any] | None = None,
+    recipe_space: dict[str, Any] | None = None,
+    population_size: int = 12,
+    n_generations: int = 5,
+    elite_size: int = 2,
+    crossover_rate: float = 0.7,
+    mutation_rate: float = 0.2,
+    tournament_size: int = 3,
+    max_evaluations: int | None = None,
+    random_state: int | None = 42,
+    task: Literal['classification', 'regression', 'auto'] = "auto",
+    cv: int | Any = 5,
+    cv_strategy: Literal['auto', 'kfold', 'stratified', 'group', 'stratified_group', 'time'] = "auto",
+    ranking_metric: str | None = None,
+    groups: pd.Series | None = None,
+    preprocess: PreprocessRecipe | None = None,
+    allow_session_global_preprocess: bool = False,
+    refit: bool = True,
+) -> SearchResult:
+    """Genetic-algorithm HPO with leakage-safe train-fold CV.
+
+    In-tree NumPy GA (population, tournament selection, crossover/mutation,
+    elitism) — not random search renamed, not NAS, not a swarm zoo.
+    ``param_space`` / ``recipe_space`` use the same declare-style float/int/
+    categorical forms as Optuna declare spaces (dicts only; no trial callables).
+    """
+    session.assert_can_fit("train")
+    result = run_evolutionary_search(
+        session.dataset,
+        session._split_plan,
+        estimator,
+        param_space=param_space,
+        recipe_space=recipe_space,
+        population_size=population_size,
+        n_generations=n_generations,
+        elite_size=elite_size,
+        crossover_rate=crossover_rate,
+        mutation_rate=mutation_rate,
+        tournament_size=tournament_size,
+        max_evaluations=max_evaluations,
+        random_state=random_state,
+        task=task,
+        cv=cv,
+        cv_strategy=cv_strategy,
+        ranking_metric=ranking_metric,
+        groups=groups,
+        preprocess=preprocess,
+        session_preprocess_applied=session._session_preprocess_applied(),
+        allow_session_global_preprocess=allow_session_global_preprocess,
+        refit=refit,
+    )
+    session._last_search = result
+    if refit and result.refit_result is not None:
+        session._fit_result = result.refit_result
+    session._record(
+        "evolutionary_search",
+        {
+            "estimator": type(estimator).__name__,
+            "population_size": population_size,
+            "n_generations": n_generations,
+            "elite_size": elite_size,
+            "crossover_rate": crossover_rate,
+            "mutation_rate": mutation_rate,
+            "tournament_size": tournament_size,
+            "max_evaluations": max_evaluations,
+            "random_state": random_state,
+            "task": task,
+            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv_strategy": cv_strategy,
+            "ranking_metric": ranking_metric,
+            "refit": refit,
+            "has_param_space": param_space is not None,
+            "has_recipe_space": recipe_space is not None,
+        },
+        result_summary={
+            "best_params": result.best_params,
+            "best_recipe_knobs": result.best_recipe_knobs,
+            "best_score": result.best_score,
+            "best_std": result.best_std,
+            "ranking_metric": result.ranking_metric,
+            "n_trials": len(result.trials),
+            "n_evaluations": None
+            if not isinstance(result.study, dict)
+            else result.study.get("n_evaluations"),
         },
     )
     return result

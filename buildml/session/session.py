@@ -42,13 +42,37 @@ from buildml.preprocess.text import TextFeaturePlan
 
 from . import (
     ai_ops,
+    anomaly_ops,
+    automl_ops,
     classical_ops,
     data_ops,
     dl_ops,
     eda_ops,
+    ensemble_ops,
+    forecast_ops,
     preprocess_ops,
     rag_ops,
+    activelearning_ops,
+    federated_ops,
+    metalearning_ops,
+    multitask_ops,
+    online_ops,
+    probabilistic_ops,
+    causal_ops,
+    graph_ops,
+    symbolic_ops,
+    cbr_ops,
+    rl_ops,
+    tda_ops,
+    recommender_ops,
+    ranking_ops,
+    kg_ops,
+    decision_ops,
+    synthetic_ops,
+    selfsupervised_ops,
+    semisupervised_ops,
     state,
+    unsupervised_ops,
     workflow_ops,
 )
 from .audit import DryRunReport, HistorySummary
@@ -75,6 +99,245 @@ if TYPE_CHECKING:
     from buildml.rag.generate import ChatProvider as RagChatProvider
     from buildml.rag.results import GenerateResult, IndexResult, RagEvalResult, RetrieveResult
     from buildml.rag.types import GenerateConfig, RetrieveConfig
+    from buildml.automl.results import AutoMLPlan, AutoMLResult
+    from buildml.automl.types import AutoMLBudget, AutoMLMethod, AutoMLSelection
+    from buildml.ensemble.results import EnsembleFitResult, EnsemblePlan
+    from buildml.ensemble.types import BlendMethod, VotingMethod
+    from buildml.forecasting.results import (
+        ForecastEvalResult,
+        ForecastFitResult,
+        ForecastGenerateResult,
+        ForecastPlan,
+    )
+    from buildml.forecasting.types import ForecastEvalStrategy, ForecastMethod
+    from buildml.anomaly.results import (
+        AnomalyEvalResult,
+        AnomalyFitResult,
+        AnomalyPlan,
+        AnomalyScoreResult,
+    )
+    from buildml.anomaly.types import AnomalyMethod, AnomalyMode, ThresholdPolicy
+    from buildml.semisupervised.results import (
+        SemiSupervisedEvalResult,
+        SemiSupervisedFitResult,
+        SemiSupervisedPlan,
+        SemiSupervisedPredictResult,
+    )
+    from buildml.semisupervised.types import SemiSupervisedMethod
+    from buildml.selfsupervised.results import (
+        SSLHeadFitResult,
+        SSLHeadPlan,
+        SelfSupervisedEvalResult,
+        SelfSupervisedFitResult,
+        SelfSupervisedPlan,
+        SelfSupervisedTransformResult,
+    )
+    from buildml.selfsupervised.types import SelfSupervisedMethod, SSLHeadEstimator
+    from buildml.activelearning.results import (
+        ActiveLearningEvalResult,
+        ActiveLearningFitResult,
+        ActiveLearningLabelResult,
+        ActiveLearningPlan,
+        ActiveLearningQueryResult,
+    )
+    from buildml.activelearning.types import ActiveLearningEstimator, ActiveLearningStrategy
+    from buildml.online.results import (
+        OnlineEvalResult,
+        OnlineFitResult,
+        OnlinePlan,
+        OnlinePredictResult,
+        OnlineUpdateResult,
+    )
+    from buildml.online.types import OnlineEstimator, OnlineTask
+    from buildml.multitask.results import (
+        MultiTaskEvalResult,
+        MultiTaskFitResult,
+        MultiTaskPlan,
+        MultiTaskPredictResult,
+    )
+    from buildml.multitask.types import (
+        MultiTaskBaseEstimator,
+        MultiTaskMethod,
+        MultiTaskTask,
+    )
+    from buildml.metalearning.results import (
+        MetaAdaptResult,
+        MetaLearningEvalResult,
+        MetaLearningFitResult,
+        MetaLearningPlan,
+    )
+    from buildml.metalearning.types import (
+        MetaLearningBaseEstimator,
+        MetaLearningMethod,
+    )
+    from buildml.federated.results import (
+        FederatedEvalResult,
+        FederatedFitResult,
+        FederatedPlan,
+        FederatedPredictResult,
+    )
+    from buildml.federated.types import (
+        FederatedEstimator,
+        FederatedMethod,
+        FederatedTask,
+    )
+    from buildml.probabilistic.results import (
+        ProbabilisticEvalResult,
+        ProbabilisticFitResult,
+        ProbabilisticIntervalResult,
+        ProbabilisticPlan,
+        ProbabilisticPredictResult,
+    )
+    from buildml.probabilistic.types import (
+        IntervalMethod,
+        ProbabilisticEstimator,
+        ProbabilisticTask,
+    )
+    from buildml.causal.results import (
+        CausalEstimateResult,
+        CausalEvalResult,
+        CausalFitResult,
+        CausalPlan,
+        CausalRefuteResult,
+    )
+    from buildml.causal.types import (
+        CausalAssumptions,
+        CausalMethod,
+        CausalRefuteKind,
+    )
+    from buildml.graph.results import (
+        GraphEvalResult,
+        GraphFitResult,
+        GraphPlan,
+        GraphPredictResult,
+    )
+    from buildml.graph.types import (
+        ClassicalEstimator,
+        GraphMethod,
+        GraphMode,
+        GraphSpec,
+        GraphTask,
+    )
+    from buildml.symbolic.results import (
+        NeuroSymbolicFitResult,
+        NeuroSymbolicPlan,
+        SymbolicEvalResult,
+        SymbolicFitResult,
+        SymbolicPlan,
+        SymbolicPredictResult,
+    )
+    from buildml.symbolic.rules import Rule
+    from buildml.symbolic.types import (
+        BaseEstimatorName,
+        NeuroSymbolicMode,
+        SymbolicSource,
+        SymbolicTask,
+    )
+    from buildml.cbr.results import (
+        CbrEvalResult,
+        CbrFitResult,
+        CbrPlan,
+        CbrPredictResult,
+        CbrRetainResult,
+        CbrRetrieveResult,
+    )
+    from buildml.cbr.types import (
+        CbrAdaptMode,
+        CbrMetric,
+        CbrReuseMode,
+        CbrTask,
+    )
+    from buildml.rl.results import (
+        ImitationEvalResult,
+        ImitationFitResult,
+        ImitationPlan,
+        ImitationPredictResult,
+        RlActResult,
+        RlEvalResult,
+        RlFitResult,
+        RlPlan,
+    )
+    from buildml.rl.types import (
+        BanditAlgorithm,
+        ImitationEstimator,
+        ImitationTask,
+        RlMode,
+    )
+    from buildml.tda.results import (
+        TdaEvalResult,
+        TdaFitResult,
+        TdaPlan,
+        TdaPredictResult,
+        TdaTransformResult,
+    )
+    from buildml.tda.types import TdaHead, TdaTask, Vectorization
+    from buildml.recommenders.results import (
+        RecommendResult,
+        RecommenderEvalResult,
+        RecommenderFitResult,
+        RecommenderPlan,
+    )
+    from buildml.recommenders.types import (
+        ColdStartPolicy,
+        FeedbackMode,
+        RecommenderMethod,
+    )
+    from buildml.ranking.results import (
+        RankerEvalResult,
+        RankerFitResult,
+        RankerPlan,
+        RankResult,
+    )
+    from buildml.ranking.types import (
+        PairwiseEstimator,
+        PointwiseEstimator,
+        RankerMethod,
+    )
+    from buildml.kg.results import (
+        KgEvalResult,
+        KgFitResult,
+        KgPlan,
+        KgQueryResult,
+        PredictLinksResult,
+        ScoreTriplesResult,
+    )
+    from buildml.kg.types import (
+        KgMethod,
+        KgNorm,
+        KgQueryMode,
+        LinkPredictionMode,
+    )
+    from buildml.optimize.results import (
+        ApplyDecisionsResult,
+        DecisionEvalResult,
+        DecisionFitResult,
+        DecisionPlan,
+    )
+    from buildml.optimize.types import (
+        AllocationObjective,
+        DecisionMethod,
+        KnapsackSolver,
+        ScoreSource,
+        TuningPartition,
+    )
+    from buildml.synthetic.results import (
+        SyntheticEvalResult,
+        SyntheticSampleResult,
+        SynthesizerFitResult,
+        SynthesizerPlan,
+    )
+    from buildml.synthetic.types import (
+        EvalMode,
+        MergeMode,
+        SynthesizerMethod,
+    )
+    from buildml.unsupervised.results import (
+        ClusterAssignResult,
+        ClusterEvalResult,
+        ClusterFitResult,
+        ClusterPlan,
+    )
+    from buildml.unsupervised.types import ClusterMethod
 
 
 class Session:
@@ -162,6 +425,118 @@ class Session:
         self._rag_retrieve_result: RetrieveResult | None = None
         self._rag_eval_result: RagEvalResult | None = None
         self._rag_generate_result: GenerateResult | None = None
+        self._cluster_plan: ClusterPlan | None = None
+        self._cluster_fit_result: ClusterFitResult | None = None
+        self._cluster_assign_result: ClusterAssignResult | None = None
+        self._cluster_eval_result: ClusterEvalResult | None = None
+        self._ensemble_plan: EnsemblePlan | None = None
+        self._ensemble_fit_result: EnsembleFitResult | None = None
+        self._automl_plan: AutoMLPlan | None = None
+        self._automl_result: AutoMLResult | None = None
+        self._forecast_plan: ForecastPlan | None = None
+        self._forecast_fit_result: ForecastFitResult | None = None
+        self._forecast_generate_result: ForecastGenerateResult | None = None
+        self._forecast_eval_result: ForecastEvalResult | None = None
+        self._anomaly_plan: AnomalyPlan | None = None
+        self._anomaly_fit_result: AnomalyFitResult | None = None
+        self._anomaly_score_result: AnomalyScoreResult | None = None
+        self._anomaly_eval_result: AnomalyEvalResult | None = None
+        self._semisupervised_plan: SemiSupervisedPlan | None = None
+        self._semisupervised_fit_result: SemiSupervisedFitResult | None = None
+        self._semisupervised_predict_result: SemiSupervisedPredictResult | None = None
+        self._semisupervised_eval_result: SemiSupervisedEvalResult | None = None
+        self._ssl_plan: SelfSupervisedPlan | None = None
+        self._ssl_fit_result: SelfSupervisedFitResult | None = None
+        self._ssl_transform_result: SelfSupervisedTransformResult | None = None
+        self._ssl_head_plan: SSLHeadPlan | None = None
+        self._ssl_head_fit_result: SSLHeadFitResult | None = None
+        self._ssl_eval_result: SelfSupervisedEvalResult | None = None
+        self._activelearning_plan: ActiveLearningPlan | None = None
+        self._activelearning_fit_result: ActiveLearningFitResult | None = None
+        self._activelearning_query_result: ActiveLearningQueryResult | None = None
+        self._activelearning_label_result: ActiveLearningLabelResult | None = None
+        self._activelearning_eval_result: ActiveLearningEvalResult | None = None
+        self._online_plan: OnlinePlan | None = None
+        self._online_fit_result: OnlineFitResult | None = None
+        self._online_update_result: OnlineUpdateResult | None = None
+        self._online_eval_result: OnlineEvalResult | None = None
+        self._online_predict_result: OnlinePredictResult | None = None
+        self._multitask_plan: MultiTaskPlan | None = None
+        self._multitask_fit_result: MultiTaskFitResult | None = None
+        self._multitask_predict_result: MultiTaskPredictResult | None = None
+        self._multitask_eval_result: MultiTaskEvalResult | None = None
+        self._metalearning_plan: MetaLearningPlan | None = None
+        self._metalearning_fit_result: MetaLearningFitResult | None = None
+        self._metalearning_adapt_result: MetaAdaptResult | None = None
+        self._metalearning_eval_result: MetaLearningEvalResult | None = None
+        self._federated_plan: FederatedPlan | None = None
+        self._federated_fit_result: FederatedFitResult | None = None
+        self._federated_eval_result: FederatedEvalResult | None = None
+        self._federated_predict_result: FederatedPredictResult | None = None
+        self._probabilistic_plan: ProbabilisticPlan | None = None
+        self._probabilistic_fit_result: ProbabilisticFitResult | None = None
+        self._probabilistic_eval_result: ProbabilisticEvalResult | None = None
+        self._probabilistic_predict_result: ProbabilisticPredictResult | None = None
+        self._probabilistic_interval_result: ProbabilisticIntervalResult | None = None
+        self._causal_assumptions: CausalAssumptions | None = None
+        self._causal_plan: CausalPlan | None = None
+        self._causal_fit_result: CausalFitResult | None = None
+        self._causal_estimate_result: CausalEstimateResult | None = None
+        self._causal_eval_result: CausalEvalResult | None = None
+        self._causal_refute_result: CausalRefuteResult | None = None
+        self._graph_spec: GraphSpec | None = None
+        self._graph_plan: GraphPlan | None = None
+        self._graph_fit_result: GraphFitResult | None = None
+        self._graph_predict_result: GraphPredictResult | None = None
+        self._graph_eval_result: GraphEvalResult | None = None
+        self._symbolic_plan: SymbolicPlan | None = None
+        self._symbolic_fit_result: SymbolicFitResult | None = None
+        self._symbolic_eval_result: SymbolicEvalResult | None = None
+        self._symbolic_predict_result: SymbolicPredictResult | None = None
+        self._neuro_symbolic_plan: NeuroSymbolicPlan | None = None
+        self._neuro_symbolic_fit_result: NeuroSymbolicFitResult | None = None
+        self._neuro_symbolic_predict_result: SymbolicPredictResult | None = None
+        self._cbr_plan: CbrPlan | None = None
+        self._cbr_fit_result: CbrFitResult | None = None
+        self._cbr_eval_result: CbrEvalResult | None = None
+        self._cbr_predict_result: CbrPredictResult | None = None
+        self._cbr_retrieve_result: CbrRetrieveResult | None = None
+        self._cbr_retain_result: CbrRetainResult | None = None
+        self._imitation_plan: ImitationPlan | None = None
+        self._imitation_fit_result: ImitationFitResult | None = None
+        self._imitation_eval_result: ImitationEvalResult | None = None
+        self._imitation_predict_result: ImitationPredictResult | None = None
+        self._rl_plan: RlPlan | None = None
+        self._rl_fit_result: RlFitResult | None = None
+        self._rl_eval_result: RlEvalResult | None = None
+        self._rl_act_result: RlActResult | None = None
+        self._tda_plan: TdaPlan | None = None
+        self._tda_fit_result: TdaFitResult | None = None
+        self._tda_eval_result: TdaEvalResult | None = None
+        self._tda_transform_result: TdaTransformResult | None = None
+        self._tda_predict_result: TdaPredictResult | None = None
+        self._recommender_plan: RecommenderPlan | None = None
+        self._recommender_fit_result: RecommenderFitResult | None = None
+        self._recommender_eval_result: RecommenderEvalResult | None = None
+        self._recommender_recommend_result: RecommendResult | None = None
+        self._ranker_plan: RankerPlan | None = None
+        self._ranker_fit_result: RankerFitResult | None = None
+        self._ranker_eval_result: RankerEvalResult | None = None
+        self._ranker_rank_result: RankResult | None = None
+        self._kg_plan: KgPlan | None = None
+        self._kg_fit_result: KgFitResult | None = None
+        self._kg_eval_result: KgEvalResult | None = None
+        self._kg_score_result: ScoreTriplesResult | None = None
+        self._kg_predict_result: PredictLinksResult | None = None
+        self._kg_query_result: KgQueryResult | None = None
+        self._decision_plan: DecisionPlan | None = None
+        self._decision_fit_result: DecisionFitResult | None = None
+        self._decision_eval_result: DecisionEvalResult | None = None
+        self._decision_apply_result: ApplyDecisionsResult | None = None
+        self._synthesizer_plan: SynthesizerPlan | None = None
+        self._synthetic_fit_result: SynthesizerFitResult | None = None
+        self._synthetic_eval_result: SyntheticEvalResult | None = None
+        self._synthetic_sample_result: SyntheticSampleResult | None = None
         self._ai_provider: ProviderProtocol | ProviderConfig | None = None
         self._ai_egress_config: EgressConfig | None = None
         self._ai_transcript: TranscriptStore | None = None
@@ -728,6 +1103,3108 @@ class Session:
     def reduce_plan(self) -> ReducePlan | None:
         """Last fitted dimensionality-reduction plan, if any."""
         return self._reduce_plan
+
+    def fit_clusters(
+        self,
+        *,
+        method: ClusterMethod = "kmeans",
+        n_clusters: int | None = 8,
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        n_init: int | str = "auto",
+        max_iter: int = 300,
+        linkage: str = "ward",
+        eps: float = 0.5,
+        min_samples: int = 5,
+        prefer_reduce_components: bool = True,
+        label_column: str = "cluster_id",
+    ) -> ClusterFitResult:
+        """Fit a clusterer on the train partition only.
+
+        Parameters
+        ----------
+        method:
+            ``kmeans`` (native predict), ``agglomerative`` (nearest-centroid
+            holdout assign with disclosure), or ``dbscan`` (nearest-core / noise).
+        n_clusters:
+            Required for kmeans/agglomerative; ignored for dbscan.
+        prefer_reduce_components:
+            When True and :meth:`reduce_dimensions` components are on the frame,
+            cluster those components instead of raw features.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Geometry is learned on train only.
+        Scale numeric inputs first for distance-based methods. This path is
+        distinct from EDA IsolationForest / correlation-cluster screens.
+        Dimensionality reduction stays on :meth:`reduce_dimensions` (PCA)."""
+        return unsupervised_ops.fit_clusters(
+            self,
+            method=method,
+            n_clusters=n_clusters,
+            columns=columns,
+            random_state=random_state,
+            n_init=n_init,
+            max_iter=max_iter,
+            linkage=linkage,
+            eps=eps,
+            min_samples=min_samples,
+            prefer_reduce_components=prefer_reduce_components,
+            label_column=label_column,
+        )
+
+    def assign_clusters(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        attach: bool = False,
+    ) -> ClusterAssignResult:
+        """Assign cluster labels with the train-fitted plan (no refit).
+
+        Parameters
+        ----------
+        partition:
+            ``train``, ``validation``, ``test``, or ``all``.
+        attach:
+            When True, requires ``partition='all'`` and writes ``label_column``
+            onto the Session frame as a feature role column."""
+        return unsupervised_ops.assign_clusters_op(
+            self, partition=partition, attach=attach
+        )
+
+    def evaluate_clusters(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        external_label_column: str | None = None,
+        sample_size: int | None = 2000,
+        random_state: int | None = 0,
+    ) -> ClusterEvalResult:
+        """Evaluate train-fitted clusters on a partition without refitting.
+
+        Internal metrics (silhouette, Calinski–Harabasz, Davies–Bouldin) describe
+        geometry — not supervised accuracy. Optional ``external_label_column``
+        adds ARI/NMI with disclosure. Defaults to validation, falling back to
+        test when no validation partition exists."""
+        return unsupervised_ops.evaluate_clusters(
+            self,
+            partition=partition,
+            external_label_column=external_label_column,
+            sample_size=sample_size,
+            random_state=random_state,
+        )
+
+    @property
+    def cluster_plan(self) -> ClusterPlan | None:
+        """Last fitted unsupervised :class:`~buildml.unsupervised.results.ClusterPlan`."""
+        return self._cluster_plan
+
+    @property
+    def cluster_fit_result(self) -> ClusterFitResult | None:
+        """Last :class:`~buildml.unsupervised.results.ClusterFitResult`, if any."""
+        return self._cluster_fit_result
+
+    @property
+    def cluster_assign_result(self) -> ClusterAssignResult | None:
+        """Last :class:`~buildml.unsupervised.results.ClusterAssignResult`, if any."""
+        return self._cluster_assign_result
+
+    @property
+    def cluster_eval_result(self) -> ClusterEvalResult | None:
+        """Last :class:`~buildml.unsupervised.results.ClusterEvalResult`, if any."""
+        return self._cluster_eval_result
+
+    def save_unsupervised_bundle(self, path: str | Path) -> Path:
+        """Persist the active cluster plan as ``buildml.unsupervised_bundle.v1``.
+
+        Distinct from Session checkpoints, classical pipelines, Torch trainer
+        bundles, and RAG bundles. See
+        :data:`buildml.unsupervised.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return unsupervised_ops.save_unsupervised_bundle_op(self, path=path)
+
+    def load_unsupervised_bundle(self, path: str | Path) -> Session:
+        """Load an unsupervised bundle into this Session."""
+        return unsupervised_ops.load_unsupervised_bundle_op(self, path=path)
+
+    def fit_voting(
+        self,
+        estimators: Mapping[str, Any] | Sequence[tuple[str, Any]],
+        *,
+        voting: VotingMethod = "hard",
+        weights: Sequence[float] | None = None,
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> EnsembleFitResult:
+        """Fit a VotingClassifier / VotingRegressor on the train partition only.
+
+        Parameters
+        ----------
+        estimators:
+            Mapping or sequence of ``(name, estimator)`` base learners.
+        voting:
+            ``hard`` or ``soft`` (classification; soft needs ``predict_proba``).
+        weights:
+            Optional per-estimator weights.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Fits on train only. Sets
+        :attr:`fit_result` so :meth:`evaluate` / :meth:`predict` /
+        :meth:`save_pipeline` work. Distinct from passing a single RandomForest
+        to :meth:`fit`."""
+        return ensemble_ops.fit_voting(
+            self, estimators, voting=voting, weights=weights, task=task
+        )
+
+    def fit_stacking(
+        self,
+        estimators: Mapping[str, Any] | Sequence[tuple[str, Any]],
+        *,
+        final_estimator: Any | None = None,
+        cv: int = 5,
+        passthrough: bool = False,
+        stack_method: str = "auto",
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> EnsembleFitResult:
+        """Fit a StackingClassifier / StackingRegressor on the train partition only.
+
+        Notes
+        -----
+        **Leakage:** Stacking CV folds stay inside train. Session test is never
+        used for out-of-fold meta features."""
+        return ensemble_ops.fit_stacking(
+            self,
+            estimators,
+            final_estimator=final_estimator,
+            cv=cv,
+            passthrough=passthrough,
+            stack_method=stack_method,
+            task=task,
+        )
+
+    def fit_blending(
+        self,
+        estimators: Mapping[str, Any] | Sequence[tuple[str, Any]],
+        *,
+        final_estimator: Any | None = None,
+        holdout_fraction: float = 0.2,
+        blend_method: BlendMethod = "predict_proba",
+        random_state: int | None = 0,
+        refit_bases_on_full_train: bool = True,
+        passthrough: bool = False,
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> EnsembleFitResult:
+        """Fit a holdout-blend ensemble on the train partition only.
+
+        The blend holdout is carved from **train** (not Session validation/test).
+        Prefer :meth:`fit_stacking` when you want CV out-of-fold meta features.
+
+        Notes
+        -----
+        **Leakage:** Meta-learner fits on an inner train holdout only. Bases are
+        optionally refit on full train for deployment (disclosed)."""
+        return ensemble_ops.fit_blending(
+            self,
+            estimators,
+            final_estimator=final_estimator,
+            holdout_fraction=holdout_fraction,
+            blend_method=blend_method,
+            random_state=random_state,
+            refit_bases_on_full_train=refit_bases_on_full_train,
+            passthrough=passthrough,
+            task=task,
+        )
+
+    def evaluate_ensemble(
+        self,
+        *,
+        partition: Literal["train", "validation", "test"] = "test",
+    ) -> EvaluateResult:
+        """Evaluate the last native ensemble with classical supervised metrics.
+
+        Same metric path as :meth:`evaluate`, with ensemble strategy disclosures
+        attached to recommendations / diagnostics."""
+        return ensemble_ops.evaluate_ensemble(self, partition=partition)
+
+    @property
+    def ensemble_plan(self) -> EnsemblePlan | None:
+        """Last fitted native :class:`~buildml.ensemble.results.EnsemblePlan`."""
+        return self._ensemble_plan
+
+    @property
+    def ensemble_fit_result(self) -> EnsembleFitResult | None:
+        """Last :class:`~buildml.ensemble.results.EnsembleFitResult`, if any."""
+        return self._ensemble_fit_result
+
+    def save_ensemble_bundle(self, path: str | Path) -> Path:
+        """Persist the active ensemble plan as ``buildml.ensemble_bundle.v1``.
+
+        Distinct from Session checkpoints and classical pipeline bundles. See
+        :data:`buildml.ensemble.checkpoint.CHECKPOINT_BOUNDARY`. Prefer
+        :meth:`save_pipeline` when preprocess plans must travel with the
+        estimator."""
+        return ensemble_ops.save_ensemble_bundle_op(self, path=path)
+
+    def load_ensemble_bundle(self, path: str | Path) -> Session:
+        """Load an ensemble bundle into this Session."""
+        return ensemble_ops.load_ensemble_bundle_op(self, path=path)
+
+    def run_automl(
+        self,
+        *,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        method: AutoMLMethod = "randomized",
+        selection: AutoMLSelection = "cv",
+        n_trials: int = 20,
+        cv: int | Any = 3,
+        outer_cv: int | Any = 3,
+        cv_strategy: Literal[
+            "auto", "kfold", "stratified", "group", "stratified_group", "time"
+        ] = "auto",
+        ranking_metric: str | None = None,
+        families: Sequence[str] | None = None,
+        include_recipe_search: bool = True,
+        include_ensembles: bool = False,
+        max_ensemble_bases: int = 3,
+        preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
+        refit: bool = True,
+        random_state: int | None = 0,
+        groups: pd.Series | None = None,
+        budget: AutoMLBudget | None = None,
+    ) -> AutoMLResult:
+        """Search model families and fold-local preprocess strategies on train.
+
+        Goes beyond single-estimator :meth:`grid_search` / :meth:`optuna_search`
+        by jointly ranking estimator **families**, discrete **recipe
+        strategies** (impute/scale/encode/select), modest hyperparameter
+        catalogs, and optionally voting ensembles of diverse top families.
+
+        Parameters
+        ----------
+        method:
+            ``randomized`` (default, no extra), ``grid``, or ``optuna``
+            (requires ``buildml[optuna]``).
+        selection:
+            ``cv`` (train-fold CV), ``nested`` (outer train estimate after
+            inner selection), or ``validation`` (rank on Session validation;
+            never test).
+        include_recipe_search:
+            Search discrete fold-local :class:`PreprocessRecipe` strategies.
+        include_ensembles:
+            Optionally score voting ensembles of diverse top families.
+        allow_session_global_preprocess:
+            Same hard refusal contract as classical CV/search.
+
+        Notes
+        -----
+        **Leakage:** Session test never enters selection. Fold-local recipes
+        refit on fold-train only. **Not** NAS, not causal discovery, not a
+        fully automated AI scientist — finite disclosed catalogs under a
+        trial budget. Sets :attr:`fit_result` so :meth:`evaluate` /
+        :meth:`predict` / :meth:`save_pipeline` work.
+        """
+        return automl_ops.run_automl_op(
+            self,
+            task=task,
+            method=method,
+            selection=selection,
+            n_trials=n_trials,
+            cv=cv,
+            outer_cv=outer_cv,
+            cv_strategy=cv_strategy,
+            ranking_metric=ranking_metric,
+            families=families,
+            include_recipe_search=include_recipe_search,
+            include_ensembles=include_ensembles,
+            max_ensemble_bases=max_ensemble_bases,
+            preprocess=preprocess,
+            allow_session_global_preprocess=allow_session_global_preprocess,
+            refit=refit,
+            random_state=random_state,
+            groups=groups,
+            budget=budget,
+        )
+
+    def evaluate_automl(
+        self,
+        *,
+        partition: Literal["train", "validation", "test"] = "test",
+    ) -> EvaluateResult:
+        """Evaluate the last AutoML winner with classical supervised metrics.
+
+        Same metric path as :meth:`evaluate`, with AutoML disclosures attached
+        to recommendations / diagnostics."""
+        return automl_ops.evaluate_automl(self, partition=partition)
+
+    @property
+    def automl_plan(self) -> AutoMLPlan | None:
+        """Last selected :class:`~buildml.automl.results.AutoMLPlan`."""
+        return self._automl_plan
+
+    @property
+    def automl_result(self) -> AutoMLResult | None:
+        """Last :class:`~buildml.automl.results.AutoMLResult`, if any."""
+        return self._automl_result
+
+    def save_automl_bundle(self, path: str | Path) -> Path:
+        """Persist the active AutoML plan as ``buildml.automl_bundle.v1``.
+
+        Distinct from Session checkpoints and classical pipeline bundles. See
+        :data:`buildml.automl.checkpoint.CHECKPOINT_BOUNDARY`. Prefer
+        :meth:`save_pipeline` when Session-global preprocess plans must travel
+        with the estimator."""
+        return automl_ops.save_automl_bundle_op(self, path=path)
+
+    def load_automl_bundle(self, path: str | Path) -> Session:
+        """Load an AutoML bundle into this Session."""
+        return automl_ops.load_automl_bundle_op(self, path=path)
+
+    def fit_forecast(
+        self,
+        *,
+        method: ForecastMethod = "lag_ridge",
+        horizon: int = 1,
+        lags: list[int] | tuple[int, ...] | None = None,
+        seasonal_period: int | None = None,
+        exog_columns: list[str] | None = None,
+        target_column: str | None = None,
+        time_column: str | None = None,
+        random_state: int | None = 0,
+        alpha: float = 1.0,
+        max_iter: int = 100,
+        max_depth: int | None = 3,
+        learning_rate: float = 0.1,
+    ) -> ForecastFitResult:
+        """Fit a classical forecaster on the train partition only.
+
+        Parameters
+        ----------
+        method:
+            ``naive``, ``seasonal_naive``, ``drift``, ``mean``, ``lag_ridge``,
+            or ``lag_hgb``.
+        horizon:
+            Default generate horizon stored on the plan.
+        lags:
+            Positive lag orders for lag models (defaults to ``(1, 2, 3, 7)``).
+        seasonal_period:
+            Required semantics for ``seasonal_naive`` (defaults to ``max(lags)``).
+        exog_columns:
+            Optional numeric exogenous columns. Empty ⇒ univariate.
+
+        Notes
+        -----
+        **Leakage:** Requires :meth:`time_split` (or chronologically ordered
+        :meth:`inject_split`). Random/stratified/group splits are refused.
+        Not a full econometrics suite and not a digital twin. Core
+        sklearn/numpy/pandas only — no Torch sequence model here.
+        """
+        return forecast_ops.fit_forecast(
+            self,
+            method=method,
+            horizon=horizon,
+            lags=lags,
+            seasonal_period=seasonal_period,
+            exog_columns=exog_columns,
+            target_column=target_column,
+            time_column=time_column,
+            random_state=random_state,
+            alpha=alpha,
+            max_iter=max_iter,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+        )
+
+    def generate_forecast(
+        self,
+        *,
+        horizon: int | None = None,
+        origin: str = "train_end",
+        future_exog: Any | None = None,
+    ) -> ForecastGenerateResult:
+        """Generate an H-step forecast from the train-fitted plan (no refit).
+
+        Parameters
+        ----------
+        horizon:
+            Steps ahead; defaults to the plan horizon.
+        origin:
+            ``train_end``, ``validation_end``, or ``test_end``.
+        future_exog:
+            Required when the plan uses exogenous columns.
+        """
+        return forecast_ops.generate_forecast_op(
+            self, horizon=horizon, origin=origin, future_exog=future_exog
+        )
+
+    def evaluate_forecast(
+        self,
+        *,
+        partition: PartitionName = "test",
+        strategy: ForecastEvalStrategy = "rolling_one_step",
+    ) -> ForecastEvalResult:
+        """Evaluate the train-fitted forecaster on a holdout partition.
+
+        Metrics: MAE, RMSE, MAPE (MAPE unstable near zero — disclosed).
+        Defaults to validation when requested but missing, falling back to test
+        via the ops layer for empty validation only when partition='validation'.
+        """
+        return forecast_ops.evaluate_forecast_op(
+            self, partition=partition, strategy=strategy
+        )
+
+    @property
+    def forecast_plan(self) -> ForecastPlan | None:
+        """Last fitted :class:`~buildml.forecasting.results.ForecastPlan`."""
+        return self._forecast_plan
+
+    @property
+    def forecast_fit_result(self) -> ForecastFitResult | None:
+        """Last :class:`~buildml.forecasting.results.ForecastFitResult`, if any."""
+        return self._forecast_fit_result
+
+    @property
+    def forecast_generate_result(self) -> ForecastGenerateResult | None:
+        """Last :class:`~buildml.forecasting.results.ForecastGenerateResult`, if any."""
+        return self._forecast_generate_result
+
+    @property
+    def forecast_eval_result(self) -> ForecastEvalResult | None:
+        """Last :class:`~buildml.forecasting.results.ForecastEvalResult`, if any."""
+        return self._forecast_eval_result
+
+    def save_forecast_bundle(self, path: str | Path) -> Path:
+        """Persist the active forecast plan as ``buildml.forecast_bundle.v1``.
+
+        Distinct from Session checkpoints, classical pipelines, Torch trainer
+        bundles, and RAG bundles. See
+        :data:`buildml.forecasting.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return forecast_ops.save_forecast_bundle_op(self, path=path)
+
+    def load_forecast_bundle(self, path: str | Path) -> Session:
+        """Load a forecast bundle into this Session."""
+        return forecast_ops.load_forecast_bundle_op(self, path=path)
+
+    def fit_anomaly(
+        self,
+        *,
+        method: AnomalyMethod = "isolation_forest",
+        mode: AnomalyMode = "unsupervised",
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        contamination: float = 0.05,
+        threshold_policy: ThresholdPolicy = "contamination",
+        score_threshold: float | None = None,
+        quantile: float | None = None,
+        n_estimators: int = 100,
+        max_samples: str | int | float = "auto",
+        n_neighbors: int = 20,
+        nu: float = 0.05,
+        kernel: str = "rbf",
+        gamma: str | float = "scale",
+        normal_label_column: str | None = None,
+        normal_label_value: Any = 0,
+        positive_label: Any = 1,
+        prefer_reduce_components: bool = True,
+        flag_column: str = "is_anomaly",
+        score_column: str = "anomaly_score",
+    ) -> AnomalyFitResult:
+        """Fit an anomaly / fraud detector on the train partition only.
+
+        Parameters
+        ----------
+        method:
+            ``isolation_forest``, ``lof``, ``one_class_svm``, or
+            ``supervised_hgb`` (binary classifier scores).
+        mode:
+            ``unsupervised`` (fit all train rows), ``novelty`` (normal-only
+            train subset via ``normal_label_column``), or ``supervised``.
+        contamination:
+            Prior alert fraction used when ``threshold_policy='contamination'``
+            (and IsolationForest/LOF contamination knobs).
+        threshold_policy:
+            ``contamination``, ``quantile``, ``score_threshold``, or
+            ``decision_zero`` (One-Class SVM).
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Detector fit on train only. Higher
+        ``anomaly_score`` means more anomalous; thresholds and alert rates are
+        always disclosed. Distinct from EDA IsolationForest screens and
+        :meth:`handle_outliers`. Not a graph-fraud or streaming platform; no
+        causal fraud claims. Clustering (:meth:`fit_clusters`) remains a
+        separate structure API.
+        """
+        return anomaly_ops.fit_anomaly(
+            self,
+            method=method,
+            mode=mode,
+            columns=columns,
+            random_state=random_state,
+            contamination=contamination,
+            threshold_policy=threshold_policy,
+            score_threshold=score_threshold,
+            quantile=quantile,
+            n_estimators=n_estimators,
+            max_samples=max_samples,
+            n_neighbors=n_neighbors,
+            nu=nu,
+            kernel=kernel,
+            gamma=gamma,
+            normal_label_column=normal_label_column,
+            normal_label_value=normal_label_value,
+            positive_label=positive_label,
+            prefer_reduce_components=prefer_reduce_components,
+            flag_column=flag_column,
+            score_column=score_column,
+        )
+
+    def score_anomalies(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        attach: bool = False,
+        override_threshold: float | None = None,
+    ) -> AnomalyScoreResult:
+        """Score and flag rows with the train-fitted anomaly plan (no refit).
+
+        Parameters
+        ----------
+        partition:
+            ``train``, ``validation``, ``test``, or ``all``.
+        attach:
+            When True, requires ``partition='all'`` and writes score/flag
+            columns onto the Session frame.
+        override_threshold:
+            Optional absolute threshold for this call only (does not mutate
+            the stored plan threshold).
+        """
+        return anomaly_ops.score_anomalies_op(
+            self,
+            partition=partition,
+            attach=attach,
+            override_threshold=override_threshold,
+        )
+
+    def evaluate_anomaly(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        label_column: str | None = None,
+        positive_label: Any | None = None,
+        k: int | None = None,
+        override_threshold: float | None = None,
+    ) -> AnomalyEvalResult:
+        """Evaluate train-fitted anomaly scores on a partition without refitting.
+
+        Always reports threshold and alert rate. When labels are available
+        (``label_column`` or a target role), also reports precision/recall/F1,
+        PR-AUC, ROC-AUC, and precision/recall@k with imbalance disclosures.
+        Defaults to validation, falling back to test when no validation
+        partition exists.
+        """
+        return anomaly_ops.evaluate_anomaly_op(
+            self,
+            partition=partition,
+            label_column=label_column,
+            positive_label=positive_label,
+            k=k,
+            override_threshold=override_threshold,
+        )
+
+    @property
+    def anomaly_plan(self) -> AnomalyPlan | None:
+        """Last fitted :class:`~buildml.anomaly.results.AnomalyPlan`."""
+        return self._anomaly_plan
+
+    @property
+    def anomaly_fit_result(self) -> AnomalyFitResult | None:
+        """Last :class:`~buildml.anomaly.results.AnomalyFitResult`, if any."""
+        return self._anomaly_fit_result
+
+    @property
+    def anomaly_score_result(self) -> AnomalyScoreResult | None:
+        """Last :class:`~buildml.anomaly.results.AnomalyScoreResult`, if any."""
+        return self._anomaly_score_result
+
+    @property
+    def anomaly_eval_result(self) -> AnomalyEvalResult | None:
+        """Last :class:`~buildml.anomaly.results.AnomalyEvalResult`, if any."""
+        return self._anomaly_eval_result
+
+    def save_anomaly_bundle(self, path: str | Path) -> Path:
+        """Persist the active anomaly plan as ``buildml.anomaly_bundle.v1``.
+
+        Distinct from Session checkpoints, unsupervised bundles, classical
+        pipelines, Torch trainer bundles, and RAG bundles. See
+        :data:`buildml.anomaly.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return anomaly_ops.save_anomaly_bundle_op(self, path=path)
+
+    def load_anomaly_bundle(self, path: str | Path) -> Session:
+        """Load an anomaly bundle into this Session."""
+        return anomaly_ops.load_anomaly_bundle_op(self, path=path)
+
+    def fit_semisupervised(
+        self,
+        *,
+        method: SemiSupervisedMethod = "label_propagation",
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        kernel: str = "knn",
+        n_neighbors: int = 7,
+        max_iter: int = 1000,
+        alpha: float = 0.2,
+        base_estimator: str = "logistic_regression",
+        threshold: float = 0.75,
+        criterion: str = "threshold",
+        k_best: int = 10,
+        max_self_train_iter: int = 10,
+        unlabeled_marker: Any = None,
+        prefer_reduce_components: bool = True,
+    ) -> SemiSupervisedFitResult:
+        """Fit a semi-supervised classifier on the train partition only.
+
+        Parameters
+        ----------
+        method:
+            ``label_propagation``, ``label_spreading``, or ``self_training``.
+        unlabeled_marker:
+            Extra sentinel treated as unlabeled. Default ``None`` means pandas
+            missing values (NaN) in the target role mark unlabeled rows.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Fit uses train only. Validation/test
+        never invent labels for model selection. Distinct from anomaly novelty
+        and from self-supervised pretext (:meth:`fit_ssl_pretext`).
+        """
+        return semisupervised_ops.fit_semisupervised_op(
+            self,
+            method=method,
+            columns=columns,
+            random_state=random_state,
+            kernel=kernel,
+            n_neighbors=n_neighbors,
+            max_iter=max_iter,
+            alpha=alpha,
+            base_estimator=base_estimator,
+            threshold=threshold,
+            criterion=criterion,
+            k_best=k_best,
+            max_self_train_iter=max_self_train_iter,
+            unlabeled_marker=unlabeled_marker,
+            prefer_reduce_components=prefer_reduce_components,
+        )
+
+    def predict_semisupervised(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        attach: bool = False,
+        prediction_column: str = "semisupervised_prediction",
+    ) -> SemiSupervisedPredictResult:
+        """Predict with the train-fitted semi-supervised plan (no refit)."""
+        return semisupervised_ops.predict_semisupervised_op(
+            self,
+            partition=partition,
+            attach=attach,
+            prediction_column=prediction_column,
+        )
+
+    def evaluate_semisupervised(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        unlabeled_marker: Any = None,
+    ) -> SemiSupervisedEvalResult:
+        """Evaluate semi-supervised predictions on labeled partition rows only.
+
+        Unlabeled holdout rows are disclosed and excluded from metrics. Defaults
+        to validation, falling back to test when no validation partition exists.
+        """
+        return semisupervised_ops.evaluate_semisupervised_op(
+            self,
+            partition=partition,
+            unlabeled_marker=unlabeled_marker,
+        )
+
+    @property
+    def semisupervised_plan(self) -> SemiSupervisedPlan | None:
+        """Last fitted :class:`~buildml.semisupervised.results.SemiSupervisedPlan`."""
+        return self._semisupervised_plan
+
+    @property
+    def semisupervised_fit_result(self) -> SemiSupervisedFitResult | None:
+        """Last :class:`~buildml.semisupervised.results.SemiSupervisedFitResult`."""
+        return self._semisupervised_fit_result
+
+    @property
+    def semisupervised_predict_result(self) -> SemiSupervisedPredictResult | None:
+        """Last :class:`~buildml.semisupervised.results.SemiSupervisedPredictResult`."""
+        return self._semisupervised_predict_result
+
+    @property
+    def semisupervised_eval_result(self) -> SemiSupervisedEvalResult | None:
+        """Last :class:`~buildml.semisupervised.results.SemiSupervisedEvalResult`."""
+        return self._semisupervised_eval_result
+
+    def save_semisupervised_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.semisupervised_bundle.v1``.
+
+        See :data:`buildml.semisupervised.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return semisupervised_ops.save_semisupervised_bundle_op(self, path=path)
+
+    def load_semisupervised_bundle(self, path: str | Path) -> Session:
+        """Load a semi-supervised bundle into this Session."""
+        return semisupervised_ops.load_semisupervised_bundle_op(self, path=path)
+
+    def fit_ssl_pretext(
+        self,
+        *,
+        method: SelfSupervisedMethod = "masked_tabular",
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        latent_dim: int = 16,
+        hidden: tuple[int, ...] | list[int] = (64,),
+        mask_ratio: float = 0.15,
+        n_mask_views: int = 3,
+        max_iter: int = 200,
+        prefer_reduce_components: bool = True,
+        representation_prefix: str = "ssl_emb",
+    ) -> SelfSupervisedFitResult:
+        """Fit a self-supervised tabular pretext on the train partition only.
+
+        Parameters
+        ----------
+        method:
+            Currently ``masked_tabular`` (masked reconstruction AE lite).
+        latent_dim:
+            Bottleneck width exported as representation columns.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Pretext fits on train features only
+        (labels ignored). Not BERT-from-scratch. Vision/audio/speech transfer
+        continues via :meth:`load_pretrained_backbone` /
+        :meth:`attach_backbone_head`.
+        """
+        return selfsupervised_ops.fit_ssl_pretext_op(
+            self,
+            method=method,
+            columns=columns,
+            random_state=random_state,
+            latent_dim=latent_dim,
+            hidden=hidden,
+            mask_ratio=mask_ratio,
+            n_mask_views=n_mask_views,
+            max_iter=max_iter,
+            prefer_reduce_components=prefer_reduce_components,
+            representation_prefix=representation_prefix,
+        )
+
+    def transform_ssl(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "train",
+        attach: bool = False,
+    ) -> SelfSupervisedTransformResult:
+        """Export SSL representations with the train-fitted pretext (no refit)."""
+        return selfsupervised_ops.transform_ssl_op(
+            self,
+            partition=partition,
+            attach=attach,
+        )
+
+    def finetune_ssl_head(
+        self,
+        *,
+        estimator: SSLHeadEstimator = "logistic_regression",
+        random_state: int | None = 0,
+        unlabeled_marker: Any = None,
+    ) -> SSLHeadFitResult:
+        """Fit a supervised head on frozen SSL embeddings (labeled train only).
+
+        Unlabeled train targets (NaN by default) are skipped. Holdout partitions
+        are evaluation-only; the pretext encoder is not updated.
+        """
+        return selfsupervised_ops.finetune_ssl_head_op(
+            self,
+            estimator=estimator,
+            random_state=random_state,
+            unlabeled_marker=unlabeled_marker,
+        )
+
+    def evaluate_ssl(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        unlabeled_marker: Any = None,
+    ) -> SelfSupervisedEvalResult:
+        """Evaluate frozen SSL pretext + head on labeled partition rows."""
+        return selfsupervised_ops.evaluate_ssl_op(
+            self,
+            partition=partition,
+            unlabeled_marker=unlabeled_marker,
+        )
+
+    @property
+    def ssl_plan(self) -> SelfSupervisedPlan | None:
+        """Last fitted :class:`~buildml.selfsupervised.results.SelfSupervisedPlan`."""
+        return self._ssl_plan
+
+    @property
+    def ssl_fit_result(self) -> SelfSupervisedFitResult | None:
+        """Last :class:`~buildml.selfsupervised.results.SelfSupervisedFitResult`."""
+        return self._ssl_fit_result
+
+    @property
+    def ssl_transform_result(self) -> SelfSupervisedTransformResult | None:
+        """Last :class:`~buildml.selfsupervised.results.SelfSupervisedTransformResult`."""
+        return self._ssl_transform_result
+
+    @property
+    def ssl_head_plan(self) -> SSLHeadPlan | None:
+        """Last :class:`~buildml.selfsupervised.results.SSLHeadPlan`, if any."""
+        return self._ssl_head_plan
+
+    @property
+    def ssl_head_fit_result(self) -> SSLHeadFitResult | None:
+        """Last :class:`~buildml.selfsupervised.results.SSLHeadFitResult`, if any."""
+        return self._ssl_head_fit_result
+
+    @property
+    def ssl_eval_result(self) -> SelfSupervisedEvalResult | None:
+        """Last :class:`~buildml.selfsupervised.results.SelfSupervisedEvalResult`."""
+        return self._ssl_eval_result
+
+    def save_ssl_bundle(self, path: str | Path) -> Path:
+        """Persist the active SSL plan as ``buildml.selfsupervised_bundle.v1``.
+
+        See :data:`buildml.selfsupervised.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return selfsupervised_ops.save_ssl_bundle_op(self, path=path)
+
+    def load_ssl_bundle(self, path: str | Path) -> Session:
+        """Load a self-supervised bundle into this Session."""
+        return selfsupervised_ops.load_ssl_bundle_op(self, path=path)
+
+    def fit_active_learner(
+        self,
+        *,
+        strategy: ActiveLearningStrategy = "margin",
+        base_estimator: ActiveLearningEstimator = "logistic_regression",
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        batch_size: int = 5,
+        label_budget: int | None = 50,
+        unlabeled_marker: Any = None,
+        prefer_reduce_components: bool = True,
+        committee_size: int = 5,
+        auto_refit: bool = True,
+    ) -> ActiveLearningFitResult:
+        """Fit / initialize an active learner on labeled train rows only.
+
+        Parameters
+        ----------
+        strategy:
+            ``least_confidence``, ``margin``, ``entropy``, ``committee``, or
+            ``expected_model_change_lite``.
+        label_budget:
+            Cap on labels acquired via :meth:`label_rows` (``None`` = unlimited).
+        unlabeled_marker:
+            Extra sentinel treated as unlabeled pool. Default ``None`` means
+            pandas missing values (NaN) in the target role mark the pool.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Fit uses labeled train rows only. The
+        query pool is train missingness — never validation/test. Labels come
+        from the user (no oracle in core). Distinct from
+        :meth:`fit_semisupervised` propagation and :meth:`fit_ssl_pretext`.
+        """
+        return activelearning_ops.fit_active_learner_op(
+            self,
+            strategy=strategy,
+            base_estimator=base_estimator,
+            columns=columns,
+            random_state=random_state,
+            batch_size=batch_size,
+            label_budget=label_budget,
+            unlabeled_marker=unlabeled_marker,
+            prefer_reduce_components=prefer_reduce_components,
+            committee_size=committee_size,
+            auto_refit=auto_refit,
+        )
+
+    def suggest_query(
+        self,
+        *,
+        batch_size: int | None = None,
+        strategy: ActiveLearningStrategy | None = None,
+    ) -> ActiveLearningQueryResult:
+        """Suggest unlabeled *train* indices for human labeling (no oracle).
+
+        Never queries validation/test. Honors the remaining label budget.
+        Low-level package alias: ``buildml.activelearning.query_indices``.
+        """
+        return activelearning_ops.suggest_query_op(
+            self,
+            batch_size=batch_size,
+            strategy=strategy,
+        )
+
+    def label_rows(
+        self,
+        *,
+        indices: list[Any] | tuple[Any, ...],
+        labels: list[Any] | tuple[Any, ...],
+        refit: bool | None = None,
+    ) -> ActiveLearningLabelResult:
+        """Incorporate user-provided labels on train-pool rows; optionally refit.
+
+        Labels must come from the user (or a test harness oracle). Core never
+        invents labels. Refuses validation/test indices and enforces
+        ``label_budget``.
+        """
+        return activelearning_ops.label_rows_op(
+            self,
+            indices=indices,
+            labels=labels,
+            refit=refit,
+        )
+
+    def evaluate_active_learning(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        unlabeled_marker: Any = None,
+    ) -> ActiveLearningEvalResult:
+        """Evaluate the active learner on labeled partition rows only.
+
+        Unlabeled holdout rows are disclosed and excluded from metrics. Defaults
+        to validation, falling back to test when no validation partition exists.
+        """
+        return activelearning_ops.evaluate_active_learning_op(
+            self,
+            partition=partition,
+            unlabeled_marker=unlabeled_marker,
+        )
+
+    @property
+    def activelearning_plan(self) -> ActiveLearningPlan | None:
+        """Last fitted :class:`~buildml.activelearning.results.ActiveLearningPlan`."""
+        return self._activelearning_plan
+
+    @property
+    def activelearning_fit_result(self) -> ActiveLearningFitResult | None:
+        """Last :class:`~buildml.activelearning.results.ActiveLearningFitResult`."""
+        return self._activelearning_fit_result
+
+    @property
+    def activelearning_query_result(self) -> ActiveLearningQueryResult | None:
+        """Last :class:`~buildml.activelearning.results.ActiveLearningQueryResult`."""
+        return self._activelearning_query_result
+
+    @property
+    def activelearning_label_result(self) -> ActiveLearningLabelResult | None:
+        """Last :class:`~buildml.activelearning.results.ActiveLearningLabelResult`."""
+        return self._activelearning_label_result
+
+    @property
+    def activelearning_eval_result(self) -> ActiveLearningEvalResult | None:
+        """Last :class:`~buildml.activelearning.results.ActiveLearningEvalResult`."""
+        return self._activelearning_eval_result
+
+    def save_active_learning_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.activelearning_bundle.v1``.
+
+        See :data:`buildml.activelearning.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return activelearning_ops.save_active_learning_bundle_op(self, path=path)
+
+    def load_active_learning_bundle(self, path: str | Path) -> Session:
+        """Load an active-learning bundle into this Session."""
+        return activelearning_ops.load_active_learning_bundle_op(self, path=path)
+
+    def fit_online(
+        self,
+        *,
+        estimator: OnlineEstimator = "sgd_classifier",
+        task: OnlineTask | None = None,
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        chunk_size: int = 50,
+        n_init: int | None = None,
+        indices: list[Any] | tuple[Any, ...] | None = None,
+        classes: list[Any] | tuple[Any, ...] | None = None,
+        prefer_reduce_components: bool = True,
+        allow_refit_fallback: bool = False,
+        drift_disclose: bool = True,
+    ) -> OnlineFitResult:
+        """Warm-start an incremental ``partial_fit`` estimator on a train chunk.
+
+        Parameters
+        ----------
+        estimator:
+            Sklearn ``partial_fit`` family name (``sgd_classifier``,
+            ``sgd_regressor``, ``passive_aggressive_*``, ``perceptron``,
+            ``multinomial_nb``, ``bernoulli_nb``).
+        classes:
+            Full class vocabulary for classifiers. When omitted, discovered from
+            the full train target column (labels only).
+        allow_refit_fallback:
+            If ``True``, estimators without ``partial_fit`` may full-refit on
+            cumulative seen rows with an explicit disclosure. Default ``False``
+            refuses silent full refits.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Init uses a train chunk only.
+        Validation/test are never used for updates. Honesty: batch/stream-chunk
+        Session updates — not a distributed streaming platform.
+        """
+        return online_ops.fit_online_op(
+            self,
+            estimator=estimator,
+            task=task,
+            columns=columns,
+            random_state=random_state,
+            chunk_size=chunk_size,
+            n_init=n_init,
+            indices=indices,
+            classes=classes,
+            prefer_reduce_components=prefer_reduce_components,
+            allow_refit_fallback=allow_refit_fallback,
+            drift_disclose=drift_disclose,
+        )
+
+    def partial_fit_online(
+        self,
+        *,
+        n_rows: int | None = None,
+        indices: list[Any] | tuple[Any, ...] | None = None,
+        frame: pd.DataFrame | None = None,
+    ) -> OnlineUpdateResult:
+        """Incremental ``partial_fit`` update on the next train chunk or frame.
+
+        Provide at most one of ``indices`` or ``frame``. Default advances the
+        train cursor by ``n_rows`` (or the plan ``chunk_size``). Refuses
+        validation/test indices.
+        """
+        return online_ops.partial_fit_online_op(
+            self,
+            n_rows=n_rows,
+            indices=indices,
+            frame=frame,
+        )
+
+    def evaluate_online(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+    ) -> OnlineEvalResult:
+        """Evaluate the online learner on a holdout partition (never for updates).
+
+        Defaults to validation, falling back to test when no validation
+        partition exists.
+        """
+        return online_ops.evaluate_online_op(self, partition=partition)
+
+    def predict_online(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+    ) -> OnlinePredictResult:
+        """Predict with the incremental online estimator (no update)."""
+        return online_ops.predict_online_op(self, partition=partition)
+
+    @property
+    def online_plan(self) -> OnlinePlan | None:
+        """Last fitted :class:`~buildml.online.results.OnlinePlan`."""
+        return self._online_plan
+
+    @property
+    def online_fit_result(self) -> OnlineFitResult | None:
+        """Last :class:`~buildml.online.results.OnlineFitResult`."""
+        return self._online_fit_result
+
+    @property
+    def online_update_result(self) -> OnlineUpdateResult | None:
+        """Last :class:`~buildml.online.results.OnlineUpdateResult`."""
+        return self._online_update_result
+
+    @property
+    def online_eval_result(self) -> OnlineEvalResult | None:
+        """Last :class:`~buildml.online.results.OnlineEvalResult`."""
+        return self._online_eval_result
+
+    @property
+    def online_predict_result(self) -> OnlinePredictResult | None:
+        """Last :class:`~buildml.online.results.OnlinePredictResult`."""
+        return self._online_predict_result
+
+    def save_online_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.online_bundle.v1``.
+
+        See :data:`buildml.online.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return online_ops.save_online_bundle_op(self, path=path)
+
+    def load_online_bundle(self, path: str | Path) -> Session:
+        """Load an online-learning bundle into this Session."""
+        return online_ops.load_online_bundle_op(self, path=path)
+
+    def fit_multitask(
+        self,
+        *,
+        method: MultiTaskMethod = "multi_output",
+        task: MultiTaskTask = "auto",
+        targets: list[str] | tuple[str, ...] | None = None,
+        columns: list[str] | None = None,
+        base_estimator: MultiTaskBaseEstimator | str = "logistic_regression",
+        random_state: int | None = 0,
+        order: list[str] | tuple[str, ...] | None = None,
+        prefer_reduce_components: bool = True,
+        prediction_prefix: str = "multitask_pred",
+    ) -> MultiTaskFitResult:
+        """Fit a multi-target MultiOutput / Chain estimator on train only.
+
+        Parameters
+        ----------
+        method:
+            ``multi_output``, ``classifier_chain``, or ``regressor_chain``.
+        task:
+            ``classification``, ``regression``, or ``auto`` (infers; refuses
+            mixed classification+regression targets).
+        targets:
+            Optional explicit target columns. When omitted, all
+            ``role='target'`` columns are used (requires ``>= 2``).
+        base_estimator:
+            Classification: ``logistic_regression``, ``hist_gradient_boosting``.
+            Regression: ``ridge``, ``hist_gradient_boosting_regressor``.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Fit uses train only. Validation/test are
+        never used for fitting. Classical :meth:`fit` remains single-target via
+        ``require_target()``. Honesty: sklearn MultiOutput / Chain on shared
+        features — not a deep multi-head MTL research platform.
+        """
+        return multitask_ops.fit_multitask_op(
+            self,
+            method=method,
+            task=task,
+            targets=targets,
+            columns=columns,
+            base_estimator=base_estimator,
+            random_state=random_state,
+            order=order,
+            prefer_reduce_components=prefer_reduce_components,
+            prediction_prefix=prediction_prefix,
+        )
+
+    def predict_multitask(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        attach: bool = False,
+        prediction_prefix: str | None = None,
+    ) -> MultiTaskPredictResult:
+        """Predict per-task outputs with the frozen multi-task plan (no refit).
+
+        ``attach=True`` requires ``partition='all'`` and writes
+        ``{prediction_prefix}_{target}`` feature columns.
+        """
+        return multitask_ops.predict_multitask_op(
+            self,
+            partition=partition,
+            attach=attach,
+            prediction_prefix=prediction_prefix,
+        )
+
+    def evaluate_multitask(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+    ) -> MultiTaskEvalResult:
+        """Evaluate multi-task predictions with per-task and aggregate metrics.
+
+        Defaults to validation, falling back to test when no validation
+        partition exists. Holdout rows are never used for fitting.
+        """
+        return multitask_ops.evaluate_multitask_op(self, partition=partition)
+
+    @property
+    def multitask_plan(self) -> MultiTaskPlan | None:
+        """Last fitted :class:`~buildml.multitask.results.MultiTaskPlan`."""
+        return self._multitask_plan
+
+    @property
+    def multitask_fit_result(self) -> MultiTaskFitResult | None:
+        """Last :class:`~buildml.multitask.results.MultiTaskFitResult`."""
+        return self._multitask_fit_result
+
+    @property
+    def multitask_predict_result(self) -> MultiTaskPredictResult | None:
+        """Last :class:`~buildml.multitask.results.MultiTaskPredictResult`."""
+        return self._multitask_predict_result
+
+    @property
+    def multitask_eval_result(self) -> MultiTaskEvalResult | None:
+        """Last :class:`~buildml.multitask.results.MultiTaskEvalResult`."""
+        return self._multitask_eval_result
+
+    def save_multitask_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.multitask_bundle.v1``.
+
+        See :data:`buildml.multitask.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return multitask_ops.save_multitask_bundle_op(self, path=path)
+
+    def load_multitask_bundle(self, path: str | Path) -> Session:
+        """Load a multi-task bundle into this Session."""
+        return multitask_ops.load_multitask_bundle_op(self, path=path)
+
+    def fit_metalearning(
+        self,
+        *,
+        method: MetaLearningMethod = "prototypical",
+        task_column: str | None = None,
+        columns: list[str] | None = None,
+        n_way: int | None = None,
+        k_shot: int = 5,
+        n_query: int = 10,
+        n_episodes: int = 20,
+        base_estimator: MetaLearningBaseEstimator | str = "logistic_regression",
+        random_state: int | None = 0,
+        prefer_reduce_components: bool = True,
+        task_holdout_fraction: float = 0.25,
+    ) -> MetaLearningFitResult:
+        """Meta-train a tabular few-shot / episodic learner on train tasks only.
+
+        Parameters
+        ----------
+        method:
+            ``prototypical`` (nearest-centroid) or ``warm_start`` (pooled
+            sklearn init + support adapt).
+        task_column:
+            Episodic task id column. When omitted, the single
+            ``role='group'`` column is used.
+        k_shot / n_query / n_episodes:
+            Episodic protocol knobs for meta-train disclosure metrics.
+        task_holdout_fraction:
+            Fraction of train task ids held out internally when enough
+            tasks exist (``>= 3``).
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Meta-train uses train only.
+        Validation/test are never used for meta-training. Needs exactly one
+        ``role='target'`` and a task/group column. Honesty: practical tabular
+        few-shot / episodic Session protocol — not foundation-model
+        meta-learning or MAML-at-scale.
+        """
+        return metalearning_ops.fit_metalearning_op(
+            self,
+            method=method,
+            task_column=task_column,
+            columns=columns,
+            n_way=n_way,
+            k_shot=k_shot,
+            n_query=n_query,
+            n_episodes=n_episodes,
+            base_estimator=base_estimator,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+            task_holdout_fraction=task_holdout_fraction,
+        )
+
+    def adapt_to_task(
+        self,
+        *,
+        task_id: Any | None = None,
+        partition: PartitionName = "train",
+        support_frame: Any | None = None,
+        max_support_per_class: int | None = None,
+        random_state: int | None = 0,
+    ) -> MetaAdaptResult:
+        """Fast-adapt the meta-learner to one task's labeled support set.
+
+        Provide ``task_id`` (rows pulled from ``partition``) or an explicit
+        ``support_frame``. Does not refit the global meta-train plan.
+        """
+        return metalearning_ops.adapt_to_task_op(
+            self,
+            task_id=task_id,
+            partition=partition,
+            support_frame=support_frame,
+            max_support_per_class=max_support_per_class,
+            random_state=random_state,
+        )
+
+    def evaluate_metalearning(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        k_shot: int | None = None,
+        n_query: int | None = None,
+        n_way: int | None = None,
+        prefer_novel_tasks: bool = True,
+        random_state: int | None = 0,
+    ) -> MetaLearningEvalResult:
+        """Evaluate episodic few-shot performance on a holdout partition.
+
+        Prefers novel task ids absent from meta-train. Defaults to
+        validation, falling back to test when no validation partition
+        exists. Holdout rows are never used for meta-training.
+        """
+        return metalearning_ops.evaluate_metalearning_op(
+            self,
+            partition=partition,
+            k_shot=k_shot,
+            n_query=n_query,
+            n_way=n_way,
+            prefer_novel_tasks=prefer_novel_tasks,
+            random_state=random_state,
+        )
+
+    @property
+    def metalearning_plan(self) -> MetaLearningPlan | None:
+        """Last fitted :class:`~buildml.metalearning.results.MetaLearningPlan`."""
+        return self._metalearning_plan
+
+    @property
+    def metalearning_fit_result(self) -> MetaLearningFitResult | None:
+        """Last :class:`~buildml.metalearning.results.MetaLearningFitResult`."""
+        return self._metalearning_fit_result
+
+    @property
+    def metalearning_adapt_result(self) -> MetaAdaptResult | None:
+        """Last :class:`~buildml.metalearning.results.MetaAdaptResult`."""
+        return self._metalearning_adapt_result
+
+    @property
+    def metalearning_eval_result(self) -> MetaLearningEvalResult | None:
+        """Last :class:`~buildml.metalearning.results.MetaLearningEvalResult`."""
+        return self._metalearning_eval_result
+
+    def save_metalearning_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.metalearning_bundle.v1``.
+
+        See :data:`buildml.metalearning.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return metalearning_ops.save_metalearning_bundle_op(self, path=path)
+
+    def load_metalearning_bundle(self, path: str | Path) -> Session:
+        """Load a meta-learning bundle into this Session."""
+        return metalearning_ops.load_metalearning_bundle_op(self, path=path)
+
+    def fit_federated(
+        self,
+        *,
+        method: FederatedMethod = "fedavg",
+        estimator: FederatedEstimator = "sgd_classifier",
+        task: FederatedTask | None = None,
+        client_column: str | None = None,
+        columns: list[str] | None = None,
+        n_rounds: int = 5,
+        local_epochs: int = 1,
+        client_fraction: float = 1.0,
+        mu: float = 0.0,
+        random_state: int | None = 0,
+        prefer_reduce_components: bool = True,
+        min_client_rows: int = 2,
+    ) -> FederatedFitResult:
+        """Simulate federated averaging on Session train clients.
+
+        Parameters
+        ----------
+        method:
+            ``fedavg`` (weighted coefficient averaging) or ``fedprox``
+            (FedAvg + proximal pull; requires ``mu > 0``).
+        estimator:
+            Linear / SGD family supporting ``coef_`` / ``intercept_``
+            aggregation (``sgd_classifier``, ``sgd_regressor``,
+            ``logistic_regression``, ``ridge``, ``linear_regression``).
+        client_column:
+            Client id column. When omitted, the single ``role='group'``
+            column is used.
+        n_rounds / local_epochs / client_fraction:
+            Federation schedule knobs.
+        mu:
+            FedProx proximal strength (required ``> 0`` when
+            ``method='fedprox'``).
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Local client updates use train only.
+        Validation/test are never used for training. Needs exactly one
+        ``role='target'`` and a client/group column. Honesty: local
+        FedAvg-style simulation on partitioned Session data — not a
+        distributed FL platform (Flower/OpenFL); not cryptographic secure
+        aggregation.
+        """
+        return federated_ops.fit_federated_op(
+            self,
+            method=method,
+            estimator=estimator,
+            task=task,
+            client_column=client_column,
+            columns=columns,
+            n_rounds=n_rounds,
+            local_epochs=local_epochs,
+            client_fraction=client_fraction,
+            mu=mu,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+            min_client_rows=min_client_rows,
+        )
+
+    def evaluate_federated(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        per_client: bool = True,
+    ) -> FederatedEvalResult:
+        """Evaluate the global federated model on a holdout partition.
+
+        Defaults to validation, falling back to test when no validation
+        partition exists. Holdout rows are never used for local updates.
+        """
+        return federated_ops.evaluate_federated_op(
+            self,
+            partition=partition,
+            per_client=per_client,
+        )
+
+    def predict_federated(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+    ) -> FederatedPredictResult:
+        """Predict with the global federated model (no update)."""
+        return federated_ops.predict_federated_op(self, partition=partition)
+
+    @property
+    def federated_plan(self) -> FederatedPlan | None:
+        """Last fitted :class:`~buildml.federated.results.FederatedPlan`."""
+        return self._federated_plan
+
+    @property
+    def federated_fit_result(self) -> FederatedFitResult | None:
+        """Last :class:`~buildml.federated.results.FederatedFitResult`."""
+        return self._federated_fit_result
+
+    @property
+    def federated_eval_result(self) -> FederatedEvalResult | None:
+        """Last :class:`~buildml.federated.results.FederatedEvalResult`."""
+        return self._federated_eval_result
+
+    @property
+    def federated_predict_result(self) -> FederatedPredictResult | None:
+        """Last :class:`~buildml.federated.results.FederatedPredictResult`."""
+        return self._federated_predict_result
+
+    def save_federated_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.federated_bundle.v1``.
+
+        See :data:`buildml.federated.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return federated_ops.save_federated_bundle_op(self, path=path)
+
+    def load_federated_bundle(self, path: str | Path) -> Session:
+        """Load a federated-learning bundle into this Session."""
+        return federated_ops.load_federated_bundle_op(self, path=path)
+
+    def fit_probabilistic(
+        self,
+        *,
+        estimator: ProbabilisticEstimator = "bayesian_ridge",
+        task: ProbabilisticTask | None = None,
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        alpha: float = 0.1,
+        conformal: bool = True,
+        conformal_calibration_fraction: float = 0.2,
+        interval_method: IntervalMethod | None = None,
+        prefer_reduce_components: bool = True,
+        n_restarts_optimizer: int = 0,
+    ) -> ProbabilisticFitResult:
+        """Fit a Bayesian / probabilistic estimator with uncertainty.
+
+        Parameters
+        ----------
+        estimator:
+            ``bayesian_ridge``, ``gaussian_process_regressor``,
+            ``gaussian_process_classifier``, or ``gaussian_nb``.
+        alpha:
+            Miscoverage level for intervals / prediction sets (default 0.1 →
+            nominal 90% coverage).
+        conformal:
+            When True, carve a split-conformal calibration subset from the
+            Session **train** partition only (never validation/test).
+        interval_method:
+            ``posterior_std``, ``split_conformal``, ``both``, or ``none``.
+            Inferred when omitted.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Fit and conformal calibration use train
+        only. Holdout is for ``evaluate_probabilistic`` / ``predict_interval``.
+        Honesty: sklearn BayesianRidge / GP / GaussianNB + optional split
+        conformal — **not** a PyMC/Stan MCMC platform or Bayesian deep nets.
+        Classical :meth:`calibration` remains for classical :meth:`fit`
+        classifiers and is not overwritten.
+        """
+        return probabilistic_ops.fit_probabilistic_op(
+            self,
+            estimator=estimator,
+            task=task,
+            columns=columns,
+            random_state=random_state,
+            alpha=alpha,
+            conformal=conformal,
+            conformal_calibration_fraction=conformal_calibration_fraction,
+            interval_method=interval_method,
+            prefer_reduce_components=prefer_reduce_components,
+            n_restarts_optimizer=n_restarts_optimizer,
+        )
+
+    def evaluate_probabilistic(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        alpha: float | None = None,
+    ) -> ProbabilisticEvalResult:
+        """Evaluate probabilistic predictions with proper scoring rules.
+
+        Defaults to validation, falling back to test when no validation
+        partition exists. Reports NLL / coverage / Brier (as applicable).
+        Holdout rows are never used for fit or conformal calibration.
+        """
+        return probabilistic_ops.evaluate_probabilistic_op(
+            self,
+            partition=partition,
+            alpha=alpha,
+        )
+
+    def predict_probabilistic(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        return_std: bool = True,
+        return_proba: bool = True,
+    ) -> ProbabilisticPredictResult:
+        """Point predictions (optional posterior std / class probabilities)."""
+        return probabilistic_ops.predict_probabilistic_op(
+            self,
+            partition=partition,
+            return_std=return_std,
+            return_proba=return_proba,
+        )
+
+    def predict_interval(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        alpha: float | None = None,
+        method: str | None = None,
+    ) -> ProbabilisticIntervalResult:
+        """Predictive intervals (regression) or conformal prediction sets."""
+        return probabilistic_ops.predict_interval_op(
+            self,
+            partition=partition,
+            alpha=alpha,
+            method=method,
+        )
+
+    @property
+    def probabilistic_plan(self) -> ProbabilisticPlan | None:
+        """Last fitted :class:`~buildml.probabilistic.results.ProbabilisticPlan`."""
+        return self._probabilistic_plan
+
+    @property
+    def probabilistic_fit_result(self) -> ProbabilisticFitResult | None:
+        """Last :class:`~buildml.probabilistic.results.ProbabilisticFitResult`."""
+        return self._probabilistic_fit_result
+
+    @property
+    def probabilistic_eval_result(self) -> ProbabilisticEvalResult | None:
+        """Last :class:`~buildml.probabilistic.results.ProbabilisticEvalResult`."""
+        return self._probabilistic_eval_result
+
+    @property
+    def probabilistic_predict_result(self) -> ProbabilisticPredictResult | None:
+        """Last :class:`~buildml.probabilistic.results.ProbabilisticPredictResult`."""
+        return self._probabilistic_predict_result
+
+    @property
+    def probabilistic_interval_result(self) -> ProbabilisticIntervalResult | None:
+        """Last :class:`~buildml.probabilistic.results.ProbabilisticIntervalResult`."""
+        return self._probabilistic_interval_result
+
+    def save_probabilistic_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.probabilistic_bundle.v1``.
+
+        See :data:`buildml.probabilistic.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return probabilistic_ops.save_probabilistic_bundle_op(self, path=path)
+
+    def load_probabilistic_bundle(self, path: str | Path) -> Session:
+        """Load a probabilistic bundle into this Session."""
+        return probabilistic_ops.load_probabilistic_bundle_op(self, path=path)
+
+    def declare_causal_assumptions(
+        self,
+        *,
+        treatment: str,
+        outcome: str,
+        confounders: Sequence[str] | None,
+        estimand: str = "ATE",
+        identification: str = "backdoor",
+        instruments: Sequence[str] | None = None,
+        acknowledge_unconfoundedness: bool = False,
+        acknowledge_positivity: bool = False,
+        allow_empty_confounders: bool = False,
+    ) -> CausalAssumptions:
+        """Declare identification assumptions required for causal estimation.
+
+        Causal APIs refuse estimation until treatment, outcome, confounders
+        (or an explicit empty-confounder waiver), estimand, and the
+        unconfoundedness / positivity acknowledgements are set. EDA /
+        association / feature-importance paths never satisfy these fields.
+        """
+        return causal_ops.declare_causal_assumptions_op(
+            self,
+            treatment=treatment,
+            outcome=outcome,
+            confounders=confounders,
+            estimand=estimand,
+            identification=identification,
+            instruments=instruments,
+            acknowledge_unconfoundedness=acknowledge_unconfoundedness,
+            acknowledge_positivity=acknowledge_positivity,
+            allow_empty_confounders=allow_empty_confounders,
+        )
+
+    def fit_causal(
+        self,
+        *,
+        method: CausalMethod = "aipw",
+        assumptions: CausalAssumptions | dict[str, Any] | None = None,
+        bootstrap_samples: int = 200,
+        random_state: int | None = 0,
+        clip_propensity: tuple[float, float] = (0.01, 0.99),
+        outcome_model: str = "ridge",
+        propensity_model: str = "logistic_regression",
+    ) -> CausalFitResult:
+        """Fit causal nuisance models (train-only) and estimate backdoor ATE.
+
+        Parameters
+        ----------
+        method:
+            ``t_learner`` (outcome regression), ``ipw``, or ``aipw``
+            (doubly robust).
+        assumptions:
+            Optional explicit :class:`CausalAssumptions` / mapping. When
+            omitted, uses the object from :meth:`declare_causal_assumptions`.
+        bootstrap_samples:
+            Full retrain bootstrap on train for uncertainty (0 disables).
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Nuisances fit on train only.
+        **Assumptions:** Refuses without validated CausalAssumptions.
+        Honesty: sklearn T-learner / IPW / AIPW — not DoWhy/EconML, not
+        causal discovery. EDA remains associational.
+        """
+        return causal_ops.fit_causal_op(
+            self,
+            method=method,
+            assumptions=assumptions,
+            bootstrap_samples=bootstrap_samples,
+            random_state=random_state,
+            clip_propensity=clip_propensity,
+            outcome_model=outcome_model,
+            propensity_model=propensity_model,
+        )
+
+    def estimate_causal(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "train",
+        bootstrap_samples: int | None = None,
+        random_state: int | None = None,
+    ) -> CausalEstimateResult:
+        """Estimate ATE on a partition with fitted train nuisances."""
+        return causal_ops.estimate_causal_op(
+            self,
+            partition=partition,
+            bootstrap_samples=bootstrap_samples,
+            random_state=random_state,
+        )
+
+    def evaluate_causal(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        bootstrap_samples: int | None = None,
+    ) -> CausalEvalResult:
+        """Holdout nuisance predictive checks + ATE (not proof of identification)."""
+        return causal_ops.evaluate_causal_op(
+            self,
+            partition=partition,
+            bootstrap_samples=bootstrap_samples,
+        )
+
+    def refute_causal(
+        self,
+        *,
+        kind: CausalRefuteKind = "placebo_treatment",
+        random_state: int | None = 0,
+    ) -> CausalRefuteResult:
+        """Simple placebo / random-confounder sensitivity disclosure.
+
+        Not a full DoWhy refutation suite.
+        """
+        return causal_ops.refute_causal_op(
+            self,
+            kind=kind,
+            random_state=random_state,
+        )
+
+    @property
+    def causal_assumptions(self) -> CausalAssumptions | None:
+        """Last declared :class:`~buildml.causal.types.CausalAssumptions`."""
+        return self._causal_assumptions
+
+    @property
+    def causal_plan(self) -> CausalPlan | None:
+        """Last fitted :class:`~buildml.causal.results.CausalPlan`."""
+        return self._causal_plan
+
+    @property
+    def causal_fit_result(self) -> CausalFitResult | None:
+        """Last :class:`~buildml.causal.results.CausalFitResult`."""
+        return self._causal_fit_result
+
+    @property
+    def causal_estimate_result(self) -> CausalEstimateResult | None:
+        """Last :class:`~buildml.causal.results.CausalEstimateResult`."""
+        return self._causal_estimate_result
+
+    @property
+    def causal_eval_result(self) -> CausalEvalResult | None:
+        """Last :class:`~buildml.causal.results.CausalEvalResult`."""
+        return self._causal_eval_result
+
+    @property
+    def causal_refute_result(self) -> CausalRefuteResult | None:
+        """Last :class:`~buildml.causal.results.CausalRefuteResult`."""
+        return self._causal_refute_result
+
+    def save_causal_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.causal_bundle.v1``.
+
+        See :data:`buildml.causal.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return causal_ops.save_causal_bundle_op(self, path=path)
+
+    def load_causal_bundle(self, path: str | Path) -> Session:
+        """Load a causal bundle into this Session."""
+        return causal_ops.load_causal_bundle_op(self, path=path)
+
+    def set_graph(
+        self,
+        edges: Any,
+        *,
+        source_col: str = "source",
+        target_col: str = "target",
+        node_id_col: str = "node_id",
+        directed: bool = False,
+    ) -> GraphSpec:
+        """Attach an edge list; Session rows are nodes.
+
+        Conventions: one dataset row per node; ``node_id_col`` uniquely
+        identifies nodes and must match edge endpoints. ``Session.split``
+        creates **node** partitions. Not a Neo4j/KG product surface.
+
+        Parameters
+        ----------
+        edges:
+            Edge list as a DataFrame with ``source_col``/``target_col`` or a
+            sequence of ``(source, target)`` pairs.
+        """
+        return graph_ops.set_graph_op(
+            self,
+            edges,
+            source_col=source_col,
+            target_col=target_col,
+            node_id_col=node_id_col,
+            directed=directed,
+        )
+
+    def fit_graph(
+        self,
+        *,
+        method: GraphMethod = "classical",
+        task: GraphTask = "node_classification",
+        mode: GraphMode = "inductive",
+        columns: Sequence[str] | None = None,
+        classical_estimator: ClassicalEstimator = "logistic_regression",
+        hidden_dim: int = 32,
+        n_layers: int = 2,
+        epochs: int = 80,
+        learning_rate: float = 0.01,
+        weight_decay: float = 5e-4,
+        dropout: float = 0.1,
+        random_state: int | None = 0,
+        include_graph_metrics: bool = True,
+    ) -> GraphFitResult:
+        """Fit graph node classification (classical or pure-Torch GCN).
+
+        **Leakage:** Requires a split and :meth:`set_graph`. Train labels only.
+        Default ``mode='inductive'`` fits on the train-induced subgraph;
+        ``transductive`` uses full topology with train-label-only supervision
+        (disclosed). Classical path needs ``buildml[graph]`` (NetworkX);
+        GCN needs ``buildml[torch]`` (no PyTorch Geometric).
+        """
+        return graph_ops.fit_graph_op(
+            self,
+            method=method,
+            task=task,
+            mode=mode,
+            columns=columns,
+            classical_estimator=classical_estimator,
+            hidden_dim=hidden_dim,
+            n_layers=n_layers,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            weight_decay=weight_decay,
+            dropout=dropout,
+            random_state=random_state,
+            include_graph_metrics=include_graph_metrics,
+        )
+
+    def predict_graph(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+    ) -> GraphPredictResult:
+        """Predict node labels with the fitted :class:`GraphPlan`."""
+        return graph_ops.predict_graph_op(self, partition=partition)
+
+    def evaluate_graph(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+    ) -> GraphEvalResult:
+        """Evaluate node classification on a holdout partition."""
+        return graph_ops.evaluate_graph_op(self, partition=partition)
+
+    @property
+    def graph_spec(self) -> GraphSpec | None:
+        """Last attached :class:`~buildml.graph.types.GraphSpec`."""
+        return self._graph_spec
+
+    @property
+    def graph_plan(self) -> GraphPlan | None:
+        """Last fitted :class:`~buildml.graph.results.GraphPlan`."""
+        return self._graph_plan
+
+    @property
+    def graph_fit_result(self) -> GraphFitResult | None:
+        """Last :class:`~buildml.graph.results.GraphFitResult`."""
+        return self._graph_fit_result
+
+    @property
+    def graph_predict_result(self) -> GraphPredictResult | None:
+        """Last :class:`~buildml.graph.results.GraphPredictResult`."""
+        return self._graph_predict_result
+
+    @property
+    def graph_eval_result(self) -> GraphEvalResult | None:
+        """Last :class:`~buildml.graph.results.GraphEvalResult`."""
+        return self._graph_eval_result
+
+    def save_graph_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.graph_bundle.v1``.
+
+        See :data:`buildml.graph.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return graph_ops.save_graph_bundle_op(self, path=path)
+
+    def load_graph_bundle(self, path: str | Path) -> Session:
+        """Load a graph bundle into this Session."""
+        return graph_ops.load_graph_bundle_op(self, path=path)
+
+    def fit_symbolic(
+        self,
+        *,
+        source: SymbolicSource = "decision_tree",
+        task: SymbolicTask | None = None,
+        rules: Sequence[Mapping[str, Any] | Rule] | None = None,
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        max_depth: int = 4,
+        min_samples_leaf: int = 5,
+        max_rules: int = 32,
+        default_consequent: Any = None,
+        prefer_reduce_components: bool = True,
+    ) -> SymbolicFitResult:
+        """Compile or induce a symbolic if-then rule base on train.
+
+        Parameters
+        ----------
+        source:
+            ``declared`` (expert rules via ``rules=``), ``decision_tree``
+            (sklearn path export), or ``decision_list`` (sequential covering).
+        rules:
+            Required when ``source='declared'``; optional merge input otherwise.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Induction uses Session train only.
+        Honesty: structured tabular rules with explanation traces — **not**
+        an AGI symbolic reasoner, Prolog engine, or Z3 SMT solver.
+        """
+        return symbolic_ops.fit_symbolic_op(
+            self,
+            source=source,
+            task=task,
+            rules=rules,
+            columns=columns,
+            random_state=random_state,
+            max_depth=max_depth,
+            min_samples_leaf=min_samples_leaf,
+            max_rules=max_rules,
+            default_consequent=default_consequent,
+            prefer_reduce_components=prefer_reduce_components,
+        )
+
+    def evaluate_symbolic(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+    ) -> SymbolicEvalResult:
+        """Evaluate the symbolic rule base on a holdout partition."""
+        return symbolic_ops.evaluate_symbolic_op(self, partition=partition)
+
+    def predict_symbolic(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        return_traces: bool = True,
+    ) -> SymbolicPredictResult:
+        """Predict with rule-firing explanation traces (no update)."""
+        return symbolic_ops.predict_symbolic_op(
+            self,
+            partition=partition,
+            return_traces=return_traces,
+        )
+
+    def fit_neuro_symbolic(
+        self,
+        *,
+        mode: NeuroSymbolicMode = "constraint_overlay",
+        base_estimator: BaseEstimatorName = "logistic_regression",
+        task: SymbolicTask | None = None,
+        rules: Sequence[Mapping[str, Any] | Rule] | None = None,
+        rule_source: SymbolicSource = "decision_tree",
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        soft_strength: float = 0.5,
+        max_depth: int = 3,
+        min_samples_leaf: int = 5,
+        max_rules: int = 24,
+        prefer_reduce_components: bool = True,
+    ) -> NeuroSymbolicFitResult:
+        """Fit a sklearn + symbolic hybrid in one Session API.
+
+        Modes: ``constraint_overlay``, ``rules_as_features``,
+        ``constraint_repair``. Rules may be declared or train-induced
+        (``rule_source``). Train-only for learning; holdout for eval/predict.
+        """
+        return symbolic_ops.fit_neuro_symbolic_op(
+            self,
+            mode=mode,
+            base_estimator=base_estimator,
+            task=task,
+            rules=rules,
+            rule_source=rule_source,
+            columns=columns,
+            random_state=random_state,
+            soft_strength=soft_strength,
+            max_depth=max_depth,
+            min_samples_leaf=min_samples_leaf,
+            max_rules=max_rules,
+            prefer_reduce_components=prefer_reduce_components,
+        )
+
+    def evaluate_neuro_symbolic(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+    ) -> SymbolicEvalResult:
+        """Evaluate the neuro-symbolic hybrid on a holdout partition."""
+        return symbolic_ops.evaluate_neuro_symbolic_op(self, partition=partition)
+
+    def predict_neuro_symbolic(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        return_traces: bool = True,
+    ) -> SymbolicPredictResult:
+        """Hybrid predict with neural + rule traces (no update)."""
+        return symbolic_ops.predict_neuro_symbolic_op(
+            self,
+            partition=partition,
+            return_traces=return_traces,
+        )
+
+    @property
+    def symbolic_plan(self) -> SymbolicPlan | None:
+        """Last fitted :class:`~buildml.symbolic.results.SymbolicPlan`."""
+        return self._symbolic_plan
+
+    @property
+    def neuro_symbolic_plan(self) -> NeuroSymbolicPlan | None:
+        """Last fitted :class:`~buildml.symbolic.results.NeuroSymbolicPlan`."""
+        return self._neuro_symbolic_plan
+
+    @property
+    def symbolic_fit_result(self) -> SymbolicFitResult | None:
+        """Last :class:`~buildml.symbolic.results.SymbolicFitResult`."""
+        return self._symbolic_fit_result
+
+    @property
+    def neuro_symbolic_fit_result(self) -> NeuroSymbolicFitResult | None:
+        """Last :class:`~buildml.symbolic.results.NeuroSymbolicFitResult`."""
+        return self._neuro_symbolic_fit_result
+
+    @property
+    def symbolic_eval_result(self) -> SymbolicEvalResult | None:
+        """Last symbolic / neuro-symbolic :class:`SymbolicEvalResult`."""
+        return self._symbolic_eval_result
+
+    @property
+    def symbolic_predict_result(self) -> SymbolicPredictResult | None:
+        """Last pure-symbolic :class:`SymbolicPredictResult`."""
+        return self._symbolic_predict_result
+
+    @property
+    def neuro_symbolic_predict_result(self) -> SymbolicPredictResult | None:
+        """Last neuro-symbolic :class:`SymbolicPredictResult`."""
+        return self._neuro_symbolic_predict_result
+
+    def save_symbolic_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.symbolic_bundle.v1``.
+
+        Prefers ``NeuroSymbolicPlan`` when both are present. See
+        :data:`buildml.symbolic.checkpoint.CHECKPOINT_BOUNDARY`.
+        """
+        return symbolic_ops.save_symbolic_bundle_op(self, path=path)
+
+    def load_symbolic_bundle(self, path: str | Path) -> Session:
+        """Load a symbolic / neuro-symbolic bundle into this Session."""
+        return symbolic_ops.load_symbolic_bundle_op(self, path=path)
+
+    def fit_cbr(
+        self,
+        *,
+        task: CbrTask | None = None,
+        metric: CbrMetric = "euclidean",
+        reuse: CbrReuseMode = "distance_weighted",
+        adapt: CbrAdaptMode = "none",
+        k: int = 5,
+        columns: list[str] | None = None,
+        categorical_columns: list[str] | None = None,
+        standardize: bool = True,
+        distance_eps: float = 1e-8,
+        random_state: int | None = 0,
+        prefer_reduce_components: bool = True,
+    ) -> CbrFitResult:
+        """Build a tabular case memory from Session train.
+
+        Parameters
+        ----------
+        metric:
+            ``euclidean`` / ``manhattan`` / ``cosine`` (numeric) or ``mixed``
+            (Gower-style numeric + categorical).
+        reuse:
+            Classification: ``majority`` / ``distance_weighted``.
+            Regression: ``distance_weighted`` / ``local_mean`` / ``local_ridge``.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Case base uses train only.
+        Honesty: case→solution CBR for supervised-style tasks — **not** RAG
+        (document retrieval for generation) and not a vector DB product.
+        """
+        return cbr_ops.fit_cbr_op(
+            self,
+            task=task,
+            metric=metric,
+            reuse=reuse,
+            adapt=adapt,
+            k=k,
+            columns=columns,
+            categorical_columns=categorical_columns,
+            standardize=standardize,
+            distance_eps=distance_eps,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+        )
+
+    def retrieve_cases(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        k: int | None = None,
+    ) -> CbrRetrieveResult:
+        """Retrieve k nearest cases (no reuse / no memory update)."""
+        return cbr_ops.retrieve_cases_op(self, partition=partition, k=k)
+
+    def predict_cbr(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        k: int | None = None,
+        return_traces: bool = True,
+    ) -> CbrPredictResult:
+        """Predict via retrieve + reuse with case-influence traces."""
+        return cbr_ops.predict_cbr_op(
+            self,
+            partition=partition,
+            k=k,
+            return_traces=return_traces,
+        )
+
+    def evaluate_cbr(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        k: int | None = None,
+    ) -> CbrEvalResult:
+        """Evaluate CBR on a holdout partition (no memory update)."""
+        return cbr_ops.evaluate_cbr_op(self, partition=partition, k=k)
+
+    def retain_cbr(
+        self,
+        *,
+        labeled_frame: Any | None = None,
+        row_indices: Sequence[Any] | None = None,
+        solution_column: str | None = None,
+        source_disclosure: str,
+        allow_overlap_with_train: bool = True,
+    ) -> CbrRetainResult:
+        """Retain new labeled cases; refuses Session validation/test indices.
+
+        Requires a non-empty ``source_disclosure``. Pass either
+        ``labeled_frame`` or ``row_indices`` (not both).
+        """
+        return cbr_ops.retain_cbr_op(
+            self,
+            labeled_frame=labeled_frame,
+            row_indices=row_indices,
+            solution_column=solution_column,
+            source_disclosure=source_disclosure,
+            allow_overlap_with_train=allow_overlap_with_train,
+        )
+
+    @property
+    def cbr_plan(self) -> CbrPlan | None:
+        """Last fitted :class:`~buildml.cbr.results.CbrPlan`."""
+        return self._cbr_plan
+
+    @property
+    def cbr_fit_result(self) -> CbrFitResult | None:
+        """Last :class:`~buildml.cbr.results.CbrFitResult`."""
+        return self._cbr_fit_result
+
+    @property
+    def cbr_eval_result(self) -> CbrEvalResult | None:
+        """Last :class:`~buildml.cbr.results.CbrEvalResult`."""
+        return self._cbr_eval_result
+
+    @property
+    def cbr_predict_result(self) -> CbrPredictResult | None:
+        """Last :class:`~buildml.cbr.results.CbrPredictResult`."""
+        return self._cbr_predict_result
+
+    @property
+    def cbr_retrieve_result(self) -> CbrRetrieveResult | None:
+        """Last :class:`~buildml.cbr.results.CbrRetrieveResult`."""
+        return self._cbr_retrieve_result
+
+    @property
+    def cbr_retain_result(self) -> CbrRetainResult | None:
+        """Last :class:`~buildml.cbr.results.CbrRetainResult`."""
+        return self._cbr_retain_result
+
+    def save_cbr_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.cbr_bundle.v1``.
+
+        See :data:`buildml.cbr.checkpoint.CHECKPOINT_BOUNDARY`.
+        """
+        return cbr_ops.save_cbr_bundle_op(self, path=path)
+
+    def load_cbr_bundle(self, path: str | Path) -> Session:
+        """Load a CBR bundle into this Session."""
+        return cbr_ops.load_cbr_bundle_op(self, path=path)
+
+    def fit_imitation(
+        self,
+        *,
+        task: ImitationTask | None = None,
+        estimator: ImitationEstimator | None = None,
+        columns: list[str] | None = None,
+        action_column: str | None = None,
+        random_state: int | None = 0,
+        prefer_reduce_components: bool = True,
+    ) -> ImitationFitResult:
+        """Fit behavioral cloning from demonstration rows (train only).
+
+        Parameters
+        ----------
+        action_column:
+            Demonstrated action column. Defaults to the Dataset target.
+        task / estimator:
+            Classification or regression BC; inferred when omitted.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Policy uses train only.
+        Honesty: BC from tables — not inverse RL, not DAgger, not robotics.
+        """
+        return rl_ops.fit_imitation_op(
+            self,
+            task=task,
+            estimator=estimator,
+            columns=columns,
+            action_column=action_column,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+        )
+
+    def predict_imitation_action(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+    ) -> ImitationPredictResult:
+        """Predict actions under the fitted behavioral cloning policy."""
+        return rl_ops.predict_imitation_action_op(self, partition=partition)
+
+    def evaluate_imitation(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+    ) -> ImitationEvalResult:
+        """Compare predicted actions to held-out demonstration actions."""
+        return rl_ops.evaluate_imitation_op(self, partition=partition)
+
+    @property
+    def imitation_plan(self) -> ImitationPlan | None:
+        """Last fitted :class:`~buildml.rl.results.ImitationPlan`."""
+        return self._imitation_plan
+
+    @property
+    def imitation_fit_result(self) -> ImitationFitResult | None:
+        """Last :class:`~buildml.rl.results.ImitationFitResult`."""
+        return self._imitation_fit_result
+
+    @property
+    def imitation_eval_result(self) -> ImitationEvalResult | None:
+        """Last :class:`~buildml.rl.results.ImitationEvalResult`."""
+        return self._imitation_eval_result
+
+    @property
+    def imitation_predict_result(self) -> ImitationPredictResult | None:
+        """Last :class:`~buildml.rl.results.ImitationPredictResult`."""
+        return self._imitation_predict_result
+
+    def save_imitation_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.imitation_bundle.v1``."""
+        return rl_ops.save_imitation_bundle_op(self, path=path)
+
+    def load_imitation_bundle(self, path: str | Path) -> Session:
+        """Load an imitation bundle into this Session."""
+        return rl_ops.load_imitation_bundle_op(self, path=path)
+
+    def fit_rl(
+        self,
+        *,
+        mode: RlMode = "contextual_bandit",
+        algorithm: BanditAlgorithm = "linucb",
+        columns: list[str] | None = None,
+        action_column: str | None = None,
+        reward_column: str | None = None,
+        alpha: float = 1.0,
+        epsilon: float = 0.1,
+        temperature: float = 1.0,
+        random_state: int | None = 0,
+        prefer_reduce_components: bool = True,
+        env_id: str = "CartPole-v1",
+        n_episodes: int = 200,
+        max_steps: int = 500,
+        learning_rate: float = 0.01,
+        gamma: float = 0.99,
+    ) -> RlFitResult:
+        """Fit a contextual bandit (core) or Gymnasium REINFORCE-lite.
+
+        Parameters
+        ----------
+        mode:
+            ``contextual_bandit`` (train logged table) or ``gym_reinforce``
+            (requires ``buildml[rl]`` / gymnasium).
+        algorithm:
+            Bandit algorithm: ``linucb`` / ``epsilon_greedy`` / ``softmax``.
+
+        Notes
+        -----
+        **Leakage (bandit):** Requires a split; policy updates use train only.
+        Holdout metrics are **offline** (DM/IPS) and disclosed as such.
+        Honesty: Session bandit / small-env RL — not MuJoCo / robotics.
+        """
+        return rl_ops.fit_rl_op(
+            self,
+            mode=mode,
+            algorithm=algorithm,
+            columns=columns,
+            action_column=action_column,
+            reward_column=reward_column,
+            alpha=alpha,
+            epsilon=epsilon,
+            temperature=temperature,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+            env_id=env_id,
+            n_episodes=n_episodes,
+            max_steps=max_steps,
+            learning_rate=learning_rate,
+            gamma=gamma,
+        )
+
+    def act_rl(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        observations: Sequence[Any] | Any | None = None,
+        deterministic: bool = True,
+        random_state: int | None = 0,
+    ) -> RlActResult:
+        """Choose actions under the fitted RL policy.
+
+        For ``gym_reinforce``, pass ``observations=...`` (env observation vectors).
+        """
+        return rl_ops.act_rl_op(
+            self,
+            partition=partition,
+            observations=observations,
+            deterministic=deterministic,
+            random_state=random_state,
+        )
+
+    def evaluate_rl(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+        n_episodes: int | None = None,
+        max_steps: int | None = None,
+        random_state: int | None = 0,
+        deterministic: bool = True,
+    ) -> RlEvalResult:
+        """Evaluate RL (offline bandit metrics or Gymnasium episode returns)."""
+        return rl_ops.evaluate_rl_op(
+            self,
+            partition=partition,
+            n_episodes=n_episodes,
+            max_steps=max_steps,
+            random_state=random_state,
+            deterministic=deterministic,
+        )
+
+    @property
+    def rl_plan(self) -> RlPlan | None:
+        """Last fitted :class:`~buildml.rl.results.RlPlan`."""
+        return self._rl_plan
+
+    @property
+    def rl_fit_result(self) -> RlFitResult | None:
+        """Last :class:`~buildml.rl.results.RlFitResult`."""
+        return self._rl_fit_result
+
+    @property
+    def rl_eval_result(self) -> RlEvalResult | None:
+        """Last :class:`~buildml.rl.results.RlEvalResult`."""
+        return self._rl_eval_result
+
+    @property
+    def rl_act_result(self) -> RlActResult | None:
+        """Last :class:`~buildml.rl.results.RlActResult`."""
+        return self._rl_act_result
+
+    def save_rl_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.rl_bundle.v1``."""
+        return rl_ops.save_rl_bundle_op(self, path=path)
+
+    def load_rl_bundle(self, path: str | Path) -> Session:
+        """Load an RL bundle into this Session."""
+        return rl_ops.load_rl_bundle_op(self, path=path)
+
+    def fit_tda(
+        self,
+        *,
+        vectorization: Vectorization = "persistence_image",
+        homology_dims: Sequence[int] = (0, 1),
+        knn: int = 16,
+        maxdim: int = 1,
+        thresh: float | None = None,
+        n_bins: int = 20,
+        n_layers: int = 3,
+        pixel_size: float | None = None,
+        standardize: bool = True,
+        head: TdaHead = "logistic_regression",
+        task: TdaTask | None = None,
+        columns: list[str] | None = None,
+        random_state: int | None = 0,
+        prefer_reduce_components: bool = True,
+        max_points_guard: int = 4000,
+    ) -> TdaFitResult:
+        """Fit topological features (+ optional sklearn head) on train only.
+
+        Requires ``buildml[tda]`` (ripser + persim). Local Vietoris–Rips on
+        kNN train neighborhoods; vectorizer ranges and head use train only.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Holdout never updates the PH pipeline.
+        Honesty: Session PH + vectorization → sklearn — not a Mapper suite.
+        """
+        return tda_ops.fit_tda_op(
+            self,
+            vectorization=vectorization,
+            homology_dims=homology_dims,
+            knn=knn,
+            maxdim=maxdim,
+            thresh=thresh,
+            n_bins=n_bins,
+            n_layers=n_layers,
+            pixel_size=pixel_size,
+            standardize=standardize,
+            head=head,
+            task=task,
+            columns=columns,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+            max_points_guard=max_points_guard,
+        )
+
+    def transform_tda(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+    ) -> TdaTransformResult:
+        """Transform a partition with the frozen train-fitted TDA pipeline."""
+        return tda_ops.transform_tda_op(self, partition=partition)
+
+    def predict_tda(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+    ) -> TdaPredictResult:
+        """Predict with the optional TDA supervised head."""
+        return tda_ops.predict_tda_op(self, partition=partition)
+
+    def evaluate_tda(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "validation",
+    ) -> TdaEvalResult:
+        """Score the TDA head on a holdout partition (frozen train pipeline)."""
+        return tda_ops.evaluate_tda_op(self, partition=partition)
+
+    @property
+    def tda_plan(self) -> TdaPlan | None:
+        """Last fitted :class:`~buildml.tda.results.TdaPlan`."""
+        return self._tda_plan
+
+    @property
+    def tda_fit_result(self) -> TdaFitResult | None:
+        """Last :class:`~buildml.tda.results.TdaFitResult`."""
+        return self._tda_fit_result
+
+    @property
+    def tda_eval_result(self) -> TdaEvalResult | None:
+        """Last :class:`~buildml.tda.results.TdaEvalResult`."""
+        return self._tda_eval_result
+
+    @property
+    def tda_transform_result(self) -> TdaTransformResult | None:
+        """Last :class:`~buildml.tda.results.TdaTransformResult`."""
+        return self._tda_transform_result
+
+    @property
+    def tda_predict_result(self) -> TdaPredictResult | None:
+        """Last :class:`~buildml.tda.results.TdaPredictResult`."""
+        return self._tda_predict_result
+
+    def save_tda_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.tda_bundle.v1``."""
+        return tda_ops.save_tda_bundle_op(self, path=path)
+
+    def load_tda_bundle(self, path: str | Path) -> Session:
+        """Load a TDA bundle into this Session."""
+        return tda_ops.load_tda_bundle_op(self, path=path)
+
+    def fit_recommender(
+        self,
+        *,
+        method: RecommenderMethod = "item_knn",
+        user_column: str | None = None,
+        item_column: str | None = None,
+        rating_column: str | None = None,
+        feedback: FeedbackMode = "explicit",
+        n_neighbors: int = 40,
+        n_factors: int = 32,
+        min_rating: float | None = None,
+        item_feature_columns: list[str] | None = None,
+        cold_start: ColdStartPolicy = "popularity",
+        random_state: int | None = 0,
+    ) -> RecommenderFitResult:
+        """Fit a recommender on train interactions only.
+
+        Requires explicit ``user_column`` / ``item_column``. Rating defaults to
+        the Session target for ``feedback='explicit'``. Algorithms: item/user
+        kNN CF, TruncatedSVD / NMF, or content-based item features.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Holdout interactions never update the
+        model. Known-item protocol + cold-start disclosure on recommend/eval.
+        Distinct from RAG and from EDA ``Recommendation`` Findings.
+        """
+        return recommender_ops.fit_recommender_op(
+            self,
+            method=method,
+            user_column=user_column,
+            item_column=item_column,
+            rating_column=rating_column,
+            feedback=feedback,
+            n_neighbors=n_neighbors,
+            n_factors=n_factors,
+            min_rating=min_rating,
+            item_feature_columns=item_feature_columns,
+            cold_start=cold_start,
+            random_state=random_state,
+        )
+
+    def recommend(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] | None = None,
+        user_ids: Sequence[Any] | None = None,
+        k: int = 10,
+        exclude_train_items: bool = True,
+    ) -> RecommendResult:
+        """Top-K item recommendations (train catalog / known-item protocol)."""
+        return recommender_ops.recommend_op(
+            self,
+            partition=partition,
+            user_ids=user_ids,
+            k=k,
+            exclude_train_items=exclude_train_items,
+        )
+
+    def evaluate_recommender(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        k: int = 10,
+    ) -> RecommenderEvalResult:
+        """Holdout ranking metrics: Precision@K, Recall@K, nDCG@K, MAP@K."""
+        return recommender_ops.evaluate_recommender_op(
+            self, partition=partition, k=k
+        )
+
+    @property
+    def recommender_plan(self) -> RecommenderPlan | None:
+        """Last fitted :class:`~buildml.recommenders.results.RecommenderPlan`."""
+        return self._recommender_plan
+
+    @property
+    def recommender_fit_result(self) -> RecommenderFitResult | None:
+        """Last :class:`~buildml.recommenders.results.RecommenderFitResult`."""
+        return self._recommender_fit_result
+
+    @property
+    def recommender_eval_result(self) -> RecommenderEvalResult | None:
+        """Last :class:`~buildml.recommenders.results.RecommenderEvalResult`."""
+        return self._recommender_eval_result
+
+    @property
+    def recommender_recommend_result(self) -> RecommendResult | None:
+        """Last :class:`~buildml.recommenders.results.RecommendResult`."""
+        return self._recommender_recommend_result
+
+    def save_recommender_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.recommender_bundle.v1``."""
+        return recommender_ops.save_recommender_bundle_op(self, path=path)
+
+    def load_recommender_bundle(self, path: str | Path) -> Session:
+        """Load a recommender bundle into this Session."""
+        return recommender_ops.load_recommender_bundle_op(self, path=path)
+
+    def fit_ranker(
+        self,
+        *,
+        method: RankerMethod = "pointwise",
+        query_column: str | None = None,
+        item_column: str | None = None,
+        relevance_column: str | None = None,
+        feature_columns: list[str] | None = None,
+        pointwise_estimator: PointwiseEstimator = "ridge",
+        pairwise_estimator: PairwiseEstimator = "ranksvm",
+        max_pairs_per_query: int = 80,
+        relevance_threshold: float = 0.0,
+        alpha: float = 1.0,
+        C: float = 1.0,
+        random_state: int | None = 0,
+    ) -> RankerFitResult:
+        """Fit a tabular learning-to-rank model on train rows only.
+
+        Requires explicit ``query_column`` / ``item_column``. Relevance defaults
+        to the Session target. Prefer ``group_split`` on the query id so test
+        queries' labels never enter training.
+
+        Algorithms: ``pointwise`` (Ridge / HistGradientBoosting relevance
+        regression) or ``pairwise`` (RankSVM-lite on within-query differences).
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Holdout rows never update the model.
+        Distinct from RAG retrieve/generate and from recommender CF.
+        Honesty: Session tabular LTR — not a search-engine product.
+        """
+        return ranking_ops.fit_ranker_op(
+            self,
+            method=method,
+            query_column=query_column,
+            item_column=item_column,
+            relevance_column=relevance_column,
+            feature_columns=feature_columns,
+            pointwise_estimator=pointwise_estimator,
+            pairwise_estimator=pairwise_estimator,
+            max_pairs_per_query=max_pairs_per_query,
+            relevance_threshold=relevance_threshold,
+            alpha=alpha,
+            C=C,
+            random_state=random_state,
+        )
+
+    def rank(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] | None = None,
+        query_ids: Sequence[Any] | None = None,
+        k: int = 10,
+    ) -> RankResult:
+        """Order items for queries (descending score from frozen RankerPlan)."""
+        return ranking_ops.rank_op(
+            self,
+            partition=partition,
+            query_ids=query_ids,
+            k=k,
+        )
+
+    def evaluate_ranker(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        k: int = 10,
+    ) -> RankerEvalResult:
+        """Holdout per-query metrics: nDCG@K, MAP@K, MRR@K."""
+        return ranking_ops.evaluate_ranker_op(self, partition=partition, k=k)
+
+    @property
+    def ranker_plan(self) -> RankerPlan | None:
+        """Last fitted :class:`~buildml.ranking.results.RankerPlan`."""
+        return self._ranker_plan
+
+    @property
+    def ranker_fit_result(self) -> RankerFitResult | None:
+        """Last :class:`~buildml.ranking.results.RankerFitResult`."""
+        return self._ranker_fit_result
+
+    @property
+    def ranker_eval_result(self) -> RankerEvalResult | None:
+        """Last :class:`~buildml.ranking.results.RankerEvalResult`."""
+        return self._ranker_eval_result
+
+    @property
+    def ranker_rank_result(self) -> RankResult | None:
+        """Last :class:`~buildml.ranking.results.RankResult`."""
+        return self._ranker_rank_result
+
+    def save_ranker_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.ranker_bundle.v1``."""
+        return ranking_ops.save_ranker_bundle_op(self, path=path)
+
+    def load_ranker_bundle(self, path: str | Path) -> Session:
+        """Load a ranker bundle into this Session."""
+        return ranking_ops.load_ranker_bundle_op(self, path=path)
+
+    def fit_kg(
+        self,
+        *,
+        method: KgMethod = "transe",
+        head_column: str | None = None,
+        relation_column: str | None = None,
+        tail_column: str | None = None,
+        embedding_dim: int = 50,
+        epochs: int = 40,
+        batch_size: int = 256,
+        learning_rate: float = 0.01,
+        margin: float = 1.0,
+        neg_ratio: int = 1,
+        norm: KgNorm = "l1",
+        random_state: int | None = 0,
+    ) -> KgFitResult:
+        """Fit a knowledge-graph embedding model on train triples only.
+
+        Requires explicit ``head_column`` / ``relation_column`` /
+        ``tail_column``. Algorithms: pure-numpy ``transe`` or ``distmult``
+        with disclosed uniform negative sampling.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Holdout triples never update embeddings
+        or the train adjacency used by ``query_kg``. Distinct from Graph ML
+        (``set_graph`` / ``fit_graph`` node classification) and from RAG.
+        Honesty: Session KG learning/query — not a Neo4j / graph-DB product.
+        """
+        return kg_ops.fit_kg_op(
+            self,
+            method=method,
+            head_column=head_column,
+            relation_column=relation_column,
+            tail_column=tail_column,
+            embedding_dim=embedding_dim,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            margin=margin,
+            neg_ratio=neg_ratio,
+            norm=norm,
+            random_state=random_state,
+        )
+
+    def score_triples(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] | None = None,
+        triples: Any | None = None,
+    ) -> ScoreTriplesResult:
+        """Score (head, relation, tail) triples with the frozen KgPlan."""
+        return kg_ops.score_triples_op(
+            self, partition=partition, triples=triples
+        )
+
+    def predict_links(
+        self,
+        *,
+        mode: LinkPredictionMode = "tail",
+        heads: Sequence[Any] | None = None,
+        relations: Sequence[Any] | None = None,
+        tails: Sequence[Any] | None = None,
+        k: int = 10,
+        filtered: bool = True,
+    ) -> PredictLinksResult:
+        """Predict missing link components (tail / head / relation)."""
+        return kg_ops.predict_links_op(
+            self,
+            mode=mode,
+            heads=heads,
+            relations=relations,
+            tails=tails,
+            k=k,
+            filtered=filtered,
+        )
+
+    def query_kg(
+        self,
+        *,
+        mode: KgQueryMode = "neighbors",
+        entity: Any | None = None,
+        source: Any | None = None,
+        target: Any | None = None,
+        relation: Any | None = None,
+        direction: Literal["out", "in", "both"] = "out",
+        max_hops: int = 3,
+    ) -> KgQueryResult:
+        """Symbolic neighbors / path / typed query over the train KG.
+
+        Not an LLM, not Neo4j/Cypher, not RAG — BFS / adjacency on train
+        triples only.
+        """
+        return kg_ops.query_kg_op(
+            self,
+            mode=mode,
+            entity=entity,
+            source=source,
+            target=target,
+            relation=relation,
+            direction=direction,
+            max_hops=max_hops,
+        )
+
+    def evaluate_kg(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] = "test",
+        k: int = 10,
+    ) -> KgEvalResult:
+        """Holdout filtered link-prediction metrics: MRR, Hits@1/3/K."""
+        return kg_ops.evaluate_kg_op(self, partition=partition, k=k)
+
+    @property
+    def kg_plan(self) -> KgPlan | None:
+        """Last fitted :class:`~buildml.kg.results.KgPlan`."""
+        return self._kg_plan
+
+    @property
+    def kg_fit_result(self) -> KgFitResult | None:
+        """Last :class:`~buildml.kg.results.KgFitResult`."""
+        return self._kg_fit_result
+
+    @property
+    def kg_eval_result(self) -> KgEvalResult | None:
+        """Last :class:`~buildml.kg.results.KgEvalResult`."""
+        return self._kg_eval_result
+
+    @property
+    def kg_score_result(self) -> ScoreTriplesResult | None:
+        """Last :class:`~buildml.kg.results.ScoreTriplesResult`."""
+        return self._kg_score_result
+
+    @property
+    def kg_predict_result(self) -> PredictLinksResult | None:
+        """Last :class:`~buildml.kg.results.PredictLinksResult`."""
+        return self._kg_predict_result
+
+    @property
+    def kg_query_result(self) -> KgQueryResult | None:
+        """Last :class:`~buildml.kg.results.KgQueryResult`."""
+        return self._kg_query_result
+
+    def save_kg_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.kg_bundle.v1``."""
+        return kg_ops.save_kg_bundle_op(self, path=path)
+
+    def load_kg_bundle(self, path: str | Path) -> Session:
+        """Load a knowledge-graph bundle into this Session."""
+        return kg_ops.load_kg_bundle_op(self, path=path)
+
+    def fit_decision_policy(
+        self,
+        *,
+        method: DecisionMethod = "threshold",
+        partition: TuningPartition = "validation",
+        allow_test_tuning: bool = False,
+        fp_cost: float | None = None,
+        fn_cost: float | None = None,
+        tp_benefit: float = 0.0,
+        tn_benefit: float = 0.0,
+        cost_matrix: Sequence[Sequence[float]] | None = None,
+        class_labels: list[str] | None = None,
+        capacity: int | None = None,
+        budget: float | None = None,
+        score_source: ScoreSource = "model_proba",
+        score_column: str | None = None,
+        cost_column: str | None = None,
+        value_column: str | None = None,
+        id_column: str | None = None,
+        knapsack_solver: KnapsackSolver = "dp",
+        objective: AllocationObjective = "maximize_score",
+        min_score: float | None = None,
+        lp_max_fraction: float = 1.0,
+    ) -> DecisionFitResult:
+        """Fit a decision policy on train/validation (test requires opt-in).
+
+        Methods: ``threshold`` (wraps classical ``tune_threshold`` engine),
+        ``cost_matrix`` (multiclass Bayes), ``topk``, ``knapsack``,
+        ``lp_allocate`` (scipy linprog). Prefer ``partition='validation'``.
+
+        Notes
+        -----
+        **Leakage:** Tuning on Session test requires ``allow_test_tuning=True``.
+        Honesty: ML score/cost/allocation helpers — not a general OR platform.
+        """
+        return decision_ops.fit_decision_policy_op(
+            self,
+            method=method,
+            partition=partition,
+            allow_test_tuning=allow_test_tuning,
+            fp_cost=fp_cost,
+            fn_cost=fn_cost,
+            tp_benefit=tp_benefit,
+            tn_benefit=tn_benefit,
+            cost_matrix=cost_matrix,
+            class_labels=class_labels,
+            capacity=capacity,
+            budget=budget,
+            score_source=score_source,
+            score_column=score_column,
+            cost_column=cost_column,
+            value_column=value_column,
+            id_column=id_column,
+            knapsack_solver=knapsack_solver,
+            objective=objective,
+            min_score=min_score,
+            lp_max_fraction=lp_max_fraction,
+        )
+
+    def apply_decisions(
+        self,
+        *,
+        partition: PartitionName | Literal["all"] | None = "test",
+        candidates: pd.DataFrame | None = None,
+    ) -> ApplyDecisionsResult:
+        """Apply the frozen DecisionPlan to a partition or candidate frame."""
+        return decision_ops.apply_decisions_op(
+            self, partition=partition, candidates=candidates
+        )
+
+    def evaluate_decisions(
+        self,
+        *,
+        partition: PartitionName = "test",
+    ) -> DecisionEvalResult:
+        """Evaluate the frozen DecisionPlan on a holdout partition."""
+        return decision_ops.evaluate_decisions_op(self, partition=partition)
+
+    @property
+    def decision_plan(self) -> DecisionPlan | None:
+        """Last fitted :class:`~buildml.optimize.results.DecisionPlan`."""
+        return self._decision_plan
+
+    @property
+    def decision_fit_result(self) -> DecisionFitResult | None:
+        """Last :class:`~buildml.optimize.results.DecisionFitResult`."""
+        return self._decision_fit_result
+
+    @property
+    def decision_eval_result(self) -> DecisionEvalResult | None:
+        """Last :class:`~buildml.optimize.results.DecisionEvalResult`."""
+        return self._decision_eval_result
+
+    @property
+    def decision_apply_result(self) -> ApplyDecisionsResult | None:
+        """Last :class:`~buildml.optimize.results.ApplyDecisionsResult`."""
+        return self._decision_apply_result
+
+    def save_decision_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.decision_bundle.v1``."""
+        return decision_ops.save_decision_bundle_op(self, path=path)
+
+    def load_decision_bundle(self, path: str | Path) -> Session:
+        """Load a decision-policy bundle into this Session."""
+        return decision_ops.load_decision_bundle_op(self, path=path)
+
+    def fit_synthesizer(
+        self,
+        *,
+        method: SynthesizerMethod = "gaussian_copula",
+        columns: Sequence[str] | None = None,
+        random_state: int = 42,
+        smooth_sigma: float = 0.0,
+        correlation_ridge: float = 1e-3,
+        target_column: str | None = None,
+        k_neighbors: int = 5,
+        sampling_strategy: str | float | dict[str, float] = "auto",
+    ) -> SynthesizerFitResult:
+        """Fit a tabular synthesizer on Session **train** only.
+
+        Methods: ``bootstrap`` (optional smoothed), ``gaussian_copula``
+        (mixed types), ``smote`` (requires ``buildml[imbalanced]``).
+
+        Notes
+        -----
+        **Leakage:** Always train-only. Distinct from :meth:`resample`
+        (class-balance preprocess). **Privacy:** not differential privacy.
+        """
+        return synthetic_ops.fit_synthesizer_op(
+            self,
+            method=method,
+            columns=columns,
+            random_state=random_state,
+            smooth_sigma=smooth_sigma,
+            correlation_ridge=correlation_ridge,
+            target_column=target_column,
+            k_neighbors=k_neighbors,
+            sampling_strategy=sampling_strategy,
+        )
+
+    def sample_synthetic(
+        self,
+        *,
+        n: int | None = None,
+        random_state: int | None = None,
+        condition: dict[str, Any] | None = None,
+        merge_mode: MergeMode = "none",
+        provenance_column: str = "_synthetic",
+    ) -> SyntheticSampleResult:
+        """Sample from the frozen synthesizer; optionally extend train.
+
+        Default ``merge_mode='none'`` returns a Frame without mutating roles.
+        ``merge_mode='extend_train'`` appends to train with a provenance
+        column (role=ignore); holdouts unchanged.
+        """
+        return synthetic_ops.sample_synthetic_op(
+            self,
+            n=n,
+            random_state=random_state,
+            condition=condition,
+            merge_mode=merge_mode,
+            provenance_column=provenance_column,
+        )
+
+    def evaluate_synthetic(
+        self,
+        *,
+        mode: EvalMode = "fidelity",
+        partition: PartitionName = "test",
+        n_synthetic: int | None = None,
+        random_state: int = 0,
+        estimator: Literal["auto", "logistic", "ridge"] = "auto",
+    ) -> SyntheticEvalResult:
+        """Evaluate the frozen synthesizer (fidelity metrics or TSTR utility)."""
+        return synthetic_ops.evaluate_synthetic_op(
+            self,
+            mode=mode,
+            partition=partition,
+            n_synthetic=n_synthetic,
+            random_state=random_state,
+            estimator=estimator,
+        )
+
+    @property
+    def synthesizer_plan(self) -> SynthesizerPlan | None:
+        """Last fitted :class:`~buildml.synthetic.results.SynthesizerPlan`."""
+        return self._synthesizer_plan
+
+    @property
+    def synthetic_fit_result(self) -> SynthesizerFitResult | None:
+        """Last :class:`~buildml.synthetic.results.SynthesizerFitResult`."""
+        return self._synthetic_fit_result
+
+    @property
+    def synthetic_eval_result(self) -> SyntheticEvalResult | None:
+        """Last :class:`~buildml.synthetic.results.SyntheticEvalResult`."""
+        return self._synthetic_eval_result
+
+    @property
+    def synthetic_sample_result(self) -> SyntheticSampleResult | None:
+        """Last :class:`~buildml.synthetic.results.SyntheticSampleResult`."""
+        return self._synthetic_sample_result
+
+    def save_synthetic_bundle(self, path: str | Path) -> Path:
+        """Persist the active plan as ``buildml.synthetic_bundle.v1``."""
+        return synthetic_ops.save_synthetic_bundle_op(self, path=path)
+
+    def load_synthetic_bundle(self, path: str | Path) -> Session:
+        """Load a synthesizer bundle into this Session."""
+        return synthetic_ops.load_synthetic_bundle_op(self, path=path)
 
     @classmethod
     def register_transform(
@@ -2407,9 +5884,13 @@ class Session:
         recipe_distributions: dict[str, Any] | None = None,
         param_space: Any | None = None,
         recipe_space: Any | None = None,
-        inner_search: Literal["auto", "grid", "randomized", "optuna"] = "auto",
+        inner_search: Literal[
+            "auto", "grid", "randomized", "optuna", "evolutionary"
+        ] = "auto",
         n_iter: int = 10,
         n_trials: int = 20,
+        population_size: int = 8,
+        n_generations: int = 3,
         random_state: int | None = 42,
         task: Literal["classification", "regression", "auto"] = "auto",
         outer_cv: int | Any = 5,
@@ -2439,11 +5920,14 @@ class Session:
             Fold-local recipe knob space (at most one). Requires ``preprocess``.
         param_space / recipe_space:
             Optuna spaces when ``inner_search='optuna'`` (or ``auto`` with these
-            args). Requires ``pip install 'buildml[optuna]'``.
+            args). Declare-style dicts for ``inner_search='evolutionary'``.
+            Optuna requires ``pip install 'buildml[optuna]'``.
         inner_search:
-            ``auto``, ``grid``, ``randomized``, or ``optuna``.
+            ``auto``, ``grid``, ``randomized``, ``optuna``, or ``evolutionary``.
         n_trials:
-            Optuna inner trials per outer fold.
+            Optuna inner trials per outer fold; evolutionary ``max_evaluations``.
+        population_size / n_generations:
+            Evolutionary GA knobs when ``inner_search='evolutionary'``.
         outer_cv / inner_cv:
             Outer and inner fold counts or sklearn splitters.
         preprocess:
@@ -2458,7 +5942,7 @@ class Session:
         post-selection generalization claim. Read ``mean_metrics`` /
         ``std_metrics`` for the outer estimate and
         ``outer_folds[*].best_params`` / ``best_recipe_knobs`` for chosen
-        configs (including Optuna winners)."""
+        configs (including Optuna / evolutionary winners)."""
         return classical_ops.nested_cv_score(
             self,
             estimator=estimator,
@@ -2471,6 +5955,8 @@ class Session:
             inner_search=inner_search,
             n_iter=n_iter,
             n_trials=n_trials,
+            population_size=population_size,
+            n_generations=n_generations,
             random_state=random_state,
             task=task,
             outer_cv=outer_cv,
@@ -2602,6 +6088,60 @@ class Session:
             refit=refit,
         )
 
+    def evolutionary_search(
+        self,
+        estimator: Any,
+        *,
+        param_space: dict[str, Any] | None = None,
+        recipe_space: dict[str, Any] | None = None,
+        population_size: int = 12,
+        n_generations: int = 5,
+        elite_size: int = 2,
+        crossover_rate: float = 0.7,
+        mutation_rate: float = 0.2,
+        tournament_size: int = 3,
+        max_evaluations: int | None = None,
+        random_state: int | None = 42,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        cv: int | Any = 5,
+        cv_strategy: Literal[
+            "auto", "kfold", "stratified", "group", "stratified_group", "time"
+        ] = "auto",
+        ranking_metric: str | None = None,
+        groups: pd.Series | None = None,
+        preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
+        refit: bool = True,
+    ) -> SearchResult:
+        """Genetic-algorithm HPO with leakage-safe train-fold CV.
+
+        In-tree NumPy GA (population, tournament selection, crossover/mutation,
+        elitism) — not random search renamed, not NAS, not a swarm zoo.
+        ``param_space`` / ``recipe_space`` use declare-style float/int/
+        categorical mappings (dicts only)."""
+        return classical_ops.evolutionary_search(
+            self,
+            estimator=estimator,
+            param_space=param_space,
+            recipe_space=recipe_space,
+            population_size=population_size,
+            n_generations=n_generations,
+            elite_size=elite_size,
+            crossover_rate=crossover_rate,
+            mutation_rate=mutation_rate,
+            tournament_size=tournament_size,
+            max_evaluations=max_evaluations,
+            random_state=random_state,
+            task=task,
+            cv=cv,
+            cv_strategy=cv_strategy,
+            ranking_metric=ranking_metric,
+            groups=groups,
+            preprocess=preprocess,
+            allow_session_global_preprocess=allow_session_global_preprocess,
+            refit=refit,
+        )
+
     @property
     def last_cv(self) -> CVScoreResult | None:
         """Most recent :meth:`cv_score` result, if any."""
@@ -2614,7 +6154,7 @@ class Session:
 
     @property
     def last_search(self) -> SearchResult | None:
-        """Most recent grid/randomized/optuna search result, if any."""
+        """Most recent grid/randomized/optuna/evolutionary search result, if any."""
         return self._last_search
 
     def extract_dates(

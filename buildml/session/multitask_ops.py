@@ -1,0 +1,194 @@
+"""Thin Session facades over buildml.multitask."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Literal, Sequence
+
+from buildml.core.errors import ValidationError
+from buildml.data.splits import PartitionName
+from buildml.multitask.checkpoint import load_multitask_bundle, save_multitask_bundle
+from buildml.multitask.evaluate import evaluate_multitask
+from buildml.multitask.explain_hooks import (
+    eval_result_summary,
+    fit_result_summary,
+    predict_result_summary,
+)
+from buildml.multitask.fit import fit_multitask
+from buildml.multitask.predict import predict_multitask
+from buildml.multitask.types import MultiTaskBaseEstimator, MultiTaskMethod, MultiTaskTask
+
+PartitionOrAll = PartitionName | Literal["all"]
+
+
+def fit_multitask_op(
+    session,
+    *,
+    method: MultiTaskMethod = "multi_output",
+    task: MultiTaskTask = "auto",
+    targets: Sequence[str] | None = None,
+    columns: list[str] | None = None,
+    base_estimator: MultiTaskBaseEstimator | str = "logistic_regression",
+    random_state: int | None = 0,
+    order: Sequence[str] | None = None,
+    prefer_reduce_components: bool = True,
+    prediction_prefix: str = "multitask_pred",
+) -> Any:
+    """Fit a multi-target estimator on the train partition only.
+
+    Notes
+    -----
+    **Leakage:** Requires a split. Fit uses train only. Validation/test are
+    never used for fitting. Needs ``>= 2`` target columns (roles or
+    ``targets=``). Same-type tasks only; mixed classification+regression is
+    refused. Classical ``Session.fit`` remains single-target.
+    """
+    session.assert_can_fit("train")
+    plan, result = fit_multitask(
+        session.dataset,
+        session._split_plan,
+        method=method,
+        task=task,
+        targets=targets,
+        columns=columns,
+        base_estimator=base_estimator,
+        random_state=random_state,
+        order=order,
+        prefer_reduce_components=prefer_reduce_components,
+        prediction_prefix=prediction_prefix,
+        reduce_plan=getattr(session, "_reduce_plan", None),
+    )
+    session._multitask_plan = plan
+    session._multitask_fit_result = result
+    session._multitask_predict_result = None
+    session._multitask_eval_result = None
+    session._record(
+        "fit_multitask",
+        {
+            "method": method,
+            "task": task,
+            "targets": None if targets is None else list(targets),
+            "columns": columns,
+            "base_estimator": base_estimator,
+            "random_state": random_state,
+            "order": None if order is None else list(order),
+            "prefer_reduce_components": prefer_reduce_components,
+            "prediction_prefix": prediction_prefix,
+        },
+        warnings=tuple(result.warnings),
+        result_summary=fit_result_summary(result),
+    )
+    return result
+
+
+def predict_multitask_op(
+    session,
+    *,
+    partition: PartitionOrAll = "test",
+    attach: bool = False,
+    prediction_prefix: str | None = None,
+) -> Any:
+    """Predict with the frozen multi-task plan (no refit)."""
+    plan = getattr(session, "_multitask_plan", None)
+    if plan is None:
+        raise ValidationError("No multi-task plan. Call fit_multitask(...) first.")
+    new_dataset, result = predict_multitask(
+        session.dataset,
+        plan,
+        session._split_plan,
+        partition=partition,
+        attach=attach,
+        prediction_prefix=prediction_prefix,
+    )
+    if new_dataset is not None:
+        session._dataset = new_dataset
+    session._multitask_predict_result = result
+    session._record(
+        "predict_multitask",
+        {
+            "partition": partition,
+            "attach": attach,
+            "prediction_prefix": prediction_prefix,
+        },
+        warnings=tuple(result.warnings),
+        result_summary=predict_result_summary(result),
+    )
+    return result
+
+
+def evaluate_multitask_op(
+    session,
+    *,
+    partition: PartitionOrAll = "validation",
+) -> Any:
+    """Evaluate the multi-task plan on a holdout partition (never for fit)."""
+    plan = getattr(session, "_multitask_plan", None)
+    if plan is None:
+        raise ValidationError("No multi-task plan. Call fit_multitask(...) first.")
+    resolved: PartitionOrAll = partition
+    split = session._split_plan
+    if (
+        partition == "validation"
+        and split is not None
+        and not split.validation_indices
+    ):
+        resolved = "test"
+    result = evaluate_multitask(
+        session.dataset,
+        plan,
+        session._split_plan,
+        partition=resolved,
+    )
+    session._multitask_eval_result = result
+    session._record(
+        "evaluate_multitask",
+        {"partition": resolved},
+        warnings=tuple(result.warnings),
+        result_summary=eval_result_summary(result),
+    )
+    return result
+
+
+def save_multitask_bundle_op(session, path: str | Path) -> Path:
+    """Persist the active MultiTaskPlan as ``buildml.multitask_bundle.v1``."""
+    plan = getattr(session, "_multitask_plan", None)
+    if plan is None:
+        raise ValidationError("No multi-task plan. Call fit_multitask(...) first.")
+    out = save_multitask_bundle(
+        path,
+        plan,
+        fit_result=getattr(session, "_multitask_fit_result", None),
+        eval_result=getattr(session, "_multitask_eval_result", None),
+    )
+    session._record(
+        "save_multitask_bundle",
+        {"path": str(out)},
+        result_summary={
+            "path": str(out),
+            "method": plan.method,
+            "task": plan.task,
+            "n_tasks": len(plan.target_columns),
+            "target_columns": list(plan.target_columns),
+        },
+    )
+    return out
+
+
+def load_multitask_bundle_op(session, path: str | Path) -> Any:
+    """Load a multi-task bundle into this Session."""
+    plan = load_multitask_bundle(path)
+    session._multitask_plan = plan
+    session._multitask_fit_result = None
+    session._multitask_predict_result = None
+    session._multitask_eval_result = None
+    session._record(
+        "load_multitask_bundle",
+        {
+            "path": str(path),
+            "method": plan.method,
+            "task": plan.task,
+            "n_tasks": len(plan.target_columns),
+        },
+        result_summary=plan.to_dict(),
+    )
+    return session

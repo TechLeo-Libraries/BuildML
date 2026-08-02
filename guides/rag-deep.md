@@ -200,12 +200,16 @@ gates ([ai-tools](ai-tools-operator-patterns.md)).
 - Generate quality depends entirely on the chat provider + retrieved context.
 - Faithfulness hooks are lexical / citation-marker heuristics, not a judge model.
 - Not a managed vector-DB cloud product.
+- Not tabular learning-to-rank (`fit_ranker` on labeled query–item feature
+  rows) and not recommender CF (`fit_recommender`). Shared metric names
+  (nDCG/MRR) use different protocols — see [ranking-deep.md](ranking-deep.md).
 
 ---
 
 ## Related
 
 - [RAG quickstart](quickstart-rag.md)
+- [LTR / search ranking](ranking-deep.md) (tabular judgments; distinct path)
 - [Artifacts](artifacts-checkpoints-bundles.md)
 - [AI safety](ai-operator-safety.md)
 - [Leakage](leakage-cv-recipes.md) (eval hygiene parallels)

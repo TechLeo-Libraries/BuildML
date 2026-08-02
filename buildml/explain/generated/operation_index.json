@@ -1,6 +1,87 @@
 {
-  "n_operations": 114,
+  "n_operations": 255,
   "operations": {
+    "act_rl": {
+      "doc_summary": "Choose actions under the fitted RL policy.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "act_rl",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Any] | Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "observations",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "deterministic",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.act_rl"
+    },
+    "adapt_to_task": {
+      "doc_summary": "Fast-adapt the meta-learner to one task's labeled support set.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "adapt_to_task",
+      "parameters": [
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task_id",
+          "required": false
+        },
+        {
+          "annotation": "PartitionName",
+          "default": "'train'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "support_frame",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_support_per_class",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.adapt_to_task"
+    },
     "ai_advisor": {
       "doc_summary": "Get advisory Q&A guidance about the current workflow (read-only).",
       "is_classmethod": false,
@@ -356,6 +437,29 @@
       ],
       "qualname": "Session.apply_custom_transform"
     },
+    "apply_decisions": {
+      "doc_summary": "Apply the frozen DecisionPlan to a partition or candidate frame.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "apply_decisions",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all'] | None",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "pd.DataFrame | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "candidates",
+          "required": false
+        }
+      ],
+      "qualname": "Session.apply_decisions"
+    },
     "apply_preprocess_plans": {
       "doc_summary": "Re-apply fitted preprocess plans in score-time order.",
       "is_classmethod": false,
@@ -408,6 +512,29 @@
         }
       ],
       "qualname": "Session.assert_can_fit"
+    },
+    "assign_clusters": {
+      "doc_summary": "Assign cluster labels with the train-fitted plan (no refit).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "assign_clusters",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "attach",
+          "required": false
+        }
+      ],
+      "qualname": "Session.assign_clusters"
     },
     "attach_backbone_head": {
       "doc_summary": "Attach a classification head to the last :meth:`load_pretrained_backbone` result.",
@@ -747,6 +874,78 @@
         }
       ],
       "qualname": "Session.cv_score"
+    },
+    "declare_causal_assumptions": {
+      "doc_summary": "Declare identification assumptions required for causal estimation.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "declare_causal_assumptions",
+      "parameters": [
+        {
+          "annotation": "str",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "treatment",
+          "required": true
+        },
+        {
+          "annotation": "str",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "outcome",
+          "required": true
+        },
+        {
+          "annotation": "Sequence[str] | None",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "confounders",
+          "required": true
+        },
+        {
+          "annotation": "str",
+          "default": "'ATE'",
+          "kind": "KEYWORD_ONLY",
+          "name": "estimand",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'backdoor'",
+          "kind": "KEYWORD_ONLY",
+          "name": "identification",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "instruments",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "acknowledge_unconfoundedness",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "acknowledge_positivity",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_empty_confounders",
+          "required": false
+        }
+      ],
+      "qualname": "Session.declare_causal_assumptions"
     },
     "domain_adapt_speech_torch": {
       "doc_summary": "Domain-adapt speech classify (finetune-lite; not FM continued pretrain).",
@@ -1284,6 +1483,36 @@
       ],
       "qualname": "Session.error_slices"
     },
+    "estimate_causal": {
+      "doc_summary": "Estimate ATE on a partition with fitted train nuisances.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "estimate_causal",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'train'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "bootstrap_samples",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.estimate_causal"
+    },
     "eval_plots": {
       "doc_summary": "Build an evaluation plot board for the fitted estimator.",
       "is_classmethod": false,
@@ -1386,6 +1615,73 @@
       ],
       "qualname": "Session.evaluate"
     },
+    "evaluate_active_learning": {
+      "doc_summary": "Evaluate the active learner on labeled partition rows only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_active_learning",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "unlabeled_marker",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_active_learning"
+    },
+    "evaluate_anomaly": {
+      "doc_summary": "Evaluate train-fitted anomaly scores on a partition without refitting.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_anomaly",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "label_column",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "positive_label",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "override_threshold",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_anomaly"
+    },
     "evaluate_asr": {
       "doc_summary": "Score ASR hypotheses vs references (WER/CER).",
       "is_classmethod": false,
@@ -1416,6 +1712,572 @@
       ],
       "qualname": "Session.evaluate_asr"
     },
+    "evaluate_automl": {
+      "doc_summary": "Evaluate the last AutoML winner with classical supervised metrics.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_automl",
+      "parameters": [
+        {
+          "annotation": "Literal['train', 'validation', 'test']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_automl"
+    },
+    "evaluate_causal": {
+      "doc_summary": "Holdout nuisance predictive checks + ATE (not proof of identification).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_causal",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "bootstrap_samples",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_causal"
+    },
+    "evaluate_cbr": {
+      "doc_summary": "Evaluate CBR on a holdout partition (no memory update).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_cbr",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_cbr"
+    },
+    "evaluate_clusters": {
+      "doc_summary": "Evaluate train-fitted clusters on a partition without refitting.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_clusters",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "external_label_column",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "2000",
+          "kind": "KEYWORD_ONLY",
+          "name": "sample_size",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_clusters"
+    },
+    "evaluate_decisions": {
+      "doc_summary": "Evaluate the frozen DecisionPlan on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_decisions",
+      "parameters": [
+        {
+          "annotation": "PartitionName",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_decisions"
+    },
+    "evaluate_ensemble": {
+      "doc_summary": "Evaluate the last native ensemble with classical supervised metrics.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_ensemble",
+      "parameters": [
+        {
+          "annotation": "Literal['train', 'validation', 'test']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_ensemble"
+    },
+    "evaluate_federated": {
+      "doc_summary": "Evaluate the global federated model on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_federated",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "per_client",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_federated"
+    },
+    "evaluate_forecast": {
+      "doc_summary": "Evaluate the train-fitted forecaster on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_forecast",
+      "parameters": [
+        {
+          "annotation": "PartitionName",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "ForecastEvalStrategy",
+          "default": "'rolling_one_step'",
+          "kind": "KEYWORD_ONLY",
+          "name": "strategy",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_forecast"
+    },
+    "evaluate_graph": {
+      "doc_summary": "Evaluate node classification on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_graph",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_graph"
+    },
+    "evaluate_imitation": {
+      "doc_summary": "Compare predicted actions to held-out demonstration actions.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_imitation",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_imitation"
+    },
+    "evaluate_kg": {
+      "doc_summary": "Holdout filtered link-prediction metrics: MRR, Hits@1/3/K.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_kg",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_kg"
+    },
+    "evaluate_metalearning": {
+      "doc_summary": "Evaluate episodic few-shot performance on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_metalearning",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "k_shot",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_query",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_way",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_novel_tasks",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_metalearning"
+    },
+    "evaluate_multitask": {
+      "doc_summary": "Evaluate multi-task predictions with per-task and aggregate metrics.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_multitask",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_multitask"
+    },
+    "evaluate_neuro_symbolic": {
+      "doc_summary": "Evaluate the neuro-symbolic hybrid on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_neuro_symbolic",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_neuro_symbolic"
+    },
+    "evaluate_online": {
+      "doc_summary": "Evaluate the online learner on a holdout partition (never for updates).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_online",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_online"
+    },
+    "evaluate_probabilistic": {
+      "doc_summary": "Evaluate probabilistic predictions with proper scoring rules.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_probabilistic",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "alpha",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_probabilistic"
+    },
+    "evaluate_ranker": {
+      "doc_summary": "Holdout per-query metrics: nDCG@K, MAP@K, MRR@K.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_ranker",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_ranker"
+    },
+    "evaluate_recommender": {
+      "doc_summary": "Holdout ranking metrics: Precision@K, Recall@K, nDCG@K, MAP@K.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_recommender",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_recommender"
+    },
+    "evaluate_rl": {
+      "doc_summary": "Evaluate RL (offline bandit metrics or Gymnasium episode returns).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_rl",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_episodes",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_steps",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "deterministic",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_rl"
+    },
+    "evaluate_semisupervised": {
+      "doc_summary": "Evaluate semi-supervised predictions on labeled partition rows only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_semisupervised",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "unlabeled_marker",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_semisupervised"
+    },
+    "evaluate_ssl": {
+      "doc_summary": "Evaluate frozen SSL pretext + head on labeled partition rows.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_ssl",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "unlabeled_marker",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_ssl"
+    },
+    "evaluate_symbolic": {
+      "doc_summary": "Evaluate the symbolic rule base on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_symbolic",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_symbolic"
+    },
+    "evaluate_synthetic": {
+      "doc_summary": "Evaluate the frozen synthesizer (fidelity metrics or TSTR utility).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_synthetic",
+      "parameters": [
+        {
+          "annotation": "EvalMode",
+          "default": "'fidelity'",
+          "kind": "KEYWORD_ONLY",
+          "name": "mode",
+          "required": false
+        },
+        {
+          "annotation": "PartitionName",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_synthetic",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "Literal['auto', 'logistic', 'ridge']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "estimator",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_synthetic"
+    },
+    "evaluate_tda": {
+      "doc_summary": "Score the TDA head on a holdout partition (frozen train pipeline).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_tda",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_tda"
+    },
     "evaluate_torch": {
       "doc_summary": "Evaluate the last Torch trainer on a named partition.",
       "is_classmethod": false,
@@ -1438,6 +2300,148 @@
         }
       ],
       "qualname": "Session.evaluate_torch"
+    },
+    "evolutionary_search": {
+      "doc_summary": "Genetic-algorithm HPO with leakage-safe train-fold CV.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evolutionary_search",
+      "parameters": [
+        {
+          "annotation": "Any",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "estimator",
+          "required": true
+        },
+        {
+          "annotation": "dict[str, Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "param_space",
+          "required": false
+        },
+        {
+          "annotation": "dict[str, Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "recipe_space",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "12",
+          "kind": "KEYWORD_ONLY",
+          "name": "population_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_generations",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "elite_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.7",
+          "kind": "KEYWORD_ONLY",
+          "name": "crossover_rate",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.2",
+          "kind": "KEYWORD_ONLY",
+          "name": "mutation_rate",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "tournament_size",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_evaluations",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "42",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "int | Any",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "cv",
+          "required": false
+        },
+        {
+          "annotation": "Literal['auto', 'kfold', 'stratified', 'group', 'stratified_group', 'time']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "cv_strategy",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "ranking_metric",
+          "required": false
+        },
+        {
+          "annotation": "pd.Series | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "groups",
+          "required": false
+        },
+        {
+          "annotation": "PreprocessRecipe | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "preprocess",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_session_global_preprocess",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "refit",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evolutionary_search"
     },
     "explain": {
       "doc_summary": "Explain an operation before/after execution, or return the workflow.",
@@ -1573,6 +2577,36 @@
       ],
       "qualname": "Session.feature_importance"
     },
+    "finetune_ssl_head": {
+      "doc_summary": "Fit a supervised head on frozen SSL embeddings (labeled train only).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "finetune_ssl_head",
+      "parameters": [
+        {
+          "annotation": "SSLHeadEstimator",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "estimator",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "unlabeled_marker",
+          "required": false
+        }
+      ],
+      "qualname": "Session.finetune_ssl_head"
+    },
     "fit": {
       "doc_summary": "Fit a sklearn-compatible estimator on the train partition.",
       "is_classmethod": false,
@@ -1595,6 +2629,1924 @@
         }
       ],
       "qualname": "Session.fit"
+    },
+    "fit_active_learner": {
+      "doc_summary": "Fit / initialize an active learner on labeled train rows only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_active_learner",
+      "parameters": [
+        {
+          "annotation": "ActiveLearningStrategy",
+          "default": "'margin'",
+          "kind": "KEYWORD_ONLY",
+          "name": "strategy",
+          "required": false
+        },
+        {
+          "annotation": "ActiveLearningEstimator",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "base_estimator",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "50",
+          "kind": "KEYWORD_ONLY",
+          "name": "label_budget",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "unlabeled_marker",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "committee_size",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "auto_refit",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_active_learner"
+    },
+    "fit_anomaly": {
+      "doc_summary": "Fit an anomaly / fraud detector on the train partition only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_anomaly",
+      "parameters": [
+        {
+          "annotation": "AnomalyMethod",
+          "default": "'isolation_forest'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "AnomalyMode",
+          "default": "'unsupervised'",
+          "kind": "KEYWORD_ONLY",
+          "name": "mode",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.05",
+          "kind": "KEYWORD_ONLY",
+          "name": "contamination",
+          "required": false
+        },
+        {
+          "annotation": "ThresholdPolicy",
+          "default": "'contamination'",
+          "kind": "KEYWORD_ONLY",
+          "name": "threshold_policy",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "score_threshold",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "quantile",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "100",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_estimators",
+          "required": false
+        },
+        {
+          "annotation": "str | int | float",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_samples",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "20",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_neighbors",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.05",
+          "kind": "KEYWORD_ONLY",
+          "name": "nu",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'rbf'",
+          "kind": "KEYWORD_ONLY",
+          "name": "kernel",
+          "required": false
+        },
+        {
+          "annotation": "str | float",
+          "default": "'scale'",
+          "kind": "KEYWORD_ONLY",
+          "name": "gamma",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "normal_label_column",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "normal_label_value",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "positive_label",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'is_anomaly'",
+          "kind": "KEYWORD_ONLY",
+          "name": "flag_column",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'anomaly_score'",
+          "kind": "KEYWORD_ONLY",
+          "name": "score_column",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_anomaly"
+    },
+    "fit_blending": {
+      "doc_summary": "Fit a holdout-blend ensemble on the train partition only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_blending",
+      "parameters": [
+        {
+          "annotation": "Mapping[str, Any] | Sequence[tuple[str, Any]]",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "estimators",
+          "required": true
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "final_estimator",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.2",
+          "kind": "KEYWORD_ONLY",
+          "name": "holdout_fraction",
+          "required": false
+        },
+        {
+          "annotation": "BlendMethod",
+          "default": "'predict_proba'",
+          "kind": "KEYWORD_ONLY",
+          "name": "blend_method",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "refit_bases_on_full_train",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "passthrough",
+          "required": false
+        },
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_blending"
+    },
+    "fit_causal": {
+      "doc_summary": "Fit causal nuisance models (train-only) and estimate backdoor ATE.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_causal",
+      "parameters": [
+        {
+          "annotation": "CausalMethod",
+          "default": "'aipw'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "CausalAssumptions | dict[str, Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "assumptions",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "200",
+          "kind": "KEYWORD_ONLY",
+          "name": "bootstrap_samples",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "tuple[float, float]",
+          "default": "(0.01, 0.99)",
+          "kind": "KEYWORD_ONLY",
+          "name": "clip_propensity",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'ridge'",
+          "kind": "KEYWORD_ONLY",
+          "name": "outcome_model",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "propensity_model",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_causal"
+    },
+    "fit_cbr": {
+      "doc_summary": "Build a tabular case memory from Session train.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_cbr",
+      "parameters": [
+        {
+          "annotation": "CbrTask | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "CbrMetric",
+          "default": "'euclidean'",
+          "kind": "KEYWORD_ONLY",
+          "name": "metric",
+          "required": false
+        },
+        {
+          "annotation": "CbrReuseMode",
+          "default": "'distance_weighted'",
+          "kind": "KEYWORD_ONLY",
+          "name": "reuse",
+          "required": false
+        },
+        {
+          "annotation": "CbrAdaptMode",
+          "default": "'none'",
+          "kind": "KEYWORD_ONLY",
+          "name": "adapt",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "categorical_columns",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "standardize",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1e-08",
+          "kind": "KEYWORD_ONLY",
+          "name": "distance_eps",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_cbr"
+    },
+    "fit_clusters": {
+      "doc_summary": "Fit a clusterer on the train partition only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_clusters",
+      "parameters": [
+        {
+          "annotation": "ClusterMethod",
+          "default": "'kmeans'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "8",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_clusters",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "int | str",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_init",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "300",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_iter",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'ward'",
+          "kind": "KEYWORD_ONLY",
+          "name": "linkage",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.5",
+          "kind": "KEYWORD_ONLY",
+          "name": "eps",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_samples",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cluster_id'",
+          "kind": "KEYWORD_ONLY",
+          "name": "label_column",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_clusters"
+    },
+    "fit_decision_policy": {
+      "doc_summary": "Fit a decision policy on train/validation (test requires opt-in).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_decision_policy",
+      "parameters": [
+        {
+          "annotation": "DecisionMethod",
+          "default": "'threshold'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "TuningPartition",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_test_tuning",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "fp_cost",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "fn_cost",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "tp_benefit",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "tn_benefit",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Sequence[float]] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "cost_matrix",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "class_labels",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "capacity",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "budget",
+          "required": false
+        },
+        {
+          "annotation": "ScoreSource",
+          "default": "'model_proba'",
+          "kind": "KEYWORD_ONLY",
+          "name": "score_source",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "score_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "cost_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "value_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "id_column",
+          "required": false
+        },
+        {
+          "annotation": "KnapsackSolver",
+          "default": "'dp'",
+          "kind": "KEYWORD_ONLY",
+          "name": "knapsack_solver",
+          "required": false
+        },
+        {
+          "annotation": "AllocationObjective",
+          "default": "'maximize_score'",
+          "kind": "KEYWORD_ONLY",
+          "name": "objective",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_score",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "lp_max_fraction",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_decision_policy"
+    },
+    "fit_federated": {
+      "doc_summary": "Simulate federated averaging on Session train clients.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_federated",
+      "parameters": [
+        {
+          "annotation": "FederatedMethod",
+          "default": "'fedavg'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "FederatedEstimator",
+          "default": "'sgd_classifier'",
+          "kind": "KEYWORD_ONLY",
+          "name": "estimator",
+          "required": false
+        },
+        {
+          "annotation": "FederatedTask | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "client_column",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_rounds",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "local_epochs",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "client_fraction",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "mu",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_client_rows",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_federated"
+    },
+    "fit_forecast": {
+      "doc_summary": "Fit a classical forecaster on the train partition only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_forecast",
+      "parameters": [
+        {
+          "annotation": "ForecastMethod",
+          "default": "'lag_ridge'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "horizon",
+          "required": false
+        },
+        {
+          "annotation": "list[int] | tuple[int, ...] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "lags",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "seasonal_period",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "exog_columns",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "target_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "time_column",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "alpha",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "100",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_iter",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_depth",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.1",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_forecast"
+    },
+    "fit_graph": {
+      "doc_summary": "Fit graph node classification (classical or pure-Torch GCN).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_graph",
+      "parameters": [
+        {
+          "annotation": "GraphMethod",
+          "default": "'classical'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "GraphTask",
+          "default": "'node_classification'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "GraphMode",
+          "default": "'inductive'",
+          "kind": "KEYWORD_ONLY",
+          "name": "mode",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "ClassicalEstimator",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "classical_estimator",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "32",
+          "kind": "KEYWORD_ONLY",
+          "name": "hidden_dim",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_layers",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "80",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.01",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.0005",
+          "kind": "KEYWORD_ONLY",
+          "name": "weight_decay",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.1",
+          "kind": "KEYWORD_ONLY",
+          "name": "dropout",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_graph_metrics",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_graph"
+    },
+    "fit_imitation": {
+      "doc_summary": "Fit behavioral cloning from demonstration rows (train only).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_imitation",
+      "parameters": [
+        {
+          "annotation": "ImitationTask | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "ImitationEstimator | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "estimator",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "action_column",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_imitation"
+    },
+    "fit_kg": {
+      "doc_summary": "Fit a knowledge-graph embedding model on train triples only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_kg",
+      "parameters": [
+        {
+          "annotation": "KgMethod",
+          "default": "'transe'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "head_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "relation_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "tail_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "50",
+          "kind": "KEYWORD_ONLY",
+          "name": "embedding_dim",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "256",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.01",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "margin",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "neg_ratio",
+          "required": false
+        },
+        {
+          "annotation": "KgNorm",
+          "default": "'l1'",
+          "kind": "KEYWORD_ONLY",
+          "name": "norm",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_kg"
+    },
+    "fit_metalearning": {
+      "doc_summary": "Meta-train a tabular few-shot / episodic learner on train tasks only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_metalearning",
+      "parameters": [
+        {
+          "annotation": "MetaLearningMethod",
+          "default": "'prototypical'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task_column",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_way",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "k_shot",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_query",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "20",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_episodes",
+          "required": false
+        },
+        {
+          "annotation": "MetaLearningBaseEstimator | str",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "base_estimator",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.25",
+          "kind": "KEYWORD_ONLY",
+          "name": "task_holdout_fraction",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_metalearning"
+    },
+    "fit_multitask": {
+      "doc_summary": "Fit a multi-target MultiOutput / Chain estimator on train only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_multitask",
+      "parameters": [
+        {
+          "annotation": "MultiTaskMethod",
+          "default": "'multi_output'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "MultiTaskTask",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | tuple[str, ...] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "targets",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "MultiTaskBaseEstimator | str",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "base_estimator",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | tuple[str, ...] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "order",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'multitask_pred'",
+          "kind": "KEYWORD_ONLY",
+          "name": "prediction_prefix",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_multitask"
+    },
+    "fit_neuro_symbolic": {
+      "doc_summary": "Fit a sklearn + symbolic hybrid in one Session API.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_neuro_symbolic",
+      "parameters": [
+        {
+          "annotation": "NeuroSymbolicMode",
+          "default": "'constraint_overlay'",
+          "kind": "KEYWORD_ONLY",
+          "name": "mode",
+          "required": false
+        },
+        {
+          "annotation": "BaseEstimatorName",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "base_estimator",
+          "required": false
+        },
+        {
+          "annotation": "SymbolicTask | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Mapping[str, Any] | Rule] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "rules",
+          "required": false
+        },
+        {
+          "annotation": "SymbolicSource",
+          "default": "'decision_tree'",
+          "kind": "KEYWORD_ONLY",
+          "name": "rule_source",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.5",
+          "kind": "KEYWORD_ONLY",
+          "name": "soft_strength",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_depth",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_samples_leaf",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "24",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_rules",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_neuro_symbolic"
+    },
+    "fit_online": {
+      "doc_summary": "Warm-start an incremental ``partial_fit`` estimator on a train chunk.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_online",
+      "parameters": [
+        {
+          "annotation": "OnlineEstimator",
+          "default": "'sgd_classifier'",
+          "kind": "KEYWORD_ONLY",
+          "name": "estimator",
+          "required": false
+        },
+        {
+          "annotation": "OnlineTask | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "50",
+          "kind": "KEYWORD_ONLY",
+          "name": "chunk_size",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_init",
+          "required": false
+        },
+        {
+          "annotation": "list[Any] | tuple[Any, ...] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "indices",
+          "required": false
+        },
+        {
+          "annotation": "list[Any] | tuple[Any, ...] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "classes",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_refit_fallback",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "drift_disclose",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_online"
+    },
+    "fit_probabilistic": {
+      "doc_summary": "Fit a Bayesian / probabilistic estimator with uncertainty.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_probabilistic",
+      "parameters": [
+        {
+          "annotation": "ProbabilisticEstimator",
+          "default": "'bayesian_ridge'",
+          "kind": "KEYWORD_ONLY",
+          "name": "estimator",
+          "required": false
+        },
+        {
+          "annotation": "ProbabilisticTask | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.1",
+          "kind": "KEYWORD_ONLY",
+          "name": "alpha",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "conformal",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.2",
+          "kind": "KEYWORD_ONLY",
+          "name": "conformal_calibration_fraction",
+          "required": false
+        },
+        {
+          "annotation": "IntervalMethod | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "interval_method",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_restarts_optimizer",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_probabilistic"
+    },
+    "fit_ranker": {
+      "doc_summary": "Fit a tabular learning-to-rank model on train rows only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_ranker",
+      "parameters": [
+        {
+          "annotation": "RankerMethod",
+          "default": "'pointwise'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "query_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "item_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "relevance_column",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "feature_columns",
+          "required": false
+        },
+        {
+          "annotation": "PointwiseEstimator",
+          "default": "'ridge'",
+          "kind": "KEYWORD_ONLY",
+          "name": "pointwise_estimator",
+          "required": false
+        },
+        {
+          "annotation": "PairwiseEstimator",
+          "default": "'ranksvm'",
+          "kind": "KEYWORD_ONLY",
+          "name": "pairwise_estimator",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "80",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_pairs_per_query",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "relevance_threshold",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "alpha",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "C",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_ranker"
+    },
+    "fit_recommender": {
+      "doc_summary": "Fit a recommender on train interactions only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_recommender",
+      "parameters": [
+        {
+          "annotation": "RecommenderMethod",
+          "default": "'item_knn'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "user_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "item_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "rating_column",
+          "required": false
+        },
+        {
+          "annotation": "FeedbackMode",
+          "default": "'explicit'",
+          "kind": "KEYWORD_ONLY",
+          "name": "feedback",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_neighbors",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "32",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_factors",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_rating",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "item_feature_columns",
+          "required": false
+        },
+        {
+          "annotation": "ColdStartPolicy",
+          "default": "'popularity'",
+          "kind": "KEYWORD_ONLY",
+          "name": "cold_start",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_recommender"
+    },
+    "fit_rl": {
+      "doc_summary": "Fit a contextual bandit (core) or Gymnasium REINFORCE-lite.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_rl",
+      "parameters": [
+        {
+          "annotation": "RlMode",
+          "default": "'contextual_bandit'",
+          "kind": "KEYWORD_ONLY",
+          "name": "mode",
+          "required": false
+        },
+        {
+          "annotation": "BanditAlgorithm",
+          "default": "'linucb'",
+          "kind": "KEYWORD_ONLY",
+          "name": "algorithm",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "action_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "reward_column",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "alpha",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.1",
+          "kind": "KEYWORD_ONLY",
+          "name": "epsilon",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "temperature",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'CartPole-v1'",
+          "kind": "KEYWORD_ONLY",
+          "name": "env_id",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "200",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_episodes",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "500",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_steps",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.01",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.99",
+          "kind": "KEYWORD_ONLY",
+          "name": "gamma",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_rl"
+    },
+    "fit_semisupervised": {
+      "doc_summary": "Fit a semi-supervised classifier on the train partition only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_semisupervised",
+      "parameters": [
+        {
+          "annotation": "SemiSupervisedMethod",
+          "default": "'label_propagation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'knn'",
+          "kind": "KEYWORD_ONLY",
+          "name": "kernel",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "7",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_neighbors",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_iter",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.2",
+          "kind": "KEYWORD_ONLY",
+          "name": "alpha",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "base_estimator",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.75",
+          "kind": "KEYWORD_ONLY",
+          "name": "threshold",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'threshold'",
+          "kind": "KEYWORD_ONLY",
+          "name": "criterion",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "k_best",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_self_train_iter",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "unlabeled_marker",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_semisupervised"
     },
     "fit_speech_torch": {
       "doc_summary": "Fine-tune tiny speech encoder + classifier (integration/finetune-lite).",
@@ -1688,6 +4640,394 @@
         }
       ],
       "qualname": "Session.fit_speech_torch"
+    },
+    "fit_ssl_pretext": {
+      "doc_summary": "Fit a self-supervised tabular pretext on the train partition only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_ssl_pretext",
+      "parameters": [
+        {
+          "annotation": "SelfSupervisedMethod",
+          "default": "'masked_tabular'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16",
+          "kind": "KEYWORD_ONLY",
+          "name": "latent_dim",
+          "required": false
+        },
+        {
+          "annotation": "tuple[int, ...] | list[int]",
+          "default": "(64,)",
+          "kind": "KEYWORD_ONLY",
+          "name": "hidden",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.15",
+          "kind": "KEYWORD_ONLY",
+          "name": "mask_ratio",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_mask_views",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "200",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_iter",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'ssl_emb'",
+          "kind": "KEYWORD_ONLY",
+          "name": "representation_prefix",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_ssl_pretext"
+    },
+    "fit_stacking": {
+      "doc_summary": "Fit a StackingClassifier / StackingRegressor on the train partition only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_stacking",
+      "parameters": [
+        {
+          "annotation": "Mapping[str, Any] | Sequence[tuple[str, Any]]",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "estimators",
+          "required": true
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "final_estimator",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "cv",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "passthrough",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "stack_method",
+          "required": false
+        },
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_stacking"
+    },
+    "fit_symbolic": {
+      "doc_summary": "Compile or induce a symbolic if-then rule base on train.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_symbolic",
+      "parameters": [
+        {
+          "annotation": "SymbolicSource",
+          "default": "'decision_tree'",
+          "kind": "KEYWORD_ONLY",
+          "name": "source",
+          "required": false
+        },
+        {
+          "annotation": "SymbolicTask | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Mapping[str, Any] | Rule] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "rules",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "4",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_depth",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_samples_leaf",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "32",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_rules",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "default_consequent",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_symbolic"
+    },
+    "fit_synthesizer": {
+      "doc_summary": "Fit a tabular synthesizer on Session **train** only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_synthesizer",
+      "parameters": [
+        {
+          "annotation": "SynthesizerMethod",
+          "default": "'gaussian_copula'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "42",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "smooth_sigma",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "correlation_ridge",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "target_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "k_neighbors",
+          "required": false
+        },
+        {
+          "annotation": "str | float | dict[str, float]",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "sampling_strategy",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_synthesizer"
+    },
+    "fit_tda": {
+      "doc_summary": "Fit topological features (+ optional sklearn head) on train only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_tda",
+      "parameters": [
+        {
+          "annotation": "Vectorization",
+          "default": "'persistence_image'",
+          "kind": "KEYWORD_ONLY",
+          "name": "vectorization",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[int]",
+          "default": "(0, 1)",
+          "kind": "KEYWORD_ONLY",
+          "name": "homology_dims",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16",
+          "kind": "KEYWORD_ONLY",
+          "name": "knn",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "maxdim",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "thresh",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "20",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_bins",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_layers",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "pixel_size",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "standardize",
+          "required": false
+        },
+        {
+          "annotation": "TdaHead",
+          "default": "'logistic_regression'",
+          "kind": "KEYWORD_ONLY",
+          "name": "head",
+          "required": false
+        },
+        {
+          "annotation": "TdaTask | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "4000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_points_guard",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_tda"
     },
     "fit_torch": {
       "doc_summary": "Train an ``nn.Module`` on the train Torch loader.",
@@ -1874,6 +5214,73 @@
         }
       ],
       "qualname": "Session.fit_torch_ddp"
+    },
+    "fit_voting": {
+      "doc_summary": "Fit a VotingClassifier / VotingRegressor on the train partition only.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_voting",
+      "parameters": [
+        {
+          "annotation": "Mapping[str, Any] | Sequence[tuple[str, Any]]",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "estimators",
+          "required": true
+        },
+        {
+          "annotation": "VotingMethod",
+          "default": "'hard'",
+          "kind": "KEYWORD_ONLY",
+          "name": "voting",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[float] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "weights",
+          "required": false
+        },
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_voting"
+    },
+    "generate_forecast": {
+      "doc_summary": "Generate an H-step forecast from the train-fitted plan (no refit).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "generate_forecast",
+      "parameters": [
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "horizon",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'train_end'",
+          "kind": "KEYWORD_ONLY",
+          "name": "origin",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "future_exog",
+          "required": false
+        }
+      ],
+      "qualname": "Session.generate_forecast"
     },
     "grid_search": {
       "doc_summary": "Grid-search estimator params and/or fold-local recipe knobs.",
@@ -2169,6 +5576,36 @@
       ],
       "qualname": "Session.inject_split"
     },
+    "label_rows": {
+      "doc_summary": "Incorporate user-provided labels on train-pool rows; optionally refit.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "label_rows",
+      "parameters": [
+        {
+          "annotation": "list[Any] | tuple[Any, ...]",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "indices",
+          "required": true
+        },
+        {
+          "annotation": "list[Any] | tuple[Any, ...]",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "labels",
+          "required": true
+        },
+        {
+          "annotation": "bool | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "refit",
+          "required": false
+        }
+      ],
+      "qualname": "Session.label_rows"
+    },
     "learning_curve": {
       "doc_summary": "Compute learning curves on the training partition.",
       "is_classmethod": false,
@@ -2221,6 +5658,22 @@
       "parameters": [],
       "qualname": "Session.list_transforms"
     },
+    "load_active_learning_bundle": {
+      "doc_summary": "Load an active-learning bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_active_learning_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_active_learning_bundle"
+    },
     "load_ai_transcript": {
       "doc_summary": "Load an AI transcript for resume or audit.",
       "is_classmethod": false,
@@ -2237,6 +5690,198 @@
       ],
       "qualname": "Session.load_ai_transcript"
     },
+    "load_anomaly_bundle": {
+      "doc_summary": "Load an anomaly bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_anomaly_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_anomaly_bundle"
+    },
+    "load_automl_bundle": {
+      "doc_summary": "Load an AutoML bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_automl_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_automl_bundle"
+    },
+    "load_causal_bundle": {
+      "doc_summary": "Load a causal bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_causal_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_causal_bundle"
+    },
+    "load_cbr_bundle": {
+      "doc_summary": "Load a CBR bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_cbr_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_cbr_bundle"
+    },
+    "load_decision_bundle": {
+      "doc_summary": "Load a decision-policy bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_decision_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_decision_bundle"
+    },
+    "load_ensemble_bundle": {
+      "doc_summary": "Load an ensemble bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_ensemble_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_ensemble_bundle"
+    },
+    "load_federated_bundle": {
+      "doc_summary": "Load a federated-learning bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_federated_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_federated_bundle"
+    },
+    "load_forecast_bundle": {
+      "doc_summary": "Load a forecast bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_forecast_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_forecast_bundle"
+    },
+    "load_graph_bundle": {
+      "doc_summary": "Load a graph bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_graph_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_graph_bundle"
+    },
+    "load_imitation_bundle": {
+      "doc_summary": "Load an imitation bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_imitation_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_imitation_bundle"
+    },
+    "load_kg_bundle": {
+      "doc_summary": "Load a knowledge-graph bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_kg_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_kg_bundle"
+    },
+    "load_metalearning_bundle": {
+      "doc_summary": "Load a meta-learning bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_metalearning_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_metalearning_bundle"
+    },
     "load_model": {
       "doc_summary": "Load a previously saved fitted estimator bundle into this session.",
       "is_classmethod": false,
@@ -2252,6 +5897,38 @@
         }
       ],
       "qualname": "Session.load_model"
+    },
+    "load_multitask_bundle": {
+      "doc_summary": "Load a multi-task bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_multitask_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_multitask_bundle"
+    },
+    "load_online_bundle": {
+      "doc_summary": "Load an online-learning bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_online_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_online_bundle"
     },
     "load_pipeline": {
       "doc_summary": "Load a pipeline bundle (estimator + preprocess plans + model card).",
@@ -2320,6 +5997,22 @@
       ],
       "qualname": "Session.load_pretrained_backbone"
     },
+    "load_probabilistic_bundle": {
+      "doc_summary": "Load a probabilistic bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_probabilistic_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_probabilistic_bundle"
+    },
     "load_rag_bundle": {
       "doc_summary": "Load a RAG bundle into this Session (requires ``buildml[rag]``).",
       "is_classmethod": false,
@@ -2335,6 +6028,134 @@
         }
       ],
       "qualname": "Session.load_rag_bundle"
+    },
+    "load_ranker_bundle": {
+      "doc_summary": "Load a ranker bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_ranker_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_ranker_bundle"
+    },
+    "load_recommender_bundle": {
+      "doc_summary": "Load a recommender bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_recommender_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_recommender_bundle"
+    },
+    "load_rl_bundle": {
+      "doc_summary": "Load an RL bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_rl_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_rl_bundle"
+    },
+    "load_semisupervised_bundle": {
+      "doc_summary": "Load a semi-supervised bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_semisupervised_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_semisupervised_bundle"
+    },
+    "load_ssl_bundle": {
+      "doc_summary": "Load a self-supervised bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_ssl_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_ssl_bundle"
+    },
+    "load_symbolic_bundle": {
+      "doc_summary": "Load a symbolic / neuro-symbolic bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_symbolic_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_symbolic_bundle"
+    },
+    "load_synthetic_bundle": {
+      "doc_summary": "Load a synthesizer bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_synthetic_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_synthetic_bundle"
+    },
+    "load_tda_bundle": {
+      "doc_summary": "Load a TDA bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_tda_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_tda_bundle"
     },
     "load_torch_bundle": {
       "doc_summary": "Load a Torch trainer bundle into this Session.",
@@ -2365,6 +6186,22 @@
         }
       ],
       "qualname": "Session.load_torch_bundle"
+    },
+    "load_unsupervised_bundle": {
+      "doc_summary": "Load an unsupervised bundle into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_unsupervised_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_unsupervised_bundle"
     },
     "make_audio_multimodal_torch_loaders": {
       "doc_summary": "Build audio multimodal loaders (audio \u2295 tabular and/or text and/or image).",
@@ -3072,7 +6909,7 @@
           "required": false
         },
         {
-          "annotation": "Literal['auto', 'grid', 'randomized', 'optuna']",
+          "annotation": "Literal['auto', 'grid', 'randomized', 'optuna', 'evolutionary']",
           "default": "'auto'",
           "kind": "KEYWORD_ONLY",
           "name": "inner_search",
@@ -3090,6 +6927,20 @@
           "default": "20",
           "kind": "KEYWORD_ONLY",
           "name": "n_trials",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8",
+          "kind": "KEYWORD_ONLY",
+          "name": "population_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_generations",
           "required": false
         },
         {
@@ -3481,6 +7332,36 @@
       ],
       "qualname": "Session.pack_torchserve"
     },
+    "partial_fit_online": {
+      "doc_summary": "Incremental ``partial_fit`` update on the next train chunk or frame.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "partial_fit_online",
+      "parameters": [
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_rows",
+          "required": false
+        },
+        {
+          "annotation": "list[Any] | tuple[Any, ...] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "indices",
+          "required": false
+        },
+        {
+          "annotation": "pd.DataFrame | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "frame",
+          "required": false
+        }
+      ],
+      "qualname": "Session.partial_fit_online"
+    },
     "partition": {
       "doc_summary": "Return a copy of rows for a named partition.",
       "is_classmethod": false,
@@ -3519,6 +7400,52 @@
         }
       ],
       "qualname": "Session.predict"
+    },
+    "predict_cbr": {
+      "doc_summary": "Predict via retrieve + reuse with case-influence traces.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_cbr",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "return_traces",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_cbr"
+    },
+    "predict_federated": {
+      "doc_summary": "Predict with the global federated model (no update).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_federated",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_federated"
     },
     "predict_from_pipeline": {
       "doc_summary": "Score a frame through a saved pipeline bundle in one call.",
@@ -3563,6 +7490,287 @@
         }
       ],
       "qualname": "Session.predict_from_pipeline"
+    },
+    "predict_graph": {
+      "doc_summary": "Predict node labels with the fitted :class:`GraphPlan`.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_graph",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_graph"
+    },
+    "predict_imitation_action": {
+      "doc_summary": "Predict actions under the fitted behavioral cloning policy.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_imitation_action",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_imitation_action"
+    },
+    "predict_interval": {
+      "doc_summary": "Predictive intervals (regression) or conformal prediction sets.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_interval",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "alpha",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_interval"
+    },
+    "predict_links": {
+      "doc_summary": "Predict missing link components (tail / head / relation).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_links",
+      "parameters": [
+        {
+          "annotation": "LinkPredictionMode",
+          "default": "'tail'",
+          "kind": "KEYWORD_ONLY",
+          "name": "mode",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "heads",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "relations",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "tails",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "filtered",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_links"
+    },
+    "predict_multitask": {
+      "doc_summary": "Predict per-task outputs with the frozen multi-task plan (no refit).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_multitask",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "attach",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "prediction_prefix",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_multitask"
+    },
+    "predict_neuro_symbolic": {
+      "doc_summary": "Hybrid predict with neural + rule traces (no update).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_neuro_symbolic",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "return_traces",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_neuro_symbolic"
+    },
+    "predict_online": {
+      "doc_summary": "Predict with the incremental online estimator (no update).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_online",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_online"
+    },
+    "predict_probabilistic": {
+      "doc_summary": "Point predictions (optional posterior std / class probabilities).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_probabilistic",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "return_std",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "return_proba",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_probabilistic"
+    },
+    "predict_semisupervised": {
+      "doc_summary": "Predict with the train-fitted semi-supervised plan (no refit).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_semisupervised",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "attach",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'semisupervised_prediction'",
+          "kind": "KEYWORD_ONLY",
+          "name": "prediction_column",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_semisupervised"
+    },
+    "predict_symbolic": {
+      "doc_summary": "Predict with rule-firing explanation traces (no update).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_symbolic",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "return_traces",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_symbolic"
+    },
+    "predict_tda": {
+      "doc_summary": "Predict with the optional TDA supervised head.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_tda",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_tda"
     },
     "prepare_design_matrix": {
       "doc_summary": "Project/sample columns via the active engine before sklearn materialize.",
@@ -3637,6 +7845,64 @@
         }
       ],
       "qualname": "Session.prepare_tensorrt_export"
+    },
+    "query_kg": {
+      "doc_summary": "Symbolic neighbors / path / typed query over the train KG.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "query_kg",
+      "parameters": [
+        {
+          "annotation": "KgQueryMode",
+          "default": "'neighbors'",
+          "kind": "KEYWORD_ONLY",
+          "name": "mode",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "entity",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "source",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "target",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "relation",
+          "required": false
+        },
+        {
+          "annotation": "Literal['out', 'in', 'both']",
+          "default": "'out'",
+          "kind": "KEYWORD_ONLY",
+          "name": "direction",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_hops",
+          "required": false
+        }
+      ],
+      "qualname": "Session.query_kg"
     },
     "rag_chunk": {
       "doc_summary": "Chunk the active RAG corpus with size + overlap (requires ``buildml[rag]``).",
@@ -4083,6 +8349,36 @@
       ],
       "qualname": "Session.randomized_search"
     },
+    "rank": {
+      "doc_summary": "Order items for queries (descending score from frozen RankerPlan).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "rank",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all'] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "query_ids",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        }
+      ],
+      "qualname": "Session.rank"
+    },
     "reattach": {
       "doc_summary": "Replace this session state from a checkpoint path (instance helper).",
       "is_classmethod": false,
@@ -4105,6 +8401,43 @@
         }
       ],
       "qualname": "Session.reattach"
+    },
+    "recommend": {
+      "doc_summary": "Top-K item recommendations (train catalog / known-item protocol).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "recommend",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all'] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "user_ids",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "exclude_train_items",
+          "required": false
+        }
+      ],
+      "qualname": "Session.recommend"
     },
     "reduce_dimensions": {
       "doc_summary": "Fit dimensionality reduction on train and replace numeric columns.",
@@ -4157,6 +8490,29 @@
       "name": "refuse_speech_foundation_pretrain",
       "parameters": [],
       "qualname": "Session.refuse_speech_foundation_pretrain"
+    },
+    "refute_causal": {
+      "doc_summary": "Simple placebo / random-confounder sensitivity disclosure.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "refute_causal",
+      "parameters": [
+        {
+          "annotation": "CausalRefuteKind",
+          "default": "'placebo_treatment'",
+          "kind": "KEYWORD_ONLY",
+          "name": "kind",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.refute_causal"
     },
     "register_transform": {
       "doc_summary": "Register a custom train-fit transform for :meth:`apply_custom_transform`.",
@@ -4261,6 +8617,268 @@
       "parameters": [],
       "qualname": "Session.resample_strategies"
     },
+    "retain_cbr": {
+      "doc_summary": "Retain new labeled cases; refuses Session validation/test indices.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "retain_cbr",
+      "parameters": [
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "labeled_frame",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "row_indices",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "solution_column",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "source_disclosure",
+          "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_overlap_with_train",
+          "required": false
+        }
+      ],
+      "qualname": "Session.retain_cbr"
+    },
+    "retrieve_cases": {
+      "doc_summary": "Retrieve k nearest cases (no reuse / no memory update).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "retrieve_cases",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "k",
+          "required": false
+        }
+      ],
+      "qualname": "Session.retrieve_cases"
+    },
+    "run_automl": {
+      "doc_summary": "Search model families and fold-local preprocess strategies on train.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "run_automl",
+      "parameters": [
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "AutoMLMethod",
+          "default": "'randomized'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "AutoMLSelection",
+          "default": "'cv'",
+          "kind": "KEYWORD_ONLY",
+          "name": "selection",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "20",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_trials",
+          "required": false
+        },
+        {
+          "annotation": "int | Any",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "cv",
+          "required": false
+        },
+        {
+          "annotation": "int | Any",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "outer_cv",
+          "required": false
+        },
+        {
+          "annotation": "Literal['auto', 'kfold', 'stratified', 'group', 'stratified_group', 'time']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "cv_strategy",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "ranking_metric",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "families",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_recipe_search",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_ensembles",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_ensemble_bases",
+          "required": false
+        },
+        {
+          "annotation": "PreprocessRecipe | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "preprocess",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_session_global_preprocess",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "refit",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "pd.Series | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "groups",
+          "required": false
+        },
+        {
+          "annotation": "AutoMLBudget | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "budget",
+          "required": false
+        }
+      ],
+      "qualname": "Session.run_automl"
+    },
+    "sample_synthetic": {
+      "doc_summary": "Sample from the frozen synthesizer; optionally extend train.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "sample_synthetic",
+      "parameters": [
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "n",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "dict[str, Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "condition",
+          "required": false
+        },
+        {
+          "annotation": "MergeMode",
+          "default": "'none'",
+          "kind": "KEYWORD_ONLY",
+          "name": "merge_mode",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'_synthetic'",
+          "kind": "KEYWORD_ONLY",
+          "name": "provenance_column",
+          "required": false
+        }
+      ],
+      "qualname": "Session.sample_synthetic"
+    },
+    "save_active_learning_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.activelearning_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_active_learning_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_active_learning_bundle"
+    },
     "save_ai_transcript": {
       "doc_summary": "Save the AI transcript to a JSON file (secrets redacted by default).",
       "is_classmethod": false,
@@ -4284,6 +8902,198 @@
       ],
       "qualname": "Session.save_ai_transcript"
     },
+    "save_anomaly_bundle": {
+      "doc_summary": "Persist the active anomaly plan as ``buildml.anomaly_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_anomaly_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_anomaly_bundle"
+    },
+    "save_automl_bundle": {
+      "doc_summary": "Persist the active AutoML plan as ``buildml.automl_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_automl_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_automl_bundle"
+    },
+    "save_causal_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.causal_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_causal_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_causal_bundle"
+    },
+    "save_cbr_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.cbr_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_cbr_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_cbr_bundle"
+    },
+    "save_decision_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.decision_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_decision_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_decision_bundle"
+    },
+    "save_ensemble_bundle": {
+      "doc_summary": "Persist the active ensemble plan as ``buildml.ensemble_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_ensemble_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_ensemble_bundle"
+    },
+    "save_federated_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.federated_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_federated_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_federated_bundle"
+    },
+    "save_forecast_bundle": {
+      "doc_summary": "Persist the active forecast plan as ``buildml.forecast_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_forecast_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_forecast_bundle"
+    },
+    "save_graph_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.graph_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_graph_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_graph_bundle"
+    },
+    "save_imitation_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.imitation_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_imitation_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_imitation_bundle"
+    },
+    "save_kg_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.kg_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_kg_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_kg_bundle"
+    },
+    "save_metalearning_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.metalearning_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_metalearning_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_metalearning_bundle"
+    },
     "save_model": {
       "doc_summary": "Persist the last fitted estimator bundle.",
       "is_classmethod": false,
@@ -4299,6 +9109,38 @@
         }
       ],
       "qualname": "Session.save_model"
+    },
+    "save_multitask_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.multitask_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_multitask_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_multitask_bundle"
+    },
+    "save_online_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.online_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_online_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_online_bundle"
     },
     "save_pipeline": {
       "doc_summary": "Persist fitted preprocess plans, estimator, and a model card.",
@@ -4330,6 +9172,22 @@
       ],
       "qualname": "Session.save_pipeline"
     },
+    "save_probabilistic_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.probabilistic_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_probabilistic_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_probabilistic_bundle"
+    },
     "save_rag_bundle": {
       "doc_summary": "Persist the active RAG index as ``buildml.rag_bundle.v1``.",
       "is_classmethod": false,
@@ -4346,6 +9204,134 @@
       ],
       "qualname": "Session.save_rag_bundle"
     },
+    "save_ranker_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.ranker_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_ranker_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_ranker_bundle"
+    },
+    "save_recommender_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.recommender_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_recommender_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_recommender_bundle"
+    },
+    "save_rl_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.rl_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_rl_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_rl_bundle"
+    },
+    "save_semisupervised_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.semisupervised_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_semisupervised_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_semisupervised_bundle"
+    },
+    "save_ssl_bundle": {
+      "doc_summary": "Persist the active SSL plan as ``buildml.selfsupervised_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_ssl_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_ssl_bundle"
+    },
+    "save_symbolic_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.symbolic_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_symbolic_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_symbolic_bundle"
+    },
+    "save_synthetic_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.synthetic_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_synthetic_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_synthetic_bundle"
+    },
+    "save_tda_bundle": {
+      "doc_summary": "Persist the active plan as ``buildml.tda_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_tda_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_tda_bundle"
+    },
     "save_torch_bundle": {
       "doc_summary": "Persist the last Torch trainer as ``buildml.torch_bundle.v1``.",
       "is_classmethod": false,
@@ -4361,6 +9347,22 @@
         }
       ],
       "qualname": "Session.save_torch_bundle"
+    },
+    "save_unsupervised_bundle": {
+      "doc_summary": "Persist the active cluster plan as ``buildml.unsupervised_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_unsupervised_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_unsupervised_bundle"
     },
     "scale": {
       "doc_summary": "Fit scaling on train and transform the full dataset.",
@@ -4384,6 +9386,59 @@
         }
       ],
       "qualname": "Session.scale"
+    },
+    "score_anomalies": {
+      "doc_summary": "Score and flag rows with the train-fitted anomaly plan (no refit).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "score_anomalies",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "attach",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "override_threshold",
+          "required": false
+        }
+      ],
+      "qualname": "Session.score_anomalies"
+    },
+    "score_triples": {
+      "doc_summary": "Score (head, relation, tail) triples with the frozen KgPlan.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "score_triples",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all'] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "triples",
+          "required": false
+        }
+      ],
+      "qualname": "Session.score_triples"
     },
     "search_torch": {
       "doc_summary": "Inner-fold Torch hyperparameter search on the train universe.",
@@ -4629,6 +9684,50 @@
       ],
       "qualname": "Session.serve_bundle"
     },
+    "set_graph": {
+      "doc_summary": "Attach an edge list; Session rows are nodes.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "set_graph",
+      "parameters": [
+        {
+          "annotation": "Any",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "edges",
+          "required": true
+        },
+        {
+          "annotation": "str",
+          "default": "'source'",
+          "kind": "KEYWORD_ONLY",
+          "name": "source_col",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'target'",
+          "kind": "KEYWORD_ONLY",
+          "name": "target_col",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'node_id'",
+          "kind": "KEYWORD_ONLY",
+          "name": "node_id_col",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "directed",
+          "required": false
+        }
+      ],
+      "qualname": "Session.set_graph"
+    },
     "set_roles": {
       "doc_summary": "Assign column roles on the current dataset.",
       "is_classmethod": false,
@@ -4681,6 +9780,29 @@
         }
       ],
       "qualname": "Session.split"
+    },
+    "suggest_query": {
+      "doc_summary": "Suggest unlabeled *train* indices for human labeling (no oracle).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "suggest_query",
+      "parameters": [
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "ActiveLearningStrategy | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "strategy",
+          "required": false
+        }
+      ],
+      "qualname": "Session.suggest_query"
     },
     "summarize_history": {
       "doc_summary": "Summarize operation history and list unresolved risks.",
@@ -4877,6 +9999,45 @@
         }
       ],
       "qualname": "Session.transcribe_speech"
+    },
+    "transform_ssl": {
+      "doc_summary": "Export SSL representations with the train-fitted pretext (no refit).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "transform_ssl",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'train'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "attach",
+          "required": false
+        }
+      ],
+      "qualname": "Session.transform_ssl"
+    },
+    "transform_tda": {
+      "doc_summary": "Transform a partition with the frozen train-fitted TDA pipeline.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "transform_tda",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.transform_tda"
     },
     "tune_threshold": {
       "doc_summary": "Sweep binary decision thresholds with precision/recall/F1 and optional costs.",

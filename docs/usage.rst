@@ -328,7 +328,8 @@ Leakage-safe CV and search
 --------------------------
 
 Prefer ``PreprocessRecipe`` inside ``cv_score`` / ``grid_search`` /
-``randomized_search`` / ``optuna_search`` / ``nested_cv_score`` on data that has
+``randomized_search`` / ``optuna_search`` / ``evolutionary_search`` /
+``nested_cv_score`` on data that has
 **not** already been Session-globally prepared. Session-global prep then CV is
 hard-refused by default — see :doc:`leakage-cv-recipes`.
 
