@@ -87,5 +87,6 @@ sklearn-facing operation out-of-core. Checkpoints do not contain fitted models,
 and model bundles do not contain the Session dataset or split history. The AI
 operator defaults to propose→confirm→execute; autonomy is opt-in automation
 inside an allowlist, not unconstrained agency, and does not replace domain
-review of roles, splits, or metrics. Audio multimodal and multi-node cluster
-DDP remain out of scope for this alpha (image multimodal is shipped).
+review of roles, splits, or metrics. Multi-node cluster DDP remains out of
+scope for this alpha (image and audio multimodal fusion are shipped; audio uses
+a small 1D-CNN branch, not a speech foundation model).

@@ -8,6 +8,19 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Added
+
+- **Pass L audio multimodal:** extend multimodal fusion to audio path/waveform
+  columns fused with tabular and/or text and/or image. Train-only audio
+  amplitude mean/std, built-in small 1D-CNN fusion branch (honest alpha — not a
+  speech foundation model), Session facades
+  (`make_multimodal_torch_loaders(..., audio_column=)` /
+  `make_audio_multimodal_torch_loaders`), `fit_torch` / `export_torch` refuse
+  silent tabular rebuilds, AI tools/executor/autonomy allowlist/planner wiring,
+  and teaching-surface sync. `soundfile` is included in `buildml[torch]` (also
+  via `buildml[audio]`) for path cells; waveform arrays work with Torch alone.
+  CI torch job runs Pass L tests with `.[torch,onnx]`.
+
 ### Fixed
 
 - **Pass K adversarial re-audit after Pass J:** ONNX export broke on Torch ≥2.9
@@ -26,7 +39,7 @@ with pre-release tags for alpha (`aN`) builds.
   `make_image_multimodal_torch_loaders`), `fit_torch` / `export_torch` wiring
   that refuses silent tabular rebuilds, AI tools/executor/autonomy allowlist,
   and teaching-surface sync. Pillow is included in `buildml[torch]` for path
-  cells. **Audio multimodal remains deferred.**
+  cells.
 
 ### Fixed
 

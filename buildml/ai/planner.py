@@ -99,6 +99,7 @@ _OPERATION_TO_TOOL: dict[str, tuple[str, dict[str, Any]]] = {
     "make_text_torch_loaders": ("make_text_torch_loaders", {}),
     "make_multimodal_torch_loaders": ("make_multimodal_torch_loaders", {}),
     "make_image_multimodal_torch_loaders": ("make_image_multimodal_torch_loaders", {}),
+    "make_audio_multimodal_torch_loaders": ("make_audio_multimodal_torch_loaders", {}),
     "fit_torch": ("fit_torch", {}),
     "evaluate_torch": ("evaluate_torch", {}),
     "cross_validate_torch": ("cross_validate_torch", {}),

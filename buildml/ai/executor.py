@@ -466,14 +466,18 @@ def _dispatch_tool(
             "batch_size": int(call.arguments.get("batch_size", 16)),
             "normalize": bool(call.arguments.get("normalize", True)),
             "normalize_images": bool(call.arguments.get("normalize_images", True)),
+            "normalize_audio": bool(call.arguments.get("normalize_audio", True)),
         }
         if "text_column" in call.arguments and call.arguments["text_column"] is not None:
             kwargs["text_column"] = call.arguments["text_column"]
         if "image_column" in call.arguments and call.arguments["image_column"] is not None:
             kwargs["image_column"] = call.arguments["image_column"]
+        if "audio_column" in call.arguments and call.arguments["audio_column"] is not None:
+            kwargs["audio_column"] = call.arguments["audio_column"]
         session.make_multimodal_torch_loaders(**kwargs)
         state_changes.append(
-            "Built multimodal Torch DataLoaders (train-only vocab/normalize/image stats)."
+            "Built multimodal Torch DataLoaders "
+            "(train-only vocab/normalize/image/audio stats)."
         )
         return {"multimodal_torch_loaders_built": True}, tuple(state_changes)
 
@@ -490,11 +494,34 @@ def _dispatch_tool(
         }
         if "text_column" in call.arguments and call.arguments["text_column"] is not None:
             img_kwargs["text_column"] = call.arguments["text_column"]
+        if "audio_column" in call.arguments and call.arguments["audio_column"] is not None:
+            img_kwargs["audio_column"] = call.arguments["audio_column"]
         session.make_image_multimodal_torch_loaders(**img_kwargs)
         state_changes.append(
             "Built image multimodal Torch DataLoaders (train-only image/channel stats)."
         )
         return {"image_multimodal_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "make_audio_multimodal_torch_loaders":
+        audio_column = call.arguments.get("audio_column")
+        if not audio_column:
+            raise ValidationError(
+                "make_audio_multimodal_torch_loaders requires audio_column."
+            )
+        aud_kwargs: dict[str, Any] = {
+            "audio_column": str(audio_column),
+            "batch_size": int(call.arguments.get("batch_size", 16)),
+            "normalize_audio": bool(call.arguments.get("normalize_audio", True)),
+        }
+        if "text_column" in call.arguments and call.arguments["text_column"] is not None:
+            aud_kwargs["text_column"] = call.arguments["text_column"]
+        if "image_column" in call.arguments and call.arguments["image_column"] is not None:
+            aud_kwargs["image_column"] = call.arguments["image_column"]
+        session.make_audio_multimodal_torch_loaders(**aud_kwargs)
+        state_changes.append(
+            "Built audio multimodal Torch DataLoaders (train-only audio amplitude stats)."
+        )
+        return {"audio_multimodal_torch_loaders_built": True}, tuple(state_changes)
 
     elif call.tool_name == "search_torch":
         search_kwargs: dict[str, Any] = {
@@ -612,12 +639,20 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
 
     elif tool_name == "make_multimodal_torch_loaders":
         changes.append(
-            "Will build multimodal Torch DataLoaders (train-only vocab/normalize/image stats)."
+            "Will build multimodal Torch DataLoaders "
+            "(train-only vocab/normalize/image/audio stats)."
         )
 
     elif tool_name == "make_image_multimodal_torch_loaders":
         changes.append(
-            "Will build image multimodal Torch DataLoaders (image ⊕ tabular and/or text)."
+            "Will build image multimodal Torch DataLoaders "
+            "(image ⊕ tabular and/or text and/or audio)."
+        )
+
+    elif tool_name == "make_audio_multimodal_torch_loaders":
+        changes.append(
+            "Will build audio multimodal Torch DataLoaders "
+            "(audio ⊕ tabular and/or text and/or image)."
         )
 
     elif tool_name == "search_torch":

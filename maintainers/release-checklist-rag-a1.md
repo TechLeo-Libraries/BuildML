@@ -60,4 +60,5 @@ Optional follow-ups (not required for the alpha gate):
 - Teaching Studio RAG cockpit redesign
 - That Session checkpoints contain the vector index
 - That classical or Torch APIs were replaced by RAG
-- Audio multimodal (image multimodal + tabular⊕text fusion ship in Pass G/J)
+- Speech foundation models / Whisper-scale ASR (small 1D-CNN audio multimodal
+  fusion ships in Pass L on the Torch line; not a RAG concern)

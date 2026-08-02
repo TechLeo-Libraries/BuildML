@@ -155,6 +155,20 @@ img.make_image_multimodal_torch_loaders(
     image_column="image", image_size=(32, 32), normalize_images=True
 )
 img.fit_torch(epochs=5, device="cpu")
+
+# Audio multimodal (path or waveform column ⊕ tabular and/or text and/or image)
+aud = (
+    Session.ingest(df_with_audio)
+    .set_roles({"x1": "feature", "audio": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+aud.make_audio_multimodal_torch_loaders(
+    audio_column="audio",
+    audio_sample_rate=16000,
+    audio_max_samples=16000,
+    normalize_audio=True,
+)
+aud.fit_torch(epochs=5, device="cpu")
 ```
 
 ## Known limits (honest)
@@ -162,9 +176,10 @@ img.fit_torch(epochs=5, device="cpu")
 - **CPU-first merge gate.** CI runs Torch on CPU (Python 3.11–3.12). CUDA/MPS
   are supported when available with explicit fallback warnings; GPU CI is not a
   PR blocker.
-- **Tabular + text + image multimodal in scope.** Audio multimodal remains
-  deferred. Built-in MLP, text classifier, and fusion (including a small CNN
-  image branch) cover the happy path; custom `nn.Module` still works.
+- **Tabular + text + image + audio multimodal in scope.** Built-in MLP, text
+  classifier, and fusion (small CNN image branch + small 1D-CNN audio branch)
+  cover the happy path; custom `nn.Module` still works. Audio is honest alpha
+  fusion — not a speech foundation-model product.
 - **Materialization.** Partition rows become tensors via the current Session
   frame (Pandas/NumPy bridge). No Polars/DuckDB zero-copy into DataLoaders.
 - **Classical plans.** Session impute/encode/scale mutate the frame and are

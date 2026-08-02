@@ -373,9 +373,10 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="make_multimodal_torch_loaders",
             description=(
-                "Build fused multimodal Torch DataLoaders for tabular/text/image mixes "
-                "(train-only vocab, numeric normalize, image channel stats). "
-                "Requires buildml[torch]. Audio remains deferred."
+                "Build fused multimodal Torch DataLoaders for tabular/text/image/audio mixes "
+                "(train-only vocab, numeric normalize, image channel stats, audio amplitude "
+                "stats). Requires buildml[torch]. Audio fusion is a small 1D-CNN branch, "
+                "not a speech foundation model."
             ),
             parameters={
                 "type": "object",
@@ -385,6 +386,10 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                         "type": "string",
                         "description": "Image path or array feature column.",
                     },
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio path or waveform array feature column.",
+                    },
                     "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
                     "normalize": {
                         "type": "boolean",
@@ -393,6 +398,10 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                     "normalize_images": {
                         "type": "boolean",
                         "description": "Fit image channel mean/std on train (default true).",
+                    },
+                    "normalize_audio": {
+                        "type": "boolean",
+                        "description": "Fit audio amplitude mean/std on train (default true).",
                     },
                 },
                 "required": [],
@@ -405,8 +414,9 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="make_image_multimodal_torch_loaders",
             description=(
-                "Build image multimodal Torch DataLoaders (image ⊕ tabular and/or text). "
-                "Requires image_column. Train-only image channel stats. Requires buildml[torch]."
+                "Build image multimodal Torch DataLoaders (image ⊕ tabular and/or text "
+                "and/or audio). Requires image_column. Train-only image channel stats. "
+                "Requires buildml[torch]."
             ),
             parameters={
                 "type": "object",
@@ -418,6 +428,10 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                     "text_column": {
                         "type": "string",
                         "description": "Optional text feature column.",
+                    },
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Optional audio path or waveform feature column.",
                     },
                     "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
                     "normalize_images": {
@@ -431,6 +445,42 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             session_method="make_image_multimodal_torch_loaders",
             read_only=False,
             catalog_operation="make_image_multimodal_torch_loaders",
+        ),
+        ToolSpec(
+            name="make_audio_multimodal_torch_loaders",
+            description=(
+                "Build audio multimodal Torch DataLoaders (audio ⊕ tabular and/or text "
+                "and/or image). Requires audio_column. Train-only audio amplitude stats. "
+                "Small 1D-CNN fusion branch — not a speech foundation model. "
+                "Requires buildml[torch] (soundfile for path cells)."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio path or waveform array feature column (required).",
+                    },
+                    "text_column": {
+                        "type": "string",
+                        "description": "Optional text feature column.",
+                    },
+                    "image_column": {
+                        "type": "string",
+                        "description": "Optional image path or array feature column.",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
+                    "normalize_audio": {
+                        "type": "boolean",
+                        "description": "Fit audio amplitude mean/std on train (default true).",
+                    },
+                },
+                "required": ["audio_column"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_audio_multimodal_torch_loaders",
+            read_only=False,
+            catalog_operation="make_audio_multimodal_torch_loaders",
         ),
         ToolSpec(
             name="search_torch",

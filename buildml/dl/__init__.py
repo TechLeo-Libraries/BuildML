@@ -28,6 +28,7 @@ __all__ = [
     "TrainConfig",
     "TrainResult",
     "TrainingCurveReport",
+    "apply_audio_waveform_stats",
     "apply_image_channel_stats",
     "build_multimodal_fusion",
     "build_tabular_mlp",
@@ -35,12 +36,14 @@ __all__ = [
     "build_training_curve",
     "cross_validate_torch",
     "ddp_cuda_device_count",
+    "decode_audio_cell",
     "decode_image_cell",
     "evaluate_module",
     "export_module",
     "export_onnx",
     "export_torchscript",
     "export_train_result",
+    "fit_audio_waveform_stats",
     "fit_image_channel_stats",
     "load_torch_bundle",
     "load_torchscript",
@@ -49,10 +52,12 @@ __all__ = [
     "make_text_loaders",
     "nested_cv_torch",
     "require_pillow",
+    "require_soundfile",
     "require_torch",
     "save_torch_bundle",
     "search_torch",
     "smoke_load_onnx",
+    "stack_audio_column",
     "stack_image_column",
     "torch_available",
     "torch_training_status",
@@ -146,6 +151,16 @@ def __getattr__(name: str) -> Any:
         from buildml.dl import image as image_mod
 
         return getattr(image_mod, name)
+    if name in {
+        "apply_audio_waveform_stats",
+        "decode_audio_cell",
+        "fit_audio_waveform_stats",
+        "require_soundfile",
+        "stack_audio_column",
+    }:
+        from buildml.dl import audio as audio_mod
+
+        return getattr(audio_mod, name)
     if name in {
         "ExportResult",
         "export_module",

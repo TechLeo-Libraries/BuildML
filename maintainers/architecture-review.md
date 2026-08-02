@@ -56,6 +56,7 @@
 
 ## What this file is not
 
-- Pass G/J ship nested Torch HPO and tabular/text/image multimodal fusion; audio
-  multimodal and multi-node DDP remain later.
+- Pass G/J/L ship nested Torch HPO and tabular/text/image/audio multimodal
+  fusion (audio is a small 1D-CNN branch, not a speech FM); multi-node DDP
+  remains later.
 - Not a re-litigation of 1.x `SupervisedLearning` APIs (removed/rewritten).

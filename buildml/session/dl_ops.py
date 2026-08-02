@@ -225,6 +225,7 @@ def fit_torch(
                 n_classes = max(2, len(contract.class_labels) or 2)
                 has_text = bool(mm.text_column) or bool(mm.vocab)
                 has_image = bool(mm.image_column)
+                has_audio = bool(getattr(mm, "audio_column", None))
                 vocab_size = 0
                 if has_text:
                     vocab_size = (
@@ -241,6 +242,10 @@ def fit_torch(
                     vocab_size,
                     image_channels=int(mm.image_channels) if has_image else 0,
                     image_size=tuple(mm.image_size) if has_image else (32, 32),
+                    audio_channels=1 if has_audio else 0,
+                    audio_samples=int(getattr(mm, "audio_max_samples", 16_000) or 16_000)
+                    if has_audio
+                    else 16_000,
                     task=contract.task,
                     n_classes=n_classes,
                     dropout=dropout,
@@ -440,24 +445,30 @@ def make_multimodal_torch_loaders(
     text_column: str | None = None,
     numeric_columns: list[str] | None = None,
     image_column: str | None = None,
+    audio_column: str | None = None,
     batch_size: int = 16,
     max_len: int = 64,
     max_vocab: int = 5000,
     min_freq: int = 1,
     normalize: bool = True,
     normalize_images: bool = True,
+    normalize_audio: bool = True,
     image_size: tuple[int, int] = (32, 32),
     image_channels: int = 3,
+    audio_sample_rate: int = 16_000,
+    audio_max_samples: int = 16_000,
+    audio_source_sample_rate: int | None = None,
     shuffle_train: bool = True,
     seed: int = 0,
     task: Literal["classification", "regression", "auto"] = "auto",
 ) -> Any:
-    """Build fused multimodal DataLoaders (tabular/text/image mixes).
+    """Build fused multimodal DataLoaders (tabular/text/image/audio mixes).
 
     Requires ``buildml[torch]``. Fit stats (vocab, numeric mean/std, image
-    channel mean/std) use the train partition only. Batches follow
-    ``(numeric?, tokens?, image?, y)`` for present modalities. Audio remains
-    deferred.
+    channel mean/std, audio amplitude mean/std) use the train partition only.
+    Batches follow ``(numeric?, tokens?, image?, audio?, y)`` for present
+    modalities. Audio fusion is a small 1D-CNN branch — not a speech foundation
+    model.
     """
     from buildml.dl.multimodal import MultimodalLoaderConfig, make_multimodal_loaders
 
@@ -468,6 +479,7 @@ def make_multimodal_torch_loaders(
         text_column=text_column,
         numeric_columns=numeric_columns,
         image_column=image_column,
+        audio_column=audio_column,
         config=MultimodalLoaderConfig(
             batch_size=batch_size,
             shuffle_train=shuffle_train,
@@ -477,8 +489,12 @@ def make_multimodal_torch_loaders(
             min_freq=min_freq,
             normalize=normalize,
             normalize_images=normalize_images,
+            normalize_audio=normalize_audio,
             image_size=image_size,
             image_channels=image_channels,
+            audio_sample_rate=audio_sample_rate,
+            audio_max_samples=audio_max_samples,
+            audio_source_sample_rate=audio_source_sample_rate,
         ),
         task=task,
     )
@@ -489,12 +505,16 @@ def make_multimodal_torch_loaders(
         {
             "text_column": text_column or getattr(mm, "text_column", None),
             "image_column": image_column or getattr(mm, "image_column", None),
+            "audio_column": audio_column or getattr(mm, "audio_column", None),
             "numeric_columns": list(getattr(mm, "numeric_columns", ()) or ()),
             "batch_size": batch_size,
             "normalize": normalize,
             "normalize_images": normalize_images,
+            "normalize_audio": normalize_audio,
             "image_size": list(image_size),
             "image_channels": image_channels,
+            "audio_sample_rate": audio_sample_rate,
+            "audio_max_samples": audio_max_samples,
             "modality": getattr(bundle, "modality", None),
             "seed": seed,
             "task": task,
@@ -511,19 +531,24 @@ def make_image_multimodal_torch_loaders(
     image_column: str,
     text_column: str | None = None,
     numeric_columns: list[str] | None = None,
+    audio_column: str | None = None,
     batch_size: int = 16,
     max_len: int = 64,
     max_vocab: int = 5000,
     min_freq: int = 1,
     normalize: bool = True,
     normalize_images: bool = True,
+    normalize_audio: bool = True,
     image_size: tuple[int, int] = (32, 32),
     image_channels: int = 3,
+    audio_sample_rate: int = 16_000,
+    audio_max_samples: int = 16_000,
+    audio_source_sample_rate: int | None = None,
     shuffle_train: bool = True,
     seed: int = 0,
     task: Literal["classification", "regression", "auto"] = "auto",
 ) -> Any:
-    """Build image multimodal loaders (image ⊕ tabular and/or text).
+    """Build image multimodal loaders (image ⊕ tabular and/or text and/or audio).
 
     Thin facade that requires ``image_column`` and delegates to the shared
     multimodal loader builder. Path cells need Pillow (bundled in
@@ -540,6 +565,7 @@ def make_image_multimodal_torch_loaders(
         text_column=text_column,
         numeric_columns=numeric_columns,
         image_column=image_column,
+        audio_column=audio_column,
         config=MultimodalLoaderConfig(
             batch_size=batch_size,
             shuffle_train=shuffle_train,
@@ -549,8 +575,12 @@ def make_image_multimodal_torch_loaders(
             min_freq=min_freq,
             normalize=normalize,
             normalize_images=normalize_images,
+            normalize_audio=normalize_audio,
             image_size=image_size,
             image_channels=image_channels,
+            audio_sample_rate=audio_sample_rate,
+            audio_max_samples=audio_max_samples,
+            audio_source_sample_rate=audio_source_sample_rate,
         ),
         task=task,
     )
@@ -561,12 +591,98 @@ def make_image_multimodal_torch_loaders(
         {
             "image_column": image_column or getattr(mm, "image_column", None),
             "text_column": text_column or getattr(mm, "text_column", None),
+            "audio_column": audio_column or getattr(mm, "audio_column", None),
             "numeric_columns": list(getattr(mm, "numeric_columns", ()) or ()),
             "batch_size": batch_size,
             "normalize": normalize,
             "normalize_images": normalize_images,
             "image_size": list(image_size),
             "image_channels": image_channels,
+            "modality": getattr(bundle, "modality", None),
+            "seed": seed,
+            "task": task,
+        },
+        result_summary=bundle.report.to_dict(),
+        warnings=tuple(bundle.report.warnings),
+    )
+    return bundle
+
+
+def make_audio_multimodal_torch_loaders(
+    session,
+    *,
+    audio_column: str,
+    text_column: str | None = None,
+    numeric_columns: list[str] | None = None,
+    image_column: str | None = None,
+    batch_size: int = 16,
+    max_len: int = 64,
+    max_vocab: int = 5000,
+    min_freq: int = 1,
+    normalize: bool = True,
+    normalize_images: bool = True,
+    normalize_audio: bool = True,
+    image_size: tuple[int, int] = (32, 32),
+    image_channels: int = 3,
+    audio_sample_rate: int = 16_000,
+    audio_max_samples: int = 16_000,
+    audio_source_sample_rate: int | None = None,
+    shuffle_train: bool = True,
+    seed: int = 0,
+    task: Literal["classification", "regression", "auto"] = "auto",
+) -> Any:
+    """Build audio multimodal loaders (audio ⊕ tabular and/or text and/or image).
+
+    Thin facade that requires ``audio_column`` and delegates to the shared
+    multimodal loader builder. Path cells need soundfile (bundled in
+    ``buildml[torch]`` / ``buildml[audio]``); waveform array cells work with
+    Torch alone. Uses a small 1D-CNN fusion branch — not a speech foundation
+    model.
+    """
+    if not audio_column:
+        raise ValidationError("make_audio_multimodal_torch_loaders requires audio_column")
+    from buildml.dl.multimodal import MultimodalLoaderConfig, make_multimodal_loaders
+
+    session.assert_can_fit("train")
+    bundle = make_multimodal_loaders(
+        session.dataset,
+        session._split_plan,
+        text_column=text_column,
+        numeric_columns=numeric_columns,
+        image_column=image_column,
+        audio_column=audio_column,
+        config=MultimodalLoaderConfig(
+            batch_size=batch_size,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            normalize=normalize,
+            normalize_images=normalize_images,
+            normalize_audio=normalize_audio,
+            image_size=image_size,
+            image_channels=image_channels,
+            audio_sample_rate=audio_sample_rate,
+            audio_max_samples=audio_max_samples,
+            audio_source_sample_rate=audio_source_sample_rate,
+        ),
+        task=task,
+    )
+    session._torch_loaders = bundle
+    mm = getattr(bundle, "multimodal_contract", None)
+    session._record(
+        "make_audio_multimodal_torch_loaders",
+        {
+            "audio_column": audio_column or getattr(mm, "audio_column", None),
+            "text_column": text_column or getattr(mm, "text_column", None),
+            "image_column": image_column or getattr(mm, "image_column", None),
+            "numeric_columns": list(getattr(mm, "numeric_columns", ()) or ()),
+            "batch_size": batch_size,
+            "normalize": normalize,
+            "normalize_audio": normalize_audio,
+            "audio_sample_rate": audio_sample_rate,
+            "audio_max_samples": audio_max_samples,
             "modality": getattr(bundle, "modality", None),
             "seed": seed,
             "task": task,
@@ -729,14 +845,22 @@ def export_torch(
         is_multimodal = (
             str(modality).endswith("_fusion")
             or layout is not None
-            or (hasattr(mod, "n_numeric") and (hasattr(mod, "embedding") or hasattr(mod, "image_net")))
+            or (
+                hasattr(mod, "n_numeric")
+                and (
+                    hasattr(mod, "embedding")
+                    or hasattr(mod, "image_net")
+                    or hasattr(mod, "audio_net")
+                )
+            )
         )
         if is_multimodal:
             raise ValidationError(
                 "export_torch needs active multimodal loaders or an explicit "
                 "example_input matching the fusion input_layout after multimodal fit. "
                 "Call make_multimodal_torch_loaders(...) / "
-                "make_image_multimodal_torch_loaders(...) again or pass example_input=. "
+                "make_image_multimodal_torch_loaders(...) / "
+                "make_audio_multimodal_torch_loaders(...) again or pass example_input=. "
                 "Refusing silent tabular loader rebuild."
             )
         if hasattr(mod, "vocab_size") and hasattr(mod, "embedding"):

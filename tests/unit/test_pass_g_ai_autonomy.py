@@ -40,6 +40,7 @@ def test_registry_includes_pass_g_tools() -> None:
     for required in (
         "make_multimodal_torch_loaders",
         "make_image_multimodal_torch_loaders",
+        "make_audio_multimodal_torch_loaders",
         "search_torch",
         "nested_cv_torch",
         "export_torch",
@@ -188,6 +189,17 @@ def test_pass_g_tools_have_executor_dispatch() -> None:
     assert result.error is not None
     assert "No dispatch handler" not in result.error
     assert "image_column" in result.error.lower()
+
+    # Pass L: audio multimodal tool must dispatch (missing audio_column → Session error).
+    proposal = propose_tool_execution(
+        "make_audio_multimodal_torch_loaders",
+        {},
+        registry,
+    )
+    result = execute_tool(session, proposal, confirmed=True, registry=registry)
+    assert result.error is not None
+    assert "No dispatch handler" not in result.error
+    assert "audio_column" in result.error.lower()
 
 
 def test_search_torch_tool_schema_includes_param_grid() -> None:
