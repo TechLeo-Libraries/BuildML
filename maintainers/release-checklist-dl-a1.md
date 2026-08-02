@@ -46,10 +46,16 @@ Optional follow-ups (not required for the alpha gate):
 - [ ] Open issues for any Conditional gate items that remain product gaps
 - [ ] Do not mark DL alpha “stable” until a non-`aN` release on the DL line
 
-## Do not claim at tag time
+## Do not claim at tag time (2.1.0a1 DL-first tag)
 
-- Image / sequence / multimodal loaders or a built-in model zoo
-- Fold-local Torch CV, DDP, or mixed-precision product path
-- Polars/DuckDB zero-copy into DataLoaders
-- RAG / LLM operator as shipped features
+Historical lock for the **2.1.0a1** tag only. Phase C on later Unreleased / `2.3`
+HEAD deepened several of these — do not paste this list onto current docs:
+
+- For **2.1.0a1 only:** no text/sequence loaders, no built-in MLP zoo, no
+  fold-local Torch CV (those ship in Phase C — see `dl-m0-lock.md` / CHANGELOG)
+- DDP or mixed-precision product path (still out of scope on current HEAD)
+- Polars/DuckDB zero-copy into DataLoaders (still out of scope)
+- RAG / LLM operator as shipped features of the **2.1.0a1** tag (later lines)
 - That Session checkpoints contain Torch weights
+- Image / multimodal fusion or nested Torch hyperparameter search (still out of
+  scope on current HEAD)

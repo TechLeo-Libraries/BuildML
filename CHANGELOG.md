@@ -10,6 +10,14 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Fixed
 
+- **Pass F adversarial re-audit:** closed soft-leakage docstring/concept regressions
+  that Pass E’s line-local lint missed (`nested_cv_score` param docs still claimed
+  refuse only when no fold-local recipe is provided; Concept Academy still taught
+  “without a fold recipe → limited honesty”). Restored UTF-8 in
+  `buildml/explain/concepts/*` after cp1252 mojibake (`Â±`, `â†'`, `â€"`, Greek).
+  Copy lint now checks adjacent-line windows and rejects mojibake markers.
+  Stale DL gate/checklist copy that denied built-in MLP, text loaders, and
+  fold-local Torch CV on current HEAD was corrected.
 - **Pass E re-audit:** corrected soft-leakage teaching regressions that still claimed
   a fold-local `PreprocessRecipe` alone bypasses Session-global CV refuse (README,
   guides, workflow guide, overlays). Added copy-lint rule

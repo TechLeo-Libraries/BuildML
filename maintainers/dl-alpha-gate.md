@@ -85,8 +85,11 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 
 1. **CPU slice is the merge gate.** No GPU CI on every PR; CUDA/MPS fall back with
    an explicit warning when unavailable.
-2. **Tabular numeric features first.** No image / sequence / multimodal product path.
-3. **No built-in model zoo.** Caller supplies `nn.Module`; docs may show tiny examples only.
+2. **Tabular + text/sequence in scope** (Phase C). No image / multimodal fusion
+   product path.
+3. **Built-in models are a thin happy path** (tabular MLP + text classifier when
+   `fit_torch` omits `module`). No broad model zoo; custom `nn.Module` remains
+   first-class.
 4. **Materialized tensors.** Partition frames become batches via Pandas/NumPy; no
    Polars/DuckDB zero-copy into DataLoaders.
 5. **Classical preprocess is not auto-applied** before loaders.
@@ -94,7 +97,8 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
    slice; it is **not** nested Torch hyperparameter search. DistributedDataParallel
    remains out of scope for this alpha.
 7. **No mixed precision, TorchScript/ONNX productization, or AutoML architecture search.**
-8. **RAG / LLM operator** are out of DL alpha scope (later domains).
+8. **RAG / LLM operator** are out of DL alpha scope (later domains on the `2.2` /
+   `2.3` lines).
 9. **Session checkpoints never embed Torch weights.** Use `buildml.torch_bundle.v1`.
 
 ---

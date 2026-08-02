@@ -866,8 +866,9 @@ def nested_cv_score(
         Fold-local :class:`PreprocessRecipe` used in both loops. Required when
         searching recipe knobs.
     allow_session_global_preprocess:
-        Explicit opt-in when Session-global preprocess already ran and no
-        fold-local recipe is provided (default False; refuses otherwise).
+        Explicit opt-in when Session-global preprocess already ran.
+        Default ``False`` refuses that path even if a fold-local recipe is
+        passed (recipes do not rebuild from raw/unpoisoned rows).
     warm_start_studies:
         Default False. When True with Optuna inner search, reuse one Optuna
         study across outer folds so later folds inherit prior trial history

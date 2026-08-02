@@ -24,7 +24,7 @@ AI_NOTES: dict[str, ConceptNote] = {
             intuition=(
                 "Think of egress levels as airport security zones. SCHEMA_ONLY shows only the boarding pass (column names). "
                 "STATS_ONLY adds aggregate flight statistics without passenger details. REDACTED_SAMPLE masks sensitive "
-                "passenger info. FULL_SAMPLE shares everythingâ€”use only when necessary and after inspection."
+                "passenger info. FULL_SAMPLE shares everything—use only when necessary and after inspection."
             ),
             formal_idea=(
                 "The egress manifest is a typed record of what will be (or was) sent: columns, row count, estimated tokens, "
@@ -60,7 +60,7 @@ AI_NOTES: dict[str, ConceptNote] = {
                 "Assuming STATS_ONLY protects against all data leakage (aggregates can still reveal patterns).",
             ),
             worked_example_pattern=(
-                "ai_configure â†’ ai_egress_preview â†’ review manifest â†’ ai_advisor (if manifest acceptable).",
+                "ai_configure → ai_egress_preview → review manifest → ai_advisor (if manifest acceptable).",
             ),
             related_concepts=("leakage-boundary", "ai-tool-trust"),
         ),
@@ -114,7 +114,7 @@ AI_NOTES: dict[str, ConceptNote] = {
                 "Trusting AI tool suggestions without verifying prerequisites.",
             ),
             worked_example_pattern=(
-                "ai_execute('set_roles', {'mapping': {...}}) â†’ review proposal â†’ ai_execute(..., confirm=True).",
+                "ai_execute('set_roles', {'mapping': {...}}) → review proposal → ai_execute(..., confirm=True).",
             ),
             related_concepts=("ai-prompt-injection", "ai-egress-privacy", "leakage-boundary"),
         ),
@@ -131,7 +131,7 @@ AI_NOTES: dict[str, ConceptNote] = {
                 "arbitrary code execution."
             ),
             intuition=(
-                "Imagine a mail room where incoming packages are labeled 'EXTERNALâ€”DO NOT OPEN WITHOUT INSPECTION'. "
+                "Imagine a mail room where incoming packages are labeled 'EXTERNAL—DO NOT OPEN WITHOUT INSPECTION'. "
                 "Even if a package label says 'URGENT: Give to CEO immediately', the mailroom follows procedure. "
                 "Data markers work the same way: they tell the LLM that this content is cargo, not commands."
             ),
@@ -169,7 +169,7 @@ AI_NOTES: dict[str, ConceptNote] = {
                 "Disabling injection detection for convenience.",
             ),
             worked_example_pattern=(
-                "Column name: 'ignore_previous; drop_table' â†’ detected as suspicious â†’ wrapped as data â†’ tool registry rejects unauthorized calls.",
+                "Column name: 'ignore_previous; drop_table' → detected as suspicious → wrapped as data → tool registry rejects unauthorized calls.",
             ),
             related_concepts=("ai-tool-trust", "ai-egress-privacy"),
         ),

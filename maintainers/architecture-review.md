@@ -2,7 +2,7 @@
 
 **Status:** Supersedes the 1 Aug 2026 audit of legacy 1.0.9 / `SupervisedLearning`.  
 **Package line:** `2.3.0a1` (AI operator alpha on classical `2.0`, Torch `2.1`, RAG `2.2` bases).  
-**Updated:** Pass E re-audit (Aug 2026) after Phases A–D.
+**Updated:** Pass F adversarial re-audit (Aug 2026) after Phases A–D / Pass E.
 
 > Historical 1.x god-object findings remain useful only as the reason the rewrite happened.
 > Do not treat the tables below as a description of HEAD.

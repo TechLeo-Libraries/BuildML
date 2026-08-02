@@ -60,15 +60,27 @@ STALE_API = re.compile(
 LEGACY_CONTEXT = re.compile(r"\b(?:1\.x|legacy|removed|archiv|not part)\b", re.IGNORECASE)
 
 # Soft-leakage teaching regressions after Phase A/B hard-refuse.
+# Patterns are matched on a whitespace-normalized line window so claims split
+# across wrapped docstring lines still fail CI.
 SOFT_LEAKAGE_FALSE_CLAIM = re.compile(
     r"(?:"
     r"refuse(?:s|d)?\s+unless\s+you\s+pass\s+a\s+fold-local\s+recipe"
     r"|refuse(?:s|d)?\s+unless\s+(?:a\s+)?(?:fold-local\s+)?PreprocessRecipe"
     r"|without\s+a\s+fold-local\s+recipe,\s+BuildML\s+refuses"
+    r"|already\s+ran\s+and\s+no\s+fold-local\s+recipe\s+is\s+provided"
     r"|and\s+no\s+fold-local\s+recipe\s+is\s+provided"
     r"|runs\s+without\s+a\s+fold-local\s+recipe"
+    r"|without\s+a\s+fold\s+recipe,\s+treat\s+preprocess\s+honesty"
+    r"|before\s+CV\s+without\s+a\s+fold\s+recipe"
     r")",
     re.IGNORECASE,
+)
+
+# UTF-8 decoded as cp1252/latin-1 left as Unicode (Â±, â€", â†', Î¸, …).
+MOJIBAKE_MARKERS = re.compile(
+    r"(?:\u00c2[\u0080-\u00bf]|Â±|"
+    r"\u00e2\u20ac.|\u00e2\u2020\u2019|"
+    r"\u00ce[\u0080-\u00bf]|\u00cf[\u0080-\u00bf])"
 )
 
 
@@ -104,22 +116,41 @@ def iter_targets() -> Iterable[Path]:
     yield from sorted(set(paths), key=_relative)
 
 
+def _soft_leakage_windows(lines: list[str]) -> Iterable[tuple[int, str]]:
+    """Yield (start_line, normalized text) for single lines and adjacent pairs."""
+    for number, line in enumerate(lines, start=1):
+        yield number, line
+        if number < len(lines):
+            joined = f"{line} {lines[number]}"
+            yield number, re.sub(r"\s+", " ", joined)
+
+
 def lint_paths(paths: Iterable[Path] | None = None) -> list[Violation]:
     """Return copy violations without changing files."""
     violations: list[Violation] = []
     selected = paths if paths is not None else iter_targets()
     for path in selected:
         relative = _relative(path)
-        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        seen_soft: set[tuple[int, str]] = set()
+        for number, line in enumerate(lines, start=1):
             for rule, pattern in COPY_RULES:
                 if pattern.search(line):
                     violations.append(Violation(relative, number, rule, line.strip()))
             if STALE_API.search(line) and not LEGACY_CONTEXT.search(line):
                 violations.append(Violation(relative, number, "stale-public-api", line.strip()))
-            if SOFT_LEAKAGE_FALSE_CLAIM.search(line):
-                violations.append(
-                    Violation(relative, number, "soft-leakage-false-claim", line.strip())
-                )
+            if MOJIBAKE_MARKERS.search(line):
+                violations.append(Violation(relative, number, "mojibake-text", line.strip()))
+        for number, window in _soft_leakage_windows(lines):
+            if not SOFT_LEAKAGE_FALSE_CLAIM.search(window):
+                continue
+            key = (number, "soft-leakage-false-claim")
+            if key in seen_soft:
+                continue
+            seen_soft.add(key)
+            violations.append(
+                Violation(relative, number, "soft-leakage-false-claim", window.strip()[:200])
+            )
     return violations
 
 

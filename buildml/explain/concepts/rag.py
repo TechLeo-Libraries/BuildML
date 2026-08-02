@@ -24,7 +24,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Let C_index be the indexed corpus and Q_eval the evaluation query set with relevance "
-                "labels over documents D_eval. Require C_index âˆ© D_eval = âˆ… for any claim that retrieval "
+                "labels over documents D_eval. Require C_index ∩ D_eval = ∅ for any claim that retrieval "
                 "metrics estimate performance on unseen answers."
             ),
             why_it_matters=(
@@ -52,7 +52,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "Indexing eval_only documents to 'make the demo look good'.",
             ),
             worked_example_pattern=(
-                "rag_ingest_corpus(index docs) â†’ rag_embed_and_index â†’ rag_evaluate(qrels on held-out queries).",
+                "rag_ingest_corpus(index docs) → rag_embed_and_index → rag_evaluate(qrels on held-out queries).",
             ),
             related_concepts=("leakage-boundary", "rag-chunk-index-boundary", "evaluation-partitions"),
         ),
@@ -99,7 +99,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "Embedding the vector index inside a Session checkpoint.",
             ),
             worked_example_pattern=(
-                "rag_ingest_corpus â†’ rag_chunk â†’ rag_embed_and_index â†’ save_rag_bundle.",
+                "rag_ingest_corpus → rag_chunk → rag_embed_and_index → save_rag_bundle.",
             ),
             related_concepts=("rag-eval-contamination", "reproducibility", "leakage-boundary"),
         ),
@@ -115,11 +115,11 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "hits for each evaluation query, using gold relevance labels (qrels)."
             ),
             intuition=(
-                "Ask whether the right book showed up near the top of the search resultsâ€”not whether a "
+                "Ask whether the right book showed up near the top of the search results—not whether a "
                 "classifier predicted a class label."
             ),
             formal_idea=(
-                "For query q with relevant set R_q, recall@k = |{ids in top-k} âˆ© R_q| / |R_q|. "
+                "For query q with relevant set R_q, recall@k = |{ids in top-k} ∩ R_q| / |R_q|. "
                 "MRR averages 1/rank of the first relevant hit. nDCG@k discounts later ranks; "
                 "hit-rate@k is the fraction of queries with at least one relevant hit."
             ),
@@ -148,7 +148,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "Reporting only top-1 hit rate as proof the RAG system is production-ready.",
             ),
             worked_example_pattern=(
-                "rag_embed_and_index â†’ rag_evaluate(qrels, k=5) â†’ read recall_at_k, mrr, and ndcg_at_k.",
+                "rag_embed_and_index → rag_evaluate(qrels, k=5) → read recall_at_k, mrr, and ndcg_at_k.",
             ),
             related_concepts=("rag-eval-contamination", "rag-chunk-index-boundary", "evaluation-partitions"),
         ),

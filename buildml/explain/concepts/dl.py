@@ -14,7 +14,7 @@ DL_NOTES: dict[str, ConceptNote] = {
             title="Batch and loader leakage",
             summary="Train-only shuffling and train-fit batch transforms must not remix evaluation rows into learning.",
             definition=(
-                "Batch leakage occurs when evaluation-partition rows influence training batchesâ€”through "
+                "Batch leakage occurs when evaluation-partition rows influence training batches—through "
                 "shared shuffling, oversampling, or statistics (normalize/augment) fit on more than train."
             ),
             intuition=(
@@ -23,7 +23,7 @@ DL_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Let partitions be disjoint. A train DataLoader may shuffle within train only. Any transform "
-                "parameters Î¸_batch = L(train) apply frozen to validation/test loaders."
+                "parameters θ_batch = L(train) apply frozen to validation/test loaders."
             ),
             why_it_matters=(
                 "Loader mistakes create optimistic Torch metrics that classical split discipline alone cannot catch.",
@@ -50,7 +50,7 @@ DL_NOTES: dict[str, ConceptNote] = {
                 "Building one shuffled DataLoader over the full table, then slicing batches by index later.",
             ),
             worked_example_pattern=(
-                "Split â†’ make_torch_loaders(shuffle_train=True) â†’ assert validation/test loaders do not shuffle.",
+                "Split → make_torch_loaders(shuffle_train=True) → assert validation/test loaders do not shuffle.",
                 "Compare train-fit normalize versus full-table normalize on the same holdout.",
             ),
             related_concepts=("leakage-boundary", "evaluation-partitions", "data-splitting"),
@@ -60,7 +60,7 @@ DL_NOTES: dict[str, ConceptNote] = {
             title="Early-stopping partition",
             summary="Stopping rules may read validation metrics; the test partition remains a final estimate only.",
             definition=(
-                "Early stopping selects a training epoch using a monitor partitionâ€”almost always validationâ€”"
+                "Early stopping selects a training epoch using a monitor partition—almost always validation—"
                 "so that test metrics stay out of the stopping decision."
             ),
             intuition=(
@@ -97,7 +97,7 @@ DL_NOTES: dict[str, ConceptNote] = {
                 "Using test loss as the early-stopping monitor.",
             ),
             worked_example_pattern=(
-                "fit_torch(..., early_stopping_patience=3) â†’ read early_stop.reason â†’ "
+                "fit_torch(..., early_stopping_patience=3) → read early_stop.reason → "
                 "evaluate_torch(partition='test') once.",
             ),
             related_concepts=("evaluation-partitions", "leakage-boundary", "batch-leakage", "training-curves"),
@@ -145,7 +145,7 @@ DL_NOTES: dict[str, ConceptNote] = {
                 "Publishing a loss plot without stating validation vs test scope.",
             ),
             worked_example_pattern=(
-                "fit_torch â†’ torch_training_curve â†’ read disclosures â†’ evaluate_torch(partition='test').",
+                "fit_torch → torch_training_curve → read disclosures → evaluate_torch(partition='test').",
             ),
             related_concepts=("early-stopping-partition", "evaluation-partitions", "batch-leakage"),
         ),
