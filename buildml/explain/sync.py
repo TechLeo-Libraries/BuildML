@@ -211,8 +211,10 @@ def write_operation_index(
 
 def load_operation_index(path: Path | None = None) -> dict[str, Any]:
     """Load the checked-in generated operation index."""
+    from typing import cast
+
     source = path or OPERATION_INDEX_PATH
-    return json.loads(source.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(source.read_text(encoding="utf-8")))
 
 
 def _catalog_names(catalog: Mapping[str, Any] | None = None) -> set[str]:
@@ -245,6 +247,7 @@ def check_catalog_parameters_vs_signatures(
     session_cls: type | None = None,
     catalog: Mapping[str, Any] | None = None,
 ) -> DriftReport:
+    """Require catalog parameters ⊆ signature and signature ⊆ catalog (excl. self/cls)."""
     report = DriftReport()
     if session_cls is None:
         from buildml.session import Session
@@ -260,14 +263,26 @@ def check_catalog_parameters_vs_signatures(
             report.errors.append(f"{name}: not a public Session callable")
             continue
         try:
-            available = set(inspect.signature(member).parameters)
+            signature = inspect.signature(member)
         except (TypeError, ValueError):
             report.warnings.append(f"{name}: signature unavailable for parameter check")
             continue
+        available = {
+            parameter.name
+            for parameter in signature.parameters.values()
+            if parameter.name not in {"self", "cls"}
+            and parameter.kind
+            not in {inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD}
+        }
         documented = {parameter.name for parameter in getattr(spec, "parameters", ())}
         unknown = sorted(documented - available)
+        missing = sorted(available - documented)
         if unknown:
             report.errors.append(f"{name}: catalog parameters not in signature: {unknown}")
+        if missing:
+            report.errors.append(
+                f"{name}: signature parameters missing from catalog: {missing}"
+            )
     return report
 
 
@@ -362,19 +377,45 @@ def check_ai_tools_vs_catalog(
     return report
 
 
+def check_dashboard_teaching_concepts() -> DriftReport:
+    """Fail when Teaching Studio concept chips reference unknown CONCEPT_NOTES keys."""
+    report = DriftReport()
+    from buildml.explain.concepts import CONCEPT_NOTES
+
+    try:
+        from buildml.dashboard.teaching import build_teaching_studios
+    except Exception as exc:  # pragma: no cover - optional dashboard extra
+        report.warnings.append(f"dashboard teaching import skipped: {exc}")
+        return report
+
+    studios = build_teaching_studios({})
+    unknown: set[str] = set()
+    for studio in studios.values():
+        for key in studio.get("concepts") or ():
+            if key not in CONCEPT_NOTES:
+                unknown.add(str(key))
+    if unknown:
+        report.errors.append(
+            "dashboard teaching.py references unknown concept keys: "
+            f"{sorted(unknown)}"
+        )
+    return report
+
+
 def check_teaching_surface(
     *,
     session_cls: type | None = None,
     catalog: Mapping[str, Any] | None = None,
     index_path: Path | None = None,
 ) -> DriftReport:
-    """Run the full Session ↔ index ↔ catalog ↔ AI tool sync suite."""
+    """Run the full Session ↔ index ↔ catalog ↔ AI tool ↔ dashboard sync suite."""
     report = DriftReport()
     for partial in (
         check_session_catalog_parity(session_cls=session_cls, catalog=catalog),
         check_catalog_parameters_vs_signatures(session_cls=session_cls, catalog=catalog),
         check_operation_index_fresh(path=index_path, session_cls=session_cls),
         check_ai_tools_vs_catalog(session_cls=session_cls, catalog=catalog),
+        check_dashboard_teaching_concepts(),
     ):
         report.errors.extend(partial.errors)
         report.warnings.extend(partial.warnings)

@@ -12,8 +12,10 @@ Related: [rag-alpha-gate.md](./rag-alpha-gate.md) ·
 ## Pre-tag
 
 1. [ ] Version strings agree: `pyproject.toml`, `buildml/_version.py` → `2.2.0a1`
-2. [ ] `CHANGELOG.md` has a `2.2.0a1` section with known limits (**no generate /
-   LLM-operator claims**)
+2. [ ] `CHANGELOG.md` has a `2.2.0a1` section with known limits for that tag
+   (retrieve-first alpha). Current HEAD (`2.3.0a1`) documents `rag_generate`
+   and the AI operator separately — do not paste stale “no generate” claims
+   into newer release notes.
 3. [ ] README RAG alpha status matches gate known limits
 4. [ ] `rag-alpha-gate.md` sign-off criteria reviewed against current APIs
 5. [ ] Local verification green:
@@ -49,11 +51,13 @@ Optional follow-ups (not required for the alpha gate):
 - [ ] Open issues for any Conditional gate items that remain product gaps
 - [ ] Do not mark RAG alpha “stable” until a non-`aN` release on the RAG line
 
-## Do not claim at tag time
+## Do not claim at tag time (2.2.0a1 retrieve-first tag)
 
-- Grounded generate (`rag_generate`) or LLM operator / agent product (`buildml.ai`)
+- For the **2.2.0a1** tag only: do not claim grounded generate or the LLM operator
+  (those ship on the later `2.3.0a1` line — see CHANGELOG).
 - That the hashing default is semantic retrieval quality
 - Hosted vector DB, FAISS/Chroma product path, or PDF/OCR cleanup product
 - Teaching Studio RAG cockpit redesign
 - That Session checkpoints contain the vector index
 - That classical or Torch APIs were replaced by RAG
+- Multimodal fusion or nested Torch search (still out of scope on current HEAD)

@@ -58,13 +58,15 @@ stamps, and process theater.
 `editorial-standards.md`) because these files are maintainer records, not
 user guidance.
 
-## Teaching surface sync (Phase D)
+## Teaching surface sync (Phase D / Pass E)
 
 Session public callables are the source of truth for *which* operations exist.
 Human teaching prose lives in domain overlays under
-`buildml/explain/overlays/` (classical / dl / rag / ai / workflow). A generated
-Session signature index is checked in at
-`buildml/explain/generated/operation_index.json`.
+`buildml/explain/overlays/` (classical / dl / rag / ai / workflow). Concept notes
+live under `buildml/explain/concepts/` (split by domain). A generated Session
+signature index is checked in at
+`buildml/explain/generated/operation_index.json`. Missing overlay parameter rows
+are auto-filled from that index; CI still requires full signature coverage.
 
 When you add or rename a public `Session` method, or change AI tool bindings:
 
@@ -80,6 +82,8 @@ python scripts/sync_teaching_surface.py --check
 pytest tests/unit/test_teaching_surface_sync.py tests/unit/test_explain_catalog.py -q
 ```
 
-CI runs `--check` on every PR. Do not hand-edit `operation_index.json`.
+CI runs `--check` on every PR (plus scoped mypy). Do not hand-edit
+`operation_index.json`. Dashboard Teaching Studio concept chips must resolve in
+`CONCEPT_NOTES`.
 
 — Leonard

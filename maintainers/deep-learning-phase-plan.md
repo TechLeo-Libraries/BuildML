@@ -209,7 +209,7 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 | Train-only fit for normalize / target encode used before tensors | M1 | Frozen stats on val/test |
 | No test rows in DataLoader shuffle or oversampling | M1 | Tests must prove it |
 | Validation-only early stopping; test once at end | M1 | Document anti-pattern of test-tuned early stop |
-| Fold-local DL CV | M2→L | Deferred: no fake sklearn-style Torch CV; holdout + early-stop on validation is the tested discipline |
+| Fold-local DL CV | M2→C | Shipped in Phase C as `Session.cross_validate_torch` (fold-local normalize + fresh module per fold; **not** nested Torch search) |
 | Group / time split compatibility | M2 | Loaders honor membership; group disjoint + time order checks — done |
 | Injected external partitions | M1 | `inject_split` remains valid source of membership |
 

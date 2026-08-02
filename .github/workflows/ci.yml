@@ -38,6 +38,15 @@ jobs:
       - name: Teaching surface sync
         run: python scripts/sync_teaching_surface.py --check
 
+      - name: Mypy (scoped)
+        run: >
+          mypy --follow-imports=silent
+          buildml/core
+          buildml/explain/schemas.py
+          buildml/explain/history.py
+          buildml/explain/sync.py
+          buildml/explain/concepts
+
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 
@@ -140,11 +149,12 @@ jobs:
       - name: Core import smoke without relying on classical extras
         run: python -c "import buildml; print(buildml.__version__)"
 
-      - name: Torch DL slice + M2 depth + DL alpha-gate smoke
+      - name: Torch DL slice + M2 depth + Phase C + DL alpha-gate smoke
         run: |
           pytest \
             tests/unit/test_dl_torch_slice.py \
             tests/unit/test_dl_m2_depth.py \
+            tests/unit/test_dl_phase_c.py \
             tests/integration/test_dl_torch_smoke.py \
             tests/integration/test_dl_alpha_smoke.py \
             -q
@@ -176,11 +186,12 @@ jobs:
       - name: Core import smoke without relying on RAG internals
         run: python -c "import buildml; print(buildml.__version__)"
 
-      - name: RAG unit + integration + alpha-gate smoke
+      - name: RAG unit + integration + generate + alpha-gate smoke
         run: |
           pytest \
             tests/unit/test_rag_slice.py \
             tests/unit/test_rag_m2_depth.py \
+            tests/unit/test_rag_generate.py \
             tests/integration/test_rag_smoke.py \
             tests/integration/test_rag_alpha_smoke.py \
             -q
@@ -216,6 +227,7 @@ jobs:
         run: |
           pytest \
             tests/unit/test_ai_slice.py \
+            tests/unit/test_ai_phase_c.py \
             tests/unit/test_executor_dispatch.py \
             -q
 

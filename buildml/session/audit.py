@@ -348,12 +348,13 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
                     "high",
                     (
                         "Session-global preprocess plans exist alongside CV/search history. "
-                        "Default path refuses unless fold-local PreprocessRecipe is used or "
-                        "allow_session_global_preprocess=True was set."
+                        "Default path refuses even when a fold-local PreprocessRecipe is "
+                        "passed (recipes do not rebuild from raw rows). Opt in only via "
+                        "allow_session_global_preprocess=True, or re-ingest unpoisoned data."
                     ),
                     "history.cv_preprocess_scope",
                     "cv_score",
-                    "Fold-local recipes prevent train statistics from leaking across folds.",
+                    "Re-ingest unpoisoned data, then use fold-local PreprocessRecipe.",
                 )
             )
 

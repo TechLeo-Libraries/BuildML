@@ -302,11 +302,14 @@ print(
 )
 ```
 
-Prefer `PreprocessRecipe` inside CV for fold-local honesty. Resample and
+Prefer `PreprocessRecipe` inside CV for fold-local honesty — on data that has
+**not** already been Session-globally imputed/encoded/scaled. Resample and
 `apply_custom_transform` remain Session-global. If Session-global preprocess
-already ran, CV/search refuse unless you pass a fold-local recipe or set
-`allow_session_global_preprocess=True`. `compare_models` ranks on one
-partition — override the default to `validation` during iterative selection.
+already ran, CV/search refuse **even with** a fold-local recipe (recipes do
+not undo poisoned frames). Re-ingest unpoisoned data, or set
+`allow_session_global_preprocess=True` only as an explicit override.
+`compare_models` ranks on one partition — override the default to
+`validation` during iterative selection.
 
 ---
 

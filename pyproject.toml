@@ -122,3 +122,14 @@ exclude = ["buildml/_legacy/", "build/", "docs/"]
 [[tool.mypy.overrides]]
 module = "buildml._legacy.*"
 ignore_errors = true
+
+# Gradual typing: Session facade + ops still return through untyped helpers.
+# Scoped CI covers core/explain; widen this override only with intentional cleanup.
+[[tool.mypy.overrides]]
+module = [
+  "buildml.session.*",
+  "buildml.dashboard.*",
+  "buildml.explain.overlays.*",
+  "buildml.explain.catalog",
+]
+warn_return_any = false

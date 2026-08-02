@@ -16,15 +16,15 @@ from buildml.rag.generate import EchoGroundedProvider
 _TORCH_SPEC = importlib.util.find_spec("torch") is not None
 
 
-def _torch_usable() -> bool:
-    if not _TORCH_SPEC:
-        return False
+def _require_torch_or_skip() -> None:
+    """Skip when Torch is installed but not importable in this process (e.g. AV)."""
     try:
-        from buildml.dl.extras import torch_available
+        from buildml.core.errors import MissingExtraError
+        from buildml.dl.extras import require_torch
 
-        return torch_available()
-    except Exception:
-        return False
+        require_torch(feature="pytest Torch AI Phase C")
+    except (MissingExtraError, ImportError, OSError) as exc:
+        pytest.skip(f"torch not importable in-process: {exc}")
 
 
 def test_default_registry_includes_rag_and_dl_tools() -> None:
@@ -127,8 +127,7 @@ def test_ai_run_plan_multi_step_classical() -> None:
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_ai_execute_fit_torch_tool() -> None:
-    if not _torch_usable():
-        pytest.skip("torch not importable")
+    _require_torch_or_skip()
     rng = np.random.default_rng(2)
     df = pd.DataFrame(
         {

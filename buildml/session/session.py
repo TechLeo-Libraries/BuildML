@@ -57,18 +57,24 @@ from .walkthrough import WorkflowWalkthroughReport
 if TYPE_CHECKING:
     from buildml.ai.advisor import AdvisorResult
     from buildml.ai.executor import ExecutorProposal, ExecutorResult
-    from buildml.ai.planner import PlanExecutionResult
-    from buildml.ai.privacy import EgressManifest
+    from buildml.ai.planner import BudgetTracker, PlanExecutionResult
+    from buildml.ai.privacy import EgressConfig, EgressManifest
+    from buildml.ai.provider import ProviderConfig, ProviderProtocol
     from buildml.ai.results import PlanResult
+    from buildml.ai.tools import ToolRegistry
     from buildml.ai.transcript import TranscriptStore
     from buildml.dashboard.launch import EDAAppHandle
+    from buildml.dl.cv import TorchCVResult
     from buildml.dl.results import (
         DLEvaluateResult,
         TorchLoaderBundle,
         TrainingCurveReport,
         TrainResult,
     )
-    from buildml.rag.results import IndexResult, RagEvalResult, RetrieveResult
+    from buildml.dl.types import TrainConfig
+    from buildml.rag.generate import ChatProvider as RagChatProvider
+    from buildml.rag.results import GenerateResult, IndexResult, RagEvalResult, RetrieveResult
+    from buildml.rag.types import GenerateConfig, RetrieveConfig
 
 
 class Session:
@@ -128,31 +134,31 @@ class Session:
         self._last_dry_run: DryRunReport | None = None
         self._last_history_summary: HistorySummary | None = None
         self._last_eda: EDAReport | None = None
-        self._eda_app_handle: Any | None = None
+        self._eda_app_handle: EDAAppHandle | None = None
         self._last_cv: CVScoreResult | None = None
         self._last_nested_cv: NestedCVResult | None = None
         self._last_search: SearchResult | None = None
         self._model_card: ModelCard | None = None
-        self._torch_loaders: Any | None = None
-        self._dl_train_result: Any | None = None
-        self._dl_cv_result: Any | None = None
+        self._torch_loaders: TorchLoaderBundle | None = None
+        self._dl_train_result: TrainResult | None = None
+        self._dl_cv_result: TorchCVResult | None = None
         self._rag_corpus: Any | None = None
         self._rag_chunks: Any | None = None
         self._rag_index: Any | None = None
-        self._rag_index_result: Any | None = None
-        self._rag_retrieve_result: Any | None = None
-        self._rag_eval_result: Any | None = None
-        self._rag_generate_result: Any | None = None
-        self._ai_provider: Any | None = None
-        self._ai_egress_config: Any | None = None
-        self._ai_transcript: Any | None = None
+        self._rag_index_result: IndexResult | None = None
+        self._rag_retrieve_result: RetrieveResult | None = None
+        self._rag_eval_result: RagEvalResult | None = None
+        self._rag_generate_result: GenerateResult | None = None
+        self._ai_provider: ProviderProtocol | ProviderConfig | None = None
+        self._ai_egress_config: EgressConfig | None = None
+        self._ai_transcript: TranscriptStore | None = None
         self._ai_result: Any | None = None
-        self._ai_advisor_result: Any | None = None
-        self._ai_executor_result: Any | None = None
-        self._ai_registry: Any | None = None
+        self._ai_advisor_result: AdvisorResult | None = None
+        self._ai_executor_result: ExecutorProposal | ExecutorResult | None = None
+        self._ai_registry: ToolRegistry | None = None
         self._ai_max_iterations: int = 10
-        self._ai_budget_tracker: Any | None = None
-        self._ai_plan_result: Any | None = None
+        self._ai_budget_tracker: BudgetTracker | None = None
+        self._ai_plan_result: PlanResult | None = None
 
     def __enter__(self) -> Session:
         """Return ``self`` for ``with session:`` ownership scopes."""
@@ -964,7 +970,7 @@ class Session:
         early_stopping_monitor: str = "val_loss",
         scheduler: Literal["none", "step", "plateau", "cosine"] = "none",
         resume: bool = False,
-        config: Any | None = None,
+        config: TrainConfig | None = None,
         hidden: tuple[int, ...] = (64, 32),
         dropout: float = 0.1,
     ) -> Session:
@@ -1028,7 +1034,7 @@ class Session:
         stratify: bool = True,
         task: Literal["classification", "regression", "auto"] = "auto",
         module_factory: Any | None = None,
-    ) -> Any:
+    ) -> TorchCVResult:
         """Fold-local Torch CV (normalize fit per fold; not nested search)."""
         return dl_ops.cross_validate_torch(
             self,
@@ -1050,7 +1056,7 @@ class Session:
         return self._dl_train_result
 
     @property
-    def dl_cv_result(self) -> Any | None:
+    def dl_cv_result(self) -> TorchCVResult | None:
         """Last :class:`~buildml.dl.cv.TorchCVResult`, if any."""
         return self._dl_cv_result
 
@@ -1209,15 +1215,15 @@ class Session:
         query: str,
         *,
         k: int = 5,
-        provider: Any | None = None,
+        provider: RagChatProvider | None = None,
         mode: str | None = None,
         fusion: str | None = None,
         filters: dict[str, Any] | None = None,
         rerank: bool | str | None = None,
-        retrieve_config: Any | None = None,
-        config: Any | None = None,
+        retrieve_config: RetrieveConfig | None = None,
+        config: GenerateConfig | None = None,
         use_last_retrieve: bool = False,
-    ) -> Any:
+    ) -> GenerateResult:
         """Retrieve context and generate a grounded answer with citations.
 
         Requires an active RAG index and a chat provider (explicit ``provider``
@@ -1274,7 +1280,7 @@ class Session:
         return self._rag_eval_result
 
     @property
-    def rag_generate_result(self) -> Any | None:
+    def rag_generate_result(self) -> GenerateResult | None:
         """Last :class:`~buildml.rag.results.GenerateResult`, if any."""
         return self._rag_generate_result
 

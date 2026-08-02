@@ -2,7 +2,7 @@
 
 **Status:** Supersedes the 1 Aug 2026 audit of legacy 1.0.9 / `SupervisedLearning`.  
 **Package line:** `2.3.0a1` (AI operator alpha on classical `2.0`, Torch `2.1`, RAG `2.2` bases).  
-**Updated:** Phase B thin-Session pass (Aug 2026).
+**Updated:** Pass E re-audit (Aug 2026) after Phases A–D.
 
 > Historical 1.x god-object findings remain useful only as the reason the rewrite happened.
 > Do not treat the tables below as a description of HEAD.
@@ -16,7 +16,7 @@
 | Classical spine | Ingest → roles → split → preprocess / fold recipes → fit → evaluate → CV/search |
 | Optional domains | `buildml.dl` (Torch), `buildml.rag`, `buildml.ai` (operator) |
 | Packaging | `pyproject.toml` + extras (`engines`, `torch`, `rag`, `ai`, `dashboard`, …) |
-| Tests / CI | pytest matrix + lint; alpha gates under `maintainers/*-alpha-gate.md` |
+| Tests / CI | pytest matrix + ruff + teaching-surface sync + scoped mypy; alpha gates under `maintainers/*-alpha-gate.md` |
 
 **Product in one sentence:** BuildML is a hybrid build session for tabular (and attached domain) ML workflows: method-simple Session API, leakage-safe fit scope, honest scale modes, and progressive depth via extras.
 
@@ -31,7 +31,7 @@
 | `buildml.session.data_ops` | Ingest, roles, splits, engines, checkpoints |
 | `buildml.session.preprocess_ops` | Session-global preprocess / resample orchestration |
 | `buildml.session.classical_ops` | Fit / evaluate / CV / search / pipeline / diagnostics |
-| `buildml.session.dl_ops` / `rag_ops` / `ai_ops` | Thin facades over optional domains (no Phase C depth) |
+| `buildml.session.dl_ops` / `rag_ops` / `ai_ops` | Thin facades over optional domains (Phase C depth lives in `buildml.dl` / `rag` / `ai`) |
 | `buildml.session.eda_ops` / `workflow_ops` / `audit` | EDA, dashboard entry, dry-run, walkthrough |
 | `buildml.data` / `ingest` | Dataset handle, splits, engines, materialization gates |
 | `buildml.preprocess` | Session plans + fold-local `PreprocessRecipe` |
@@ -49,12 +49,12 @@
 
 ## Related maintainer docs
 
-- [reconstruction-roadmap.md](./reconstruction-roadmap.md) — sequencing (domains shipped through AI alpha; Phase B Session thinness)
+- [reconstruction-roadmap.md](./reconstruction-roadmap.md) — sequencing (domains through AI alpha; Passes A–E)
 - [classical-ml-capability-map.md](./classical-ml-capability-map.md)
 - [quality-bar.md](./quality-bar.md)
 - Domain plans / M0 locks / alpha gates in this folder
 
 ## What this file is not
 
-- Not a capability wishlist for Phase C/D.
+- Not a capability wishlist for future multimodal / nested-Torch search work.
 - Not a re-litigation of 1.x `SupervisedLearning` APIs (removed/rewritten).

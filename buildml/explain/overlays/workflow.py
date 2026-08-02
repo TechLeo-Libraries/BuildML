@@ -153,7 +153,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         rationale=(
             "Use the live Teaching Studio for interactive review; offline HTML is the same product "
-            "surface without a server."
+            "surface without a server.",
         ),
         assumptions=("The app binds to a local loopback port and serves one Session report payload.",),
         failures=("Missing dashboard extra, port already in use, or no materialized dataset.",),

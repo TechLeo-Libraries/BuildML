@@ -85,14 +85,16 @@ fit-capable work; the full exported frame contains every partition.
 For selection-time honesty inside ``cv_score``, ``grid_search``,
 ``optuna_search``, or ``nested_cv_score``, use a fold-local
 ``PreprocessRecipe`` (dates, text, impute, encode, binning, scale, reduce/PCA,
-select, outliers) instead of Session-global plans fitted on the full train
-partition. When Session-global fit-capable plans already exist and no
-fold-local recipe is provided, CV/search **refuse** with
-``LeakageError`` unless ``allow_session_global_preprocess=True`` (explicit,
-loud override; scores remain leakage-biased). Resample and
-``apply_custom_transform`` remain Session-global only.
-``Session.text_features`` / ``Session.reduce_dimensions`` are also Session-global
-unless the same steps are expressed in the recipe.
+select, outliers) on **unpoisoned** data — do not fit Session-global plans on
+the full train partition first. When Session-global fit-capable plans already
+exist, CV/search **refuse** with ``LeakageError`` even if a fold-local recipe
+is passed (recipes do not rebuild from raw/unpoisoned rows). Opt in only via
+``allow_session_global_preprocess=True`` (explicit, loud override; scores
+remain leakage-biased), or re-ingest / checkpoint-load unpoisoned data.
+Resample and ``apply_custom_transform`` remain Session-global only.
+``Session.text_features`` / ``Session.reduce_dimensions`` are also
+Session-global unless the same steps are expressed in the recipe on
+unpoisoned data.
 
 When Polars or DuckDB is configured via ``with_engine`` or path ingest,
 ``Dataset`` attaches a native handle. Path ingest with those engines loads

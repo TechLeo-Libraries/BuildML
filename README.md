@@ -108,11 +108,13 @@ session.evaluate(partition="test")  # confirm once after selection
 ```
 
 Pass a `PreprocessRecipe` when encoding, binning, feature selection, or
-outlier fences should be refit inside each fold. Custom transforms and
-resampling stay Session-global. If you already ran full-train Session
-preprocess and call CV/search without a fold-local recipe, BuildML refuses
-unless you set `allow_session_global_preprocess=True` (scores remain
-leakage-biased).
+outlier fences should be refit inside each fold — on **unpoisoned** data
+(no prior Session-global impute/encode/scale/…). Custom transforms and
+resampling stay Session-global. If Session-global preprocess already ran,
+CV/search **refuse even when a fold-local recipe is passed** (recipes do not
+rebuild from raw rows). Opt in only with
+`allow_session_global_preprocess=True` (scores remain leakage-biased), or
+re-ingest / checkpoint-load unpoisoned data first.
 
 ## Artifacts and inspection
 

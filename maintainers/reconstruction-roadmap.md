@@ -302,4 +302,5 @@ M0 lock in [llm-m0-lock.md](./llm-m0-lock.md); gate in [ai-alpha-gate.md](./ai-a
 - **Phase A** (`d0ad2d5`): weights, CV hard-refuse for Session-global prep, `OUT_OF_CORE` removal, httpx, maintainer honesty.
 - **Phase B** (`05c9458`): Session decomposed into `data_ops` / `preprocess_ops` / `classical_ops` / `dl_ops` / `rag_ops` / `ai_ops` / `eda_ops` / `workflow_ops` / `state`; CV also refuses poisoned data + recipe without opt-in.
 - **Phase C** (`b7b1404`): deepen RAG (`rag_generate`), DL (text loaders, fold-local Torch CV, built-in models), AI multi-domain tools.
-- **Phase D** (this pass): CI-enforced teaching sync — generated Session `operation_index.json`, domain overlays under `buildml/explain/overlays/`, AI tool ↔ catalog parity gate via `scripts/sync_teaching_surface.py`.
+- **Phase D** (`cb558a6`): CI-enforced teaching sync — generated Session `operation_index.json`, domain overlays under `buildml/explain/overlays/`, AI tool ↔ catalog parity gate via `scripts/sync_teaching_surface.py`.
+- **Pass E** (this pass): full re-audit after A–D — fix soft-leakage teaching regressions, catalog param auto-fill, concepts package split, scoped mypy + Phase C tests in CI, facade typing, stale maintainer honesty.

@@ -1260,7 +1260,7 @@
           "required": false
         },
         {
-          "annotation": "Any | None",
+          "annotation": "TrainConfig | None",
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "config",
@@ -2443,7 +2443,7 @@
           "required": false
         },
         {
-          "annotation": "Any | None",
+          "annotation": "RagChatProvider | None",
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "provider",
@@ -2478,14 +2478,14 @@
           "required": false
         },
         {
-          "annotation": "Any | None",
+          "annotation": "RetrieveConfig | None",
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "retrieve_config",
           "required": false
         },
         {
-          "annotation": "Any | None",
+          "annotation": "GenerateConfig | None",
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "config",

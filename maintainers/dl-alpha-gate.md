@@ -90,7 +90,9 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 4. **Materialized tensors.** Partition frames become batches via Pandas/NumPy; no
    Polars/DuckDB zero-copy into DataLoaders.
 5. **Classical preprocess is not auto-applied** before loaders.
-6. **No fold-local Torch CV** and no DistributedDataParallel in this alpha.
+6. **Fold-local Torch CV exists** (`Session.cross_validate_torch`) as a Phase C
+   slice; it is **not** nested Torch hyperparameter search. DistributedDataParallel
+   remains out of scope for this alpha.
 7. **No mixed precision, TorchScript/ONNX productization, or AutoML architecture search.**
 8. **RAG / LLM operator** are out of DL alpha scope (later domains).
 9. **Session checkpoints never embed Torch weights.** Use `buildml.torch_bundle.v1`.

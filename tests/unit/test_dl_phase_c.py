@@ -9,21 +9,20 @@ import pandas as pd
 import pytest
 
 from buildml import Session
-from buildml.core.errors import ValidationError
+from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.explain.catalog import OPERATION_CATALOG
 
 _TORCH_SPEC = importlib.util.find_spec("torch") is not None
 
 
-def _torch_usable() -> bool:
-    if not _TORCH_SPEC:
-        return False
+def _require_torch_or_skip() -> None:
+    """Skip when Torch is installed but not importable in this process (e.g. AV)."""
     try:
-        from buildml.dl.extras import torch_available
+        from buildml.dl.extras import require_torch
 
-        return torch_available()
-    except Exception:
-        return False
+        require_torch(feature="pytest Torch Phase C")
+    except (MissingExtraError, ImportError, OSError) as exc:
+        pytest.skip(f"torch not importable in-process: {exc}")
 
 
 def _cls_frame(n: int = 90) -> pd.DataFrame:
@@ -57,8 +56,7 @@ def test_catalog_covers_phase_c_dl_ops() -> None:
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_builtin_mlp_happy_path() -> None:
-    if not _torch_usable():
-        pytest.skip("torch not importable")
+    _require_torch_or_skip()
     session = (
         Session.ingest(_cls_frame())
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
@@ -74,8 +72,7 @@ def test_builtin_mlp_happy_path() -> None:
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_classical_plans_disclosed_on_loaders() -> None:
-    if not _torch_usable():
-        pytest.skip("torch not importable")
+    _require_torch_or_skip()
     session = (
         Session.ingest(_cls_frame())
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
@@ -89,8 +86,7 @@ def test_classical_plans_disclosed_on_loaders() -> None:
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_cross_validate_torch_fold_local() -> None:
-    if not _torch_usable():
-        pytest.skip("torch not importable")
+    _require_torch_or_skip()
     session = Session.ingest(_cls_frame(n=60)).set_roles(
         {"x1": "feature", "x2": "feature", "y": "target"}
     )
@@ -103,8 +99,7 @@ def test_cross_validate_torch_fold_local() -> None:
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_text_torch_path() -> None:
-    if not _torch_usable():
-        pytest.skip("torch not importable")
+    _require_torch_or_skip()
     session = (
         Session.ingest(_text_frame())
         .set_roles({"text": "feature", "y": "target"})
@@ -120,8 +115,7 @@ def test_text_torch_path() -> None:
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_text_vocab_refuses_without_split() -> None:
-    if not _torch_usable():
-        pytest.skip("torch not importable")
+    _require_torch_or_skip()
     session = Session.ingest(_text_frame()).set_roles({"text": "feature", "y": "target"})
     with pytest.raises(ValidationError):
         session.make_text_torch_loaders(text_column="text")

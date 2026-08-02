@@ -1,99 +1,12 @@
 # ruff: noqa: E501
-"""Shared concept notes referenced by the operation catalog and Concept Academy."""
+"""Classical concept notes."""
 
 from __future__ import annotations
 
+from buildml.explain.concepts._builder import _note
 from buildml.explain.schemas import ConceptNote
 
-
-def _flatten_details(
-    *,
-    definition: str,
-    intuition: str,
-    formal_idea: str,
-    why_it_matters: tuple[str, ...],
-    how_buildml_uses: tuple[str, ...],
-    interpretation_rules: tuple[str, ...],
-    assumptions: tuple[str, ...],
-    failure_modes: tuple[str, ...],
-    anti_patterns: tuple[str, ...],
-    worked_example_pattern: tuple[str, ...],
-) -> tuple[str, ...]:
-    """Build a searchable flat paragraph list from structured teaching sections."""
-    parts: list[str] = []
-    for paragraph in (definition, intuition, formal_idea):
-        text = paragraph.strip()
-        if text:
-            parts.append(text)
-    for group in (
-        why_it_matters,
-        how_buildml_uses,
-        interpretation_rules,
-        assumptions,
-        failure_modes,
-        anti_patterns,
-        worked_example_pattern,
-    ):
-        for item in group:
-            text = item.strip()
-            if text:
-                parts.append(text)
-    return tuple(parts)
-
-
-def _note(
-    *,
-    key: str,
-    title: str,
-    summary: str,
-    definition: str,
-    intuition: str,
-    formal_idea: str,
-    why_it_matters: tuple[str, ...],
-    how_buildml_uses: tuple[str, ...],
-    interpretation_rules: tuple[str, ...],
-    assumptions: tuple[str, ...],
-    failure_modes: tuple[str, ...],
-    anti_patterns: tuple[str, ...],
-    worked_example_pattern: tuple[str, ...],
-    related_concepts: tuple[str, ...] = (),
-    references: tuple[str, ...] = (),
-    details: tuple[str, ...] | None = None,
-) -> ConceptNote:
-    """Construct a ConceptNote and auto-build searchable ``details`` when omitted."""
-    flat = details if details is not None else _flatten_details(
-        definition=definition,
-        intuition=intuition,
-        formal_idea=formal_idea,
-        why_it_matters=why_it_matters,
-        how_buildml_uses=how_buildml_uses,
-        interpretation_rules=interpretation_rules,
-        assumptions=assumptions,
-        failure_modes=failure_modes,
-        anti_patterns=anti_patterns,
-        worked_example_pattern=worked_example_pattern,
-    )
-    return ConceptNote(
-        key=key,
-        title=title,
-        summary=summary,
-        details=flat,
-        related_concepts=related_concepts,
-        references=references,
-        definition=definition,
-        intuition=intuition,
-        formal_idea=formal_idea,
-        why_it_matters=why_it_matters,
-        how_buildml_uses=how_buildml_uses,
-        interpretation_rules=interpretation_rules,
-        assumptions=assumptions,
-        failure_modes=failure_modes,
-        anti_patterns=anti_patterns,
-        worked_example_pattern=worked_example_pattern,
-    )
-
-
-CONCEPT_NOTES: dict[str, ConceptNote] = {
+CLASSICAL_NOTES: dict[str, ConceptNote] = {
     note.key: note
     for note in (
         _note(
@@ -101,8 +14,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             title="Column roles",
             summary="Roles label how each column participates in modeling, not what its dtype happens to be.",
             definition=(
-                "A column role is an explicit workflow label—feature, target, identifier, group, time, "
-                "weight, or ignore—that tells BuildML which columns may train, which must be predicted, "
+                "A column role is an explicit workflow labelâ€”feature, target, identifier, group, time, "
+                "weight, or ignoreâ€”that tells BuildML which columns may train, which must be predicted, "
                 "and which must stay out of the estimator matrix."
             ),
             intuition=(
@@ -111,7 +24,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "behavior. Roles separate meaning from storage type."
             ),
             formal_idea=(
-                "Let the table columns be C. A role map r: C → {feature, target, id, group, time, "
+                "Let the table columns be C. A role map r: C â†’ {feature, target, id, group, time, "
                 "weight, ignore} defines the modeling contract: predictors X come from feature columns, "
                 "labels y from target columns, and id/group/time/weight/ignore columns follow their own "
                 "rules for splitting, sampling, and scoring."
@@ -131,7 +44,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Treat inferred roles as a draft: confirm every target, id, and ignore assignment before split.",
                 "A high-cardinality integer labeled feature is a review flag for accidental id use.",
-                "Multiple target roles imply a multitarget or mislabeled setup—resolve before fitting.",
+                "Multiple target roles imply a multitarget or mislabeled setupâ€”resolve before fitting.",
                 "Weight roles affect training emphasis; verify they are not post-outcome quantities.",
             ),
             assumptions=(
@@ -162,7 +75,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             summary="Any statistic, vocabulary, or model parameter must be learned from training rows only.",
             definition=(
                 "The leakage boundary is the rule that evaluation rows must not influence parameters used "
-                "to transform or score them—imputers, encoders, scalers, selectors, samplers, and estimators "
+                "to transform or score themâ€”imputers, encoders, scalers, selectors, samplers, and estimators "
                 "all learn on train (or nested train folds) and apply a frozen plan elsewhere."
             ),
             intuition=(
@@ -172,8 +85,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Partition rows into train / validation / test. For any learner L that maps data to "
-                "parameters θ, compute θ = L(train) and apply the fixed map f_θ to validation and test. "
-                "Using L(train ∪ eval) or selecting models on test moves information across the boundary."
+                "parameters Î¸, compute Î¸ = L(train) and apply the fixed map f_Î¸ to validation and test. "
+                "Using L(train âˆª eval) or selecting models on test moves information across the boundary."
             ),
             why_it_matters=(
                 "Leakage inflates holdout scores and produces models that fail on truly unseen traffic.",
@@ -218,7 +131,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             title="Partition design",
             summary="A split assigns each row a membership that controls what may train, guide, and assess the model.",
             definition=(
-                "Data splitting partitions rows into disjoint sets—commonly train, validation, and test—so "
+                "Data splitting partitions rows into disjoint setsâ€”commonly train, validation, and testâ€”so "
                 "learning, iterative choices, and final estimation use separate observations under a stated "
                 "sampling design (random, stratified, grouped, or temporal)."
             ),
@@ -228,7 +141,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "both sides make the taste test too easy."
             ),
             formal_idea=(
-                "A split plan is a function s: rows → {train, validation, test, ...} with disjoint images. "
+                "A split plan is a function s: rows â†’ {train, validation, test, ...} with disjoint images. "
                 "Random splits assume exchangeability; stratified splits preserve class proportions in "
                 "expectation; grouped/temporal splits keep dependence units intact across partitions."
             ),
@@ -248,7 +161,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Random-split metrics assume rows are exchangeable; reject that reading for panels or time series.",
                 "Stratification fixes marginal class rates, not duplicate-row or entity leakage.",
                 "Keep the same membership when comparing preprocessors and estimators.",
-                "Tiny validation sets (e.g. dozens of positives) make ranking noisy—treat gaps cautiously.",
+                "Tiny validation sets (e.g. dozens of positives) make ranking noisyâ€”treat gaps cautiously.",
             ),
             assumptions=(
                 "The sampling design matches how new data will arrive (i.i.d., by group, or over time).",
@@ -304,9 +217,9 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Always read a score with its partition tag (train / validation / test).",
-                "A large train–validation gap is a review flag for overfitting, leakage, or split mismatch.",
+                "A large trainâ€“validation gap is a review flag for overfitting, leakage, or split mismatch.",
                 "If test was used to pick the winner, treat the test score as optimistic.",
-                "Small-n holdouts: wide uncertainty—prefer ranges or repeats over single-point bravado.",
+                "Small-n holdouts: wide uncertaintyâ€”prefer ranges or repeats over single-point bravado.",
             ),
             assumptions=(
                 "Validation and test are disjoint from each other and from training rows used to fit.",
@@ -326,7 +239,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             worked_example_pattern=(
                 "Freeze split; iterate model and threshold choices on validation only.",
                 "Once frozen, score test once and report partition, metric, and sample size.",
-                "If test disappoints, diagnose with train/validation curves—do not mine test for fixes.",
+                "If test disappoints, diagnose with train/validation curvesâ€”do not mine test for fixes.",
             ),
             related_concepts=("data-splitting", "model-selection", "overfitting"),
         ),
@@ -344,7 +257,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "reordered one-hots, or a new category policy, you are grading answers written on a different form."
             ),
             formal_idea=(
-                "An estimator implements a map f: X → ŷ where X lives in a coordinate system defined by "
+                "An estimator implements a map f: X â†’ Å· where X lives in a coordinate system defined by "
                 "feature names (and encoding columns). Any transform that changes that coordinate system "
                 "between fit and score breaks f unless the same fitted pipeline rebuilds X identically."
             ),
@@ -391,8 +304,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             title="Missing-data treatment",
             summary="Imputation fills gaps with a train-learned rule; it does not prove missingness is harmless.",
             definition=(
-                "Missing-data treatment decides how nulls and sentinel missings are handled—drop, impute, "
-                "or model natively—using policies justified by the missingness mechanism and by what will "
+                "Missing-data treatment decides how nulls and sentinel missings are handledâ€”drop, impute, "
+                "or model nativelyâ€”using policies justified by the missingness mechanism and by what will "
                 "be available at score time."
             ),
             intuition=(
@@ -417,9 +330,9 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Explain notes stress that imputation is a representation choice, not a causal fix.",
             ),
             interpretation_rules=(
-                "Missing rate > ~20–30% in a key feature is a review flag for drop, indicator, or domain fix.",
+                "Missing rate > ~20â€“30% in a key feature is a review flag for drop, indicator, or domain fix.",
                 "Median fills suit skewed numerics; mean fills are more pullable by tails.",
-                "Most-frequent category fill can erase rare-but-important levels—inspect value counts.",
+                "Most-frequent category fill can erase rare-but-important levelsâ€”inspect value counts.",
                 "If missingness correlates with the target, treat that as association to investigate, not proof of mechanism.",
             ),
             assumptions=(
@@ -450,7 +363,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             summary="Encoding maps category labels into numeric columns an estimator can consume.",
             definition=(
                 "Categorical encoding is a deterministic mapping from discrete level labels to numeric "
-                "features—commonly one-hot/dummy columns or ordinal integers—fit from the training "
+                "featuresâ€”commonly one-hot/dummy columns or ordinal integersâ€”fit from the training "
                 "vocabulary and applied with an explicit unknown-level policy at score time."
             ),
             intuition=(
@@ -461,7 +374,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             formal_idea=(
                 "Given training level set V_j for column j, one-hot builds indicators 1[x=v] for v in V_j "
                 "(often dropping one level for linear models). Ordinal encoding assigns a rank map "
-                "π: V_j → ℤ. Unseen levels at score time require a declared handling (error, ignore, other)."
+                "Ï€: V_j â†’ â„¤. Unseen levels at score time require a declared handling (error, ignore, other)."
             ),
             why_it_matters=(
                 "Encoding choice changes dimensionality, collinearity, and what distance-based models see.",
@@ -506,8 +419,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             title="Feature scaling",
             summary="Scaling rewrites numeric units; it adds no new information and must be train-fitted.",
             definition=(
-                "Feature scaling applies an affine or robust transform to numeric columns—standardization, "
-                "min–max, or quantile-style maps—so magnitudes become comparable for scale-sensitive "
+                "Feature scaling applies an affine or robust transform to numeric columnsâ€”standardization, "
+                "minâ€“max, or quantile-style mapsâ€”so magnitudes become comparable for scale-sensitive "
                 "learners, using parameters estimated on training rows only."
             ),
             intuition=(
@@ -516,7 +429,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "penalized linear models and k-NN do not."
             ),
             formal_idea=(
-                "Standard scaling uses train estimates μ̂_j, σ̂_j and maps x ↦ (x − μ̂_j)/σ̂_j. Min–max uses "
+                "Standard scaling uses train estimates Î¼Ì‚_j, ÏƒÌ‚_j and maps x â†¦ (x âˆ’ Î¼Ì‚_j)/ÏƒÌ‚_j. Minâ€“max uses "
                 "train min/max. Because parameters are estimated, fitting them on evaluation rows leaks "
                 "distributional information across the leakage boundary."
             ),
@@ -530,13 +443,13 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Session.apply_preprocess_plans(...) replays a restored ScalePlan at score time without refitting.",
                 "PCA and many linear baselines assume scaled inputs; Teaching Studio calls this out.",
                 "Engine choice does not change the statistical need to freeze scale parameters on train.",
-                "Pipeline order is typically impute → encode → scale before model fit.",
+                "Pipeline order is typically impute â†’ encode â†’ scale before model fit.",
                 "Soft materialization gates warn near 250 MiB; hard gates refuse when configured via "
                 "hard_limit_bytes or BUILDML_MATERIALIZATION_HARD_LIMIT_BYTES.",
             ),
             interpretation_rules=(
-                "After standard scaling, train means near 0 and variances near 1 are sanity checks—not proof of Gaussianity.",
-                "Min–max to [0, 1] on heavy-tailed data can crush typical values—review outlier influence.",
+                "After standard scaling, train means near 0 and variances near 1 are sanity checksâ€”not proof of Gaussianity.",
+                "Minâ€“max to [0, 1] on heavy-tailed data can crush typical valuesâ€”review outlier influence.",
                 "If only tree models are compared, treat scaling as optional unless downstream steps need it.",
                 "Treat soft materialization warnings as scale signals; configure a hard limit when copies must refuse.",
             ),
@@ -576,25 +489,25 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "unexamined 0.5 thresholds."
             ),
             formal_idea=(
-                "Let π = P(Y=1). When π is small, accuracy and ROC can look strong while precision at useful "
-                "recall stays poor. Resampling changes the training distribution to π'; probability "
-                "outputs and thresholds may need recalibration against the original π."
+                "Let Ï€ = P(Y=1). When Ï€ is small, accuracy and ROC can look strong while precision at useful "
+                "recall stays poor. Resampling changes the training distribution to Ï€'; probability "
+                "outputs and thresholds may need recalibration against the original Ï€."
             ),
             why_it_matters=(
-                "Metric choice must reflect false-positive versus false-negative costs under prevalence π.",
+                "Metric choice must reflect false-positive versus false-negative costs under prevalence Ï€.",
                 "Resampling alters training balance but must not rewrite validation/test prevalence.",
                 "Threshold and calibration work often matter more than exotic samplers.",
             ),
             how_buildml_uses=(
                 "Session.resample(...) adjusts training rows after split; holdouts keep natural prevalence.",
                 "Stratified splits help keep class rates stable across partitions when feasible.",
-                "Diagnostics and Teaching Studio emphasize precision–recall thinking for rare positives.",
+                "Diagnostics and Teaching Studio emphasize precisionâ€“recall thinking for rare positives.",
                 "Class-weight and threshold tools are alternatives surfaced alongside sampling.",
             ),
             interpretation_rules=(
-                "Prevalence under ~5–10% is a review flag to prefer PR curves over accuracy headlines.",
+                "Prevalence under ~5â€“10% is a review flag to prefer PR curves over accuracy headlines.",
                 "After oversampling train, judge models on unsamples validation/test.",
-                "A probability of 0.5 is not 'balanced risk' when π is tiny—set thresholds from costs.",
+                "A probability of 0.5 is not 'balanced risk' when Ï€ is tinyâ€”set thresholds from costs.",
             ),
             assumptions=(
                 "Label definitions are stable; imbalance is not an artifact of labeling backlog.",
@@ -621,7 +534,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
         _note(
             key="model-selection",
             title="Model comparison",
-            summary="A ranked score supports one criterion under one protocol—not a universal best model.",
+            summary="A ranked score supports one criterion under one protocolâ€”not a universal best model.",
             definition=(
                 "Model selection compares candidate estimators (and often pipelines) under a fixed data "
                 "partitioning protocol and metric, then chooses a candidate for deployment or further testing "
@@ -634,7 +547,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Given candidates {f_m} and a scoring rule S on a validation design D, selection returns "
-                "m* ≈ argmax S(f_m, D). The reported test score of f_{m*} is optimistically biased if D "
+                "m* â‰ˆ argmax S(f_m, D). The reported test score of f_{m*} is optimistically biased if D "
                 "included the test partition or if many m were mined without accounting for multiplicity."
             ),
             why_it_matters=(
@@ -650,7 +563,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Require identical partitions and preprocessing before trusting a rank order.",
-                "Prefer mean±std across folds for selection; treat gaps within fold std as fragile.",
+                "Prefer meanÂ±std across folds for selection; treat gaps within fold std as fragile.",
                 "Inspect failure slices and calibration, not only the headline score.",
                 "If many models were tried, expect selection bias on the validation winner.",
             ),
@@ -717,11 +630,11 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "cv_strategy selects stratified, group, stratified_group, or time fold builders.",
             ),
             interpretation_rules=(
-                "Always report population=train, fold count, strategy, and mean±std for the primary metric.",
+                "Always report population=train, fold count, strategy, and meanÂ±std for the primary metric.",
                 "If Session impute/scale ran before CV without a fold recipe, treat preprocess honesty as limited.",
-                "After hyperparameter search, prefer nested_cv_score outer mean±std over inner search means.",
+                "After hyperparameter search, prefer nested_cv_score outer meanÂ±std over inner search means.",
                 "Confirm the selected recipe once on validation or test after search.",
-                "Large fold std relative to mean→std gaps means ranks are unstable.",
+                "Large fold std relative to meanâ†’std gaps means ranks are unstable.",
             ),
             assumptions=(
                 "Fold construction matches the dependence structure (i.i.d., group, or time).",
@@ -740,8 +653,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Applying shuffled K-fold to strong time series without a time strategy.",
             ),
             worked_example_pattern=(
-                "Split (group/time/random) → optional fold PreprocessRecipe → cv_score or search on train.",
-                "For tuned selection claims, run nested_cv_score and read outer mean±std.",
+                "Split (group/time/random) â†’ optional fold PreprocessRecipe â†’ cv_score or search on train.",
+                "For tuned selection claims, run nested_cv_score and read outer meanÂ±std.",
                 "Refit winner on full train; evaluate once on the held-out partition.",
             ),
             related_concepts=("leakage-boundary", "model-selection", "evaluation-partitions", "data-splitting"),
@@ -749,10 +662,10 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
         _note(
             key="diagnostic-uncertainty",
             title="Diagnostic uncertainty",
-            summary="Metrics, curves, and importances are sample estimates—not exact truths about the world.",
+            summary="Metrics, curves, and importances are sample estimatesâ€”not exact truths about the world.",
             definition=(
-                "Diagnostic uncertainty is the recognition that reported figures—scores, p-values, "
-                "importance ranks, drift stats—vary with sample size, split, and data composition, and "
+                "Diagnostic uncertainty is the recognition that reported figuresâ€”scores, p-values, "
+                "importance ranks, drift statsâ€”vary with sample size, split, and data composition, and "
                 "must be read with those limits attached."
             ),
             intuition=(
@@ -817,7 +730,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "rank rainy days above dry days yet still say 90% when the true rate is 60%."
             ),
             formal_idea=(
-                "Discrimination concerns ordering by score; calibration concerns P(Y=1 | s(x)=p) ≈ p. "
+                "Discrimination concerns ordering by score; calibration concerns P(Y=1 | s(x)=p) â‰ˆ p. "
                 "Brier score decomposes calibration and sharpness components; reliability diagrams estimate "
                 "the calibration curve in bins. Calibrators must be fit on data not used to evaluate them."
             ),
@@ -834,8 +747,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Points near the diagonal on a reliability plot support calibration; systematic bows do not.",
-                "Brier score mixes calibration and sharpness—pair it with a curve.",
-                "With few positives, bin estimates are noisy—treat wiggles as uncertainty.",
+                "Brier score mixes calibration and sharpnessâ€”pair it with a curve.",
+                "With few positives, bin estimates are noisyâ€”treat wiggles as uncertainty.",
                 "After heavy resampling, expect to re-check calibration on natural-prevalence data.",
             ),
             assumptions=(
@@ -866,12 +779,12 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             summary="A threshold turns scores or probabilities into discrete actions under stated costs.",
             definition=(
                 "A decision threshold t maps a continuous score s(x) to an action, typically predict "
-                "positive if s(x) ≥ t. Choosing t trades precision, recall, and asymmetric error costs; "
+                "positive if s(x) â‰¥ t. Choosing t trades precision, recall, and asymmetric error costs; "
                 "it does not retrain the underlying scorer."
             ),
             intuition=(
                 "The model outputs a dial from 'probably no' to 'probably yes'. The threshold is where you "
-                "decide to act—send an alert, block a payment, call a patient. 0.5 is only special if costs "
+                "decide to actâ€”send an alert, block a payment, call a patient. 0.5 is only special if costs "
                 "and calibration make it so."
             ),
             formal_idea=(
@@ -893,7 +806,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Select t on validation; confirm once on untouched test if needed for reporting.",
                 "Plot metric-versus-threshold; do not trust a single default.",
-                "If probabilities are miscalibrated, threshold meaning shifts—fix calibration language first.",
+                "If probabilities are miscalibrated, threshold meaning shiftsâ€”fix calibration language first.",
                 "Cost ratio changes preferred t more than tiny AUC differences do.",
             ),
             assumptions=(
@@ -913,7 +826,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             worked_example_pattern=(
                 "Fix a model; sweep t on validation; record precision, recall, and cost proxy.",
-                "Pick t under an explicit constraint (e.g. recall ≥ 0.8).",
+                "Pick t under an explicit constraint (e.g. recall â‰¥ 0.8).",
                 "Apply that t once to test; report partition-tagged confusion counts.",
             ),
             related_concepts=("probability-calibration", "class-imbalance", "evaluation-partitions"),
@@ -925,7 +838,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Checkpoint integrity means a saved bundle can be reattached only when row/column "
                 "fingerprints, schema expectations, and bundle contents match enough to restore a coherent "
-                "Session—or fail loudly when they do not."
+                "Sessionâ€”or fail loudly when they do not."
             ),
             intuition=(
                 "A checkpoint is a save file for the lab notebook: data version, who is train versus test, "
@@ -949,7 +862,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Roles, splits, and history ride with full checkpoints for Teaching Studio continuity.",
             ),
             interpretation_rules=(
-                "A validation failure is a stop sign—reconcile data or start a new session path.",
+                "A validation failure is a stop signâ€”reconcile data or start a new session path.",
                 "Success means structural compatibility, not that renamed fields kept meaning.",
                 "Prefer full checkpoint resume when you need the same split and operation history.",
             ),
@@ -982,7 +895,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Reproducibility is the ability for someone (including future you) to regenerate the same "
                 "modeling artifacts and metrics from documented inputs, package versions, seeds, and "
-                "operation parameters—within the limits of platform nondeterminism."
+                "operation parametersâ€”within the limits of platform nondeterminism."
             ),
             intuition=(
                 "A result without its recipe is a story. Seeds fix supported randomness; they do not freeze "
@@ -1038,7 +951,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "An execution engine (pandas, polars, duckdb, ...) is the compute backend behind a Dataset "
                 "handle. It determines how scans, filters, and aggregates run and when data materializes to "
-                "sklearn-facing frames—not which loss the classifier optimizes."
+                "sklearn-facing framesâ€”not which loss the classifier optimizes."
             ),
             intuition=(
                 "Engines are kitchens, not recipes. A larger kitchen helps when ingredients do not fit on "
@@ -1046,8 +959,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "seasoning by magic."
             ),
             formal_idea=(
-                "Dataset operations are evaluated under engine e ∈ {pandas, polars, duckdb, ...} and mode "
-                "m ∈ {memory, lazy}. Estimator fit consumes a materialized design matrix; "
+                "Dataset operations are evaluated under engine e âˆˆ {pandas, polars, duckdb, ...} and mode "
+                "m âˆˆ {memory, lazy}. Estimator fit consumes a materialized design matrix; "
                 "engine choice affects how that matrix is produced and at what memory cost."
             ),
             why_it_matters=(
@@ -1068,7 +981,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "with_engine / with_mode adjust the handle without changing role or split semantics.",
             ),
             interpretation_rules=(
-                "Prefer lazy mode when row/byte estimates exceed comfortable RAM—not as a fashion choice.",
+                "Prefer lazy mode when row/byte estimates exceed comfortable RAMâ€”not as a fashion choice.",
                 "Treat soft materialization warnings as scale signals; hard limits abort intentional oversized copies.",
                 "Measure end-to-end wall time including materialization, not only SQL fragments.",
                 "If metrics change after engine switches, suspect conversion/dtype issues before celebrating gains.",
@@ -1100,8 +1013,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             title="Baselines",
             summary="A baseline anchors whether added model complexity improves the decision-relevant metric.",
             definition=(
-                "A baseline is a simple, transparent predictor—prevalence/majority class, mean/median "
-                "target, or a shallow policy—evaluated under the same partition and metric protocol as "
+                "A baseline is a simple, transparent predictorâ€”prevalence/majority class, mean/median "
+                "target, or a shallow policyâ€”evaluated under the same partition and metric protocol as "
                 "candidate models."
             ),
             intuition=(
@@ -1137,7 +1050,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             failure_modes=(
                 "Computing a 'baseline' using test labels or full-data prevalence after peeking.",
-                "Comparing a tuned pipeline to an untuned baseline unfairly—or the reverse.",
+                "Comparing a tuned pipeline to an untuned baseline unfairlyâ€”or the reverse.",
                 "Ignoring that a strong baseline may already be the production policy.",
             ),
             anti_patterns=(
@@ -1157,8 +1070,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             title="Overfitting",
             summary="Overfitting is a harmful gap between training fit and behavior on relevant unseen rows.",
             definition=(
-                "Overfitting occurs when a model captures training-sample idiosyncrasies—noise, spurious "
-                "correlations, or leakage—so that training performance looks strong while performance on "
+                "Overfitting occurs when a model captures training-sample idiosyncrasiesâ€”noise, spurious "
+                "correlations, or leakageâ€”so that training performance looks strong while performance on "
                 "appropriately held-out data is materially worse."
             ),
             intuition=(
@@ -1166,14 +1079,14 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Huge train scores with soft validation scores mean the model memorized the homework."
             ),
             formal_idea=(
-                "With hypothesis class capacity H and finite train sample, empirical risk R̂_train(f) can "
-                "fall far below risk on a fresh draw. Learning curves and train–validation gaps help "
+                "With hypothesis class capacity H and finite train sample, empirical risk RÌ‚_train(f) can "
+                "fall far below risk on a fresh draw. Learning curves and trainâ€“validation gaps help "
                 "separate high-variance fits from data-limited regimes and from leakage artifacts."
             ),
             why_it_matters=(
                 "Overfit models fail in production despite impressive notebook screenshots.",
                 "Gap diagnosis guides whether you need more data, less capacity, or leakage fixes.",
-                "Early stopping, regularization, and simpler features are tools—not moral virtues.",
+                "Early stopping, regularization, and simpler features are toolsâ€”not moral virtues.",
             ),
             how_buildml_uses=(
                 "Partition-tagged metrics make train-versus-validation gaps visible.",
@@ -1183,9 +1096,9 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Compare the same metric on train and validation; a large gap is a review flag.",
-                "If both are poor, you may be underfit or missing features—not classic overfit.",
+                "If both are poor, you may be underfit or missing featuresâ€”not classic overfit.",
                 "A gap that appears only after adding a suspicious feature suggests leakage first.",
-                "Tiny validation sets make gaps noisy—confirm with another split/seed.",
+                "Tiny validation sets make gaps noisyâ€”confirm with another split/seed.",
             ),
             assumptions=(
                 "Holdout rows are relevantly unseen (not near-duplicates of train).",
@@ -1212,7 +1125,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
         _note(
             key="feature-importance",
             title="Feature importance",
-            summary="Importance describes fitted-model reliance under a dataset and score—not causal effect.",
+            summary="Importance describes fitted-model reliance under a dataset and scoreâ€”not causal effect.",
             definition=(
                 "Feature importance methods quantify how much a fitted model's score degrades (or how much "
                 "impurity/gain concentrates) when a feature's information is removed or perturbed, relative "
@@ -1224,14 +1137,14 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "and a confounder might be the real story."
             ),
             formal_idea=(
-                "Permutation importance estimates Δ = S(f, D) − S(f, D with column j shuffled). Large Δ "
-                "means reliance under (f, D, S). Correlated features can split Δ; causal effects require "
+                "Permutation importance estimates Î” = S(f, D) âˆ’ S(f, D with column j shuffled). Large Î” "
+                "means reliance under (f, D, S). Correlated features can split Î”; causal effects require "
                 "identification assumptions this diagnostic does not provide."
             ),
             why_it_matters=(
                 "Guides audit questions and error analysis without pretending to be causal discovery.",
                 "Unstable ranks on small holdouts mislead feature deletion sprees.",
-                "Stakeholders often misread importance as 'drivers'—teaching must correct that.",
+                "Stakeholders often misread importance as 'drivers'â€”teaching must correct that.",
             ),
             how_buildml_uses=(
                 "Model diagnostics can compute permutation-style reliance on a chosen partition.",
@@ -1241,8 +1154,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Report partition, metric, and repeat variability with every importance table.",
-                "Near-ties among correlated features are expected—do not over-order them.",
-                "Low importance ≠ safe to drop without a refit experiment.",
+                "Near-ties among correlated features are expectedâ€”do not over-order them.",
+                "Low importance â‰  safe to drop without a refit experiment.",
                 "Importance is not a leakage test by itself; timing/semantics still need review.",
             ),
             assumptions=(
@@ -1273,12 +1186,12 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             summary="Drift is a measured distribution change across defined populations or time windows.",
             definition=(
                 "Dataset drift is a statistically detected difference in feature and/or label "
-                "distributions between two collections—train versus recent traffic, batch A versus batch B—"
+                "distributions between two collectionsâ€”train versus recent traffic, batch A versus batch Bâ€”"
                 "without automatically proving that model quality changed."
             ),
             intuition=(
                 "If last quarter's ages look older than training ages, something in the world or in the "
-                "pipeline moved. That something might break the model—or it might be harmless seasonality. "
+                "pipeline moved. That something might break the modelâ€”or it might be harmless seasonality. "
                 "Drift is a smoke alarm, not a fire report."
             ),
             formal_idea=(
@@ -1287,7 +1200,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "a drop in utility of f; label-free drift diagnoses inputs, not errors."
             ),
             why_it_matters=(
-                "Train–serve skew and temporal change are common silent failures.",
+                "Trainâ€“serve skew and temporal change are common silent failures.",
                 "Invalid splits can look like 'drift' between partitions.",
                 "Monitoring needs drift cues when labels arrive late.",
             ),
@@ -1299,8 +1212,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Treat significant tests as review flags; inspect magnitude, support, and collection changes.",
-                "Train–test drift under a random split suggests leakage of structure or bad randomization.",
-                "Feature drift without labels cannot quantify accuracy drop—pair with delayed labels when possible.",
+                "Trainâ€“test drift under a random split suggests leakage of structure or bad randomization.",
+                "Feature drift without labels cannot quantify accuracy dropâ€”pair with delayed labels when possible.",
                 "Large-n tiny differences can be 'significant' yet operationally minor.",
             ),
             assumptions=(
@@ -1337,10 +1250,10 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             intuition=(
                 "If knowing zip code sharply narrows which churn label you expect, MI is high. That can "
                 "mean a useful pattern, a proxy for something else, or a peek at information you should "
-                "not use—MI alone does not say which."
+                "not useâ€”MI alone does not say which."
             ),
             formal_idea=(
-                "I(X; Y) = H(Y) − H(Y|X) ≥ 0, zero under independence for the population quantities. "
+                "I(X; Y) = H(Y) âˆ’ H(Y|X) â‰¥ 0, zero under independence for the population quantities. "
                 "Practical estimates depend on discretization, encoding, sample size, and bias-correction "
                 "choices; ranks are usually more trustworthy than raw magnitudes across heterogeneous types."
             ),
@@ -1351,7 +1264,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "EDA Teaching Studio can surface MI-style association ranks for feature triage.",
-                "Concept Academy insists association ≠ causality and ≠ automatic column keep/drop.",
+                "Concept Academy insists association â‰  causality and â‰  automatic column keep/drop.",
                 "Roles should exclude ids before interpreting MI as predictive signal.",
                 "Use MI alongside leakage-boundary checks on timing and availability.",
             ),
@@ -1398,7 +1311,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "predict well; coefficients may not."
             ),
             formal_idea=(
-                "VIF_j = 1 / (1 − R_j²) where R_j² comes from regressing X_j on the other features. "
+                "VIF_j = 1 / (1 âˆ’ R_jÂ²) where R_jÂ² comes from regressing X_j on the other features. "
                 "VIF_j = 1 means no linear inflation; large VIF signals linear dependence. Conventional "
                 "cutoffs (e.g. 5 or 10) are review flags, not universal harm proofs for every estimator."
             ),
@@ -1414,10 +1327,10 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Concept notes mark thresholds such as VIF > 5 as review prompts.",
             ),
             interpretation_rules=(
-                "VIF above a conventional flag (often 5, sometimes 10) triggers collinearity review—not automatic deletion.",
+                "VIF above a conventional flag (often 5, sometimes 10) triggers collinearity reviewâ€”not automatic deletion.",
                 "Trees can remain predictive under high VIF; linear coefficient stories should not.",
                 "VIF is undefined or unhelpful for constant columns and tiny complete-case n.",
-                "Association among features ≠ causal structure.",
+                "Association among features â‰  causal structure.",
             ),
             assumptions=(
                 "Features are numeric (or encoded numerically in a way that makes linear dependence meaningful).",
@@ -1444,7 +1357,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
         _note(
             key="principal-components",
             title="Principal component analysis",
-            summary="PCA finds orthogonal linear combinations that capture shared numeric variance—not guaranteed predictive value.",
+            summary="PCA finds orthogonal linear combinations that capture shared numeric varianceâ€”not guaranteed predictive value.",
             definition=(
                 "Principal component analysis rotates numeric features into uncorrelated components ordered "
                 "by captured variance. It is a compression and collinearity tool; explained variance is not "
@@ -1452,7 +1365,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "If many columns move together, PCA builds a few 'summary directions' of that joint motion. "
-                "Those directions may help a linear model or visualization—or they may summarize noise you "
+                "Those directions may help a linear model or visualizationâ€”or they may summarize noise you "
                 "did not care about."
             ),
             formal_idea=(
@@ -1469,11 +1382,11 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "EDA can present explained-variance profiles as unsupervised structure screens.",
                 "Session.reduce_dimensions(method='pca') fits PCA on train and stores explained-variance ratios.",
                 "PreprocessRecipe(reduce='pca') refits the rotation on each CV fold-train.",
-                "Teaching Studio warns that variance explained ≠ target association.",
+                "Teaching Studio warns that variance explained â‰  target association.",
                 "Scaling notes are linked because PCA is scale-sensitive.",
             ),
             interpretation_rules=(
-                "A knee in cumulative explained variance is a review cue for compression—not a magic k.",
+                "A knee in cumulative explained variance is a review cue for compressionâ€”not a magic k.",
                 "High variance components can still have low mutual information with Y.",
                 "Loadings tell linear feature contributions to a component; they are not causal effects.",
                 "If one raw feature dominates PC1, check whether scaling was skipped.",
@@ -1503,9 +1416,9 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
         _note(
             key="normality-screens",
             title="Normality screens",
-            summary="Normality tests ask whether a numeric sample is compatible with a Gaussian reference—not whether ML is allowed.",
+            summary="Normality tests ask whether a numeric sample is compatible with a Gaussian referenceâ€”not whether ML is allowed.",
             definition=(
-                "A normality screen applies a statistical test or visual check (histogram, Q–Q) to assess "
+                "A normality screen applies a statistical test or visual check (histogram, Qâ€“Q) to assess "
                 "compatibility of a numeric sample with a normal distribution under the chosen procedure."
             ),
             intuition=(
@@ -1514,12 +1427,12 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "even trivial wiggles look 'significant'."
             ),
             formal_idea=(
-                "Tests such as Shapiro–Wilk or D'Agostino compute a statistic sensitive to departures from "
+                "Tests such as Shapiroâ€“Wilk or D'Agostino compute a statistic sensitive to departures from "
                 "normality and a p-value under a null of normality (with known limitations). As n grows, "
                 "power rises; practical decisions should pair p-values with skew, tails, and plots."
             ),
             why_it_matters=(
-                "Informs optional transforms or robust statistics—not mandatory model families.",
+                "Informs optional transforms or robust statisticsâ€”not mandatory model families.",
                 "Prevents p-value theater from dictating pipelines.",
                 "Helps interpret mean/std summaries that assume symmetric noise.",
             ),
@@ -1533,7 +1446,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Small p-value at large n is a review flag: inspect shape and effect, not automatic transform.",
                 "Failed normality does not require a parametric model or a log transform.",
                 "Many tree and neural estimators do not assume Gaussian features.",
-                "Use Q–Q/skew alongside the test name you ran.",
+                "Use Qâ€“Q/skew alongside the test name you ran.",
             ),
             assumptions=(
                 "Observations used in the test are appropriately i.i.d. for the test's derivation.",
@@ -1546,12 +1459,12 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Screening ids and categorical codes as if they were continuous measures.",
             ),
             anti_patterns=(
-                "Rejecting a model family solely because a feature failed Shapiro–Wilk.",
+                "Rejecting a model family solely because a feature failed Shapiroâ€“Wilk.",
                 "Reporting p-values without n or plots.",
                 "Chasing normality until every feature is warped beyond interpretation.",
             ),
             worked_example_pattern=(
-                "Pick a skewed numeric feature; view histogram/Q–Q and a normality screen on train.",
+                "Pick a skewed numeric feature; view histogram/Qâ€“Q and a normality screen on train.",
                 "Note p-value, n, and skew; decide whether a robust imputer or nonlinear model matters more.",
                 "Compare validation metric with and without a transform motivated by the screen.",
             ),
@@ -1562,7 +1475,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             title="Outlier handling",
             summary="Outlier fences are heuristic screens; learn them on train and choose detect, cap, or drop deliberately.",
             definition=(
-                "Outlier handling estimates numeric fences—commonly IQR Tukey bounds or z-score thresholds—on "
+                "Outlier handling estimates numeric fencesâ€”commonly IQR Tukey bounds or z-score thresholdsâ€”on "
                 "training rows, then detects, caps (winsorizes), or drops values outside those frozen bounds."
             ),
             intuition=(
@@ -1570,9 +1483,9 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "look unusual under a simple rule. Unusual is not the same as wrong."
             ),
             formal_idea=(
-                "For train sample x_j, IQR fences use q1 − k·IQR and q3 + k·IQR. Z-score fences use "
-                "μ̂ ± τ·σ̂. Cap replaces x with clip(x; L, U). Drop removes rows with any flagged column. "
-                "Parameters (L, U) must be θ̂ = fit(train)."
+                "For train sample x_j, IQR fences use q1 âˆ’ kÂ·IQR and q3 + kÂ·IQR. Z-score fences use "
+                "Î¼Ì‚ Â± Ï„Â·ÏƒÌ‚. Cap replaces x with clip(x; L, U). Drop removes rows with any flagged column. "
+                "Parameters (L, U) must be Î¸Ì‚ = fit(train)."
             ),
             why_it_matters=(
                 "Scale-sensitive models can overweight extremes that are measurement errors.",
@@ -1618,16 +1531,16 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             summary="Binning replaces numeric magnitudes with train-fitted intervals for compactness or stepwise effects.",
             definition=(
                 "Feature binning discretizes a numeric column into ordered intervals whose edges are estimated "
-                "from training data—quantile occupancy or uniform width—and then emits ordinal codes or one-hot "
+                "from training dataâ€”quantile occupancy or uniform widthâ€”and then emits ordinal codes or one-hot "
                 "indicators for those intervals."
             ),
             intuition=(
-                "Sometimes 'about 30–40' is more stable than the exact age 37. Binning trades within-bin detail "
+                "Sometimes 'about 30â€“40' is more stable than the exact age 37. Binning trades within-bin detail "
                 "for simpler, explainable intervals. The cut-points must come from train pages only."
             ),
             formal_idea=(
-                "Learn edges e0 < … < eB on train (quantile or uniform). Map x to bin index i with e_i ≤ x < e_{i+1}, "
-                "using open end bins (−∞, ∞) so score-time extremes remain defined. Encode as i or as 1[bin=i]."
+                "Learn edges e0 < â€¦ < eB on train (quantile or uniform). Map x to bin index i with e_i â‰¤ x < e_{i+1}, "
+                "using open end bins (âˆ’âˆž, âˆž) so score-time extremes remain defined. Encode as i or as 1[bin=i]."
             ),
             why_it_matters=(
                 "Can stabilize noisy continuous inputs and make partial-dependence style explanations easier.",
@@ -1638,7 +1551,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Session.bin(...) fits edges on train and replaces source columns with ordinal or one-hot bins.",
                 "PreprocessResult exposes edges_ and limitations about information loss.",
                 "Explain catalog links binning to schema and leakage-boundary concepts.",
-                "Open ±inf ends keep transform defined when scoring values exceed train range.",
+                "Open Â±inf ends keep transform defined when scoring values exceed train range.",
             ),
             interpretation_rules=(
                 "If many rows land in end bins at score time, review drift before trusting the discretization.",
@@ -1681,8 +1594,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "Computing that rate with the same row's label still in the average is cheating on train."
             ),
             formal_idea=(
-                "For level v, let n_v and ȳ_v be train count and mean. Smoothed mean is "
-                "(n_v·ȳ_v + α·ȳ)/(n_v + α). For train row i in fold f, estimate ȳ_v from rows with fold ≠ f. "
+                "For level v, let n_v and È³_v be train count and mean. Smoothed mean is "
+                "(n_vÂ·È³_v + Î±Â·È³)/(n_v + Î±). For train row i in fold f, estimate È³_v from rows with fold â‰  f. "
                 "Holdout rows use the full-train smoothed map."
             ),
             why_it_matters=(
@@ -1704,7 +1617,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             assumptions=(
                 "Target labels are available for the train partition and match the modeling task.",
                 "Category labels are consistently spelled across partitions.",
-                "Smoothing α is large enough to stabilize rare levels for the available n.",
+                "Smoothing Î± is large enough to stabilize rare levels for the available n.",
             ),
             failure_modes=(
                 "Fitting target means on all rows before splitting.",
@@ -1728,8 +1641,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             title="Feature selection",
             summary="Feature selection chooses a subset using train-only scores and must be frozen before honest evaluation.",
             definition=(
-                "Feature selection retains a subset of candidate predictors according to a rule—variance filters, "
-                "univariate association scores, or model-based importance—fit exclusively on training rows and then "
+                "Feature selection retains a subset of candidate predictors according to a ruleâ€”variance filters, "
+                "univariate association scores, or model-based importanceâ€”fit exclusively on training rows and then "
                 "applied as a frozen keep-list."
             ),
             intuition=(
@@ -1786,7 +1699,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Imputation, categorical encoding, and feature scaling are representation transforms: they "
                 "fill missing values, map categories to numbers, and rewrite numeric units. In supervised "
-                "pipelines they are estimators of their own—fit on train, applied frozen to other partitions."
+                "pipelines they are estimators of their ownâ€”fit on train, applied frozen to other partitions."
             ),
             intuition=(
                 "Before a model studies the data, you often translate the data into a language the model "
@@ -1794,9 +1707,9 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "translation must be written from the training pages only."
             ),
             formal_idea=(
-                "A preprocessing pipeline P_θ with θ = (impute params, vocabularies, scale params) is learned "
-                "as θ̂ = fit(P, train) and reused as transform(P_θ̂, ·). Any step that estimates θ from "
-                "evaluation rows crosses the leakage boundary. Order usually matters: impute → encode → scale."
+                "A preprocessing pipeline P_Î¸ with Î¸ = (impute params, vocabularies, scale params) is learned "
+                "as Î¸Ì‚ = fit(P, train) and reused as transform(P_Î¸Ì‚, Â·). Any step that estimates Î¸ from "
+                "evaluation rows crosses the leakage boundary. Order usually matters: impute â†’ encode â†’ scale."
             ),
             why_it_matters=(
                 "Representation choices dominate many classical ML outcomes as much as the final estimator.",
@@ -1847,10 +1760,10 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "A short product review is not a usable float. Token features turn repeated words into "
-                "columns a linear or tree model can consume—still ignoring most grammar."
+                "columns a linear or tree model can consumeâ€”still ignoring most grammar."
             ),
             formal_idea=(
-                "Given documents D_train, a vectorizer learns a mapping f: text → R^k. Score-time texts "
+                "Given documents D_train, a vectorizer learns a mapping f: text â†’ R^k. Score-time texts "
                 "use the same f. Fitting f on all rows before splitting leaks vocabulary and IDF mass "
                 "from holdout documents."
             ),
@@ -1901,10 +1814,10 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "When a domain clip, score, or lookup is not built in, register it once, fit it on train, "
-                "and reuse the same artifact at score time—same discipline as a scaler."
+                "and reuse the same artifact at score timeâ€”same discipline as a scaler."
             ),
             formal_idea=(
-                "Registration stores fit: X_train → A and transform: (X, A) → X'. Leakage occurs if fit "
+                "Registration stores fit: X_train â†’ A and transform: (X, A) â†’ X'. Leakage occurs if fit "
                 "reads holdout rows or labels that should not define A. Persistence requires a picklable A "
                 "and a still-registered transform name for replay."
             ),
@@ -1951,11 +1864,11 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Before you run a risky transform, ask what would happen: what is missing, what would "
-                "change, and which leakage notes apply—without writing history or fitting anything."
+                "change, and which leakage notes applyâ€”without writing history or fitting anything."
             ),
             formal_idea=(
                 "Dry-run maps an operation (or sequence) through the explanation catalog and workflow "
-                "resolver. It does not execute side effects; availability ≠ appropriateness."
+                "resolver. It does not execute side effects; availability â‰  appropriateness."
             ),
             why_it_matters=(
                 "Large or irreversible steps benefit from an explicit preview.",
@@ -1996,7 +1909,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "decision origin, warnings, and before/after workflow state."
             ),
             intuition=(
-                "History is the session notebook: what ran, in what order, with which knobs—and which "
+                "History is the session notebook: what ran, in what order, with which knobsâ€”and which "
                 "warnings fired. It cannot prove where a CSV originally came from."
             ),
             formal_idea=(
@@ -2032,465 +1945,6 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             related_concepts=("reproducibility", "leakage-boundary", "dry-run-plans"),
         ),
-        _note(
-            key="batch-leakage",
-            title="Batch and loader leakage",
-            summary="Train-only shuffling and train-fit batch transforms must not remix evaluation rows into learning.",
-            definition=(
-                "Batch leakage occurs when evaluation-partition rows influence training batches—through "
-                "shared shuffling, oversampling, or statistics (normalize/augment) fit on more than train."
-            ),
-            intuition=(
-                "If the DataLoader that updates weights can see test rows, or if batch normalize peeks at "
-                "holdout values, the network practices on the exam."
-            ),
-            formal_idea=(
-                "Let partitions be disjoint. A train DataLoader may shuffle within train only. Any transform "
-                "parameters θ_batch = L(train) apply frozen to validation/test loaders."
-            ),
-            why_it_matters=(
-                "Loader mistakes create optimistic Torch metrics that classical split discipline alone cannot catch.",
-                "Normalize fit on all partitions is the neural analogue of scaling before train_test_split.",
-            ),
-            how_buildml_uses=(
-                "Session.make_torch_loaders shuffles the train loader only.",
-                "Optional standardize fits mean/std on train and freezes them on validation/test.",
-                "Catalog leakage notes call out shuffle and normalize scope for Torch ops.",
-            ),
-            interpretation_rules=(
-                "If shuffle was enabled on validation/test loaders, treat subsequent scores as contaminated.",
-                "Empty holdout loaders are a data issue, not a reason to merge partitions.",
-            ),
-            assumptions=(
-                "Split membership is defined before loader construction.",
-                "Feature matrices are prepared without refitting on evaluation rows.",
-            ),
-            failure_modes=(
-                "Concatenating partitions into one Dataset with a single shuffle flag.",
-                "Global StandardScaler fit before building partition loaders.",
-            ),
-            anti_patterns=(
-                "Building one shuffled DataLoader over the full table, then slicing batches by index later.",
-            ),
-            worked_example_pattern=(
-                "Split → make_torch_loaders(shuffle_train=True) → assert validation/test loaders do not shuffle.",
-                "Compare train-fit normalize versus full-table normalize on the same holdout.",
-            ),
-            related_concepts=("leakage-boundary", "evaluation-partitions", "data-splitting"),
-        ),
-        _note(
-            key="early-stopping-partition",
-            title="Early-stopping partition",
-            summary="Stopping rules may read validation metrics; the test partition remains a final estimate only.",
-            definition=(
-                "Early stopping selects a training epoch using a monitor partition—almost always validation—"
-                "so that test metrics stay out of the stopping decision."
-            ),
-            intuition=(
-                "Validation tells you when to put the pencil down. If you watch the official test score to "
-                "decide when to stop, the official score is no longer independent."
-            ),
-            formal_idea=(
-                "Choose epoch t* = argmin_t M(validation_t). Report generalization with M(test_{t*}) only after "
-                "t* is fixed. Using M(test) inside the argmin biases the reported score."
-            ),
-            why_it_matters=(
-                "Neural nets overfit easily; stopping on test hides that overfitting.",
-                "Teaching and model cards need the monitor partition named beside the selected epoch.",
-            ),
-            how_buildml_uses=(
-                "fit_torch early_stopping_patience monitors validation (default monitor=val_loss).",
-                "TrainResult.early_stop records triggered/best_epoch/reason and restore_best_weights.",
-                "evaluate_torch defaults to partition='test' for final scoring after training choices freeze.",
-                "Catalog anti-patterns warn against test-tuned stopping.",
-            ),
-            interpretation_rules=(
-                "Read every curve with its partition tag.",
-                "If stopping used test, treat the test metric as optimistic.",
-            ),
-            assumptions=(
-                "A validation partition exists when early stopping will be enabled.",
-                "Train/val/test membership stays fixed across the run.",
-            ),
-            failure_modes=(
-                "Selecting the best test epoch after the fact and reporting that test score.",
-                "Retuning patience repeatedly against the same test split.",
-            ),
-            anti_patterns=(
-                "Using test loss as the early-stopping monitor.",
-            ),
-            worked_example_pattern=(
-                "fit_torch(..., early_stopping_patience=3) → read early_stop.reason → "
-                "evaluate_torch(partition='test') once.",
-            ),
-            related_concepts=("evaluation-partitions", "leakage-boundary", "batch-leakage", "training-curves"),
-        ),
-        _note(
-            key="training-curves",
-            title="Training curves",
-            summary="Epoch loss/metric trajectories need device, monitor partition, and honesty limits beside the plot.",
-            definition=(
-                "A training curve is the time series of train (and optional validation) losses or "
-                "metrics across epochs, optionally with learning-rate steps from a scheduler."
-            ),
-            intuition=(
-                "Curves show whether the network is still learning, plateauing, or memorizing. "
-                "Without naming the validation monitor and device, the picture is incomplete."
-            ),
-            formal_idea=(
-                "For epochs t=1..T, record L_train(t) and optionally L_val(t). Early stopping "
-                "selects t* from L_val. Claims about generalization require a separate held-out "
-                "estimate after t* is fixed."
-            ),
-            why_it_matters=(
-                "Batch losses are noisy; epoch aggregates are the teaching default.",
-                "Validation improvement is not a test result; curves alone do not prove deployment risk.",
-            ),
-            how_buildml_uses=(
-                "TrainResult.history and TrainingCurveReport store epoch series plus disclosures.",
-                "Session.torch_training_curve() and walkthrough torch_training_status surface limits.",
-                "Teaching Studio cockpit discloses early-stop partition and resolved device when a trainer exists.",
-            ),
-            interpretation_rules=(
-                "Prefer epoch aggregates over batch spikes when comparing runs.",
-                "If train falls while validation rises, treat later epochs as overfitting risk.",
-                "Read early_stop.partition before quoting a selected epoch.",
-            ),
-            assumptions=(
-                "History was logged under a fixed split and feature contract.",
-                "Scheduler and clipping settings are part of the run identity.",
-            ),
-            failure_modes=(
-                "Comparing curves from different devices or normalize contracts without disclosure.",
-                "Reading resume-appended history as a single uninterrupted LR schedule when the scheduler changed.",
-            ),
-            anti_patterns=(
-                "Publishing a loss plot without stating validation vs test scope.",
-            ),
-            worked_example_pattern=(
-                "fit_torch → torch_training_curve → read disclosures → evaluate_torch(partition='test').",
-            ),
-            related_concepts=("early-stopping-partition", "evaluation-partitions", "batch-leakage"),
-        ),
-        _note(
-            key="rag-eval-contamination",
-            title="RAG eval contamination",
-            summary="Evaluation answers must stay out of the indexed corpus or retrieval metrics become circular.",
-            definition=(
-                "Eval contamination in retrieval is indexing documents that contain labeled answers or "
-                "passages used only for evaluation queries, so the index can return the answer by identity "
-                "rather than by generalization over held-out text."
-            ),
-            intuition=(
-                "If the answer sheet is in the library, finding it is not evidence that search works on "
-                "new questions. Mark eval-only documents and keep them out of the index build."
-            ),
-            formal_idea=(
-                "Let C_index be the indexed corpus and Q_eval the evaluation query set with relevance "
-                "labels over documents D_eval. Require C_index ∩ D_eval = ∅ for any claim that retrieval "
-                "metrics estimate performance on unseen answers."
-            ),
-            why_it_matters=(
-                "Contaminated indexes inflate recall@k and MRR without improving real retrieval.",
-                "Teaching and model cards need an explicit corpus vs eval-query disclosure.",
-            ),
-            how_buildml_uses=(
-                "Documents may carry role=index or role=eval_only.",
-                "rag_embed_and_index raises LeakageError when any eval_only document is present.",
-                "Catalog leakage fields warn against indexing labeled eval answers.",
-            ),
-            interpretation_rules=(
-                "Read which corpus was indexed beside every recall@k / MRR number.",
-                "If eval answers were indexed, treat metrics as invalid for generalization claims.",
-            ),
-            assumptions=(
-                "Callers label eval-only material before indexing.",
-                "Qrels refer to document ids that exist in the index corpus when measuring hits.",
-            ),
-            failure_modes=(
-                "Silently concatenating a FAQ answer key into the index folder.",
-                "Reusing the same docs for indexing and as the only relevant targets without disclosure.",
-            ),
-            anti_patterns=(
-                "Indexing eval_only documents to 'make the demo look good'.",
-            ),
-            worked_example_pattern=(
-                "rag_ingest_corpus(index docs) → rag_embed_and_index → rag_evaluate(qrels on held-out queries).",
-            ),
-            related_concepts=("leakage-boundary", "rag-chunk-index-boundary", "evaluation-partitions"),
-        ),
-        _note(
-            key="rag-chunk-index-boundary",
-            title="RAG chunk and index boundary",
-            summary="Chunking and indexing are retrieval prep steps; they are not classical fit and not a Session checkpoint.",
-            definition=(
-                "The chunk/index boundary is the contract that documents are split into chunks, embedded, "
-                "and stored in a vector index artifact separate from Session workflow checkpoints and "
-                "Torch trainer bundles."
-            ),
-            intuition=(
-                "Think of the index as a searchable card catalog built from the books you chose to shelve. "
-                "Saving your lab notebook (Session checkpoint) does not shelve the books for you."
-            ),
-            formal_idea=(
-                "A RAG bundle records chunk config, embedder id/dim, chunk metadata, and embeddings under "
-                "schema buildml.rag_bundle.v1. Session checkpoints omit that payload; Torch bundles are "
-                "orthogonal supervised-training artifacts."
-            ),
-            why_it_matters=(
-                "Mixing artifact kinds causes failed loads and false resume expectations.",
-                "Chunk size/overlap change the retrieval unit; ids must stay deterministic for audits.",
-            ),
-            how_buildml_uses=(
-                "Session.rag_chunk / rag_embed_and_index build an in-memory RagIndex.",
-                "save_rag_bundle / load_rag_bundle round-trip buildml.rag_bundle.v1.",
-                "Wrong schema ids raise ValidationError with an explicit expected format.",
-            ),
-            interpretation_rules=(
-                "Never imply checkpoint_load restored a vector index.",
-                "State embedder id and dimension beside retrieve/eval results.",
-            ),
-            assumptions=(
-                "Index corpus membership is fixed for a given bundle.",
-                "Query embedding uses a compatible embedder after load.",
-            ),
-            failure_modes=(
-                "Passing a Session checkpoint path to load_rag_bundle.",
-                "Changing chunk config between index build and eval without rebuilding.",
-            ),
-            anti_patterns=(
-                "Embedding the vector index inside a Session checkpoint.",
-            ),
-            worked_example_pattern=(
-                "rag_ingest_corpus → rag_chunk → rag_embed_and_index → save_rag_bundle.",
-            ),
-            related_concepts=("rag-eval-contamination", "reproducibility", "leakage-boundary"),
-        ),
-        _note(
-            key="rag-retrieval-metrics",
-            title="RAG retrieval metrics",
-            summary=(
-                "recall@k, MRR, nDCG@k, and hit-rate@k measure ranking quality against gold labels; "
-                "they are not classification accuracy."
-            ),
-            definition=(
-                "Retrieval metrics score whether relevant documents or chunks appear in the top-k ranked "
-                "hits for each evaluation query, using gold relevance labels (qrels)."
-            ),
-            intuition=(
-                "Ask whether the right book showed up near the top of the search results—not whether a "
-                "classifier predicted a class label."
-            ),
-            formal_idea=(
-                "For query q with relevant set R_q, recall@k = |{ids in top-k} ∩ R_q| / |R_q|. "
-                "MRR averages 1/rank of the first relevant hit. nDCG@k discounts later ranks; "
-                "hit-rate@k is the fraction of queries with at least one relevant hit."
-            ),
-            why_it_matters=(
-                "A single unlabeled 'accuracy' hides k, relevance mode, and corpus identity.",
-                "Document-level vs chunk-level relevance change what a hit means.",
-            ),
-            how_buildml_uses=(
-                "rag_evaluate supports relevance_mode=document (default) or chunk, plus retrieve mode overrides.",
-                "RagEvalResult exposes recall_at_k, mrr, ndcg_at_k, hit_rate_at_k, and disclosures.",
-                "compare_retrieval_configs rebuilds indexes per config row for side-by-side metrics.",
-            ),
-            interpretation_rules=(
-                "Always read metrics with k, relevance_mode, and retrieve_mode.",
-                "Do not call recall@k 'accuracy'.",
-            ),
-            assumptions=(
-                "Qrels ids match the claimed relevance_mode (doc_id or chunk_id).",
-                "The same embedder/index pair is used for every eval query in the run.",
-            ),
-            failure_modes=(
-                "Comparing recall@5 from one embedder to recall@20 from another without disclosure.",
-                "Treating hashing-embedder demos as semantic retrieval quality claims.",
-            ),
-            anti_patterns=(
-                "Reporting only top-1 hit rate as proof the RAG system is production-ready.",
-            ),
-            worked_example_pattern=(
-                "rag_embed_and_index → rag_evaluate(qrels, k=5) → read recall_at_k, mrr, and ndcg_at_k.",
-            ),
-            related_concepts=("rag-eval-contamination", "rag-chunk-index-boundary", "evaluation-partitions"),
-        ),
-        _note(
-            key="ai-egress-privacy",
-            title="AI Egress Privacy",
-            summary=(
-                "User-controlled data egress before any information leaves the machine to an external LLM provider."
-            ),
-            definition=(
-                "Egress privacy is the set of controls that determine what data (schema, statistics, samples, raw rows) "
-                "leaves the user's machine when calling an external LLM API. BuildML provides four egress levels: "
-                "SCHEMA_ONLY (column names/types), STATS_ONLY (aggregates), REDACTED_SAMPLE (masked rows), and "
-                "FULL_SAMPLE (raw rows with explicit opt-in)."
-            ),
-            intuition=(
-                "Think of egress levels as airport security zones. SCHEMA_ONLY shows only the boarding pass (column names). "
-                "STATS_ONLY adds aggregate flight statistics without passenger details. REDACTED_SAMPLE masks sensitive "
-                "passenger info. FULL_SAMPLE shares everything—use only when necessary and after inspection."
-            ),
-            formal_idea=(
-                "The egress manifest is a typed record of what will be (or was) sent: columns, row count, estimated tokens, "
-                "and warnings about PII-like columns. ai_egress_preview returns the manifest without making an API call."
-            ),
-            why_it_matters=(
-                "External LLM providers see whatever payload the user approves.",
-                "Sensitive column names, statistics, or raw values may leak if egress is not controlled.",
-                "Regulatory and security requirements often restrict what data can leave internal systems.",
-            ),
-            how_buildml_uses=(
-                "ai_configure sets the default egress level (STATS_ONLY by default).",
-                "ai_egress_preview shows the manifest before any call.",
-                "ai_dry_run returns the full prompt payload for local inspection.",
-                "Column allow/deny lists filter what columns appear in egress.",
-                "Transcripts record egress manifests, not raw data (unless FULL_SAMPLE).",
-            ),
-            interpretation_rules=(
-                "STATS_ONLY sends aggregates and schema, never raw row values.",
-                "FULL_SAMPLE requires explicit opt-in and sends raw data.",
-                "Always inspect ai_egress_preview before first AI call on sensitive data.",
-            ),
-            assumptions=(
-                "The user reviews egress manifests before approving data-heavy calls.",
-                "Column allow/deny lists are configured appropriately for the sensitivity level.",
-            ),
-            failure_modes=(
-                "Using FULL_SAMPLE without reviewing what data leaves the machine.",
-                "Column names themselves may be sensitive even in SCHEMA_ONLY mode.",
-            ),
-            anti_patterns=(
-                "Auto-approving FULL_SAMPLE egress without inspection.",
-                "Assuming STATS_ONLY protects against all data leakage (aggregates can still reveal patterns).",
-            ),
-            worked_example_pattern=(
-                "ai_configure → ai_egress_preview → review manifest → ai_advisor (if manifest acceptable).",
-            ),
-            related_concepts=("leakage-boundary", "ai-tool-trust"),
-        ),
-        _note(
-            key="ai-tool-trust",
-            title="AI Tool Trust",
-            summary=(
-                "Tools are allowlisted, mapped to Session methods, and gated by a propose-confirm-execute flow."
-            ),
-            definition=(
-                "The AI operator can only execute tools that are explicitly registered in the ToolRegistry. Each tool "
-                "maps to a Session method, has a confirmation policy (auto, confirm, always_confirm), and cannot bypass "
-                "existing Session guards (leakage, validation). Destructive operations always require confirmation."
-            ),
-            intuition=(
-                "The tool registry is like a hotel safe with an approved guest list. The AI can suggest using items "
-                "from the safe, but can only access what's on the list, and certain items require the owner's signature "
-                "before they can be taken out."
-            ),
-            formal_idea=(
-                "ToolSpec defines name, parameters, confirm_policy, read_only, and destructive flags. "
-                "The executor validates each ToolCall against the registry, refuses unlisted tools, and requires "
-                "confirmation for write operations. Maximum iteration limits prevent runaway loops."
-            ),
-            why_it_matters=(
-                "LLMs may hallucinate tool names or attempt operations outside the allowed scope.",
-                "Propose-confirm-execute prevents accidental state changes from AI suggestions.",
-                "Leakage guards must fire regardless of whether human or AI initiated the operation.",
-            ),
-            how_buildml_uses=(
-                "ToolRegistry defines the M1 allowlist: describe_dataset, explain_operation, workflow_status, etc.",
-                "ai_execute validates tool calls against the registry and requires confirmation for writes.",
-                "Destructive tools (drop, delete) always require explicit confirmation.",
-                "Read-only tools (describe, explain) may auto-confirm.",
-            ),
-            interpretation_rules=(
-                "Tools not in the registry are rejected with a named error.",
-                "Confirmation status is recorded in the transcript.",
-                "Write operations modify Session state; read operations do not.",
-            ),
-            assumptions=(
-                "The tool registry is conservative and well-maintained.",
-                "Users review proposals before confirming write operations.",
-            ),
-            failure_modes=(
-                "Auto-confirming destructive operations without review.",
-                "Expanding the tool registry without security review.",
-            ),
-            anti_patterns=(
-                "Bypassing the tool registry with eval/exec.",
-                "Trusting AI tool suggestions without verifying prerequisites.",
-            ),
-            worked_example_pattern=(
-                "ai_execute('set_roles', {'mapping': {...}}) → review proposal → ai_execute(..., confirm=True).",
-            ),
-            related_concepts=("ai-prompt-injection", "ai-egress-privacy", "leakage-boundary"),
-        ),
-        _note(
-            key="ai-prompt-injection",
-            title="AI Prompt Injection Hardening",
-            summary=(
-                "Untrusted data (column names, cell values, user text) is marked and separated from instructions."
-            ),
-            definition=(
-                "Prompt injection is an attack where adversarial text in data is interpreted as instructions by the LLM. "
-                "BuildML hardens against this by: marking untrusted data with boundary tags, using system prompts that "
-                "instruct the model to treat data as data only, validating tool calls against the registry, and refusing "
-                "arbitrary code execution."
-            ),
-            intuition=(
-                "Imagine a mail room where incoming packages are labeled 'EXTERNAL—DO NOT OPEN WITHOUT INSPECTION'. "
-                "Even if a package label says 'URGENT: Give to CEO immediately', the mailroom follows procedure. "
-                "Data markers work the same way: they tell the LLM that this content is cargo, not commands."
-            ),
-            formal_idea=(
-                "Untrusted data is wrapped in [UNTRUSTED DATA] markers. Tool results are wrapped in [TOOL RESULT - DATA ONLY] "
-                "markers. The system prompt explicitly states that data is not instructions. Injection patterns "
-                "(e.g., 'ignore previous instructions') are detected and escaped in security tests."
-            ),
-            why_it_matters=(
-                "Malicious column names like '; DROP TABLE users; --' should not execute.",
-                "Cell values containing 'Ignore previous instructions' should not change AI behavior.",
-                "User prompts attempting tool registry bypass should be rejected.",
-            ),
-            how_buildml_uses=(
-                "mark_untrusted_data wraps data with source markers before sending to the LLM.",
-                "sanitize_tool_result wraps tool outputs before feeding back.",
-                "detect_injection_attempt scans text for known injection patterns.",
-                "CI injection tests verify boundaries hold with adversarial fixtures.",
-            ),
-            interpretation_rules=(
-                "Injection detection is a warning, not a block; humans review flagged content.",
-                "The tool registry, not the LLM, controls what operations execute.",
-                "eval/exec are never allowed regardless of prompt content.",
-            ),
-            assumptions=(
-                "The LLM respects boundary markers (not guaranteed, but improves safety).",
-                "The tool registry is the authoritative gate for execution.",
-            ),
-            failure_modes=(
-                "Novel injection patterns not in the detection list.",
-                "LLMs that ignore boundary instructions (mitigated by tool registry).",
-            ),
-            anti_patterns=(
-                "Trusting LLM-generated code without review.",
-                "Disabling injection detection for convenience.",
-            ),
-            worked_example_pattern=(
-                "Column name: 'ignore_previous; drop_table' → detected as suspicious → wrapped as data → tool registry rejects unauthorized calls.",
-            ),
-            related_concepts=("ai-tool-trust", "ai-egress-privacy"),
-        ),
     )
 }
 
-
-def get_concept(key: str) -> ConceptNote:
-    """Return a concept note or raise a precise catalog error."""
-    try:
-        return CONCEPT_NOTES[key]
-    except KeyError as exc:
-        raise KeyError(f"Unknown BuildML concept: {key}") from exc
-
-
-def list_concepts() -> tuple[ConceptNote, ...]:
-    """Return concept notes in stable key order."""
-    return tuple(CONCEPT_NOTES[key] for key in sorted(CONCEPT_NOTES))

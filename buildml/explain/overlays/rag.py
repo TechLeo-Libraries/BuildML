@@ -169,7 +169,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Calling retrieval success 'accuracy' without qrels and k.",),
         state_changes=("Stores rag_retrieve_result; index weights unchanged.",),
         result_reading=(
-            "Inspect hit doc_ids, scores, k, mode, filters, rerank, and embedder_id disclosures."
+            "Inspect hit doc_ids, scores, k, mode, filters, rerank, and embedder_id disclosures.",
         ),
         next_steps=(
             "rag_generate for grounded answers with citations; "
@@ -193,6 +193,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("query", "str", "Question to answer from retrieved context.", required=True),
             _p("k", "int", "Retrieval depth for grounding.", 5),
             _p("provider", "ChatProvider | None", "Optional provider; else Session AI provider."),
+            _p("mode", "str | None", "Optional retrieve mode override (dense/bm25/hybrid)."),
+            _p("fusion", "str | None", "Optional hybrid fusion strategy override."),
+            _p("filters", "dict | None", "Optional metadata filters for retrieval."),
+            _p("rerank", "bool | str | None", "Optional rerank toggle or strategy."),
+            _p("retrieve_config", "RetrieveConfig | None", "Optional full retrieve config."),
+            _p("config", "GenerateConfig | None", "Optional generation config (prompt/budget knobs)."),
             _p("use_last_retrieve", "bool", "Reuse rag_retrieve_result instead of retrieving again.", False),
         ),
         inputs=("Active RagIndex, non-empty query, and a chat provider (or ai_configure).",),
@@ -212,7 +218,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         state_changes=("Stores rag_generate_result and updates rag_retrieve_result when retrieving.",),
         result_reading=(
-            "Read answer, n_citations, citation doc/chunk ids, provider_model, and disclosures."
+            "Read answer, n_citations, citation doc/chunk ids, provider_model, and disclosures.",
         ),
         next_steps=("save_ai_transcript for the grounded exchange; save_rag_bundle for the index.",),
         concepts=("rag-retrieval-metrics", "rag-chunk-index-boundary", "rag-eval-contamination"),
@@ -253,7 +259,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         state_changes=("Stores rag_eval_result; index unchanged.",),
         result_reading=(
-            "Read recall_at_k, mrr, ndcg_at_k, hit_rate_at_k with k, relevance_mode, and retrieve_mode."
+            "Read recall_at_k, mrr, ndcg_at_k, hit_rate_at_k with k, relevance_mode, and retrieve_mode.",
         ),
         next_steps=(
             "rag_generate for grounded answers; save_rag_bundle; iterate chunk/embed configs "

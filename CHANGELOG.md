@@ -8,8 +8,25 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pass E re-audit:** corrected soft-leakage teaching regressions that still claimed
+  a fold-local `PreprocessRecipe` alone bypasses Session-global CV refuse (README,
+  guides, workflow guide, overlays). Added copy-lint rule
+  `soft-leakage-false-claim`. Overlay tuple bugs (missing trailing commas) fixed.
+- Stale maintainer honesty after Phase C: fold-local Torch CV and `rag_generate`
+  are documented as shipped; architecture review / alpha-gate / phase-plan copy
+  no longer contradict HEAD.
+
 ### Added
 
+- Catalog parameter auto-fill from `operation_index.json` plus stricter
+  signature↔catalog param parity; dashboard Teaching Studio concept keys are
+  gated against `CONCEPT_NOTES`.
+- Scoped mypy and Phase C domain tests (`test_dl_phase_c`, `test_rag_generate`,
+  `test_ai_phase_c`) in CI.
+- Concepts package split (`buildml/explain/concepts/{classical,dl,rag,ai}.py`)
+  replacing the monolithic hand blob.
 - **Phase D teaching sync:** generated Session operation index
   (`buildml/explain/generated/operation_index.json`), domain catalog overlays
   under `buildml/explain/overlays/`, and CI gate
@@ -39,6 +56,8 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Changed
 
+- Session facade typing for DL/RAG/AI public results and key method signatures
+  (still a thin delegate; logic remains in domain/ops packages).
 - RAG / DL / AI maintainer locks and quickstarts updated so “no generate” is no
   longer the product ceiling; hashing remains the CI-safe default embedder with
   semantic path first-class behind `buildml[rag]`.

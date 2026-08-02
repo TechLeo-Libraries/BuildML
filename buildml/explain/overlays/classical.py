@@ -650,7 +650,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Missing columns, incompatible date/encode contracts, empty plan sets, or outlier drop "
             "without a SplitPlan (caps are used instead with a warning).",
         ),
-        leakage=("Refitting plans on score rows would leak; this operation never fits."),
+        leakage=("Refitting plans on score rows would leak; this operation never fits.",),
         anti_patterns=(
             "Expecting resample to change score-frame row counts.",
             "Applying plans fitted on a different feature schema without checking missing-column errors.",
@@ -871,7 +871,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "preprocess",
                 "PreprocessRecipe | None",
-                "Fold-local dates/impute/encode/binning/scale/select/outliers recipe.",
+                "Fold-local dates/impute/encode/binning/scale/select/outliers recipe "
+                "on unpoisoned data.",
+            ),
+            _p(
+                "allow_session_global_preprocess",
+                "bool",
+                "Explicit opt-in when Session-global preprocess already poisoned the frame. "
+                "Default False refuses even if preprocess= is set.",
+                False,
             ),
         ),
         inputs=("Dataset, SplitPlan, estimator; optional group/time roles or PreprocessRecipe.",),
@@ -886,8 +894,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         assumptions=("Fold strategy matches dependence structure; enough rows/groups exist for cv folds.",),
         failures=("No split, invalid strategy roles, too few groups, or estimator/preprocess errors.",),
         leakage=(
-            "Session-global impute/encode/scale/select/outliers/binning/dates before CV "
-            "poison folds; refused unless PreprocessRecipe or allow_session_global_preprocess=True.",
+            "Session-global impute/encode/scale/select/outliers/binning/dates/text/reduce "
+            "before CV poison folds; refused even when a fold-local PreprocessRecipe is "
+            "passed (recipes do not rebuild from raw rows). Opt in only via "
+            "allow_session_global_preprocess=True, or re-ingest unpoisoned data first.",
             "Never include Session test indices in CV folds.",
             "Fold-local target encoding fits means on fold-train labels only.",
         ),
@@ -965,7 +975,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("inner_cv", "int | splitter", "Inner fold count or splitter.", 3),
             _p("cv_strategy", "str", "Fold builder when outer/inner cv are integers.", "auto"),
             _p("scoring_metric", "str | None", "Primary metric for outer summaries and inner rank."),
+            _p("groups", "Series | None", "Optional group labels aligned to train."),
+            _p("task", "classification | regression | auto", "Task interpretation.", "auto"),
+            _p("random_state", "int | None", "RNG seed for fold builders / samplers where applicable."),
             _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe for both loops."),
+            _p(
+                "allow_session_global_preprocess",
+                "bool",
+                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                False,
+            ),
         ),
         inputs=(
             "Dataset, SplitPlan, estimator, and at least one of estimator/recipe search spaces.",
@@ -982,7 +1001,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         rationale=(
             "Inner CV selects estimator params and fold-local recipe knobs; outer CV estimates "
-            "the selected procedure without peeking at Session test rows."
+            "the selected procedure without peeking at Session test rows.",
         ),
         assumptions=(
             "Enough train rows/groups for outer×inner folds; search space is valid.",
@@ -1043,7 +1062,14 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("cv", "int | splitter", "Fold count or splitter.", 5),
             _p("cv_strategy", "str", "Fold builder when cv is an integer.", "auto"),
             _p("ranking_metric", "str | None", "Metric used to rank trials."),
-            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe."),
+            _p("groups", "Series | None", "Optional group labels aligned to train."),
+            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on unpoisoned data."),
+            _p(
+                "allow_session_global_preprocess",
+                "bool",
+                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                False,
+            ),
             _p("refit", "bool", "Refit best params on full train and set fit_result.", True),
         ),
         inputs=("Dataset, SplitPlan, estimator, and a non-empty param_grid and/or recipe_grid.",),
@@ -1059,7 +1085,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Prefer grids small enough that fold std remains interpretable across trials.",),
         assumptions=("All grid points are valid for the estimator; metric matches decision costs.",),
         failures=("Empty grid, invalid params, CV construction errors, or fit failures.",),
-        leakage=("Nested CV stays in train; confirming repeatedly on test overfits selection.",),
+        leakage=(
+            "Nested CV stays in train; confirming repeatedly on test overfits selection.",
+            "Session-global preprocess before search is refused even with a fold-local recipe "
+            "unless allow_session_global_preprocess=True.",
+        ),
         anti_patterns=("Expanding the grid after seeing test scores.",),
         state_changes=("Stores last_search; when refit=True, replaces active fit_result with the winner.",),
         result_reading=("Compare best mean±std to the next trial and read limitations about preprocess honesty.",),
@@ -1095,7 +1125,14 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("cv", "int | splitter", "Fold count or splitter.", 5),
             _p("cv_strategy", "str", "Fold builder when cv is an integer.", "auto"),
             _p("ranking_metric", "str | None", "Metric used to rank trials."),
-            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe."),
+            _p("groups", "Series | None", "Optional group labels aligned to train."),
+            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on unpoisoned data."),
+            _p(
+                "allow_session_global_preprocess",
+                "bool",
+                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                False,
+            ),
             _p("refit", "bool", "Refit best params on full train and set fit_result.", True),
         ),
         inputs=("Dataset, SplitPlan, estimator, and parameter distributions.",),
@@ -1109,7 +1146,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Raise n_iter only while fold std still informs whether gaps are real.",),
         assumptions=("Sampled params are valid; the budget covers the interesting region roughly.",),
         failures=("Empty distributions, n_iter < 1, CV errors, or estimator fit failures.",),
-        leakage=("Same train-only nested CV contract as grid_search; test remains untouched during search.",),
+        leakage=(
+            "Same train-only nested CV contract as grid_search; test remains untouched during search.",
+            "Session-global preprocess before search is refused even with a fold-local recipe "
+            "unless allow_session_global_preprocess=True.",
+        ),
         anti_patterns=("Interpreting a lucky single trial as stable without reading fold std.",),
         state_changes=("Stores last_search; when refit=True, replaces active fit_result with the winner.",),
         result_reading=("Read best_params with mean±std and top-2 gap relative to fold noise.",),
@@ -1145,7 +1186,14 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("cv", "int | splitter", "Fold count or splitter.", 5),
             _p("cv_strategy", "str", "Fold builder when cv is an integer.", "auto"),
             _p("ranking_metric", "str | None", "Metric used to rank trials."),
-            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe."),
+            _p("groups", "Series | None", "Optional group labels aligned to train."),
+            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on unpoisoned data."),
+            _p(
+                "allow_session_global_preprocess",
+                "bool",
+                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                False,
+            ),
             _p("refit", "bool", "Refit best params on full train and set fit_result.", True),
         ),
         inputs=("Dataset, SplitPlan, estimator, and an Optuna search space.",),
@@ -1164,7 +1212,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=(
             "Missing optuna extra, empty spaces, n_trials < 1, CV errors, or estimator fit failures.",
         ),
-        leakage=("Same train-only nested CV contract as grid_search; test remains untouched during search.",),
+        leakage=(
+            "Same train-only nested CV contract as grid_search; test remains untouched during search.",
+            "Session-global preprocess before search is refused even with a fold-local recipe "
+            "unless allow_session_global_preprocess=True.",
+        ),
         anti_patterns=("Treating a short TPE run as exhaustive coverage of a huge space.",),
         state_changes=("Stores last_search; when refit=True, replaces active fit_result with the winner.",),
         result_reading=("Read best_params with mean±std and top-2 gap relative to fold noise.",),
@@ -1766,7 +1818,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         rationale=(
             "Root DuckDB Datasets own the connection; explicit close (or a context manager) "
-            "avoids process-level connection leaks in long sessions and tests."
+            "avoids process-level connection leaks in long sessions and tests.",
         ),
         assumptions=(
             "Derived Datasets share the owner's connection with ownership disabled.",
@@ -1876,7 +1928,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Avoid converting unused columns through optional engines; disclose any sampling.",),
         assumptions=("Session data may still be Pandas-backed; engine prep is not a lazy plan store.",),
         failures=("Missing columns, invalid sample_rows, or hard materialization refuse.",),
-        leakage=("Sampling changes the empirical distribution; do not treat sampled fits as full-population."),
+        leakage=(
+            "Sampling changes the empirical distribution; do not treat sampled fits as full-population.",
+        ),
         anti_patterns=("Claiming out-of-core sklearn training from prepare_design_matrix alone.",),
         state_changes=("Records disclosures; does not replace Dataset.frame.",),
         result_reading=("Read disclosures, sampled flag, and limitations before trusting a sampled fit.",),

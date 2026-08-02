@@ -166,8 +166,9 @@ An unfitted fold-local preprocess specification (`PreprocessRecipe`) refit on ea
 training rows. Supported fold-local steps include dates, text features, outliers, impute, encode,
 binning, scale, PCA (`reduce`), and feature selection. Resample and registered custom transforms
 remain Session-global only. If Session fit-capable plans were already fitted on the full train
-partition and CV/search runs without a fold-local recipe, BuildML refuses unless
-`allow_session_global_preprocess=True`.
+partition, CV/search refuse even when a fold-local recipe is passed — recipes run on the
+already-transformed frame and do not rebuild from raw rows. Re-ingest unpoisoned data, or set
+`allow_session_global_preprocess=True` as an explicit override (scores remain leakage-biased).
 
 **Dataset project / aggregate**  
 `Dataset.project` keeps a column subset; `Dataset.aggregate` computes grouped or global summaries

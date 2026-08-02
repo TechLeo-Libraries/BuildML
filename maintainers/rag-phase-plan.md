@@ -224,7 +224,7 @@ Status tags: **M0** design · **M1** thin vertical slice · **M2** depth · **M3
 
 | Capability | Tag | Notes |
 | --- | --- | --- |
-| Grounded generate from retrieved context | M3→L | Deferred; alpha remains retrieve-only |
+| Grounded generate from retrieved context | M3→C | Shipped in Phase C as `Session.rag_generate` (citations + provider; hashing retrieve remains CI default) |
 | Citation / source span attachments | M3→L | When generate ships |
 | Require cloud LLM for RAG alpha | X | Explicit non-goal |
 
@@ -419,7 +419,7 @@ rag_ingest_corpus (fixture docs)
 - Upsert/delete by chunk/doc id; metadata equality filters on retrieve.
 - Eval: `relevance_mode` document|chunk; nDCG@k + hit-rate@k; `compare_retrieval_configs`.
 - Walkthrough / workflow `rag_status` disclosures (index, embedder, store, last eval).
-- Generate deferred to M3→L (retrieve-only alpha remains valid).
+- Generate shipped in Phase C (`rag_generate`); retrieve-only alpha remains a valid subset.
 - Structure-aware markdown chunking and time-aware corpus cutoffs remain later when fixtures warrant.
 
 ### M3 — Docs and RAG alpha gate
@@ -442,7 +442,7 @@ rag_ingest_corpus (fixture docs)
 - Quickstart: [quickstart-rag.md](../guides/quickstart-rag.md).
 - Gate: [rag-alpha-gate.md](./rag-alpha-gate.md); release checklist:
   [release-checklist-rag-a1.md](./release-checklist-rag-a1.md).
-- Version line `2.2.0a1`; generate / LLM operator remain deferred (no claims).
+- Version line `2.2.0a1` was retrieve-first; current package line `2.3.0a1` includes `rag_generate` and the AI operator.
 - Alpha smoke: ingest → chunk → embed/index → dense + hybrid retrieve → evaluate →
   upsert/delete → bundle save/load → `explain("rag_retrieve")`.
 
@@ -539,7 +539,7 @@ PDF/OCR productization, hosted vector DBs, Teaching Studio redesign, `buildml.ai
 | Default vector store | Locked | NumPy cosine top-k + `embeddings.npy` / `chunks.jsonl` sidecar |
 | Bundle schema id | Locked | `buildml.rag_bundle.v1` |
 | Bundle vs Session checkpoint vs Torch | Locked | Three distinct artifacts; see §2 and [rag-m0-lock.md](./rag-m0-lock.md) |
-| Generate in M1 vs M2+ | Locked | Retrieve+eval+bundle in M1; generate deferred after M2 (M3→L) |
+| Generate in M1 vs M2+ | Updated | Retrieve+eval+bundle in M1; grounded generate shipped in Phase C on the `2.3` line |
 | RAG CI Python versions | Locked | 3.11 + 3.12 (mirror `torch` job) |
 | Whether tabular text auto-ingests from current Session frame | Locked | Explicit `rag_ingest_corpus` only (no silent full-frame index) |
 

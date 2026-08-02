@@ -59,6 +59,18 @@ STALE_API = re.compile(
 )
 LEGACY_CONTEXT = re.compile(r"\b(?:1\.x|legacy|removed|archiv|not part)\b", re.IGNORECASE)
 
+# Soft-leakage teaching regressions after Phase A/B hard-refuse.
+SOFT_LEAKAGE_FALSE_CLAIM = re.compile(
+    r"(?:"
+    r"refuse(?:s|d)?\s+unless\s+you\s+pass\s+a\s+fold-local\s+recipe"
+    r"|refuse(?:s|d)?\s+unless\s+(?:a\s+)?(?:fold-local\s+)?PreprocessRecipe"
+    r"|without\s+a\s+fold-local\s+recipe,\s+BuildML\s+refuses"
+    r"|and\s+no\s+fold-local\s+recipe\s+is\s+provided"
+    r"|runs\s+without\s+a\s+fold-local\s+recipe"
+    r")",
+    re.IGNORECASE,
+)
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -104,6 +116,10 @@ def lint_paths(paths: Iterable[Path] | None = None) -> list[Violation]:
                     violations.append(Violation(relative, number, rule, line.strip()))
             if STALE_API.search(line) and not LEGACY_CONTEXT.search(line):
                 violations.append(Violation(relative, number, "stale-public-api", line.strip()))
+            if SOFT_LEAKAGE_FALSE_CLAIM.search(line):
+                violations.append(
+                    Violation(relative, number, "soft-leakage-false-claim", line.strip())
+                )
     return violations
 
 

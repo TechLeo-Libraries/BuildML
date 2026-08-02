@@ -360,7 +360,9 @@ def evaluate_estimator(
         metrics["median_ae"] = float(median_absolute_error(y_true, y_pred, sample_weight=sw))
         metrics["r2"] = float(r2_score(y_true, y_pred, sample_weight=sw))
         try:
-            metrics["mape"] = float(mean_absolute_percentage_error(y_true, y_pred, sample_weight=sw))
+            metrics["mape"] = float(
+                mean_absolute_percentage_error(y_true, y_pred, sample_weight=sw)
+            )
         except ValueError:
             tips.append("MAPE unavailable (zeros/near-zeros in target).")
         mean_resid = float(
