@@ -134,17 +134,18 @@ def serve_bundle(
     Prefer TLS + auth at a reverse proxy for any non-local exposure.
     This is a library-owned local server, not a Kubernetes multi-cluster product.
     """
-    try:
-        import uvicorn
-    except ImportError as exc:
-        raise MissingExtraError("serve", "Managed model serving") from exc
-
     _validate_bind_target(host, port)
     _ensure_bind_security(
         host,
         api_keys=api_keys,
         allow_insecure_public_bind=allow_insecure_public_bind,
     )
+
+    try:
+        import uvicorn
+    except ImportError as exc:
+        raise MissingExtraError("serve", "Managed model serving") from exc
+
     _ensure_port_available(host, port)
 
     app = create_serving_app(
