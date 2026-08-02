@@ -148,9 +148,8 @@ to PyPI in this cut** — honesty banner only.
   a fold-local `PreprocessRecipe` alone bypasses Session-global CV refuse (README,
   guides, workflow guide, overlays). Added copy-lint rule
   `soft-leakage-false-claim`. Overlay tuple bugs (missing trailing commas) fixed.
-- Stale maintainer honesty after Phase C: fold-local Torch CV and `rag_generate`
-  are documented as shipped; architecture review / alpha-gate / phase-plan copy
-  no longer contradict HEAD.
+- Stale honesty after Phase C: fold-local Torch CV and `rag_generate` are
+  documented as shipped; user docs no longer contradict HEAD.
 
 ### Added
 
@@ -199,10 +198,9 @@ to PyPI in this cut** — honesty banner only.
 ## [2.3.0a1] — AI operator alpha — 2026-08-02
 
 First AI operator alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`maintainers/ai-alpha-gate.md`](maintainers/ai-alpha-gate.md).
-Classical alpha remains at `2.0.0a1`; DL alpha at `2.1.0a1`; RAG alpha at
-`2.2.0a1`. This line adds optional LLM-assisted workflow guidance — **not**
-autonomous agents or auto-execution.
+known limits are listed in this section. Classical alpha remains at `2.0.0a1`;
+DL alpha at `2.1.0a1`; RAG alpha at `2.2.0a1`. This line adds optional
+LLM-assisted workflow guidance — **not** autonomous agents or auto-execution.
 
 ### Added
 
@@ -247,15 +245,15 @@ autonomous agents or auto-execution.
 
 ### Verification
 
-- Gate checklist: `maintainers/ai-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `maintainers/release-checklist-ai-a1.md`).
+- Confirm known limits above still match shipped behavior.
+- Tag only after remote CI is green (see `CONTRIBUTING.md`).
 
 ## [2.2.0a1] — RAG alpha — 2026-08-01
 
 First retrieval (RAG) alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`maintainers/rag-alpha-gate.md`](maintainers/rag-alpha-gate.md).
-Classical alpha remains at `2.0.0a1`; DL alpha remains at `2.1.0a1`. This line
-adds optional retrieve / evaluate / bundle — **not** generate or an LLM operator.
+known limits are listed in this section. Classical alpha remains at `2.0.0a1`;
+DL alpha remains at `2.1.0a1`. This line adds optional retrieve / evaluate /
+bundle — **not** generate or an LLM operator.
 
 ### Added
 
@@ -287,14 +285,14 @@ adds optional retrieve / evaluate / bundle — **not** generate or an LLM operat
 
 ### Verification
 
-- Gate checklist: `maintainers/rag-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `maintainers/release-checklist-rag-a1.md`).
+- Confirm known limits above still match shipped behavior.
+- Tag only after remote CI is green (see `CONTRIBUTING.md`).
 
 ## [2.1.0a1] — DL alpha — 2026-08-01
 
 First deep-learning alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`maintainers/dl-alpha-gate.md`](maintainers/dl-alpha-gate.md).
-Classical alpha remains documented at `2.0.0a1`; this line adds optional Torch.
+known limits are listed in this section. Classical alpha remains documented at
+`2.0.0a1`; this line adds optional Torch.
 
 ### Added
 
@@ -323,13 +321,13 @@ Classical alpha remains documented at `2.0.0a1`; this line adds optional Torch.
 
 ### Verification
 
-- Gate checklist: `maintainers/dl-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `maintainers/release-checklist-dl-a1.md`).
+- Confirm known limits above still match shipped behavior.
+- Tag only after remote CI is green (see `CONTRIBUTING.md`).
 
 ## [2.0.0a1] — classical alpha — 2026-08-01
 
 First classical-ML alpha of the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`maintainers/classical-alpha-gate.md`](maintainers/classical-alpha-gate.md).
+known limits are listed in this section.
 
 ### Added
 
@@ -359,9 +357,9 @@ known limits are defined in [`maintainers/classical-alpha-gate.md`](maintainers/
 
 ### Verification
 
-- Local gate checklist: see `maintainers/classical-alpha-gate.md` sign-off section.
+- Confirm known limits above still match shipped behavior.
 - Tag only after remote CI is green on the push that includes this release
-  candidate (see `maintainers/release-checklist-a1.md`).
+  candidate (see `CONTRIBUTING.md`).
 
 ## [1.x]
 

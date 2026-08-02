@@ -13,8 +13,6 @@ directly on GitHub and included in the published Sphinx site at
 4. Optional extras on the same Session: [Torch](quickstart-torch.md), [RAG](quickstart-rag.md), [AI operator](quickstart-ai.md)
 5. [Glossary](glossary.md) — terms used across Session, reports, and extras
 
-For maintainer engineering notes, see [maintainers/](../maintainers/README.md).
-
 ## Quickstarts
 
 | Guide | Extra | Summary |

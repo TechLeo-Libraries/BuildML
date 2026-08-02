@@ -11,9 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# These paths are maintainer records or quote prohibited copy examples.
-# maintainers/ holds phase plans, gates, and design locks (not user guidance).
-ARCHIVAL_DOC_PREFIXES = ("maintainers/",)
+# Paths skipped when scanning for user-facing copy rules.
+ARCHIVAL_DOC_PREFIXES: tuple[str, ...] = ()
 ARCHIVAL_DOCS: set[str] = set()
 QUOTED_EXAMPLE_DOCS: set[str] = set()
 

@@ -33,10 +33,7 @@ python scripts/sync_teaching_surface.py --write
 python scripts/sync_teaching_surface.py --check
 ```
 
-## Release checklist (maintainers)
-
-When cutting a release, follow the relevant gate / checklist under
-[`maintainers/`](maintainers/):
+## Release checklist
 
 1. Bump `pyproject.toml` + `buildml/_version.py` together.
 2. Move `[Unreleased]` notes into a dated CHANGELOG section.
@@ -46,14 +43,6 @@ When cutting a release, follow the relevant gate / checklist under
 5. Publish to PyPI only when credentials are available and intentional; otherwise
    document the gap and leave the honesty banner.
 6. Refresh Read the Docs after the tag / docs change.
-
-Domain-specific gates:
-
-- Classical — `maintainers/classical-alpha-gate.md`
-- Torch — `maintainers/dl-alpha-gate.md`
-- RAG — `maintainers/rag-alpha-gate.md` (tag-lock historical; HEAD includes generate)
-- AI — `maintainers/ai-alpha-gate.md` (tag-lock historical; HEAD includes autonomy)
-- Generic AI cut notes — `maintainers/release-checklist-ai-a1.md`
 
 ## Pull requests
 
