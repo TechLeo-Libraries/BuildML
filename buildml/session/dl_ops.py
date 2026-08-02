@@ -266,6 +266,7 @@ def fit_torch(
         if resume and prior is not None:
             module = prior.module
         else:
+            from buildml.dl.labels import n_classes_from_labels
             from buildml.dl.multimodal import build_multimodal_fusion
 
             text_vocab = getattr(session._torch_loaders, "text_vocab", None)
@@ -273,10 +274,10 @@ def fit_torch(
             speech = getattr(session._torch_loaders, "speech_contract", None)
             contract = session._torch_loaders.contract
             modality = getattr(session._torch_loaders, "modality", None) or ""
+            n_classes = n_classes_from_labels(contract.class_labels)
             if speech is not None or modality == "speech_classify":
                 from buildml.dl.speech import build_speech_classifier
 
-                n_classes = max(2, len(contract.class_labels) or 2)
                 embed_dim = int(getattr(speech, "encoder_dim", 64) or 64) if speech else 64
                 sample_rate = (
                     int(getattr(speech, "sample_rate", 16_000) or 16_000) if speech else 16_000
@@ -292,7 +293,6 @@ def fit_torch(
                     raise ValidationError(
                         "Multimodal loaders are missing multimodal_contract for fit_torch"
                     )
-                n_classes = max(2, len(contract.class_labels) or 2)
                 has_text = bool(mm.text_column) or bool(mm.vocab)
                 has_image = bool(mm.image_column)
                 has_audio = bool(getattr(mm, "audio_column", None))
@@ -321,7 +321,6 @@ def fit_torch(
                     dropout=dropout,
                 )
             elif text_vocab is not None and multimodal is None:
-                n_classes = max(2, len(contract.class_labels) or 2)
                 module = build_text_classifier(
                     text_vocab.vocab_size,
                     n_classes=n_classes,
@@ -329,7 +328,6 @@ def fit_torch(
                 )
             else:
                 in_features = len(contract.feature_columns)
-                n_classes = max(2, len(contract.class_labels) or 2)
                 module = build_tabular_mlp(
                     in_features,
                     task=contract.task,
@@ -1091,6 +1089,7 @@ def fit_speech_torch(
     Builds speech loaders when missing. Honest alpha: not Whisper-scale FM
     training from scratch. Requires ``buildml[torch]``.
     """
+    from buildml.dl.labels import n_classes_from_labels
     from buildml.dl.speech import build_speech_classifier
     from buildml.dl.train import train_supervised_module
     from buildml.dl.types import TrainConfig
@@ -1113,7 +1112,7 @@ def fit_speech_torch(
     assert session._torch_loaders is not None
     contract = session._torch_loaders.contract
     speech = getattr(session._torch_loaders, "speech_contract", None)
-    n_classes = max(2, len(contract.class_labels) or 2)
+    n_classes = n_classes_from_labels(contract.class_labels)
     embed = int(getattr(speech, "encoder_dim", encoder_dim) or encoder_dim)
     sr = int(getattr(speech, "sample_rate", sample_rate) or sample_rate)
     module = build_speech_classifier(

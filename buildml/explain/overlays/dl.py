@@ -33,6 +33,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         (
             "Resolve feature and target roles.",
             "Materialize numeric arrays per partition.",
+            "For classification, remap train-fit class ids to contiguous 0..K-1 "
+            "(class_labels stores original ids).",
             "Fit optional train-only normalize stats and freeze them on validation/test.",
             "Construct DataLoaders with shuffle on train only.",
         ),
@@ -56,7 +58,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Build tensors yourself and inject only if you accept leaving the Session path.",
         ),
         rationale=("Use when moving from partition frames to batched Torch training.",),
-        assumptions=("Features and targets are numeric; non-numeric columns were encoded or dropped earlier.",),
+        assumptions=(
+            "Features and targets are numeric; non-numeric columns were encoded or dropped earlier.",
+            "Classification targets may be sparse integer ids — loaders remap to 0..K-1.",
+        ),
         failures=("Missing Torch extra, empty train, non-numeric columns, or NaNs in the design matrix.",),
         leakage=(
             "Fitting normalize on all rows, or shuffling validation/test into train batches, leaks evaluation signal.",
@@ -65,6 +70,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=(
             "Treating loader construction as permission to skip a declared split.",
             "Expecting Polars/DuckDB zero-copy into DataLoaders in this slice.",
+            "Assuming n_classes = max(label)+1 without contiguous remapping.",
         ),
         state_changes=("Stores torch loaders on the Session and appends loader metadata to history.",),
         result_reading=(
@@ -86,6 +92,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         (
             "Resolve a text feature column and target.",
             "Fit vocabulary on the train partition only.",
+            "Remap class ids to contiguous 0..K-1 (class_labels stores original ids).",
             "Encode padded token ids per partition with shuffle on train only.",
         ),
         parameters=(
@@ -107,7 +114,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "make_audio_multimodal_torch_loaders when text must fuse with other modalities.",
         ),
         rationale=("Use when the modeling path is text/sequence rather than pure numeric tables.",),
-        assumptions=("Target labels are integer class ids; vocabulary must not see validation/test text.",),
+        assumptions=(
+            "Target labels are integer class ids (sparse ids remapped to contiguous 0..K-1); "
+            "vocabulary must not see validation/test text.",
+        ),
         failures=("Missing Torch extra, no text column, empty train, or non-numeric target.",),
         leakage=("Fitting vocabulary on all rows leaks holdout token identity into the model.",),
         anti_patterns=("Treating hashing RAG embeddings as a substitute for this supervised text path.",),
@@ -617,6 +627,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Resolve audio_column and target roles.",
             "Decode path/waveform cells to fixed-length mono tensors.",
             "Fit optional train-only amplitude mean/std.",
+            "Remap class ids to contiguous 0..K-1 (class_labels stores original ids).",
             "Construct DataLoaders with shuffle on train only.",
         ),
         parameters=(
@@ -639,7 +650,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "transcribe_speech for ASR text generation without classification training.",
         ),
         rationale=("Use when fine-tuning a tiny speech encoder head on labeled audio.",),
-        assumptions=("Targets are numeric class ids; audio cells are paths or waveforms.",),
+        assumptions=(
+            "Targets are numeric class ids (sparse ids remapped to contiguous 0..K-1); "
+            "audio cells are paths or waveforms.",
+        ),
         failures=("Missing Torch extra, empty train, non-numeric labels, or bad audio cells.",),
         leakage=("Fitting amp stats on all rows, or ignoring SplitPlan membership, leaks evaluation signal.",),
         anti_patterns=(

@@ -18,6 +18,7 @@ from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.dl.dataset import arrays_to_tensor_dataset, infer_task, resolve_feature_target
 from buildml.dl.extras import require_torch
+from buildml.dl.labels import encode_class_targets, fit_class_labels, n_classes_from_labels
 from buildml.dl.models import build_tabular_mlp
 from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
 from buildml.dl.types import TrainConfig
@@ -243,15 +244,20 @@ def cross_validate_torch(
             x_train = apply_standardize(x_train, mean, std)
             x_val = apply_standardize(x_val, mean, std)
 
-        n_classes = int(len(np.unique(y_train))) if resolved_task == "classification" else 1
+        if resolved_task == "classification":
+            class_labels = fit_class_labels(y_train)
+            n_classes = n_classes_from_labels(class_labels)
+            y_train = encode_class_targets(y_train, class_labels).astype(np.float64, copy=False)
+            y_val = encode_class_targets(y_val, class_labels).astype(np.float64, copy=False)
+        else:
+            class_labels = ()
+            n_classes = 1
         module = factory(len(feature_cols), resolved_task, n_classes)
         contract = FeatureContract(
             feature_columns=tuple(feature_cols),
             target_column=target,
             task=resolved_task,
-            class_labels=tuple(sorted(np.unique(y_train).tolist()))
-            if resolved_task == "classification"
-            else (),
+            class_labels=class_labels,
             normalize_mean=None if mean is None else tuple(float(v) for v in mean),
             normalize_std=None if std is None else tuple(float(v) for v in std),
         )

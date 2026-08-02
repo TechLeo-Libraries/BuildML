@@ -149,7 +149,7 @@ jobs:
       - name: Core import smoke without relying on classical extras
         run: python -c "import buildml; print(buildml.__version__)"
 
-      - name: Torch DL slice + M2 depth + Phase C + Pass G/J/L/O + DL alpha-gate smoke
+      - name: Torch DL slice + M2 depth + Phase C + Pass G/J/L/O/Q + DL alpha-gate smoke
         run: |
           pytest \
             tests/unit/test_dl_torch_slice.py \
@@ -159,6 +159,7 @@ jobs:
             tests/unit/test_pass_j_image_multimodal.py \
             tests/unit/test_pass_l_audio_multimodal.py \
             tests/unit/test_pass_o_speech_ddp_serve.py \
+            tests/unit/test_pass_q_label_encoding.py \
             tests/integration/test_dl_torch_smoke.py \
             tests/integration/test_dl_alpha_smoke.py \
             -q

@@ -19,6 +19,7 @@ from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.dl.extras import require_torch
+from buildml.dl.labels import encode_class_targets, fit_class_labels
 from buildml.dl.results import LoaderReport, TorchLoaderBundle
 from buildml.dl.types import FeatureContract, LoaderConfig
 
@@ -203,7 +204,7 @@ def make_text_loaders(
             f"Target '{target}' must be numeric class ids for the text Torch path "
             "(encode labels to integers first)."
         )
-    class_labels = tuple(sorted(pd.unique(y_train)))
+    class_labels = fit_class_labels(y_train)
     contract = TextContract(
         text_column=text_col,
         target_column=target,
@@ -230,9 +231,7 @@ def make_text_loaders(
             continue
         part = frame.iloc[idx]
         x = texts_to_ids(part[text_col].astype(str).tolist(), vocab)
-        y = part[target].to_numpy(dtype=np.int64, copy=True)
-        if np.isnan(y.astype(np.float64)).any():
-            raise ValidationError("Target contains NaN; clean labels before text loaders")
+        y = encode_class_targets(part[target], class_labels)
         x_t = torch.as_tensor(x, dtype=torch.long)
         y_t = torch.as_tensor(y, dtype=torch.long)
         dataset_t = torch.utils.data.TensorDataset(x_t, y_t)

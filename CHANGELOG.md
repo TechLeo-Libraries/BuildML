@@ -10,6 +10,11 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Fixed
 
+- **Pass Q after Pass P:** Torch classification paths now LabelEncoder-style remap
+  sparse/non-contiguous integer class ids to contiguous ``0..K-1`` (speech, text,
+  tabular, multimodal, CV/search). ``class_labels`` keeps original ids in index
+  order so ``n_classes = len(class_labels)`` matches CrossEntropy targets;
+  evaluate confusion matrices decode back to original ids. CI wires Pass Q tests.
 - **Pass P after Pass O:** CI torch job now runs Pass O speech/DDP/serve tests;
   extras matrix covers `buildml[serve]`; multi-node DDP requires `LOCAL_RANK`
   (no silent global-rank→device mapping) and writes parsed `MASTER_*` into the

@@ -33,6 +33,7 @@ from buildml.dl.audio import (
     stack_audio_column,
 )
 from buildml.dl.extras import require_torch
+from buildml.dl.labels import encode_class_targets, fit_class_labels
 from buildml.dl.results import LoaderReport, TorchLoaderBundle
 from buildml.dl.types import FeatureContract
 
@@ -285,11 +286,12 @@ def make_speech_loaders(
             f"Target '{target}' must be numeric class ids for the speech classify path "
             "(encode labels to integers first)."
         )
-    class_labels = tuple(sorted(pd.unique(y_train)))
+    class_labels = fit_class_labels(y_train)
     disclosures = (
         "Speech classify finetune-lite: tiny 1D-CNN encoder + linear head.",
         "Not training a Whisper-scale foundation model from scratch.",
         "Amplitude mean/std fit on train only when normalize_audio=True.",
+        "Class labels remapped to contiguous 0..K-1; class_labels stores original ids.",
     )
     contract = SpeechContract(
         audio_column=audio_col,
@@ -331,9 +333,7 @@ def make_speech_loaders(
                 np.asarray([audio_mean], dtype=np.float32),
                 np.asarray([audio_std], dtype=np.float32),
             )
-        y = part[target].to_numpy(dtype=np.int64, copy=True)
-        if np.isnan(y.astype(np.float64)).any():
-            raise ValidationError("Target contains NaN; clean labels before speech loaders")
+        y = encode_class_targets(part[target], class_labels)
         x_t = torch.as_tensor(waves, dtype=torch.float32)
         y_t = torch.as_tensor(y, dtype=torch.long)
         dataset_t = torch.utils.data.TensorDataset(x_t, y_t)

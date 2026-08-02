@@ -174,11 +174,18 @@ def evaluate_module(
             f1_score(y_true, y_pred, average="weighted", zero_division=0)
         )
         metrics["f1_macro"] = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
+        # Loaders encode targets to 0..K-1; class_labels[i] is the original id.
         if labels:
+            inv = np.asarray(list(labels))
+            idx_true = np.asarray(y_true, dtype=np.int64)
+            idx_pred = np.asarray(y_pred, dtype=np.int64)
+            y_true_cm = inv[idx_true]
+            y_pred_cm = inv[idx_pred]
             label_values = list(labels)
+            cm = confusion_matrix(y_true_cm, y_pred_cm, labels=label_values)
         else:
             label_values = sorted(set(np.unique(y_true)).union(set(np.unique(y_pred))))
-        cm = confusion_matrix(y_true, y_pred, labels=label_values)
+            cm = confusion_matrix(y_true, y_pred, labels=label_values)
         cm_list = cm.astype(int).tolist()
 
     early = train_result.early_stop
