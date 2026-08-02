@@ -218,5 +218,70 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             ),
             related_concepts=("probabilistic-uncertainty", "federated-bundle-boundary"),
         ),
+        _note(
+            key="probabilistic-mapie",
+            title="MAPIE conformal backend",
+            summary="Optional MAPIE split/CV+/jackknife+ conformal via buildml[probabilistic-industry].",
+            definition=(
+                "backend='mapie' wraps MAPIE MapieRegressor / MapieClassifier "
+                "for distribution-free intervals (regression) or prediction sets "
+                "(classification). Split uses a train-only carve; CV+ and "
+                "jackknife+ use Session train with internal resampling."
+            ),
+            intuition=(
+                "Industry conformal tooling when you want CV+ or jackknife+ "
+                "beyond the in-tree absolute-residual split recipe."
+            ),
+            formal_idea=(
+                "Conformal prediction with MAPIE method='base' or 'plus'."
+            ),
+            why_it_matters=(
+                "Honest industry defaults when MAPIE is installed.",
+            ),
+            how_buildml_uses=(
+                "fit_probabilistic(backend='mapie', estimator='cv_plus', task='regression').",
+            ),
+            interpretation_rules=(
+                "Read interval_coverage / set_coverage on holdout; disclosures note train-only fit.",
+            ),
+            assumptions=("Exchangeable scores; Session split present.",),
+            failure_modes=("Missing extra; too-small train for MAPIE cv.",),
+            anti_patterns=("Calibrating MAPIE on Session test.",),
+            worked_example_pattern=(
+                "fit_probabilistic(backend='mapie', estimator='split', task='regression').",
+            ),
+            related_concepts=("probabilistic-split-conformal", "probabilistic-uncertainty"),
+        ),
+        _note(
+            key="probabilistic-ngboost",
+            title="NGBoost predictive distributions",
+            summary="Natural gradient boosting with Normal/Bernoulli predictive distributions.",
+            definition=(
+                "backend='ngboost' fits NGBRegressor / NGBClassifier and exposes "
+                "pred_dist for NLL and CRPS (regression) plus optional in-tree "
+                "conformal overlay carved from train."
+            ),
+            intuition=(
+                "Gradient boosting that outputs a full predictive distribution, "
+                "not just a point estimate."
+            ),
+            formal_idea=(
+                "Natural gradient boosting toward a parametric predictive family."
+            ),
+            why_it_matters=(
+                "Strong tabular uncertainty without MCMC.",
+            ),
+            how_buildml_uses=(
+                "fit_probabilistic(backend='ngboost', estimator='ngboost_regressor').",
+            ),
+            interpretation_rules=("Read nll and crps in evaluate_probabilistic.",),
+            assumptions=("Numeric features; enough train rows for boosting.",),
+            failure_modes=("Missing ngboost extra; binary-only Bernoulli classifier path.",),
+            anti_patterns=("Calling NGBoost a Bayesian MCMC posterior.",),
+            worked_example_pattern=(
+                "fit_probabilistic(backend='ngboost', estimator='ngboost_regressor', conformal=True).",
+            ),
+            related_concepts=("probabilistic-uncertainty", "diagnostic-uncertainty"),
+        ),
     )
 }

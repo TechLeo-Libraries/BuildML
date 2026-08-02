@@ -220,6 +220,30 @@ class RagEvalResult:
 
 
 @dataclass(slots=True)
+class RagGenerateEvalResult:
+    """Generation-quality metrics over grounded answers (cheap heuristics)."""
+
+    n_queries: int
+    mean_faithfulness: float
+    mean_answer_relevance: float
+    citation_coverage: float
+    per_query: tuple[dict[str, Any], ...] = ()
+    disclosures: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "n_queries": self.n_queries,
+            "mean_faithfulness": self.mean_faithfulness,
+            "mean_answer_relevance": self.mean_answer_relevance,
+            "citation_coverage": self.citation_coverage,
+            "per_query": list(self.per_query),
+            "disclosures": list(self.disclosures),
+            "warnings": list(self.warnings),
+        }
+
+
+@dataclass(slots=True)
 class ConfigCompareResult:
     """Side-by-side retrieval metrics for multiple configs."""
 

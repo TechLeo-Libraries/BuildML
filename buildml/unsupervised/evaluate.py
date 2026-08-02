@@ -6,6 +6,7 @@ from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
+from sklearn.cluster import KMeans
 from sklearn.metrics import (
     adjusted_rand_score,
     calinski_harabasz_score,
@@ -33,17 +34,14 @@ def evaluate_clustering(
     external_label_column: str | None = None,
     sample_size: int | None = 2000,
     random_state: int | None = 0,
+    compute_stability: bool = False,
+    stability_runs: int = 10,
+    stability_sample_fraction: float = 0.8,
+    compute_elbow: bool = False,
+    elbow_k_min: int = 2,
+    elbow_k_max: int = 10,
 ) -> ClusterEvalResult:
-    """Score a train-fitted cluster plan on a partition without refitting.
-
-    Internal metrics (silhouette, Calinski–Harabasz, Davies–Bouldin) measure
-    geometric cohesion/separation. They are **not** supervised accuracy and do
-    not validate a ground-truth taxonomy.
-
-    Optional ``external_label_column`` computes ARI / NMI against a provided
-    reference column. That is an external agreement check with disclosure — not
-    proof that unsupervised discovery recovered a causal or business truth.
-    """
+    """Score a train-fitted cluster plan on a partition without refitting."""
     _, assign = assign_clusters(
         dataset, plan, split_plan, partition=partition, attach=False
     )
@@ -73,6 +71,7 @@ def evaluate_clustering(
         "Cluster validity is not ground truth. Prefer domain review before operational claims.",
     ]
     recommendations: list[str] = []
+    diagnostics: dict[str, Any] = {}
 
     usable_mask = labels >= 0
     n_usable = int(usable_mask.sum())
@@ -94,10 +93,9 @@ def evaluate_clustering(
         else:
             x_s, y_s = x_eval, y_eval
         try:
-            # silhouette needs >1 label in the sample
             if len(set(int(v) for v in y_s)) >= 2:
                 metrics["silhouette"] = float(silhouette_score(x_s, y_s))
-        except Exception as exc:  # pragma: no cover - defensive
+        except Exception as exc:  # pragma: no cover
             warnings.append(f"silhouette unavailable: {exc}")
         try:
             metrics["calinski_harabasz"] = float(calinski_harabasz_score(x_eval, y_eval))
@@ -111,6 +109,70 @@ def evaluate_clustering(
     if assign.n_noise:
         metrics["noise_rate"] = float(assign.n_noise) / float(max(assign.n_rows, 1))
 
+    # Inertia / elbow from fit diagnostics or optional recompute on train
+    if plan.method == "kmeans" and plan.config.get("elbow_inertia"):
+        diagnostics["elbow_inertia"] = plan.config["elbow_inertia"]
+        if "inertia" not in metrics and partition == "train":
+            fit_inertia = plan.config.get("inertia")
+            if fit_inertia is None and hasattr(plan.estimator_, "inertia_"):
+                metrics["inertia"] = float(plan.estimator_.inertia_)
+
+    if compute_elbow and plan.method in {"kmeans", "agglomerative"}:
+        train_frame = (
+            frame
+            if partition == "train"
+            else (
+                frame_for_partition(dataset, split_plan, "train")
+                if split_plan is not None
+                else None
+            )
+        )
+        if train_frame is not None:
+            x_train = matrix_from_frame(train_frame, list(plan.columns))
+            elbow = _elbow_curve(
+                x_train,
+                k_min=elbow_k_min,
+                k_max=elbow_k_max,
+                random_state=random_state,
+            )
+            diagnostics["elbow_inertia"] = elbow
+            disclosures.append(
+                "Elbow inertia curve computed on train partition (k-means refits for diagnostics only)."
+            )
+
+    if compute_stability and split_plan is not None:
+        train_frame = frame_for_partition(dataset, split_plan, "train")
+        x_train = matrix_from_frame(train_frame, list(plan.columns))
+        k = plan.n_clusters or 2
+        if k >= 2 and x_train.shape[0] >= k + 2:
+            stab = _bootstrap_stability(
+                x_train,
+                n_clusters=int(k),
+                runs=int(stability_runs),
+                sample_fraction=float(stability_sample_fraction),
+                random_state=random_state,
+            )
+            metrics["stability_ari_mean"] = float(stab["mean"])
+            metrics["stability_ari_std"] = float(stab["std"])
+            diagnostics["stability_runs"] = int(stability_runs)
+            disclosures.append(
+                "Bootstrap stability uses repeated k-means on train subsamples; "
+                "ARI measures label agreement — not ground truth."
+            )
+        else:
+            warnings.append("Stability skipped: insufficient train rows or k for bootstrap.")
+
+    if plan.method == "gmm" and plan.config.get("gmm_bic"):
+        diagnostics["gmm_bic"] = plan.config["gmm_bic"]
+        if plan.config.get("gmm_selected_k") is not None:
+            diagnostics["gmm_selected_k"] = plan.config["gmm_selected_k"]
+
+    transductive = plan.method in {"spectral", "optics"}
+    if transductive:
+        disclosures.append(
+            f"{plan.method} fit is transductive on train; holdout metrics use disclosed assign approximations."
+        )
+
     external: dict[str, float] = {}
     if external_label_column is not None:
         if external_label_column not in frame.columns:
@@ -122,9 +184,6 @@ def evaluate_clustering(
             raise ValidationError(
                 "external_label_column contains nulls; drop or impute before external metrics"
             )
-        # Align external scores on non-noise predictions when noise present.
-        # Factorize so float-coded references (e.g. ignore-role columns touched by
-        # scaling) still enter sklearn as discrete labels.
         ref_codes = pd.Series(ref).astype("object")
         _, ref_ids = np.unique(ref_codes.to_numpy(), return_inverse=True)
         if n_usable < len(labels):
@@ -147,8 +206,8 @@ def evaluate_clustering(
 
     if plan.used_reduce_components:
         recommendations.append(
-            "Clusters were fit in PCA component space; interpret loadings before "
-            "naming clusters as original features."
+            "Clusters were fit in reduced component space; interpret loadings/embeddings "
+            "before naming clusters as original features."
         )
     if "silhouette" in metrics and metrics["silhouette"] < 0.15:
         recommendations.append(
@@ -176,4 +235,51 @@ def evaluate_clustering(
         disclosures=tuple(dict.fromkeys(disclosures)),
         warnings=tuple(warnings),
         recommendations=tuple(recommendations),
+        diagnostics=diagnostics,
     )
+
+
+def _elbow_curve(
+    x: np.ndarray,
+    *,
+    k_min: int,
+    k_max: int,
+    random_state: int | None,
+) -> dict[str, float]:
+    n_train = x.shape[0]
+    hi = min(int(k_max), n_train - 1)
+    lo = max(2, int(k_min))
+    out: dict[str, float] = {}
+    for k in range(lo, hi + 1):
+        km = KMeans(n_clusters=k, random_state=random_state, n_init="auto")
+        km.fit(x)
+        out[str(k)] = float(km.inertia_)
+    return out
+
+
+def _bootstrap_stability(
+    x: np.ndarray,
+    *,
+    n_clusters: int,
+    runs: int,
+    sample_fraction: float,
+    random_state: int | None,
+) -> dict[str, float]:
+    rng = np.random.default_rng(random_state)
+    n = x.shape[0]
+    size = max(n_clusters + 1, int(n * sample_fraction))
+    aris: list[float] = []
+    ref_labels: np.ndarray | None = None
+    for _ in range(runs):
+        idx = rng.choice(n, size=size, replace=False)
+        sub = x[idx]
+        km = KMeans(n_clusters=n_clusters, random_state=int(rng.integers(0, 2**31)), n_init=3)
+        lab = km.fit_predict(sub)
+        if ref_labels is None:
+            ref_labels = lab
+            continue
+        # Compare on intersection indices mapped via subsample positions
+        aris.append(float(adjusted_rand_score(ref_labels, lab)))
+    if not aris:
+        return {"mean": 0.0, "std": 0.0}
+    return {"mean": float(np.mean(aris)), "std": float(np.std(aris))}

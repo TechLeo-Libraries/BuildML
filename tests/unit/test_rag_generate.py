@@ -17,7 +17,7 @@ def _indexed_session() -> Session:
         "Classical Session.fit trains sklearn estimators on tabular data.",
         "Torch fit_torch trains neural networks with optional early stopping.",
     ]
-    return Session().rag_ingest_corpus(docs).rag_embed_and_index()
+    return Session().rag_ingest_corpus(docs).rag_embed_and_index(embedder="hashing")
 
 
 def test_catalog_covers_rag_generate() -> None:

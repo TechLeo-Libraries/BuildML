@@ -5,8 +5,9 @@
 > pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 > pip install "buildml[rag]"   # sentence-transformers for semantic backends
 > ```
-> Default hashing embedder works on core numpy/sklearn after the 2.x install.
-> See [installation](../docs/installation.rst).
+> Default when ``buildml[rag]`` is installed: **sentence-transformers** embeddings
+> and **hybrid BM25+dense** retrieval. Explicit ``embedder="hashing"`` remains for
+> CI / lexical-only paths. See [installation](../docs/installation.rst).
 
 Retrieval-augmented generation on the same Session spine: history, explain,
 and distinct artifact kinds. Short on-ramp: [quickstart-rag](quickstart-rag.md).
@@ -57,17 +58,14 @@ docs = [
 
 session = Session()
 session.rag_ingest_corpus(docs)
-session.rag_chunk(size=160, overlap=32)
-session.rag_embed_and_index()  # buildml.hashing_embed.v1 by default
+session.rag_chunk(size=160, overlap=32, strategy="recursive")
+session.rag_embed_and_index()  # auto: ST when buildml[rag] installed
 
+# Default retrieve is hybrid when rag extra present
+hybrid = session.rag_retrieve("corpus contamination indexed answers", k=3)
 dense = session.rag_retrieve("corpus contamination indexed answers", k=3, mode="dense")
 bm25 = session.rag_retrieve("corpus contamination indexed answers", k=3, mode="bm25")
-hybrid = session.rag_retrieve(
-    "corpus contamination indexed answers",
-    k=3,
-    mode="hybrid",  # dense + BM25, RRF fusion by default
-)
-print(dense.hits[0].doc_id, bm25.hits[0].doc_id, hybrid.hits[0].doc_id)
+print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
 ```
 
 ---
@@ -192,10 +190,63 @@ gates ([ai-tools](ai-tools-operator-patterns.md)).
 
 ---
 
+## Use case F — Cross-encoder rerank + generation eval
+
+```python
+from buildml.rag.evaluate import evaluate_generation
+
+# Optional rerank (requires buildml[rag])
+reranked = session.rag_retrieve(
+    "corpus contamination indexed answers",
+    k=3,
+    mode="hybrid",
+    rerank=True,
+    config={"rerank_candidates": 12},
+)
+
+gen_metrics = evaluate_generation(
+    session._rag_index,
+    [{"query": "What causes contamination?", "reference_answer": "indexed eval answers"}],
+    k=3,
+)
+print(gen_metrics.mean_faithfulness, gen_metrics.mean_answer_relevance)
+```
+
+---
+
+## Use case G — Explicit hashing fallback
+
+```python
+session.rag_embed_and_index(embedder="hashing")  # lexical CI path
+```
+
+---
+
+## Extras design
+
+| Extra | Pins | Role |
+| --- | --- | --- |
+| `buildml[rag]` | sentence-transformers, transformers | **Default** semantic embed + cross-encoder rerank |
+| `buildml[rag-advanced]` | langchain-community, langchain-core | Optional LangChain QA adapter (`buildml.rag.adapters`) |
+
+BM25 is implemented in-process (no rank_bm25 pin) to keep core retrieval self-contained.
+
+---
+
+## Benchmark
+
+```bash
+python benchmarks/rag/retrieval_quality.py
+```
+
+Compares hashing vs ST vs hybrid+rerank on an in-repo corpus with metric floors for CI.
+
+---
+
 ## Failure modes / limits
 
-- Default embedder is **lexical hashing** — strong for CI, weaker for semantics.
-- Semantic models need `buildml[ai]`/`[rag]` deps and download time.
+- Without ``buildml[rag]``, defaults fall back to **hashing + dense** (disclosed).
+- Semantic models need download time and compatible torch/cpu wheels.
 - `eval_only` contamination → `LeakageError`.
 - Generate quality depends entirely on the chat provider + retrieved context.
 - Faithfulness hooks are lexical / citation-marker heuristics, not a judge model.

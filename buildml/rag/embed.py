@@ -123,10 +123,13 @@ def resolve_embedder(
 
     Defaults
     --------
-    - ``None`` / ``"hashing"`` → lexical :class:`HashingEmbedder` (CI-safe, no download).
-    - ``"auto"`` → sentence-transformers when ``buildml[rag]`` is importable, else hashing.
+    - ``None`` / ``"auto"`` → sentence-transformers when ``buildml[rag]`` is importable,
+      else lexical :class:`HashingEmbedder` (CI-safe, no download).
+    - ``"hashing"`` → explicit lexical fallback with disclosure.
     - ``"sentence-transformers"`` / ``"minilm"`` / model id → semantic path (requires extra).
     """
+    if embedder is None:
+        embedder = "auto"
     if embedder == "auto":
         from buildml.rag.extras import rag_available
 

@@ -137,6 +137,39 @@ def adapt_to_task(
             f"Built {len(proto_map)} class prototype(s) from support "
             "(tabular nearest-centroid)."
         )
+    elif plan.method == "prototypical_torch":
+        if plan.meta_learner_ is None:
+            raise ValidationError(
+                "Torch prototypical plan has no meta_learner_. Refit with "
+                "method='prototypical_torch'."
+            )
+        emb = plan.meta_learner_.embed(x)
+        proto_map = compute_prototypes(emb, y_codes)
+        label_by_code = {
+            i: _coerce(plan.label_encoder_.classes_[i])
+            for i in range(len(plan.label_encoder_.classes_))
+        }
+        prototypes = {
+            label_by_code[code]: tuple(float(v) for v in vec)
+            for code, vec in proto_map.items()
+            if code in label_by_code
+        }
+        adapted_estimator = plan.meta_learner_
+        disclosures.append(
+            f"Torch prototypical adapt: {len(proto_map)} embedding-space "
+            "prototype(s) from support."
+        )
+    elif plan.method in {"maml", "reptile"}:
+        if plan.meta_learner_ is None:
+            raise ValidationError(
+                f"{plan.method} plan has no meta_learner_. Refit with "
+                f"method={plan.method!r}."
+            )
+        adapted_estimator = plan.meta_learner_
+        disclosures.append(
+            f"Industry {plan.method} adapt: inner-loop refit on support "
+            f"(inner_steps={getattr(plan.meta_learner_, 'inner_steps', None)})."
+        )
     elif plan.method == "warm_start":
         if plan.init_estimator_ is None:
             raise ValidationError(

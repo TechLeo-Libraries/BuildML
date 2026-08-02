@@ -47,7 +47,8 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Calling reconstruction MAE a classification score.",
             ),
             worked_example_pattern=(
-                "fit_ssl_pretext(latent_dim=16) → finetune_ssl_head() → evaluate_ssl().",
+                "fit_ssl_pretext(method='simclr_tabular', latent_dim=16, epochs=40) "
+                "→ finetune_ssl_head() → evaluate_ssl().",
             ),
             related_concepts=("ssl-masked-tabular", "semisupervised-label-missingness"),
         ),

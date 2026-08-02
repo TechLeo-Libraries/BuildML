@@ -34,6 +34,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p(
+                "backend",
+                "sklearn | industry | embedding | torch | None",
+                "Retrieval backend; honest default when extras installed.",
+                None,
+            ),
+            _p(
                 "task",
                 "classification | regression | None",
                 "Task; inferred from target when omitted.",
@@ -58,6 +64,17 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
             _p("k", "int", "Number of neighbors.", 5),
             _p("columns", "list[str] | None", "Numeric feature columns."),
+            _p(
+                "text_columns",
+                "list[str] | None",
+                "Text columns for backend='embedding' (buildml[rag|ssl]).",
+            ),
+            _p(
+                "text_model_name",
+                "str",
+                "Sentence-transformer model id for embedding backend.",
+                "sentence-transformers/all-MiniLM-L6-v2",
+            ),
             _p(
                 "categorical_columns",
                 "list[str] | None",
@@ -123,6 +140,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "test",
             ),
             _p("k", "int | None", "Override plan.k."),
+            _p(
+                "backend",
+                "sklearn | industry | embedding | torch | None",
+                "Override retrieval backend for this query.",
+            ),
         ),
         inputs=("CbrPlan + query partition.",),
         outputs=("CbrRetrieveResult with CaseTrace neighbors.",),
@@ -159,6 +181,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
             _p("k", "int | None", "Override plan.k."),
             _p("return_traces", "bool", "Include CaseTrace per row.", True),
+            _p(
+                "backend",
+                "sklearn | industry | embedding | torch | None",
+                "Override retrieval backend for this predict call.",
+            ),
         ),
         inputs=("CbrPlan + query partition.",),
         outputs=("CbrPredictResult.",),

@@ -195,7 +195,7 @@ def build_index(
     chunk_config: ChunkConfig | None = None,
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
-    embedder: Embedder | EmbedFn | str | None = None,
+    embedder: Embedder | EmbedFn | str | None = "auto",
     chunks: ChunkResult | Sequence[Chunk] | None = None,
     device: str | None = None,
 ) -> RagIndex:

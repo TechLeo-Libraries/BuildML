@@ -1,21 +1,34 @@
 # Synthetic-data systems — deep guide
 
-Session path for **train-fitted tabular generators**. Phase-1 bar: Session API,
-leakage discipline, tests, explain/catalog, guides, bundle, AI allowlist,
-honest docs.
+Session path for **train-fitted tabular generators**. Phase-1 bar + **R6.10
+industry depth**: native fallback, SDV when installed, honest capability matrix.
 
 ## What this is / is not
 
 | Is | Is not |
 | --- | --- |
-| Bootstrap / smoothed bootstrap | Differential privacy product |
-| Gaussian copula (mixed types, empirical CDF) | SDV / CTGAN / TVAE stack in core |
-| Optional SMOTE wrap (`buildml[imbalanced]`) | Drop-in replacement for `Session.resample` |
-| Fidelity metrics + TSTR utility eval | Membership-inference / anonymization audit |
-| Explicit `extend_train` merge with provenance | Silent poisoning of roles / holdouts |
+| Native bootstrap / copula / SMOTE | Differential privacy product |
+| SDV CTGAN/TVAE/CopulaGAN (`buildml[synthetic-industry]`) | Drop-in replacement for `Session.resample` |
+| Built-in fidelity + TSTR; SDMetrics when installed | Membership-inference / anonymization audit |
+| `validate_synthetic` built-in checks (+ optional GE lite) | Silent poisoning of roles / holdouts |
+| Explicit `extend_train` merge with provenance | Required SDV stack in core |
 
-Dependency policy: core stays light (numpy / scipy / sklearn). No
-`buildml[synthetic]` extra — SMOTE reuses the existing `imbalanced` extra.
+Dependency policy: core stays light (numpy / scipy / sklearn). Native SMOTE
+reuses `buildml[imbalanced]`. SDV + SDMetrics use `buildml[synthetic-industry]`.
+
+## Capability matrix
+
+```python
+from buildml import Session
+
+Session.synthetic_capability_matrix()
+# backends: native (always), sdv (when SDV installed)
+# evaluation: builtin fidelity/TSTR; sdmetrics when installed
+```
+
+Use `backend=` on `fit_synthesizer` / `sample_synthetic` / `evaluate_synthetic`.
+When `backend=None`, method name resolves the backend (`gaussian_copula` → native,
+`ctgan` → sdv). Default backend when SDV is installed: **sdv** (see matrix).
 
 ## Cross-link: `Session.resample`
 
@@ -24,64 +37,57 @@ Dependency policy: core stays light (numpy / scipy / sklearn). No
 | Goal | Class rebalance | General tabular generation |
 | Mutates train? | Yes (rebuilds split) | Only if `merge_mode='extend_train'` |
 | Persists generator? | Lineage `ResamplePlan` | `SynthesizerPlan` bundle |
-| Extra | `buildml[imbalanced]` | Core (smote method → same extra) |
+| Extra | `buildml[imbalanced]` | Core native; SDV → `synthetic-industry` |
 
-Prefer `resample` when the only goal is imbalance handling before `fit`.
-Prefer the synthetic path when you need reusable sampling, fidelity/TSTR
-evaluation, or controlled augmentation with provenance.
+## Backends and methods
 
-## Methods
+### Native (`backend='native'`)
 
-### `bootstrap`
+**bootstrap** — row resample (+ optional `smooth_sigma` noise).
 
-Row resampling with replacement from train. Set `smooth_sigma > 0` to add
-Gaussian noise (`smooth_sigma × train column std`) on continuous/integer
-columns (smoothed bootstrap). Categoricals are copied as-is from donor rows.
+**gaussian_copula** — mixed-type empirical CDF + correlation latent; optional
+`condition={col: value}` rejection sampling.
 
-**Honesty:** plain bootstrap can emit near-duplicates of train rows.
+**smote** — reusable imblearn wrap (`buildml[imbalanced]`).
 
-### `gaussian_copula`
+### SDV (`backend='sdv'`, `buildml[synthetic-industry]`)
 
-1. Infer column kinds (continuous / integer / categorical).
-2. Map each column to a Gaussian latent via empirical CDF (categoricals use
-   frequency-bin midpoints so proportions participate in the joint).
-3. Estimate correlation (+ ridge / PSD projection).
-4. Sample MVN → inverse transform to original domains.
-
-Optional `condition={col: value}` uses rejection sampling (copula only).
-
-**Honesty:** models rank correlations + empirical marginals — not a deep
-generative model. Nulls re-introduced at train rates.
-
-### `smote`
-
-Reusable imblearn SMOTE wrap. Requires numeric features, a target, and
-`buildml[imbalanced]`. Does **not** mutate Session until an explicit merge.
-Prefer `Session.resample(sampler='smote')` for one-shot class balancing.
+**ctgan**, **tvae**, **copulagan** — SDV single-table deep synthesizers.
+Knobs: `epochs`, `batch_size`. Train-only fit; not differential privacy.
+Small train sets (n<100) may underfit — disclosures warn accordingly.
 
 ## Leakage
 
 - Fit **always** on train (`assert_fit_partition`).
 - Holdouts never estimate schema / joints.
-- `extend_train` rebuilds indices; validation/test values unchanged
-  (internal equality guard).
+- `extend_train` rebuilds indices; validation/test values unchanged.
 - `evaluate_synthetic` never refits the generator on the eval partition.
 
 ## Evaluation
 
-### `mode='fidelity'`
+### Built-in (`eval_backend='builtin'` or `'auto'` without SDMetrics)
 
-- Continuous/integer: two-sample KS statistic (mean across columns).
-- Categorical: total variation distance.
-- Continuous pairwise: mean absolute correlation difference (`corr_l1`).
+**fidelity** — KS / total variation / correlation L1.
 
-### `mode='tstr'`
+**tstr** — train-on-synthetic, test-on-real sklearn utility + TRTR baseline.
 
-Train-on-Synthetic, Test-on-Real with a simple sklearn pipeline
-(impute → scale/one-hot → LogisticRegression or Ridge). Also reports a TRTR
-baseline when real train is available (`tstr_gap_vs_trtr`).
+### SDMetrics (`eval_backend='sdmetrics'` or `'auto'` when installed)
 
-**Disclosure:** utility proxy, not a generative quality certificate or privacy proof.
+Appends SDMetrics QualityReport scores (`sdmetrics_overall`, property breakdown)
+alongside built-in fidelity metrics.
+
+## Validation
+
+```python
+session.sample_synthetic(n=100, validate=True)  # built-in checks on sample
+# or:
+from buildml.synthetic import validate_synthetic
+validate_synthetic(session.synthesizer_plan, frame)
+```
+
+Built-in: column presence, null-rate tolerance, categorical vocabulary, numeric
+range slack. Optional Great Expectations lite column-presence expectations when
+`great_expectations` is separately installed.
 
 ## Merge provenance
 
@@ -89,32 +95,26 @@ baseline when real train is available (`tstr_gap_vs_trtr`).
 session.sample_synthetic(n=100, merge_mode="extend_train", provenance_column="_synthetic")
 ```
 
-- Appends only to train.
-- Provenance column role = `ignore` (cannot silently become a feature).
-- Clears classical `FitResult` (train membership changed).
-
-Default `merge_mode='none'` returns `SyntheticSampleResult.frame` only.
+Provenance column role = `ignore`. Default `merge_mode='none'` returns Frame only.
 
 ## Bundle boundary
 
 `buildml.synthetic_bundle.v1` = `meta.json` + `synthetic_plan.joblib`.
 Session checkpoints do **not** embed `SynthesizerPlan`.
 
+## Benchmark
+
+`benchmarks/synthetic/tstr_quality.py` — TSTR vs native copula baseline; SDV
+methods run when `buildml[synthetic-industry]` is installed.
+
 ## Privacy
 
 Not differential privacy. Do not ship synthetic samples as an anonymization
-control without a dedicated privacy review. Disclosures are attached to fit /
-sample / evaluate / bundles.
+control without a dedicated privacy review.
 
 ## Phase tracker
 
-Phase 1–2 complete. Phase 3 application systems:
+R6.10 **PASS** — native fallback + SDV industry depth + capability matrix +
+benchmark + guides/explain/AI allowlist/tests/production extra.
 
-- Recommenders **PASS**
-- Search / LTR **PASS**
-- Knowledge graphs **PASS**
-- Optimisation / decisions **PASS**
-- **Synthetic-data systems PASS** (this guide)
-
-Residuals after Phase 3 synthetic: NLP/CV deepenings vs existing Torch
-multimodal / speech / vision hooks — see package tracker notes.
+Next: R6.11 imitation + RL (final R6 item).

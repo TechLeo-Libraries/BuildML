@@ -37,6 +37,10 @@ def fit_forecast(
     max_iter: int = 100,
     max_depth: int | None = 3,
     learning_rate: float = 0.1,
+    order: tuple[int, int, int] | None = None,
+    seasonal_order: tuple[int, int, int, int] | None = None,
+    nbeats_input_size: int = 24,
+    nbeats_horizon: int | None = None,
 ) -> Any:
     """Fit a classical forecaster on the train partition only.
 
@@ -62,6 +66,10 @@ def fit_forecast(
         max_iter=max_iter,
         max_depth=max_depth,
         learning_rate=learning_rate,
+        order=order,
+        seasonal_order=seasonal_order,
+        nbeats_input_size=nbeats_input_size,
+        nbeats_horizon=nbeats_horizon,
     )
     session._forecast_plan = plan
     session._forecast_fit_result = result
@@ -168,7 +176,7 @@ def evaluate_forecast_op(
 
 
 def save_forecast_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active ForecastPlan as ``buildml.forecast_bundle.v1``."""
+    """Persist the active ForecastPlan as ``buildml.forecast_bundle.v2``."""
     plan = getattr(session, "_forecast_plan", None)
     if plan is None:
         raise ValidationError("No forecast plan. Call fit_forecast(...) first.")

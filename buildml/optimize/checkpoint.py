@@ -50,6 +50,7 @@ def save_decision_bundle(
     payload: dict[str, Any] = {
         "plan": plan,
         "cost_matrix": None if plan.cost_matrix_ is None else np.asarray(plan.cost_matrix_),
+        "aux_estimator": getattr(plan, "aux_estimator_", None),
     }
     joblib.dump(payload, destination / "decision_plan.joblib")
     meta: dict[str, Any] = {
@@ -90,6 +91,8 @@ def load_decision_bundle(path: str | Path) -> DecisionPlan:
             raise ValidationError("Loaded plan object is not a DecisionPlan")
         if loaded.get("cost_matrix") is not None and plan.cost_matrix_ is None:
             plan.cost_matrix_ = np.asarray(loaded["cost_matrix"], dtype=float)
+        if loaded.get("aux_estimator") is not None and plan.aux_estimator_ is None:
+            plan.aux_estimator_ = loaded["aux_estimator"]
     else:
         raise ValidationError(
             "decision_plan.joblib must contain a DecisionPlan or a payload "

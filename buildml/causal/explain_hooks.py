@@ -11,6 +11,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
+        "backend": payload.get("backend"),
         "method": payload.get("method"),
         "estimand": payload.get("estimand"),
         "identification": payload.get("identification"),
@@ -106,6 +107,8 @@ def causal_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for causal ML."""
+    from buildml.causal.catalog import causal_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -128,7 +131,8 @@ def causal_status(
     if enabled:
         disclosures.extend(
             [
-                f"CausalPlan method={getattr(plan, 'method', None)}, "
+                f"CausalPlan backend={getattr(plan, 'backend', 'native')}, "
+                f"method={getattr(plan, 'method', None)}, "
                 f"ATE={getattr(plan, 'ate', None)}, "
                 f"treatment={getattr(plan, 'treatment_column', None)}, "
                 f"outcome={getattr(plan, 'outcome_column', None)}.",
@@ -137,7 +141,8 @@ def causal_status(
                 "Session checkpoints do not embed CausalPlan; use "
                 "save_causal_bundle / load_causal_bundle.",
                 "Honesty: backdoor ATE under caller-declared CausalAssumptions "
-                "— not causal discovery; not DoWhy/EconML; EDA stays associational.",
+                "— not causal discovery; EDA stays associational.",
+                "Industry backends (DoWhy/EconML) require buildml[causal-industry].",
             ]
         )
         for note in getattr(plan, "disclosures", ()) or ():
@@ -178,8 +183,10 @@ def causal_status(
         "present": enabled or saw or has_assumptions,
         "has_causal_plan": enabled,
         "has_assumptions": has_assumptions,
+        "backend": None if plan is None else getattr(plan, "backend", "native"),
         "method": None if plan is None else getattr(plan, "method", None),
         "ate": None if plan is None else getattr(plan, "ate", None),
+        "capability_matrix": causal_capability_matrix(),
         "has_fit_result": fit_result is not None,
         "has_estimate_result": estimate_result is not None,
         "has_eval_result": eval_result is not None,

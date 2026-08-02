@@ -23,14 +23,15 @@ full COCO detection/segmentation suite.
 
 Honesty
 -------
-Not a full econometrics suite. Univariate by default; optional numeric exogenous
-columns with disclosed future-exog requirements. Refuses shuffled random splits.
-No Torch sequence model in this package (core sklearn/numpy/pandas only).
+Industry defaults when ``buildml[timeseries]`` installed (ETS/ARIMA/SARIMAX).
+Core lag/baseline fallback with clear MissingExtraError when industry methods
+requested without extras. Prophet/N-BEATS behind separate extras.
+Refuses shuffled random splits. Not a digital twin.
 
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. No optional extra
-required for ``import buildml`` forecasting.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Optional:
+``buildml[timeseries]``, ``buildml[timeseries-prophet]``, ``buildml[timeseries-ml]``.
 
-Lazy imports — core never grows heavy forecast stacks (statsmodels/prophet/etc.).
+Lazy imports — core never grows heavy forecast stacks.
 """
 
 from __future__ import annotations

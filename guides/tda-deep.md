@@ -1,38 +1,50 @@
 # TDA deep guide
 
-Session-shaped persistent homology for tabular workflows.
+Session-shaped persistent homology for tabular workflows — native and industry backends.
 
-## Why ripser + persim
+## Backend catalog
+
+| Backend | Extra | PH engine | Vectorizations |
+|---------|-------|-----------|----------------|
+| **native** (default when only `tda` installed) | `buildml[tda]` | ripser VR | persistence_image, landscape, silhouette |
+| **giotto** (default when industry installed) | `buildml[tda-industry]` | gtda VietorisRipsPersistence | betti_curve, persistence_image, persistence_landscape, landscape |
+
+```python
+Session.tda_capability_matrix()
+```
+
+## Why ripser + persim (native) vs giotto-tda (industry)
 
 | Option | Trade-off |
 |--------|-----------|
-| **ripser + persim** (chosen) | Light, standard VR backend + persistence images; landscapes/silhouettes in-tree |
-| giotto-tda | Richer sklearn pipelines, heavier transitive deps |
-| Multiple half-wired stacks | Rejected — one coherent path |
+| **ripser + persim** (`buildml[tda]`) | Light, standard VR backend + persistence images; landscapes/silhouettes in-tree |
+| **giotto-tda** (`buildml[tda-industry]`) | Sklearn-style PH pipelines, Betti curves, gtda vectorizers, optional KeplerMapper train summary |
+| Multiple half-wired stacks | Rejected — two honest backends behind one Session API |
 
-`import buildml` never imports ripser/persim. Missing installs raise
-`MissingExtraError("tda", ...)`.
+`import buildml` never imports ripser/persim/gtda. Missing installs raise
+`MissingExtraError("tda", ...)` or `MissingExtraError("tda-industry", ...)`.
 
 ## Pipeline
 
 1. Resolve ≥2 numeric feature columns (optional `reduce_dimensions` components).
 2. Optional train mean/scale standardization.
-3. Fit `NearestNeighbors` on **train** points.
-4. For each train row: local cloud = `knn` train neighbors → Vietoris–Rips
-   diagrams via ripser (`maxdim`, optional `thresh`).
-5. Fit vectorizer ranges/grids from **train diagrams only**.
-6. Optional sklearn head on train topological vectors.
-7. Holdout: same NN index + frozen vectorizer (+ head); never refit.
+3. Optional train subsample when above `max_points_guard` (`subsample_strategy`: error | random | stratified).
+4. Fit `NearestNeighbors` on **train** points.
+5. For each train row: local cloud = `knn` train neighbors → Vietoris–Rips diagrams.
+6. Fit vectorizer ranges/grids from **train diagrams only**.
+7. Optional sklearn head on train topological vectors.
+8. Holdout: same NN index + frozen vectorizer (+ head); never refit.
 
 ## APIs
 
 | Method | Role |
 |--------|------|
-| `fit_tda` | Train PH + vectorizer ± head |
+| `fit_tda` | Train PH + vectorizer ± head (`backend=`, `mapper=` on giotto) |
 | `transform_tda` | Topological feature matrix |
 | `predict_tda` | Head predictions |
-| `evaluate_tda` | Holdout metrics |
-| `save_tda_bundle` / `load_tda_bundle` | `buildml.tda_bundle.v1` |
+| `evaluate_tda` | Holdout metrics; optional Wasserstein/bottleneck diagram distances |
+| `tda_capability_matrix` | Honest backend / vectorization matrix |
+| `save_tda_bundle` / `load_tda_bundle` | `buildml.tda_bundle.v2` (v1 loadable) |
 
 ## Bundle boundary
 
@@ -41,20 +53,20 @@ Session-shaped persistent homology for tabular workflows.
 
 ## What this is not
 
-- Full Mapper research / visualization suite (deep PH path is the product bar)
+- Full Mapper research / interactive visualization suite (train summary only on giotto)
 - Every TDA paper (multiparameter, zigzag, sheaves, …)
 - Domain-specific credit-risk product surface
-- A reason to pull giotto-tda into core
+
+## Benchmark
+
+`benchmarks/tda/persistence_pipeline.py` compares native vs giotto vectorizations.
 
 ## Teaching surfaces
 
 Concepts: `tda-persistent-homology`, `tda-vectorization`, `tda-supervised-head`,
-`tda-bundle-boundary`, `tda-extra-boundary`. Overlays + AI allowlist +
-walkthrough `tda_status` are wired.
+`tda-bundle-boundary`, `tda-extra-boundary`, `tda-giotto-backend`. Overlays +
+AI allowlist + walkthrough `tda_status` are wired.
 
 ## Tracker
 
-Phase 2 TDA → **PASS**. Phase 3 starts at **recommendation systems**
-(depth-first). After recommenders PASS: LTR, knowledge graphs,
-optimisation/decision helpers, synthetic-data. NLP/CV deepenings if still
-partial.
+Phase 2 TDA → **PASS (R5.9 industry depth)**.

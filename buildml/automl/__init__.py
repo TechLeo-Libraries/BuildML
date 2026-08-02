@@ -14,15 +14,12 @@ Phase 1 (**complete**):
 Later phases and explicit non-goals: see ``buildml.unsupervised`` module doc.
 
 Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Randomized/grid
-AutoML needs no optional extra. Optuna-backed AutoML reuses ``buildml[optuna]``
-— no separate ``buildml[automl]`` extra unless new heavy deps appear.
-
-Honest scope: finite disclosed catalogs of model families and preprocess
-strategies under a trial budget. Not NAS, not causal discovery, not a fully
-automated AI scientist.
+AutoML needs no optional extra. Optuna-backed AutoML uses ``buildml[automl]``.
+Industry adapters (FLAML / AutoGluon) and GBDT families use
+``buildml[automl-industry]``.
 
 Lazy imports — core never grows heavy AutoML stacks beyond sklearn (+ optional
-Optuna).
+Optuna / industry adapters when explicitly requested).
 """
 
 from __future__ import annotations
@@ -32,6 +29,7 @@ from typing import Any
 __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
+    "AutoMLBackend",
     "AutoMLBudget",
     "AutoMLConfig",
     "AutoMLMethod",
@@ -40,6 +38,10 @@ __all__ = [
     "AutoMLSelection",
     "AutoMLTrial",
     "CandidateKind",
+    "EnsembleMode",
+    "automl_capability_matrix",
+    "export_comparison_metrics",
+    "list_automl_methods",
     "load_automl_bundle",
     "run_automl",
     "save_automl_bundle",
@@ -53,8 +55,10 @@ def __getattr__(name: str) -> Any:
         "AutoMLBudget",
         "AutoMLConfig",
         "AutoMLMethod",
+        "AutoMLBackend",
         "AutoMLSelection",
         "CandidateKind",
+        "EnsembleMode",
     }:
         from buildml.automl import types as types_mod
 
@@ -67,6 +71,14 @@ def __getattr__(name: str) -> Any:
         from buildml.automl.search import run_automl
 
         return run_automl
+    if name == "export_comparison_metrics":
+        from buildml.automl.search import export_comparison_metrics
+
+        return export_comparison_metrics
+    if name in {"automl_capability_matrix", "list_automl_methods"}:
+        from buildml.automl import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",

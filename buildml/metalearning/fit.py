@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
+from buildml.metalearning.catalog import resolve_backend_method
 from buildml.metalearning.features import (
     compute_prototypes,
     encode_labels,
@@ -26,6 +27,7 @@ from buildml.metalearning.features import (
 )
 from buildml.metalearning.results import MetaLearningFitResult, MetaLearningPlan
 from buildml.metalearning.types import (
+    MetaLearningBackend,
     MetaLearningBaseEstimator,
     MetaLearningConfig,
     MetaLearningMethod,
@@ -45,6 +47,7 @@ def fit_metalearning(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: MetaLearningBackend | None = None,
     method: MetaLearningMethod = "prototypical",
     task_column: str | None = None,
     columns: list[str] | None = None,
@@ -56,31 +59,40 @@ def fit_metalearning(
     random_state: int | None = 0,
     prefer_reduce_components: bool = True,
     task_holdout_fraction: float = 0.25,
+    meta_epochs: int = 40,
+    inner_lr: float = 0.05,
+    inner_steps: int = 5,
+    meta_lr: float = 1e-3,
+    embed_dim: int = 32,
+    hidden_dim: int = 64,
+    device: str = "cpu",
     reduce_plan: Any | None = None,
 ) -> tuple[MetaLearningPlan, MetaLearningFitResult]:
     """Meta-train on episodic tasks carved from the train partition only.
 
+    Backends
+    --------
+    sklearn (default):
+        ``prototypical`` nearest-centroid and ``warm_start`` pooled sklearn adapt.
+    torch (``buildml[torch]``):
+        ``prototypical_torch`` — MLP encoder + episodic prototype loss.
+    industry (``buildml[metalearning-industry,torch]``):
+        ``maml`` / ``reptile`` — first-order tabular task adaptation via learn2learn
+        when installed.
+
     Honesty
     -------
-    Practical tabular few-shot / episodic protocols:
-
-    * ``prototypical`` — nearest-centroid (ProtoNet-style) on raw/scaled
-      features; no learned neural embedding.
-    * ``warm_start`` — pooled sklearn classifier as meta-initialization,
-      then fast adapt on a support set.
-
-    Not foundation-model meta-learning, not MAML-at-scale, not a paper zoo.
+    Practical tabular few-shot / episodic protocols — not foundation-model
+    meta-learning, not MAML-at-scale, not EconML-style causal meta.
     Validation/test partitions are never used for meta-training.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
-    method_key = str(method).lower().replace("-", "_")
-    if method_key not in {"prototypical", "warm_start"}:
-        raise ValidationError(
-            f"Unknown meta-learning method={method!r}. Supported: "
-            "'prototypical', 'warm_start'."
-        )
+    resolved_backend, method_key = resolve_backend_method(
+        backend=backend,
+        method=str(method),
+    )
     if int(k_shot) < 1:
         raise ValidationError("k_shot must be >= 1.")
     if int(n_query) < 1:
@@ -155,6 +167,7 @@ def fit_metalearning(
         )
 
     init_estimator: Any = None
+    meta_learner: Any = None
     meta_acc: float | None = None
 
     if method_key == "prototypical":
@@ -170,6 +183,68 @@ def fit_metalearning(
             n_query=int(n_query),
             n_episodes=int(n_episodes),
             rng=rng,
+        )
+        disclosures.extend(episode_notes)
+        warnings.extend(episode_warns)
+    elif method_key == "prototypical_torch":
+        from buildml.metalearning.adapters.torch_prototypical import (
+            meta_train_prototypical_torch,
+        )
+
+        meta_learner, meta_acc, episode_notes, episode_warns = (
+            meta_train_prototypical_torch(
+                train,
+                task_column=task_col,
+                target_column=target_col,
+                columns=cols,
+                label_encoder=label_encoder,
+                meta_train_ids=meta_train_ids,
+                n_way=resolved_n_way,
+                k_shot=int(k_shot),
+                n_query=int(n_query),
+                n_episodes=int(n_episodes),
+                rng=rng,
+                meta_epochs=int(meta_epochs),
+                embed_dim=int(embed_dim),
+                hidden_dim=int(hidden_dim),
+                meta_lr=float(meta_lr),
+                random_state=random_state,
+                device=device,
+            )
+        )
+        disclosures.extend(episode_notes)
+        warnings.extend(episode_warns)
+    elif method_key in {"maml", "reptile"}:
+        from buildml.metalearning.adapters.industry_maml import (
+            meta_train_maml,
+            meta_train_reptile,
+        )
+
+        trainer = meta_train_maml if method_key == "maml" else meta_train_reptile
+        meta_learner, meta_acc, episode_notes, episode_warns = trainer(
+            train,
+            task_column=task_col,
+            target_column=target_col,
+            columns=cols,
+            label_encoder=label_encoder,
+            meta_train_ids=meta_train_ids,
+            n_way=resolved_n_way,
+            k_shot=int(k_shot),
+            n_query=int(n_query),
+            n_episodes=int(n_episodes),
+            rng=rng,
+            n_classes=len(classes),
+            meta_epochs=int(meta_epochs),
+            inner_lr=float(inner_lr),
+            inner_steps=int(inner_steps),
+            meta_lr=float(meta_lr),
+            hidden_dim=int(hidden_dim),
+            random_state=random_state,
+            device=device,
+            frame_for_task=frame_for_task,
+            sample_support_query=sample_support_query,
+            matrix_from_frame=matrix_from_frame,
+            encode_labels=encode_labels,
         )
         disclosures.extend(episode_notes)
         warnings.extend(episode_warns)
@@ -208,13 +283,15 @@ def fit_metalearning(
             "excluded from features.",
             "Honesty: practical tabular few-shot / episodic Session protocol "
             "— not foundation-model meta-learning or MAML-at-scale.",
-            f"method={method_key}, n_meta_train_tasks={len(meta_train_ids)}, "
+            f"backend={resolved_backend}, method={method_key}, "
+            f"n_meta_train_tasks={len(meta_train_ids)}, "
             f"n_way={resolved_n_way}, k_shot={k_shot}, n_episodes={n_episodes}, "
             f"n_train_rows={len(train)}.",
         ]
     )
 
     config = MetaLearningConfig(
+        backend=resolved_backend,  # type: ignore[arg-type]
         method=method_key,  # type: ignore[arg-type]
         task_column=task_col,
         columns=tuple(cols),
@@ -226,8 +303,16 @@ def fit_metalearning(
         random_state=random_state,
         prefer_reduce_components=prefer_reduce_components,
         task_holdout_fraction=float(task_holdout_fraction),
+        meta_epochs=int(meta_epochs),
+        inner_lr=float(inner_lr),
+        inner_steps=int(inner_steps),
+        meta_lr=float(meta_lr),
+        embed_dim=int(embed_dim),
+        hidden_dim=int(hidden_dim),
+        device=str(device),
     )
     plan = MetaLearningPlan(
+        backend=resolved_backend,
         method=method_key,
         columns=tuple(cols),
         target_column=target_col,
@@ -243,12 +328,14 @@ def fit_metalearning(
         meta_train_accuracy=meta_acc,
         label_encoder_=label_encoder,
         init_estimator_=init_estimator,
+        meta_learner_=meta_learner,
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
         used_reduce_components=used_reduce,
         config=config.to_dict(),
     )
     result = MetaLearningFitResult(
+        backend=resolved_backend,
         method=method_key,
         n_train_rows=int(len(train)),
         columns=tuple(cols),

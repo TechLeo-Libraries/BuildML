@@ -87,6 +87,11 @@ def predict_graph(
             frame, plan, src, dst, score_mask
         )
         disclosures.extend(more_disc)
+    elif plan.method == "pyg":
+        preds, proba, more_disc = _predict_pyg(
+            frame, plan, src, dst, score_mask
+        )
+        disclosures.extend(more_disc)
     else:
         raise ValidationError(f"Unknown plan.method={plan.method!r}.")
 
@@ -177,5 +182,30 @@ def _predict_gcn(
     pred_idx_all = proba_all.argmax(axis=1)
     classes = list(plan.classes_)
     preds = np.asarray([classes[int(i)] for i in pred_idx_all[score_mask]], dtype=object)
+    proba = proba_all[score_mask]
+    return preds, proba, disclosures
+
+
+def _predict_pyg(
+    frame,
+    plan: GraphPlan,
+    src: np.ndarray,
+    dst: np.ndarray,
+    score_mask: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray | None, list[str]]:
+    pyg_model = plan.config.get("pyg_model", "gcn")
+    disclosures = [
+        f"PyG {pyg_model} forward on mode-filtered edge_index; labels unused.",
+    ]
+    x = matrix_from_frame(frame, list(plan.feature_columns))
+    pyg_clf = plan.estimator_
+    proba_all = pyg_clf.predict_proba(
+        x, src, dst, directed=plan.directed
+    )
+    pred_idx_all = proba_all.argmax(axis=1)
+    classes = list(plan.classes_)
+    preds = np.asarray(
+        [classes[int(i)] for i in pred_idx_all[score_mask]], dtype=object
+    )
     proba = proba_all[score_mask]
     return preds, proba, disclosures

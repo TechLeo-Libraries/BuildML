@@ -227,6 +227,14 @@ def _predict_episode(
     if plan.method == "prototypical":
         protos = compute_prototypes(x_s, y_s)
         return nearest_prototype_predict(x_q, protos)
+    if plan.method == "prototypical_torch":
+        if plan.meta_learner_ is None:
+            raise ValidationError("Torch prototypical plan missing meta_learner_.")
+        return plan.meta_learner_.predict_from_support(x_s, y_s, x_q)
+    if plan.method in {"maml", "reptile"}:
+        if plan.meta_learner_ is None:
+            raise ValidationError(f"{plan.method} plan missing meta_learner_.")
+        return plan.meta_learner_.adapt_predict(x_s, y_s, x_q)
     if plan.method == "warm_start":
         if plan.init_estimator_ is None:
             raise ValidationError("Warm-start plan missing init_estimator_.")

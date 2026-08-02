@@ -1,0 +1,99 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "classical": {
+        "available": true,
+        "extra": "graph",
+        "methods": [
+          "logistic_regression",
+          "random_forest"
+        ],
+        "modes": [
+          "inductive",
+          "transductive"
+        ],
+        "message_passing": "NetworkX topology metrics + tabular concat",
+        "notes": "Requires buildml[graph] (NetworkX). Degree, clustering, PageRank, avg neighbor degree; betweenness when n\u2264200."
+      },
+      "gcn": {
+        "available": true,
+        "extra": "torch",
+        "methods": [
+          "gcn"
+        ],
+        "modes": [
+          "inductive",
+          "transductive"
+        ],
+        "message_passing": "Pure-Torch Kipf\u2013Welling GCN (dense adjacency)",
+        "notes": "No PyTorch Geometric. Symmetric normalized adjacency with self-loops; train-mask cross-entropy only. Dense guard \u22645000 nodes."
+      },
+      "pyg": {
+        "available": false,
+        "extra": "graph-pyg",
+        "methods": [
+          "gcn",
+          "graphsage",
+          "gat"
+        ],
+        "modes": [
+          "inductive",
+          "transductive"
+        ],
+        "message_passing": "PyTorch Geometric conv layers (sparse edge_index)",
+        "notes": "Requires buildml[graph-pyg] (torch-geometric + torch). GCNConv, SAGEConv, GATConv with train-label-only loss. Same inductive/transductive edge filters as classical/gcn."
+      }
+    },
+    "tasks": [
+      "node_classification"
+    ],
+    "evaluation_metrics": [
+      "accuracy",
+      "f1_macro",
+      "roc_auc"
+    ],
+    "default_backend_when_installed": "gcn",
+    "default_pyg_model_when_installed": "gcn",
+    "install_hints": {
+      "graph": "pip install 'buildml[graph]'  # NetworkX classical node features + sklearn",
+      "torch": "pip install 'buildml[torch]'  # pure-Torch GCN (no PyG)",
+      "graph-pyg": "pip install 'buildml[graph-pyg]'  # PyTorch Geometric GCN / GraphSAGE / GAT"
+    },
+    "non_goals": [
+      "Neo4j / graph-database product",
+      "Knowledge-graph link prediction (see buildml.kg)",
+      "Graph-level classification zoo",
+      "Full PyG research algorithm catalog beyond GCN/SAGE/GAT",
+      "Link prediction product depth on this surface"
+    ],
+    "graph_extra_present": true,
+    "torch_spec_present": true,
+    "pyg_extra_present": false,
+    "pyg_runtime_present": false,
+    "pyg_import_honesty": "pyg backend 'available' reflects torch-geometric install (find_spec). Training also requires a working torch \u2014 broken wheels may fail at require_pyg / require_torch.",
+    "train_only_honesty": "All backends fit with train-node labels only. Inductive fit uses train\u2013train edges; transductive uses full topology with disclosed train-label-only supervision."
+  },
+  "runs": [
+    {
+      "label": "classical",
+      "method": "classical",
+      "pyg_model": null,
+      "train_accuracy": 1.0,
+      "n_train_nodes": 51,
+      "n_edges_fit": 125,
+      "metrics": {
+        "accuracy": 0.6875,
+        "f1_macro": 0.6536796536796536,
+        "roc_auc": 1.0
+      }
+    },
+    {
+      "label": "gcn",
+      "skipped": "[WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading \"C:\\Users\\leona\\AppData\\Roaming\\Python\\Python313\\site-packages\\torch\\lib\\c10.dll\" or one of its dependencies."
+    },
+    {
+      "label": "pyg",
+      "skipped": "torch-geometric missing"
+    }
+  ]
+}

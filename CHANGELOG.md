@@ -10,6 +10,77 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- **R6 refinement sweep (Phase 2 industry depth — complete, R6.1–R6.11):** Each
+  domain ships `*_capability_matrix()`, `backend=` auto-routing (sklearn/native
+  fallback when extras absent; industry/torch/ssl/rl adapters default when
+  installed), per-domain benchmark smoke, guides/explain/AI allowlist updates,
+  and its industry extra in `buildml[production]`. Domains:
+  - **R6.1 semi-supervised:** XGB/LGBM pseudo-label (`semisupervised-industry`),
+    FixMatch/MixMatch tabular (`torch`), HF text pseudo-label (`ssl`); benchmark
+    `benchmarks/semisupervised/partial_labels.py`; SSL integration pipeline
+    (`fit_ssl_pretext` → `transform_ssl` → `fit_semisupervised`).
+  - **R6.2 active learning:** scikit-activeml CoreSet/QBC (`activelearning-industry`),
+    Torch BALD/MC-dropout (`torch`); benchmark
+    `benchmarks/activelearning/query_efficiency.py`; `label_rows` stays human-only.
+  - **R6.3 online / continual:** River streaming + ADWIN/Page-Hinkley drift
+    (`online-industry`), lite torch replay/EWC (`torch`); benchmark
+    `benchmarks/online/stream_accuracy.py`.
+  - **R6.4 multi-task:** XGB/LGBM/CatBoost multi-target (`multitask-industry`),
+    shared-trunk multi-head torch (`torch`); benchmark
+    `benchmarks/multitask/multi_target_quality.py`.
+  - **R6.5 meta-learning:** torch prototypical encoder (`torch`), learn2learn
+    MAML/Reptile (`metalearning-industry`); benchmark
+    `benchmarks/metalearning/few_shot_adaptation.py`.
+  - **R6.6 symbolic / neuro-symbolic:** skope-rules + imodels + optional Z3
+    (`symbolic-industry`), lite torch CBN/NAM (`torch`); benchmark
+    `benchmarks/symbolic/rule_fidelity.py`.
+  - **R6.7 CBR:** hnswlib approximate retrieval (`cbr-industry`), text case
+    embedding (`rag|ssl`), lite torch metric encoder (`torch`); benchmark
+    `benchmarks/cbr/retrieval_accuracy.py`; CBR≠RAG boundary documented.
+  - **R6.8 LTR:** LightGBM LambdaRank / XGB rank:ndcg / CatBoost YetiRank
+    (`ranking-industry`), torch listwise-lite (`torch`); benchmark
+    `benchmarks/ranking/ndcg_lift.py`; LTR≠RAG≠recommenders boundary documented.
+  - **R6.9 optimisation / decisions:** PuLP/OR-Tools knapsack MIP, CVXPY LP
+    (`optimize-industry`); benchmark `benchmarks/optimize/policy_value.py`.
+  - **R6.10 synthetic data:** SDV CTGAN/TVAE/CopulaGAN + SDMetrics
+    (`synthetic-industry`); benchmark `benchmarks/synthetic/tstr_quality.py`; no
+    DP claims.
+  - **R6.11 imitation + RL:** Gymnasium REINFORCE-lite (`buildml[rl]`), SB3
+    PPO/DQN/A2C + imitation BC/GAIL-lite (`buildml[rl-industry]`); benchmark
+    `benchmarks/rl/policy_return.py`; offline/batch RL disclosed out of scope.
+- **R1–R5 domain refinement (industry depth):** Full refinement sweep across SSL,
+  unsupervised, time-series (analysis + forecast), RAG, AutoML, anomaly,
+  recommenders, causal, federated, knowledge graphs, probabilistic, graph (PyG),
+  and TDA. Each domain ships honest **capability matrices** (installed backends,
+  methods, extras) for docs, walkthrough, and AI tools. Industry libraries are
+  **defaults when installed** (`backend='auto'` / resolver helpers); core sklearn
+  paths remain when extras are absent.
+- **Industry optional extras:** `automl-industry` (FLAML + AutoGluon + GBDT
+  stack), `anomaly-industry` (PyOD), `recommenders-industry` (implicit +
+  LightFM), `causal-industry` (DoWhy + EconML), `federated-industry` (Flower),
+  `kg-industry` (PyKEEN), `probabilistic-industry` (MAPIE + NGBoost),
+  `semisupervised-industry`, `activelearning-industry`, `online-industry`,
+  `multitask-industry`, `metalearning-industry`, `symbolic-industry`,
+  `cbr-industry`, `ranking-industry`, `optimize-industry`, `synthetic-industry`,
+  `rl-industry`, `tda-industry` (giotto-tda). Depth extras: `ssl`, `unsupervised`,
+  `timeseries` (+ `timeseries-prophet`, `timeseries-ml`), `graph-pyg`,
+  `rag-advanced` (LangChain retrieve hooks), `rl` (Gymnasium REINFORCE-lite).
+- **`buildml[production]` meta-extra:** One-shot optional group aggregating all
+  R1–R6 `*-industry` extras plus core depth extras (`torch`, `ssl`, `rag`, `tda`,
+  `unsupervised`, `timeseries`, `graph`, `graph-pyg`, `optuna`, `automl`, `rl`).
+  Core `import buildml` unchanged.
+- **Benchmark smoke scripts:** 25 per-domain runners under `benchmarks/` (R1–R5:
+  SSL linear probe, unsupervised cluster quality, TS analysis/forecast, RAG
+  retrieval, AutoML tabular search, anomaly detector comparison, recommenders
+  ranking, causal ATE, federated FedAvg, KG link prediction, probabilistic
+  interval coverage, graph node classification, TDA persistence; R6: semi-supervised,
+  active learning, online, multi-task, meta-learning, symbolic, CBR, LTR,
+  optimise, synthetic, RL). Discovered by `scripts/run_benchmark_smokes.py`;
+  graceful skips when optional extras missing; CI `benchmarks` job on Linux (core
+  install).
+- **Bundle format bumps (v2, v1 loadable):** `buildml.ssl_bundle.v2`,
+  `buildml.unsupervised_bundle.v2`, `buildml.forecast_bundle.v2`,
+  `buildml.tda_bundle.v2` — richer plan metadata for refined domains.
 - **Pass X guides sync:** Refresh ``guides/`` (and Sphinx includes) so Pass W
   tutorials cover Pass V surfaces without inventing APIs — gated multimodal
   fusion + frozen ``multimodal_preprocess`` restore, ``evaluate_asr`` /
@@ -33,6 +104,19 @@ with pre-release tags for alpha (`aN`) builds.
   RAG, AI safety + tool patterns, and serve/deploy recipes. Sphinx
   ``docs/guides.rst`` / ``usage.rst`` / ``features.rst`` / ``index.rst`` point
   at the expanded set; optional ``examples/`` scripts mirror key snippets.
+
+### Changed
+
+- **SSL defaults:** Torch tabular methods (`simclr_tabular`, `byol_tabular`,
+  `vicreg_tabular`, `mae_tabular`, `vae_tabular`) are industry defaults when
+  `buildml[torch]` is installed. Legacy sklearn `masked_tabular` remains as
+  **deprecated fallback** when Torch is absent.
+- **Unsupervised depth:** Extended clustering (GMM, spectral, OPTICS, mean-shift,
+  optional HDBSCAN, DEC/IDEC when Torch present) with v2 bundle persistence.
+- **Time-series depth:** statsmodels-backed decomposition/diagnostics/changepoints;
+  industry forecast backends via Prophet and NeuralForecast behind optional extras.
+- **RAG depth:** LangChain adapter behind `buildml[rag-advanced]`; retrieval
+  quality benchmark with hashing CI floors and optional semantic/rerank paths.
 
 ### Clarified
 

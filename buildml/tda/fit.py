@@ -10,6 +10,7 @@ from sklearn.neighbors import NearestNeighbors
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.tda.catalog import resolve_backend_vectorization
 from buildml.tda.extras import require_tda_stack
 from buildml.tda.features import (
     encode_classification_targets,
@@ -22,7 +23,8 @@ from buildml.tda.features import (
 )
 from buildml.tda.homology import compute_rips_diagrams, local_point_cloud
 from buildml.tda.results import TdaFitResult, TdaPlan
-from buildml.tda.types import TdaHead, TdaTask, Vectorization
+from buildml.tda.subsample import SubsampleStrategy, apply_train_subsample
+from buildml.tda.types import TdaBackend, TdaHead, TdaTask, Vectorization
 from buildml.tda.vectorize import (
     feature_names_from_state,
     fit_vectorizer_state,
@@ -34,6 +36,7 @@ def fit_tda(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: TdaBackend | None = None,
     vectorization: Vectorization = "persistence_image",
     homology_dims: Sequence[int] = (0, 1),
     knn: int = 16,
@@ -50,26 +53,140 @@ def fit_tda(
     prefer_reduce_components: bool = True,
     reduce_plan: Any | None = None,
     max_points_guard: int = 4000,
+    subsample_strategy: SubsampleStrategy = "error",
+    mapper: bool = False,
 ) -> tuple[TdaPlan, TdaFitResult]:
     """Fit a leakage-safe TDA pipeline on the Session **train** partition.
 
-    Pipeline
+    Backends
     --------
-    1. Resolve numeric features; optional train-only standardization.
-    2. Fit a NearestNeighbors index on train points.
-    3. For each train row, build a local point cloud from ``knn`` train
-       neighbors, compute Vietoris–Rips persistence (ripser), and collect
-       diagrams.
-    4. Fit vectorizer ranges / grids from **train diagrams only**
-       (persistence image / landscape / silhouette).
-    5. Optionally fit a sklearn head on the train topological vectors.
+    native (default when ``buildml[tda]`` installed):
+        ripser VR persistence + persim/in-tree vectorization.
+    giotto (``buildml[tda-industry]``):
+        giotto-tda PH + BettiCurve / PersistenceImage / PersistenceLandscape;
+        optional KeplerMapper train summary when ``mapper=True``.
 
     Honesty: Session-shaped persistent homology + vectorization → sklearn —
     not a full Mapper research suite, not every TDA paper.
     """
-    require_tda_stack(feature="fit_tda")
+    resolved_backend, resolved_vec = resolve_backend_vectorization(
+        backend=backend,
+        vectorization=str(vectorization),
+    )
+    if resolved_backend == "giotto":
+        from buildml.tda.adapters.giotto import fit_giotto
+
+        return fit_giotto(
+            dataset,
+            split_plan,
+            vectorization=resolved_vec,  # type: ignore[arg-type]
+            homology_dims=homology_dims,
+            knn=knn,
+            maxdim=maxdim,
+            thresh=thresh,
+            n_bins=n_bins,
+            n_layers=n_layers,
+            pixel_size=pixel_size,
+            standardize=standardize,
+            head=head,
+            task=task,
+            columns=columns,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+            reduce_plan=reduce_plan,
+            max_points_guard=max_points_guard,
+            subsample_strategy=subsample_strategy,
+            mapper=mapper,
+            **_prepare_subsample_context(
+                dataset,
+                split_plan,
+                max_points_guard=max_points_guard,
+                subsample_strategy=subsample_strategy,
+                random_state=random_state,
+            ),
+        )
+    return _fit_native(
+        dataset,
+        split_plan,
+        vectorization=resolved_vec,  # type: ignore[arg-type]
+        homology_dims=homology_dims,
+        knn=knn,
+        maxdim=maxdim,
+        thresh=thresh,
+        n_bins=n_bins,
+        n_layers=n_layers,
+        pixel_size=pixel_size,
+        standardize=standardize,
+        head=head,
+        task=task,
+        columns=columns,
+        random_state=random_state,
+        prefer_reduce_components=prefer_reduce_components,
+        reduce_plan=reduce_plan,
+        max_points_guard=max_points_guard,
+        subsample_strategy=subsample_strategy,
+    )
+
+
+def _prepare_subsample_context(
+    dataset: Dataset,
+    split_plan: SplitPlan | None,
+    *,
+    max_points_guard: int,
+    subsample_strategy: SubsampleStrategy,
+    random_state: int | None,
+) -> dict[str, Any]:
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
+    target = dataset.require_target()
+    full_train = train_partition_frame(dataset, split_plan)
+    _, sub_train, disclosures, warnings = apply_train_subsample(
+        split_plan,
+        full_train,
+        max_points=max_points_guard,
+        strategy=subsample_strategy,
+        target_column=target,
+        random_state=random_state,
+    )
+    return {
+        "train_frame": sub_train,
+        "split_plan_eff": split_plan,
+        "subsample_disclosures": disclosures,
+        "subsample_warnings": warnings,
+    }
+
+
+def _fit_native(
+    dataset: Dataset,
+    split_plan: SplitPlan | None,
+    *,
+    vectorization: Vectorization,
+    homology_dims: Sequence[int],
+    knn: int,
+    maxdim: int,
+    thresh: float | None,
+    n_bins: int,
+    n_layers: int,
+    pixel_size: float | None,
+    standardize: bool,
+    head: TdaHead,
+    task: TdaTask | None,
+    columns: list[str] | None,
+    random_state: int | None,
+    prefer_reduce_components: bool,
+    reduce_plan: Any | None,
+    max_points_guard: int,
+    subsample_strategy: SubsampleStrategy,
+    train_frame: Any | None = None,
+    split_plan_eff: SplitPlan | None = None,
+    subsample_disclosures: Sequence[str] = (),
+    subsample_warnings: Sequence[str] = (),
+) -> tuple[TdaPlan, TdaFitResult]:
+    """Native ripser + persim/in-tree fit path."""
+    require_tda_stack(feature="fit_tda")
+    assert_fit_partition(split_plan_eff or split_plan, "train")
+    sp = split_plan_eff or split_plan
+    assert sp is not None
 
     if int(knn) < 2:
         raise ValidationError("knn must be >= 2 for non-trivial local point clouds.")
@@ -87,16 +204,26 @@ def fit_tda(
     if int(n_layers) < 1:
         raise ValidationError("n_layers must be >= 1.")
 
-    n_train = int(len(split_plan.train_indices))
-    if n_train > int(max_points_guard):
-        raise ValidationError(
-            f"Train size {n_train} exceeds max_points_guard={max_points_guard}. "
-            "Subsample before fit_tda or raise the guard deliberately."
-        )
-
     target = dataset.require_target()
-    train = train_partition_frame(dataset, split_plan)
-    cols, used_reduce, disclosures = resolve_tda_columns(
+    if train_frame is None:
+        ctx = _prepare_subsample_context(
+            dataset,
+            sp,
+            max_points_guard=max_points_guard,
+            subsample_strategy=subsample_strategy,
+            random_state=random_state,
+        )
+        train = ctx["train_frame"]
+        subsample_disclosures = ctx["subsample_disclosures"]
+        subsample_warnings = ctx["subsample_warnings"]
+    else:
+        train = train_frame
+
+    n_train = int(len(train))
+    warnings: list[str] = list(subsample_warnings)
+    disclosures: list[str] = list(subsample_disclosures)
+
+    cols, used_reduce, col_disclosures = resolve_tda_columns(
         dataset,
         train,
         columns,
@@ -104,7 +231,7 @@ def fit_tda(
         prefer_reduce_components=prefer_reduce_components,
         target_column=target,
     )
-    warnings: list[str] = []
+    disclosures.extend(col_disclosures)
 
     x_raw = matrix_from_frame(train, cols)
     if standardize:
@@ -179,6 +306,7 @@ def fit_tda(
         disclosures.append("head='none': TDA transformer only; no supervised head fitted.")
 
     plan = TdaPlan(
+        backend="native",
         vectorization=str(vectorization),
         columns=tuple(cols),
         homology_dims=dims,
@@ -206,6 +334,7 @@ def fit_tda(
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
         config={
+            "backend": "native",
             "vectorization": str(vectorization),
             "homology_dims": list(dims),
             "knn": knn_eff,
@@ -220,9 +349,11 @@ def fit_tda(
             "random_state": random_state,
             "prefer_reduce_components": prefer_reduce_components,
             "max_points_guard": int(max_points_guard),
+            "subsample_strategy": subsample_strategy,
         },
     )
     result = TdaFitResult(
+        backend="native",
         vectorization=str(vectorization),
         n_train_rows=n_train,
         feature_dim=int(x_tda.shape[1]),
@@ -265,7 +396,6 @@ def _make_regressor(name: str, *, random_state: int | None) -> Any:
     from sklearn.linear_model import Ridge
 
     if name in {"ridge", "logistic_regression"}:
-        # logistic_regression on regression task → ridge (honest remap)
         return Ridge(random_state=random_state)
     if name == "random_forest":
         return RandomForestRegressor(

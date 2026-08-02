@@ -17,13 +17,16 @@ from buildml.forecasting.results import (
     ForecastPlan,
 )
 
-BUNDLE_FORMAT = "buildml.forecast_bundle.v1"
+BUNDLE_FORMAT = "buildml.forecast_bundle.v2"
+BUNDLE_FORMAT_V1 = "buildml.forecast_bundle.v1"
+BUNDLE_FORMAT_V2 = "buildml.forecast_bundle.v2"
+SUPPORTED_FORMATS = frozenset({BUNDLE_FORMAT_V1, BUNDLE_FORMAT_V2})
 CHECKPOINT_BOUNDARY = (
     "Forecast bundles, classical pipeline bundles, unsupervised/ensemble/AutoML "
     "bundles, Torch trainer bundles, RAG bundles, and Session checkpoints are "
     "complementary, not interchangeable. "
-    "A forecast bundle (buildml.forecast_bundle.v1) stores a train-fitted "
-    "ForecastPlan (baseline or lag estimator + lag/exog contract + disclosures). "
+    "A forecast bundle (buildml.forecast_bundle.v2) stores a train-fitted "
+    "ForecastPlan (baseline, lag, statsmodels, Prophet, or neural estimator + contract). "
     "A Session checkpoint stores data, roles, splits, history, and optional classical "
     "preprocess plans; it does not embed the forecaster. "
     "Reload tabular workflow via checkpoint_load; reload forecasting via "
@@ -39,11 +42,12 @@ def save_forecast_bundle(
     eval_result: ForecastEvalResult | None = None,
     generate_result: ForecastGenerateResult | None = None,
 ) -> Path:
-    """Write a forecast bundle directory (``buildml.forecast_bundle.v1``).
+    """Write a forecast bundle directory (``buildml.forecast_bundle.v2``).
 
     Layout
     ------
     ``meta.json``, ``forecast_plan.joblib``.
+    v1 bundles remain loadable via :func:`load_forecast_bundle`.
     """
     if plan is None:
         raise ValidationError("No ForecastPlan to save.")
@@ -80,9 +84,10 @@ def load_forecast_bundle(path: str | Path) -> ForecastPlan:
         )
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     fmt = meta.get("format")
-    if fmt != BUNDLE_FORMAT:
+    if fmt not in SUPPORTED_FORMATS:
         raise ValidationError(
-            f"Unsupported forecast bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
+            f"Unsupported forecast bundle format {fmt!r}; "
+            f"expected one of {sorted(SUPPORTED_FORMATS)}."
         )
     loaded = joblib.load(plan_path)
     if isinstance(loaded, ForecastPlan):

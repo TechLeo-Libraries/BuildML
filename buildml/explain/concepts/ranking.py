@@ -124,7 +124,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Closer to ranking preferences than pointwise RMSE.",
-                "Still sklearn-core — not LambdaMART / LightGBM.",
+                "Sklearn-core fallback — industry GBDT rankers when installed.",
             ),
             how_buildml_uses=(
                 "fit_ranker(method='pairwise', max_pairs_per_query=...).",
@@ -141,6 +141,52 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "fit_ranker(method='pairwise') → evaluate_ranker(k=5)."
             ),
             related_concepts=("ltr-tabular-ranking", "ltr-pointwise", "ltr-ranking-metrics"),
+        ),
+        _note(
+            key="ltr-industry-rankers",
+            title="Industry GBDT rankers (LambdaRank / rank:ndcg / YetiRank)",
+            summary=(
+                "backend='industry' uses LightGBM LambdaRank, XGBoost rank:ndcg, "
+                "or CatBoost YetiRank when buildml[ranking-industry] is installed."
+            ),
+            definition=(
+                "Listwise/pairwise GBDT objectives optimize ranking metrics directly "
+                "on query-grouped judgment rows, unlike sklearn pointwise regression."
+            ),
+            intuition=(
+                "When gradient-boosted rankers are installed, they become the "
+                "default LTR backend because they target nDCG-style quality."
+            ),
+            formal_idea=(
+                "Train on contiguous query groups with listwise rank objectives; "
+                "score(x) from booster leaf ensemble."
+            ),
+            why_it_matters=(
+                "Stronger tabular LTR baseline than Ridge for many judgment tables.",
+                "Still requires honest query-group splits — not a search product.",
+            ),
+            how_buildml_uses=(
+                "fit_ranker(backend='industry', method='lambdarank_lgbm'|...); "
+                "ranking_capability_matrix() lists installed methods.",
+            ),
+            interpretation_rules=(
+                "Compare against sklearn pointwise on the same group_split.",
+                "Do not equate with RAG chunk ranking or recommender CF metrics.",
+            ),
+            assumptions=("Numeric features; ≥2 train queries; ranking-industry extra."),
+            failure_modes=("Missing extra; tiny query groups; overlapping query ids."),
+            anti_patterns=(
+                "Calling LambdaRank a search-engine stack.",
+                "Mixing evaluate_ranker numbers with rag_evaluate.",
+            ),
+            worked_example_pattern=(
+                "fit_ranker(backend='industry') → evaluate_ranker(k=10)."
+            ),
+            related_concepts=(
+                "ltr-tabular-ranking",
+                "ltr-pointwise",
+                "ltr-ranking-metrics",
+            ),
         ),
         _note(
             key="ltr-ranking-metrics",

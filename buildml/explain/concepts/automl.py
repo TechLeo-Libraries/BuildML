@@ -190,5 +190,56 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
             ),
             related_concepts=("automl-beyond-hpo", "ensemble-bundle-boundary"),
         ),
+        _note(
+            key="automl-industry-backends",
+            title="Industry AutoML backends (FLAML / AutoGluon / Optuna depth)",
+            summary=(
+                "backend='native' searches fold-local recipes; backend='flaml'/'autogluon' "
+                "delegates to industry adapters on train-only data with disclosed limits."
+            ),
+            definition=(
+                "BuildML AutoML exposes backend='native' (grid/randomized/optuna/evolutionary), "
+                "backend='optuna' (pruning, study persistence, optional multi-objective), and "
+                "optional industry adapters FLAML / AutoGluon behind buildml[automl-industry]. "
+                "Industry backends bypass fold-local PreprocessRecipe search because the "
+                "third-party stack handles internal featurization."
+            ),
+            intuition=(
+                "Native AutoML is a leakage-safe recipe × family search you control. "
+                "Industry adapters trade that control for broader model zoos under a time budget."
+            ),
+            formal_idea=(
+                "Train-only fit: D_train → backend.search → θ*; Session test ∉ selection."
+            ),
+            why_it_matters=(
+                "Operators expect AutoGluon/FLAML parity but still need Session leakage rules.",
+                "Capability matrix must disclose nested-CV gaps on industry paths.",
+            ),
+            how_buildml_uses=(
+                "Session.run_automl(backend=...); automl_capability_matrix() for honest docs.",
+                "export_comparison_metrics() for trial export.",
+            ),
+            interpretation_rules=(
+                "Read config.backend and limitations on AutoMLResult.",
+                "Do not compare industry inner scores directly to native fold-local trials.",
+            ),
+            assumptions=("Industry libs installed only when extra is present.",),
+            failure_modes=(
+                "Expecting nested selection on FLAML/AutoGluon backends.",
+                "Claiming fold-local recipe search when backend is industry.",
+            ),
+            anti_patterns=(
+                "Passing Session test rows into industry adapter fit.",
+            ),
+            worked_example_pattern=(
+                "run_automl(backend='flaml', time_budget=120, selection='validation') "
+                "→ evaluate_automl(partition='test').",
+            ),
+            related_concepts=(
+                "automl-beyond-hpo",
+                "automl-selection-honesty",
+                "automl-recipe-strategy-search",
+            ),
+        ),
     )
 }

@@ -67,6 +67,8 @@ def forecasting_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for classical forecasting."""
+    from buildml.forecasting.catalog import forecast_status_payload
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -80,11 +82,13 @@ def forecasting_status(
         for r in records
     )
     enabled = plan is not None
-    disclosures: list[str] = []
+    base = forecast_status_payload()
+    disclosures: list[str] = list(base.get("disclosures", []))
     if enabled:
         disclosures.extend(
             [
                 f"ForecastPlan method={getattr(plan, 'method', None)}, "
+                f"backend={getattr(plan, 'backend', None)}, "
                 f"horizon={getattr(plan, 'horizon', None)}, "
                 f"univariate={getattr(plan, 'univariate', None)}.",
                 "Session checkpoints do not embed ForecastPlan; use "
@@ -133,6 +137,12 @@ def forecasting_status(
         "has_fit_result": fit_result is not None,
         "has_eval_result": eval_result is not None,
         "has_generate_result": generate_result is not None,
+        "backends": {
+            "statsmodels": base.get("statsmodels_available"),
+            "prophet": base.get("prophet_available"),
+            "neuralforecast": base.get("neuralforecast_available"),
+        },
+        "default_method": base.get("default_method"),
         "eval": eval_payload,
         "generate": generate_payload,
         "disclosures": disclosures,

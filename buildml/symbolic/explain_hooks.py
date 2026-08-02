@@ -11,9 +11,12 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
+        "backend": payload.get("backend"),
         "source": payload.get("source"),
+        "method": payload.get("method"),
         "mode": payload.get("mode"),
         "base_estimator_name": payload.get("base_estimator_name"),
+        "torch_method": payload.get("torch_method"),
         "task": payload.get("task"),
         "n_train_rows": payload.get("n_train_rows"),
         "n_rules": payload.get("n_rules"),
@@ -88,10 +91,24 @@ def symbolic_status(
     )
     enabled = symbolic_plan is not None or neuro_plan is not None
     disclosures: list[str] = []
+    try:
+        from buildml.symbolic.catalog import symbolic_capability_matrix
+
+        cap = symbolic_capability_matrix()
+        disclosures.append(
+            "Capability matrix: "
+            f"symbolic default_backend={cap.get('default_symbolic_backend_when_installed')}, "
+            f"neuro default_backend={cap.get('default_neuro_backend_when_installed')}, "
+            f"industry={cap.get('industry_extra_present')}, z3={cap.get('z3_present')}."
+        )
+    except Exception:  # noqa: BLE001
+        pass
     if symbolic_plan is not None:
         disclosures.extend(
             [
-                f"SymbolicPlan source={getattr(symbolic_plan, 'source', None)}, "
+                f"SymbolicPlan backend={getattr(symbolic_plan, 'backend', None)}, "
+                f"source={getattr(symbolic_plan, 'source', None)}, "
+                f"method={getattr(symbolic_plan, 'method', None)}, "
                 f"task={getattr(symbolic_plan, 'task', None)}, "
                 f"n_rules={getattr(symbolic_plan, 'n_rules', None)}, "
                 f"provenance={getattr(getattr(symbolic_plan, 'knowledge_base', None), 'provenance', None)}.",
@@ -107,8 +124,10 @@ def symbolic_status(
     if neuro_plan is not None:
         disclosures.extend(
             [
-                f"NeuroSymbolicPlan mode={getattr(neuro_plan, 'mode', None)}, "
+                f"NeuroSymbolicPlan backend={getattr(neuro_plan, 'backend', None)}, "
+                f"mode={getattr(neuro_plan, 'mode', None)}, "
                 f"base={getattr(neuro_plan, 'base_estimator_name', None)}, "
+                f"torch_method={getattr(neuro_plan, 'torch_method', None)}, "
                 f"task={getattr(neuro_plan, 'task', None)}, "
                 f"n_rules={len(getattr(getattr(neuro_plan, 'knowledge_base', None), 'rules', ()) or ())}.",
                 "Hybrid integrates sklearn predictions with symbolic "
@@ -141,7 +160,13 @@ def symbolic_status(
         "present": enabled or saw,
         "has_symbolic_plan": symbolic_plan is not None,
         "has_neuro_symbolic_plan": neuro_plan is not None,
+        "backend": (
+            None
+            if symbolic_plan is None and neuro_plan is None
+            else getattr(symbolic_plan or neuro_plan, "backend", None)
+        ),
         "source": None if symbolic_plan is None else getattr(symbolic_plan, "source", None),
+        "method": None if symbolic_plan is None else getattr(symbolic_plan, "method", None),
         "mode": None if neuro_plan is None else getattr(neuro_plan, "mode", None),
         "task": (
             None
@@ -156,6 +181,7 @@ def symbolic_status(
         "has_fit_result": fit_result is not None or neuro_fit_result is not None,
         "has_eval_result": eval_result is not None,
         "eval": eval_payload,
+        "capability_matrix": _capability_matrix_safe(),
         "disclosures": disclosures,
         "boundary": (
             "Symbolic AI compiles/induces tabular if-then rules; neuro-symbolic "
@@ -175,3 +201,12 @@ def symbolic_status_for_session(session: Any) -> dict[str, Any]:
         eval_result=getattr(session, "_symbolic_eval_result", None),
         history=list(getattr(session, "_history", ()) or ()),
     )
+
+
+def _capability_matrix_safe() -> dict[str, Any]:
+    try:
+        from buildml.symbolic.catalog import symbolic_capability_matrix
+
+        return symbolic_capability_matrix()
+    except Exception:  # noqa: BLE001
+        return {}

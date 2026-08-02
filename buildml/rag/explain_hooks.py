@@ -148,7 +148,11 @@ def rag_status(
         disclosures.append(f"embed_device={embed_cfg.get('device')}")
     elif embed_cfg.get("backend") == "hashing":
         disclosures.append(
-            "Default hashing embedder is lexical/hashed, not a semantic sentence model."
+            "Hashing embedder is lexical/hashed, not a semantic sentence model."
+        )
+    elif embed_cfg.get("backend") == "sentence-transformers":
+        disclosures.append(
+            "Sentence-transformer embedder is the recommended semantic default when buildml[rag] is installed."
         )
 
     eval_payload = None

@@ -9,6 +9,15 @@ import numpy as np
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.recommenders.adapters.implicit_lib import (
+    build_user_item_csr,
+    fit_implicit_model,
+)
+from buildml.recommenders.adapters.lightfm import (
+    _feature_csr,
+    fit_lightfm_model,
+)
+from buildml.recommenders.catalog import resolve_backend_method
 from buildml.recommenders.features import (
     build_interactions,
     build_user_item_matrix,
@@ -26,6 +35,7 @@ from buildml.recommenders.results import RecommenderFitResult, RecommenderPlan
 from buildml.recommenders.types import (
     ColdStartPolicy,
     FeedbackMode,
+    RecommenderBackend,
     RecommenderConfig,
     RecommenderMethod,
 )
@@ -35,7 +45,8 @@ def fit_recommender(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
-    method: RecommenderMethod = "item_knn",
+    method: RecommenderMethod | None = None,
+    backend: RecommenderBackend | None = None,
     user_column: str | None = None,
     item_column: str | None = None,
     rating_column: str | None = None,
@@ -44,26 +55,37 @@ def fit_recommender(
     n_factors: int = 32,
     min_rating: float | None = None,
     item_feature_columns: Sequence[str] | None = None,
+    user_feature_columns: Sequence[str] | None = None,
     cold_start: ColdStartPolicy = "popularity",
     random_state: int | None = 0,
+    n_iterations: int = 15,
+    lightfm_epochs: int = 10,
 ) -> tuple[RecommenderPlan, RecommenderFitResult]:
     """Fit a leakage-safe recommender on the Session **train** partition.
 
     Pipeline
     --------
-    1. Resolve user/item/(rating) columns.
+    1. Resolve user/item/(rating) columns and backend/method routing.
     2. Build train-only interactions and user×item matrix.
-    3. Fit neighborhood similarities, matrix factorization, or content profiles.
+    3. Fit sklearn CF, implicit ALS/BPR, or LightFM hybrid model.
     4. Store popularity prior for cold-start disclosure / fallback.
 
-    Honesty: Session collaborative filtering + optional content features —
+    When ``feedback='implicit'`` and ``method`` is omitted, defaults to ALS
+    via the ``implicit`` library when ``buildml[recommenders-industry]`` is
+    installed; otherwise falls back to sklearn NMF on binary interactions.
+
+    Honesty: Session collaborative filtering + optional content / hybrid features —
     not a Netflix-scale recsys platform. Never trains on holdout interactions.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
-    if method not in {"item_knn", "user_knn", "svd", "nmf", "content"}:
-        raise ValidationError(f"Unknown recommender method: {method!r}")
+    resolved_backend, resolved_method = resolve_backend_method(
+        backend=backend,
+        method=method,
+        feedback=feedback,
+    )
+
     if int(n_neighbors) < 1:
         raise ValidationError("n_neighbors must be >= 1.")
     if int(n_factors) < 1:
@@ -108,23 +130,71 @@ def fit_recommender(
     user_factors = None
     item_factors = None
     feat_cols: tuple[str, ...] = ()
+    user_feat_cols: tuple[str, ...] = ()
     item_features = None
     feat_mean = None
     feat_scale = None
+    backend_model = None
+    user_item_csr = None
+    lightfm_user_features = None
+    lightfm_item_features = None
 
-    if method == "item_knn":
+    if resolved_backend == "implicit":
+        user_item_csr = build_user_item_csr(matrix)
+        backend_model = fit_implicit_model(
+            user_item_csr,
+            method=resolved_method,  # type: ignore[arg-type]
+            n_factors=n_factors,
+            random_state=random_state,
+            n_iterations=n_iterations,
+        )
+        disclosures.append(
+            f"{resolved_method}: implicit library ALS/BPR on sparse train matrix "
+            f"({len(users)} users × {len(items)} items); "
+            f"n_factors={n_factors}, iterations={n_iterations}."
+        )
+    elif resolved_backend == "lightfm":
+        user_feat_cols = tuple(str(c) for c in user_feature_columns or ())
+        feat_cols = tuple(str(c) for c in item_feature_columns or ())
+        user_item_csr = build_user_item_csr(matrix)
+        lightfm_user_features = _feature_csr(
+            train, user_col, users, user_feat_cols or None
+        )
+        lightfm_item_features = _feature_csr(
+            train, item_col, items, feat_cols or None
+        )
+        backend_model = fit_lightfm_model(
+            user_item_csr,
+            n_factors=n_factors,
+            random_state=random_state,
+            feedback=feedback,
+            user_features=lightfm_user_features,
+            item_features=lightfm_item_features,
+            epochs=lightfm_epochs,
+        )
+        side = []
+        if user_feat_cols:
+            side.append(f"user_features={list(user_feat_cols)}")
+        if feat_cols:
+            side.append(f"item_features={list(feat_cols)}")
+        side_note = f" with {', '.join(side)}" if side else " (interactions only)"
+        disclosures.append(
+            f"lightfm: LightFM hybrid WARP on train interactions{side_note}; "
+            f"n_factors={n_factors}, epochs={lightfm_epochs}."
+        )
+    elif resolved_method == "item_knn":
         similarity = fit_item_similarity(matrix)
         disclosures.append(
             f"item_knn: cosine item-item similarity on {len(items)} train items; "
             f"n_neighbors={n_neighbors}."
         )
-    elif method == "user_knn":
+    elif resolved_method == "user_knn":
         similarity = fit_user_similarity(matrix)
         disclosures.append(
             f"user_knn: cosine user-user similarity on {len(users)} train users; "
             f"n_neighbors={n_neighbors}."
         )
-    elif method == "svd":
+    elif resolved_method == "svd":
         user_factors, item_factors = fit_svd_factors(
             matrix, n_factors=n_factors, random_state=random_state
         )
@@ -133,7 +203,7 @@ def fit_recommender(
             f"({user_factors.shape[1]} components) on train matrix; "
             f"scores use train global mean centering."
         )
-    elif method == "nmf":
+    elif resolved_method == "nmf":
         user_factors, item_factors = fit_nmf_factors(
             matrix, n_factors=n_factors, random_state=random_state
         )
@@ -172,7 +242,8 @@ def fit_recommender(
     )
 
     config = RecommenderConfig(
-        method=method,
+        method=resolved_method,
+        backend=resolved_backend,
         user_column=user_col,
         item_column=item_col,
         rating_column=rating_col,
@@ -181,12 +252,16 @@ def fit_recommender(
         n_factors=n_factors,
         min_rating=min_rating,
         item_feature_columns=feat_cols or None,
+        user_feature_columns=user_feat_cols or None,
         cold_start=cold_start,
         random_state=random_state,
+        n_iterations=n_iterations,
+        lightfm_epochs=lightfm_epochs,
     )
 
     plan = RecommenderPlan(
-        method=method,
+        method=resolved_method,
+        backend=resolved_backend,
         user_column=user_col,
         item_column=item_col,
         rating_column=rating_col,
@@ -207,9 +282,14 @@ def fit_recommender(
         global_mean_=global_mean,
         item_popularity_=item_popularity,
         item_feature_columns=feat_cols,
+        user_feature_columns=user_feat_cols,
         item_features_=item_features,
         item_feature_mean_=feat_mean,
         item_feature_scale_=feat_scale,
+        backend_model_=backend_model,
+        user_item_csr_=user_item_csr,
+        lightfm_user_features_=lightfm_user_features,
+        lightfm_item_features_=lightfm_item_features,
         cold_start=cold_start,
         min_rating=min_rating,
         disclosures=tuple(disclosures),
@@ -217,7 +297,8 @@ def fit_recommender(
         config=config.to_dict(),
     )
     result = RecommenderFitResult(
-        method=method,
+        method=resolved_method,
+        backend=resolved_backend,
         n_train_interactions=plan.n_train_interactions,
         n_users=plan.n_users,
         n_items=plan.n_items,
@@ -225,8 +306,10 @@ def fit_recommender(
         user_column=user_col,
         item_column=item_col,
         rating_column=rating_col,
-        n_neighbors=n_neighbors if method in {"item_knn", "user_knn"} else None,
-        n_factors=n_factors if method in {"svd", "nmf"} else None,
+        n_neighbors=n_neighbors if resolved_method in {"item_knn", "user_knn"} else None,
+        n_factors=n_factors
+        if resolved_method in {"svd", "nmf", "als", "bpr", "lightfm"}
+        else None,
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
     )

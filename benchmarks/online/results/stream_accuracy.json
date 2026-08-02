@@ -1,0 +1,143 @@
+{
+  "benchmark": "online_stream_accuracy",
+  "capability_matrix": {
+    "backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "estimators": [
+          "sgd_classifier",
+          "sgd_regressor",
+          "passive_aggressive_classifier",
+          "passive_aggressive_regressor",
+          "perceptron",
+          "multinomial_nb",
+          "bernoulli_nb"
+        ],
+        "modality": "tabular",
+        "drift_detectors": [
+          "mean_shift"
+        ],
+        "notes": "Core sklearn partial_fit family (SGD, PA, Perceptron, NB). Optional init-chunk mean-shift disclosure on updates."
+      },
+      "industry": {
+        "available": false,
+        "extra": "online-industry",
+        "estimators": [
+          "river_logistic",
+          "river_hoeffding",
+          "river_pa",
+          "river_linear_regression",
+          "river_hoeffding_regressor"
+        ],
+        "modality": "tabular",
+        "drift_detectors": [
+          "mean_shift",
+          "adwin",
+          "page_hinkley"
+        ],
+        "notes": "River streaming sklearn-compatible models with ADWIN / Page-Hinkley drift hooks on updates and evaluate (buildml[online-industry])."
+      },
+      "torch": {
+        "available": true,
+        "extra": "torch",
+        "estimators": [
+          "replay_mlp",
+          "ewc_mlp"
+        ],
+        "modality": "tabular",
+        "drift_detectors": [
+          "mean_shift"
+        ],
+        "notes": "Lite replay-buffer or EWC tabular MLP continual learner \u2014 honest small-scale, not a lifelong-learning research suite (buildml[torch])."
+      }
+    },
+    "chunk_ingestion": {
+      "session_train_cursor": "Default: carve unused train rows after cursor",
+      "explicit_indices": "Train-partition dataset indices only",
+      "external_frame": "Role-aligned user frame; cursor not advanced"
+    },
+    "evaluation": {
+      "metrics_classification": [
+        "accuracy",
+        "f1_macro",
+        "f1_weighted"
+      ],
+      "metrics_regression": [
+        "mae",
+        "rmse",
+        "r2"
+      ],
+      "holdout_rule": "validation/test never used for partial_fit updates",
+      "drift_hooks": "River ADWIN/Page-Hinkley on holdout error stream when backend=industry; mean_shift disclosure on all backends."
+    },
+    "default_backend_when_installed": "torch",
+    "default_estimator_when_installed": "replay_mlp",
+    "install_hints": {
+      "online-industry": "pip install 'buildml[online-industry]'  # River streaming models + ADWIN/Page-Hinkley drift",
+      "torch": "pip install 'buildml[torch]'  # replay / EWC tabular continual MLP"
+    },
+    "non_goals": [
+      "Distributed streaming platforms",
+      "Full lifelong-learning research suites",
+      "Silent full refits (allow_refit_fallback must disclose)",
+      "Using holdout rows for incremental updates"
+    ],
+    "river_present": false,
+    "torch_spec_present": true,
+    "industry_extra_present": false
+  },
+  "full_refit_test_accuracy": 0.9222222222222223,
+  "runs": [
+    {
+      "backend": "sklearn",
+      "estimator": "sgd_classifier",
+      "chunk_size": 40,
+      "points": [
+        {
+          "n_seen_rows": 40,
+          "n_updates": 0,
+          "accuracy": 0.9,
+          "drift_detected": false
+        },
+        {
+          "n_seen_rows": 80,
+          "n_updates": 1,
+          "accuracy": 0.8444444444444444,
+          "drift_detected": false
+        },
+        {
+          "n_seen_rows": 120,
+          "n_updates": 2,
+          "accuracy": 0.7,
+          "drift_detected": false
+        },
+        {
+          "n_seen_rows": 160,
+          "n_updates": 3,
+          "accuracy": 0.8444444444444444,
+          "drift_detected": false
+        },
+        {
+          "n_seen_rows": 200,
+          "n_updates": 4,
+          "accuracy": 0.9222222222222223,
+          "drift_detected": false
+        },
+        {
+          "n_seen_rows": 240,
+          "n_updates": 5,
+          "accuracy": 0.9,
+          "drift_detected": false
+        },
+        {
+          "n_seen_rows": 270,
+          "n_updates": 6,
+          "accuracy": 0.8222222222222222,
+          "drift_detected": false
+        }
+      ],
+      "final_accuracy": 0.8222222222222222
+    }
+  ]
+}

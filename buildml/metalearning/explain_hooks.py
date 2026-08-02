@@ -11,6 +11,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
+        "backend": payload.get("backend"),
         "method": payload.get("method"),
         "n_train_rows": payload.get("n_train_rows"),
         "task_column": payload.get("task_column"),
@@ -84,11 +85,13 @@ def metalearning_status(
     if enabled:
         disclosures.extend(
             [
-                f"MetaLearningPlan method={getattr(plan, 'method', None)}, "
+                f"MetaLearningPlan backend={getattr(plan, 'backend', None)}, "
+                f"method={getattr(plan, 'method', None)}, "
                 f"task_column={getattr(plan, 'task_column', None)}, "
                 f"n_meta_train_tasks={len(getattr(plan, 'train_task_ids', ()) or ())}, "
                 f"n_way={getattr(plan, 'n_way', None)}, "
                 f"k_shot={getattr(plan, 'k_shot', None)}.",
+                f"held_out_task_ids={list(getattr(plan, 'held_out_task_ids', ()) or ())}.",
                 "Meta-train uses train partition only; validation/test are "
                 "evaluation-only.",
                 "Session checkpoints do not embed MetaLearningPlan; use "
@@ -131,6 +134,7 @@ def metalearning_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_metalearning_plan": enabled,
+        "backend": None if plan is None else getattr(plan, "backend", None),
         "method": None if plan is None else getattr(plan, "method", None),
         "task_column": None if plan is None else getattr(plan, "task_column", None),
         "n_meta_train_tasks": (
@@ -148,9 +152,10 @@ def metalearning_status(
         "disclosures": disclosures,
         "boundary": (
             "Meta-learning provides practical tabular few-shot / episodic "
-            "protocols (prototypical nearest-centroid and warm-start adapt). "
-            "Holdout is evaluation-only. Not foundation-model meta-learning; "
-            "not MAML-at-scale; not causal; not federated."
+            "protocols (sklearn prototypical/warm_start; optional torch "
+            "prototypical_torch and industry MAML/Reptile). Holdout is "
+            "evaluation-only. Not foundation-model meta-learning; not "
+            "MAML-at-scale; not causal; not federated."
         ),
     }
 

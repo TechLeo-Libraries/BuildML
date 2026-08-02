@@ -17,12 +17,13 @@ world sims, TTS, robotics/control product.
 
 Honesty (this package):
   - Explicit if-then rule knowledge bases over tabular columns.
-  - Induction: sklearn DecisionTree path export and sequential-covering
-    decision lists (train-only). Declared expert rules also supported.
-  - Neuro-symbolic: sklearn base estimator + rule overlay / rules-as-features /
-    constraint-repair as a single Session API.
-  - **Not** an AGI symbolic reasoner, Prolog engine, or Z3 SMT solver.
-  - Core stays light: numpy/pandas/sklearn only — no Prolog/Z3 dependency.
+  - Induction: sklearn DecisionTree / decision-list (core) plus optional
+    skope-rules / imodels rule export via ``buildml[symbolic-industry]``.
+  - Neuro-symbolic: sklearn or lite torch concept-bottleneck / NAM bases with
+    rule overlay / rules-as-features / constraint-repair in one Session API.
+  - Optional Z3 lite constraint verification when symbolic-industry + z3 installed.
+  - **Not** an AGI symbolic reasoner, Prolog engine, or full Z3 SMT product.
+  - Core stays light: numpy/pandas/sklearn only — industry/torch are extras.
 
 Lazy imports — core never grows heavy logic-programming stacks.
 """
@@ -49,7 +50,14 @@ __all__ = [
     "SymbolicPlan",
     "SymbolicPredictResult",
     "SymbolicSource",
+    "SymbolicBackend",
+    "IndustrySymbolicMethod",
+    "NeuroSymbolicBackend",
+    "TorchNeuroMethod",
     "SymbolicTask",
+    "list_symbolic_methods",
+    "list_neuro_symbolic_methods",
+    "symbolic_capability_matrix",
     "evaluate_neuro_symbolic",
     "evaluate_symbolic",
     "fit_neuro_symbolic",
@@ -67,6 +75,10 @@ def __getattr__(name: str) -> Any:
     if name in {
         "SymbolicTask",
         "SymbolicSource",
+        "SymbolicBackend",
+        "IndustrySymbolicMethod",
+        "NeuroSymbolicBackend",
+        "TorchNeuroMethod",
         "NeuroSymbolicMode",
         "BaseEstimatorName",
         "SymbolicConfig",
@@ -127,4 +139,16 @@ def __getattr__(name: str) -> Any:
         from buildml.symbolic import explain_hooks as hooks
 
         return getattr(hooks, name)
+    if name == "symbolic_capability_matrix":
+        from buildml.symbolic.catalog import symbolic_capability_matrix
+
+        return symbolic_capability_matrix
+    if name == "list_symbolic_methods":
+        from buildml.symbolic.catalog import list_symbolic_methods
+
+        return list_symbolic_methods
+    if name == "list_neuro_symbolic_methods":
+        from buildml.symbolic.catalog import list_neuro_symbolic_methods
+
+        return list_neuro_symbolic_methods
     raise AttributeError(f"module 'buildml.symbolic' has no attribute {name!r}")

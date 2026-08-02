@@ -102,21 +102,28 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     _operation(
         "fit_causal",
         OperationKind.MODEL,
-        "Fit causal nuisance models and estimate backdoor ATE.",
-        "Train-only T-learner / IPW / AIPW under CausalAssumptions.",
+        "Fit causal models and estimate backdoor ATE.",
+        "Train-only native / DoWhy / EconML under CausalAssumptions.",
         "Causal fit step.",
         (
             "Require SplitPlan and validated CausalAssumptions.",
-            "Fit outcome and/or propensity nuisances on train only.",
-            "Estimate ATE; optional full retrain bootstrap CI.",
+            "Route backend=native|dowhy|econml (industry extras optional).",
+            "Fit outcome and/or propensity nuisances on train only (native).",
+            "Estimate ATE; optional bootstrap CI (native/econml).",
             "Never use validation/test for nuisance fitting.",
             "Refuse incomplete assumptions; never read causality from EDA.",
         ),
         parameters=(
             _p(
+                "backend",
+                "native | dowhy | econml | None",
+                "Estimation backend; None infers from method.",
+                None,
+            ),
+            _p(
                 "method",
-                "t_learner | ipw | aipw",
-                "Estimation strategy (default AIPW).",
+                "t_learner | ipw | aipw | backdoor_* | dml | causal_forest | policy_tree",
+                "Estimation strategy (default AIPW on native).",
                 "aipw",
             ),
             _p(
@@ -165,7 +172,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         anti_patterns=(
             "Fitting without acknowledgements.",
-            "Calling this causal discovery or a DoWhy platform.",
+            "Calling this causal discovery.",
+            "Treating DoWhy refutation as proof of identification.",
         ),
         state_changes=(
             "Stores causal_plan and fit result; clears estimate/eval/refute slots.",
@@ -181,6 +189,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "causal-aipw",
             "causal-t-learner",
             "causal-ipw",
+            "causal-dowhy",
+            "causal-econml",
             "causal-ate-backdoor",
             "leakage-boundary",
         ),
@@ -273,19 +283,21 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "refute_causal",
         OperationKind.DIAGNOSTIC,
         "Simple placebo / random-confounder sensitivity disclosure.",
-        "Not a full DoWhy refutation suite.",
+        "DoWhy refutation suite when backend='dowhy'.",
         "Causal refute step.",
         (
             "Require CausalPlan.",
-            "Placebo: shuffle treatment on train and refit.",
-            "Random confounder: append noise covariate and refit.",
-            "Report ATE shift; disclose limits.",
+            "Native: shuffle treatment or append noise covariate and refit.",
+            "DoWhy: placebo, random common cause, unobserved confounder, "
+            "data subset, placebo outcome refuters.",
+            "Report ATE shift / p-values; disclose limits.",
         ),
         parameters=(
             _p(
                 "kind",
-                "placebo_treatment | random_confounder",
-                "Sensitivity check kind.",
+                "placebo_treatment | random_confounder | random_common_cause | "
+                "add_unobserved_common_cause | data_subset | placebo_outcome",
+                "Sensitivity check kind (backend-dependent).",
                 "placebo_treatment",
             ),
             _p("random_state", "int | None", "RNG seed.", 0),

@@ -16,7 +16,12 @@ from buildml.multitask.explain_hooks import (
 )
 from buildml.multitask.fit import fit_multitask
 from buildml.multitask.predict import predict_multitask
-from buildml.multitask.types import MultiTaskBaseEstimator, MultiTaskMethod, MultiTaskTask
+from buildml.multitask.types import (
+    MultiTaskBackend,
+    MultiTaskBaseEstimator,
+    MultiTaskMethod,
+    MultiTaskTask,
+)
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -24,6 +29,7 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_multitask_op(
     session,
     *,
+    backend: MultiTaskBackend | None = None,
     method: MultiTaskMethod = "multi_output",
     task: MultiTaskTask = "auto",
     targets: Sequence[str] | None = None,
@@ -33,6 +39,10 @@ def fit_multitask_op(
     order: Sequence[str] | None = None,
     prefer_reduce_components: bool = True,
     prediction_prefix: str = "multitask_pred",
+    epochs: int = 60,
+    batch_size: int = 64,
+    learning_rate: float = 1e-3,
+    device: str = "cpu",
 ) -> Any:
     """Fit a multi-target estimator on the train partition only.
 
@@ -40,13 +50,14 @@ def fit_multitask_op(
     -----
     **Leakage:** Requires a split. Fit uses train only. Validation/test are
     never used for fitting. Needs ``>= 2`` target columns (roles or
-    ``targets=``). Same-type tasks only; mixed classification+regression is
-    refused. Classical ``Session.fit`` remains single-target.
+    ``targets=``). Sklearn/industry require same-type tasks; torch supports
+    mixed cls+reg. Classical ``Session.fit`` remains single-target.
     """
     session.assert_can_fit("train")
     plan, result = fit_multitask(
         session.dataset,
         session._split_plan,
+        backend=backend,
         method=method,
         task=task,
         targets=targets,
@@ -57,6 +68,10 @@ def fit_multitask_op(
         prefer_reduce_components=prefer_reduce_components,
         prediction_prefix=prediction_prefix,
         reduce_plan=getattr(session, "_reduce_plan", None),
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        device=device,
     )
     session._multitask_plan = plan
     session._multitask_fit_result = result
@@ -65,6 +80,7 @@ def fit_multitask_op(
     session._record(
         "fit_multitask",
         {
+            "backend": backend,
             "method": method,
             "task": task,
             "targets": None if targets is None else list(targets),
@@ -74,6 +90,10 @@ def fit_multitask_op(
             "order": None if order is None else list(order),
             "prefer_reduce_components": prefer_reduce_components,
             "prediction_prefix": prediction_prefix,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "device": device,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),
@@ -165,6 +185,7 @@ def save_multitask_bundle_op(session, path: str | Path) -> Path:
         {"path": str(out)},
         result_summary={
             "path": str(out),
+            "backend": plan.backend,
             "method": plan.method,
             "task": plan.task,
             "n_tasks": len(plan.target_columns),
@@ -185,6 +206,7 @@ def load_multitask_bundle_op(session, path: str | Path) -> Any:
         "load_multitask_bundle",
         {
             "path": str(path),
+            "backend": plan.backend,
             "method": plan.method,
             "task": plan.task,
             "n_tasks": len(plan.target_columns),

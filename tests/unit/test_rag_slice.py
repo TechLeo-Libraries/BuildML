@@ -164,7 +164,7 @@ def test_session_rag_vertical_slice(tmp_path: Path) -> None:
         ]
     )
     session.rag_chunk(size=128, overlap=16)
-    session.rag_embed_and_index()
+    session.rag_embed_and_index(embedder="hashing")
     assert session.rag_index_result is not None
     result = session.rag_retrieve("systems programming rust", k=2)
     assert len(result.hits) == 2

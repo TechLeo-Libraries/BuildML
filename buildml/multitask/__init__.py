@@ -1,40 +1,15 @@
-"""Multi-task / multi-output learning domain (sklearn MultiOutput / Chain).
+"""Multi-task / multi-output learning domain (sklearn + industry + torch).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
+Industry depth (R6.4):
+  - Core sklearn: MultiOutput / Chain façades (always available).
+  - Industry (``buildml[multitask-industry]``): XGBoost/LightGBM/CatBoost
+    multi-target when installed.
+  - Torch (``buildml[torch]``): shared-trunk multi-head joint training; mixed
+    classification+regression via separate heads.
 
-Phase 2:
-  1. Semi-supervised learning — done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks — done (``buildml.selfsupervised``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit) — done (``buildml.online``).
-  5. Multi-task learning — **this module** (done).
-  6. Meta-learning — done (``buildml.metalearning``).
-  7. Federated learning — done (``buildml.federated``).
-  8. Bayesian / probabilistic — done (``buildml.probabilistic``); next = Causal.
-  Later: graph, evolutionary,
-  symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
-  NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
-  - Shared-feature multi-target fitting via sklearn ``MultiOutputClassifier`` /
-    ``MultiOutputRegressor`` / ``ClassifierChain`` / ``RegressorChain``.
-  - Same-type tasks only (all classification or all regression). Mixed
-    classification+regression targets are refused with a clear error.
-  - Classical ``Session.fit`` remains single-target (``require_target()``);
-    this path is distinct and requires ``>= 2`` target columns.
-  - Train-only fit; validation/test are evaluation-only.
-  - Not a deep multi-head MTL research platform, not multi-label binary
-    relevance zoos, not causal multi-task.
-
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Multi-task uses
-sklearn multi-output / chain façades — no optional extra required for
-``import buildml``.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Industry GBDT and
+Torch multi-head paths use optional extras. Sklearn remains the honest fallback
+when extras are missing.
 
 Lazy imports — core never grows heavy MTL stacks.
 """
@@ -46,6 +21,7 @@ from typing import Any
 __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
+    "MultiTaskBackend",
     "MultiTaskBaseEstimator",
     "MultiTaskConfig",
     "MultiTaskEvalResult",
@@ -56,7 +32,9 @@ __all__ = [
     "MultiTaskTask",
     "evaluate_multitask",
     "fit_multitask",
+    "list_multitask_methods",
     "load_multitask_bundle",
+    "multitask_capability_matrix",
     "multitask_status",
     "multitask_status_for_session",
     "predict_multitask",
@@ -67,6 +45,7 @@ __all__ = [
 def __getattr__(name: str) -> Any:
     if name in {
         "MultiTaskMethod",
+        "MultiTaskBackend",
         "MultiTaskTask",
         "MultiTaskBaseEstimator",
         "MultiTaskConfig",
@@ -95,6 +74,10 @@ def __getattr__(name: str) -> Any:
         from buildml.multitask.evaluate import evaluate_multitask
 
         return evaluate_multitask
+    if name in {"multitask_capability_matrix", "list_multitask_methods"}:
+        from buildml.multitask import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",

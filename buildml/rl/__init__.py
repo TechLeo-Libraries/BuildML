@@ -48,13 +48,18 @@ __all__ = [
     "evaluate_rl",
     "fit_imitation",
     "fit_rl",
-    "gymnasium_available",
+    "rl_capability_matrix",
+    "list_imitation_methods",
+    "list_rl_algorithms",
+    "rl_industry_available",
+    "stable_baselines3_available",
     "imitation_status",
     "imitation_status_for_session",
     "load_imitation_bundle",
     "load_rl_bundle",
     "predict_imitation_action",
     "require_gymnasium",
+    "gymnasium_available",
     "rl_status",
     "rl_status_for_session",
     "save_imitation_bundle",
@@ -123,10 +128,18 @@ def __getattr__(name: str) -> Any:
         from buildml.rl import checkpoint as checkpoint_mod
 
         return getattr(checkpoint_mod, name)
-    if name in {"require_gymnasium", "gymnasium_available"}:
+    if name in {"require_gymnasium", "gymnasium_available", "rl_industry_available", "stable_baselines3_available"}:
         from buildml.rl import extras as extras_mod
 
         return getattr(extras_mod, name)
+    if name in {
+        "rl_capability_matrix",
+        "list_imitation_methods",
+        "list_rl_algorithms",
+    }:
+        from buildml.rl import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "imitation_status",
         "imitation_status_for_session",

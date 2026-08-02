@@ -163,5 +163,49 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
             ),
             related_concepts=("semisupervised-train-only-fit",),
         ),
+        _note(
+            key="semisupervised-ssl-pipeline",
+            title="SSL → semi-supervised pipeline",
+            summary=(
+                "fit_ssl_pretext learns train representations; transform_ssl exposes "
+                "embeddings; fit_semisupervised propagates/pseudo-labels partial targets."
+            ),
+            definition=(
+                "BuildML documents a two-stage pipeline: self-supervised pretext on "
+                "train features (labels optional), then semi-supervised classification "
+                "on the resulting embedding columns with NaN=unlabeled targets."
+            ),
+            intuition=(
+                "Learn a useful coordinate system from all rows, then fill in scarce "
+                "class stickers using both the coordinates and the few known labels."
+            ),
+            formal_idea=(
+                "Stage 1: encoder f = fit_ssl_pretext(X_train). Stage 2: "
+                "g = fit_semisupervised(f(X_train), y_train^{partial})."
+            ),
+            why_it_matters=(
+                "Combining representation learning with partial labels is a common "
+                "industry recipe; finetune_ssl_head alone ignores unlabeled train rows."
+            ),
+            how_buildml_uses=(
+                "Session.fit_ssl_pretext → Session.transform_ssl(attach=True) → "
+                "Session.fit_semisupervised(columns=ssl_emb_*).",
+            ),
+            interpretation_rules=(
+                "finetune_ssl_head = labeled-only head; fit_semisupervised = uses unlabeled.",
+                "Holdout eval still scores labeled rows only.",
+            ),
+            assumptions=("Split exists before both stages.",),
+            failure_modes=(
+                "Using finetune_ssl_head when unlabeled train rows should contribute.",
+            ),
+            anti_patterns=(
+                "Skipping transform_ssl then expecting SSL columns magically.",
+            ),
+            worked_example_pattern=(
+                "fit_ssl_pretext(simclr_tabular) → transform_ssl → fit_semisupervised(self_training).",
+            ),
+            related_concepts=("ssl-pretext-then-head", "semisupervised-train-only-fit"),
+        ),
     )
 }

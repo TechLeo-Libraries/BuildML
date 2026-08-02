@@ -26,6 +26,8 @@ class SymbolicPlan:
     n_rules: int
     knowledge_base: RuleKnowledgeBase
     classes_: tuple[Any, ...] | None
+    backend: str = "sklearn"
+    method: str | None = None
     tree_estimator_: Any = field(repr=False, default=None)
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -35,6 +37,8 @@ class SymbolicPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "kind": "symbolic",
+            "backend": self.backend,
+            "method": self.method,
             "source": self.source,
             "task": self.task,
             "columns": list(self.columns),
@@ -68,6 +72,8 @@ class NeuroSymbolicPlan:
     n_train_rows: int
     knowledge_base: RuleKnowledgeBase
     estimator_: Any = field(repr=False)
+    backend: str = "sklearn"
+    torch_method: str | None = None
     label_encoder_: Any = field(repr=False, default=None)
     classes_: tuple[Any, ...] | None = None
     rule_feature_names_: tuple[str, ...] = ()
@@ -80,8 +86,10 @@ class NeuroSymbolicPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "kind": "neuro_symbolic",
+            "backend": self.backend,
             "mode": self.mode,
             "base_estimator_name": self.base_estimator_name,
+            "torch_method": self.torch_method,
             "task": self.task,
             "columns": list(self.columns),
             "target_column": self.target_column,
@@ -109,6 +117,8 @@ class SymbolicFitResult:
     columns: tuple[str, ...]
     target_column: str
     provenance: str
+    backend: str = "sklearn"
+    method: str | None = None
     classes: tuple[Any, ...] | None = None
     train_accuracy: float | None = None
     disclosures: tuple[str, ...] = ()
@@ -117,6 +127,8 @@ class SymbolicFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "source": self.source,
+            "backend": self.backend,
+            "method": self.method,
             "task": self.task,
             "n_train_rows": self.n_train_rows,
             "n_rules": self.n_rules,
@@ -142,6 +154,8 @@ class NeuroSymbolicFitResult:
     columns: tuple[str, ...]
     target_column: str
     rule_provenance: str
+    backend: str = "sklearn"
+    torch_method: str | None = None
     classes: tuple[Any, ...] | None = None
     train_score: float | None = None
     disclosures: tuple[str, ...] = ()
@@ -150,7 +164,9 @@ class NeuroSymbolicFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "mode": self.mode,
+            "backend": self.backend,
             "base_estimator_name": self.base_estimator_name,
+            "torch_method": self.torch_method,
             "task": self.task,
             "n_train_rows": self.n_train_rows,
             "n_rules": self.n_rules,

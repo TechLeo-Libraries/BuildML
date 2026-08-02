@@ -16,6 +16,7 @@ from buildml.ranking.features import (
 )
 from buildml.ranking.rank import score_rows
 from buildml.ranking.results import RankerEvalResult, RankerPlan
+from buildml.ranking.types import RankerBackend
 
 
 def evaluate_ranker(
@@ -25,6 +26,7 @@ def evaluate_ranker(
     *,
     partition: str = "test",
     k: int = 10,
+    backend: RankerBackend | None = None,
 ) -> RankerEvalResult:
     """Score ranking quality on a holdout partition.
 
@@ -75,7 +77,7 @@ def evaluate_ranker(
             warnings=tuple(warnings),
         )
 
-    scores = score_rows(plan, holdout)
+    scores = score_rows(plan, holdout, backend=backend)
     frame = holdout.copy()
     frame["__score__"] = scores
     qcol = plan.query_column

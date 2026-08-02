@@ -44,10 +44,14 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_imitation_op(
     session,
     *,
+    backend: str | None = None,
     task: ImitationTask | None = None,
     estimator: ImitationEstimator | None = None,
+    method: str | None = None,
     columns: list[str] | None = None,
     action_column: str | None = None,
+    env_id: str | None = None,
+    n_epochs: int = 40,
     random_state: int | None = 0,
     prefer_reduce_components: bool = True,
 ) -> Any:
@@ -62,10 +66,14 @@ def fit_imitation_op(
     plan, result = fit_imitation(
         session.dataset,
         session._split_plan,
+        backend=backend,  # type: ignore[arg-type]
         task=task,
         estimator=estimator,
+        method=method,  # type: ignore[arg-type]
         columns=columns,
         action_column=action_column,
+        env_id=env_id,
+        n_epochs=n_epochs,
         random_state=random_state,
         prefer_reduce_components=prefer_reduce_components,
         reduce_plan=getattr(session, "_reduce_plan", None),
@@ -77,10 +85,14 @@ def fit_imitation_op(
     session._record(
         "fit_imitation",
         {
+            "backend": backend,
             "task": task,
             "estimator": estimator,
+            "method": method,
             "columns": columns,
             "action_column": action_column,
+            "env_id": env_id,
+            "n_epochs": n_epochs,
             "random_state": random_state,
             "prefer_reduce_components": prefer_reduce_components,
         },
@@ -188,8 +200,9 @@ def load_imitation_bundle_op(session, path: str | Path):
 def fit_rl_op(
     session,
     *,
-    mode: RlMode = "contextual_bandit",
-    algorithm: BanditAlgorithm = "linucb",
+    backend: str | None = None,
+    mode: RlMode | None = None,
+    algorithm: BanditAlgorithm | str = "linucb",
     columns: list[str] | None = None,
     action_column: str | None = None,
     reward_column: str | None = None,
@@ -203,20 +216,29 @@ def fit_rl_op(
     max_steps: int = 500,
     learning_rate: float = 0.01,
     gamma: float = 0.99,
+    total_timesteps: int = 20_000,
 ) -> Any:
     """Fit a contextual bandit (core) or Gymnasium REINFORCE-lite (``buildml[rl]``).
 
     Notes
     -----
     **Leakage (bandit):** Requires a split; updates use train logged data only.
-    **gym_reinforce:** Env loop; does not fit on Session tabular partitions.
+    **gym_reinforce / gym_sb3:** Env loop; does not fit on Session tabular partitions.
     Honesty: not MuJoCo / robotics / multi-agent.
     """
-    if mode == "contextual_bandit":
+    from buildml.rl.catalog import resolve_rl_backend_mode_algorithm
+
+    _backend, resolved_mode, _algo = resolve_rl_backend_mode_algorithm(
+        backend=backend,  # type: ignore[arg-type]
+        mode=mode,
+        algorithm=str(algorithm),
+    )
+    if resolved_mode == "contextual_bandit":
         session.assert_can_fit("train")
         plan, result = fit_rl(
             session.dataset,
             session._split_plan,
+            backend=backend,  # type: ignore[arg-type]
             mode=mode,
             algorithm=algorithm,
             columns=columns,
@@ -230,11 +252,10 @@ def fit_rl_op(
             reduce_plan=getattr(session, "_reduce_plan", None),
         )
     else:
-        # Gym path: Session is the workflow host; no tabular fit partition required,
-        # but a dataset may still be attached for continuity.
         plan, result = fit_rl(
             getattr(session, "_dataset", None),
             getattr(session, "_split_plan", None),
+            backend=backend,  # type: ignore[arg-type]
             mode=mode,
             algorithm=algorithm,
             env_id=env_id,
@@ -243,6 +264,7 @@ def fit_rl_op(
             learning_rate=learning_rate,
             gamma=gamma,
             random_state=random_state,
+            total_timesteps=total_timesteps,
         )
     session._rl_plan = plan
     session._rl_fit_result = result
@@ -251,6 +273,7 @@ def fit_rl_op(
     session._record(
         "fit_rl",
         {
+            "backend": backend,
             "mode": mode,
             "algorithm": algorithm,
             "columns": columns,
@@ -266,6 +289,7 @@ def fit_rl_op(
             "max_steps": max_steps,
             "learning_rate": learning_rate,
             "gamma": gamma,
+            "total_timesteps": total_timesteps,
         },
         warnings=tuple(result.warnings),
         result_summary=rl_fit_summary(result),

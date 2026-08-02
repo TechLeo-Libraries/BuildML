@@ -164,7 +164,8 @@ Models and diagnostics
 * Fit learning-to-rank models (``fit_ranker`` → ``rank`` / ``evaluate_ranker``)
   on query–item feature rows. Persist via ``buildml.ranker_bundle.v1``.
 * Fit knowledge-graph embeddings (``fit_kg`` → ``score_triples`` /
-  ``predict_links`` / ``query_kg``): TransE/DistMult-lite + symbolic query.
+  ``predict_links`` / ``query_kg``): native TransE/DistMult or PyKEEN
+  RotatE/ComplEx (``buildml[kg-industry]``) + symbolic query.
   Persist via ``buildml.kg_bundle.v1``. Not Neo4j / Graph ML / RAG.
 * Fit decision policies (``fit_decision_policy`` → ``apply_decisions`` /
   ``evaluate_decisions``): thresholds, cost matrices, top-K / knapsack / LP.

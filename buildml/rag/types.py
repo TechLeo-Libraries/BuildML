@@ -7,10 +7,12 @@ from typing import Any, Literal
 
 DEFAULT_CHUNK_SIZE = 512
 DEFAULT_CHUNK_OVERLAP = 64
+DEFAULT_CHUNK_STRATEGY: Literal["fixed", "recursive"] = "fixed"
 DEFAULT_EMBED_DIM = 384
 DEFAULT_TOP_K = 5
 HASHING_EMBEDDER_ID = "buildml.hashing_embed.v1"
 DEFAULT_STORE_BACKEND = "numpy_cosine"
+# Static fallback; runtime prefers hybrid when buildml[rag] is importable.
 DEFAULT_RETRIEVE_MODE: Literal["dense", "bm25", "hybrid"] = "dense"
 DEFAULT_FUSION: Literal["rrf", "weighted"] = "rrf"
 DEFAULT_RRF_K = 60
@@ -22,23 +24,36 @@ DEFAULT_RERANK_CANDIDATES = 20
 RetrieveMode = Literal["dense", "bm25", "hybrid"]
 FusionMethod = Literal["rrf", "weighted"]
 RelevanceMode = Literal["document", "chunk"]
+ChunkStrategy = Literal["fixed", "recursive"]
 
 
 @dataclass(slots=True)
 class ChunkConfig:
-    """Fixed-size character chunking with overlap."""
+    """Character chunking with overlap and fixed or recursive strategy."""
 
     size: int = DEFAULT_CHUNK_SIZE
     overlap: int = DEFAULT_CHUNK_OVERLAP
+    strategy: ChunkStrategy = DEFAULT_CHUNK_STRATEGY
+    separators: tuple[str, ...] = ("\n\n", "\n", ". ", " ", "")
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        payload["separators"] = list(self.separators)
+        return payload
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> ChunkConfig:
+        raw_seps = payload.get("separators")
+        separators: tuple[str, ...]
+        if raw_seps is None:
+            separators = ("\n\n", "\n", ". ", " ", "")
+        else:
+            separators = tuple(str(s) for s in raw_seps)
         return cls(
             size=int(payload.get("size", DEFAULT_CHUNK_SIZE)),
             overlap=int(payload.get("overlap", DEFAULT_CHUNK_OVERLAP)),
+            strategy=payload.get("strategy") or DEFAULT_CHUNK_STRATEGY,
+            separators=separators,
         )
 
 
@@ -86,7 +101,8 @@ class RetrieveConfig:
 
     Defaults
     --------
-    - ``mode="dense"`` — cosine top-k over the NumPy store (M1 behavior).
+    - ``mode`` — ``"hybrid"`` (BM25 + dense RRF) when ``buildml[rag]`` is installed;
+      ``"dense"`` otherwise. Pass ``mode="dense"`` explicitly for dense-only.
     - ``fusion="rrf"`` with ``rrf_k=60`` when ``mode="hybrid"``.
     - ``rerank=False`` — no cross-encoder pass unless explicitly requested.
     - ``filters=None`` — no metadata equality filter.

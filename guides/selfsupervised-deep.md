@@ -1,11 +1,9 @@
-# Self-supervised deep guide
+# Self-supervised deep guide (Phase R1 — Torch industry depth)
 
-> **Install (GitHub 2.x):**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-
-Phase 2 second item: honest Session-shaped SSL hooks. Complete smaller surface
-shipped: **masked tabular autoencoder lite** + representation export + supervised
-head. Not BERT/SimCLR product training.
+> **Install:**
+> `pip install "buildml[torch]"` for tabular contrastive/generative SSL defaults.
+> `pip install "buildml[ssl]"` adds sentence-transformers for text SSL.
+> `pip install "buildml[vision]"` for vision SSL backbones.
 
 ## Story
 
@@ -19,8 +17,18 @@ finetune_ssl_head (labeled train only; NaN targets skipped)
 evaluate_ssl (labeled holdout only)
 ```
 
-You can also `transform_ssl(attach=True)` and continue with classical
-`Session.fit` / `fit_semisupervised` on the embedding columns.
+## Method catalog (Session `method=`)
+
+| Method | Modality | Backend | Notes |
+| --- | --- | --- | --- |
+| `simclr_tabular` | tabular | Torch | **Default** when torch installed |
+| `byol_tabular` | tabular | Torch | Bootstrap-your-own-latent |
+| `vicreg_tabular` | tabular | Torch | Variance-invariance-covariance |
+| `mae_tabular` | tabular | Torch | Masked autoencoder |
+| `vae_tabular` | tabular | Torch | Variational AE |
+| `hf_text_ssl` | text | sentence-transformers | Pass `text_column=` |
+| `vision_ssl` | vision | torchvision + projector | Pass `image_column=` |
+| `masked_tabular` | tabular | sklearn | **Deprecated** — use Torch methods |
 
 ## Contract
 
@@ -29,29 +37,41 @@ You can also `transform_ssl(attach=True)` and continue with classical
 | Pretext fit | Train features only |
 | Labels during pretext | Ignored |
 | Head fit | Labeled train rows only |
-| Holdout | Frozen encoder + head; unlabeled holdout excluded from metrics |
-| Bundle | `buildml.selfsupervised_bundle.v1` |
+| Holdout | Frozen encoder + head |
+| Bundle | `buildml.ssl_bundle.v2` (v1 legacy loadable) |
 
-## Torch backbone transfer (related, not duplicated)
+## Migration from legacy sklearn SSL
 
-Vision/audio/speech freeze/finetune remains:
+`method="masked_tabular"` still works but emits `DeprecationWarning`.
+Replace with:
+
+```python
+session.fit_ssl_pretext(method="simclr_tabular", latent_dim=16, epochs=40)
+```
+
+Bundles saved after Torch fit use `buildml.ssl_bundle.v2`. Old
+`buildml.selfsupervised_bundle.v1` bundles load unchanged.
+
+## Torch backbone transfer (related)
+
+Vision/audio/speech freeze/finetune for downstream supervised heads:
 
 - `Session.load_pretrained_backbone`
 - `Session.attach_backbone_head`
 
-under `buildml[torch]` / `buildml[speech]`. That path loads published (or mock)
-weights — it does not train tabular masked AEs.
+`vision_ssl` trains a projector on image columns inside the SSL Session path;
+backbone transfer remains the path for published-weight linear probes.
 
-## Honesty / non-goals
+## Benchmarks
 
-- No contrastive foundation-model zoo
-- No training BERT/Whisper from scratch
-- Reconstruction MAE is a pretext diagnostic, not predictive utility
-- Active learning and online / continual are done; next Phase 2 item: **multi-task learning**
+```bash
+python benchmarks/ssl/linear_probe_tabular.py --epochs 25
+```
+
+Compares linear-probe accuracy across Torch methods vs legacy sklearn.
 
 ## Related
 
 - [Quickstart](quickstart-selfsupervised.md)
-- [Semi-supervised](semisupervised-deep.md)
 - [Pretrained backbones](pretrained-backbones.md)
 - [Artifacts](artifacts-checkpoints-bundles.md)

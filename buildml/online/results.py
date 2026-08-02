@@ -36,10 +36,12 @@ class OnlinePlan:
     warnings: tuple[str, ...] = ()
     used_reduce_components: bool = False
     config: dict[str, Any] = field(default_factory=dict)
+    backend: str = "sklearn"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "estimator_name": self.estimator_name,
+            "backend": self.backend,
             "task": self.task,
             "columns": list(self.columns),
             "target_column": self.target_column,
@@ -76,10 +78,12 @@ class OnlineFitResult:
     used_refit_fallback: bool = False
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
+    backend: str = "sklearn"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "estimator_name": self.estimator_name,
+            "backend": self.backend,
             "task": self.task,
             "n_init_rows": self.n_init_rows,
             "n_train_rows": self.n_train_rows,
@@ -137,6 +141,8 @@ class OnlineEvalResult:
     n_seen_rows: int
     n_updates: int
     metrics: dict[str, float]
+    drift_detected: bool = False
+    drift_notes: tuple[str, ...] = ()
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
@@ -149,6 +155,8 @@ class OnlineEvalResult:
             "n_seen_rows": self.n_seen_rows,
             "n_updates": self.n_updates,
             "metrics": dict(self.metrics),
+            "drift_detected": self.drift_detected,
+            "drift_notes": list(self.drift_notes),
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
         }

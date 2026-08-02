@@ -1,36 +1,14 @@
 """Meta-learning domain (tabular few-shot / episodic Session protocols).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
+Industry depth (R6.5):
+  - Core sklearn: ``prototypical`` nearest-centroid + ``warm_start`` adapt.
+  - Torch (``buildml[torch]``): ``prototypical_torch`` deep tabular encoder.
+  - Industry (``buildml[metalearning-industry,torch]``): ``maml`` / ``reptile``
+    via learn2learn first-order tabular adapters.
 
-Phase 2:
-  1. Semi-supervised learning — done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks — done (``buildml.selfsupervised``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit) — done (``buildml.online``).
-  5. Multi-task learning — done (``buildml.multitask``).
-  6. Meta-learning — **this module**.
-  7. Federated learning — done (``buildml.federated``).
-  8. Bayesian / probabilistic — done (``buildml.probabilistic``); next = Causal.
-  Later: graph, evolutionary,
-  symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
-  NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
-  - Practical tabular few-shot / episodic protocols on Session data.
-  - Task definition via a task/group column (role or ``task_column=``).
-  - Algorithms shipped deeply: ``prototypical`` (nearest-centroid) and
-    ``warm_start`` (pooled sklearn init + support adapt).
-  - Train-only meta-train; validation/test are evaluation-only.
-  - Not foundation-model meta-learning, not MAML-at-scale, not a paper zoo.
-
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Meta-learning
-uses sklearn façades — no optional extra required for ``import buildml``.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Torch and industry
+paths use optional extras. Sklearn remains the honest fallback when extras
+are missing.
 
 Lazy imports — core never grows heavy meta-learning stacks.
 """
@@ -43,6 +21,7 @@ __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
     "MetaAdaptResult",
+    "MetaLearningBackend",
     "MetaLearningBaseEstimator",
     "MetaLearningConfig",
     "MetaLearningEvalResult",
@@ -52,7 +31,9 @@ __all__ = [
     "adapt_to_task",
     "evaluate_metalearning",
     "fit_metalearning",
+    "list_metalearning_methods",
     "load_metalearning_bundle",
+    "metalearning_capability_matrix",
     "metalearning_status",
     "metalearning_status_for_session",
     "save_metalearning_bundle",
@@ -62,6 +43,7 @@ __all__ = [
 def __getattr__(name: str) -> Any:
     if name in {
         "MetaLearningMethod",
+        "MetaLearningBackend",
         "MetaLearningBaseEstimator",
         "MetaLearningConfig",
     }:
@@ -89,6 +71,10 @@ def __getattr__(name: str) -> Any:
         from buildml.metalearning.evaluate import evaluate_metalearning
 
         return evaluate_metalearning
+    if name in {"metalearning_capability_matrix", "list_metalearning_methods"}:
+        from buildml.metalearning import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",

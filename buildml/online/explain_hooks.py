@@ -12,6 +12,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "estimator_name": payload.get("estimator_name"),
+        "backend": payload.get("backend"),
         "task": payload.get("task"),
         "n_init_rows": payload.get("n_init_rows"),
         "n_train_rows": payload.get("n_train_rows"),
@@ -53,6 +54,8 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
         "n_seen_rows": payload.get("n_seen_rows"),
         "n_updates": payload.get("n_updates"),
         "metrics": payload.get("metrics"),
+        "drift_detected": payload.get("drift_detected"),
+        "drift_notes": payload.get("drift_notes"),
     }
 
 
@@ -101,13 +104,15 @@ def online_status(
     if enabled:
         disclosures.extend(
             [
-                f"OnlinePlan estimator={getattr(plan, 'estimator_name', None)}, "
+                f"OnlinePlan backend={getattr(plan, 'backend', None)}, "
+                f"estimator={getattr(plan, 'estimator_name', None)}, "
                 f"task={getattr(plan, 'task', None)}, "
                 f"n_seen_rows={getattr(plan, 'n_seen_rows', None)}, "
                 f"n_updates={getattr(plan, 'n_updates', None)}, "
                 f"cursor={getattr(plan, 'cursor', None)}.",
-                "Updates use sklearn partial_fit on train chunks (or role-aligned "
-                "external frames). Validation/test are never used for updates.",
+                "Updates use partial_fit on train chunks (sklearn, River, or torch "
+                "continual) or role-aligned external frames. Validation/test are "
+                "never used for updates.",
                 "Silent full refits are refused unless allow_refit_fallback was "
                 "explicitly enabled (always disclosed).",
                 "Session checkpoints do not embed OnlinePlan; use "
@@ -148,6 +153,7 @@ def online_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_online_plan": enabled,
+        "backend": None if plan is None else getattr(plan, "backend", None),
         "estimator_name": None if plan is None else getattr(plan, "estimator_name", None),
         "task": None if plan is None else getattr(plan, "task", None),
         "n_seen_rows": None if plan is None else getattr(plan, "n_seen_rows", None),

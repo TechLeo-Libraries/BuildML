@@ -43,8 +43,13 @@ def predict_semisupervised(
     missing = [c for c in plan.columns if c not in frame.columns]
     if missing:
         raise ValidationError(f"Missing feature columns for prediction: {missing}")
-    x = matrix_from_frame(frame, list(plan.columns))
-    raw = plan.estimator_.predict(x)
+    modality = getattr(plan, "modality", "tabular") or "tabular"
+    if modality == "text":
+        texts = frame[list(plan.columns)[0]].astype(str).tolist()
+        raw = plan.estimator_.predict(texts)
+    else:
+        x = matrix_from_frame(frame, list(plan.columns))
+        raw = plan.estimator_.predict(x)
     preds = decode_predictions(raw, plan.label_encoder_)
 
     disclosures = [

@@ -129,6 +129,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "rag_evaluate supports relevance_mode=document (default) or chunk, plus retrieve mode overrides.",
+                "evaluate_generation scores faithfulness + answer relevance with EchoGroundedProvider for CI.",
                 "RagEvalResult exposes recall_at_k, mrr, ndcg_at_k, hit_rate_at_k, and disclosures.",
                 "compare_retrieval_configs rebuilds indexes per config row for side-by-side metrics.",
             ),

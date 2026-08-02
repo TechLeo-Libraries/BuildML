@@ -20,6 +20,7 @@ from buildml.federated.explain_hooks import (
 from buildml.federated.fit import fit_federated
 from buildml.federated.predict import predict_federated
 from buildml.federated.types import (
+    FederatedBackend,
     FederatedEstimator,
     FederatedMethod,
     FederatedTask,
@@ -31,6 +32,7 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_federated_op(
     session,
     *,
+    backend: FederatedBackend | None = None,
     method: FederatedMethod = "fedavg",
     estimator: FederatedEstimator = "sgd_classifier",
     task: FederatedTask | None = None,
@@ -51,13 +53,15 @@ def fit_federated_op(
     **Leakage:** Requires a split. Local client updates use train only.
     Validation/test are never used for training. Needs a client/group column
     (role or ``client_column=``) and exactly one ``role='target'``. Honesty:
-    local FedAvg-style simulation — not a distributed FL platform; not
+    local FedAvg-style simulation — ``backend='flower'`` uses Flower libraries
+    but still runs in-process unless you deploy Flower separately; not
     cryptographic secure aggregation.
     """
     session.assert_can_fit("train")
     plan, result = fit_federated(
         session.dataset,
         session._split_plan,
+        backend=backend,
         method=method,
         estimator=estimator,
         task=task,
@@ -79,6 +83,7 @@ def fit_federated_op(
     session._record(
         "fit_federated",
         {
+            "backend": result.backend,
             "method": method,
             "estimator": estimator,
             "task": task,
@@ -101,6 +106,7 @@ def fit_federated_op(
 def evaluate_federated_op(
     session,
     *,
+    backend: FederatedBackend | None = None,
     partition: PartitionOrAll = "validation",
     per_client: bool = True,
 ) -> Any:
@@ -122,6 +128,7 @@ def evaluate_federated_op(
         session.dataset,
         plan,
         session._split_plan,
+        backend=backend,
         partition=resolved,
         per_client=per_client,
     )
@@ -129,6 +136,7 @@ def evaluate_federated_op(
     session._record(
         "evaluate_federated",
         {
+            "backend": backend,
             "partition": resolved,
             "per_client": per_client,
         },
@@ -141,6 +149,7 @@ def evaluate_federated_op(
 def predict_federated_op(
     session,
     *,
+    backend: FederatedBackend | None = None,
     partition: PartitionOrAll = "test",
 ) -> Any:
     """Predict with the global federated model (no update)."""
@@ -153,12 +162,13 @@ def predict_federated_op(
         session.dataset,
         plan,
         session._split_plan,
+        backend=backend,
         partition=partition,
     )
     session._federated_predict_result = result
     session._record(
         "predict_federated",
-        {"partition": partition},
+        {"backend": backend, "partition": partition},
         warnings=tuple(result.warnings),
         result_summary=predict_result_summary(result),
     )
@@ -183,6 +193,7 @@ def save_federated_bundle_op(session, path: str | Path) -> Path:
         {"path": str(out)},
         result_summary={
             "path": str(out),
+            "backend": getattr(plan, "backend", "native"),
             "method": plan.method,
             "estimator_name": plan.estimator_name,
             "client_column": plan.client_column,
@@ -203,6 +214,7 @@ def load_federated_bundle_op(session, path: str | Path) -> Any:
         "load_federated_bundle",
         {
             "path": str(path),
+            "backend": getattr(plan, "backend", "native"),
             "method": plan.method,
             "estimator_name": plan.estimator_name,
             "client_column": plan.client_column,

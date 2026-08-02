@@ -32,11 +32,18 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "bootstrap: row resample (+ optional smooth_sigma noise).",
             "gaussian_copula: mixed-type empirical CDF + correlation latent.",
             "smote: reusable imblearn SMOTE wrap (extra imbalanced).",
+            "sdv: CTGAN/TVAE/CopulaGAN when buildml[synthetic-industry] installed.",
         ),
         parameters=(
             _p(
+                "backend",
+                "native | sdv | None",
+                "Synthesizer backend (see synthetic_capability_matrix).",
+                None,
+            ),
+            _p(
                 "method",
-                "bootstrap | gaussian_copula | smote",
+                "bootstrap | gaussian_copula | smote | ctgan | tvae | copulagan",
                 "Generator family.",
                 "gaussian_copula",
             ),
@@ -62,6 +69,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "Forwarded to imblearn SMOTE.",
                 "auto",
             ),
+            _p("epochs", "int", "SDV training epochs.", 300),
+            _p("batch_size", "int", "SDV batch size.", 500),
         ),
         inputs=("Split train rows + column roles.",),
         outputs=("SynthesizerPlan + SynthesizerFitResult.",),
@@ -131,6 +140,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "Column marking synthetic rows when merging.",
                 "_synthetic",
             ),
+            _p(
+                "validate",
+                "bool",
+                "Run built-in validate_synthetic on the sample.",
+                False,
+            ),
         ),
         inputs=("Frozen SynthesizerPlan.",),
         outputs=("SyntheticSampleResult (+ optional Session train mutation)."),
@@ -171,6 +186,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p("mode", "fidelity | tstr", "Evaluation family.", "fidelity"),
+            _p(
+                "eval_backend",
+                "auto | builtin | sdmetrics",
+                "Fidelity eval backend (SDMetrics when installed).",
+                "auto",
+            ),
             _p(
                 "partition",
                 "train | validation | test",

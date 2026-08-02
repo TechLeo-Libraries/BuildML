@@ -11,6 +11,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
+        "backend": payload.get("backend"),
         "method": payload.get("method"),
         "n_train_rows": payload.get("n_train_rows"),
         "n_train_queries": payload.get("n_train_queries"),
@@ -76,7 +77,8 @@ def ranking_status(
     if enabled:
         disclosures.extend(
             [
-                f"RankerPlan method={getattr(plan, 'method', None)}, "
+                f"RankerPlan backend={getattr(plan, 'backend', None)}, "
+                f"method={getattr(plan, 'method', None)}, "
                 f"queries={getattr(plan, 'n_train_queries', None)}, "
                 f"rows={getattr(plan, 'n_train_rows', None)}, "
                 f"features={getattr(plan, 'n_features', None)}.",
@@ -108,6 +110,7 @@ def ranking_status(
         "present": enabled or saw,
         "has_ranker_plan": enabled,
         "method": None if plan is None else getattr(plan, "method", None),
+        "backend": None if plan is None else getattr(plan, "backend", None),
         "n_train_queries": None if plan is None else getattr(plan, "n_train_queries", None),
         "n_train_rows": None if plan is None else getattr(plan, "n_train_rows", None),
         "n_features": None if plan is None else getattr(plan, "n_features", None),

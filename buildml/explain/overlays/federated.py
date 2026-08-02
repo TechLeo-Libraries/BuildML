@@ -34,6 +34,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p(
+                "backend",
+                "native | flower | None",
+                "Federation backend (defaults to flower when flwr installed).",
+                None,
+            ),
+            _p(
                 "method",
                 "fedavg | fedprox",
                 "Aggregation path (fedprox requires mu > 0).",
@@ -113,6 +119,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "federated-simulation",
             "federated-fedavg",
             "federated-fedprox",
+            "federated-flower-backend",
             "leakage-boundary",
         ),
     ),

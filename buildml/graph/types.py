@@ -29,10 +29,11 @@ import pandas as pd
 
 from buildml.core.errors import ValidationError
 
-GraphMethod = Literal["classical", "gcn"]
+GraphMethod = Literal["classical", "gcn", "pyg"]
 GraphTask = Literal["node_classification"]
 GraphMode = Literal["inductive", "transductive"]
 ClassicalEstimator = Literal["logistic_regression", "random_forest"]
+PyGModel = Literal["gcn", "graphsage", "gat"]
 
 
 @dataclass(slots=True)
@@ -95,6 +96,8 @@ class GraphConfig:
     dropout: float = 0.1
     random_state: int | None = 0
     include_graph_metrics: bool = True
+    pyg_model: PyGModel = "gcn"
+    heads: int = 4
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -111,4 +114,6 @@ class GraphConfig:
             "dropout": self.dropout,
             "random_state": self.random_state,
             "include_graph_metrics": self.include_graph_metrics,
+            "pyg_model": self.pyg_model,
+            "heads": self.heads,
         }

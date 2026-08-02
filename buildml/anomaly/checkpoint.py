@@ -84,4 +84,14 @@ def load_anomaly_bundle(path: str | Path) -> AnomalyPlan:
     plan = loaded["plan"]
     if not isinstance(plan, AnomalyPlan):
         raise ValidationError("Loaded plan object is not an AnomalyPlan")
+    if not getattr(plan, "backend", None):
+        plan.backend = _infer_backend_from_method(plan.method)
     return plan
+
+
+def _infer_backend_from_method(method: str) -> str:
+    if method in {"hbos", "copod", "ecod", "deepsvdd"}:
+        return "pyod"
+    if method == "autoencoder":
+        return "torch"
+    return "sklearn"

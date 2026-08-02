@@ -1,39 +1,10 @@
-"""Self-supervised learning hooks (tabular pretext → representation → head).
+"""Self-supervised learning hooks (Torch industry defaults + legacy sklearn fallback).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
+Phase R1 (refinement): Torch tabular contrastive (SimCLR/BYOL/VICReg), generative
+(MAE/VAE), HF text SSL, vision SSL with Session API + bundle v2.
 
-Phase 2:
-  1. Semi-supervised learning — done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks — **this module (PASS)** (masked tabular AE
-     lite + representation export + supervised head attach; zoo freeze/finetune
-     remains ``load_pretrained_backbone`` / ``attach_backbone_head``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit) — done (``buildml.online``).
-  5. Multi-task learning — done (``buildml.multitask``).
-  6. Meta-learning — done (``buildml.metalearning``).
-  7. Federated learning — done (``buildml.federated``).
-  8. Bayesian / probabilistic — done (``buildml.probabilistic``); next = Causal.
-  Later: graph, evolutionary,
-  symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
-  NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
-  - Not BERT / SimCLR / MoCo product training from scratch.
-  - Complete smaller surface: masked tabular reconstruction + embedding export +
-    supervised head fine-tune, with leakage-safe train-only pretext.
-  - Vision/audio/speech SSL-style transfer reuses existing Torch zoo hooks under
-    ``buildml[torch]`` / ``buildml[speech]`` — not reimplemented here.
-
-Dependency policy: core masked-tabular path uses numpy/pandas/sklearn (no
-optional extra). Torch zoo transfer remains optional extras.
-
-Lazy imports — core never grows heavy SSL stacks.
+Dependency policy: industry Torch/HF backends when ``buildml[torch]`` /
+``buildml[ssl]`` installed; legacy ``masked_tabular`` sklearn path deprecated.
 """
 
 from __future__ import annotations
@@ -42,6 +13,8 @@ from typing import Any
 
 __all__ = [
     "BUNDLE_FORMAT",
+    "BUNDLE_FORMAT_V1",
+    "BUNDLE_FORMAT_V2",
     "CHECKPOINT_BOUNDARY",
     "MaskedTabularEncoder",
     "SSLHeadEstimator",
@@ -56,6 +29,7 @@ __all__ = [
     "evaluate_ssl",
     "finetune_ssl_head",
     "fit_ssl_pretext",
+    "list_ssl_methods",
     "load_ssl_bundle",
     "save_ssl_bundle",
     "selfsupervised_status",
@@ -102,6 +76,8 @@ def __getattr__(name: str) -> Any:
         return evaluate_ssl
     if name in {
         "BUNDLE_FORMAT",
+        "BUNDLE_FORMAT_V1",
+        "BUNDLE_FORMAT_V2",
         "CHECKPOINT_BOUNDARY",
         "save_ssl_bundle",
         "load_ssl_bundle",
@@ -113,4 +89,8 @@ def __getattr__(name: str) -> Any:
         from buildml.selfsupervised import explain_hooks as hooks
 
         return getattr(hooks, name)
+    if name == "list_ssl_methods":
+        from buildml.selfsupervised.torch.catalog import list_ssl_methods
+
+        return list_ssl_methods
     raise AttributeError(f"module 'buildml.selfsupervised' has no attribute {name!r}")

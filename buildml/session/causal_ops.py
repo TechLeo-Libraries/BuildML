@@ -19,6 +19,7 @@ from buildml.causal.fit import fit_causal
 from buildml.causal.refute import refute_causal
 from buildml.causal.types import (
     CausalAssumptions,
+    CausalBackend,
     CausalMethod,
     CausalRefuteKind,
 )
@@ -99,6 +100,7 @@ def _resolve_assumptions(
 def fit_causal_op(
     session,
     *,
+    backend: CausalBackend | None = None,
     method: CausalMethod = "aipw",
     assumptions: CausalAssumptions | dict[str, Any] | None = None,
     bootstrap_samples: int = 200,
@@ -107,14 +109,15 @@ def fit_causal_op(
     outcome_model: str = "ridge",
     propensity_model: str = "logistic_regression",
 ) -> Any:
-    """Fit causal nuisance models on Session train and estimate ATE.
+    """Fit causal models on Session train and estimate ATE.
 
     Notes
     -----
     **Leakage:** Requires a split. Nuisance models fit on train only.
     **Assumptions:** Requires validated CausalAssumptions — refused otherwise.
-    Honesty: native sklearn T-learner / IPW / AIPW — not DoWhy/EconML;
-    not causal discovery; EDA remains associational.
+    Backends: native (T-learner/IPW/AIPW), dowhy, econml when
+    ``buildml[causal-industry]`` is installed. Not causal discovery; EDA
+    remains associational.
     """
     resolved = _resolve_assumptions(session, assumptions)
     session._causal_assumptions = resolved
@@ -123,6 +126,7 @@ def fit_causal_op(
         session.dataset,
         session._split_plan,
         resolved,
+        backend=backend,
         method=method,
         bootstrap_samples=bootstrap_samples,
         random_state=random_state,
@@ -138,6 +142,7 @@ def fit_causal_op(
     session._record(
         "fit_causal",
         {
+            "backend": backend or plan.backend,
             "method": method,
             "bootstrap_samples": bootstrap_samples,
             "random_state": random_state,

@@ -3,8 +3,9 @@
 > **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
 > install Session 2.x. Use
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> (or an editable checkout). Randomized/grid AutoML is core sklearn — no
-> optional extra. Optuna method reuses `buildml[optuna]`.
+> Randomized/grid/evolutionary AutoML is core sklearn — no optional extra.
+> Optuna backend: `buildml[automl]`. Industry adapters (FLAML / AutoGluon) and
+> GBDT families: `buildml[automl-industry]`.
 > See [installation](../docs/installation.rst).
 
 Joint model-family + fold-local preprocess-strategy search on the Session —
@@ -80,6 +81,44 @@ print(session.evaluate_automl(partition="test").metrics)
 ```
 
 Outer folds stay inside **train**. Session test never enters selection.
+
+---
+
+## Industry backends (optional)
+
+Install `buildml[automl-industry]` for FLAML / AutoGluon adapters and
+LightGBM / XGBoost / CatBoost native families:
+
+```python
+from buildml.automl import automl_capability_matrix
+
+print(automl_capability_matrix()["backends"])
+
+# FLAML on train only (validation ranking; nested not supported)
+session.run_automl(backend="flaml", selection="validation", time_budget=120)
+
+# Deepened Optuna (pruning, study persistence via AutoMLBudget)
+from buildml.automl import AutoMLBudget
+
+session.run_automl(
+    backend="optuna",
+    n_trials=20,
+    budget=AutoMLBudget(
+        max_trials=20,
+        enable_pruning=True,
+        study_storage="sqlite:///automl_study.db",
+    ),
+)
+
+# Export trial comparison metrics
+from buildml.automl import export_comparison_metrics
+
+export_comparison_metrics(session.automl_result, "artifacts/automl_trials.json")
+```
+
+Native `backend='native'` remains the leakage-first path with fold-local
+recipe search. Industry adapters bypass recipe strategy search — see
+`limitations` on `AutoMLResult`.
 
 ---
 

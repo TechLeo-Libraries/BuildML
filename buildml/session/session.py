@@ -71,6 +71,7 @@ from . import (
     synthetic_ops,
     selfsupervised_ops,
     semisupervised_ops,
+    timeseries_ops,
     state,
     unsupervised_ops,
     workflow_ops,
@@ -100,7 +101,13 @@ if TYPE_CHECKING:
     from buildml.rag.results import GenerateResult, IndexResult, RagEvalResult, RetrieveResult
     from buildml.rag.types import GenerateConfig, RetrieveConfig
     from buildml.automl.results import AutoMLPlan, AutoMLResult
-    from buildml.automl.types import AutoMLBudget, AutoMLMethod, AutoMLSelection
+    from buildml.automl.types import (
+        AutoMLBackend,
+        AutoMLBudget,
+        AutoMLMethod,
+        AutoMLSelection,
+        EnsembleMode,
+    )
     from buildml.ensemble.results import EnsembleFitResult, EnsemblePlan
     from buildml.ensemble.types import BlendMethod, VotingMethod
     from buildml.forecasting.results import (
@@ -115,15 +122,22 @@ if TYPE_CHECKING:
         AnomalyFitResult,
         AnomalyPlan,
         AnomalyScoreResult,
+        AnomalyThresholdTuneResult,
     )
-    from buildml.anomaly.types import AnomalyMethod, AnomalyMode, ThresholdPolicy
+    from buildml.anomaly.types import (
+        AnomalyBackend,
+        AnomalyMethod,
+        AnomalyMode,
+        ThresholdPolicy,
+        ThresholdTuningMetric,
+    )
     from buildml.semisupervised.results import (
         SemiSupervisedEvalResult,
         SemiSupervisedFitResult,
         SemiSupervisedPlan,
         SemiSupervisedPredictResult,
     )
-    from buildml.semisupervised.types import SemiSupervisedMethod
+    from buildml.semisupervised.types import SemiSupervisedBackend, SemiSupervisedMethod
     from buildml.selfsupervised.results import (
         SSLHeadFitResult,
         SSLHeadPlan,
@@ -140,7 +154,11 @@ if TYPE_CHECKING:
         ActiveLearningPlan,
         ActiveLearningQueryResult,
     )
-    from buildml.activelearning.types import ActiveLearningEstimator, ActiveLearningStrategy
+    from buildml.activelearning.types import (
+        ActiveLearningBackend,
+        ActiveLearningEstimator,
+        ActiveLearningStrategy,
+    )
     from buildml.online.results import (
         OnlineEvalResult,
         OnlineFitResult,
@@ -148,7 +166,12 @@ if TYPE_CHECKING:
         OnlinePredictResult,
         OnlineUpdateResult,
     )
-    from buildml.online.types import OnlineEstimator, OnlineTask
+    from buildml.online.types import (
+        OnlineBackend,
+        OnlineDriftDetector,
+        OnlineEstimator,
+        OnlineTask,
+    )
     from buildml.multitask.results import (
         MultiTaskEvalResult,
         MultiTaskFitResult,
@@ -156,6 +179,7 @@ if TYPE_CHECKING:
         MultiTaskPredictResult,
     )
     from buildml.multitask.types import (
+        MultiTaskBackend,
         MultiTaskBaseEstimator,
         MultiTaskMethod,
         MultiTaskTask,
@@ -177,6 +201,7 @@ if TYPE_CHECKING:
         FederatedPredictResult,
     )
     from buildml.federated.types import (
+        FederatedBackend,
         FederatedEstimator,
         FederatedMethod,
         FederatedTask,
@@ -202,6 +227,7 @@ if TYPE_CHECKING:
     )
     from buildml.causal.types import (
         CausalAssumptions,
+        CausalBackend,
         CausalMethod,
         CausalRefuteKind,
     )
@@ -217,6 +243,7 @@ if TYPE_CHECKING:
         GraphMode,
         GraphSpec,
         GraphTask,
+        PyGModel,
     )
     from buildml.symbolic.results import (
         NeuroSymbolicFitResult,
@@ -229,7 +256,10 @@ if TYPE_CHECKING:
     from buildml.symbolic.rules import Rule
     from buildml.symbolic.types import (
         BaseEstimatorName,
+        IndustrySymbolicMethod,
+        NeuroSymbolicBackend,
         NeuroSymbolicMode,
+        SymbolicBackend,
         SymbolicSource,
         SymbolicTask,
     )
@@ -270,7 +300,14 @@ if TYPE_CHECKING:
         TdaPredictResult,
         TdaTransformResult,
     )
-    from buildml.tda.types import TdaHead, TdaTask, Vectorization
+    from buildml.tda.types import (
+        DiagramDistanceMetric,
+        SubsampleStrategy,
+        TdaBackend,
+        TdaHead,
+        TdaTask,
+        Vectorization,
+    )
     from buildml.recommenders.results import (
         RecommendResult,
         RecommenderEvalResult,
@@ -280,6 +317,7 @@ if TYPE_CHECKING:
     from buildml.recommenders.types import (
         ColdStartPolicy,
         FeedbackMode,
+        RecommenderBackend,
         RecommenderMethod,
     )
     from buildml.ranking.results import (
@@ -291,6 +329,7 @@ if TYPE_CHECKING:
     from buildml.ranking.types import (
         PairwiseEstimator,
         PointwiseEstimator,
+        RankerBackend,
         RankerMethod,
     )
     from buildml.kg.results import (
@@ -302,6 +341,7 @@ if TYPE_CHECKING:
         ScoreTriplesResult,
     )
     from buildml.kg.types import (
+        KgBackend,
         KgMethod,
         KgNorm,
         KgQueryMode,
@@ -327,8 +367,10 @@ if TYPE_CHECKING:
         SynthesizerPlan,
     )
     from buildml.synthetic.types import (
+        EvalBackend,
         EvalMode,
         MergeMode,
+        SyntheticBackend,
         SynthesizerMethod,
     )
     from buildml.unsupervised.results import (
@@ -437,6 +479,7 @@ class Session:
         self._forecast_fit_result: ForecastFitResult | None = None
         self._forecast_generate_result: ForecastGenerateResult | None = None
         self._forecast_eval_result: ForecastEvalResult | None = None
+        self._ts_analysis_result: Any | None = None
         self._anomaly_plan: AnomalyPlan | None = None
         self._anomaly_fit_result: AnomalyFitResult | None = None
         self._anomaly_score_result: AnomalyScoreResult | None = None
@@ -1068,27 +1111,33 @@ class Session:
         self,
         *,
         columns: list[str] | None = None,
-        method: Literal["pca"] = "pca",
+        method: Literal["pca", "umap", "tsne"] = "pca",
         n_components: int | float | None = None,
         drop_input_columns: bool = True,
         prefix: str = "pc",
+        random_state: int | None = 0,
+        umap_n_neighbors: int = 15,
+        umap_min_dist: float = 0.1,
+        tsne_perplexity: float = 30.0,
+        tsne_learning_rate: str | float = "auto",
     ) -> Session:
         """Fit dimensionality reduction on train and replace numeric columns.
 
         Parameters
         ----------
         method:
-            Currently ``pca`` only.
+            ``pca`` (core sklearn), ``umap`` (umap-learn when
+            ``buildml[unsupervised]`` installed), or ``tsne`` (sklearn; transductive
+            train embed with disclosed holdout NN transfer).
         n_components:
-            Integer count, float variance target in (0, 1], or ``None`` for the
-            maximum feasible components.
+            Integer count, float variance target in (0, 1] for PCA, or ``None``.
         prefix:
-            Output column prefix (``pc_1``, ``pc_2``, …).
+            Output column prefix (``pc_1``, ``umap_1``, …).
 
         Notes
         -----
-        **Leakage:** Requires a split. The rotation is learned on train only.
-        Explained variance is unsupervised and is not predictive utility.
+        **Leakage:** Requires a split. The transform is learned on train only.
+        Explained variance / embedding quality is unsupervised — not predictive utility.
         Scale numeric inputs first when magnitudes differ."""
         return preprocess_ops.reduce_dimensions(
             self,
@@ -1097,6 +1146,11 @@ class Session:
             n_components=n_components,
             drop_input_columns=drop_input_columns,
             prefix=prefix,
+            random_state=random_state,
+            umap_n_neighbors=umap_n_neighbors,
+            umap_min_dist=umap_min_dist,
+            tsne_perplexity=tsne_perplexity,
+            tsne_learning_rate=tsne_learning_rate,
         )
 
     @property
@@ -1116,28 +1170,49 @@ class Session:
         linkage: str = "ward",
         eps: float = 0.5,
         min_samples: int = 5,
+        gmm_covariance_type: str = "full",
+        gmm_max_components: int = 10,
+        gmm_select_by: str = "bic",
+        hdbscan_min_cluster_size: int = 5,
+        hdbscan_min_samples: int | None = None,
+        spectral_affinity: str = "nearest_neighbors",
+        spectral_n_neighbors: int = 10,
+        optics_min_samples: int = 5,
+        optics_xi: float = 0.05,
+        optics_min_cluster_size: float | None = None,
+        bandwidth: float | None = None,
+        latent_dim: int = 10,
+        pretrain_epochs: int = 50,
+        finetune_epochs: int = 100,
+        batch_size: int = 256,
+        learning_rate: float = 1e-3,
         prefer_reduce_components: bool = True,
         label_column: str = "cluster_id",
+        auto_k: bool = False,
+        auto_k_min: int = 2,
+        auto_k_max: int = 10,
     ) -> ClusterFitResult:
         """Fit a clusterer on the train partition only.
 
         Parameters
         ----------
         method:
-            ``kmeans`` (native predict), ``agglomerative`` (nearest-centroid
-            holdout assign with disclosure), or ``dbscan`` (nearest-core / noise).
+            Core: ``kmeans``, ``agglomerative``, ``dbscan``, ``gmm`` (BIC k),
+            ``spectral``, ``optics``, ``mean_shift``. Industry extras:
+            ``hdbscan`` (``buildml[unsupervised]``). Deep: ``dec`` / ``idec``
+            (``buildml[torch]``).
         n_clusters:
-            Required for kmeans/agglomerative; ignored for dbscan.
+            Required for partition-based methods; density methods observe k.
         prefer_reduce_components:
             When True and :meth:`reduce_dimensions` components are on the frame,
             cluster those components instead of raw features.
+        auto_k:
+            Elbow (k-means) or BIC range (GMM) selection on train.
 
         Notes
         -----
         **Leakage:** Requires a split. Geometry is learned on train only.
-        Scale numeric inputs first for distance-based methods. This path is
-        distinct from EDA IsolationForest / correlation-cluster screens.
-        Dimensionality reduction stays on :meth:`reduce_dimensions` (PCA)."""
+        Scale numeric inputs first for distance-based methods."""
         return unsupervised_ops.fit_clusters(
             self,
             method=method,
@@ -1149,8 +1224,27 @@ class Session:
             linkage=linkage,
             eps=eps,
             min_samples=min_samples,
+            gmm_covariance_type=gmm_covariance_type,
+            gmm_max_components=gmm_max_components,
+            gmm_select_by=gmm_select_by,
+            hdbscan_min_cluster_size=hdbscan_min_cluster_size,
+            hdbscan_min_samples=hdbscan_min_samples,
+            spectral_affinity=spectral_affinity,
+            spectral_n_neighbors=spectral_n_neighbors,
+            optics_min_samples=optics_min_samples,
+            optics_xi=optics_xi,
+            optics_min_cluster_size=optics_min_cluster_size,
+            bandwidth=bandwidth,
+            latent_dim=latent_dim,
+            pretrain_epochs=pretrain_epochs,
+            finetune_epochs=finetune_epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
             prefer_reduce_components=prefer_reduce_components,
             label_column=label_column,
+            auto_k=auto_k,
+            auto_k_min=auto_k_min,
+            auto_k_max=auto_k_max,
         )
 
     def assign_clusters(
@@ -1179,19 +1273,30 @@ class Session:
         external_label_column: str | None = None,
         sample_size: int | None = 2000,
         random_state: int | None = 0,
+        compute_stability: bool = False,
+        stability_runs: int = 10,
+        stability_sample_fraction: float = 0.8,
+        compute_elbow: bool = False,
+        elbow_k_min: int = 2,
+        elbow_k_max: int = 10,
     ) -> ClusterEvalResult:
         """Evaluate train-fitted clusters on a partition without refitting.
 
         Internal metrics (silhouette, Calinski–Harabasz, Davies–Bouldin) describe
-        geometry — not supervised accuracy. Optional ``external_label_column``
-        adds ARI/NMI with disclosure. Defaults to validation, falling back to
-        test when no validation partition exists."""
+        geometry — not supervised accuracy. Optional bootstrap stability and elbow
+        diagnostics available. Optional ``external_label_column`` adds ARI/NMI."""
         return unsupervised_ops.evaluate_clusters(
             self,
             partition=partition,
             external_label_column=external_label_column,
             sample_size=sample_size,
             random_state=random_state,
+            compute_stability=compute_stability,
+            stability_runs=stability_runs,
+            stability_sample_fraction=stability_sample_fraction,
+            compute_elbow=compute_elbow,
+            elbow_k_min=elbow_k_min,
+            elbow_k_max=elbow_k_max,
         )
 
     @property
@@ -1215,7 +1320,7 @@ class Session:
         return self._cluster_eval_result
 
     def save_unsupervised_bundle(self, path: str | Path) -> Path:
-        """Persist the active cluster plan as ``buildml.unsupervised_bundle.v1``.
+        """Persist the active cluster plan as ``buildml.unsupervised_bundle.v2``.
 
         Distinct from Session checkpoints, classical pipelines, Torch trainer
         bundles, and RAG bundles. See
@@ -1351,6 +1456,7 @@ class Session:
     def run_automl(
         self,
         *,
+        backend: AutoMLBackend = "native",
         task: Literal["classification", "regression", "auto"] = "auto",
         method: AutoMLMethod = "randomized",
         selection: AutoMLSelection = "cv",
@@ -1363,7 +1469,9 @@ class Session:
         ranking_metric: str | None = None,
         families: Sequence[str] | None = None,
         include_recipe_search: bool = True,
+        include_industry_families: bool = True,
         include_ensembles: bool = False,
+        ensemble_mode: EnsembleMode = "voting",
         max_ensemble_bases: int = 3,
         preprocess: PreprocessRecipe | None = None,
         allow_session_global_preprocess: bool = False,
@@ -1371,6 +1479,7 @@ class Session:
         random_state: int | None = 0,
         groups: pd.Series | None = None,
         budget: AutoMLBudget | None = None,
+        time_budget: float | None = None,
     ) -> AutoMLResult:
         """Search model families and fold-local preprocess strategies on train.
 
@@ -1381,17 +1490,27 @@ class Session:
 
         Parameters
         ----------
+        backend:
+            ``native`` (default), ``optuna`` (deepened Optuna),
+            ``flaml`` or ``autogluon`` (``buildml[automl-industry]``).
         method:
-            ``randomized`` (default, no extra), ``grid``, or ``optuna``
-            (requires ``buildml[optuna]``).
+            ``randomized`` (default), ``grid``, ``optuna`` (``buildml[automl]``),
+            or ``evolutionary`` (in-tree GA).
         selection:
             ``cv`` (train-fold CV), ``nested`` (outer train estimate after
             inner selection), or ``validation`` (rank on Session validation;
             never test).
         include_recipe_search:
             Search discrete fold-local :class:`PreprocessRecipe` strategies.
+        include_industry_families:
+            When ``buildml[automl-industry]`` GBDT libs are installed, extend
+            the native catalog with LightGBM / XGBoost / CatBoost.
         include_ensembles:
-            Optionally score voting ensembles of diverse top families.
+            Optionally score voting/stacking ensembles of diverse top families.
+        ensemble_mode:
+            ``voting``, ``stacking``, or ``both`` when ``include_ensembles=True``.
+        time_budget:
+            Optional wall-clock cap in seconds (disclosed in results).
         allow_session_global_preprocess:
             Same hard refusal contract as classical CV/search.
 
@@ -1405,6 +1524,7 @@ class Session:
         """
         return automl_ops.run_automl_op(
             self,
+            backend=backend,
             task=task,
             method=method,
             selection=selection,
@@ -1415,7 +1535,9 @@ class Session:
             ranking_metric=ranking_metric,
             families=families,
             include_recipe_search=include_recipe_search,
+            include_industry_families=include_industry_families,
             include_ensembles=include_ensembles,
+            ensemble_mode=ensemble_mode,
             max_ensemble_bases=max_ensemble_bases,
             preprocess=preprocess,
             allow_session_global_preprocess=allow_session_global_preprocess,
@@ -1423,6 +1545,7 @@ class Session:
             random_state=random_state,
             groups=groups,
             budget=budget,
+            time_budget=time_budget,
         )
 
     def evaluate_automl(
@@ -1462,7 +1585,7 @@ class Session:
     def fit_forecast(
         self,
         *,
-        method: ForecastMethod = "lag_ridge",
+        method: ForecastMethod = "auto",
         horizon: int = 1,
         lags: list[int] | tuple[int, ...] | None = None,
         seasonal_period: int | None = None,
@@ -1474,14 +1597,20 @@ class Session:
         max_iter: int = 100,
         max_depth: int | None = 3,
         learning_rate: float = 0.1,
+        order: tuple[int, int, int] | None = None,
+        seasonal_order: tuple[int, int, int, int] | None = None,
+        nbeats_input_size: int = 24,
+        nbeats_horizon: int | None = None,
     ) -> ForecastFitResult:
-        """Fit a classical forecaster on the train partition only.
+        """Fit a forecaster on the train partition only.
 
         Parameters
         ----------
         method:
-            ``naive``, ``seasonal_naive``, ``drift``, ``mean``, ``lag_ridge``,
-            or ``lag_hgb``.
+            ``auto`` (ETS when statsmodels installed, else ``lag_ridge``),
+            baselines, ``lag_ridge``/``lag_hgb``, or with ``buildml[timeseries]``:
+            ``arima``, ``auto_arima``, ``ets``, ``sarimax``. Prophet / N-BEATS
+            behind ``timeseries-prophet`` / ``timeseries-ml``.
         horizon:
             Default generate horizon stored on the plan.
         lags:
@@ -1495,8 +1624,8 @@ class Session:
         -----
         **Leakage:** Requires :meth:`time_split` (or chronologically ordered
         :meth:`inject_split`). Random/stratified/group splits are refused.
-        Not a full econometrics suite and not a digital twin. Core
-        sklearn/numpy/pandas only — no Torch sequence model here.
+        Not a digital twin. With ``buildml[timeseries]``, statsmodels ETS/ARIMA
+        are industry defaults; core lag/baseline fallback when extras absent.
         """
         return forecast_ops.fit_forecast(
             self,
@@ -1512,6 +1641,10 @@ class Session:
             max_iter=max_iter,
             max_depth=max_depth,
             learning_rate=learning_rate,
+            order=order,
+            seasonal_order=seasonal_order,
+            nbeats_input_size=nbeats_input_size,
+            nbeats_horizon=nbeats_horizon,
         )
 
     def generate_forecast(
@@ -1584,9 +1717,64 @@ class Session:
         """Load a forecast bundle into this Session."""
         return forecast_ops.load_forecast_bundle_op(self, path=path)
 
+    def analyze_timeseries(
+        self,
+        *,
+        target_column: str | None = None,
+        time_column: str | None = None,
+        scope: str = "train",
+        seasonal_period: int | None = None,
+        decompose_method: str | None = None,
+        include_decompose: bool = True,
+        include_diagnostics: bool = True,
+        include_changepoints: bool = True,
+        include_features: bool = True,
+        acf_lags: int = 40,
+        pacf_lags: int = 40,
+        changepoint_penalty: float = 10.0,
+        rolling_window: int = 7,
+    ) -> Any:
+        """Run time-series analysis (decompose, diagnostics, changepoints, features).
+
+        Notes
+        -----
+        **Leakage:** Requires :meth:`time_split`. Default ``scope='train'``.
+        Industry defaults (STL, ADF/KPSS) when ``buildml[timeseries]`` installed.
+        """
+        return timeseries_ops.analyze_timeseries_op(
+            self,
+            target_column=target_column,
+            time_column=time_column,
+            scope=scope,  # type: ignore[arg-type]
+            seasonal_period=seasonal_period,
+            decompose_method=decompose_method,  # type: ignore[arg-type]
+            include_decompose=include_decompose,
+            include_diagnostics=include_diagnostics,
+            include_changepoints=include_changepoints,
+            include_features=include_features,
+            acf_lags=acf_lags,
+            pacf_lags=pacf_lags,
+            changepoint_penalty=changepoint_penalty,
+            rolling_window=rolling_window,
+        )
+
+    def ts_decompose(self, **kwargs: Any) -> Any:
+        """STL/classical decomposition on train-only scope (default)."""
+        return timeseries_ops.ts_decompose_op(self, **kwargs)
+
+    def ts_diagnostics(self, **kwargs: Any) -> Any:
+        """ACF/PACF and ADF/KPSS stationarity tests."""
+        return timeseries_ops.ts_diagnostics_op(self, **kwargs)
+
+    @property
+    def ts_analysis_result(self) -> Any | None:
+        """Last time-series analysis result, if any."""
+        return self._ts_analysis_result
+
     def fit_anomaly(
         self,
         *,
+        backend: AnomalyBackend | None = None,
         method: AnomalyMethod = "isolation_forest",
         mode: AnomalyMode = "unsupervised",
         columns: list[str] | None = None,
@@ -1601,6 +1789,9 @@ class Session:
         nu: float = 0.05,
         kernel: str = "rbf",
         gamma: str | float = "scale",
+        latent_dim: int = 8,
+        ae_epochs: int = 40,
+        ae_batch_size: int = 64,
         normal_label_column: str | None = None,
         normal_label_value: Any = 0,
         positive_label: Any = 1,
@@ -1612,9 +1803,12 @@ class Session:
 
         Parameters
         ----------
+        backend:
+            ``sklearn`` (core), ``pyod`` (``buildml[anomaly-industry]``), or
+            ``torch`` (``buildml[torch]`` autoencoder path).
         method:
-            ``isolation_forest``, ``lof``, ``one_class_svm``, or
-            ``supervised_hgb`` (binary classifier scores).
+            Catalog method for the backend — see
+            :func:`buildml.anomaly.anomaly_capability_matrix`.
         mode:
             ``unsupervised`` (fit all train rows), ``novelty`` (normal-only
             train subset via ``normal_label_column``), or ``supervised``.
@@ -1623,7 +1817,8 @@ class Session:
             (and IsolationForest/LOF contamination knobs).
         threshold_policy:
             ``contamination``, ``quantile``, ``score_threshold``, or
-            ``decision_zero`` (One-Class SVM).
+            ``decision_zero`` (One-Class SVM). Use
+            :meth:`tune_anomaly_threshold` for validation-tuned cutoffs.
 
         Notes
         -----
@@ -1636,6 +1831,7 @@ class Session:
         """
         return anomaly_ops.fit_anomaly(
             self,
+            backend=backend,
             method=method,
             mode=mode,
             columns=columns,
@@ -1650,6 +1846,9 @@ class Session:
             nu=nu,
             kernel=kernel,
             gamma=gamma,
+            latent_dim=latent_dim,
+            ae_epochs=ae_epochs,
+            ae_batch_size=ae_batch_size,
             normal_label_column=normal_label_column,
             normal_label_value=normal_label_value,
             positive_label=positive_label,
@@ -1657,6 +1856,38 @@ class Session:
             flag_column=flag_column,
             score_column=score_column,
         )
+
+    def tune_anomaly_threshold(
+        self,
+        *,
+        partition: PartitionName = "validation",
+        label_column: str | None = None,
+        positive_label: Any | None = None,
+        metric: ThresholdTuningMetric = "f1",
+        fbeta: float = 2.0,
+        allow_test_tuning: bool = False,
+        update_plan: bool = True,
+    ) -> AnomalyThresholdTuneResult:
+        """Tune anomaly threshold on validation labels (never test by default).
+
+        Same leakage discipline as :meth:`tune_threshold` — tune on validation,
+        evaluate final claims on untouched test.
+        """
+        return anomaly_ops.tune_anomaly_threshold_op(
+            self,
+            partition=partition,
+            label_column=label_column,
+            positive_label=positive_label,
+            metric=metric,
+            fbeta=fbeta,
+            allow_test_tuning=allow_test_tuning,
+            update_plan=update_plan,
+        )
+
+    @staticmethod
+    def anomaly_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for anomaly backends and extras."""
+        return anomaly_ops.anomaly_capability_matrix_op()
 
     def score_anomalies(
         self,
@@ -1746,6 +1977,7 @@ class Session:
     def fit_semisupervised(
         self,
         *,
+        backend: SemiSupervisedBackend | None = None,
         method: SemiSupervisedMethod = "label_propagation",
         columns: list[str] | None = None,
         random_state: int | None = 0,
@@ -1758,6 +1990,14 @@ class Session:
         criterion: str = "threshold",
         k_best: int = 10,
         max_self_train_iter: int = 10,
+        epochs: int = 40,
+        batch_size: int = 64,
+        learning_rate: float = 1e-3,
+        consistency_weight: float = 1.0,
+        mixup_alpha: float = 0.75,
+        device: str = "cpu",
+        text_column: str | None = None,
+        text_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
         unlabeled_marker: Any = None,
         prefer_reduce_components: bool = True,
     ) -> SemiSupervisedFitResult:
@@ -1765,8 +2005,12 @@ class Session:
 
         Parameters
         ----------
+        backend:
+            ``sklearn`` (default), ``industry`` (XGB/LGBM pseudo-label),
+            ``torch`` (FixMatch/MixMatch tabular), or ``hf`` (text pseudo-label).
         method:
-            ``label_propagation``, ``label_spreading``, or ``self_training``.
+            Algorithm within the backend — see
+            :func:`buildml.semisupervised.semisupervised_capability_matrix`.
         unlabeled_marker:
             Extra sentinel treated as unlabeled. Default ``None`` means pandas
             missing values (NaN) in the target role mark unlabeled rows.
@@ -1776,9 +2020,13 @@ class Session:
         **Leakage:** Requires a split. Fit uses train only. Validation/test
         never invent labels for model selection. Distinct from anomaly novelty
         and from self-supervised pretext (:meth:`fit_ssl_pretext`).
+
+        **SSL integration:** ``fit_ssl_pretext`` → ``transform_ssl`` (or reduce
+        on embeddings) → ``fit_semisupervised`` uses partial labels on SSL features.
         """
         return semisupervised_ops.fit_semisupervised_op(
             self,
+            backend=backend,
             method=method,
             columns=columns,
             random_state=random_state,
@@ -1791,6 +2039,14 @@ class Session:
             criterion=criterion,
             k_best=k_best,
             max_self_train_iter=max_self_train_iter,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            consistency_weight=consistency_weight,
+            mixup_alpha=mixup_alpha,
+            device=device,
+            text_column=text_column,
+            text_model_name=text_model_name,
             unlabeled_marker=unlabeled_marker,
             prefer_reduce_components=prefer_reduce_components,
         )
@@ -1860,45 +2116,70 @@ class Session:
     def fit_ssl_pretext(
         self,
         *,
-        method: SelfSupervisedMethod = "masked_tabular",
+        method: SelfSupervisedMethod | None = None,
         columns: list[str] | None = None,
+        text_column: str | None = None,
+        image_column: str | None = None,
         random_state: int | None = 0,
         latent_dim: int = 16,
         hidden: tuple[int, ...] | list[int] = (64,),
         mask_ratio: float = 0.15,
         n_mask_views: int = 3,
         max_iter: int = 200,
+        epochs: int = 40,
+        batch_size: int = 64,
+        learning_rate: float = 1e-3,
+        temperature: float = 0.5,
+        projector_dim: int = 32,
+        projector_hidden: tuple[int, ...] | list[int] = (64,),
         prefer_reduce_components: bool = True,
         representation_prefix: str = "ssl_emb",
+        backbone: str = "resnet18",
+        weight_mode: str = "mock",
+        hf_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+        device: str = "cpu",
     ) -> SelfSupervisedFitResult:
-        """Fit a self-supervised tabular pretext on the train partition only.
+        """Fit a self-supervised pretext on the train partition only.
 
         Parameters
         ----------
         method:
-            Currently ``masked_tabular`` (masked reconstruction AE lite).
+            Torch tabular defaults: ``simclr_tabular``, ``byol_tabular``,
+            ``vicreg_tabular``, ``mae_tabular``, ``vae_tabular``.
+            Legacy ``masked_tabular`` (sklearn) is deprecated.
+            Text: ``hf_text_ssl``. Vision: ``vision_ssl``.
         latent_dim:
             Bottleneck width exported as representation columns.
 
         Notes
         -----
         **Leakage:** Requires a split. Pretext fits on train features only
-        (labels ignored). Not BERT-from-scratch. Vision/audio/speech transfer
-        continues via :meth:`load_pretrained_backbone` /
-        :meth:`attach_backbone_head`.
+        (labels ignored). Install ``buildml[torch]`` for industry defaults.
         """
         return selfsupervised_ops.fit_ssl_pretext_op(
             self,
             method=method,
             columns=columns,
+            text_column=text_column,
+            image_column=image_column,
             random_state=random_state,
             latent_dim=latent_dim,
             hidden=hidden,
             mask_ratio=mask_ratio,
             n_mask_views=n_mask_views,
             max_iter=max_iter,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            temperature=temperature,
+            projector_dim=projector_dim,
+            projector_hidden=projector_hidden,
             prefer_reduce_components=prefer_reduce_components,
             representation_prefix=representation_prefix,
+            backbone=backbone,
+            weight_mode=weight_mode,
+            hf_model_name=hf_model_name,
+            device=device,
         )
 
     def transform_ssl(
@@ -1977,7 +2258,7 @@ class Session:
         return self._ssl_eval_result
 
     def save_ssl_bundle(self, path: str | Path) -> Path:
-        """Persist the active SSL plan as ``buildml.selfsupervised_bundle.v1``.
+        """Persist the active SSL plan as ``buildml.ssl_bundle.v2``.
 
         See :data:`buildml.selfsupervised.checkpoint.CHECKPOINT_BOUNDARY`."""
         return selfsupervised_ops.save_ssl_bundle_op(self, path=path)
@@ -1989,6 +2270,7 @@ class Session:
     def fit_active_learner(
         self,
         *,
+        backend: ActiveLearningBackend | None = None,
         strategy: ActiveLearningStrategy = "margin",
         base_estimator: ActiveLearningEstimator = "logistic_regression",
         columns: list[str] | None = None,
@@ -1999,14 +2281,20 @@ class Session:
         prefer_reduce_components: bool = True,
         committee_size: int = 5,
         auto_refit: bool = True,
+        epochs: int = 60,
+        learning_rate: float = 1e-3,
+        mc_samples: int = 20,
+        device: str = "cpu",
     ) -> ActiveLearningFitResult:
         """Fit / initialize an active learner on labeled train rows only.
 
         Parameters
         ----------
+        backend:
+            ``sklearn`` (default), ``industry`` (scikit-activeml), or ``torch``.
         strategy:
-            ``least_confidence``, ``margin``, ``entropy``, ``committee``, or
-            ``expected_model_change_lite``.
+            Uncertainty / committee / CoreSet / BALD strategies — see
+            :func:`activelearning_capability_matrix`.
         label_budget:
             Cap on labels acquired via :meth:`label_rows` (``None`` = unlimited).
         unlabeled_marker:
@@ -2022,6 +2310,7 @@ class Session:
         """
         return activelearning_ops.fit_active_learner_op(
             self,
+            backend=backend,
             strategy=strategy,
             base_estimator=base_estimator,
             columns=columns,
@@ -2032,6 +2321,10 @@ class Session:
             prefer_reduce_components=prefer_reduce_components,
             committee_size=committee_size,
             auto_refit=auto_refit,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            mc_samples=mc_samples,
+            device=device,
         )
 
     def suggest_query(
@@ -2126,7 +2419,8 @@ class Session:
     def fit_online(
         self,
         *,
-        estimator: OnlineEstimator = "sgd_classifier",
+        backend: OnlineBackend | None = None,
+        estimator: OnlineEstimator | str = "sgd_classifier",
         task: OnlineTask | None = None,
         columns: list[str] | None = None,
         random_state: int | None = 0,
@@ -2137,15 +2431,25 @@ class Session:
         prefer_reduce_components: bool = True,
         allow_refit_fallback: bool = False,
         drift_disclose: bool = True,
+        drift_detector: OnlineDriftDetector | None = None,
+        buffer_size: int = 512,
+        epochs_per_update: int = 5,
+        batch_size: int = 64,
+        learning_rate: float = 1e-3,
+        ewc_lambda: float = 100.0,
+        hidden_dim: int = 64,
+        device: str = "cpu",
     ) -> OnlineFitResult:
         """Warm-start an incremental ``partial_fit`` estimator on a train chunk.
 
         Parameters
         ----------
+        backend:
+            ``sklearn`` (default partial_fit family), ``industry`` (River +
+            ``buildml[online-industry]``), or ``torch`` (replay/EWC continual MLP +
+            ``buildml[torch]``).
         estimator:
-            Sklearn ``partial_fit`` family name (``sgd_classifier``,
-            ``sgd_regressor``, ``passive_aggressive_*``, ``perceptron``,
-            ``multinomial_nb``, ``bernoulli_nb``).
+            Backend-specific estimator name (see ``online_capability_matrix()``).
         classes:
             Full class vocabulary for classifiers. When omitted, discovered from
             the full train target column (labels only).
@@ -2162,6 +2466,7 @@ class Session:
         """
         return online_ops.fit_online_op(
             self,
+            backend=backend,
             estimator=estimator,
             task=task,
             columns=columns,
@@ -2173,6 +2478,14 @@ class Session:
             prefer_reduce_components=prefer_reduce_components,
             allow_refit_fallback=allow_refit_fallback,
             drift_disclose=drift_disclose,
+            drift_detector=drift_detector,
+            buffer_size=buffer_size,
+            epochs_per_update=epochs_per_update,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            ewc_lambda=ewc_lambda,
+            hidden_dim=hidden_dim,
+            device=device,
         )
 
     def partial_fit_online(
@@ -2199,13 +2512,17 @@ class Session:
         self,
         *,
         partition: PartitionName | Literal["all"] = "validation",
+        drift_check: bool = True,
     ) -> OnlineEvalResult:
         """Evaluate the online learner on a holdout partition (never for updates).
 
         Defaults to validation, falling back to test when no validation
-        partition exists.
+        partition exists. ``drift_check`` surfaces River ADWIN/Page-Hinkley or
+        mean-shift disclosure without updating the model.
         """
-        return online_ops.evaluate_online_op(self, partition=partition)
+        return online_ops.evaluate_online_op(
+            self, partition=partition, drift_check=drift_check
+        )
 
     def predict_online(
         self,
@@ -2253,6 +2570,7 @@ class Session:
     def fit_multitask(
         self,
         *,
+        backend: MultiTaskBackend | None = None,
         method: MultiTaskMethod = "multi_output",
         task: MultiTaskTask = "auto",
         targets: list[str] | tuple[str, ...] | None = None,
@@ -2262,32 +2580,42 @@ class Session:
         order: list[str] | tuple[str, ...] | None = None,
         prefer_reduce_components: bool = True,
         prediction_prefix: str = "multitask_pred",
+        epochs: int = 60,
+        batch_size: int = 64,
+        learning_rate: float = 1e-3,
+        device: str = "cpu",
     ) -> MultiTaskFitResult:
-        """Fit a multi-target MultiOutput / Chain estimator on train only.
+        """Fit a multi-target estimator on train only.
 
         Parameters
         ----------
+        backend:
+            ``sklearn`` (default when no extras), ``industry`` (XGB/LGBM/CatBoost
+            multi-target), or ``torch`` (shared-trunk multi-head). See
+            :func:`buildml.multitask.multitask_capability_matrix`.
         method:
-            ``multi_output``, ``classifier_chain``, or ``regressor_chain``.
+            Algorithm within the backend — e.g. ``multi_output``,
+            ``multi_output_xgb``, ``shared_trunk_multihead``.
         task:
-            ``classification``, ``regression``, or ``auto`` (infers; refuses
-            mixed classification+regression targets).
+            ``classification``, ``regression``, ``auto`` (infers; mixed kinds
+            allowed only on torch), or ``mixed`` (torch only).
         targets:
             Optional explicit target columns. When omitted, all
             ``role='target'`` columns are used (requires ``>= 2``).
         base_estimator:
-            Classification: ``logistic_regression``, ``hist_gradient_boosting``.
-            Regression: ``ridge``, ``hist_gradient_boosting_regressor``.
+            Sklearn backend only — classification: ``logistic_regression``,
+            ``hist_gradient_boosting``; regression: ``ridge``,
+            ``hist_gradient_boosting_regressor``.
 
         Notes
         -----
         **Leakage:** Requires a split. Fit uses train only. Validation/test are
         never used for fitting. Classical :meth:`fit` remains single-target via
-        ``require_target()``. Honesty: sklearn MultiOutput / Chain on shared
-        features — not a deep multi-head MTL research platform.
+        ``require_target()``.
         """
         return multitask_ops.fit_multitask_op(
             self,
+            backend=backend,
             method=method,
             task=task,
             targets=targets,
@@ -2297,6 +2625,10 @@ class Session:
             order=order,
             prefer_reduce_components=prefer_reduce_components,
             prediction_prefix=prediction_prefix,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            device=device,
         )
 
     def predict_multitask(
@@ -2363,6 +2695,7 @@ class Session:
     def fit_metalearning(
         self,
         *,
+        backend: str | None = None,
         method: MetaLearningMethod = "prototypical",
         task_column: str | None = None,
         columns: list[str] | None = None,
@@ -2374,14 +2707,24 @@ class Session:
         random_state: int | None = 0,
         prefer_reduce_components: bool = True,
         task_holdout_fraction: float = 0.25,
+        meta_epochs: int = 40,
+        inner_lr: float = 0.05,
+        inner_steps: int = 5,
+        meta_lr: float = 1e-3,
+        embed_dim: int = 32,
+        hidden_dim: int = 64,
+        device: str = "cpu",
     ) -> MetaLearningFitResult:
         """Meta-train a tabular few-shot / episodic learner on train tasks only.
 
         Parameters
         ----------
+        backend:
+            ``sklearn`` (default), ``torch`` (``buildml[torch]``), or
+            ``industry`` (``buildml[metalearning-industry,torch]``).
         method:
-            ``prototypical`` (nearest-centroid) or ``warm_start`` (pooled
-            sklearn init + support adapt).
+            ``prototypical``, ``warm_start``, ``prototypical_torch``,
+            ``maml``, or ``reptile`` depending on backend.
         task_column:
             Episodic task id column. When omitted, the single
             ``role='group'`` column is used.
@@ -2401,6 +2744,7 @@ class Session:
         """
         return metalearning_ops.fit_metalearning_op(
             self,
+            backend=backend,
             method=method,
             task_column=task_column,
             columns=columns,
@@ -2412,6 +2756,13 @@ class Session:
             random_state=random_state,
             prefer_reduce_components=prefer_reduce_components,
             task_holdout_fraction=task_holdout_fraction,
+            meta_epochs=meta_epochs,
+            inner_lr=inner_lr,
+            inner_steps=inner_steps,
+            meta_lr=meta_lr,
+            embed_dim=embed_dim,
+            hidden_dim=hidden_dim,
+            device=device,
         )
 
     def adapt_to_task(
@@ -2496,6 +2847,7 @@ class Session:
     def fit_federated(
         self,
         *,
+        backend: FederatedBackend | None = None,
         method: FederatedMethod = "fedavg",
         estimator: FederatedEstimator = "sgd_classifier",
         task: FederatedTask | None = None,
@@ -2513,6 +2865,10 @@ class Session:
 
         Parameters
         ----------
+        backend:
+            ``native`` (default in-process FedAvg/FedProx) or ``flower``
+            (``buildml[federated-industry]`` NumPyClient + flwr aggregation).
+            When omitted and ``flwr`` is installed, defaults to ``flower``.
         method:
             ``fedavg`` (weighted coefficient averaging) or ``fedprox``
             (FedAvg + proximal pull; requires ``mu > 0``).
@@ -2535,11 +2891,12 @@ class Session:
         Validation/test are never used for training. Needs exactly one
         ``role='target'`` and a client/group column. Honesty: local
         FedAvg-style simulation on partitioned Session data — not a
-        distributed FL platform (Flower/OpenFL); not cryptographic secure
-        aggregation.
+        networked FL deployment unless you operate one separately; not
+        cryptographic secure aggregation.
         """
         return federated_ops.fit_federated_op(
             self,
+            backend=backend,
             method=method,
             estimator=estimator,
             task=task,
@@ -2557,6 +2914,7 @@ class Session:
     def evaluate_federated(
         self,
         *,
+        backend: FederatedBackend | None = None,
         partition: PartitionName | Literal["all"] = "validation",
         per_client: bool = True,
     ) -> FederatedEvalResult:
@@ -2564,9 +2922,11 @@ class Session:
 
         Defaults to validation, falling back to test when no validation
         partition exists. Holdout rows are never used for local updates.
+        Optional ``backend=`` validates consistency with the fitted plan.
         """
         return federated_ops.evaluate_federated_op(
             self,
+            backend=backend,
             partition=partition,
             per_client=per_client,
         )
@@ -2574,10 +2934,18 @@ class Session:
     def predict_federated(
         self,
         *,
+        backend: FederatedBackend | None = None,
         partition: PartitionName | Literal["all"] = "test",
     ) -> FederatedPredictResult:
-        """Predict with the global federated model (no update)."""
-        return federated_ops.predict_federated_op(self, partition=partition)
+        """Predict with the global federated model (no update).
+
+        Optional ``backend=`` validates consistency with the fitted plan.
+        """
+        return federated_ops.predict_federated_op(
+            self,
+            backend=backend,
+            partition=partition,
+        )
 
     @property
     def federated_plan(self) -> FederatedPlan | None:
@@ -2612,6 +2980,7 @@ class Session:
     def fit_probabilistic(
         self,
         *,
+        backend: str | None = None,
         estimator: ProbabilisticEstimator = "bayesian_ridge",
         task: ProbabilisticTask | None = None,
         columns: list[str] | None = None,
@@ -2622,20 +2991,26 @@ class Session:
         interval_method: IntervalMethod | None = None,
         prefer_reduce_components: bool = True,
         n_restarts_optimizer: int = 0,
+        n_estimators: int = 100,
+        learning_rate: float = 0.05,
     ) -> ProbabilisticFitResult:
         """Fit a Bayesian / probabilistic estimator with uncertainty.
 
         Parameters
         ----------
+        backend:
+            ``native`` (sklearn + in-tree conformal), ``mapie``, or ``ngboost``
+            when ``buildml[probabilistic-industry]`` is installed.
         estimator:
-            ``bayesian_ridge``, ``gaussian_process_regressor``,
-            ``gaussian_process_classifier``, or ``gaussian_nb``.
+            Native: ``bayesian_ridge``, ``gaussian_process_*``, ``gaussian_nb``.
+            MAPIE: ``split``, ``cv_plus``, ``jackknife_plus``.
+            NGBoost: ``ngboost_regressor``, ``ngboost_classifier``.
         alpha:
             Miscoverage level for intervals / prediction sets (default 0.1 →
             nominal 90% coverage).
         conformal:
             When True, carve a split-conformal calibration subset from the
-            Session **train** partition only (never validation/test).
+            Session **train** partition only (native/ngboost; MAPIE owns conformal).
         interval_method:
             ``posterior_std``, ``split_conformal``, ``both``, or ``none``.
             Inferred when omitted.
@@ -2644,13 +3019,12 @@ class Session:
         -----
         **Leakage:** Requires a split. Fit and conformal calibration use train
         only. Holdout is for ``evaluate_probabilistic`` / ``predict_interval``.
-        Honesty: sklearn BayesianRidge / GP / GaussianNB + optional split
-        conformal — **not** a PyMC/Stan MCMC platform or Bayesian deep nets.
-        Classical :meth:`calibration` remains for classical :meth:`fit`
-        classifiers and is not overwritten.
+        Honesty: tabular uncertainty quantification — **not** PyMC/Stan MCMC or
+        Bayesian deep nets. Classical :meth:`calibration` remains unchanged.
         """
         return probabilistic_ops.fit_probabilistic_op(
             self,
+            backend=backend,
             estimator=estimator,
             task=task,
             columns=columns,
@@ -2661,6 +3035,8 @@ class Session:
             interval_method=interval_method,
             prefer_reduce_components=prefer_reduce_components,
             n_restarts_optimizer=n_restarts_optimizer,
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
         )
 
     def evaluate_probabilistic(
@@ -2782,6 +3158,7 @@ class Session:
     def fit_causal(
         self,
         *,
+        backend: CausalBackend | None = None,
         method: CausalMethod = "aipw",
         assumptions: CausalAssumptions | dict[str, Any] | None = None,
         bootstrap_samples: int = 200,
@@ -2790,28 +3167,33 @@ class Session:
         outcome_model: str = "ridge",
         propensity_model: str = "logistic_regression",
     ) -> CausalFitResult:
-        """Fit causal nuisance models (train-only) and estimate backdoor ATE.
+        """Fit causal models (train-only) and estimate backdoor ATE.
 
         Parameters
         ----------
+        backend:
+            ``native`` (default), ``dowhy``, or ``econml``. Industry backends
+            require ``buildml[causal-industry]``.
         method:
-            ``t_learner`` (outcome regression), ``ipw``, or ``aipw``
-            (doubly robust).
+            Native: ``t_learner``, ``ipw``, ``aipw``. DoWhy: ``backdoor_linear``,
+            ``backdoor_propensity_score``, ``backdoor_propensity_weighting``.
+            EconML: ``dml``, ``causal_forest``, ``policy_tree``.
         assumptions:
             Optional explicit :class:`CausalAssumptions` / mapping. When
             omitted, uses the object from :meth:`declare_causal_assumptions`.
         bootstrap_samples:
-            Full retrain bootstrap on train for uncertainty (0 disables).
+            Full retrain bootstrap on train for uncertainty (0 disables;
+            native and econml; DoWhy uses estimator CIs).
 
         Notes
         -----
         **Leakage:** Requires a split. Nuisances fit on train only.
         **Assumptions:** Refuses without validated CausalAssumptions.
-        Honesty: sklearn T-learner / IPW / AIPW — not DoWhy/EconML, not
-        causal discovery. EDA remains associational.
+        Not causal discovery. EDA remains associational.
         """
         return causal_ops.fit_causal_op(
             self,
+            backend=backend,
             method=method,
             assumptions=assumptions,
             bootstrap_samples=bootstrap_samples,
@@ -2951,14 +3333,17 @@ class Session:
         dropout: float = 0.1,
         random_state: int | None = 0,
         include_graph_metrics: bool = True,
+        pyg_model: PyGModel = "gcn",
+        heads: int = 4,
     ) -> GraphFitResult:
-        """Fit graph node classification (classical or pure-Torch GCN).
+        """Fit graph node classification (classical, pure-Torch GCN, or PyG).
 
         **Leakage:** Requires a split and :meth:`set_graph`. Train labels only.
         Default ``mode='inductive'`` fits on the train-induced subgraph;
         ``transductive`` uses full topology with train-label-only supervision
         (disclosed). Classical path needs ``buildml[graph]`` (NetworkX);
-        GCN needs ``buildml[torch]`` (no PyTorch Geometric).
+        GCN needs ``buildml[torch]``; PyG needs ``buildml[graph-pyg]``
+        with ``pyg_model`` in ``gcn`` / ``graphsage`` / ``gat``.
         """
         return graph_ops.fit_graph_op(
             self,
@@ -2975,6 +3360,8 @@ class Session:
             dropout=dropout,
             random_state=random_state,
             include_graph_metrics=include_graph_metrics,
+            pyg_model=pyg_model,
+            heads=heads,
         )
 
     def predict_graph(
@@ -3031,7 +3418,9 @@ class Session:
     def fit_symbolic(
         self,
         *,
+        backend: SymbolicBackend | None = None,
         source: SymbolicSource = "decision_tree",
+        method: IndustrySymbolicMethod | None = None,
         task: SymbolicTask | None = None,
         rules: Sequence[Mapping[str, Any] | Rule] | None = None,
         columns: list[str] | None = None,
@@ -3041,26 +3430,38 @@ class Session:
         max_rules: int = 32,
         default_consequent: Any = None,
         prefer_reduce_components: bool = True,
+        verify_constraints: bool = False,
     ) -> SymbolicFitResult:
         """Compile or induce a symbolic if-then rule base on train.
 
         Parameters
         ----------
+        backend:
+            ``sklearn`` (core tree/list/declared) or ``industry`` (skope-rules /
+            imodels when ``buildml[symbolic-industry]`` is installed). Defaults
+            to industry when installed, else sklearn.
         source:
             ``declared`` (expert rules via ``rules=``), ``decision_tree``
             (sklearn path export), or ``decision_list`` (sequential covering).
-        rules:
-            Required when ``source='declared'``; optional merge input otherwise.
+            Used when ``backend='sklearn'``.
+        method:
+            ``skope_rules``, ``rulefit``, or ``boosted_rules`` when
+            ``backend='industry'``.
+        verify_constraints:
+            When True and z3-solver is installed, run a lite SAT check on hard
+            constraint rules (not a full SMT product).
 
         Notes
         -----
         **Leakage:** Requires a split. Induction uses Session train only.
         Honesty: structured tabular rules with explanation traces — **not**
-        an AGI symbolic reasoner, Prolog engine, or Z3 SMT solver.
+        an AGI symbolic reasoner, Prolog engine, or full Z3 SMT product.
         """
         return symbolic_ops.fit_symbolic_op(
             self,
+            backend=backend,
             source=source,
+            method=method,
             task=task,
             rules=rules,
             columns=columns,
@@ -3070,6 +3471,7 @@ class Session:
             max_rules=max_rules,
             default_consequent=default_consequent,
             prefer_reduce_components=prefer_reduce_components,
+            verify_constraints=verify_constraints,
         )
 
     def evaluate_symbolic(
@@ -3096,8 +3498,10 @@ class Session:
     def fit_neuro_symbolic(
         self,
         *,
+        backend: NeuroSymbolicBackend | None = None,
         mode: NeuroSymbolicMode = "constraint_overlay",
         base_estimator: BaseEstimatorName = "logistic_regression",
+        torch_method: str | None = None,
         task: SymbolicTask | None = None,
         rules: Sequence[Mapping[str, Any] | Rule] | None = None,
         rule_source: SymbolicSource = "decision_tree",
@@ -3108,17 +3512,23 @@ class Session:
         min_samples_leaf: int = 5,
         max_rules: int = 24,
         prefer_reduce_components: bool = True,
+        torch_epochs: int = 60,
+        device: str = "cpu",
     ) -> NeuroSymbolicFitResult:
-        """Fit a sklearn + symbolic hybrid in one Session API.
+        """Fit a base model + symbolic hybrid in one Session API.
 
-        Modes: ``constraint_overlay``, ``rules_as_features``,
-        ``constraint_repair``. Rules may be declared or train-induced
-        (``rule_source``). Train-only for learning; holdout for eval/predict.
+        Backends: ``sklearn`` (core) or ``torch`` (concept-bottleneck / NAM lite
+        when ``buildml[torch]`` is installed). Modes: ``constraint_overlay``,
+        ``rules_as_features``, ``constraint_repair``. Rules may be declared or
+        train-induced (``rule_source``). Train-only for learning; holdout for
+        eval/predict.
         """
         return symbolic_ops.fit_neuro_symbolic_op(
             self,
+            backend=backend,
             mode=mode,
             base_estimator=base_estimator,
+            torch_method=torch_method,
             task=task,
             rules=rules,
             rule_source=rule_source,
@@ -3129,6 +3539,8 @@ class Session:
             min_samples_leaf=min_samples_leaf,
             max_rules=max_rules,
             prefer_reduce_components=prefer_reduce_components,
+            torch_epochs=torch_epochs,
+            device=device,
         )
 
     def evaluate_neuro_symbolic(
@@ -3199,9 +3611,29 @@ class Session:
         """Load a symbolic / neuro-symbolic bundle into this Session."""
         return symbolic_ops.load_symbolic_bundle_op(self, path=path)
 
+    @staticmethod
+    def symbolic_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for symbolic / neuro-symbolic backends."""
+        return symbolic_ops.symbolic_capability_matrix_op()
+
+    @staticmethod
+    def cbr_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for CBR retrieval backends."""
+        from buildml.cbr.catalog import cbr_capability_matrix
+
+        return cbr_capability_matrix()
+
+    @staticmethod
+    def ranking_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for tabular LTR backends and methods."""
+        from buildml.ranking.catalog import ranking_capability_matrix
+
+        return ranking_capability_matrix()
+
     def fit_cbr(
         self,
         *,
+        backend: str | None = None,
         task: CbrTask | None = None,
         metric: CbrMetric = "euclidean",
         reuse: CbrReuseMode = "distance_weighted",
@@ -3209,15 +3641,23 @@ class Session:
         k: int = 5,
         columns: list[str] | None = None,
         categorical_columns: list[str] | None = None,
+        text_columns: list[str] | None = None,
+        text_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
         standardize: bool = True,
         distance_eps: float = 1e-8,
         random_state: int | None = 0,
         prefer_reduce_components: bool = True,
+        torch_epochs: int = 40,
+        device: str = "cpu",
     ) -> CbrFitResult:
         """Build a tabular case memory from Session train.
 
         Parameters
         ----------
+        backend:
+            ``sklearn`` (exact kNN fallback), ``industry`` (hnswlib/faiss ANN when
+            ``buildml[cbr-industry]``), ``embedding`` (sentence-transformers text
+            cases when ``buildml[rag|ssl]``), ``torch`` (learned metric encoder).
         metric:
             ``euclidean`` / ``manhattan`` / ``cosine`` (numeric) or ``mixed``
             (Gower-style numeric + categorical).
@@ -3233,6 +3673,7 @@ class Session:
         """
         return cbr_ops.fit_cbr_op(
             self,
+            backend=backend,
             task=task,
             metric=metric,
             reuse=reuse,
@@ -3240,10 +3681,14 @@ class Session:
             k=k,
             columns=columns,
             categorical_columns=categorical_columns,
+            text_columns=text_columns,
+            text_model_name=text_model_name,
             standardize=standardize,
             distance_eps=distance_eps,
             random_state=random_state,
             prefer_reduce_components=prefer_reduce_components,
+            torch_epochs=torch_epochs,
+            device=device,
         )
 
     def retrieve_cases(
@@ -3251,9 +3696,12 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "test",
         k: int | None = None,
+        backend: str | None = None,
     ) -> CbrRetrieveResult:
         """Retrieve k nearest cases (no reuse / no memory update)."""
-        return cbr_ops.retrieve_cases_op(self, partition=partition, k=k)
+        return cbr_ops.retrieve_cases_op(
+            self, partition=partition, k=k, backend=backend
+        )
 
     def predict_cbr(
         self,
@@ -3261,6 +3709,7 @@ class Session:
         partition: PartitionName | Literal["all"] = "test",
         k: int | None = None,
         return_traces: bool = True,
+        backend: str | None = None,
     ) -> CbrPredictResult:
         """Predict via retrieve + reuse with case-influence traces."""
         return cbr_ops.predict_cbr_op(
@@ -3268,6 +3717,7 @@ class Session:
             partition=partition,
             k=k,
             return_traces=return_traces,
+            backend=backend,
         )
 
     def evaluate_cbr(
@@ -3346,10 +3796,14 @@ class Session:
     def fit_imitation(
         self,
         *,
+        backend: str | None = None,
         task: ImitationTask | None = None,
         estimator: ImitationEstimator | None = None,
+        method: str | None = None,
         columns: list[str] | None = None,
         action_column: str | None = None,
+        env_id: str | None = None,
+        n_epochs: int = 40,
         random_state: int | None = 0,
         prefer_reduce_components: bool = True,
     ) -> ImitationFitResult:
@@ -3369,10 +3823,14 @@ class Session:
         """
         return rl_ops.fit_imitation_op(
             self,
+            backend=backend,
             task=task,
             estimator=estimator,
+            method=method,
             columns=columns,
             action_column=action_column,
+            env_id=env_id,
+            n_epochs=n_epochs,
             random_state=random_state,
             prefer_reduce_components=prefer_reduce_components,
         )
@@ -3424,8 +3882,9 @@ class Session:
     def fit_rl(
         self,
         *,
-        mode: RlMode = "contextual_bandit",
-        algorithm: BanditAlgorithm = "linucb",
+        backend: str | None = None,
+        mode: RlMode | None = None,
+        algorithm: BanditAlgorithm | str = "linucb",
         columns: list[str] | None = None,
         action_column: str | None = None,
         reward_column: str | None = None,
@@ -3439,16 +3898,20 @@ class Session:
         max_steps: int = 500,
         learning_rate: float = 0.01,
         gamma: float = 0.99,
+        total_timesteps: int = 20_000,
     ) -> RlFitResult:
         """Fit a contextual bandit (core) or Gymnasium REINFORCE-lite.
 
         Parameters
         ----------
         mode:
-            ``contextual_bandit`` (train logged table) or ``gym_reinforce``
-            (requires ``buildml[rl]`` / gymnasium).
+            ``contextual_bandit`` (train logged table), ``gym_reinforce``
+            (``buildml[rl]``), or ``gym_sb3`` (``buildml[rl-industry]``).
+        backend:
+            ``sklearn`` (bandit), ``native`` (REINFORCE-lite), or ``industry`` (SB3).
         algorithm:
-            Bandit algorithm: ``linucb`` / ``epsilon_greedy`` / ``softmax``.
+            Bandit: ``linucb`` / ``epsilon_greedy`` / ``softmax``.
+            SB3: ``ppo`` / ``dqn`` / ``a2c``.
 
         Notes
         -----
@@ -3458,6 +3921,7 @@ class Session:
         """
         return rl_ops.fit_rl_op(
             self,
+            backend=backend,
             mode=mode,
             algorithm=algorithm,
             columns=columns,
@@ -3473,6 +3937,7 @@ class Session:
             max_steps=max_steps,
             learning_rate=learning_rate,
             gamma=gamma,
+            total_timesteps=total_timesteps,
         )
 
     def act_rl(
@@ -3545,6 +4010,7 @@ class Session:
     def fit_tda(
         self,
         *,
+        backend: TdaBackend | None = None,
         vectorization: Vectorization = "persistence_image",
         homology_dims: Sequence[int] = (0, 1),
         knn: int = 16,
@@ -3560,11 +4026,14 @@ class Session:
         random_state: int | None = 0,
         prefer_reduce_components: bool = True,
         max_points_guard: int = 4000,
+        subsample_strategy: SubsampleStrategy = "error",
+        mapper: bool = False,
     ) -> TdaFitResult:
         """Fit topological features (+ optional sklearn head) on train only.
 
-        Requires ``buildml[tda]`` (ripser + persim). Local Vietoris–Rips on
-        kNN train neighborhoods; vectorizer ranges and head use train only.
+        Requires ``buildml[tda]`` (native) or ``buildml[tda-industry]`` (giotto).
+        Local Vietoris–Rips on kNN train neighborhoods; vectorizer ranges and
+        head use train only.
 
         Notes
         -----
@@ -3573,6 +4042,7 @@ class Session:
         """
         return tda_ops.fit_tda_op(
             self,
+            backend=backend,
             vectorization=vectorization,
             homology_dims=homology_dims,
             knn=knn,
@@ -3588,15 +4058,23 @@ class Session:
             random_state=random_state,
             prefer_reduce_components=prefer_reduce_components,
             max_points_guard=max_points_guard,
+            subsample_strategy=subsample_strategy,
+            mapper=mapper,
         )
+
+    @staticmethod
+    def tda_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for native vs giotto TDA backends."""
+        return tda_ops.tda_capability_matrix_op()
 
     def transform_tda(
         self,
         *,
         partition: PartitionName | Literal["all"] = "test",
+        backend: TdaBackend | None = None,
     ) -> TdaTransformResult:
         """Transform a partition with the frozen train-fitted TDA pipeline."""
-        return tda_ops.transform_tda_op(self, partition=partition)
+        return tda_ops.transform_tda_op(self, partition=partition, backend=backend)
 
     def predict_tda(
         self,
@@ -3610,9 +4088,20 @@ class Session:
         self,
         *,
         partition: PartitionName | Literal["all"] = "validation",
+        backend: TdaBackend | None = None,
+        compare_diagram_distances: bool = False,
+        diagram_distance_metric: DiagramDistanceMetric = "wasserstein",
+        diagram_distance_dim: int = 1,
     ) -> TdaEvalResult:
         """Score the TDA head on a holdout partition (frozen train pipeline)."""
-        return tda_ops.evaluate_tda_op(self, partition=partition)
+        return tda_ops.evaluate_tda_op(
+            self,
+            partition=partition,
+            backend=backend,
+            compare_diagram_distances=compare_diagram_distances,
+            diagram_distance_metric=diagram_distance_metric,
+            diagram_distance_dim=diagram_distance_dim,
+        )
 
     @property
     def tda_plan(self) -> TdaPlan | None:
@@ -3640,7 +4129,7 @@ class Session:
         return self._tda_predict_result
 
     def save_tda_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.tda_bundle.v1``."""
+        """Persist the active plan as ``buildml.tda_bundle.v2``."""
         return tda_ops.save_tda_bundle_op(self, path=path)
 
     def load_tda_bundle(self, path: str | Path) -> Session:
@@ -3650,7 +4139,8 @@ class Session:
     def fit_recommender(
         self,
         *,
-        method: RecommenderMethod = "item_knn",
+        method: RecommenderMethod | None = None,
+        backend: RecommenderBackend | None = None,
         user_column: str | None = None,
         item_column: str | None = None,
         rating_column: str | None = None,
@@ -3659,14 +4149,19 @@ class Session:
         n_factors: int = 32,
         min_rating: float | None = None,
         item_feature_columns: list[str] | None = None,
+        user_feature_columns: list[str] | None = None,
         cold_start: ColdStartPolicy = "popularity",
         random_state: int | None = 0,
+        n_iterations: int = 15,
+        lightfm_epochs: int = 10,
     ) -> RecommenderFitResult:
         """Fit a recommender on train interactions only.
 
         Requires explicit ``user_column`` / ``item_column``. Rating defaults to
-        the Session target for ``feedback='explicit'``. Algorithms: item/user
-        kNN CF, TruncatedSVD / NMF, or content-based item features.
+        the Session target for ``feedback='explicit'``. Core algorithms: item/user
+        kNN CF, TruncatedSVD / NMF, content-based item features. With
+        ``buildml[recommenders-industry]``: implicit ALS/BPR (default for
+        ``feedback='implicit'``) and LightFM hybrid.
 
         Notes
         -----
@@ -3677,6 +4172,7 @@ class Session:
         return recommender_ops.fit_recommender_op(
             self,
             method=method,
+            backend=backend,
             user_column=user_column,
             item_column=item_column,
             rating_column=rating_column,
@@ -3685,8 +4181,11 @@ class Session:
             n_factors=n_factors,
             min_rating=min_rating,
             item_feature_columns=item_feature_columns,
+            user_feature_columns=user_feature_columns,
             cold_start=cold_start,
             random_state=random_state,
+            n_iterations=n_iterations,
+            lightfm_epochs=lightfm_epochs,
         )
 
     def recommend(
@@ -3748,7 +4247,8 @@ class Session:
     def fit_ranker(
         self,
         *,
-        method: RankerMethod = "pointwise",
+        backend: RankerBackend | None = None,
+        method: RankerMethod | str | None = None,
         query_column: str | None = None,
         item_column: str | None = None,
         relevance_column: str | None = None,
@@ -3759,6 +4259,11 @@ class Session:
         relevance_threshold: float = 0.0,
         alpha: float = 1.0,
         C: float = 1.0,
+        n_estimators: int = 120,
+        learning_rate: float = 0.08,
+        hidden_dim: int = 64,
+        epochs: int = 40,
+        device: str = "cpu",
         random_state: int | None = 0,
     ) -> RankerFitResult:
         """Fit a tabular learning-to-rank model on train rows only.
@@ -3767,8 +4272,10 @@ class Session:
         to the Session target. Prefer ``group_split`` on the query id so test
         queries' labels never enter training.
 
-        Algorithms: ``pointwise`` (Ridge / HistGradientBoosting relevance
-        regression) or ``pairwise`` (RankSVM-lite on within-query differences).
+        Backends (see ``ranking_capability_matrix()``):
+        ``sklearn`` pointwise/pairwise fallback; ``industry`` GBDT rankers
+        (``buildml[ranking-industry]``); ``torch`` listwise-lite
+        (``buildml[torch]``). Industry is the default when installed.
 
         Notes
         -----
@@ -3778,6 +4285,7 @@ class Session:
         """
         return ranking_ops.fit_ranker_op(
             self,
+            backend=backend,
             method=method,
             query_column=query_column,
             item_column=item_column,
@@ -3789,6 +4297,11 @@ class Session:
             relevance_threshold=relevance_threshold,
             alpha=alpha,
             C=C,
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
+            hidden_dim=hidden_dim,
+            epochs=epochs,
+            device=device,
             random_state=random_state,
         )
 
@@ -3798,6 +4311,7 @@ class Session:
         partition: PartitionName | Literal["all"] | None = None,
         query_ids: Sequence[Any] | None = None,
         k: int = 10,
+        backend: RankerBackend | None = None,
     ) -> RankResult:
         """Order items for queries (descending score from frozen RankerPlan)."""
         return ranking_ops.rank_op(
@@ -3805,6 +4319,7 @@ class Session:
             partition=partition,
             query_ids=query_ids,
             k=k,
+            backend=backend,
         )
 
     def evaluate_ranker(
@@ -3812,9 +4327,12 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "test",
         k: int = 10,
+        backend: RankerBackend | None = None,
     ) -> RankerEvalResult:
         """Holdout per-query metrics: nDCG@K, MAP@K, MRR@K."""
-        return ranking_ops.evaluate_ranker_op(self, partition=partition, k=k)
+        return ranking_ops.evaluate_ranker_op(
+            self, partition=partition, k=k, backend=backend
+        )
 
     @property
     def ranker_plan(self) -> RankerPlan | None:
@@ -3847,6 +4365,7 @@ class Session:
     def fit_kg(
         self,
         *,
+        backend: KgBackend | None = None,
         method: KgMethod = "transe",
         head_column: str | None = None,
         relation_column: str | None = None,
@@ -3863,8 +4382,9 @@ class Session:
         """Fit a knowledge-graph embedding model on train triples only.
 
         Requires explicit ``head_column`` / ``relation_column`` /
-        ``tail_column``. Algorithms: pure-numpy ``transe`` or ``distmult``
-        with disclosed uniform negative sampling.
+        ``tail_column``. Backends: ``native`` (numpy TransE/DistMult) or
+        ``pykeen`` (RotatE/ComplEx/TransE/DistMult when
+        ``buildml[kg-industry]`` is installed).
 
         Notes
         -----
@@ -3875,6 +4395,7 @@ class Session:
         """
         return kg_ops.fit_kg_op(
             self,
+            backend=backend,
             method=method,
             head_column=head_column,
             relation_column=relation_column,
@@ -3999,6 +4520,7 @@ class Session:
         self,
         *,
         method: DecisionMethod = "threshold",
+        backend: str | None = None,
         partition: TuningPartition = "validation",
         allow_test_tuning: bool = False,
         fp_cost: float | None = None,
@@ -4023,7 +4545,9 @@ class Session:
 
         Methods: ``threshold`` (wraps classical ``tune_threshold`` engine),
         ``cost_matrix`` (multiclass Bayes), ``topk``, ``knapsack``,
-        ``lp_allocate`` (scipy linprog). Prefer ``partition='validation'``.
+        ``lp_allocate`` (scipy linprog or CVXPY). ``backend=`` selects industry
+        solvers when installed (see ``decision_capability_matrix()``).
+        Prefer ``partition='validation'``.
 
         Notes
         -----
@@ -4033,6 +4557,7 @@ class Session:
         return decision_ops.fit_decision_policy_op(
             self,
             method=method,
+            backend=backend,
             partition=partition,
             allow_test_tuning=allow_test_tuning,
             fp_cost=fp_cost,
@@ -4101,9 +4626,20 @@ class Session:
         """Load a decision-policy bundle into this Session."""
         return decision_ops.load_decision_bundle_op(self, path=path)
 
+    @staticmethod
+    def decision_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for decision-policy backends."""
+        return decision_ops.decision_capability_matrix_op()
+
+    @staticmethod
+    def optimize_capability_matrix() -> dict[str, Any]:
+        """Alias for :meth:`decision_capability_matrix`."""
+        return decision_ops.decision_capability_matrix_op()
+
     def fit_synthesizer(
         self,
         *,
+        backend: SyntheticBackend | None = None,
         method: SynthesizerMethod = "gaussian_copula",
         columns: Sequence[str] | None = None,
         random_state: int = 42,
@@ -4112,11 +4648,14 @@ class Session:
         target_column: str | None = None,
         k_neighbors: int = 5,
         sampling_strategy: str | float | dict[str, float] = "auto",
+        epochs: int = 300,
+        batch_size: int = 500,
     ) -> SynthesizerFitResult:
         """Fit a tabular synthesizer on Session **train** only.
 
-        Methods: ``bootstrap`` (optional smoothed), ``gaussian_copula``
-        (mixed types), ``smote`` (requires ``buildml[imbalanced]``).
+        Backends (see ``synthetic_capability_matrix()``):
+        native — bootstrap / Gaussian copula / SMOTE (``buildml[imbalanced]``).
+        sdv — CTGAN / TVAE / CopulaGAN (``buildml[synthetic-industry]``).
 
         Notes
         -----
@@ -4125,6 +4664,7 @@ class Session:
         """
         return synthetic_ops.fit_synthesizer_op(
             self,
+            backend=backend,
             method=method,
             columns=columns,
             random_state=random_state,
@@ -4133,6 +4673,8 @@ class Session:
             target_column=target_column,
             k_neighbors=k_neighbors,
             sampling_strategy=sampling_strategy,
+            epochs=epochs,
+            batch_size=batch_size,
         )
 
     def sample_synthetic(
@@ -4143,12 +4685,14 @@ class Session:
         condition: dict[str, Any] | None = None,
         merge_mode: MergeMode = "none",
         provenance_column: str = "_synthetic",
+        validate: bool = False,
     ) -> SyntheticSampleResult:
         """Sample from the frozen synthesizer; optionally extend train.
 
         Default ``merge_mode='none'`` returns a Frame without mutating roles.
         ``merge_mode='extend_train'`` appends to train with a provenance
-        column (role=ignore); holdouts unchanged.
+        column (role=ignore); holdouts unchanged. ``validate=True`` runs
+        built-in schema checks on the sample.
         """
         return synthetic_ops.sample_synthetic_op(
             self,
@@ -4157,12 +4701,14 @@ class Session:
             condition=condition,
             merge_mode=merge_mode,
             provenance_column=provenance_column,
+            validate=validate,
         )
 
     def evaluate_synthetic(
         self,
         *,
         mode: EvalMode = "fidelity",
+        eval_backend: EvalBackend = "auto",
         partition: PartitionName = "test",
         n_synthetic: int | None = None,
         random_state: int = 0,
@@ -4172,11 +4718,17 @@ class Session:
         return synthetic_ops.evaluate_synthetic_op(
             self,
             mode=mode,
+            eval_backend=eval_backend,
             partition=partition,
             n_synthetic=n_synthetic,
             random_state=random_state,
             estimator=estimator,
         )
+
+    @staticmethod
+    def synthetic_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for synthetic backends and eval paths."""
+        return synthetic_ops.synthetic_capability_matrix_op()
 
     @property
     def synthesizer_plan(self) -> SynthesizerPlan | None:
@@ -5264,28 +5816,31 @@ class Session:
         *,
         size: int = 512,
         overlap: int = 64,
+        strategy: str = "fixed",
     ) -> Session:
-        """Chunk the active RAG corpus with size + overlap (requires ``buildml[rag]``)."""
-        return rag_ops.rag_chunk(self, size=size, overlap=overlap)
+        """Chunk the active RAG corpus (fixed or recursive strategy)."""
+        return rag_ops.rag_chunk(self, size=size, overlap=overlap, strategy=strategy)
 
     def rag_embed_and_index(
         self,
         *,
-        embedder: Any | None = None,
+        embedder: Any | None = "auto",
         chunk_size: int | None = None,
         chunk_overlap: int | None = None,
+        chunk_strategy: str | None = None,
         device: str | None = None,
     ) -> Session:
-        """Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
+        """Embed chunks and build the default NumPy cosine index.
 
-        Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
-        Default embedder is ``buildml.hashing_embed.v1`` (lexical/hashed, not semantic).
-        ``device`` applies to sentence-transformer backends; hashing stays CPU-only."""
+        Default embedder is ``auto`` (sentence-transformers when ``buildml[rag]``
+        is installed, else hashing with disclosure). Pass ``embedder="hashing"``
+        for explicit lexical/CI paths."""
         return rag_ops.rag_embed_and_index(
             self,
             embedder=embedder,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
+            chunk_strategy=chunk_strategy,
             device=device,
         )
 
@@ -5302,8 +5857,8 @@ class Session:
     ) -> Any:
         """Retrieve ranked chunks (dense / BM25 / hybrid) against the active RAG index.
 
-        Defaults: ``mode="dense"``, no metadata filters, ``rerank=False``. Hybrid
-        defaults to RRF (``rrf_k=60``). Cross-encoder rerank requires ``buildml[rag]``."""
+        Defaults: ``mode="hybrid"`` when ``buildml[rag]`` is installed, else ``dense``.
+        Metadata filters and cross-encoder rerank are opt-in."""
         return rag_ops.rag_retrieve(
             self,
             query=query,

@@ -34,9 +34,17 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p(
+                "backend",
+                "sklearn | industry | torch | hf",
+                "Semi-supervised backend; sklearn when extras missing.",
+                None,
+            ),
+            _p(
                 "method",
-                "label_propagation | label_spreading | self_training",
-                "Semi-supervised algorithm.",
+                "label_propagation | label_spreading | self_training | "
+                "pseudo_label_xgb | pseudo_label_lgbm | fixmatch_tabular | "
+                "mixmatch_tabular | text_pseudo_label",
+                "Semi-supervised algorithm within the backend.",
                 "label_propagation",
             ),
             _p("columns", "list[str] | None", "Optional explicit numeric columns."),
@@ -51,10 +59,19 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "Self-training base classifier.",
                 "logistic_regression",
             ),
-            _p("threshold", "float", "Self-training confidence threshold.", 0.75),
+            _p(
+                "threshold",
+                "float",
+                "Self-training / pseudo-label confidence threshold.",
+                0.75,
+            ),
             _p("criterion", "str", "Self-training selection criterion.", "threshold"),
             _p("k_best", "int", "Self-training k_best when criterion requires it.", 10),
-            _p("max_self_train_iter", "int", "Self-training outer iterations.", 10),
+            _p("max_self_train_iter", "int", "Self-training / pseudo-label outer iterations.", 10),
+            _p("epochs", "int", "Torch consistency training epochs.", 40),
+            _p("batch_size", "int", "Torch mini-batch size.", 64),
+            _p("text_column", "str | None", "Text feature column for hf backend.", None),
+            _p("text_model_name", "str", "Sentence-transformer model for hf backend.", "sentence-transformers/all-MiniLM-L6-v2"),
             _p(
                 "unlabeled_marker",
                 "Any | None",
@@ -73,7 +90,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split and usually after impute/scale; optional reduce_dimensions.",),
         alternatives=(
             "Session.fit for fully labeled supervised learning.",
-            "Session.fit_ssl_pretext when learning representations without label propagation.",
+            "Session.fit_ssl_pretext + transform_ssl + fit_semisupervised for SSL embeddings.",
+            "Session.finetune_ssl_head when only labeled train rows matter.",
             "Anomaly novelty mode is normal-only detection — not this API.",
         ),
         rationale=(
@@ -107,6 +125,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "semisupervised-label-missingness",
             "semisupervised-train-only-fit",
             "semisupervised-vs-novelty",
+            "semisupervised-ssl-pipeline",
             "leakage-boundary",
         ),
     ),

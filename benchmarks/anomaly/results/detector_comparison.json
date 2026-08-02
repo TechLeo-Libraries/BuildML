@@ -1,0 +1,131 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "isolation_forest",
+          "lof",
+          "one_class_svm"
+        ],
+        "modes": [
+          "unsupervised",
+          "novelty"
+        ],
+        "supervised_methods": [
+          "supervised_hgb"
+        ],
+        "score_calibration": "sklearn score_samples / decision_function inverted"
+      },
+      "pyod": {
+        "available": false,
+        "extra": "anomaly-industry",
+        "methods": [
+          "hbos",
+          "copod",
+          "ecod",
+          "deepsvdd"
+        ],
+        "modes": [
+          "unsupervised",
+          "novelty"
+        ],
+        "supervised_methods": [],
+        "score_calibration": "PyOD decision_function (higher = more anomalous)",
+        "notes": "deepsvdd may require torch inside PyOD; install buildml[torch] when DeepSVDD training fails on CPU-only stacks."
+      },
+      "torch": {
+        "available": true,
+        "extra": "torch",
+        "methods": [
+          "autoencoder"
+        ],
+        "modes": [
+          "unsupervised",
+          "novelty"
+        ],
+        "supervised_methods": [],
+        "score_calibration": "train-only MSE reconstruction error (higher = more anomalous)"
+      }
+    },
+    "supervised_scorers": {
+      "supervised_hgb": {
+        "available": true,
+        "extra": null
+      },
+      "supervised_xgb": {
+        "available": true,
+        "extra": "anomaly-industry"
+      },
+      "supervised_lgbm": {
+        "available": true,
+        "extra": "anomaly-industry"
+      }
+    },
+    "evaluation_metrics": [
+      "average_precision",
+      "roc_auc",
+      "precision",
+      "recall",
+      "f1",
+      "precision_at_k",
+      "recall_at_k"
+    ],
+    "threshold_policies": [
+      "contamination",
+      "quantile",
+      "score_threshold",
+      "decision_zero",
+      "validation_tuned"
+    ],
+    "default_backend_when_installed": "torch",
+    "default_supervised_when_installed": "supervised_xgb",
+    "install_hints": {
+      "anomaly-industry": "pip install 'buildml[anomaly-industry]'  # PyOD (HBOS/COPOD/ECOD/DeepSVDD) + XGBoost/LightGBM fraud scorers",
+      "torch": "pip install 'buildml[torch]'  # tabular autoencoder reconstruction-error anomaly path"
+    },
+    "non_goals": [
+      "Graph fraud / entity networks",
+      "Online streaming anomaly product",
+      "Causal fraud attribution",
+      "Full PyOD algorithm zoo beyond catalog methods"
+    ],
+    "torch_spec_present": true,
+    "torch_import_honesty": "torch backend 'available' reflects package install (find_spec). Broken wheels may still fail at require_torch \u2014 same policy as buildml.dl.",
+    "industry_extra_present": true
+  },
+  "runs": [
+    {
+      "backend": "sklearn",
+      "method": "isolation_forest",
+      "mode": "unsupervised",
+      "train_alert_rate": 0.10426540284360189,
+      "threshold": 0.5486734669760857,
+      "validation_average_precision": 0.71,
+      "validation_f1": 0.9090909090909091,
+      "test_average_precision": 0.8968253968253967,
+      "test_alert_rate": 0.045454545454545456
+    },
+    {
+      "backend": "sklearn",
+      "method": "lof",
+      "mode": "unsupervised",
+      "train_alert_rate": 0.10426540284360189,
+      "threshold": 1.2372872704598252,
+      "validation_average_precision": 0.12721368638988775,
+      "validation_f1": 0.2857142857142857,
+      "test_average_precision": 0.1182165801418675,
+      "test_alert_rate": 0.45454545454545453
+    },
+    {
+      "backend": "sklearn",
+      "method": "supervised_hgb",
+      "mode": "supervised",
+      "test_average_precision": 1.0,
+      "test_precision_at_k": 0.4
+    }
+  ],
+  "pyod_available": false,
+  "torch_available": false
+}

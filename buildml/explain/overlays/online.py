@@ -34,11 +34,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Never use validation/test for the init update.",
         ),
         parameters=(
+            _p("backend", "sklearn | industry | torch | None", "Online backend; honest default when installed."),
             _p(
                 "estimator",
-                "sgd_classifier | sgd_regressor | passive_aggressive_classifier | "
-                "passive_aggressive_regressor | perceptron | multinomial_nb | bernoulli_nb",
-                "Sklearn partial_fit family estimator.",
+                "Backend-specific estimator name (see online_capability_matrix).",
                 "sgd_classifier",
             ),
             _p("task", "classification | regression | None", "Optional task override."),
@@ -67,9 +66,18 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "drift_disclose",
                 "bool",
-                "Emit lite mean-shift notes on later updates.",
+                "Emit lite drift notes on updates/evaluate.",
                 True,
             ),
+            _p(
+                "drift_detector",
+                "mean_shift | adwin | page_hinkley | none",
+                "Drift disclosure mode (River detectors need backend=industry).",
+                "mean_shift",
+            ),
+            _p("buffer_size", "int", "Torch replay buffer capacity.", 512),
+            _p("epochs_per_update", "int", "Torch training epochs per partial_fit.", 5),
+            _p("device", "str", "Torch device string.", "cpu"),
         ),
         inputs=("Split Session with numeric features and a labeled train target.",),
         outputs=("OnlineFitResult; OnlinePlan stored on the Session.",),
@@ -177,6 +185,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "train | validation | test | all",
                 "Evaluation partition (validation falls back to test if absent).",
                 "validation",
+            ),
+            _p(
+                "drift_check",
+                "bool",
+                "Surface River or mean-shift drift notes without model update.",
+                True,
             ),
         ),
         inputs=("Active OnlinePlan and a labeled evaluation partition.",),

@@ -195,6 +195,48 @@ RL_NOTES: dict[str, ConceptNote] = {
             related_concepts=("rl-contextual-bandit", "rl-bundle-boundary"),
         ),
         _note(
+            key="rl-sb3-industry",
+            title="Stable-Baselines3 industry path (buildml[rl-industry])",
+            summary="PPO/DQN/A2C on small Gymnasium envs via SB3; defaults when rl-industry is installed.",
+            definition=(
+                "fit_rl(backend='industry', mode='gym_sb3') trains Stable-Baselines3 "
+                "policies on honest small discrete-action envs. Requires "
+                "buildml[rl-industry] (SB3 + imitation + gymnasium + torch)."
+            ),
+            intuition=(
+                "Use industry-grade policy-gradient / value-based RL on CartPole-class "
+                "teaching envs without claiming a robotics product."
+            ),
+            formal_idea="π_θ learned by PPO/DQN/A2C env interaction; evaluate via mean_return.",
+            why_it_matters=(
+                "Industry depth without Ray RLlib complexity or MuJoCo scope creep.",
+                "Offline RL (batch RL) remains explicitly out of scope.",
+            ),
+            how_buildml_uses=(
+                "Session.fit_rl(backend='industry', mode='gym_sb3', algorithm='ppo') → "
+                "evaluate_rl / act_rl(observations=...).",
+            ),
+            interpretation_rules=(
+                "mean_return from env rollouts; offline=False.",
+                "Read rl_capability_matrix() for backend defaults and non-goals.",
+            ),
+            assumptions=(
+                "Discrete action space; Box-like observations; rl-industry installed.",
+            ),
+            failure_modes=(
+                "Under-trained CartPole; continuous-action envs unsupported.",
+            ),
+            anti_patterns=(
+                "Claiming BuildML is a MuJoCo / AV / multi-agent platform.",
+                "Confusing bandit offline IPS with SB3 online returns.",
+            ),
+            worked_example_pattern=(
+                "pip install 'buildml[rl-industry]'; "
+                "fit_rl(mode='gym_sb3', algorithm='ppo', total_timesteps=25000).",
+            ),
+            related_concepts=("rl-gym-reinforce", "rl-offline-metrics", "rl-bundle-boundary"),
+        ),
+        _note(
             key="rl-bundle-boundary",
             title="RL bundle vs Session checkpoint",
             summary="buildml.rl_bundle.v1 stores RlPlan; checkpoints do not embed the policy.",

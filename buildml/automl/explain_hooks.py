@@ -15,6 +15,7 @@ def fit_result_summary(result: Any) -> dict[str, Any]:
         payload = dict(result)
     return {
         "method": payload.get("method"),
+        "backend": (payload.get("config") or {}).get("backend", "native"),
         "selection": payload.get("selection"),
         "task": payload.get("task"),
         "ranking_metric": payload.get("ranking_metric"),
@@ -35,6 +36,8 @@ def automl_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for AutoML."""
+    from buildml.automl.catalog import automl_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -79,6 +82,7 @@ def automl_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_automl_plan": enabled,
+        "backend": None if plan is None else (getattr(plan, "config", {}) or {}).get("backend", "native"),
         "method": None if plan is None else getattr(plan, "method", None),
         "selection": None if plan is None else getattr(plan, "selection", None),
         "task": None if plan is None else getattr(plan, "task", None),
@@ -89,6 +93,7 @@ def automl_status(
         "best_score": None if plan is None else getattr(plan, "best_score", None),
         "has_result": result is not None,
         "disclosures": disclosures,
+        "capability_matrix": automl_capability_matrix(),
         "boundary": (
             "AutoML is a Session domain path distinct from single-estimator "
             "grid_search / optuna_search on one fixed model."

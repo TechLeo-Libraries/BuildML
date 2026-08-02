@@ -12,19 +12,21 @@ Phase 3 — Application systems (depth-first):
   Remaining deepenings: NLP/CV if still partial.
 
 Honesty (this package):
-  - Local Vietoris–Rips persistence (ripser) on kNN train neighborhoods.
-  - Train-fitted vectorization: persistence images (persim) or in-tree
-    landscapes / silhouettes → fixed-length features.
+  - **native** backend: local Vietoris–Rips persistence (ripser) on kNN train
+    neighborhoods; train-fitted vectorization (persim PI or in-tree landscapes /
+    silhouettes) → fixed-length features.
+  - **giotto** backend (``buildml[tda-industry]``): giotto-tda PH + BettiCurve /
+    PersistenceImage / PersistenceLandscape; optional KeplerMapper train summary.
   - Optional sklearn classify/regress head fitted on **train** topological
     features only; holdout uses the frozen transformer (no refit).
   - **Not** a full Mapper research suite, not every TDA paper, not a
     domain-specific credit-risk product (tabular use is fine motivation).
 
 Dependency policy: core stays numpy/pandas/sklearn.
-  - ``buildml[tda]`` → ``ripser`` + ``persim`` (chosen over giotto-tda for a
-    lighter, well-integrated PH → vectorization stack without pulling a
-    heavier transitive tree). Silhouette vectorization is in-tree.
-  - ``import buildml`` never requires ripser/persim.
+  - ``buildml[tda]`` → ``ripser`` + ``persim`` (light native PH stack).
+  - ``buildml[tda-industry]`` → ``buildml[tda]`` + ``giotto-tda`` (industry
+    Betti curves, gtda vectorizers, optional Mapper summary).
+  - ``import buildml`` never requires ripser/persim/giotto-tda.
 
 Lazy imports — keep the core import graph light.
 """
@@ -35,6 +37,7 @@ from typing import Any
 
 __all__ = [
     "BUNDLE_FORMAT",
+    "BUNDLE_FORMAT_V1",
     "CHECKPOINT_BOUNDARY",
     "TdaConfig",
     "TdaEvalResult",
@@ -47,13 +50,17 @@ __all__ = [
     "Vectorization",
     "evaluate_tda",
     "fit_tda",
+    "list_tda_vectorizations",
     "load_tda_bundle",
     "predict_tda",
+    "require_giotto",
     "require_persim",
     "require_ripser",
     "require_tda_stack",
     "save_tda_bundle",
     "tda_available",
+    "tda_capability_matrix",
+    "tda_industry_available",
     "tda_status",
     "tda_status_for_session",
     "transform_tda",
@@ -93,6 +100,7 @@ def __getattr__(name: str) -> Any:
         return evaluate_tda
     if name in {
         "BUNDLE_FORMAT",
+        "BUNDLE_FORMAT_V1",
         "CHECKPOINT_BOUNDARY",
         "save_tda_bundle",
         "load_tda_bundle",
@@ -103,12 +111,18 @@ def __getattr__(name: str) -> Any:
     if name in {
         "require_ripser",
         "require_persim",
+        "require_giotto",
         "require_tda_stack",
         "tda_available",
+        "tda_industry_available",
     }:
         from buildml.tda import extras as extras_mod
 
         return getattr(extras_mod, name)
+    if name in {"tda_capability_matrix", "list_tda_vectorizations"}:
+        from buildml.tda import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {"tda_status", "tda_status_for_session"}:
         from buildml.tda import explain_hooks as hooks
 

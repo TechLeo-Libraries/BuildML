@@ -1,4 +1,4 @@
-"""Graph ML domain (node classification: classical + pure-Torch GCN).
+"""Graph ML domain (node classification: classical + pure-Torch GCN + PyG).
 
 Phase coverage (internal tracker — depth-first; do not spray stubs)
 ------------------------------------------------------------------
@@ -18,9 +18,10 @@ full COCO detection/segmentation suite. Knowledge-graph *learning* is a
 Honesty (this package):
   - Session rows = nodes; edge list attached via ``set_graph``; splits are
     **node** partitions.
-  - Two complete paths:
+  - Three complete paths:
       1. Classical: NetworkX metrics + sklearn classifier (``buildml[graph]``).
-      2. Pure-Torch GCN (``buildml[torch]``) — **no** PyTorch Geometric.
+      2. Pure-Torch GCN (``buildml[torch]``) — dense adjacency, no PyG.
+      3. PyTorch Geometric (``buildml[graph-pyg]``) — GCN / GraphSAGE / GAT.
   - Default ``mode='inductive'``: fit on train-induced subgraph; score may use
     train↔holdout edges; holdout↔holdout dropped. ``transductive`` uses full
     topology with train-label-only supervision (disclosed).
@@ -29,11 +30,10 @@ Honesty (this package):
 
 Dependency policy: core stays numpy/pandas/pyarrow/sklearn.
   - ``buildml[graph]`` → NetworkX (classical path).
-  - ``buildml[torch]`` → Torch (GCN path).
-  - PyG skipped: heavy CUDA/Torch coupling; a 1–2 layer GCN is honest with
-    dense normalized adjacency under the Session size guard (≤5000 nodes).
+  - ``buildml[torch]`` → Torch (pure-Torch GCN path).
+  - ``buildml[graph-pyg]`` → torch-geometric + torch (industry GNN path).
 
-Lazy imports — ``import buildml`` never requires networkx or torch.
+Lazy imports — ``import buildml`` never requires networkx, torch, or pyg.
 """
 
 from __future__ import annotations
@@ -53,14 +53,18 @@ __all__ = [
     "GraphPredictResult",
     "GraphSpec",
     "GraphTask",
+    "PyGModel",
     "evaluate_graph",
     "fit_graph",
+    "graph_capability_matrix",
     "graph_status",
     "graph_status_for_session",
     "load_graph_bundle",
     "networkx_available",
     "predict_graph",
+    "pyg_available",
     "require_networkx",
+    "require_pyg",
     "save_graph_bundle",
 ]
 
@@ -73,6 +77,7 @@ def __getattr__(name: str) -> Any:
         "GraphMode",
         "GraphSpec",
         "GraphTask",
+        "PyGModel",
     }:
         from buildml.graph import types as types_mod
 
@@ -98,6 +103,10 @@ def __getattr__(name: str) -> Any:
         from buildml.graph.evaluate import evaluate_graph
 
         return evaluate_graph
+    if name == "graph_capability_matrix":
+        from buildml.graph.catalog import graph_capability_matrix
+
+        return graph_capability_matrix
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",
@@ -111,7 +120,7 @@ def __getattr__(name: str) -> Any:
         from buildml.graph import explain_hooks as hooks
 
         return getattr(hooks, name)
-    if name in {"require_networkx", "networkx_available"}:
+    if name in {"require_networkx", "networkx_available", "require_pyg", "pyg_available"}:
         from buildml.graph import extras as extras_mod
 
         return getattr(extras_mod, name)

@@ -11,6 +11,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
+        "backend": payload.get("backend"),
         "estimator_name": payload.get("estimator_name"),
         "task": payload.get("task"),
         "n_train_rows": payload.get("n_train_rows"),
@@ -91,6 +92,8 @@ def probabilistic_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for Bayesian / probabilistic ML."""
+    from buildml.probabilistic.catalog import probabilistic_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -109,7 +112,8 @@ def probabilistic_status(
     if enabled:
         disclosures.extend(
             [
-                f"ProbabilisticPlan estimator={getattr(plan, 'estimator_name', None)}, "
+                f"ProbabilisticPlan backend={getattr(plan, 'backend', 'native')}, "
+                f"estimator={getattr(plan, 'estimator_name', None)}, "
                 f"task={getattr(plan, 'task', None)}, "
                 f"alpha={getattr(plan, 'alpha', None)}, "
                 f"conformal={getattr(plan, 'conformal', None)}, "
@@ -118,11 +122,11 @@ def probabilistic_status(
                 "only. Validation/test are evaluation / interval scoring only.",
                 "Session.calibration() remains the classical FitResult diagnostic "
                 "and is not replaced by this path; evaluate_probabilistic reports "
-                "NLL/Brier/ECE for probabilistic classifiers.",
+                "NLL/Brier/ECE/CRPS for probabilistic plans.",
                 "Session checkpoints do not embed ProbabilisticPlan; use "
                 "save_probabilistic_bundle / load_probabilistic_bundle.",
-                "Honesty: sklearn BayesianRidge / GaussianProcess* / GaussianNB "
-                "+ optional split conformal — not a PyMC/Stan MCMC platform.",
+                "Honesty: native sklearn + optional MAPIE/NGBoost industry "
+                "backends — not a PyMC/Stan MCMC platform.",
             ]
         )
         for note in getattr(plan, "disclosures", ()) or ():
@@ -157,11 +161,13 @@ def probabilistic_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_probabilistic_plan": enabled,
+        "backend": None if plan is None else getattr(plan, "backend", "native"),
         "estimator_name": None if plan is None else getattr(plan, "estimator_name", None),
         "task": None if plan is None else getattr(plan, "task", None),
         "alpha": None if plan is None else getattr(plan, "alpha", None),
         "conformal": None if plan is None else getattr(plan, "conformal", None),
         "interval_method": None if plan is None else getattr(plan, "interval_method", None),
+        "capability_matrix": probabilistic_capability_matrix(),
         "has_fit_result": fit_result is not None,
         "has_eval_result": eval_result is not None,
         "has_interval_result": interval_result is not None,
@@ -169,9 +175,10 @@ def probabilistic_status(
         "interval": interval_payload,
         "disclosures": disclosures,
         "boundary": (
-            "Bayesian / probabilistic ML fits sklearn uncertainty-aware "
-            "estimators with optional train-only split conformal intervals. "
-            "Not a probabilistic-programming platform; not causal."
+            "Bayesian / probabilistic ML fits uncertainty-aware tabular "
+            "estimators (native sklearn, optional MAPIE conformal, optional "
+            "NGBoost distributions) with train-only split conformal when "
+            "enabled. Not a probabilistic-programming platform; not causal."
         ),
     }
 

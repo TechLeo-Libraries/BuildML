@@ -22,6 +22,7 @@ from buildml.recommenders.recommend import recommend
 from buildml.recommenders.types import (
     ColdStartPolicy,
     FeedbackMode,
+    RecommenderBackend,
     RecommenderMethod,
 )
 
@@ -31,7 +32,8 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_recommender_op(
     session,
     *,
-    method: RecommenderMethod = "item_knn",
+    method: RecommenderMethod | None = None,
+    backend: RecommenderBackend | None = None,
     user_column: str | None = None,
     item_column: str | None = None,
     rating_column: str | None = None,
@@ -40,8 +42,11 @@ def fit_recommender_op(
     n_factors: int = 32,
     min_rating: float | None = None,
     item_feature_columns: Sequence[str] | None = None,
+    user_feature_columns: Sequence[str] | None = None,
     cold_start: ColdStartPolicy = "popularity",
     random_state: int | None = 0,
+    n_iterations: int = 15,
+    lightfm_epochs: int = 10,
 ):
     """Fit a recommender on Session train interactions only.
 
@@ -51,12 +56,16 @@ def fit_recommender_op(
     use train interactions only. Holdout items may appear as cold catalog
     misses (known-item protocol). Distinct from RAG and EDA Recommendation
     Findings.
+
+    When ``feedback='implicit'`` and ``method`` is omitted, defaults to ALS
+    (``implicit`` library) when ``buildml[recommenders-industry]`` is installed.
     """
     session.assert_can_fit("train")
     plan, result = fit_recommender(
         session.dataset,
         session._split_plan,
         method=method,
+        backend=backend,
         user_column=user_column,
         item_column=item_column,
         rating_column=rating_column,
@@ -65,8 +74,11 @@ def fit_recommender_op(
         n_factors=n_factors,
         min_rating=min_rating,
         item_feature_columns=item_feature_columns,
+        user_feature_columns=user_feature_columns,
         cold_start=cold_start,
         random_state=random_state,
+        n_iterations=n_iterations,
+        lightfm_epochs=lightfm_epochs,
     )
     session._recommender_plan = plan
     session._recommender_fit_result = result
@@ -75,7 +87,8 @@ def fit_recommender_op(
     session._record(
         "fit_recommender",
         {
-            "method": method,
+            "method": result.method,
+            "backend": result.backend,
             "user_column": user_column,
             "item_column": item_column,
             "rating_column": rating_column,
@@ -86,8 +99,13 @@ def fit_recommender_op(
             "item_feature_columns": (
                 None if item_feature_columns is None else list(item_feature_columns)
             ),
+            "user_feature_columns": (
+                None if user_feature_columns is None else list(user_feature_columns)
+            ),
             "cold_start": cold_start,
             "random_state": random_state,
+            "n_iterations": n_iterations,
+            "lightfm_epochs": lightfm_epochs,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),

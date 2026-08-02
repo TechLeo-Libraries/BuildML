@@ -72,6 +72,36 @@ outside Session and then claim holdout validity.
 
 ## Methods and assign strategies
 
+| Method | Backend | Holdout assign | Notes |
+| --- | --- | --- | --- |
+| `kmeans` | sklearn | Native `predict` | `auto_k` elbow selection on train |
+| `agglomerative` | sklearn | Nearest train centroid | Disclosed approximation |
+| `dbscan` | sklearn | Nearest core within `eps` | Density-driven k |
+| `gmm` | sklearn | Native `predict` | BIC model selection (`auto_k` or fixed k) |
+| `hdbscan` | hdbscan | `approximate_predict` / nearest core | Default density when `[unsupervised]` installed |
+| `spectral` | sklearn | Nearest centroid | **Transductive** on train |
+| `optics` | sklearn | Nearest centroid | **Transductive**; order-driven k |
+| `mean_shift` | sklearn | Nearest centroid | Bandwidth-driven k |
+| `dec` / `idec` | Torch | Native encoder assign | Requires `[torch]` |
+
+## Dimensionality / viz (`reduce_dimensions`)
+
+| Method | Extra | Holdout transform |
+| --- | --- | --- |
+| `pca` | core | Native |
+| `umap` | `[unsupervised]` | Native `transform` |
+| `tsne` | core | Nearest-neighbor train embed transfer (disclosed) |
+
+## Validation (`evaluate_clusters`)
+
+- Silhouette, Calinski–Harabasz, Davies–Bouldin (internal geometry)
+- Optional bootstrap stability (`compute_stability=True`) on train subsamples
+- Optional elbow curve (`compute_elbow=True`) for k-means family diagnostics
+- Transductive-method disclosures on spectral/optics/t-SNE paths
+- Bundles: `buildml.unsupervised_bundle.v2` (v1 loadable)
+
+Legacy table (still accurate for the original three methods):
+
 | Method | Fit | Holdout assign | Notes |
 | --- | --- | --- | --- |
 | `kmeans` | sklearn `KMeans` on train | Native `predict` | Primary full API |

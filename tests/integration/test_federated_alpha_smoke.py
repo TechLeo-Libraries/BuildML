@@ -44,6 +44,7 @@ def test_federated_alpha_smoke(tmp_path: Path) -> None:
     )
 
     fit = session.fit_federated(
+        backend="native",
         method="fedavg",
         estimator="sgd_classifier",
         n_rounds=4,

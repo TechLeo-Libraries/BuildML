@@ -23,6 +23,7 @@ __all__ = [
     "filter_edges_for_mode",
     "build_adjacency",
     "normalize_adjacency",
+    "edge_index_from_pairs",
     "resolve_feature_columns",
     "matrix_from_frame",
     "target_array",
@@ -290,6 +291,24 @@ def normalize_adjacency(adj: np.ndarray) -> np.ndarray:
     deg_inv_sqrt = np.where(deg > 0, 1.0 / np.sqrt(deg), 0.0)
     d = np.diag(deg_inv_sqrt)
     return d @ a_hat @ d
+
+
+def edge_index_from_pairs(
+    src: np.ndarray,
+    dst: np.ndarray,
+    *,
+    directed: bool,
+) -> np.ndarray:
+    """Build PyG ``edge_index`` shape ``[2, num_edges]`` from endpoint arrays."""
+    src = np.asarray(src, dtype=np.int64)
+    dst = np.asarray(dst, dtype=np.int64)
+    if len(src) != len(dst):
+        raise ValidationError("src/dst length mismatch for edge_index.")
+    if directed:
+        return np.stack([src, dst], axis=0)
+    rev_src = np.concatenate([src, dst])
+    rev_dst = np.concatenate([dst, src])
+    return np.stack([rev_src, rev_dst], axis=0)
 
 
 def resolve_feature_columns(

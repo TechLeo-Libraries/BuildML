@@ -208,9 +208,19 @@ DEFAULT_RECIPE_STRATEGIES: tuple[RecipeStrategy, ...] = (
         description="Median impute only.",
     ),
     RecipeStrategy(
+        name="impute_mean",
+        recipe=PreprocessRecipe(impute="mean", scale=None, encode=None),
+        description="Mean impute only.",
+    ),
+    RecipeStrategy(
         name="impute_scale",
         recipe=PreprocessRecipe(impute="median", scale="standard", encode=None),
         description="Median impute + standard scale.",
+    ),
+    RecipeStrategy(
+        name="impute_most_frequent_scale",
+        recipe=PreprocessRecipe(impute="most_frequent", scale="standard", encode=None),
+        description="Most-frequent impute + standard scale.",
     ),
     RecipeStrategy(
         name="impute_minmax",
@@ -228,6 +238,11 @@ DEFAULT_RECIPE_STRATEGIES: tuple[RecipeStrategy, ...] = (
         description="Median impute + standard scale + ordinal categoricals.",
     ),
     RecipeStrategy(
+        name="impute_encode_onehot",
+        recipe=PreprocessRecipe(impute="median", scale=None, encode="onehot"),
+        description="Median impute + one-hot (no scale).",
+    ),
+    RecipeStrategy(
         name="impute_scale_select",
         recipe=PreprocessRecipe(
             impute="median",
@@ -237,6 +252,17 @@ DEFAULT_RECIPE_STRATEGIES: tuple[RecipeStrategy, ...] = (
             select_k=10,
         ),
         description="Impute/scale/one-hot plus fold-local SelectKBest.",
+    ),
+    RecipeStrategy(
+        name="impute_scale_select_k20",
+        recipe=PreprocessRecipe(
+            impute="median",
+            scale="standard",
+            encode="onehot",
+            select="univariate",
+            select_k=20,
+        ),
+        description="Impute/scale/one-hot plus SelectKBest(k=20).",
     ),
     RecipeStrategy(
         name="impute_scale_variance",
@@ -249,6 +275,11 @@ DEFAULT_RECIPE_STRATEGIES: tuple[RecipeStrategy, ...] = (
         ),
         description="Impute/scale/one-hot plus fold-local variance threshold.",
     ),
+    RecipeStrategy(
+        name="impute_minmax_onehot",
+        recipe=PreprocessRecipe(impute="median", scale="minmax", encode="onehot"),
+        description="Median impute + minmax + one-hot.",
+    ),
 )
 
 
@@ -257,8 +288,18 @@ def families_for_task(
     *,
     names: tuple[str, ...] | list[str] | None = None,
     max_families: int | None = None,
+    include_industry: bool = True,
 ) -> list[ModelFamily]:
-    catalog = CLASSIFICATION_FAMILIES if task == "classification" else REGRESSION_FAMILIES
+    catalog = list(
+        CLASSIFICATION_FAMILIES if task == "classification" else REGRESSION_FAMILIES
+    )
+    if include_industry:
+        industry = (
+            _industry_classification_families()
+            if task == "classification"
+            else _industry_regression_families()
+        )
+        catalog.extend(industry)
     if names is None:
         chosen = list(catalog)
     else:
@@ -324,7 +365,163 @@ def recipe_strategies(
 
 
 def family_by_name(task: TaskName, name: str) -> ModelFamily:
-    for fam in families_for_task(task):
+    for fam in families_for_task(task, include_industry=True):
         if fam.name == name:
             return fam
     raise ValidationError(f"Unknown family {name!r} for task {task!r}")
+
+
+def _industry_classification_families() -> tuple[ModelFamily, ...]:
+    from buildml.automl.extras import (
+        catboost_available,
+        lightgbm_available,
+        xgboost_available,
+    )
+
+    out: list[ModelFamily] = []
+    if lightgbm_available():
+        out.append(
+            ModelFamily(
+                name="lightgbm",
+                task="classification",
+                factory=_lgb_clf,
+                param_grid={"n_estimators": [80, 120], "learning_rate": [0.05, 0.1]},
+                param_distributions={
+                    "n_estimators": [60, 100, 140],
+                    "learning_rate": [0.03, 0.05, 0.1],
+                    "num_leaves": [15, 31, 63],
+                },
+            )
+        )
+    if xgboost_available():
+        out.append(
+            ModelFamily(
+                name="xgboost",
+                task="classification",
+                factory=_xgb_clf,
+                param_grid={"n_estimators": [80, 120], "max_depth": [3, 6]},
+                param_distributions={
+                    "n_estimators": [60, 100, 140],
+                    "max_depth": [3, 5, 7],
+                    "learning_rate": [0.03, 0.05, 0.1],
+                },
+            )
+        )
+    if catboost_available():
+        out.append(
+            ModelFamily(
+                name="catboost",
+                task="classification",
+                factory=_cat_clf,
+                param_grid={"iterations": [80, 120], "depth": [4, 6]},
+                param_distributions={
+                    "iterations": [60, 100, 140],
+                    "depth": [4, 6, 8],
+                    "learning_rate": [0.03, 0.05, 0.1],
+                },
+            )
+        )
+    return tuple(out)
+
+
+def _industry_regression_families() -> tuple[ModelFamily, ...]:
+    from buildml.automl.extras import (
+        catboost_available,
+        lightgbm_available,
+        xgboost_available,
+    )
+
+    out: list[ModelFamily] = []
+    if lightgbm_available():
+        out.append(
+            ModelFamily(
+                name="lightgbm",
+                task="regression",
+                factory=_lgb_reg,
+                param_grid={"n_estimators": [80, 120], "learning_rate": [0.05, 0.1]},
+                param_distributions={
+                    "n_estimators": [60, 100, 140],
+                    "learning_rate": [0.03, 0.05, 0.1],
+                    "num_leaves": [15, 31, 63],
+                },
+            )
+        )
+    if xgboost_available():
+        out.append(
+            ModelFamily(
+                name="xgboost",
+                task="regression",
+                factory=_xgb_reg,
+                param_grid={"n_estimators": [80, 120], "max_depth": [3, 6]},
+                param_distributions={
+                    "n_estimators": [60, 100, 140],
+                    "max_depth": [3, 5, 7],
+                    "learning_rate": [0.03, 0.05, 0.1],
+                },
+            )
+        )
+    if catboost_available():
+        out.append(
+            ModelFamily(
+                name="catboost",
+                task="regression",
+                factory=_cat_reg,
+                param_grid={"iterations": [80, 120], "depth": [4, 6]},
+                param_distributions={
+                    "iterations": [60, 100, 140],
+                    "depth": [4, 6, 8],
+                    "learning_rate": [0.03, 0.05, 0.1],
+                },
+            )
+        )
+    return tuple(out)
+
+
+def _lgb_clf(rs: int | None) -> Any:
+    from buildml.automl.extras import require_lightgbm
+
+    lgb = require_lightgbm()
+    return lgb.LGBMClassifier(
+        n_estimators=100, random_state=rs, verbosity=-1, n_jobs=1
+    )
+
+
+def _lgb_reg(rs: int | None) -> Any:
+    from buildml.automl.extras import require_lightgbm
+
+    lgb = require_lightgbm()
+    return lgb.LGBMRegressor(n_estimators=100, random_state=rs, verbosity=-1, n_jobs=1)
+
+
+def _xgb_clf(rs: int | None) -> Any:
+    from buildml.automl.extras import require_xgboost
+
+    xgb = require_xgboost()
+    return xgb.XGBClassifier(
+        n_estimators=100, random_state=rs, verbosity=0, n_jobs=1, use_label_encoder=False
+    )
+
+
+def _xgb_reg(rs: int | None) -> Any:
+    from buildml.automl.extras import require_xgboost
+
+    xgb = require_xgboost()
+    return xgb.XGBRegressor(n_estimators=100, random_state=rs, verbosity=0, n_jobs=1)
+
+
+def _cat_clf(rs: int | None) -> Any:
+    from buildml.automl.extras import require_catboost
+
+    cb = require_catboost()
+    return cb.CatBoostClassifier(
+        iterations=100, random_state=rs, verbose=False, allow_writing_files=False
+    )
+
+
+def _cat_reg(rs: int | None) -> Any:
+    from buildml.automl.extras import require_catboost
+
+    cb = require_catboost()
+    return cb.CatBoostRegressor(
+        iterations=100, random_state=rs, verbose=False, allow_writing_files=False
+    )

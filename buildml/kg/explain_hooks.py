@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from buildml.kg.catalog import kg_capability_matrix
+from buildml.kg.extras import pykeen_available
+
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     """Compact result_summary for ``fit_kg`` history."""
@@ -11,6 +14,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
+        "backend": payload.get("backend"),
         "method": payload.get("method"),
         "n_train_triples": payload.get("n_train_triples"),
         "n_entities": payload.get("n_entities"),
@@ -114,7 +118,8 @@ def kg_status(
     if enabled:
         disclosures.extend(
             [
-                f"KgPlan method={getattr(plan, 'method', None)}, "
+                f"KgPlan backend={getattr(plan, 'backend', None)}, "
+                f"method={getattr(plan, 'method', None)}, "
                 f"entities={getattr(plan, 'n_entities', None)}, "
                 f"relations={getattr(plan, 'n_relations', None)}, "
                 f"triples={getattr(plan, 'n_train_triples', None)}.",
@@ -145,12 +150,15 @@ def kg_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_kg_plan": enabled,
+        "backend": None if plan is None else getattr(plan, "backend", None),
         "method": None if plan is None else getattr(plan, "method", None),
         "n_entities": None if plan is None else getattr(plan, "n_entities", None),
         "n_relations": None if plan is None else getattr(plan, "n_relations", None),
         "n_train_triples": (
             None if plan is None else getattr(plan, "n_train_triples", None)
         ),
+        "pykeen_available": pykeen_available(),
+        "capability_matrix": kg_capability_matrix(),
         "has_fit_result": fit_result is not None,
         "has_eval_result": eval_result is not None,
         "has_score_result": score_result is not None,
@@ -160,9 +168,9 @@ def kg_status(
         "disclosures": disclosures,
         "boundary": (
             "Knowledge graphs are a Session domain path: (head, relation, tail) "
-            "triples → TransE/DistMult link prediction + symbolic "
-            "neighbors/path/typed query. Not Graph ML node-classify "
-            "(set_graph/fit_graph), not Neo4j, not RAG."
+            "triples → native TransE/DistMult or PyKEEN RotatE/ComplEx link "
+            "prediction + symbolic neighbors/path/typed query. Not Graph ML "
+            "node-classify (set_graph/fit_graph), not Neo4j, not RAG."
         ),
     }
 

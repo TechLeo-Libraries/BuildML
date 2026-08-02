@@ -1,0 +1,109 @@
+{
+  "benchmark": "metalearning_few_shot_adaptation",
+  "capability_matrix": {
+    "backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "prototypical",
+          "warm_start"
+        ],
+        "modality": "tabular",
+        "notes": "Nearest-centroid prototypical and warm-start sklearn adapt \u2014 always available; honest fallback when torch/industry extras are missing."
+      },
+      "torch": {
+        "available": true,
+        "extra": "torch",
+        "methods": [
+          "prototypical_torch"
+        ],
+        "modality": "tabular",
+        "notes": "PyTorch MLP encoder + episodic prototype loss for tabular ProtoNet-style few-shot (buildml[torch]). Small-scale, not image/foundation-model meta-learning."
+      },
+      "industry": {
+        "available": true,
+        "extra": "metalearning-industry",
+        "methods": [
+          "maml",
+          "reptile"
+        ],
+        "modality": "tabular",
+        "notes": "First-order tabular MAML/Reptile via learn2learn when buildml[metalearning-industry] and buildml[torch] are installed. Honest small-scale task adaptation \u2014 not second-order MAML-at-scale or EconML-style causal meta."
+      }
+    },
+    "episodic_protocol": {
+      "task_column": "role='group' or task_column=",
+      "metrics": [
+        "meta_train_accuracy",
+        "mean_accuracy",
+        "mean_f1_macro"
+      ],
+      "held_out_task_ids": "fit_metalearning may hold out train task ids internally; evaluate_metalearning prefers them on partition='train'."
+    },
+    "evaluation": {
+      "metrics": [
+        "mean_accuracy",
+        "mean_f1_macro",
+        "n_tasks_scored"
+      ],
+      "holdout_rule": "validation/test never used for meta-train; prefer novel task ids on holdout partitions."
+    },
+    "default_backend_when_installed": "industry",
+    "default_method_when_installed": "maml",
+    "install_hints": {
+      "torch": "pip install 'buildml[torch]'  # deep tabular prototypical encoder",
+      "metalearning-industry": "pip install 'buildml[metalearning-industry,torch]'  # learn2learn MAML/Reptile tabular adapters"
+    },
+    "non_goals": [
+      "Foundation-model or vision MAML-at-scale",
+      "EconML-style causal meta (see buildml.causal)",
+      "Regression few-shot (classification-focused surface)",
+      "Neural architecture search across meta-learners"
+    ],
+    "learn2learn_present": false,
+    "torch_spec_present": true,
+    "industry_extra_present": true
+  },
+  "k_shot": 3,
+  "results": [
+    {
+      "backend": "sklearn",
+      "method": "prototypical",
+      "meta_train_accuracy": 1.0,
+      "n_meta_train_tasks": 8,
+      "n_held_out_tasks": 2,
+      "held_out_task_ids": [
+        "t0",
+        "t5"
+      ],
+      "eval_mean_accuracy": 1.0,
+      "eval_mean_f1_macro": 1.0,
+      "n_tasks_evaluated": 1,
+      "novel_task_ids": [
+        "t0",
+        "t5"
+      ]
+    },
+    {
+      "backend": "sklearn",
+      "method": "warm_start",
+      "meta_train_accuracy": 1.0,
+      "n_meta_train_tasks": 8,
+      "n_held_out_tasks": 2,
+      "held_out_task_ids": [
+        "t0",
+        "t5"
+      ],
+      "eval_mean_accuracy": 1.0,
+      "eval_mean_f1_macro": 1.0,
+      "n_tasks_evaluated": 1,
+      "novel_task_ids": [
+        "t0",
+        "t5"
+      ]
+    }
+  ],
+  "sklearn_baseline_eval_accuracy": 1.0,
+  "floor_note": "Torch/industry backends should track sklearn prototypical/warm_start on this synthetic episodic benchmark when extras are installed."
+}

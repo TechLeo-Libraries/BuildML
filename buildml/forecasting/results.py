@@ -33,6 +33,8 @@ class ForecastPlan:
     warnings: tuple[str, ...] = ()
     config: dict[str, Any] = field(default_factory=dict)
     univariate: bool = True
+    backend: str = "sklearn"
+    industry_estimator_: Any = field(default=None, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -55,6 +57,8 @@ class ForecastPlan:
             "config": dict(self.config),
             "univariate": self.univariate,
             "has_estimator": self.estimator_ is not None,
+            "backend": self.backend,
+            "has_industry_estimator": self.industry_estimator_ is not None,
         }
 
 

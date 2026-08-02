@@ -10,7 +10,11 @@ from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.model.supervised import FitResult
-from buildml.optimize.allocate import select_knapsack, select_lp_allocate, select_topk
+from buildml.optimize.allocate import (
+    select_knapsack_with_backend,
+    select_lp_allocate_with_backend,
+    select_topk,
+)
 from buildml.optimize.features import partition_frame, require_split
 from buildml.optimize.fit import _resolve_allocation_inputs
 from buildml.optimize.policies import apply_cost_matrix_policy, apply_threshold_policy
@@ -151,10 +155,12 @@ def _apply_allocation(
     elif plan.method == "knapsack":
         if plan.budget is None:
             raise ValidationError("DecisionPlan.budget is required for knapsack.")
-        selection = select_knapsack(
+        plan_backend = plan.config.get("backend") or plan.operating_points.get("backend")
+        selection = select_knapsack_with_backend(
             values,
             costs,
             budget=float(plan.budget),
+            backend=plan_backend,
             solver=plan.knapsack_solver or "dp",
             min_score=plan.min_score,
             ids=ids,
@@ -162,10 +168,12 @@ def _apply_allocation(
     elif plan.method == "lp_allocate":
         if plan.budget is None:
             raise ValidationError("DecisionPlan.budget is required for lp_allocate.")
-        selection = select_lp_allocate(
+        plan_backend = plan.config.get("backend") or plan.operating_points.get("backend")
+        selection = select_lp_allocate_with_backend(
             values,
             costs,
             budget=float(plan.budget),
+            backend=plan_backend,
             max_fraction=float(plan.lp_max_fraction),
             min_score=plan.min_score,
             ids=ids,

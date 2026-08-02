@@ -1,0 +1,16 @@
+{
+  "benchmark": "ssl_linear_probe_tabular",
+  "torch_available": false,
+  "results": [
+    {
+      "method": "masked_tabular",
+      "accuracy": 0.96,
+      "f1_macro": 0.959983993597439,
+      "pretext_loss": null,
+      "reconstruction_mae": 0.18723146166657806
+    }
+  ],
+  "best_method": "masked_tabular",
+  "legacy_sklearn_accuracy": 0.96,
+  "floor_note": "Torch SSL should meet or exceed legacy sklearn masked_tabular."
+}

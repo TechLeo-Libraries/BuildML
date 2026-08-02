@@ -24,7 +24,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "fit_probabilistic",
         OperationKind.MODEL,
         "Fit a Bayesian / probabilistic estimator with uncertainty.",
-        "Train sklearn BayesianRidge / GP / GaussianNB; optional train-only conformal.",
+        "Train sklearn BayesianRidge / GP / GaussianNB, MAPIE conformal, or NGBoost; optional train-only conformal.",
         "Probabilistic fit step.",
         (
             "Require a SplitPlan and exactly one target.",
@@ -35,10 +35,17 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p(
+                "backend",
+                "native | mapie | ngboost | None",
+                "Probabilistic backend; inferred from estimator when omitted.",
+                "native",
+            ),
+            _p(
                 "estimator",
                 "bayesian_ridge | gaussian_process_regressor | "
-                "gaussian_process_classifier | gaussian_nb",
-                "Uncertainty-aware sklearn estimator family.",
+                "gaussian_process_classifier | gaussian_nb | split | cv_plus | "
+                "jackknife_plus | ngboost_regressor | ngboost_classifier",
+                "Estimator or MAPIE conformal method.",
                 "bayesian_ridge",
             ),
             _p(
@@ -78,6 +85,18 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "GP kernel optimizer restarts (0 keeps runs cheap/deterministic).",
                 0,
             ),
+            _p(
+                "n_estimators",
+                "int",
+                "NGBoost boosting rounds when backend='ngboost'.",
+                100,
+            ),
+            _p(
+                "learning_rate",
+                "float",
+                "NGBoost learning rate when backend='ngboost'.",
+                0.05,
+            ),
         ),
         inputs=("Session dataset with split and target.",),
         outputs=("ProbabilisticFitResult; Session.probabilistic_plan attached.",),
@@ -116,6 +135,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "probabilistic-bayesian-ridge",
             "probabilistic-gaussian-process",
             "probabilistic-split-conformal",
+            "probabilistic-mapie",
+            "probabilistic-ngboost",
             "leakage-boundary",
         ),
     ),

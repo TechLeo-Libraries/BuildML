@@ -42,3 +42,8 @@ def torch_available() -> bool:
     except Exception:
         return False
     return True
+
+
+def torch_spec_available() -> bool:
+    """Cheap check: is a torch distribution installed (may not import cleanly)?"""
+    return importlib.util.find_spec("torch") is not None

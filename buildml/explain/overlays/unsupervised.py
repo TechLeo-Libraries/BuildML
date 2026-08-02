@@ -28,11 +28,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         (
             "Require a SplitPlan and refuse fit without train.",
             "Resolve numeric columns; prefer ReducePlan component columns when present.",
-            "Fit kmeans, agglomerative, or dbscan on train only.",
+            "Fit kmeans, agglomerative, dbscan, gmm, spectral, optics, mean_shift on train; "
+            "hdbscan when buildml[unsupervised] installed; dec/idec when buildml[torch] installed.",
             "Record assign strategy disclosures for non-native predictors.",
         ),
         parameters=(
-            _p("method", "kmeans | agglomerative | dbscan", "Clustering algorithm.", "kmeans"),
+            _p("method", "kmeans | agglomerative | dbscan | gmm | hdbscan | spectral | optics | mean_shift | dec | idec", "Clustering algorithm.", "kmeans"),
             _p("n_clusters", "int | None", "Requested k for kmeans/agglomerative.", 8),
             _p("columns", "list[str] | None", "Optional explicit numeric columns."),
             _p("random_state", "int | None", "RNG seed for kmeans.", 0),
@@ -48,6 +49,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 True,
             ),
             _p("label_column", "str", "Column name used when attach=True later.", "cluster_id"),
+            _p("auto_k", "bool", "Elbow (k-means) or BIC range (GMM) on train.", False),
         ),
         inputs=("Split Session with numeric features (typically scaled; optionally PCA components).",),
         outputs=("ClusterFitResult; ClusterPlan stored on the Session.",),
@@ -159,6 +161,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
             _p("sample_size", "int | None", "Optional silhouette subsample cap.", 2000),
             _p("random_state", "int | None", "Subsample seed.", 0),
+            _p("compute_stability", "bool", "Bootstrap stability diagnostics on train.", False),
+            _p("compute_elbow", "bool", "Elbow inertia curve on train (diagnostic refits).", False),
         ),
         inputs=("Active ClusterPlan and partition features.",),
         outputs=("ClusterEvalResult stored on the Session.",),
@@ -190,7 +194,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     _operation(
         "save_unsupervised_bundle",
         OperationKind.PERSIST,
-        "Persist the active ClusterPlan as buildml.unsupervised_bundle.v1.",
+        "Persist the active ClusterPlan as buildml.unsupervised_bundle.v2.",
         "Save a deployable/reloadable clustering map distinct from Session checkpoints.",
         "Unsupervised artifact save.",
         (
@@ -212,14 +216,14 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Treating unsupervised bundles as interchangeable with Torch/RAG bundles.",
         ),
         state_changes=("Records save path in history; does not clear the plan.",),
-        result_reading=("Confirm meta.json format == buildml.unsupervised_bundle.v1.",),
+        result_reading=("Confirm meta.json format == buildml.unsupervised_bundle.v2 (v1 loadable).",),
         next_steps=("load_unsupervised_bundle on a fresh Session when needed.",),
         concepts=("unsupervised-bundle-boundary", "unsupervised-train-fit-holdout-assign"),
     ),
     _operation(
         "load_unsupervised_bundle",
         OperationKind.PERSIST,
-        "Load a buildml.unsupervised_bundle.v1 ClusterPlan into the Session.",
+        "Load a buildml.unsupervised_bundle.v2 (or v1) ClusterPlan into the Session.",
         "Restore a frozen clustering map for assign/evaluate.",
         "Unsupervised artifact load.",
         (

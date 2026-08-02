@@ -55,6 +55,8 @@ def test_public_surface_and_catalog() -> None:
     import buildml.federated as federated
 
     assert hasattr(federated, "fit_federated")
+    assert hasattr(federated, "federated_capability_matrix")
+    assert hasattr(federated, "export_round_history")
     assert hasattr(Session, "fit_federated")
     for name in (
         "fit_federated",
@@ -84,6 +86,7 @@ def test_public_surface_and_catalog() -> None:
 def test_session_fedavg_loop_and_bundle(tmp_path: Path) -> None:
     session = _session()
     fit = session.fit_federated(
+        backend="native",
         method="fedavg",
         estimator="sgd_classifier",
         n_rounds=3,

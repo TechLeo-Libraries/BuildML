@@ -2,13 +2,8 @@
 
 Justification
 -------------
-PyTorch Geometric is intentionally **not** required. It couples tightly to
-specific Torch/CUDA builds and pulls a heavy stack. A 1–2 layer GCN with
-symmetric normalized adjacency (Kipf & Welling) is implementable with core
-``torch`` matmul on the dense normalized adjacency already built for the
-Session size limit (≤5000 nodes). That keeps ``import buildml`` light and
-makes ``buildml[torch]`` sufficient for the GNN path; classical features
-remain behind ``buildml[graph]`` (NetworkX).
+PyTorch Geometric is available via ``buildml[graph-pyg]`` (method='pyg').
+This module keeps a **pure-Torch** 1–2 layer GCN without PyG for lighter installs.
 """
 
 from __future__ import annotations

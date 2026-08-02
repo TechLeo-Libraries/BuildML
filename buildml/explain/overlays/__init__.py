@@ -10,6 +10,7 @@ from buildml.explain.overlays.classical import _OPERATIONS as _CLASSICAL
 from buildml.explain.overlays.dl import _OPERATIONS as _DL
 from buildml.explain.overlays.ensemble import _OPERATIONS as _ENSEMBLE
 from buildml.explain.overlays.forecasting import _OPERATIONS as _FORECASTING
+from buildml.explain.overlays.timeseries import _OPERATIONS as _TIMESERIES
 from buildml.explain.overlays.federated import _OPERATIONS as _FEDERATED
 from buildml.explain.overlays.metalearning import _OPERATIONS as _METALEARNING
 from buildml.explain.overlays.multitask import _OPERATIONS as _MULTITASK
@@ -41,6 +42,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     *_ENSEMBLE,
     *_AUTOML,
     *_FORECASTING,
+    *_TIMESERIES,
     *_ANOMALY,
     *_SEMISUPERVISED,
     *_SELFSUPERVISED,

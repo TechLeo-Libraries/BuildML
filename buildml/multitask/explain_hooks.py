@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from buildml.multitask.catalog import multitask_capability_matrix
+
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     """Compact result_summary for ``fit_multitask`` history."""
@@ -12,6 +14,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "method": payload.get("method"),
+        "backend": payload.get("backend"),
         "task": payload.get("task"),
         "n_train_rows": payload.get("n_train_rows"),
         "target_columns": payload.get("target_columns"),
@@ -81,18 +84,20 @@ def multitask_status(
     if enabled:
         disclosures.extend(
             [
-                f"MultiTaskPlan method={getattr(plan, 'method', None)}, "
+                f"MultiTaskPlan backend={getattr(plan, 'backend', None)}, "
+                f"method={getattr(plan, 'method', None)}, "
                 f"task={getattr(plan, 'task', None)}, "
                 f"n_tasks={len(getattr(plan, 'target_columns', ()) or ())}, "
                 f"targets={list(getattr(plan, 'target_columns', ()) or ())}.",
-                "Fit uses sklearn MultiOutput / Chain on train only; "
-                "validation/test are evaluation-only.",
-                "Same-type tasks only (all classification or all regression); "
-                "mixed targets are refused.",
+                "Fit uses train only; validation/test are evaluation-only.",
+                (
+                    "Sklearn/industry backends require same-type targets; torch "
+                    "shared_trunk_multihead supports mixed cls+reg."
+                ),
                 "Classical Session.fit remains single-target.",
                 "Session checkpoints do not embed MultiTaskPlan; use "
                 "save_multitask_bundle / load_multitask_bundle.",
-                "Honesty: shared-feature multi-output — not a deep MTL "
+                "Honesty: shared-feature multi-target — not a deep MTL "
                 "research platform.",
             ]
         )
@@ -120,6 +125,7 @@ def multitask_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_multitask_plan": enabled,
+        "backend": None if plan is None else getattr(plan, "backend", None),
         "method": None if plan is None else getattr(plan, "method", None),
         "task": None if plan is None else getattr(plan, "task", None),
         "target_columns": (
@@ -136,11 +142,12 @@ def multitask_status(
         "has_eval_result": eval_result is not None,
         "has_predict_result": predict_result is not None,
         "eval": eval_payload,
+        "capability_matrix": multitask_capability_matrix(),
         "disclosures": disclosures,
         "boundary": (
-            "Multi-task uses sklearn MultiOutput/Chain on shared features with "
-            "multiple same-type targets. Holdout is evaluation-only. Not deep "
-            "MTL; not causal; not federated."
+            "Multi-task uses sklearn MultiOutput/Chain, industry GBDT multi-target, "
+            "or torch shared-trunk multi-head on shared features. Holdout is "
+            "evaluation-only. Not deep MTL; not causal; not federated."
         ),
     }
 

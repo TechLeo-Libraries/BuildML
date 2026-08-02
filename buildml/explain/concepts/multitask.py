@@ -12,12 +12,14 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
         _note(
             key="multitask-multi-output",
             title="Multi-output / multi-task on shared features",
-            summary="Sklearn MultiOutput / Chain façades for multiple same-type targets — not a deep MTL research platform.",
+            summary="Sklearn MultiOutput/Chain, industry GBDT multi-target, or torch shared-trunk multi-head — not a deep MTL research platform.",
             definition=(
                 "Multi-task learning in BuildML fits multiple targets that share "
-                "the same feature matrix using sklearn MultiOutputClassifier / "
-                "MultiOutputRegressor or ClassifierChain / RegressorChain. "
-                "Classical Session.fit remains single-target."
+                "the same feature matrix. Backends: sklearn MultiOutput/Chain "
+                "(core), industry XGBoost/LightGBM/CatBoost multi-target "
+                "(multitask-industry extra), torch shared-trunk multi-head "
+                "(torch extra; mixed cls+reg via separate heads). Classical "
+                "Session.fit remains single-target."
             ),
             intuition=(
                 "One practice binder with several answer columns graded by "
@@ -33,8 +35,8 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
                 "Using holdout rows to fit is leakage.",
             ),
             how_buildml_uses=(
-                "Session.fit_multitask → Session.predict_multitask / evaluate_multitask.",
-                "Targets from multiple role='target' columns or explicit targets=.",
+                "Session.fit_multitask(backend=..., method=...) → predict/evaluate.",
+                "See multitask_capability_matrix() for honest defaults.",
             ),
             interpretation_rules=(
                 "Read n_tasks, target_columns, method, task, and disclosures.",

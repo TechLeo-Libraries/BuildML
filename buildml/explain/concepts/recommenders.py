@@ -58,6 +58,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             related_concepts=(
                 "recommender-ranking-metrics",
                 "recommender-cold-start",
+                "recommender-industry-backends",
                 "recommender-bundle-boundary",
                 "leakage-boundary",
             ),
@@ -163,6 +164,58 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             related_concepts=(
                 "recommender-ranking-metrics",
                 "recommender-bundle-boundary",
+            ),
+        ),
+        _note(
+            key="recommender-industry-backends",
+            title="Industry recommender backends (implicit, LightFM)",
+            summary=(
+                "With buildml[recommenders-industry], implicit ALS/BPR is the "
+                "default for feedback='implicit'; LightFM supports hybrid side features."
+            ),
+            definition=(
+                "Industry backends wrap mature libraries instead of reimplementing "
+                "ALS/BPR: implicit for sparse implicit-feedback CF; LightFM for "
+                "hybrid user/item features plus interactions."
+            ),
+            intuition=(
+                "Implicit feedback (clicks, views) needs sparse matrix factorization "
+                "engines; side features help cold catalog items via hybrid models."
+            ),
+            formal_idea=(
+                "backend='implicit' → ALS/BPR on CSR user×item; "
+                "backend='lightfm' → WARP on interactions + optional feature CSR."
+            ),
+            why_it_matters=(
+                "Honest defaults when extras are installed; sklearn core remains "
+                "available without industry dependencies.",
+            ),
+            how_buildml_uses=(
+                "fit_recommender(feedback='implicit') defaults to als; "
+                "fit_recommender(method='lightfm', item_feature_columns=[...]).",
+            ),
+            interpretation_rules=(
+                "Inspect recommender_capability_matrix() for install state.",
+                "Known-item protocol applies to all backends.",
+            ),
+            assumptions=(
+                "recommenders-industry extra for implicit/LightFM paths.",
+            ),
+            failure_modes=(
+                "MissingExtraError when industry backend requested without install.",
+            ),
+            anti_patterns=(
+                "Reimplementing ALS from scratch in BuildML core.",
+                "Using implicit backend with explicit-only rating semantics.",
+            ),
+            worked_example_pattern=(
+                "pip install 'buildml[recommenders-industry]' → "
+                "fit_recommender(feedback='implicit') → evaluate_recommender(k=10).",
+            ),
+            related_concepts=(
+                "recommender-collaborative-filtering",
+                "recommender-content-based",
+                "recommender-ranking-metrics",
             ),
         ),
         _note(

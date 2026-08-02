@@ -42,10 +42,26 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p(
+                "backend",
+                "sklearn | industry",
+                "Rule induction backend; industry when extras installed.",
+            ),
+            _p(
                 "source",
                 "declared | decision_tree | decision_list",
-                "Rule origin / induction mechanism.",
+                "Rule origin when backend='sklearn'.",
                 "decision_tree",
+            ),
+            _p(
+                "method",
+                "skope_rules | rulefit | boosted_rules",
+                "Industry rule export when backend='industry'.",
+            ),
+            _p(
+                "verify_constraints",
+                "bool",
+                "Optional Z3 lite SAT check on hard constraints.",
+                False,
             ),
             _p(
                 "task",
@@ -189,6 +205,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p(
+                "backend",
+                "sklearn | torch",
+                "Hybrid base backend; torch for concept-bottleneck / NAM lite.",
+            ),
+            _p(
                 "mode",
                 "constraint_overlay | rules_as_features | constraint_repair",
                 "Hybrid integration mode.",
@@ -196,9 +217,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
             _p(
                 "base_estimator",
-                "logistic_regression | ridge | random_forest | decision_tree",
-                "sklearn base family.",
+                "logistic_regression | ridge | random_forest | decision_tree | "
+                "concept_bottleneck_lite | neural_additive_lite",
+                "sklearn or torch lite base family.",
                 "logistic_regression",
+            ),
+            _p(
+                "torch_method",
+                "concept_bottleneck_lite | neural_additive_lite",
+                "Torch base when backend='torch'.",
             ),
             _p(
                 "task",

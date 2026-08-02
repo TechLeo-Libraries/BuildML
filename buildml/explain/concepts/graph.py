@@ -51,6 +51,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
                 "graph-inductive-transductive",
                 "graph-classical-features",
                 "graph-gcn",
+                "graph-pyg",
                 "graph-bundle-boundary",
                 "leakage-boundary",
             ),
@@ -134,9 +135,54 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             ),
         ),
         _note(
+            key="graph-pyg",
+            title="PyTorch Geometric GCN / GraphSAGE / GAT",
+            summary=(
+                "Industry GNN path via torch_geometric.nn with train-mask "
+                "cross-entropy — requires buildml[graph-pyg]."
+            ),
+            definition=(
+                "PyG path requires buildml[graph-pyg] (torch-geometric + torch). "
+                "Supports GCNConv, SAGEConv, GATConv via pyg_model= "
+                "gcn|graphsage|gat. Same inductive/transductive edge filters "
+                "as classical and pure-Torch GCN."
+            ),
+            intuition=(
+                "Use PyG when you want standard conv layers and sparse "
+                "edge_index message passing without reimplementing GNN blocks."
+            ),
+            formal_idea="H' = Conv(H, edge_index); loss on train mask only.",
+            why_it_matters=(
+                "Bridges Session graph ML to industry PyG stacks while "
+                "preserving leakage disclosures.",
+            ),
+            how_buildml_uses=(
+                "fit_graph(method='pyg', pyg_model='graphsage', mode='inductive').",
+            ),
+            interpretation_rules=(
+                "Read pyg_model and method=pyg in disclosures; not full PyG zoo.",
+            ),
+            assumptions=("Numeric node features; graph-pyg extra installed.",),
+            failure_modes=("Missing graph-pyg; broken torch wheel.",),
+            anti_patterns=(
+                "Expecting every PyG algorithm (GIN, PNA, etc.) on this surface.",
+                "Ignoring inductive vs transductive mode.",
+            ),
+            worked_example_pattern=(
+                "pip install 'buildml[graph-pyg]'; "
+                "fit_graph(method='pyg', pyg_model='gat', heads=4).",
+            ),
+            related_concepts=(
+                "graph-inductive-transductive",
+                "graph-gcn",
+                "graph-bundle-boundary",
+                "leakage-boundary",
+            ),
+        ),
+        _note(
             key="graph-gcn",
             title="Pure-Torch GCN (no PyTorch Geometric)",
-            summary="A 1–2 layer GCN with symmetric normalized adjacency implemented in Torch — PyG is intentionally not required.",
+            summary="A 1–2 layer GCN with symmetric normalized adjacency implemented in Torch — PyG is optional via method='pyg'.",
             definition=(
                 "GCN path requires buildml[torch]. Uses D^{-1/2}(A+I)D^{-1/2} "
                 "and train-mask cross-entropy. Dense adjacency is limited to "
@@ -157,7 +203,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             assumptions=("Numeric tabular node features present; torch installed.",),
             failure_modes=("Missing torch; zero feature columns; huge graphs.",),
             anti_patterns=(
-                "Calling this a full PyG / GraphSAGE / GAT suite.",
+                "Calling this the only neural graph path (see graph-pyg for PyG).",
                 "Ignoring inductive vs transductive disclosures.",
             ),
             worked_example_pattern=(
@@ -165,6 +211,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             ),
             related_concepts=(
                 "graph-inductive-transductive",
+                "graph-pyg",
                 "graph-bundle-boundary",
                 "leakage-boundary",
             ),

@@ -18,7 +18,9 @@ def test_core_import_and_catalog() -> None:
     import buildml.ranking as ranking
 
     assert hasattr(ranking, "fit_ranker")
+    assert hasattr(ranking, "ranking_capability_matrix")
     assert hasattr(Session, "fit_ranker")
+    assert hasattr(Session, "ranking_capability_matrix")
     for op in (
         "fit_ranker",
         "rank",

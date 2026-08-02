@@ -119,7 +119,7 @@ def test_refuse_unknown_method() -> None:
         fit_metalearning(
             session.dataset,
             session.split_plan,
-            method="maml",  # type: ignore[arg-type]
+            method="not_a_real_method",  # type: ignore[arg-type]
         )
 
 

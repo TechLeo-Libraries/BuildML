@@ -2,12 +2,12 @@
 
 > **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
 > install Session 2.x. Install 2.x from GitHub (or an editable checkout).
-> Semi-supervised methods use core sklearn — no optional extra is required.
+> Core sklearn methods need no extra; industry/torch/HF paths use optional extras.
 > See [installation](../docs/installation.rst).
 
 Scarce labels + abundant unlabeled train rows on the same `Session`: history,
-explain catalog, and a distinct semi-supervised bundle. Unlabeled targets are
-**NaN missingness** by default (mapped to sklearn `-1` internally).
+explain catalog, capability matrix, and a distinct semi-supervised bundle.
+Unlabeled targets are **NaN missingness** by default (mapped to sklearn `-1` internally).
 
 **Go deeper:** [Semi-supervised deep](semisupervised-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md) ·
@@ -15,6 +15,8 @@ explain catalog, and a distinct semi-supervised bundle. Unlabeled targets are
 
 ```bash
 pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+# Optional industry depth:
+pip install "buildml[semisupervised-industry,torch,ssl]"
 ```
 
 Recommended recipe: split on fully labeled data (so stratification works), then
@@ -54,7 +56,7 @@ session._dataset = Dataset.from_transformed(
 )
 
 fit = session.fit_semisupervised(method="label_propagation", n_neighbors=7)
-print(fit.n_labeled_train, fit.n_unlabeled_train, fit.method)
+print(fit.n_labeled_train, fit.n_unlabeled_train, fit.backend, fit.method)
 
 preds = session.predict_semisupervised(partition="test")
 print(preds.n_rows, preds.predictions[:5])
@@ -65,17 +67,30 @@ print(ev.n_labeled_eval, ev.metrics)
 bundle = session.save_semisupervised_bundle("artifacts/semisupervised_bundle")
 ```
 
-Self-training variant:
+Industry pseudo-label (when XGBoost installed):
 
 ```python
 session.fit_semisupervised(
-    method="self_training",
-    base_estimator="logistic_regression",
+    backend="industry",
+    method="pseudo_label_xgb",
     threshold=0.8,
+    max_self_train_iter=10,
 )
 print(session.evaluate_semisupervised(partition="test").metrics)
 ```
 
-**Not this API:** anomaly novelty (normal-only detector fit), self-supervised
-pretext (`fit_ssl_pretext`), or active learning
-([quickstart-active-learning](quickstart-active-learning.md)).
+SSL → semi-supervised pipeline:
+
+```python
+session.fit_ssl_pretext(method="simclr_tabular", latent_dim=8, epochs=20)
+session.transform_ssl(attach=True, partition="all")
+session.fit_semisupervised(
+    method="self_training",
+    columns=list(session.ssl_plan.representation_columns),
+    prefer_reduce_components=False,
+)
+```
+
+**Not this API:** anomaly novelty (normal-only detector fit), active learning
+([quickstart-active-learning](quickstart-active-learning.md)), or pure SSL pretext
+without partial labels.

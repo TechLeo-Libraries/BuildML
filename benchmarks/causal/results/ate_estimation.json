@@ -1,0 +1,165 @@
+{
+  "true_ate": 1.5,
+  "capability_matrix": {
+    "backends": {
+      "native": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "t_learner",
+          "ipw",
+          "aipw"
+        ],
+        "refute_kinds": [
+          "placebo_treatment",
+          "random_confounder"
+        ],
+        "bootstrap_ci": true,
+        "causal_graph": false,
+        "identification_api": "caller-declared backdoor set only",
+        "cate_heterogeneity": false,
+        "policy_learning": false
+      },
+      "dowhy": {
+        "available": true,
+        "extra": "causal-industry",
+        "methods": [
+          "backdoor_linear",
+          "backdoor_propensity_score",
+          "backdoor_propensity_weighting"
+        ],
+        "refute_kinds": [
+          "placebo_treatment",
+          "random_confounder",
+          "random_common_cause",
+          "add_unobserved_common_cause",
+          "data_subset",
+          "placebo_outcome"
+        ],
+        "bootstrap_ci": false,
+        "causal_graph": true,
+        "identification_api": "DoWhy identify_effect on declared DAG",
+        "cate_heterogeneity": false,
+        "policy_learning": false,
+        "notes": "DoWhy refutation suite runs when backend='dowhy' and buildml[causal-industry] is installed. Graph is built from declared confounders \u2192 treatment/outcome; not causal discovery."
+      },
+      "econml": {
+        "available": true,
+        "extra": "causal-industry",
+        "methods": [
+          "dml",
+          "causal_forest",
+          "policy_tree"
+        ],
+        "refute_kinds": [
+          "placebo_treatment",
+          "random_confounder"
+        ],
+        "bootstrap_ci": true,
+        "causal_graph": false,
+        "identification_api": "caller-declared backdoor adjustment via DML",
+        "cate_heterogeneity": true,
+        "policy_learning": true,
+        "notes": "DML / CausalForestDML estimate ATE with optional CATE std; policy_tree learns a treatment assignment rule on train \u2014 not a deployment-ready policy product."
+      }
+    },
+    "default_backend_when_installed": "econml",
+    "install_hints": {
+      "causal-industry": "pip install 'buildml[causal-industry]'  # DoWhy refutation suite + EconML DML/CATE/policy paths"
+    },
+    "non_goals": [
+      "Causal discovery / automatic graph learning",
+      "IV / front-door identification (instruments refused)",
+      "Multi-valued or continuous treatment",
+      "Substituting EDA associations for CausalAssumptions",
+      "Proof of unconfoundedness from holdout metrics"
+    ],
+    "industry_extra_present": true,
+    "assumption_gate": "All backends require explicit CausalAssumptions with acknowledge_unconfoundedness and acknowledge_positivity. EDA never satisfies this gate."
+  },
+  "runs": [
+    {
+      "backend": "native",
+      "method": "aipw",
+      "true_ate": 1.5,
+      "estimated_ate": 1.5142106500762167,
+      "ate_error": 0.014210650076216691,
+      "ate_ci_low": 1.4166749114768817,
+      "ate_ci_high": 1.6103427850941152,
+      "validation_ate": 1.5286496207530156,
+      "refute_ate": 0.06898893363393972,
+      "cate_std": null,
+      "n_train": 320
+    },
+    {
+      "backend": "native",
+      "method": "t_learner",
+      "true_ate": 1.5,
+      "estimated_ate": 1.5230686002279938,
+      "ate_error": 0.02306860022799384,
+      "ate_ci_low": 1.4197773750037792,
+      "ate_ci_high": 1.609678871857184,
+      "validation_ate": 1.5407276442791347,
+      "refute_ate": 0.06942028589924107,
+      "cate_std": null,
+      "n_train": 320
+    },
+    {
+      "backend": "dowhy",
+      "method": "backdoor_linear",
+      "true_ate": 1.5,
+      "estimated_ate": 1.5183566941123963,
+      "ate_error": 0.018356694112396266,
+      "ate_ci_low": 1.4216832567829478,
+      "ate_ci_high": 1.6150301314418447,
+      "validation_ate": 1.5183566941123963,
+      "refute_ate": -0.009073804897127663,
+      "cate_std": null,
+      "n_train": 320
+    },
+    {
+      "backend": "dowhy",
+      "method": "backdoor_propensity_weighting",
+      "true_ate": 1.5,
+      "estimated_ate": 1.520665520812463,
+      "ate_error": 0.02066552081246309,
+      "ate_ci_low": 1.3558867170475444,
+      "ate_ci_high": 1.6795463113215403,
+      "validation_ate": 1.520665520812463,
+      "refute_ate": -0.4860106489313786,
+      "cate_std": null,
+      "n_train": 320
+    },
+    {
+      "backend": "econml",
+      "method": "dml",
+      "true_ate": 1.5,
+      "estimated_ate": 1.458766624709842,
+      "ate_error": 0.041233375290157914,
+      "ate_ci_low": 1.313987303764565,
+      "ate_ci_high": 1.5985066889066848,
+      "validation_ate": 1.476697195006902,
+      "refute_ate": -0.07622735379135755,
+      "cate_std": 0.17996050895297636,
+      "n_train": 320
+    },
+    {
+      "backend": "econml",
+      "method": "causal_forest",
+      "true_ate": 1.5,
+      "estimated_ate": 1.461068079853329,
+      "ate_error": 0.038931920146670906,
+      "ate_ci_low": null,
+      "ate_ci_high": null,
+      "validation_ate": 1.457961424455942,
+      "refute_ate": -0.04782562948471005,
+      "cate_std": 0.12622501770895447,
+      "n_train": 320
+    }
+  ],
+  "summary": {
+    "n_runs": 6,
+    "best_native_error": 0.014210650076216691,
+    "mean_error": 0.02607779344431645
+  }
+}

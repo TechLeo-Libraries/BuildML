@@ -14,9 +14,17 @@ ImitationEstimator = Literal[
     "hist_gradient_boosting_regressor",
 ]
 
-RlMode = Literal["contextual_bandit", "gym_reinforce"]
+ImitationBackend = Literal["sklearn", "industry"]
+
+ImitationMethod = Literal["bc_mlp", "gail_lite"]
+
+RlMode = Literal["contextual_bandit", "gym_reinforce", "gym_sb3"]
+
+RlBackend = Literal["sklearn", "native", "industry"]
 
 BanditAlgorithm = Literal["linucb", "epsilon_greedy", "softmax"]
+
+Sb3Algorithm = Literal["ppo", "dqn", "a2c"]
 
 
 @dataclass(slots=True)
@@ -24,18 +32,26 @@ class ImitationConfig:
     """User-facing behavioral cloning knobs (serializable summary)."""
 
     task: ImitationTask = "classification"
+    backend: ImitationBackend = "sklearn"
     estimator: ImitationEstimator = "logistic_regression"
+    method: ImitationMethod | None = None
     columns: tuple[str, ...] | None = None
     action_column: str | None = None
+    env_id: str | None = None
+    n_epochs: int = 40
     random_state: int | None = 0
     prefer_reduce_components: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "task": self.task,
+            "backend": self.backend,
             "estimator": self.estimator,
+            "method": self.method,
             "columns": None if self.columns is None else list(self.columns),
             "action_column": self.action_column,
+            "env_id": self.env_id,
+            "n_epochs": self.n_epochs,
             "random_state": self.random_state,
             "prefer_reduce_components": self.prefer_reduce_components,
         }
@@ -46,6 +62,7 @@ class RlConfig:
     """User-facing RL knobs (bandit + optional Gymnasium)."""
 
     mode: RlMode = "contextual_bandit"
+    backend: RlBackend = "sklearn"
     algorithm: BanditAlgorithm = "linucb"
     columns: tuple[str, ...] | None = None
     action_column: str | None = None
@@ -62,10 +79,12 @@ class RlConfig:
     learning_rate: float = 0.01
     gamma: float = 0.99
     hidden_seed: int | None = None
+    total_timesteps: int = 20_000
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "mode": self.mode,
+            "backend": self.backend,
             "algorithm": self.algorithm,
             "columns": None if self.columns is None else list(self.columns),
             "action_column": self.action_column,
@@ -81,4 +100,5 @@ class RlConfig:
             "learning_rate": self.learning_rate,
             "gamma": self.gamma,
             "hidden_seed": self.hidden_seed,
+            "total_timesteps": self.total_timesteps,
         }

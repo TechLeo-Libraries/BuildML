@@ -252,6 +252,11 @@ def feature_names_from_state(state: dict[str, Any]) -> tuple[str, ...]:
         for d in dims:
             for i in range(n_bins):
                 names.append(f"tda_sil_H{d}_{i}")
+    elif kind.startswith("giotto_"):
+        per = int(state.get("per_dim", state.get("feature_dim", 0)))
+        for d in dims:
+            for i in range(per):
+                names.append(f"tda_{kind}_H{d}_{i}")
     else:
         for i in range(int(state["feature_dim"])):
             names.append(f"tda_feat_{i}")

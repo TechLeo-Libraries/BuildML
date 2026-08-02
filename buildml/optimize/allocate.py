@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.optimize.catalog import DecisionBackendName, resolve_backend
 
 
 def select_topk(
@@ -57,6 +58,73 @@ def select_topk(
         "selected_value": float(scores[chosen].sum()),
         "selected_cost": float(costs[chosen].sum()),
     }
+
+
+def select_knapsack_with_backend(
+    values: np.ndarray,
+    costs: np.ndarray,
+    *,
+    budget: float,
+    backend: DecisionBackendName | None = None,
+    solver: str = "dp",
+    min_score: float | None = None,
+    ids: np.ndarray | None = None,
+) -> dict[str, Any]:
+    """Route knapsack selection to native DP/greedy or industry MIP backends."""
+    resolved = resolve_backend(method="knapsack", backend=backend)
+    if resolved == "pulp":
+        from buildml.optimize.adapters.pulp_mip import select_knapsack_pulp
+
+        return select_knapsack_pulp(
+            values, costs, budget=float(budget), min_score=min_score, ids=ids
+        )
+    if resolved == "ortools":
+        from buildml.optimize.adapters.ortools_mip import select_knapsack_ortools
+
+        return select_knapsack_ortools(
+            values, costs, budget=float(budget), min_score=min_score, ids=ids
+        )
+    return select_knapsack(
+        values,
+        costs,
+        budget=float(budget),
+        solver=solver,
+        min_score=min_score,
+        ids=ids,
+    )
+
+
+def select_lp_allocate_with_backend(
+    values: np.ndarray,
+    costs: np.ndarray,
+    *,
+    budget: float,
+    backend: DecisionBackendName | None = None,
+    max_fraction: float = 1.0,
+    min_score: float | None = None,
+    ids: np.ndarray | None = None,
+) -> dict[str, Any]:
+    """Route LP allocation to scipy linprog or CVXPY."""
+    resolved = resolve_backend(method="lp_allocate", backend=backend)
+    if resolved == "cvxpy":
+        from buildml.optimize.adapters.cvxpy_lp import select_lp_allocate_cvxpy
+
+        return select_lp_allocate_cvxpy(
+            values,
+            costs,
+            budget=float(budget),
+            max_fraction=float(max_fraction),
+            min_score=min_score,
+            ids=ids,
+        )
+    return select_lp_allocate(
+        values,
+        costs,
+        budget=float(budget),
+        max_fraction=float(max_fraction),
+        min_score=min_score,
+        ids=ids,
+    )
 
 
 def select_knapsack(

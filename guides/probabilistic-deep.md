@@ -1,23 +1,42 @@
 # Probabilistic / Bayesian ML (deep)
 
 BuildML’s probabilistic path is a **Session-facing uncertainty** stack on
-sklearn estimators, not a probabilistic-programming product.
+tabular estimators, not a probabilistic-programming product.
 
 ## Mental model
 
-1. `fit_probabilistic` fits on Session **train**.
-2. If `conformal=True`, a calibration subset is carved from **train only**
-   (stratified for classification). The estimator fits on the remainder;
-   nonconformity scores on the carve yield a finite-sample quantile.
-3. `predict_interval` builds regression bands (`posterior_std`,
-   `split_conformal`, or `both`) or classification prediction sets.
-4. `evaluate_probabilistic` reports point metrics plus NLL, coverage / mean
-   width (or set coverage / mean set size), and binary Brier/ECE when
-   applicable.
+1. `fit_probabilistic` fits on Session **train** (choose a **backend**).
+2. If `conformal=True` on **native** / **ngboost**, a calibration subset is
+   carved from **train only** (stratified for classification). **MAPIE** owns
+   conformal calibration internally (split carve, CV+, or jackknife+).
+3. `predict_interval` builds regression bands or classification prediction sets.
+4. `evaluate_probabilistic` reports point metrics plus NLL, CRPS (when
+   feasible), coverage / mean width (or set coverage / mean set size).
 5. `save_probabilistic_bundle` / `load_probabilistic_bundle` persist the
    `ProbabilisticPlan` separately from Session checkpoints.
 
-## Estimators
+## Backends
+
+| Backend | Extra | Role |
+| --- | --- | --- |
+| `native` | core | sklearn BayesianRidge / GP / GaussianNB + in-tree split conformal |
+| `mapie` | `probabilistic-industry` | MAPIE conformal regression/classification (split, CV+, jackknife+) |
+| `ngboost` | `probabilistic-industry` | NGBoost predictive distributions + optional in-tree conformal overlay |
+
+Install industry backends:
+
+```bash
+pip install 'buildml[probabilistic-industry]'
+```
+
+Inspect honest defaults:
+
+```python
+from buildml.probabilistic import probabilistic_capability_matrix
+probabilistic_capability_matrix()
+```
+
+## Native estimators
 
 | Key | Task | Uncertainty |
 | --- | --- | --- |
@@ -25,6 +44,23 @@ sklearn estimators, not a probabilistic-programming product.
 | `gaussian_process_regressor` | regression | `return_std` + optional conformal |
 | `gaussian_process_classifier` | classification | `predict_proba` + conformal sets |
 | `gaussian_nb` | classification | `predict_proba` + conformal sets |
+
+## MAPIE methods (`backend='mapie'`)
+
+| Key | Description |
+| --- | --- |
+| `split` | Prefit base estimator on train fit-carve; calibrate on train calib-carve |
+| `cv_plus` | Cross-validation+ on Session train |
+| `jackknife_plus` | Jackknife+ on Session train |
+
+Set `task='regression'` or `task='classification'` explicitly for MAPIE.
+
+## NGBoost estimators (`backend='ngboost'`)
+
+| Key | Task |
+| --- | --- |
+| `ngboost_regressor` | regression (NLL / CRPS from `pred_dist`) |
+| `ngboost_classifier` | classification (`predict_proba` + optional conformal sets) |
 
 GP `n_restarts_optimizer` defaults to `0` for cheap/deterministic runs.
 
@@ -39,21 +75,14 @@ GP `n_restarts_optimizer` defaults to `0` for cheap/deterministic runs.
 
 Classical `Session.calibration()` diagnoses reliability for classical
 `fit(...)` classifiers (`FitResult`). The probabilistic path does **not**
-replace it; `evaluate_probabilistic` reports NLL/Brier/ECE for its own
+replace it; `evaluate_probabilistic` reports NLL/Brier/ECE/CRPS for its own
 plan. Both can coexist on one Session.
-
-## Why no MAPIE / PyMC extra
-
-Split conformal (absolute residual / `1 − p(y)`) is implemented in-tree for
-this Session-scoped path, so core stays sklearn-only. PyMC/Stan would be a
-different product surface (MCMC / probabilistic programming) and is an
-explicit non-goal here.
 
 ## Bundle boundary
 
-`buildml.probabilistic_bundle.v1` stores the estimator, conformal quantile,
-train carve indices, and disclosures. Session checkpoints do **not** embed
-`ProbabilisticPlan`.
+`buildml.probabilistic_bundle.v1` stores the estimator, backend, conformal
+quantile, train carve indices, and disclosures. Session checkpoints do **not**
+embed `ProbabilisticPlan`.
 
 ## Anti-patterns
 

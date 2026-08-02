@@ -11,7 +11,7 @@ import pandas as pd
 from buildml.automl.checkpoint import load_automl_bundle, save_automl_bundle
 from buildml.automl.explain_hooks import fit_result_summary
 from buildml.automl.search import run_automl
-from buildml.automl.types import AutoMLBudget, AutoMLMethod, AutoMLSelection
+from buildml.automl.types import AutoMLBackend, AutoMLBudget, AutoMLMethod, AutoMLSelection, EnsembleMode
 from buildml.core.errors import ValidationError
 from buildml.model.supervised import EvaluateResult, evaluate_estimator
 from buildml.preprocess.fold import PreprocessRecipe
@@ -23,6 +23,7 @@ CvStrategy = Literal["auto", "kfold", "stratified", "group", "stratified_group",
 def run_automl_op(
     session,
     *,
+    backend: AutoMLBackend = "native",
     task: TaskType = "auto",
     method: AutoMLMethod = "randomized",
     selection: AutoMLSelection = "cv",
@@ -33,7 +34,9 @@ def run_automl_op(
     ranking_metric: str | None = None,
     families: Sequence[str] | None = None,
     include_recipe_search: bool = True,
+    include_industry_families: bool = True,
     include_ensembles: bool = False,
+    ensemble_mode: EnsembleMode = "voting",
     max_ensemble_bases: int = 3,
     preprocess: PreprocessRecipe | None = None,
     allow_session_global_preprocess: bool = False,
@@ -41,6 +44,7 @@ def run_automl_op(
     random_state: int | None = 0,
     groups: pd.Series | None = None,
     budget: AutoMLBudget | None = None,
+    time_budget: float | None = None,
 ) -> Any:
     """Run AutoML model-family + recipe-strategy search on the train partition.
 
@@ -53,6 +57,7 @@ def run_automl_op(
     plan, result, fit_result = run_automl(
         session.dataset,
         session._split_plan,
+        backend=backend,
         task=task,
         method=method,
         selection=selection,
@@ -63,7 +68,9 @@ def run_automl_op(
         ranking_metric=ranking_metric,
         families=None if families is None else tuple(families),
         include_recipe_search=include_recipe_search,
+        include_industry_families=include_industry_families,
         include_ensembles=include_ensembles,
+        ensemble_mode=ensemble_mode,
         max_ensemble_bases=max_ensemble_bases,
         preprocess=preprocess,
         session_preprocess_applied=session._session_preprocess_applied(),
@@ -72,6 +79,7 @@ def run_automl_op(
         random_state=random_state,
         groups=groups,
         budget=budget,
+        time_budget=time_budget,
     )
     session._automl_plan = plan
     session._automl_result = result
@@ -80,6 +88,7 @@ def run_automl_op(
     session._record(
         "run_automl",
         {
+            "backend": backend,
             "method": method,
             "selection": selection,
             "task": task,
@@ -89,11 +98,14 @@ def run_automl_op(
             "ranking_metric": ranking_metric,
             "families": None if families is None else list(families),
             "include_recipe_search": include_recipe_search,
+            "include_industry_families": include_industry_families,
             "include_ensembles": include_ensembles,
+            "ensemble_mode": ensemble_mode,
             "max_ensemble_bases": max_ensemble_bases,
             "allow_session_global_preprocess": allow_session_global_preprocess,
             "refit": refit,
             "random_state": random_state,
+            "time_budget": time_budget,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),

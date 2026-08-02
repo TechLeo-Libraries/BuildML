@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 OnlineTask = Literal["classification", "regression"]
+OnlineBackend = Literal["sklearn", "industry", "torch"]
 
-OnlineEstimator = Literal[
+SklearnOnlineEstimator = Literal[
     "sgd_classifier",
     "sgd_regressor",
     "passive_aggressive_classifier",
@@ -16,13 +17,25 @@ OnlineEstimator = Literal[
     "multinomial_nb",
     "bernoulli_nb",
 ]
+IndustryOnlineEstimator = Literal[
+    "river_logistic",
+    "river_hoeffding",
+    "river_pa",
+    "river_linear_regression",
+    "river_hoeffding_regressor",
+]
+TorchContinualMethod = Literal["replay_mlp", "ewc_mlp"]
+
+OnlineEstimator = SklearnOnlineEstimator | IndustryOnlineEstimator | TorchContinualMethod
+OnlineDriftDetector = Literal["mean_shift", "adwin", "page_hinkley", "none"]
 
 
 @dataclass(slots=True)
 class OnlineConfig:
     """User-facing online-learning knobs (serializable summary)."""
 
-    estimator: OnlineEstimator = "sgd_classifier"
+    estimator: str = "sgd_classifier"
+    backend: OnlineBackend | None = None
     task: OnlineTask = "classification"
     columns: tuple[str, ...] | None = None
     random_state: int | None = 0
@@ -32,10 +45,19 @@ class OnlineConfig:
     prefer_reduce_components: bool = True
     allow_refit_fallback: bool = False
     drift_disclose: bool = True
+    drift_detector: OnlineDriftDetector = "mean_shift"
+    buffer_size: int = 512
+    epochs_per_update: int = 5
+    batch_size: int = 64
+    learning_rate: float = 1e-3
+    ewc_lambda: float = 100.0
+    hidden_dim: int = 64
+    device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "estimator": self.estimator,
+            "backend": self.backend,
             "task": self.task,
             "columns": None if self.columns is None else list(self.columns),
             "random_state": self.random_state,
@@ -45,4 +67,12 @@ class OnlineConfig:
             "prefer_reduce_components": self.prefer_reduce_components,
             "allow_refit_fallback": self.allow_refit_fallback,
             "drift_disclose": self.drift_disclose,
+            "drift_detector": self.drift_detector,
+            "buffer_size": self.buffer_size,
+            "epochs_per_update": self.epochs_per_update,
+            "batch_size": self.batch_size,
+            "learning_rate": self.learning_rate,
+            "ewc_lambda": self.ewc_lambda,
+            "hidden_dim": self.hidden_dim,
+            "device": self.device,
         }

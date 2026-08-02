@@ -133,12 +133,12 @@ TDA_NOTES: dict[str, ConceptNote] = {
             key="tda-bundle-boundary",
             title="TDA bundle vs Session checkpoint",
             summary=(
-                "buildml.tda_bundle.v1 stores TdaPlan; checkpoints do not embed "
-                "the TDA transformer."
+                "buildml.tda_bundle.v2 stores TdaPlan (v1 loadable); checkpoints "
+                "do not embed the TDA transformer."
             ),
             definition=(
                 "A TDA bundle directory holds meta.json + tda_plan.joblib under "
-                "schema buildml.tda_bundle.v1."
+                "schema buildml.tda_bundle.v2 (v1 bundles remain loadable)."
             ),
             intuition="Save the PH pipeline separately from workflow resume state.",
             formal_idea="TdaPlan is not embedded in a Session checkpoint payload.",
@@ -147,7 +147,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Reload via load_tda_bundle after checkpoint_load.",
             ),
-            assumptions=("Bundle format matches buildml.tda_bundle.v1.",),
+            assumptions=("Bundle format matches buildml.tda_bundle.v2 (or v1).",),
             failure_modes=("Mixing TDA bundles with RL / RAG / graph bundles.",),
             anti_patterns=("Expecting checkpoint_load to restore TdaPlan.",),
             worked_example_pattern=(
@@ -157,27 +157,72 @@ TDA_NOTES: dict[str, ConceptNote] = {
         ),
         _note(
             key="tda-extra-boundary",
-            title="buildml[tda] optional stack",
+            title="buildml[tda] and buildml[tda-industry] optional stacks",
             summary=(
-                "ripser + persim are optional; MissingExtraError if absent. "
-                "import buildml never requires them."
+                "ripser + persim (native) and giotto-tda (industry) are optional; "
+                "MissingExtraError if absent. import buildml never requires them."
             ),
             definition=(
-                "The tda extra installs ripser (VR PH) and persim (images/landscapes). "
-                "Silhouette vectorization is implemented in-tree."
+                "buildml[tda] installs ripser (VR PH) and persim (persistence images). "
+                "buildml[tda-industry] adds giotto-tda for BettiCurve, gtda vectorizers, "
+                "and optional KeplerMapper train summaries. Silhouette vectorization "
+                "is in-tree on the native path."
             ),
-            intuition="Core stays light; install the extra when you need TDA.",
-            formal_idea="MissingExtraError('tda', feature) on ImportError.",
+            intuition="Core stays light; install tda for native PH, tda-industry for giotto.",
+            formal_idea="MissingExtraError('tda'|'tda-industry', feature) on ImportError.",
             why_it_matters=("Keeps the default install small.",),
-            how_buildml_uses=("pip install 'buildml[tda]'; require_tda_stack().",),
+            how_buildml_uses=(
+                "pip install 'buildml[tda]' (native); "
+                "pip install 'buildml[tda-industry]' (giotto); "
+                "tda_capability_matrix(); require_tda_stack()."
+            ),
             interpretation_rules=(
-                "Chosen over giotto-tda for a lighter PH→vectorization pair.",
+                "Default backend when both installed: giotto (industry depth). "
+                "Silhouette remains native-only.",
             ),
             assumptions=("Compatible wheels for the platform Python.",),
-            failure_modes=("Extra not installed → MissingExtraError on fit_tda.",),
-            anti_patterns=("Importing ripser at buildml package import time.",),
-            worked_example_pattern=("pip install 'buildml[tda]' then fit_tda().",),
-            related_concepts=("tda-persistent-homology",),
+            failure_modes=(
+                "Extra not installed → MissingExtraError on fit_tda.",
+            ),
+            anti_patterns=("Importing ripser/gtda at buildml package import time.",),
+            worked_example_pattern=(
+                "fit_tda(backend='giotto', vectorization='betti_curve')."
+            ),
+            related_concepts=("tda-persistent-homology", "tda-giotto-backend"),
+        ),
+        _note(
+            key="tda-giotto-backend",
+            title="giotto-tda industry backend",
+            summary=(
+                "When buildml[tda-industry] is installed, backend='giotto' runs "
+                "gtda VietorisRipsPersistence + BettiCurve / PersistenceImage / "
+                "PersistenceLandscape; optional Mapper summary on train."
+            ),
+            definition=(
+                "The giotto adapter wraps giotto-tda homology and diagram "
+                "vectorizers behind the same Session fit/transform/evaluate API."
+            ),
+            intuition=(
+                "Industry-standard sklearn-compatible TDA transformers on local "
+                "kNN train point clouds."
+            ),
+            formal_idea="backend='giotto' → gtda PH + frozen train vectorizer.",
+            why_it_matters=(
+                "Betti curves and gtda vectorizers without abandoning the native path.",
+            ),
+            how_buildml_uses=(
+                "fit_tda(backend='giotto', vectorization='betti_curve', mapper=True)."
+            ),
+            interpretation_rules=(
+                "Mapper output is diagnostic disclosure only — not supervised features.",
+            ),
+            assumptions=("buildml[tda-industry] installed.",),
+            failure_modes=("giotto missing → MissingExtraError; Mapper may warn on tiny train.",),
+            anti_patterns=("Expecting interactive Mapper visualization from Session API.",),
+            worked_example_pattern=(
+                "Session.tda_capability_matrix()['backends']['giotto']."
+            ),
+            related_concepts=("tda-extra-boundary", "tda-vectorization"),
         ),
     )
 }

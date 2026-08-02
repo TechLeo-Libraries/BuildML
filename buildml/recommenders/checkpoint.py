@@ -70,6 +70,10 @@ def save_recommender_bundle(
             if plan.item_feature_scale_ is None
             else np.asarray(plan.item_feature_scale_)
         ),
+        "backend_model": plan.backend_model_,
+        "user_item_csr": plan.user_item_csr_,
+        "lightfm_user_features": plan.lightfm_user_features_,
+        "lightfm_item_features": plan.lightfm_item_features_,
         "user_ids": list(plan.user_ids),
         "item_ids": list(plan.item_ids),
     }
@@ -134,6 +138,14 @@ def load_recommender_bundle(path: str | Path) -> RecommenderPlan:
         plan.item_feature_mean_ = np.asarray(loaded["item_feature_mean"], dtype=float)
     if loaded.get("item_feature_scale") is not None and plan.item_feature_scale_ is None:
         plan.item_feature_scale_ = np.asarray(loaded["item_feature_scale"], dtype=float)
+    if loaded.get("backend_model") is not None and plan.backend_model_ is None:
+        plan.backend_model_ = loaded["backend_model"]
+    if loaded.get("user_item_csr") is not None and plan.user_item_csr_ is None:
+        plan.user_item_csr_ = loaded["user_item_csr"]
+    if loaded.get("lightfm_user_features") is not None and plan.lightfm_user_features_ is None:
+        plan.lightfm_user_features_ = loaded["lightfm_user_features"]
+    if loaded.get("lightfm_item_features") is not None and plan.lightfm_item_features_ is None:
+        plan.lightfm_item_features_ = loaded["lightfm_item_features"]
     if loaded.get("user_ids") and not plan.user_ids:
         plan.user_ids = tuple(loaded["user_ids"])
         plan.user_index_ = {u: i for i, u in enumerate(plan.user_ids)}

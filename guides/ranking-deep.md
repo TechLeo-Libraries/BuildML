@@ -1,6 +1,7 @@
 # Learning-to-rank (tabular search ranking) — deep guide
 
-> Core Session path. No LightGBM/XGBoost required.
+> Core Session path with sklearn fallback; industry GBDT rankers via
+> `buildml[ranking-industry]`; torch listwise-lite via `buildml[torch]`.
 > Quickstart: [quickstart-ranking.md](quickstart-ranking.md).
 
 ## What this is (and is not)
@@ -9,7 +10,7 @@
 
 1. Ingest judgment rows `(query_id, item_id, features…, relevance)`
 2. Prefer `group_split` on the query id
-3. `fit_ranker` on **train only**
+3. `fit_ranker` on **train only** (industry backend default when installed)
 4. `rank` to order candidates per query
 5. `evaluate_ranker` with graded nDCG@K, MAP@K, MRR@K
 6. `save_ranker_bundle` / `load_ranker_bundle`
@@ -17,13 +18,20 @@
 **Is not:**
 
 - A search-engine product (no crawler, inverted index, or serving stack)
-- RAG (`rag_retrieve` / chunk embeddings / generate) — see [rag-deep.md](rag-deep.md)
+- RAG (`rag_retrieve` / chunk embeddings / `rag_evaluate`) — see [rag-deep.md](rag-deep.md)
 - Recommenders (`fit_recommender` user–item CF) — see [recommenders-deep.md](recommenders-deep.md)
 - Hyperparameter `evolutionary_search` / classical model search
 
 Metric names may overlap (nDCG, MRR) across RAG / recommenders / LTR; the
 **protocol** differs. Do not mix `rag_evaluate`, `evaluate_recommender`, and
 `evaluate_ranker` numbers.
+
+Inspect installed backends:
+
+```python
+from buildml import Session
+Session.ranking_capability_matrix()
+```
 
 ---
 
@@ -53,23 +61,37 @@ Each **row** is one labeled judgment. Multiple rows share a `query_id`.
 
 ---
 
-## Algorithms
+## Backends and algorithms
 
-### Pointwise (`method='pointwise'`)
+### Sklearn fallback (`backend='sklearn'`)
 
-- `pointwise_estimator='ridge'` (default): `sklearn.linear_model.Ridge`
-- `pointwise_estimator='hgb'`: `HistGradientBoostingRegressor`
-- Features are standardized on **train** means/scales only.
-- Inference score = predicted relevance; sort descending within query.
+Always available — no extra required.
 
-### Pairwise RankSVM-lite (`method='pairwise'`)
+| `method` | Estimator |
+|----------|-----------|
+| `pointwise` | Ridge (default) or HistGradientBoostingRegressor (`pointwise_estimator='hgb'`) |
+| `pairwise` | RankSVM-lite: LinearSVC on within-query feature differences |
 
-- Sample within-query pairs with distinct grades (budget
-  `max_pairs_per_query`).
-- Build difference features `x_i − x_j` and train `LinearSVC`.
-- Inference score = `w·x` (linear scoring function).
-- Honesty: RankSVM-**lite**, not LambdaMART / LightGBM ranker. Optional
-  boosted listwise extras are out of scope until a complete path is justified.
+Features are standardized on **train** means/scales only.
+
+### Industry GBDT rankers (`backend='industry'`, `buildml[ranking-industry]`)
+
+**Default backend when LightGBM/XGBoost/CatBoost are installed.**
+
+| `method` | Library | Objective |
+|----------|---------|-----------|
+| `lambdarank_lgbm` | LightGBM | LambdaRank (ndcg metric) |
+| `rank_ndcg_xgb` | XGBoost | `rank:ndcg` |
+| `yetirank_catboost` | CatBoost | YetiRank |
+
+Query groups are sorted contiguously for listwise training; inference scores
+each row independently then sorts within query.
+
+### Torch listwise-lite (`backend='torch'`, `buildml[torch]`)
+
+| `method` | Idea |
+|----------|------|
+| `listwise_lite` | Small MLP + per-query softmax cross-entropy on normalized relevance grades (ListNet-style lite) |
 
 ---
 
@@ -83,6 +105,9 @@ Macro-averaged over holdout queries that have ≥1 relevant item
 | `ndcg_at_k` | Graded nDCG with gain `2^rel − 1` |
 | `map_at_k` | Mean average precision (binaryized grades) |
 | `mrr_at_k` | Mean reciprocal rank of first relevant |
+
+These are **judgment-table** metrics. RAG chunk nDCG and recommender known-item
+nDCG use different candidate sets and protocols.
 
 ---
 
@@ -103,21 +128,26 @@ Session checkpoints do **not** embed `RankerPlan`. See
 ```python
 # After group_split + roles...
 session.fit_ranker(
+    backend="sklearn",
     method="pointwise",
     query_column="query_id",
     item_column="item_id",
 )
 pw = session.evaluate_ranker(k=5).metrics
 
+# Industry default when buildml[ranking-industry] installed:
 session.fit_ranker(
-    method="pairwise",
+    backend="industry",
+    method="lambdarank_lgbm",
     query_column="query_id",
     item_column="item_id",
-    max_pairs_per_query=60,
 )
-pr = session.evaluate_ranker(k=5).metrics
-print(pw, pr)
+gbdt = session.evaluate_ranker(k=5).metrics
+print("pointwise", pw, "lambdarank", gbdt)
 ```
+
+Benchmark: `python benchmarks/ranking/ndcg_lift.py` compares industry default
+vs sklearn pointwise on synthetic judgments.
 
 ---
 
@@ -126,6 +156,6 @@ print(pw, pr)
 Phase 3 application systems — depth-first:
 
 1. Recommenders — **PASS**
-2. Search / LTR — **this module**
-3. Knowledge graphs — next after LTR PASS
-4. Then optimisation / decision helpers, synthetic-data systems
+2. Search / LTR — **PASS** (R6.8 industry depth)
+3. Knowledge graphs — **PASS**
+4. Optimisation / decision helpers — next (R6.9)

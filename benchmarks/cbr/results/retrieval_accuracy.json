@@ -1,0 +1,45 @@
+{
+  "capability_matrix_summary": {
+    "default_backend": "sklearn",
+    "hnswlib_present": false,
+    "torch_present": false
+  },
+  "runs": [
+    {
+      "backend": "sklearn",
+      "n_cases": 300,
+      "points": [
+        {
+          "k": 1,
+          "accuracy": 0.95,
+          "latency_ms_mean": 4.672966664656997,
+          "latency_ms_std": 0.4590423705712179
+        },
+        {
+          "k": 3,
+          "accuracy": 0.95,
+          "latency_ms_mean": 4.810533331086238,
+          "latency_ms_std": 0.09920243636691982
+        },
+        {
+          "k": 5,
+          "accuracy": 0.95,
+          "latency_ms_mean": 5.056166633342703,
+          "latency_ms_std": 0.0970108617463023
+        },
+        {
+          "k": 11,
+          "accuracy": 0.95,
+          "latency_ms_mean": 7.375433342531323,
+          "latency_ms_std": 2.0040120913521395
+        },
+        {
+          "k": 21,
+          "accuracy": 0.95,
+          "latency_ms_mean": 6.683666724711657,
+          "latency_ms_std": 0.10869654916968441
+        }
+      ]
+    }
+  ]
+}

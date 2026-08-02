@@ -9,6 +9,7 @@ from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
+from buildml.causal.catalog import resolve_backend_method
 from buildml.causal.estimate import estimate_ate_from_models
 from buildml.causal.features import (
     design_matrix,
@@ -22,6 +23,7 @@ from buildml.causal.features import (
 from buildml.causal.results import CausalFitResult, CausalPlan
 from buildml.causal.types import (
     CausalAssumptions,
+    CausalBackend,
     CausalConfig,
     CausalMethod,
 )
@@ -35,6 +37,7 @@ def fit_causal(
     split_plan: SplitPlan | None,
     assumptions: CausalAssumptions,
     *,
+    backend: CausalBackend | None = None,
     method: CausalMethod = "aipw",
     bootstrap_samples: int = 200,
     random_state: int | None = 0,
@@ -42,7 +45,17 @@ def fit_causal(
     outcome_model: str = "ridge",
     propensity_model: str = "logistic_regression",
 ) -> tuple[CausalPlan, CausalFitResult]:
-    """Fit nuisance models on Session train and estimate backdoor ATE.
+    """Fit causal models on Session train and estimate backdoor ATE.
+
+    Backends
+    --------
+    native (default):
+        sklearn T-learner / IPW / AIPW with optional bootstrap CI.
+    dowhy (``buildml[causal-industry]``):
+        Causal graph from declared confounders, DoWhy identification +
+        backdoor estimation; expanded refutation via ``refute_causal``.
+    econml (``buildml[causal-industry]``):
+        LinearDML, CausalForestDML, PolicyTree on declared backdoor sets.
 
     Honesty
     -------
@@ -50,10 +63,60 @@ def fit_causal(
     (treatment, outcome, confounders, estimand, unconfoundedness and
     positivity acknowledgements). EDA / association diagnostics never
     satisfy those acknowledgements. Nuisance models fit on **train only**;
-    validation/test are never used for fitting. Bootstrap uncertainty
-    resamples the train partition. This is not causal discovery and not a
-    DoWhy/EconML product surface.
+    validation/test are never used for fitting. This is not causal discovery.
     """
+    assumptions.validate()
+    resolved_backend, resolved_method = resolve_backend_method(
+        backend=backend,
+        method=str(method),
+    )
+    if resolved_backend == "dowhy":
+        from buildml.causal.adapters.dowhy import fit_dowhy
+
+        return fit_dowhy(
+            dataset,
+            split_plan,
+            assumptions,
+            method=resolved_method,
+            random_state=random_state,
+        )
+    if resolved_backend == "econml":
+        from buildml.causal.adapters.econml import fit_econml
+
+        return fit_econml(
+            dataset,
+            split_plan,
+            assumptions,
+            method=resolved_method,
+            bootstrap_samples=bootstrap_samples,
+            random_state=random_state,
+        )
+    return _fit_native(
+        dataset,
+        split_plan,
+        assumptions,
+        method=resolved_method,  # type: ignore[arg-type]
+        bootstrap_samples=bootstrap_samples,
+        random_state=random_state,
+        clip_propensity=clip_propensity,
+        outcome_model=outcome_model,
+        propensity_model=propensity_model,
+    )
+
+
+def _fit_native(
+    dataset: Dataset,
+    split_plan: SplitPlan | None,
+    assumptions: CausalAssumptions,
+    *,
+    method: CausalMethod = "aipw",
+    bootstrap_samples: int = 200,
+    random_state: int | None = 0,
+    clip_propensity: tuple[float, float] = (0.01, 0.99),
+    outcome_model: str = "ridge",
+    propensity_model: str = "logistic_regression",
+) -> tuple[CausalPlan, CausalFitResult]:
+    """Native sklearn T-learner / IPW / AIPW path."""
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
     assumptions.validate()
@@ -159,6 +222,7 @@ def fit_causal(
 
     config = CausalConfig(
         method=method_key,  # type: ignore[arg-type]
+        backend="native",
         bootstrap_samples=int(bootstrap_samples),
         random_state=random_state,
         clip_propensity=clip,
@@ -167,6 +231,7 @@ def fit_causal(
     )
     plan = CausalPlan(
         method=method_key,
+        backend="native",
         assumptions=assumptions,
         treatment_column=assumptions.treatment,
         outcome_column=assumptions.outcome,
@@ -193,6 +258,7 @@ def fit_causal(
     )
     result = CausalFitResult(
         method=method_key,
+        backend="native",
         estimand=assumptions.estimand,
         identification=assumptions.identification,
         treatment_column=assumptions.treatment,

@@ -154,11 +154,11 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
         _note(
             key="unsupervised-bundle-boundary",
             title="Unsupervised bundle boundary",
-            summary="Cluster plans persist as buildml.unsupervised_bundle.v1 — complementary to Session checkpoints and Torch/RAG bundles.",
+            summary="Cluster plans persist as buildml.unsupervised_bundle.v2 — complementary to Session checkpoints and Torch/RAG bundles.",
             definition=(
                 "The unsupervised bundle boundary is the contract that a train-fitted ClusterPlan "
                 "(estimator, feature columns, assign strategy, disclosures) is stored under "
-                "buildml.unsupervised_bundle.v1, separate from Session workflow checkpoints and "
+                "buildml.unsupervised_bundle.v2 (v1 loadable), separate from Session workflow checkpoints and "
                 "from Torch/RAG/classical pipeline artifacts."
             ),
             intuition=(

@@ -1,8 +1,9 @@
-"""Train-only federated learning simulation (local FedAvg / FedProx)."""
+"""Train-only federated learning simulation (native FedAvg / FedProx or Flower)."""
 
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
@@ -19,6 +20,7 @@ from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
+from buildml.federated.catalog import resolve_backend
 from buildml.federated.features import (
     average_linear_params,
     client_ids_in_frame,
@@ -33,6 +35,7 @@ from buildml.federated.features import (
 )
 from buildml.federated.results import FederatedFitResult, FederatedPlan
 from buildml.federated.types import (
+    FederatedBackend,
     FederatedConfig,
     FederatedEstimator,
     FederatedMethod,
@@ -44,10 +47,30 @@ _REGRESSORS = {"sgd_regressor", "ridge", "linear_regression"}
 _PARTIAL_FIT = {"sgd_classifier", "sgd_regressor"}
 
 
+@dataclass
+class _FederatedContext:
+    method_key: str
+    est_key: str
+    resolved_task: str
+    client_col: str
+    target_col: str
+    cols: list[str]
+    used_reduce: bool
+    train: Any
+    eligible: list[Any]
+    label_encoder: Any
+    classes_tuple: tuple[Any, ...] | None
+    global_est: Any
+    mu: float
+    disclosures: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+
 def fit_federated(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: FederatedBackend | None = None,
     method: FederatedMethod = "fedavg",
     estimator: FederatedEstimator = "sgd_classifier",
     task: FederatedTask | None = None,
@@ -64,15 +87,81 @@ def fit_federated(
 ) -> tuple[FederatedPlan, FederatedFitResult]:
     """Simulate federated averaging on Session train clients.
 
+    Backends
+    --------
+    native (default):
+        In-process weighted coef_/intercept_ aggregation (FedAvg / FedProx).
+    flower (``buildml[federated-industry]``):
+        Flower NumPyClient wrappers over Session partitions + flwr weighted
+        aggregation — still local simulation unless you deploy Flower yourself.
+
     Honesty
     -------
     Local FedAvg-style (or FedProx) orchestration on rows partitioned by a
     client/group column. Each "client" is a slice of the Session train
-    partition — not a networked FL runtime. No Flower/OpenFL replacement.
+    partition — not a networked FL runtime unless you operate one separately.
     No cryptographic secure aggregation; model updates are averaged in-process
     with clear privacy limits (the orchestrator sees client updates).
     Validation/test partitions are never used for local training.
     """
+    resolved_backend = resolve_backend(backend, method=method)
+    if resolved_backend == "flower":
+        from buildml.federated.adapters.flower import fit_flower
+
+        return fit_flower(
+            dataset,
+            split_plan,
+            method=method,
+            estimator=estimator,
+            task=task,
+            client_column=client_column,
+            columns=columns,
+            n_rounds=n_rounds,
+            local_epochs=local_epochs,
+            client_fraction=client_fraction,
+            mu=mu,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+            min_client_rows=min_client_rows,
+            reduce_plan=reduce_plan,
+        )
+    return _fit_native(
+        dataset,
+        split_plan,
+        method=method,
+        estimator=estimator,
+        task=task,
+        client_column=client_column,
+        columns=columns,
+        n_rounds=n_rounds,
+        local_epochs=local_epochs,
+        client_fraction=client_fraction,
+        mu=mu,
+        random_state=random_state,
+        prefer_reduce_components=prefer_reduce_components,
+        min_client_rows=min_client_rows,
+        reduce_plan=reduce_plan,
+    )
+
+
+def _prepare_federated_context(
+    dataset: Dataset,
+    split_plan: SplitPlan | None,
+    *,
+    method: FederatedMethod = "fedavg",
+    estimator: FederatedEstimator = "sgd_classifier",
+    task: FederatedTask | None = None,
+    client_column: str | None = None,
+    columns: list[str] | None = None,
+    n_rounds: int = 5,
+    local_epochs: int = 1,
+    client_fraction: float = 1.0,
+    mu: float = 0.0,
+    random_state: int | None = 0,
+    prefer_reduce_components: bool = True,
+    min_client_rows: int = 2,
+    reduce_plan: Any | None = None,
+) -> _FederatedContext:
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
@@ -173,42 +262,96 @@ def fit_federated(
         random_state=random_state,
     )
 
+    return _FederatedContext(
+        method_key=method_key,
+        est_key=est_key,
+        resolved_task=resolved_task,
+        client_col=client_col,
+        target_col=target_col,
+        cols=cols,
+        used_reduce=used_reduce,
+        train=train,
+        eligible=eligible,
+        label_encoder=label_encoder,
+        classes_tuple=classes_tuple,
+        global_est=global_est,
+        mu=float(mu),
+        disclosures=disclosures,
+        warnings=warnings,
+    )
+
+
+def _fit_native(
+    dataset: Dataset,
+    split_plan: SplitPlan | None,
+    *,
+    method: FederatedMethod = "fedavg",
+    estimator: FederatedEstimator = "sgd_classifier",
+    task: FederatedTask | None = None,
+    client_column: str | None = None,
+    columns: list[str] | None = None,
+    n_rounds: int = 5,
+    local_epochs: int = 1,
+    client_fraction: float = 1.0,
+    mu: float = 0.0,
+    random_state: int | None = 0,
+    prefer_reduce_components: bool = True,
+    min_client_rows: int = 2,
+    reduce_plan: Any | None = None,
+) -> tuple[FederatedPlan, FederatedFitResult]:
+    ctx = _prepare_federated_context(
+        dataset,
+        split_plan,
+        method=method,
+        estimator=estimator,
+        task=task,
+        client_column=client_column,
+        columns=columns,
+        n_rounds=n_rounds,
+        local_epochs=local_epochs,
+        client_fraction=client_fraction,
+        mu=mu,
+        random_state=random_state,
+        prefer_reduce_components=prefer_reduce_components,
+        min_client_rows=min_client_rows,
+        reduce_plan=reduce_plan,
+    )
+
     rng = np.random.default_rng(random_state)
     round_history: list[dict[str, Any]] = []
     final_metric: float | None = None
 
     for round_idx in range(int(n_rounds)):
-        selected = _sample_clients(eligible, float(client_fraction), rng)
+        selected = _sample_clients(ctx.eligible, float(client_fraction), rng)
         client_params: list[dict[str, np.ndarray]] = []
         weights: list[float] = []
         client_metrics: list[float] = []
         participated: list[Any] = []
-        global_params = extract_linear_params(global_est)
+        global_params = extract_linear_params(ctx.global_est)
 
         for cid in selected:
-            client_frame = frame_for_client(train, client_col, cid)
+            client_frame = frame_for_client(ctx.train, ctx.client_col, cid)
             n_rows = int(len(client_frame))
             if n_rows < int(min_client_rows):
                 continue
             local_est, local_metric, local_notes = _local_update(
-                global_est,
+                ctx.global_est,
                 global_params,
                 client_frame,
-                columns=cols,
-                target_column=target_col,
-                task=resolved_task,
-                estimator_key=est_key,
+                columns=ctx.cols,
+                target_column=ctx.target_col,
+                task=ctx.resolved_task,
+                estimator_key=ctx.est_key,
                 local_epochs=int(local_epochs),
-                mu=float(mu),
-                label_encoder=label_encoder,
-                classes=classes_tuple,
+                mu=float(ctx.mu),
+                label_encoder=ctx.label_encoder,
+                classes=ctx.classes_tuple,
                 random_state=random_state,
             )
             if local_notes:
-                # Keep only first-round unique notes to avoid spam.
                 for note in local_notes:
-                    if note not in disclosures:
-                        disclosures.append(note)
+                    if note not in ctx.disclosures:
+                        ctx.disclosures.append(note)
             client_params.append(extract_linear_params(local_est))
             weights.append(float(n_rows))
             participated.append(cid)
@@ -216,31 +359,39 @@ def fit_federated(
                 client_metrics.append(float(local_metric))
 
         if not client_params:
-            warnings.append(
+            ctx.warnings.append(
                 f"Round {round_idx + 1}: no clients produced updates; "
                 "stopping early."
             )
             break
 
         aggregated = average_linear_params(client_params, weights)
-        set_linear_params(global_est, aggregated)
-        # Keep classes_ / bookkeeping alive after aggregation.
-        if classes_tuple is not None and hasattr(global_est, "classes_"):
-            global_est.classes_ = np.asarray(label_encoder.classes_)
+        set_linear_params(ctx.global_est, aggregated)
+        if ctx.classes_tuple is not None and hasattr(ctx.global_est, "classes_"):
+            ctx.global_est.classes_ = np.asarray(ctx.label_encoder.classes_)
 
         mean_client = float(np.mean(client_metrics)) if client_metrics else None
         final_metric = mean_client
+        total_weight = float(sum(weights))
         round_history.append(
             {
                 "round": round_idx + 1,
+                "backend": "native",
                 "n_clients": len(client_params),
                 "n_samples": int(sum(weights)),
+                "total_weight": total_weight,
+                "weighting": "sample_size",
+                "aggregation": "weighted coef_/intercept_ average",
                 "mean_client_train_metric": mean_client,
                 "client_ids": [str(c) for c in participated],
+                "client_weights": {
+                    str(cid): float(w)
+                    for cid, w in zip(participated, weights, strict=True)
+                },
             }
         )
 
-    disclosures.extend(
+    ctx.disclosures.extend(
         [
             "Federated fit uses the train partition only; validation/test "
             "are never used for local client updates.",
@@ -248,73 +399,125 @@ def fit_federated(
             "Aggregation is in-process weighted coefficient averaging "
             "(FedAvg / weighted-by-n) — not cryptographic secure aggregation.",
             "Honesty: local FL simulation for research/teaching/workflows — "
-            "not a distributed FL platform (not Flower/OpenFL).",
-            f"method={method_key}, estimator={est_key}, "
-            f"n_clients={len(eligible)}, n_rounds={n_rounds}, "
+            "not a distributed FL platform unless you deploy one separately.",
+            f"backend=native, method={ctx.method_key}, estimator={ctx.est_key}, "
+            f"n_clients={len(ctx.eligible)}, n_rounds={n_rounds}, "
             f"local_epochs={local_epochs}, client_fraction={client_fraction}, "
-            f"mu={mu}, n_train_rows={len(train)}.",
+            f"mu={ctx.mu}, n_train_rows={len(ctx.train)}.",
         ]
     )
-    if method_key == "fedprox":
-        disclosures.append(
+    if ctx.method_key == "fedprox":
+        ctx.disclosures.append(
             f"FedProx proximal pull applied after each local epoch "
-            f"(mu={mu}): coef ← coef − mu·(coef − global)."
+            f"(mu={ctx.mu}): coef ← coef − mu·(coef − global)."
         )
 
     config = FederatedConfig(
-        method=method_key,  # type: ignore[arg-type]
-        estimator=est_key,  # type: ignore[arg-type]
-        task=resolved_task,  # type: ignore[arg-type]
-        client_column=client_col,
-        columns=tuple(cols),
+        backend="native",
+        method=ctx.method_key,  # type: ignore[arg-type]
+        estimator=ctx.est_key,  # type: ignore[arg-type]
+        task=ctx.resolved_task,  # type: ignore[arg-type]
+        client_column=ctx.client_col,
+        columns=tuple(ctx.cols),
         n_rounds=int(n_rounds),
         local_epochs=int(local_epochs),
         client_fraction=float(client_fraction),
-        mu=float(mu),
+        mu=float(ctx.mu),
         random_state=random_state,
         prefer_reduce_components=prefer_reduce_components,
         min_client_rows=int(min_client_rows),
     )
-    plan = FederatedPlan(
-        method=method_key,
-        estimator_name=est_key,
-        task=resolved_task,
-        columns=tuple(cols),
-        target_column=target_col,
-        client_column=client_col,
-        client_ids=tuple(eligible),
-        n_train_rows=int(len(train)),
+    return _build_fit_outputs(
+        ctx,
+        round_history=round_history,
+        final_metric=final_metric,
+        backend="native",
+        config=config,
         n_rounds=int(n_rounds),
         local_epochs=int(local_epochs),
         client_fraction=float(client_fraction),
-        mu=float(mu),
-        classes_=classes_tuple,
+    )
+
+
+def _build_fit_outputs(
+    ctx: _FederatedContext,
+    *,
+    round_history: list[dict[str, Any]],
+    final_metric: float | None,
+    backend: str,
+    config: FederatedConfig,
+    n_rounds: int | None = None,
+    local_epochs: int | None = None,
+    client_fraction: float | None = None,
+) -> tuple[FederatedPlan, FederatedFitResult]:
+    rounds = int(n_rounds if n_rounds is not None else config.n_rounds)
+    epochs = int(local_epochs if local_epochs is not None else config.local_epochs)
+    fraction = float(
+        client_fraction if client_fraction is not None else config.client_fraction
+    )
+    plan = FederatedPlan(
+        backend=backend,
+        method=ctx.method_key,
+        estimator_name=ctx.est_key,
+        task=ctx.resolved_task,
+        columns=tuple(ctx.cols),
+        target_column=ctx.target_col,
+        client_column=ctx.client_col,
+        client_ids=tuple(ctx.eligible),
+        n_train_rows=int(len(ctx.train)),
+        n_rounds=rounds,
+        local_epochs=epochs,
+        client_fraction=fraction,
+        mu=float(ctx.mu),
+        classes_=ctx.classes_tuple,
         round_history=tuple(round_history),
-        estimator_=global_est,
-        label_encoder_=label_encoder,
-        disclosures=tuple(disclosures),
-        warnings=tuple(warnings),
-        used_reduce_components=used_reduce,
+        estimator_=ctx.global_est,
+        label_encoder_=ctx.label_encoder,
+        disclosures=tuple(ctx.disclosures),
+        warnings=tuple(ctx.warnings),
+        used_reduce_components=ctx.used_reduce,
         config=config.to_dict(),
     )
     result = FederatedFitResult(
-        method=method_key,
-        estimator_name=est_key,
-        task=resolved_task,
-        n_train_rows=int(len(train)),
-        n_clients=len(eligible),
-        n_rounds=int(n_rounds),
-        local_epochs=int(local_epochs),
-        client_column=client_col,
-        columns=tuple(cols),
-        target_column=target_col,
+        backend=backend,
+        method=ctx.method_key,
+        estimator_name=ctx.est_key,
+        task=ctx.resolved_task,
+        n_train_rows=int(len(ctx.train)),
+        n_clients=len(ctx.eligible),
+        n_rounds=rounds,
+        local_epochs=epochs,
+        client_column=ctx.client_col,
+        columns=tuple(ctx.cols),
+        target_column=ctx.target_col,
         final_train_metric=final_metric,
         round_history=tuple(round_history),
-        used_reduce_components=used_reduce,
-        disclosures=tuple(disclosures),
-        warnings=tuple(warnings),
+        used_reduce_components=ctx.used_reduce,
+        disclosures=tuple(ctx.disclosures),
+        warnings=tuple(ctx.warnings),
     )
     return plan, result
+
+
+def _linear_ndarrays(estimator: Any) -> list[np.ndarray]:
+    params = extract_linear_params(estimator)
+    return [
+        np.asarray(params["coef_"], dtype=float).ravel().copy(),
+        np.asarray(params["intercept_"], dtype=float).copy(),
+    ]
+
+
+def _ndarrays_to_linear(
+    ndarrays: list[np.ndarray],
+    *,
+    template: Any,
+) -> dict[str, np.ndarray]:
+    template_params = extract_linear_params(template)
+    coef = np.asarray(ndarrays[0], dtype=float).reshape(template_params["coef_"].shape)
+    intercept = np.asarray(ndarrays[1], dtype=float).reshape(
+        template_params["intercept_"].shape
+    )
+    return {"coef_": coef, "intercept_": intercept}
 
 
 def _resolve_task(est_key: str, task: FederatedTask | None) -> str:
@@ -379,7 +582,6 @@ def _initialize_global(
     random_state: int | None,
 ) -> Any:
     """Seed global coef_ shapes via a small train-only init fit."""
-    # Use the largest eligible client for a stable shape init (train only).
     sizes = [
         (cid, int((train[client_column] == cid).sum())) for cid in eligible_clients
     ]
@@ -404,8 +606,7 @@ def _initialize_global(
             estimator.partial_fit(x, y)
         else:
             estimator.fit(x, y)
-    # Zero-ish re-init optional? Keep fitted init as warm start for FedAvg.
-    _ = random_state  # reserved for future random init paths
+    _ = random_state
     return estimator
 
 
@@ -473,11 +674,9 @@ def _local_update(
             f"({local_epochs} epoch(s) per selected client)."
         )
     else:
-        # Full-fit path: warm_start when available; otherwise fit then pull.
         for _epoch in range(local_epochs):
             if hasattr(local, "warm_start"):
                 local.warm_start = True
-            # LogisticRegression needs n_iter_ for warm_start continuity.
             if hasattr(local, "n_iter_") and local.n_iter_ is None:
                 local.n_iter_ = np.array([0])
             try:
@@ -528,7 +727,6 @@ def _score_local(
         return None
     if task == "classification":
         return float(accuracy_score(y, pred))
-    # Prefer R²; fall back to negative MSE if constant target.
     try:
         return float(r2_score(y, pred))
     except Exception:  # noqa: BLE001

@@ -27,6 +27,8 @@ from buildml.graph.data import (
 )
 from buildml.graph.features import build_classical_design, compute_graph_metrics
 from buildml.graph.gnn import GCNClassifier
+from buildml.graph.adapters.pyg import fit_pyg
+from buildml.graph.extras import require_pyg
 from buildml.graph.results import GraphFitResult, GraphPlan
 from buildml.graph.types import (
     ClassicalEstimator,
@@ -35,6 +37,7 @@ from buildml.graph.types import (
     GraphMode,
     GraphSpec,
     GraphTask,
+    PyGModel,
 )
 
 
@@ -56,6 +59,8 @@ def fit_graph(
     dropout: float = 0.1,
     random_state: int | None = 0,
     include_graph_metrics: bool = True,
+    pyg_model: PyGModel = "gcn",
+    heads: int = 4,
 ) -> tuple[GraphPlan, GraphFitResult]:
     """Fit a node classifier with leakage-aware graph structure.
 
@@ -71,9 +76,9 @@ def fit_graph(
     graph_spec.validate()
 
     method_key = str(method).lower().replace("-", "_")
-    if method_key not in {"classical", "gcn"}:
+    if method_key not in {"classical", "gcn", "pyg"}:
         raise ValidationError(
-            f"Unknown graph method={method!r}. Supported: classical, gcn."
+            f"Unknown graph method={method!r}. Supported: classical, gcn, pyg."
         )
     if task != "node_classification":
         raise ValidationError(
@@ -160,6 +165,8 @@ def fit_graph(
         dropout=dropout,
         random_state=random_state,
         include_graph_metrics=include_graph_metrics,
+        pyg_model=pyg_model,
+        heads=heads,
     )
 
     if method_key == "classical":
@@ -177,6 +184,34 @@ def fit_graph(
             classes=classes,
             classical_estimator=classical_estimator,
             include_graph_metrics=include_graph_metrics,
+            random_state=random_state,
+            n_edges_fit=len(src_fit),
+            disclosures=disclosures,
+            warnings=warnings,
+            config=config,
+        )
+
+    if method_key == "pyg":
+        return _fit_pyg(
+            frame=frame,
+            feat_cols=feat_cols,
+            target_column=target_column,
+            y_all=y_all,
+            train_mask=train_mask,
+            src_fit=src_fit,
+            dst_fit=dst_fit,
+            graph_spec=graph_spec,
+            mode_key=mode_key,
+            encoder=encoder,
+            classes=classes,
+            pyg_model=pyg_model,
+            hidden_dim=hidden_dim,
+            n_layers=n_layers,
+            heads=heads,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            weight_decay=weight_decay,
+            dropout=dropout,
             random_state=random_state,
             n_edges_fit=len(src_fit),
             disclosures=disclosures,
@@ -395,6 +430,121 @@ def _fit_gcn(
     )
     fit_result = GraphFitResult(
         method="gcn",
+        mode=mode_key,
+        task="node_classification",
+        n_train_nodes=int(train_mask.sum()),
+        n_edges_fit=n_edges_fit,
+        n_classes=len(classes),
+        train_accuracy=train_acc,
+        train_loss_last=train_loss_last,
+        disclosures=tuple(disclosures),
+        warnings=tuple(warnings),
+    )
+    return plan, fit_result
+
+
+def _fit_pyg(
+    *,
+    frame,
+    feat_cols: list[str],
+    target_column: str,
+    y_all: np.ndarray,
+    train_mask: np.ndarray,
+    src_fit: np.ndarray,
+    dst_fit: np.ndarray,
+    graph_spec: GraphSpec,
+    mode_key: GraphMode,
+    encoder: LabelEncoder,
+    classes: tuple[Any, ...],
+    pyg_model: PyGModel,
+    hidden_dim: int,
+    n_layers: int,
+    heads: int,
+    epochs: int,
+    learning_rate: float,
+    weight_decay: float,
+    dropout: float,
+    random_state: int | None,
+    n_edges_fit: int,
+    disclosures: list[str],
+    warnings: list[str],
+    config: GraphConfig,
+) -> tuple[GraphPlan, GraphFitResult]:
+    require_pyg(feature=f"Graph PyG {pyg_model} node classification")
+    n_nodes = len(frame)
+    if not feat_cols:
+        raise ValidationError(
+            "PyG requires at least one numeric tabular node feature column. "
+            "Encode/scale features first, or use method='classical' with "
+            "include_graph_metrics=True."
+        )
+    if n_nodes > 5000:
+        raise ValidationError(
+            f"Graph has {n_nodes} nodes; this Session surface is limited to "
+            "5000 nodes for dense/sparse materialization clarity."
+        )
+    x = matrix_from_frame(frame, feat_cols)
+    model_key = str(pyg_model).lower().replace("-", "_")
+    disclosures.append(
+        f"PyTorch Geometric backend: {model_key} via torch_geometric.nn; "
+        "sparse edge_index; train-mask cross-entropy only."
+    )
+
+    class_to_index = {c: i for i, c in enumerate(classes)}
+    pyg_clf = fit_pyg(
+        x=x,
+        y_all=y_all,
+        src_fit=src_fit,
+        dst_fit=dst_fit,
+        directed=graph_spec.directed,
+        train_mask=train_mask,
+        class_to_index=class_to_index,
+        pyg_model=pyg_model,
+        hidden_dim=hidden_dim,
+        n_layers=n_layers,
+        heads=heads,
+        epochs=epochs,
+        learning_rate=learning_rate,
+        weight_decay=weight_decay,
+        dropout=dropout,
+        random_state=random_state,
+    )
+    pred_idx = pyg_clf.predict(
+        x, src_fit, dst_fit, directed=graph_spec.directed
+    )
+    y_train_idx = np.asarray(
+        [class_to_index[v] for v in y_all[train_mask].tolist()], dtype=np.int64
+    )
+    train_acc = float(np.mean(pred_idx[train_mask] == y_train_idx))
+    train_loss_last = (
+        None if not pyg_clf.train_losses_ else float(pyg_clf.train_losses_[-1])
+    )
+    estimator_name = f"pyg_{model_key}"
+
+    plan = GraphPlan(
+        method="pyg",
+        task="node_classification",
+        mode=mode_key,
+        node_id_col=graph_spec.node_id_col,
+        feature_columns=tuple(feat_cols),
+        graph_metric_names=(),
+        design_feature_names=tuple(feat_cols),
+        target_column=target_column,
+        classes_=classes,
+        n_train_nodes=int(train_mask.sum()),
+        n_edges_fit=n_edges_fit,
+        directed=graph_spec.directed,
+        estimator_name=estimator_name,
+        estimator_=pyg_clf,
+        label_encoder_=encoder,
+        graph_spec=graph_spec,
+        adj_norm_fit_=None,
+        disclosures=tuple(disclosures),
+        warnings=tuple(warnings),
+        config=config.to_dict(),
+    )
+    fit_result = GraphFitResult(
+        method="pyg",
         mode=mode_key,
         task="node_classification",
         n_train_nodes=int(train_mask.sum()),

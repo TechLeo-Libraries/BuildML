@@ -37,6 +37,7 @@ __all__ = [
     "CaseBase",
     "CaseTrace",
     "CbrAdaptMode",
+    "CbrBackend",
     "CbrConfig",
     "CbrEvalResult",
     "CbrFitResult",
@@ -47,6 +48,7 @@ __all__ = [
     "CbrRetrieveResult",
     "CbrReuseMode",
     "CbrTask",
+    "cbr_capability_matrix",
     "cbr_status",
     "cbr_status_for_session",
     "evaluate_cbr",
@@ -65,6 +67,7 @@ def __getattr__(name: str) -> Any:
         "CbrMetric",
         "CbrReuseMode",
         "CbrAdaptMode",
+        "CbrBackend",
         "CbrConfig",
     }:
         from buildml.cbr import types as types_mod
@@ -114,6 +117,10 @@ def __getattr__(name: str) -> Any:
         from buildml.cbr import checkpoint as checkpoint_mod
 
         return getattr(checkpoint_mod, name)
+    if name == "cbr_capability_matrix":
+        from buildml.cbr.catalog import cbr_capability_matrix
+
+        return cbr_capability_matrix
     if name in {"cbr_status", "cbr_status_for_session"}:
         from buildml.cbr import explain_hooks as hooks
 

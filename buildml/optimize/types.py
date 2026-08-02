@@ -12,6 +12,7 @@ DecisionMethod = Literal[
     "knapsack",
     "lp_allocate",
 ]
+DecisionBackend = Literal["native", "pulp", "ortools", "cvxpy", "calibrated", "xgb"]
 TuningPartition = Literal["train", "validation", "test"]
 ScoreSource = Literal["model_proba", "model_decision_function", "column"]
 KnapsackSolver = Literal["dp", "greedy"]
@@ -23,6 +24,7 @@ class DecisionConfig:
     """User-facing decision-policy knobs (serializable summary)."""
 
     method: DecisionMethod = "threshold"
+    backend: DecisionBackend | None = None
     partition: TuningPartition = "validation"
     allow_test_tuning: bool = False
     # Binary threshold / expected-cost (wraps classical threshold sweep)
@@ -50,6 +52,7 @@ class DecisionConfig:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "partition": self.partition,
             "allow_test_tuning": self.allow_test_tuning,
             "fp_cost": self.fp_cost,

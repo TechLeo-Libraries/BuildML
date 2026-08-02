@@ -12,7 +12,7 @@ Phase 2:
   5. Multi-task learning — done (``buildml.multitask``).
   6. Meta-learning — done (``buildml.metalearning``).
   7. Federated learning — done (``buildml.federated``).
-  8. Bayesian / probabilistic — **this module**.
+  8. Bayesian / probabilistic — **this module** (R5.7 industry depth).
   9. Causal ML — see ``buildml.causal`` (assumption-declared path).
   Later: graph, evolutionary (classical HPO), symbolic (see ``buildml.symbolic``),
   CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
@@ -24,19 +24,22 @@ digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
 full COCO detection/segmentation suite.
 
 Honesty (this package):
-  - sklearn ``BayesianRidge`` / ``GaussianProcessRegressor`` /
+  - **native** backend: sklearn ``BayesianRidge`` / ``GaussianProcessRegressor`` /
     ``GaussianProcessClassifier`` / ``GaussianNB`` with predictive std /
-    proba and optional **split conformal** intervals/sets.
+    proba and optional **in-tree split conformal** intervals/sets.
+  - **mapie** backend (``buildml[probabilistic-industry]``): MAPIE conformal
+    regression/classification — split, CV+, jackknife+ when installed.
+  - **ngboost** backend (``buildml[probabilistic-industry]``): natural gradient
+    boosting with predictive distributions (NLL / CRPS).
   - Conformal calibration is carved from the Session **train** partition only;
     validation/test are never used for fit or conformal calibration.
   - Classical ``Session.calibration()`` (reliability / ECE for classical
     ``fit(...)`` classifiers) is unchanged and complementary.
   - **Not** a PyMC / Stan / NumPyro MCMC platform and **not** Bayesian deep nets.
 
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Split conformal is
-implemented in-tree (MAPIE-style absolute residual / probability scores) — no
-optional extra required for ``import buildml``. MAPIE was considered and
-skipped to keep core light for this Session-scoped path.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. In-tree split
+conformal requires no optional extra. MAPIE / NGBoost are behind
+``buildml[probabilistic-industry]``.
 
 Lazy imports — core never grows heavy probabilistic-programming stacks.
 """
@@ -49,6 +52,7 @@ __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
     "IntervalMethod",
+    "ProbabilisticBackend",
     "ProbabilisticConfig",
     "ProbabilisticEstimator",
     "ProbabilisticEvalResult",
@@ -59,9 +63,11 @@ __all__ = [
     "ProbabilisticTask",
     "evaluate_probabilistic",
     "fit_probabilistic",
+    "list_probabilistic_estimators",
     "load_probabilistic_bundle",
     "predict_interval",
     "predict_probabilistic",
+    "probabilistic_capability_matrix",
     "probabilistic_status",
     "probabilistic_status_for_session",
     "save_probabilistic_bundle",
@@ -70,6 +76,7 @@ __all__ = [
 
 def __getattr__(name: str) -> Any:
     if name in {
+        "ProbabilisticBackend",
         "ProbabilisticEstimator",
         "ProbabilisticTask",
         "IntervalMethod",
@@ -104,6 +111,13 @@ def __getattr__(name: str) -> Any:
         from buildml.probabilistic.predict import predict_interval
 
         return predict_interval
+    if name in {
+        "probabilistic_capability_matrix",
+        "list_probabilistic_estimators",
+    }:
+        from buildml.probabilistic import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",

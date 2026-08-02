@@ -19,6 +19,7 @@ __all__ = [
     "feature_matrix",
     "standardize_fit",
     "standardize_apply",
+    "query_group_sizes",
     "disclose_query_split",
     "ndcg_at_k_graded",
     "average_precision_at_k",
@@ -195,6 +196,25 @@ def standardize_apply(
     if X.size == 0:
         return X.copy()
     return (X - mean) / scale
+
+
+def query_group_sizes(
+    X: np.ndarray,
+    y: np.ndarray,
+    groups: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[int]]:
+    """Stable-sort rows by query group and return contiguous group sizes."""
+    if len(groups) == 0:
+        return X.copy(), y.copy(), groups.copy(), []
+    order = np.argsort(groups, kind="mergesort")
+    groups_sorted = groups[order]
+    _, counts = np.unique(groups_sorted, return_counts=True)
+    return (
+        np.asarray(X[order], dtype=float),
+        np.asarray(y[order], dtype=float),
+        groups_sorted,
+        [int(c) for c in counts.tolist()],
+    )
 
 
 def disclose_query_split(

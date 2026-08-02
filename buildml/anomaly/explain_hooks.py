@@ -14,6 +14,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     else:
         payload = dict(fit_result)
     return {
+        "backend": payload.get("backend"),
         "method": payload.get("method"),
         "mode": payload.get("mode"),
         "n_train_rows": payload.get("n_train_rows"),
@@ -76,6 +77,8 @@ def anomaly_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for anomaly / fraud detection."""
+    from buildml.anomaly.catalog import anomaly_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -83,6 +86,7 @@ def anomaly_status(
             "fit_anomaly",
             "score_anomalies",
             "evaluate_anomaly",
+            "tune_anomaly_threshold",
             "save_anomaly_bundle",
             "load_anomaly_bundle",
         }
@@ -93,7 +97,8 @@ def anomaly_status(
     if enabled:
         disclosures.extend(
             [
-                f"AnomalyPlan method={getattr(plan, 'method', None)}, "
+                f"AnomalyPlan backend={getattr(plan, 'backend', None)}, "
+                f"method={getattr(plan, 'method', None)}, "
                 f"mode={getattr(plan, 'mode', None)}, "
                 f"threshold={getattr(plan, 'threshold_', None)} "
                 f"({getattr(plan, 'threshold_policy', None)}), "
@@ -129,6 +134,7 @@ def anomaly_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_anomaly_plan": enabled,
+        "backend": None if plan is None else getattr(plan, "backend", None),
         "method": None if plan is None else getattr(plan, "method", None),
         "mode": None if plan is None else getattr(plan, "mode", None),
         "threshold": None if plan is None else getattr(plan, "threshold_", None),
@@ -137,6 +143,7 @@ def anomaly_status(
         "used_reduce_components": (
             None if plan is None else getattr(plan, "used_reduce_components", None)
         ),
+        "capability_matrix": anomaly_capability_matrix(),
         "has_fit_result": fit_result is not None,
         "has_eval_result": eval_result is not None,
         "eval": eval_payload,

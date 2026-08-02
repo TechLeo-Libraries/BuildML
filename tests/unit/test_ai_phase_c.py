@@ -66,7 +66,7 @@ def test_ai_execute_rag_generate_flow() -> None:
     session = (
         Session()
         .rag_ingest_corpus(docs)
-        .rag_embed_and_index()
+        .rag_embed_and_index(embedder="hashing")
         .ai_configure(provider="mock")
     )
     # Prefer echo grounded provider for deterministic citations in generate tool path.

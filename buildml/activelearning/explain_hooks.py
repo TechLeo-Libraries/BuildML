@@ -12,6 +12,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "strategy": payload.get("strategy"),
+        "backend": payload.get("backend"),
         "base_estimator": payload.get("base_estimator"),
         "n_train_rows": payload.get("n_train_rows"),
         "n_labeled_train": payload.get("n_labeled_train"),
@@ -79,6 +80,8 @@ def activelearning_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for active learning."""
+    from buildml.activelearning.catalog import activelearning_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -97,7 +100,8 @@ def activelearning_status(
     if enabled:
         disclosures.extend(
             [
-                f"ActiveLearningPlan strategy={getattr(plan, 'strategy', None)}, "
+                f"ActiveLearningPlan backend={getattr(plan, 'backend', None)}, "
+                f"strategy={getattr(plan, 'strategy', None)}, "
                 f"n_labeled_train={getattr(plan, 'n_labeled_train', None)}, "
                 f"n_unlabeled_pool={getattr(plan, 'n_unlabeled_pool', None)}, "
                 f"n_queries_used={getattr(plan, 'n_queries_used', None)}, "
@@ -142,6 +146,8 @@ def activelearning_status(
         "present": enabled or saw,
         "has_activelearning_plan": enabled,
         "strategy": None if plan is None else getattr(plan, "strategy", None),
+        "backend": None if plan is None else getattr(plan, "backend", None),
+        "capability_matrix": activelearning_capability_matrix(),
         "n_labeled_train": None if plan is None else getattr(plan, "n_labeled_train", None),
         "n_unlabeled_pool": (
             None if plan is None else getattr(plan, "n_unlabeled_pool", None)

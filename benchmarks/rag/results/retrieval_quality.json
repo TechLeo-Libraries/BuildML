@@ -1,0 +1,35 @@
+{
+  "benchmark": "rag_retrieval_quality",
+  "k": 3,
+  "passed": true,
+  "floors": {
+    "hashing_hybrid_recall_at_k": 0.4,
+    "hashing_hybrid_mrr": 0.3
+  },
+  "rows": [
+    {
+      "name": "hashing-dense",
+      "embedder_id": "buildml.hashing_embed.v1",
+      "retrieve_mode": "dense",
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "hit_rate_at_k": 1.0,
+      "n_chunks": 5
+    },
+    {
+      "name": "hashing-hybrid",
+      "embedder_id": "buildml.hashing_embed.v1",
+      "retrieve_mode": "hybrid",
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0,
+      "hit_rate_at_k": 1.0,
+      "n_chunks": 5
+    },
+    {
+      "name": "st-skipped",
+      "reason": "buildml[rag] not installed"
+    }
+  ]
+}

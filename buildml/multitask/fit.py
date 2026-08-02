@@ -1,26 +1,19 @@
-"""Train-only multi-task / multi-output fit (sklearn MultiOutput / Chain)."""
+"""Train-only multi-task fit with sklearn / industry / torch backends."""
 
 from __future__ import annotations
 
 from typing import Any, Sequence
 
-from sklearn.ensemble import (
-    HistGradientBoostingClassifier,
-    HistGradientBoostingRegressor,
-)
-from sklearn.linear_model import LogisticRegression, Ridge
-from sklearn.multioutput import (
-    ClassifierChain,
-    MultiOutputClassifier,
-    MultiOutputRegressor,
-    RegressorChain,
-)
-
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
+from buildml.multitask.adapters.gbdt_multioutput import build_gbdt_estimator
+from buildml.multitask.adapters.sklearn import build_sklearn_estimator
+from buildml.multitask.adapters.torch_multihead import build_torch_estimator
+from buildml.multitask.catalog import resolve_backend_method
 from buildml.multitask.features import (
     encode_multitask_y,
+    infer_task_kinds,
     infer_task_type,
     matrix_from_frame,
     resolve_multitask_columns,
@@ -28,32 +21,19 @@ from buildml.multitask.features import (
 )
 from buildml.multitask.results import MultiTaskFitResult, MultiTaskPlan
 from buildml.multitask.types import (
+    MultiTaskBackend,
     MultiTaskBaseEstimator,
     MultiTaskConfig,
     MultiTaskMethod,
     MultiTaskTask,
 )
 
-_CLS_BASES = {
-    "logistic_regression": lambda rs: LogisticRegression(
-        max_iter=500, random_state=rs
-    ),
-    "hist_gradient_boosting": lambda rs: HistGradientBoostingClassifier(
-        random_state=rs
-    ),
-}
-_REG_BASES = {
-    "ridge": lambda rs: Ridge(random_state=rs),
-    "hist_gradient_boosting_regressor": lambda rs: HistGradientBoostingRegressor(
-        random_state=rs
-    ),
-}
-
 
 def fit_multitask(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: MultiTaskBackend | None = None,
     method: MultiTaskMethod = "multi_output",
     task: MultiTaskTask = "auto",
     targets: Sequence[str] | None = None,
@@ -64,31 +44,46 @@ def fit_multitask(
     prefer_reduce_components: bool = True,
     prediction_prefix: str = "multitask_pred",
     reduce_plan: Any | None = None,
+    epochs: int = 60,
+    batch_size: int = 64,
+    learning_rate: float = 1e-3,
+    device: str = "cpu",
 ) -> tuple[MultiTaskPlan, MultiTaskFitResult]:
     """Fit a multi-target estimator on the train partition only.
 
+    Backends
+    --------
+    sklearn (default when no extras):
+        MultiOutput / Chain façades on shared features.
+    industry (``buildml[multitask-industry]``):
+        XGBoost/LightGBM/CatBoost multi-target when installed.
+    torch (``buildml[torch]``):
+        Shared-trunk multi-head joint training; supports mixed cls+reg targets.
+
     Honesty
     -------
-    Uses sklearn ``MultiOutput*`` / ``*Chain`` façades on shared features with
-    multiple targets. Same-type tasks only (all classification or all
-    regression). Mixed classification+regression is refused. Classical
-    ``Session.fit`` remains single-target. This is not a deep multi-head MTL
-    research platform.
+    Train-only fit; validation/test are evaluation-only. Classical
+    ``Session.fit`` remains single-target. Not a deep MTL research platform.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
-    method_key = str(method).lower().replace("-", "_")
-    if method_key not in {"multi_output", "classifier_chain", "regressor_chain"}:
-        raise ValidationError(
-            f"Unknown multi-task method={method!r}. Supported: "
-            "'multi_output', 'classifier_chain', 'regressor_chain'."
-        )
+    resolved_backend, resolved_method = resolve_backend_method(
+        backend=backend, method=str(method)
+    )
+    method_key = str(resolved_method).lower().replace("-", "_")
 
     target_cols, disclosures = resolve_target_columns(dataset, targets)
     train = frame_for_partition(dataset, split_plan, "train")
-    resolved_task, task_notes = infer_task_type(train, target_cols, task)
+    allow_mixed = resolved_backend == "torch" and method_key == "shared_trunk_multihead"
+    resolved_task, task_notes = infer_task_type(
+        train,
+        target_cols,
+        task,
+        allow_mixed=allow_mixed,
+    )
     disclosures.extend(task_notes)
+    task_kinds = infer_task_kinds(train, target_cols)
 
     if method_key == "classifier_chain" and resolved_task != "classification":
         raise ValidationError(
@@ -99,6 +94,16 @@ def fit_multitask(
         raise ValidationError(
             "method='regressor_chain' requires regression targets "
             f"(resolved task={resolved_task!r})."
+        )
+    if resolved_backend == "industry" and resolved_task == "mixed":
+        raise ValidationError(
+            "Industry GBDT multi-task supports same-type targets only."
+        )
+    if resolved_backend == "sklearn" and resolved_task == "mixed":
+        raise ValidationError(
+            "Sklearn multi-task supports same-type targets only. "
+            "Use backend='torch', method='shared_trunk_multihead' for mixed "
+            "classification+regression."
         )
 
     cols, used_reduce, col_notes = resolve_multitask_columns(
@@ -113,7 +118,10 @@ def fit_multitask(
 
     x = matrix_from_frame(train, cols)
     y, encoders, classes = encode_multitask_y(
-        train, target_cols, task=resolved_task
+        train,
+        target_cols,
+        task=resolved_task,
+        task_kinds=task_kinds,
     )
 
     chain_order = _resolve_chain_order(target_cols, order) if order is not None else None
@@ -125,35 +133,59 @@ def fit_multitask(
         )
 
     estimator = _build_estimator(
+        resolved_backend,
         method_key,
         resolved_task,
         str(base_estimator),
         random_state,
         order_indices=chain_order,
+        target_columns=target_cols,
+        task_kinds=task_kinds,
+        classes_per_task=classes,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        device=device,
     )
     try:
         estimator.fit(x, y)
     except Exception as exc:  # noqa: BLE001
         raise ValidationError(
-            f"Multi-task fit failed for method={method_key!r}, "
-            f"base_estimator={base_estimator!r}: {exc}"
+            f"Multi-task fit failed for backend={resolved_backend!r}, "
+            f"method={method_key!r}, base_estimator={base_estimator!r}: {exc}"
         ) from exc
 
+    backend_notes = {
+        "sklearn": (
+            "Sklearn MultiOutput / Chain on shared features (train partition only)."
+        ),
+        "industry": (
+            "Industry GBDT multi-target estimators on shared features "
+            "(train partition only)."
+        ),
+        "torch": (
+            "Torch shared-trunk multi-head joint training on shared features "
+            "(train partition only)."
+        ),
+    }
     disclosures.extend(
         [
-            "Multi-task learning fits sklearn MultiOutput / Chain estimators on "
-            "shared features with multiple targets (train partition only).",
+            backend_notes[resolved_backend],
             "Validation/test partitions are never used for fitting.",
-            "Same-type tasks only; mixed classification+regression is refused.",
+            (
+                "Mixed classification+regression supported only on torch "
+                "shared_trunk_multihead; other backends require same-type targets."
+            ),
             "Not a deep multi-head MTL research platform or multi-label binary "
             "relevance zoo.",
-            f"n_tasks={len(target_cols)}, method={method_key}, "
-            f"task={resolved_task}, n_train_rows={len(train)}.",
+            f"n_tasks={len(target_cols)}, backend={resolved_backend}, "
+            f"method={method_key}, task={resolved_task}, n_train_rows={len(train)}.",
         ]
     )
 
     config = MultiTaskConfig(
         method=method_key,  # type: ignore[arg-type]
+        backend=resolved_backend,
         task=resolved_task,  # type: ignore[arg-type]
         targets=tuple(target_cols),
         columns=tuple(cols),
@@ -162,14 +194,20 @@ def fit_multitask(
         order=None if order is None else tuple(order),
         prefer_reduce_components=prefer_reduce_components,
         prediction_prefix=prediction_prefix,
+        epochs=int(epochs),
+        batch_size=int(batch_size),
+        learning_rate=float(learning_rate),
+        device=str(device),
     )
     plan = MultiTaskPlan(
         method=method_key,
+        backend=resolved_backend,
         task=resolved_task,
         columns=tuple(cols),
         target_columns=tuple(target_cols),
         n_train_rows=int(len(train)),
         classes_per_task_=classes,
+        task_kinds_=task_kinds,
         estimator_=estimator,
         label_encoders_=encoders,
         disclosures=tuple(disclosures),
@@ -179,6 +217,7 @@ def fit_multitask(
     )
     result = MultiTaskFitResult(
         method=method_key,
+        backend=resolved_backend,
         task=resolved_task,
         n_train_rows=int(len(train)),
         columns=tuple(cols),
@@ -205,43 +244,44 @@ def _resolve_chain_order(
 
 
 def _build_estimator(
+    backend: str,
     method: str,
     task: str,
     base_estimator: str,
     random_state: int | None,
     *,
     order_indices: list[int] | None,
+    target_columns: list[str],
+    task_kinds: dict[str, str],
+    classes_per_task: dict[str, tuple[Any, ...]],
+    epochs: int,
+    batch_size: int,
+    learning_rate: float,
+    device: str,
 ) -> Any:
-    base_key = str(base_estimator).lower().replace("-", "_")
-    if task == "classification":
-        if base_key not in _CLS_BASES:
-            # Allow regression bases to fail clearly
-            if base_key in _REG_BASES:
-                raise ValidationError(
-                    f"base_estimator={base_estimator!r} is a regressor; "
-                    "classification multi-task needs "
-                    f"{sorted(_CLS_BASES)}."
-                )
-            raise ValidationError(
-                f"Unknown classification base_estimator={base_estimator!r}. "
-                f"Supported: {sorted(_CLS_BASES)}"
-            )
-        base = _CLS_BASES[base_key](random_state)
-        if method == "multi_output":
-            return MultiOutputClassifier(base)
-        return ClassifierChain(base, order=order_indices, random_state=random_state)
-
-    if base_key not in _REG_BASES:
-        if base_key in _CLS_BASES:
-            raise ValidationError(
-                f"base_estimator={base_estimator!r} is a classifier; "
-                f"regression multi-task needs {sorted(_REG_BASES)}."
-            )
-        raise ValidationError(
-            f"Unknown regression base_estimator={base_estimator!r}. "
-            f"Supported: {sorted(_REG_BASES)}"
+    if backend == "sklearn":
+        return build_sklearn_estimator(
+            method=method,
+            task=task,
+            base_estimator=base_estimator,
+            random_state=random_state,
+            order_indices=order_indices,
         )
-    base = _REG_BASES[base_key](random_state)
-    if method == "multi_output":
-        return MultiOutputRegressor(base)
-    return RegressorChain(base, order=order_indices, random_state=random_state)
+    if backend == "industry":
+        return build_gbdt_estimator(
+            method=method,  # type: ignore[arg-type]
+            task=task,
+            random_state=random_state,
+        )
+    if backend == "torch":
+        return build_torch_estimator(
+            target_columns=target_columns,
+            task_kinds=task_kinds,
+            classes_per_task=classes_per_task,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            random_state=random_state,
+            device=device,
+        )
+    raise ValidationError(f"Unknown multi-task backend={backend!r}.")

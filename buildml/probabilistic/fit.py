@@ -5,19 +5,23 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, WhiteKernel
-from sklearn.linear_model import BayesianRidge
-from sklearn.naive_bayes import GaussianNB
 
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
-from buildml.probabilistic.conformal import (
-    absolute_residual_scores,
-    classification_nonconformity,
-    conformal_quantile,
+from buildml.probabilistic.adapters.mapie import (
+    fit_mapie,
+    mapie_supports_predict_proba,
+    mapie_supports_return_std,
 )
+from buildml.probabilistic.adapters.native import (
+    build_native_estimator,
+    fit_native_conformal,
+    native_supports_predict_proba,
+    native_supports_return_std,
+)
+from buildml.probabilistic.adapters.ngboost import build_ngboost_estimator
+from buildml.probabilistic.catalog import resolve_backend_estimator
 from buildml.probabilistic.features import (
     encode_classification_targets,
     matrix_from_frame,
@@ -29,20 +33,22 @@ from buildml.probabilistic.features import (
 from buildml.probabilistic.results import ProbabilisticFitResult, ProbabilisticPlan
 from buildml.probabilistic.types import (
     IntervalMethod,
+    ProbabilisticBackend,
     ProbabilisticConfig,
     ProbabilisticEstimator,
     ProbabilisticTask,
 )
 
-_REGRESSORS = {"bayesian_ridge", "gaussian_process_regressor"}
-_CLASSIFIERS = {"gaussian_process_classifier", "gaussian_nb"}
 _RETURN_STD = {"bayesian_ridge", "gaussian_process_regressor"}
+_CLASSIFIERS = {"gaussian_process_classifier", "gaussian_nb"}
+_MAPIE_METHODS = {"split", "cv_plus", "jackknife_plus"}
 
 
 def fit_probabilistic(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: ProbabilisticBackend | None = None,
     estimator: ProbabilisticEstimator = "bayesian_ridge",
     task: ProbabilisticTask | None = None,
     columns: list[str] | None = None,
@@ -53,16 +59,24 @@ def fit_probabilistic(
     interval_method: IntervalMethod | None = None,
     prefer_reduce_components: bool = True,
     n_restarts_optimizer: int = 0,
+    n_estimators: int = 100,
+    learning_rate: float = 0.05,
     reduce_plan: Any | None = None,
 ) -> tuple[ProbabilisticPlan, ProbabilisticFitResult]:
     """Fit a probabilistic / Bayesian-leaning estimator on Session train.
 
-    Honesty
-    -------
-    Uses sklearn ``BayesianRidge``, ``GaussianProcess*``, or ``GaussianNB``.
-    Optional split conformal calibrates intervals/sets on a **train-only**
-    carve — never Session validation/test. This is uncertainty quantification
-    for tabular estimators, not a PyMC/Stan MCMC platform or Bayesian deep net.
+    Backends
+    --------
+    native (default):
+        sklearn BayesianRidge / GaussianProcess* / GaussianNB + in-tree split
+        conformal carved from train only.
+    mapie (``buildml[probabilistic-industry]``):
+        MAPIE conformal regression/classification — split, CV+, jackknife+.
+    ngboost (``buildml[probabilistic-industry]``):
+        NGBoost predictive distributions with optional in-tree conformal overlay.
+
+    Honesty: uncertainty quantification for tabular estimators — not PyMC/Stan
+    MCMC or Bayesian deep nets. Classical ``Session.calibration()`` unchanged.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -71,9 +85,14 @@ def fit_probabilistic(
         raise ValidationError(f"alpha must be in (0, 1); got {alpha}.")
 
     est_key = str(estimator).lower().replace("-", "_")
-    resolved_task = _resolve_task(est_key, task)
+    resolved_backend, resolved_estimator, resolved_task = resolve_backend_estimator(
+        backend=backend,
+        estimator=est_key,
+        task=task,
+    )
     resolved_interval = _resolve_interval_method(
-        est_key,
+        resolved_backend,
+        resolved_estimator,
         resolved_task,
         conformal=conformal,
         interval_method=interval_method,
@@ -97,7 +116,10 @@ def fit_probabilistic(
         "split_conformal",
         "both",
     }
-    # Discover class vocabulary early (labels only) for stratified carve.
+    use_mapie = resolved_backend == "mapie"
+    if use_mapie:
+        use_conformal = False  # MAPIE owns conformal calibration
+
     class_vocab: tuple[Any, ...] | None = None
     if resolved_task == "classification":
         train_y = train[target]
@@ -117,7 +139,7 @@ def fit_probabilistic(
 
     fit_indices: list[Any]
     calib_indices: list[Any]
-    if use_conformal:
+    if use_conformal or (use_mapie and resolved_estimator == "split"):
         stratify = None
         if resolved_task == "classification":
             stratify = train.loc[list(split_plan.train_indices), target].astype(str)
@@ -136,10 +158,11 @@ def fit_probabilistic(
     else:
         fit_indices = list(split_plan.train_indices)
         calib_indices = []
-        if conformal and resolved_task == "classification" and est_key not in _CLASSIFIERS:
-            warnings.append(
-                "conformal=True ignored for this estimator/task combination."
-            )
+        if conformal and resolved_backend == "native" and resolved_task == "classification":
+            if resolved_estimator not in _CLASSIFIERS:
+                warnings.append(
+                    "conformal=True ignored for this estimator/task combination."
+                )
 
     fit_frame = full.loc[fit_indices]
     x_fit = matrix_from_frame(fit_frame, cols)
@@ -155,86 +178,169 @@ def fit_probabilistic(
     else:
         y_fit = regression_targets(fit_frame[target])
 
-    estimator_obj = _build_estimator(
-        est_key,
-        random_state=random_state,
-        n_restarts_optimizer=n_restarts_optimizer,
-    )
-    try:
-        estimator_obj.fit(x_fit, y_fit)
-    except Exception as exc:  # noqa: BLE001
-        raise ValidationError(
-            f"Probabilistic fit failed for estimator={est_key!r}: {exc}"
-        ) from exc
-
+    mapie_method: str | None = None
+    supports_std = False
+    supports_proba = False
     conformal_q: float | None = None
-    if use_conformal and calib_indices:
-        calib_frame = full.loc[calib_indices]
-        x_cal = matrix_from_frame(calib_frame, cols)
-        if resolved_task == "regression":
-            y_cal = regression_targets(calib_frame[target])
-            pred_cal = np.asarray(estimator_obj.predict(x_cal), dtype=float)
-            scores = absolute_residual_scores(y_cal, pred_cal)
-            conformal_q = conformal_quantile(scores, alpha)
-            disclosures.append(
-                f"Regression split-conformal quantile q̂={conformal_q:.6g} "
-                f"at alpha={alpha} (target coverage≈{1 - alpha:.0%})."
-            )
-        else:
-            if not hasattr(estimator_obj, "predict_proba"):
-                raise ValidationError(
-                    "Classification conformal requires predict_proba."
+
+    if resolved_backend == "native":
+        estimator_obj = build_native_estimator(
+            resolved_estimator,
+            random_state=random_state,
+            n_restarts_optimizer=n_restarts_optimizer,
+        )
+        try:
+            estimator_obj.fit(x_fit, y_fit)
+        except Exception as exc:  # noqa: BLE001
+            raise ValidationError(
+                f"Probabilistic fit failed for estimator={resolved_estimator!r}: {exc}"
+            ) from exc
+
+        if use_conformal and calib_indices:
+            calib_frame = full.loc[calib_indices]
+            x_cal = matrix_from_frame(calib_frame, cols)
+            if resolved_task == "regression":
+                y_cal = regression_targets(calib_frame[target])
+            else:
+                y_cal, _, _ = encode_classification_targets(
+                    calib_frame[target],
+                    classes=classes_tuple,
                 )
-            y_cal, _, _ = encode_classification_targets(
-                calib_frame[target],
+            conformal_q = fit_native_conformal(
+                estimator_obj,
+                task=resolved_task,
+                x_cal=x_cal,
+                y_cal=y_cal,
+                alpha=alpha,
                 classes=classes_tuple,
             )
-            proba = np.asarray(estimator_obj.predict_proba(x_cal), dtype=float)
-            scores = classification_nonconformity(proba, y_cal)
-            conformal_q = conformal_quantile(scores, alpha)
             disclosures.append(
-                f"Classification split-conformal nonconformity quantile "
-                f"q̂={conformal_q:.6g} at alpha={alpha}."
+                f"Native split-conformal quantile q̂={conformal_q:.6g} at alpha={alpha}."
             )
 
-    supports_std = est_key in _RETURN_STD
-    supports_proba = hasattr(estimator_obj, "predict_proba")
+        supports_std = native_supports_return_std(resolved_estimator)
+        supports_proba = native_supports_predict_proba(estimator_obj)
+        disclosures.extend(_native_disclosures(resolved_estimator, supports_std, supports_proba))
+
+    elif resolved_backend == "mapie":
+        mapie_method = resolved_estimator
+        x_cal = y_cal_arr = None
+        if resolved_estimator == "split" and calib_indices:
+            calib_frame = full.loc[calib_indices]
+            x_cal = matrix_from_frame(calib_frame, cols)
+            if resolved_task == "regression":
+                y_cal_arr = regression_targets(calib_frame[target])
+            else:
+                y_cal_arr, _, _ = encode_classification_targets(
+                    calib_frame[target],
+                    classes=classes_tuple,
+                )
+        elif resolved_estimator == "split":
+            raise ValidationError(
+                "MAPIE split conformal requires a train-only calibration carve."
+            )
+
+        estimator_obj, mapie_disclosures = fit_mapie(
+            method=resolved_estimator,  # type: ignore[arg-type]
+            task=resolved_task,
+            x_fit=x_fit,
+            y_fit=y_fit,
+            x_cal=x_cal,
+            y_cal=y_cal_arr,
+            random_state=random_state,
+            alpha=float(alpha),
+        )
+        disclosures.extend(mapie_disclosures)
+        supports_std = mapie_supports_return_std()
+        supports_proba = mapie_supports_predict_proba(estimator_obj)
+        resolved_interval = _mapie_interval_method(resolved_estimator)
+
+    elif resolved_backend == "ngboost":
+        estimator_obj = build_ngboost_estimator(
+            resolved_estimator,
+            random_state=random_state,
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
+        )
+        try:
+            estimator_obj.fit(x_fit, y_fit)
+        except Exception as exc:  # noqa: BLE001
+            raise ValidationError(
+                f"NGBoost fit failed for estimator={resolved_estimator!r}: {exc}"
+            ) from exc
+
+        if use_conformal and calib_indices:
+            calib_frame = full.loc[calib_indices]
+            x_cal = matrix_from_frame(calib_frame, cols)
+            if resolved_task == "regression":
+                y_cal = regression_targets(calib_frame[target])
+                from buildml.probabilistic.adapters.ngboost import ngboost_predict_std
+
+                mean, _ = ngboost_predict_std(estimator_obj, x_cal)
+                from buildml.probabilistic.conformal import (
+                    absolute_residual_scores,
+                    conformal_quantile,
+                )
+
+                scores = absolute_residual_scores(y_cal, mean)
+                conformal_q = conformal_quantile(scores, alpha)
+            else:
+                y_cal, _, _ = encode_classification_targets(
+                    calib_frame[target],
+                    classes=classes_tuple,
+                )
+                conformal_q = fit_native_conformal(
+                    estimator_obj,
+                    task=resolved_task,
+                    x_cal=x_cal,
+                    y_cal=y_cal,
+                    alpha=alpha,
+                    classes=classes_tuple,
+                )
+            disclosures.append(
+                f"NGBoost + in-tree conformal overlay q̂={conformal_q:.6g} at alpha={alpha}."
+            )
+
+        supports_std = resolved_task == "regression"
+        supports_proba = hasattr(estimator_obj, "predict_proba")
+        disclosures.extend(
+            [
+                "NGBoost backend: natural-gradient boosting predictive distributions.",
+                "Fit uses Session train only; validation/test are evaluation only.",
+                f"interval_method={resolved_interval}; alpha={alpha}.",
+            ]
+        )
+    else:
+        raise ValidationError(f"Unknown backend={resolved_backend!r}.")
+
     disclosures.extend(
         [
-            "Probabilistic path uses sklearn BayesianRidge / GaussianProcess* / "
-            "GaussianNB — not PyMC/Stan MCMC or Bayesian deep nets.",
             "Fit uses the Session train partition only "
             "(plus an optional train-only conformal carve).",
             "Validation/test are evaluation / interval scoring only.",
-            f"interval_method={resolved_interval}; alpha={alpha}.",
+            f"backend={resolved_backend}, interval_method={resolved_interval}, alpha={alpha}.",
         ]
     )
-    if supports_std:
-        disclosures.append(
-            "Estimator supports predict(..., return_std=True) for posterior "
-            "predictive std under the model’s Gaussian assumptions."
-        )
-    if supports_proba:
-        disclosures.append(
-            "Estimator supports predict_proba; evaluate reports NLL/Brier. "
-            "Classical Session.calibration() remains available for classical "
-            "fit(...) classifiers and is not overwritten by this path."
-        )
 
     config = ProbabilisticConfig(
-        estimator=est_key,  # type: ignore[arg-type]
+        backend=resolved_backend,
+        estimator=resolved_estimator,  # type: ignore[arg-type]
         task=resolved_task,
         columns=tuple(cols),
         random_state=random_state,
         alpha=float(alpha),
-        conformal=bool(conformal),
+        conformal=bool(conformal) if resolved_backend != "mapie" else True,
         conformal_calibration_fraction=float(conformal_calibration_fraction),
         interval_method=resolved_interval,
         prefer_reduce_components=prefer_reduce_components,
         n_restarts_optimizer=int(n_restarts_optimizer),
+        n_estimators=int(n_estimators),
+        learning_rate=float(learning_rate),
+        mapie_method=mapie_method,  # type: ignore[arg-type]
     )
     plan = ProbabilisticPlan(
-        estimator_name=est_key,
+        backend=resolved_backend,
+        estimator_name=resolved_estimator,
         task=resolved_task,
         columns=tuple(cols),
         target_column=target,
@@ -242,7 +348,7 @@ def fit_probabilistic(
         n_fit_rows=len(fit_indices),
         n_conformal_calib_rows=len(calib_indices),
         alpha=float(alpha),
-        conformal=bool(use_conformal),
+        conformal=bool(use_conformal or use_mapie),
         interval_method=resolved_interval,
         classes_=classes_tuple,
         estimator_=estimator_obj,
@@ -258,7 +364,8 @@ def fit_probabilistic(
         config=config.to_dict(),
     )
     result = ProbabilisticFitResult(
-        estimator_name=est_key,
+        backend=resolved_backend,
+        estimator_name=resolved_estimator,
         task=resolved_task,
         n_train_rows=n_train,
         n_fit_rows=len(fit_indices),
@@ -266,10 +373,11 @@ def fit_probabilistic(
         columns=tuple(cols),
         target_column=target,
         alpha=float(alpha),
-        conformal=bool(use_conformal),
+        conformal=bool(use_conformal or use_mapie),
         interval_method=resolved_interval,
         classes=classes_tuple,
         conformal_quantile=conformal_q,
+        mapie_method=mapie_method,
         used_reduce_components=used_reduce,
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
@@ -277,34 +385,58 @@ def fit_probabilistic(
     return plan, result
 
 
-def _resolve_task(estimator: str, task: ProbabilisticTask | None) -> ProbabilisticTask:
-    if estimator in _CLASSIFIERS:
-        if task == "regression":
-            raise ValidationError(
-                f"Estimator {estimator!r} is a classifier; task cannot be "
-                "'regression'."
-            )
-        return "classification"
-    if estimator in _REGRESSORS:
-        if task == "classification":
-            raise ValidationError(
-                f"Estimator {estimator!r} is a regressor; task cannot be "
-                "'classification'."
-            )
-        return "regression"
-    raise ValidationError(
-        f"Unknown probabilistic estimator={estimator!r}. "
-        f"Supported: {sorted(_CLASSIFIERS | _REGRESSORS)}"
-    )
+def _native_disclosures(
+    estimator: str,
+    supports_std: bool,
+    supports_proba: bool,
+) -> list[str]:
+    out = [
+        "Native backend: sklearn BayesianRidge / GaussianProcess* / GaussianNB "
+        "+ optional in-tree split conformal — not PyMC/Stan MCMC.",
+    ]
+    if supports_std:
+        out.append(
+            "Estimator supports predict(..., return_std=True) for posterior "
+            "predictive std under the model's Gaussian assumptions."
+        )
+    if supports_proba:
+        out.append(
+            "Estimator supports predict_proba; evaluate reports NLL/Brier. "
+            "Classical Session.calibration() remains available for classical "
+            "fit(...) classifiers and is not overwritten by this path."
+        )
+    return out
+
+
+def _mapie_interval_method(method: str) -> IntervalMethod:
+    if method == "split":
+        return "mapie"
+    if method == "cv_plus":
+        return "mapie_cv_plus"
+    if method == "jackknife_plus":
+        return "mapie_jackknife_plus"
+    return "mapie"
 
 
 def _resolve_interval_method(
+    backend: str,
     estimator: str,
     task: ProbabilisticTask,
     *,
     conformal: bool,
     interval_method: IntervalMethod | None,
 ) -> IntervalMethod:
+    if backend == "mapie":
+        if interval_method is not None and interval_method not in {
+            "mapie",
+            "mapie_cv_plus",
+            "mapie_jackknife_plus",
+            "split_conformal",
+            "none",
+        }:
+            pass  # fall through to mapie default
+        return _mapie_interval_method(estimator)
+
     if interval_method is not None:
         method = interval_method
     elif task == "regression":
@@ -328,35 +460,4 @@ def _resolve_interval_method(
         raise ValidationError(
             "interval_method='both' requires an estimator with return_std."
         )
-    if method in {"split_conformal", "both"} and not conformal and interval_method is not None:
-        # Explicit method requesting conformal without conformal=True — enable.
-        pass
     return method
-
-
-def _build_estimator(
-    name: str,
-    *,
-    random_state: int | None,
-    n_restarts_optimizer: int,
-) -> Any:
-    if name == "bayesian_ridge":
-        return BayesianRidge()
-    if name == "gaussian_process_regressor":
-        kernel = RBF(length_scale=1.0) + WhiteKernel(noise_level=1.0)
-        return GaussianProcessRegressor(
-            kernel=kernel,
-            random_state=random_state,
-            n_restarts_optimizer=int(n_restarts_optimizer),
-            normalize_y=True,
-        )
-    if name == "gaussian_process_classifier":
-        kernel = RBF(length_scale=1.0)
-        return GaussianProcessClassifier(
-            kernel=kernel,
-            random_state=random_state,
-            n_restarts_optimizer=int(n_restarts_optimizer),
-        )
-    if name == "gaussian_nb":
-        return GaussianNB()
-    raise ValidationError(f"Unsupported probabilistic estimator '{name}'")

@@ -7,6 +7,9 @@ from typing import Any, Sequence
 import numpy as np
 import pandas as pd
 
+from buildml.cbr.adapters.industry_ann import add_vectors_to_ann_index
+from buildml.cbr.adapters.text_embed import embed_text_cases
+from buildml.cbr.adapters.torch_metric import encode_with_torch
 from buildml.cbr.cases import Case, CaseBase, encode_categoricals
 from buildml.cbr.features import (
     matrix_from_frame,
@@ -161,6 +164,13 @@ def retain_cbr(
     else:
         cat_all = np.zeros((x_all.shape[0], 0), dtype=int)
 
+    search_all, ann_index, ann_library = _extend_search_artifacts(
+        plan,
+        labeled_frame=labeled_frame.loc[[c.row_index for c in new_cases]],
+        new_numeric=np.asarray(new_x, dtype=float),
+        start_id=mem.n_cases,
+    )
+
     new_base = CaseBase(
         cases=tuple([*mem.cases, *new_cases]),
         numeric_matrix=x_all,
@@ -172,17 +182,25 @@ def retain_cbr(
         numeric_scale_=mem.numeric_scale_,
         numeric_ranges_=mem.numeric_ranges_,
         cat_vocabularies_=mem.cat_vocabularies_,
+        search_matrix_=search_all,
+        ann_index_=ann_index,
+        ann_library_=ann_library,
+        text_embedder_id_=mem.text_embedder_id_,
+        torch_encoder_=mem.torch_encoder_,
         disclosures=tuple([*mem.disclosures, *disclosures]),
         n_retained=mem.n_retained + len(new_cases),
     )
     new_plan = CbrPlan(
         task=plan.task,
+        backend=plan.backend,
         metric=plan.metric,
         reuse=plan.reuse,
         adapt=plan.adapt,
         k=plan.k,
         columns=plan.columns,
         categorical_columns=plan.categorical_columns,
+        text_columns=plan.text_columns,
+        text_model_name=plan.text_model_name,
         target_column=plan.target_column,
         n_train_rows=plan.n_train_rows,
         case_base=new_base,
@@ -203,6 +221,46 @@ def retain_cbr(
         warnings=(),
     )
     return new_plan, result
+
+
+def _extend_search_artifacts(
+    plan: CbrPlan,
+    *,
+    labeled_frame: pd.DataFrame,
+    new_numeric: np.ndarray,
+    start_id: int,
+) -> tuple[np.ndarray, Any, str | None]:
+    mem = plan.case_base
+    base_search = mem.search_matrix_
+    if base_search is None:
+        base_search = mem.numeric_matrix
+    backend = str(plan.backend)
+    if backend == "embedding" and plan.text_columns:
+        new_search, _ = embed_text_cases(
+            labeled_frame,
+            plan.text_columns,
+            model_name=plan.text_model_name,
+            numeric_matrix=new_numeric if new_numeric.shape[1] else None,
+        )
+    elif backend == "torch" and mem.torch_encoder_ is not None:
+        new_search = encode_with_torch(
+            mem.torch_encoder_,
+            new_numeric,
+            device=str(plan.config.get("device", "cpu")),
+        )
+    else:
+        new_search = np.asarray(new_numeric, dtype=float)
+    search_all = np.vstack([base_search, new_search])
+    ann_index = mem.ann_index_
+    ann_library = mem.ann_library_
+    if ann_index is not None and ann_library:
+        ann_index = add_vectors_to_ann_index(
+            ann_index,
+            ann_library,
+            new_search,
+            start_id=start_id,
+        )
+    return search_all, ann_index, ann_library
 
 
 def _partition_label_index_set(

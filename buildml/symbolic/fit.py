@@ -12,6 +12,14 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.symbolic.adapters.imodels_rules import induce_imodels_rules
+from buildml.symbolic.adapters.skope_rules import induce_skope_rules
+from buildml.symbolic.adapters.torch_neuro import build_torch_neuro_estimator
+from buildml.symbolic.adapters.z3_verify import verify_rule_constraints
+from buildml.symbolic.catalog import (
+    resolve_neuro_symbolic_backend,
+    resolve_symbolic_backend_method,
+)
 from buildml.symbolic.features import (
     classification_accuracy,
     encode_classification_targets,
@@ -38,7 +46,10 @@ from buildml.symbolic.rules import (
 )
 from buildml.symbolic.types import (
     BaseEstimatorName,
+    IndustrySymbolicMethod,
+    NeuroSymbolicBackend,
     NeuroSymbolicMode,
+    SymbolicBackend,
     SymbolicSource,
     SymbolicTask,
 )
@@ -48,7 +59,9 @@ def fit_symbolic(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: SymbolicBackend | None = None,
     source: SymbolicSource = "decision_tree",
+    method: IndustrySymbolicMethod | None = None,
     task: SymbolicTask | None = None,
     rules: Sequence[Mapping[str, Any] | Rule] | None = None,
     columns: list[str] | None = None,
@@ -59,29 +72,32 @@ def fit_symbolic(
     default_consequent: Any = None,
     prefer_reduce_components: bool = True,
     reduce_plan: Any | None = None,
+    verify_constraints: bool = False,
 ) -> tuple[SymbolicPlan, SymbolicFitResult]:
     """Compile or induce a symbolic rule knowledge base on Session train.
 
+    Backends
+    --------
+    sklearn (default fallback):
+        ``declared``, ``decision_tree``, ``decision_list`` — core induction.
+    industry (``buildml[symbolic-industry]``):
+        ``skope_rules``, ``rulefit``, ``boosted_rules`` — interpretable models
+        exported as if-then rules when installed.
+
     Honesty
     -------
-    Structured if-then rules over tabular columns. Sources:
-
-    - ``declared`` — expert / caller rules (not learned)
-    - ``decision_tree`` — sklearn DecisionTree path export (train-induced)
-    - ``decision_list`` — sequential covering lite (train-induced)
-
-    Not an AGI reasoner, Prolog engine, or Z3 SMT solver. Validation/test are
-    never used for induction or compile-time statistics beyond disclosures.
+    Structured if-then rules over tabular columns. Not an AGI reasoner,
+    Prolog engine, or full Z3 SMT product. Optional Z3 lite verification when
+    ``verify_constraints=True`` and z3-solver is installed.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
-    source_key = str(source).lower().replace("-", "_")
-    if source_key not in {"declared", "decision_tree", "decision_list"}:
-        raise ValidationError(
-            f"Unknown symbolic source {source!r}; expected declared, "
-            "decision_tree, or decision_list."
-        )
+    resolved_backend, source_key, resolved_method = resolve_symbolic_backend_method(
+        backend=backend,
+        source=source,
+        method=method,
+    )
 
     target = dataset.require_target()
     train = train_partition_frame(dataset, split_plan)
@@ -126,6 +142,58 @@ def fit_symbolic(
             "Declared rules are expert/caller-supplied; they were not induced "
             "from Session train."
         )
+    elif resolved_backend == "industry":
+        if resolved_task == "classification":
+            assert y_codes is not None and classes is not None
+            if resolved_method == "skope_rules":
+                kb, tree_est = induce_skope_rules(
+                    train,
+                    cols,
+                    y_codes,
+                    task="classification",
+                    max_rules=max_rules,
+                    random_state=random_state,
+                    class_names=classes,
+                )
+            else:
+                kb, tree_est = induce_imodels_rules(
+                    train,
+                    cols,
+                    y_codes,
+                    task="classification",
+                    method=resolved_method,
+                    max_rules=max_rules,
+                    random_state=random_state,
+                    class_names=classes,
+                    max_depth=max_depth,
+                )
+        else:
+            if resolved_method == "skope_rules":
+                raise ValidationError(
+                    "SkopeRules is classification-only; use method='rulefit' "
+                    "for regression."
+                )
+            kb, tree_est = induce_imodels_rules(
+                train,
+                cols,
+                y_num,
+                task="regression",
+                method="rulefit",
+                max_rules=max_rules,
+                random_state=random_state,
+                max_depth=max_depth,
+            )
+            resolved_method = "rulefit"
+        if default_consequent is not None:
+            kb = RuleKnowledgeBase(
+                rules=kb.rules,
+                default_consequent=default_consequent,
+                columns_used=kb.columns_used,
+                disclosures=kb.disclosures,
+                provenance=kb.provenance,
+            )
+        disclosures.extend(kb.disclosures)
+        source_key = resolved_method
     elif source_key == "decision_tree":
         if resolved_task == "classification":
             assert y_codes is not None
@@ -187,9 +255,17 @@ def fit_symbolic(
             )
         disclosures.extend(kb.disclosures)
 
+    if verify_constraints:
+        verification = verify_rule_constraints(kb, cols)
+        disclosures.extend(verification.disclosures)
+        warnings.extend(verification.warnings)
+
     disclosures.append(
         "Symbolic fit uses Session train only. Holdout is for "
         "evaluate_symbolic / predict_symbolic."
+    )
+    disclosures.append(
+        f"Symbolic backend={resolved_backend}, source/method={source_key}."
     )
     disclosures.append(
         "Honesty: structured tabular rules — not Prolog/Z3/AGI symbolic AI."
@@ -214,7 +290,9 @@ def fit_symbolic(
             warnings.append("Could not compute train regression R2 for fit summary.")
 
     config = {
+        "backend": resolved_backend,
         "source": source_key,
+        "method": None if resolved_backend == "sklearn" else resolved_method,
         "task": resolved_task,
         "columns": cols,
         "random_state": random_state,
@@ -223,9 +301,12 @@ def fit_symbolic(
         "max_rules": max_rules,
         "default_consequent": default_consequent,
         "prefer_reduce_components": prefer_reduce_components,
+        "verify_constraints": verify_constraints,
     }
     plan = SymbolicPlan(
         source=source_key,
+        backend=resolved_backend,
+        method=None if resolved_backend == "sklearn" else resolved_method,
         task=resolved_task,
         columns=tuple(cols),
         target_column=target,
@@ -241,6 +322,8 @@ def fit_symbolic(
     )
     result = SymbolicFitResult(
         source=source_key,
+        backend=resolved_backend,
+        method=None if resolved_backend == "sklearn" else resolved_method,
         task=resolved_task,
         n_train_rows=n_train,
         n_rules=len(kb.rules),
@@ -259,8 +342,10 @@ def fit_neuro_symbolic(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: NeuroSymbolicBackend | None = None,
     mode: NeuroSymbolicMode = "constraint_overlay",
     base_estimator: BaseEstimatorName = "logistic_regression",
+    torch_method: str | None = None,
     task: SymbolicTask | None = None,
     rules: Sequence[Mapping[str, Any] | Rule] | None = None,
     rule_source: SymbolicSource = "decision_tree",
@@ -272,14 +357,17 @@ def fit_neuro_symbolic(
     max_rules: int = 24,
     prefer_reduce_components: bool = True,
     reduce_plan: Any | None = None,
+    torch_epochs: int = 60,
+    device: str = "cpu",
 ) -> tuple[NeuroSymbolicPlan, NeuroSymbolicFitResult]:
-    """Fit a sklearn base model jointly with a symbolic rule component.
+    """Fit a base model jointly with a symbolic rule component.
 
-    Modes
-    -----
-    - ``constraint_overlay`` — train base model; at predict apply hard/soft rules
-    - ``rules_as_features`` — fire rules as binary features; train on ``[X|R]``
-    - ``constraint_repair`` — train base model; repair hard-constraint violations
+    Backends
+    --------
+    sklearn (default fallback):
+        Logistic/Ridge/RF/DT base + symbolic overlay / features / repair.
+    torch (``buildml[torch]``):
+        Lite concept-bottleneck or neural-additive base with the same modes.
 
     Rules may be expert-declared or train-induced (``rule_source``). Induction
     and base-model fitting use Session **train** only.
@@ -299,6 +387,12 @@ def fit_neuro_symbolic(
         )
     if not 0.0 <= float(soft_strength) <= 1.0:
         raise ValidationError("soft_strength must be in [0, 1].")
+
+    resolved_neuro_backend, resolved_torch_method = resolve_neuro_symbolic_backend(
+        backend=backend,
+        base_estimator=str(base_estimator),
+        torch_method=torch_method,
+    )
 
     target = dataset.require_target()
     train = train_partition_frame(dataset, split_plan)
@@ -419,7 +513,13 @@ def fit_neuro_symbolic(
         )
 
     estimator = _build_base_estimator(
-        base_estimator, task=resolved_task, random_state=random_state
+        base_estimator,
+        task=resolved_task,
+        random_state=random_state,
+        backend=resolved_neuro_backend,
+        torch_method=resolved_torch_method,
+        torch_epochs=torch_epochs,
+        device=device,
     )
     estimator.fit(x, y_fit)
 
@@ -430,17 +530,28 @@ def fit_neuro_symbolic(
         train_score = None
 
     disclosures.append(
+        f"Neuro-symbolic backend={resolved_neuro_backend}, "
+        f"base={base_estimator if resolved_neuro_backend == 'sklearn' else resolved_torch_method}."
+    )
+    disclosures.append(
         "Neuro-symbolic fit uses Session train only for induction and base "
         "estimator fitting. Holdout is for evaluate_neuro_symbolic / predict."
     )
     disclosures.append(
-        "Honesty: sklearn + tabular rule hybrid — not a deep neuro-symbolic "
-        "research platform, Prolog, or Z3."
+        "Honesty: tabular rule hybrid — not a deep neuro-symbolic research "
+        "platform, Prolog, or full Z3 product."
     )
 
+    base_name = (
+        str(base_estimator)
+        if resolved_neuro_backend == "sklearn"
+        else resolved_torch_method
+    )
     config = {
+        "backend": resolved_neuro_backend,
         "mode": mode_key,
-        "base_estimator": base_estimator,
+        "base_estimator": base_name,
+        "torch_method": resolved_torch_method if resolved_neuro_backend == "torch" else None,
         "task": resolved_task,
         "columns": cols,
         "random_state": random_state,
@@ -450,10 +561,14 @@ def fit_neuro_symbolic(
         "min_samples_leaf": min_samples_leaf,
         "max_rules": max_rules,
         "prefer_reduce_components": prefer_reduce_components,
+        "torch_epochs": torch_epochs,
+        "device": device,
     }
     plan = NeuroSymbolicPlan(
         mode=mode_key,
-        base_estimator_name=str(base_estimator),
+        backend=resolved_neuro_backend,
+        base_estimator_name=base_name,
+        torch_method=resolved_torch_method if resolved_neuro_backend == "torch" else None,
         task=resolved_task,
         columns=tuple(cols),
         target_column=target,
@@ -471,7 +586,9 @@ def fit_neuro_symbolic(
     )
     result = NeuroSymbolicFitResult(
         mode=mode_key,
-        base_estimator_name=str(base_estimator),
+        backend=resolved_neuro_backend,
+        base_estimator_name=base_name,
+        torch_method=resolved_torch_method if resolved_neuro_backend == "torch" else None,
         task=resolved_task,
         n_train_rows=n_train,
         n_rules=len(kb.rules),
@@ -539,7 +656,20 @@ def _build_base_estimator(
     *,
     task: str,
     random_state: int | None,
+    backend: str = "sklearn",
+    torch_method: str | None = None,
+    torch_epochs: int = 60,
+    device: str = "cpu",
 ) -> Any:
+    if backend == "torch":
+        method = torch_method or str(name)
+        return build_torch_neuro_estimator(
+            method=method,
+            task=task,
+            random_state=random_state,
+            epochs=torch_epochs,
+            device=device,
+        )
     key = str(name).lower().replace("-", "_")
     if task == "classification":
         if key == "logistic_regression":

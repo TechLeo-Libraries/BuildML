@@ -20,6 +20,7 @@ from buildml.data.splits import (
     assert_fit_partition,
     frame_for_partition,
 )
+from buildml.rl.catalog import resolve_imitation_backend_method
 from buildml.rl.features import (
     classification_metrics,
     continuous_actions,
@@ -36,7 +37,7 @@ from buildml.rl.results import (
     ImitationPlan,
     ImitationPredictResult,
 )
-from buildml.rl.types import ImitationConfig, ImitationEstimator, ImitationTask
+from buildml.rl.types import ImitationBackend, ImitationConfig, ImitationEstimator, ImitationMethod, ImitationTask
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -60,10 +61,14 @@ def fit_imitation(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: ImitationBackend | None = None,
     task: ImitationTask | None = None,
     estimator: ImitationEstimator | None = None,
+    method: ImitationMethod | None = None,
     columns: list[str] | None = None,
     action_column: str | None = None,
+    env_id: str | None = None,
+    n_epochs: int = 40,
     random_state: int | None = 0,
     prefer_reduce_components: bool = True,
     reduce_plan: Any | None = None,
@@ -90,11 +95,31 @@ def fit_imitation(
         )
 
     resolved_task = task or infer_imitation_task(train[action_col])  # type: ignore[arg-type]
-    resolved_estimator = estimator or (
-        "logistic_regression"
-        if resolved_task == "classification"
-        else "ridge"
+    resolved_backend, resolved_method = resolve_imitation_backend_method(
+        backend=backend,
+        estimator=estimator,
+        method=method,
+        task=resolved_task,
     )
+
+    if resolved_backend == "industry":
+        return _fit_imitation_industry(
+            dataset,
+            split_plan,
+            train=train,
+            action_col=action_col,
+            target=target,
+            task=resolved_task,
+            method=resolved_method,  # type: ignore[arg-type]
+            columns=columns,
+            env_id=env_id,
+            n_epochs=n_epochs,
+            random_state=random_state,
+            prefer_reduce_components=prefer_reduce_components,
+            reduce_plan=reduce_plan,
+        )
+
+    resolved_estimator = resolved_method  # sklearn estimator key
     _validate_estimator_for_task(resolved_task, resolved_estimator)
 
     cols, used_reduce, disclosures = resolve_rl_columns(
@@ -147,6 +172,7 @@ def fit_imitation(
 
     config = ImitationConfig(
         task=resolved_task,  # type: ignore[arg-type]
+        backend="sklearn",
         estimator=resolved_estimator,  # type: ignore[arg-type]
         columns=tuple(cols),
         action_column=action_col,
@@ -155,6 +181,7 @@ def fit_imitation(
     )
     plan = ImitationPlan(
         task=resolved_task,
+        backend="sklearn",
         estimator=resolved_estimator,
         columns=tuple(cols),
         action_column=action_col,
@@ -170,7 +197,114 @@ def fit_imitation(
     )
     result = ImitationFitResult(
         task=resolved_task,
+        backend="sklearn",
         estimator=resolved_estimator,
+        n_train_rows=n_train,
+        columns=tuple(cols),
+        action_column=action_col,
+        classes=classes,
+        train_score=train_score,
+        disclosures=tuple(disclosures),
+        warnings=tuple(warnings),
+    )
+    return plan, result
+
+
+def _fit_imitation_industry(
+    dataset: Dataset,
+    split_plan: SplitPlan,
+    *,
+    train: pd.DataFrame,
+    action_col: str,
+    target: str,
+    task: str,
+    method: str,
+    columns: list[str] | None,
+    env_id: str | None,
+    n_epochs: int,
+    random_state: int | None,
+    prefer_reduce_components: bool,
+    reduce_plan: Any | None,
+) -> tuple[ImitationPlan, ImitationFitResult]:
+    from buildml.rl.adapters.imitation_industry import (
+        fit_tabular_bc_mlp,
+        fit_tabular_gail_lite,
+    )
+
+    cols, used_reduce, disclosures = resolve_rl_columns(
+        dataset,
+        train,
+        columns,
+        reduce_plan=reduce_plan,
+        prefer_reduce_components=prefer_reduce_components,
+        target_column=target,
+        exclude_columns=(action_col,) if action_col != target else (),
+    )
+    x = matrix_from_frame(train, cols)
+    n_train = int(x.shape[0])
+    y_codes, label_encoder, classes = encode_discrete_actions(train[action_col])
+    n_actions = len(classes)
+    warnings: list[str] = []
+
+    if method == "bc_mlp":
+        policy, train_score, ind_disclosures, ind_warnings = fit_tabular_bc_mlp(
+            x,
+            y_codes,
+            n_actions=n_actions,
+            n_epochs=n_epochs,
+            random_state=random_state,
+        )
+    elif method == "gail_lite":
+        if env_id is None:
+            raise ValidationError(
+                "gail_lite requires env_id=... with env-compatible demonstration rows."
+            )
+        policy, train_score, ind_disclosures, ind_warnings = fit_tabular_gail_lite(
+            x,
+            y_codes,
+            env_id=env_id,
+            n_actions=n_actions,
+            random_state=random_state,
+        )
+    else:
+        raise ValidationError(f"Unknown industry imitation method={method!r}.")
+
+    disclosures.extend(ind_disclosures)
+    warnings.extend(ind_warnings)
+
+    config = ImitationConfig(
+        task=task,  # type: ignore[arg-type]
+        backend="industry",
+        method=method,  # type: ignore[arg-type]
+        columns=tuple(cols),
+        action_column=action_col,
+        env_id=env_id,
+        n_epochs=n_epochs,
+        random_state=random_state,
+        prefer_reduce_components=prefer_reduce_components,
+    )
+    plan = ImitationPlan(
+        task=task,
+        backend="industry",
+        estimator=method,
+        method=method,
+        columns=tuple(cols),
+        action_column=action_col,
+        n_train_rows=n_train,
+        classes_=classes,
+        label_encoder_=label_encoder,
+        estimator_=policy,
+        disclosures=tuple(disclosures),
+        warnings=tuple(warnings),
+        used_reduce_components=used_reduce,
+        config=config.to_dict(),
+        train_score=train_score,
+    )
+    result = ImitationFitResult(
+        task=task,
+        backend="industry",
+        estimator=method,
+        method=method,
         n_train_rows=n_train,
         columns=tuple(cols),
         action_column=action_col,
@@ -200,7 +334,11 @@ def predict_imitation_action(
             disclosures=("Empty partition; no actions predicted.",),
         )
     x = matrix_from_frame(frame, list(plan.columns))
-    raw = plan.estimator_.predict(x)
+    estimator = plan.estimator_
+    if hasattr(estimator, "predict") and hasattr(estimator, "method"):
+        raw = estimator.predict(x)
+    else:
+        raw = estimator.predict(x)
     if plan.task == "classification":
         actions = tuple(decode_discrete_actions(np.asarray(raw), plan.label_encoder_))
     else:

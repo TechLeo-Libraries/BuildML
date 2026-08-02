@@ -6,19 +6,16 @@ Phase 1–2 complete. Phase 3 — Application systems:
   Recommendation systems (**PASS**).
   Search / LTR (**PASS**).
   Knowledge graphs (**PASS**).
-  Optimisation / decision helpers (**PASS** — this module).
+  Optimisation / decision helpers (**PASS** — this module; R6.9 industry depth).
   Synthetic-data systems (**PASS**).
 
 Honesty (this package):
   - Decision helpers for ML scores, costs, and constrained allocations.
   - **Not** a general operations-research platform, MIP suite, or digital twin.
-  - Cost-sensitive thresholds wrap classical ``threshold_report`` /
-    ``Session.tune_threshold`` (same engine; this path persists a DecisionPlan).
-  - Multiclass Bayes decisions under a user-supplied cost matrix.
-  - Allocation: top-K capacity, knapsack-lite (numpy DP/greedy), and continuous
-    LP via ``scipy.optimize.linprog`` (transitive via scikit-learn).
+  - Native fallback: threshold_report, numpy knapsack DP/greedy, scipy linprog.
+  - Industry depth via ``buildml[optimize-industry]``: PuLP/OR-Tools 0-1 knapsack
+    MIP, CVXPY convex LP, XGB cost-sensitive thresholds, sklearn calibration.
   - Never tunes on Session test without ``allow_test_tuning=True`` + disclosure.
-  - No PuLP / OR-Tools dependency (not justified for this depth).
 
 Lazy imports — keep the core import graph light.
 """
@@ -38,11 +35,13 @@ __all__ = [
     "DecisionMethod",
     "DecisionPlan",
     "apply_decisions",
+    "decision_capability_matrix",
     "decision_status",
     "decision_status_for_session",
     "evaluate_decisions",
     "fit_decision_policy",
     "load_decision_bundle",
+    "optimize_capability_matrix",
     "save_decision_bundle",
 ]
 
@@ -51,6 +50,7 @@ def __getattr__(name: str) -> Any:
     if name in {
         "DecisionConfig",
         "DecisionMethod",
+        "DecisionBackend",
         "CostModel",
         "TuningPartition",
         "ScoreSource",
@@ -94,4 +94,15 @@ def __getattr__(name: str) -> Any:
         from buildml.optimize import explain_hooks as hooks
 
         return getattr(hooks, name)
+    if name in {"decision_capability_matrix", "optimize_capability_matrix"}:
+        from buildml.optimize.catalog import (
+            decision_capability_matrix,
+            optimize_capability_matrix,
+        )
+
+        return (
+            decision_capability_matrix
+            if name == "decision_capability_matrix"
+            else optimize_capability_matrix
+        )
     raise AttributeError(f"module 'buildml.optimize' has no attribute {name!r}")

@@ -14,9 +14,34 @@ from buildml.core.errors import ValidationError
 
 CausalEstimand = Literal["ATE"]
 CausalIdentification = Literal["backdoor"]
-CausalMethod = Literal["t_learner", "ipw", "aipw"]
+CausalBackend = Literal["native", "dowhy", "econml"]
+NativeCausalMethod = Literal["t_learner", "ipw", "aipw"]
+DoWhyCausalMethod = Literal[
+    "backdoor_linear",
+    "backdoor_propensity_score",
+    "backdoor_propensity_weighting",
+]
+EconMLCausalMethod = Literal["dml", "causal_forest", "policy_tree"]
+CausalMethod = Literal[
+    "t_learner",
+    "ipw",
+    "aipw",
+    "backdoor_linear",
+    "backdoor_propensity_score",
+    "backdoor_propensity_weighting",
+    "dml",
+    "causal_forest",
+    "policy_tree",
+]
 CausalOutcomeKind = Literal["continuous", "binary"]
-CausalRefuteKind = Literal["placebo_treatment", "random_confounder"]
+CausalRefuteKind = Literal[
+    "placebo_treatment",
+    "random_confounder",
+    "random_common_cause",
+    "add_unobserved_common_cause",
+    "data_subset",
+    "placebo_outcome",
+]
 
 
 @dataclass(slots=True)
@@ -152,6 +177,7 @@ class CausalConfig:
     """User-facing causal estimation knobs (serializable summary)."""
 
     method: CausalMethod = "aipw"
+    backend: CausalBackend = "native"
     bootstrap_samples: int = 200
     random_state: int | None = 0
     clip_propensity: tuple[float, float] = (0.01, 0.99)
@@ -161,6 +187,7 @@ class CausalConfig:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "bootstrap_samples": self.bootstrap_samples,
             "random_state": self.random_state,
             "clip_propensity": list(self.clip_propensity),

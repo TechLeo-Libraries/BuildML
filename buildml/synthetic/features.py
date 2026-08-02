@@ -80,7 +80,7 @@ def resolve_columns(
         cols = list(feats) + ([tgt] if tgt not in feats else [])
         return cols
 
-    # bootstrap / gaussian_copula: features + target (if present), skip id/ignore
+    # bootstrap / gaussian_copula / sdv: features + target (if present), skip id/ignore
     cols = []
     if feature_cols:
         cols.extend(feature_cols)

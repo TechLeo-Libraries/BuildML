@@ -9,6 +9,7 @@ import numpy as np
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
+from buildml.rl.adapters.stable_baselines3 import SB3PolicyWrapper, act_sb3_observation
 from buildml.rl.bandit import LinUCBPolicy, RewardModelBandit
 from buildml.rl.features import decode_discrete_actions, matrix_from_frame
 from buildml.rl.gym_reinforce import LinearSoftmaxPolicy, act_gym_observation
@@ -34,6 +35,12 @@ def act_rl(
             observations=observations,
             deterministic=deterministic,
             random_state=random_state,
+        )
+    if plan.mode == "gym_sb3":
+        return _act_sb3(
+            plan,
+            observations=observations,
+            deterministic=deterministic,
         )
     if plan.mode != "contextual_bandit":
         raise ValidationError(f"Unsupported RL mode for act_rl: {plan.mode!r}.")
@@ -149,5 +156,45 @@ def _act_gym(
         scores=tuple(scores),
         disclosures=(
             "Actions chosen by a Gymnasium REINFORCE-lite linear softmax policy.",
+        ),
+    )
+
+
+def _act_sb3(
+    plan: RlPlan,
+    *,
+    observations: Sequence[Any] | np.ndarray | None,
+    deterministic: bool,
+) -> RlActResult:
+    if observations is None:
+        raise ValidationError(
+            "gym_sb3 act_rl requires observations=... "
+            "(array or sequence of observation vectors)."
+        )
+    policy = plan.policy_
+    if not isinstance(policy, SB3PolicyWrapper):
+        raise ValidationError("gym_sb3 plan is missing an SB3PolicyWrapper.")
+    arr = np.asarray(observations, dtype=float)
+    if arr.ndim == 1:
+        arr = arr.reshape(1, -1)
+    actions: list[Any] = []
+    scores: list[tuple[float, ...]] = []
+    for obs in arr:
+        action, probs = act_sb3_observation(
+            policy,
+            obs,
+            deterministic=deterministic,
+        )
+        actions.append(action)
+        scores.append(probs)
+    return RlActResult(
+        partition=None,
+        mode=plan.mode,
+        n_rows=len(actions),
+        actions=tuple(actions),
+        scores=tuple(scores),
+        disclosures=(
+            "Actions chosen by a Stable-Baselines3 industry policy.",
+            "Honesty: small-env teaching loop — not MuJoCo/robotics.",
         ),
     )

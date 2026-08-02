@@ -34,8 +34,14 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p(
+                "backend",
+                "sklearn | torch | industry",
+                "Meta-learning backend (honest defaults when extras installed).",
+                "sklearn",
+            ),
+            _p(
                 "method",
-                "prototypical | warm_start",
+                "prototypical | warm_start | prototypical_torch | maml | reptile",
                 "Few-shot algorithm path.",
                 "prototypical",
             ),
@@ -68,6 +74,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "Fraction of train task ids held out internally (when >=3 tasks).",
                 0.25,
             ),
+            _p("meta_epochs", "int", "Torch/industry meta-training epochs.", 40),
+            _p("inner_lr", "float", "MAML/Reptile inner-loop learning rate.", 0.05),
+            _p("inner_steps", "int", "Inner-loop SGD steps per episode.", 5),
+            _p("meta_lr", "float", "Meta / Reptile outer learning rate.", 1e-3),
+            _p("embed_dim", "int", "Torch prototypical embedding dimension.", 32),
+            _p("hidden_dim", "int", "Torch/industry MLP hidden dimension.", 64),
+            _p("device", "str", "Torch device string.", "cpu"),
         ),
         inputs=(
             "Split Session with numeric features, one target, and a task/group column.",
@@ -111,6 +124,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "metalearning-episodic",
             "metalearning-prototypical",
             "metalearning-warm-start",
+            "metalearning-torch-prototypical",
+            "metalearning-maml",
             "leakage-boundary",
         ),
     ),

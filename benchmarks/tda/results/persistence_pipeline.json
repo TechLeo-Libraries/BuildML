@@ -1,0 +1,101 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "native": {
+        "available": true,
+        "extra": "tda",
+        "homology_engine": "ripser (Vietoris\u2013Rips)",
+        "vectorizations": [
+          "persistence_image",
+          "landscape",
+          "silhouette"
+        ],
+        "diagram_distances": [
+          "wasserstein",
+          "bottleneck"
+        ],
+        "mapper": false,
+        "notes": "Light ripser + persim stack; landscapes and silhouettes vectorized in-tree. Default when buildml[tda] is installed."
+      },
+      "giotto": {
+        "available": false,
+        "extra": "tda-industry",
+        "homology_engine": "gtda.homology.VietorisRipsPersistence",
+        "vectorizations": [
+          "persistence_image",
+          "persistence_landscape",
+          "landscape",
+          "betti_curve"
+        ],
+        "diagram_distances": [
+          "wasserstein",
+          "bottleneck"
+        ],
+        "mapper": false,
+        "notes": "giotto-tda sklearn-style PH + BettiCurve / PersistenceImage / PersistenceLandscape. Optional KeplerMapper summary on train when mapper=True (buildml[tda-industry])."
+      }
+    },
+    "subsample_strategies": [
+      "error",
+      "random",
+      "stratified"
+    ],
+    "evaluate_diagram_metrics": [
+      "wasserstein",
+      "bottleneck"
+    ],
+    "default_backend_when_installed": "native",
+    "install_hints": {
+      "tda": "pip install 'buildml[tda]'  # ripser + persim \u2014 native VR PH + persistence images",
+      "tda-industry": "pip install 'buildml[tda-industry]'  # buildml[tda] + giotto-tda (Betti curves, gtda vectorizers, Mapper)"
+    },
+    "non_goals": [
+      "Full Mapper research / interactive visualization suite",
+      "Multiparameter, zigzag, or sheaf persistence",
+      "Domain-specific credit-risk product surface",
+      "Every TDA paper implementation"
+    ],
+    "tda_extra_present": true,
+    "tda_industry_extra_present": false
+  },
+  "runs": [
+    {
+      "backend": "native",
+      "vectorization": "persistence_image",
+      "feature_dim": 264,
+      "train_score": 0.738562091503268,
+      "validation_accuracy": 0.6666666666666666,
+      "validation_macro_f1": 0.6657877389584708,
+      "diagram_distances": {
+        "wasserstein_H1": 0.1576828005006015
+      },
+      "n_disclosures": 4
+    },
+    {
+      "backend": "native",
+      "vectorization": "landscape",
+      "feature_dim": 72,
+      "train_score": 0.7124183006535948,
+      "validation_accuracy": 0.6923076923076923,
+      "validation_macro_f1": 0.6921052631578948,
+      "diagram_distances": {
+        "wasserstein_H1": 0.1576828005006015
+      },
+      "n_disclosures": 4
+    },
+    {
+      "backend": "native",
+      "vectorization": "silhouette",
+      "feature_dim": 24,
+      "train_score": 0.7124183006535948,
+      "validation_accuracy": 0.6923076923076923,
+      "validation_macro_f1": 0.6921052631578948,
+      "diagram_distances": {
+        "wasserstein_H1": 0.1576828005006015
+      },
+      "n_disclosures": 4
+    }
+  ],
+  "tda_available": true,
+  "giotto_available": false
+}

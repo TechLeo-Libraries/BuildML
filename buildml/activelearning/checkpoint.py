@@ -76,6 +76,8 @@ def load_active_learning_bundle(path: str | Path) -> ActiveLearningPlan:
         )
     loaded = joblib.load(plan_path)
     if isinstance(loaded, ActiveLearningPlan):
+        if not getattr(loaded, "backend", None):
+            loaded.backend = "sklearn"
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:
         raise ValidationError(
@@ -85,4 +87,6 @@ def load_active_learning_bundle(path: str | Path) -> ActiveLearningPlan:
     plan = loaded["plan"]
     if not isinstance(plan, ActiveLearningPlan):
         raise ValidationError("Loaded plan object is not an ActiveLearningPlan")
+    if not getattr(plan, "backend", None):
+        plan.backend = "sklearn"
     return plan

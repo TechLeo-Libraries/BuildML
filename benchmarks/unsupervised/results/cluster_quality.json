@@ -1,0 +1,80 @@
+{
+  "benchmark": "unsupervised_cluster_quality",
+  "hdbscan_available": false,
+  "torch_available": false,
+  "results": [
+    {
+      "method": "kmeans",
+      "silhouette": 0.7459947557321501,
+      "davies_bouldin": 0.3489048303917577,
+      "calinski_harabasz": 803.3806894512838,
+      "adjusted_rand_index": 0.9789980239493364,
+      "n_clusters_observed": 3,
+      "stability_ari_mean": 0.00044988531015203266
+    },
+    {
+      "method": "agglomerative",
+      "silhouette": 0.7459947557321501,
+      "davies_bouldin": 0.3489048303917577,
+      "calinski_harabasz": 803.3806894512838,
+      "adjusted_rand_index": 0.9789980239493364,
+      "n_clusters_observed": 3,
+      "stability_ari_mean": null
+    },
+    {
+      "method": "dbscan",
+      "silhouette": null,
+      "davies_bouldin": null,
+      "calinski_harabasz": null,
+      "adjusted_rand_index": 0.0,
+      "n_clusters_observed": 1,
+      "stability_ari_mean": null
+    },
+    {
+      "method": "gmm",
+      "silhouette": 0.7459947557321501,
+      "davies_bouldin": 0.3489048303917577,
+      "calinski_harabasz": 803.3806894512838,
+      "adjusted_rand_index": 0.9789980239493364,
+      "n_clusters_observed": 3,
+      "stability_ari_mean": null
+    },
+    {
+      "method": "spectral",
+      "silhouette": 0.7459947557321501,
+      "davies_bouldin": 0.3489048303917577,
+      "calinski_harabasz": 803.3806894512838,
+      "adjusted_rand_index": 0.9789980239493364,
+      "n_clusters_observed": 3,
+      "stability_ari_mean": null
+    },
+    {
+      "method": "optics",
+      "silhouette": 0.19620396370895984,
+      "davies_bouldin": 1.0632760229301543,
+      "calinski_harabasz": 301.317550929212,
+      "adjusted_rand_index": 0.20662309991277117,
+      "n_clusters_observed": 20,
+      "stability_ari_mean": null
+    },
+    {
+      "method": "mean_shift",
+      "silhouette": 0.7459947557321501,
+      "davies_bouldin": 0.3489048303917577,
+      "calinski_harabasz": 803.3806894512838,
+      "adjusted_rand_index": 0.9789980239493364,
+      "n_clusters_observed": 3,
+      "stability_ari_mean": null
+    }
+  ],
+  "baseline_methods": [
+    "kmeans",
+    "agglomerative",
+    "dbscan"
+  ],
+  "baseline_best_method": "kmeans",
+  "baseline_best_ari": 0.9789980239493364,
+  "best_method": "kmeans",
+  "best_ari": 0.9789980239493364,
+  "floor_note": "Extended methods should meet or exceed legacy 3-method baseline ARI on reference blobs."
+}

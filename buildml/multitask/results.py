@@ -21,7 +21,9 @@ class MultiTaskPlan:
     target_columns: tuple[str, ...]
     n_train_rows: int
     classes_per_task_: dict[str, tuple[Any, ...]]
-    estimator_: Any = field(repr=False)
+    estimator_: Any = field(default=None, repr=False)
+    backend: str = "sklearn"
+    task_kinds_: dict[str, str] = field(default_factory=dict)
     label_encoders_: dict[str, Any] = field(repr=False, default_factory=dict)
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -31,6 +33,7 @@ class MultiTaskPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "task": self.task,
             "columns": list(self.columns),
             "target_columns": list(self.target_columns),
@@ -39,6 +42,7 @@ class MultiTaskPlan:
             "classes_per_task": {
                 k: list(v) for k, v in self.classes_per_task_.items()
             },
+            "task_kinds": dict(self.task_kinds_),
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
             "used_reduce_components": self.used_reduce_components,
@@ -56,6 +60,7 @@ class MultiTaskFitResult:
     columns: tuple[str, ...]
     target_columns: tuple[str, ...]
     n_tasks: int
+    backend: str = "sklearn"
     used_reduce_components: bool = False
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -63,6 +68,7 @@ class MultiTaskFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "task": self.task,
             "n_train_rows": self.n_train_rows,
             "columns": list(self.columns),

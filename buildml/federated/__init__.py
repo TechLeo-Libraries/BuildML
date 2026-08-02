@@ -23,16 +23,18 @@ full COCO detection/segmentation suite.
 
 Honesty (this package):
   - Local FedAvg-style (and FedProx) orchestration on Session data partitioned
-    by a client/group column — **not** a production FL network stack.
-  - Not a Flower / OpenFL replacement.
+    by a client/group column — **not** a production FL network stack unless you
+    deploy one separately.
+  - ``backend='flower'`` uses Flower (flwr) NumPyClient + aggregation helpers
+    but still runs in-process on Session partitions by default.
   - No cryptographic secure aggregation; the in-process orchestrator sees
     client coefficient updates (privacy limits disclosed).
   - Train-only local updates; validation/test are evaluation-only.
   - Deep path: sklearn linear / SGD coefficient averaging.
 
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Federated
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Native
 simulation uses sklearn façades — no optional extra required for
-``import buildml``.
+``import buildml``. ``buildml[federated-industry]`` adds Flower (flwr).
 
 Lazy imports — core never grows heavy FL stacks.
 """
@@ -53,9 +55,12 @@ __all__ = [
     "FederatedPredictResult",
     "FederatedTask",
     "evaluate_federated",
+    "export_round_history",
+    "federated_capability_matrix",
     "federated_status",
     "federated_status_for_session",
     "fit_federated",
+    "list_federated_methods",
     "load_federated_bundle",
     "predict_federated",
     "save_federated_bundle",
@@ -93,6 +98,18 @@ def __getattr__(name: str) -> Any:
         from buildml.federated.predict import predict_federated
 
         return predict_federated
+    if name == "federated_capability_matrix":
+        from buildml.federated.catalog import federated_capability_matrix
+
+        return federated_capability_matrix
+    if name == "list_federated_methods":
+        from buildml.federated.catalog import list_federated_methods
+
+        return list_federated_methods
+    if name == "export_round_history":
+        from buildml.federated.results import export_round_history
+
+        return export_round_history
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",

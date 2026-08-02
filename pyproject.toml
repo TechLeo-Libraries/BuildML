@@ -43,20 +43,145 @@ polars = ["polars>=0.20"]
 duckdb = ["duckdb>=0.10"]
 engines = ["buildml[polars,duckdb]"]
 optuna = ["optuna>=3.4"]
+automl = ["buildml[optuna]"]
+automl-industry = [
+  "buildml[automl]",
+  "flaml>=2.1",
+  "autogluon.tabular>=1.1",
+  "lightgbm>=4.0",
+  "xgboost>=2.0",
+  "catboost>=1.2",
+]
 torch = ["torch>=2.2", "pillow>=9.0", "soundfile>=0.12"]
+ssl = ["buildml[torch]", "sentence-transformers>=2.2", "transformers>=4.36"]
 dl = ["buildml[torch]"]
 audio = ["buildml[torch]"]
 speech = ["buildml[torch]", "transformers>=4.36"]
 vision = ["buildml[torch]", "torchvision>=0.17"]
 pretrained = ["buildml[vision,speech]"]
 onnx = ["onnx>=1.15"]
-rag = ["sentence-transformers>=2.2"]
+rag = ["sentence-transformers>=2.2", "transformers>=4.36"]
+rag-advanced = ["buildml[rag]", "langchain-community>=0.2", "langchain-core>=0.2"]
 graph = ["networkx>=3.0"]
+graph-pyg = ["buildml[torch]", "torch-geometric>=2.5"]
 rl = ["gymnasium>=0.29"]
+rl-industry = [
+  "buildml[rl]",
+  "stable-baselines3>=2.3",
+  "imitation>=1.0",
+  "torch>=2.2",
+]
 tda = ["ripser>=0.6", "persim>=0.3"]
+tda-industry = ["buildml[tda]", "giotto-tda>=0.6"]
 ai = ["openai>=1.0"]
 llm = ["buildml[ai]"]
 imbalanced = ["imbalanced-learn>=0.11"]
+unsupervised = ["hdbscan>=0.8", "umap-learn>=0.5"]
+timeseries = ["statsmodels>=0.14", "scipy>=1.11", "ruptures>=1.1"]
+timeseries-prophet = ["buildml[timeseries]", "prophet>=1.1"]
+timeseries-ml = ["buildml[timeseries]", "neuralforecast>=1.7", "torch>=2.2"]
+anomaly-industry = [
+  "pyod>=1.1",
+  "lightgbm>=4.0",
+  "xgboost>=2.0",
+]
+activelearning-industry = [
+  "scikit-activeml>=1.0.0",
+]
+semisupervised-industry = [
+  "lightgbm>=4.0",
+  "xgboost>=2.0",
+]
+ranking-industry = [
+  "lightgbm>=4.0",
+  "xgboost>=2.0",
+  "catboost>=1.2",
+]
+metalearning-industry = [
+  "learn2learn>=0.2",
+]
+multitask-industry = [
+  "lightgbm>=4.0",
+  "xgboost>=2.0",
+  "catboost>=1.2",
+]
+online-industry = [
+  "river>=0.21",
+]
+recommenders-industry = [
+  "implicit>=0.7",
+  "lightfm>=1.17",
+]
+causal-industry = [
+    "dowhy>=0.11",
+    "econml>=0.15",
+]
+federated-industry = [
+    "flwr>=1.5",
+]
+kg-industry = [
+    "pykeen>=1.10",
+]
+probabilistic-industry = [
+    "mapie>=0.8",
+    "ngboost>=0.5",
+]
+symbolic-industry = [
+    "skope-rules>=1.0",
+    "imodels>=2.0",
+    "z3-solver>=4.12",
+]
+cbr-industry = [
+    "hnswlib>=0.8",
+]
+optimize-industry = [
+  "pulp>=2.7",
+  "ortools>=9.8",
+  "cvxpy>=1.4",
+  "xgboost>=2.0",
+]
+synthetic-industry = [
+  "sdv>=1.17",
+  "sdmetrics>=0.15",
+]
+# One-shot install for industry-depth ML domains (R1–R6 refinement).
+# Core `import buildml` stays light — Session + numpy/pandas/sklearn only.
+# Does not pull dashboard, serve, ai, or dev tooling.
+production = [
+  "buildml[torch]",
+  "buildml[ssl]",
+  "buildml[rag]",
+  "buildml[rag-advanced]",
+  "buildml[tda]",
+  "buildml[unsupervised]",
+  "buildml[timeseries]",
+  "buildml[timeseries-prophet]",
+  "buildml[timeseries-ml]",
+  "buildml[graph]",
+  "buildml[graph-pyg]",
+  "buildml[optuna]",
+  "buildml[automl]",
+  "buildml[automl-industry]",
+  "buildml[tda-industry]",
+  "buildml[anomaly-industry]",
+  "buildml[semisupervised-industry]",
+  "buildml[ranking-industry]",
+  "buildml[multitask-industry]",
+  "buildml[activelearning-industry]",
+  "buildml[metalearning-industry]",
+  "buildml[online-industry]",
+  "buildml[recommenders-industry]",
+  "buildml[causal-industry]",
+  "buildml[federated-industry]",
+  "buildml[kg-industry]",
+  "buildml[probabilistic-industry]",
+  "buildml[symbolic-industry]",
+  "buildml[cbr-industry]",
+  "buildml[optimize-industry]",
+  "buildml[synthetic-industry]",
+  "buildml[rl]",
+  "buildml[rl-industry]",
+]
 viz = ["matplotlib>=3.7", "seaborn>=0.13"]
 reports = ["sweetviz>=2.3", "ydata-profiling>=4.6"]
 eda = ["buildml[viz,reports]"]
@@ -76,7 +201,7 @@ dashboard = [
   "python-multipart>=0.0.9",
 ]
 excel = ["openpyxl>=3.1"]
-all-classical = ["buildml[engines,imbalanced,eda,excel,dashboard,optuna]"]
+all-classical = ["buildml[engines,imbalanced,eda,excel,dashboard,optuna,automl]"]
 docs = ["sphinx", "sphinx-rtd-theme", "myst-parser"]
 dev = [
   "pytest>=7.4",

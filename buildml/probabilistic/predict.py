@@ -9,6 +9,8 @@ import numpy as np
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
+from buildml.probabilistic.adapters.mapie import mapie_predict_interval, mapie_predict_sets
+from buildml.probabilistic.adapters.ngboost import ngboost_predict_std
 from buildml.probabilistic.conformal import (
     classification_prediction_sets,
     regression_intervals,
@@ -50,14 +52,42 @@ def predict_probabilistic(
     x = matrix_from_frame(frame, list(plan.columns))
     disclosures = [
         "predict_probabilistic does not update the probabilistic plan.",
-        f"Predictions from estimator={plan.estimator_name}.",
+        f"Predictions from backend={plan.backend}, estimator={plan.estimator_name}.",
     ]
     warnings: list[str] = []
     std_out: tuple[float, ...] | None = None
     proba_out: tuple[tuple[float, ...], ...] | None = None
 
-    if plan.task == "regression":
-        if return_std and plan.supports_return_std:
+    if plan.backend == "mapie":
+        if plan.task == "regression":
+            point, _, _, _ = mapie_predict_interval(
+                plan.estimator_, x, task="regression", alpha=plan.alpha
+            )
+            preds = point
+        else:
+            point, _ = mapie_predict_sets(
+                plan.estimator_, x, alpha=plan.alpha, task="classification"
+            )
+            preds = tuple(decode_predictions(np.asarray(point), plan.label_encoder_))
+        if return_proba and plan.supports_predict_proba:
+            from buildml.probabilistic.adapters.mapie import MapieWrapper
+
+            handle = (
+                plan.estimator_
+                if isinstance(plan.estimator_, MapieWrapper)
+                else plan.estimator_
+            )
+            est = getattr(handle, "estimator", handle)
+            base = getattr(est, "estimator", est)
+            if hasattr(base, "predict_proba"):
+                proba = np.asarray(base.predict_proba(x), dtype=float)
+                proba_out = tuple(tuple(float(v) for v in row) for row in proba)
+    elif plan.task == "regression":
+        if plan.backend == "ngboost" and return_std:
+            mean, std = ngboost_predict_std(plan.estimator_, x)
+            preds = tuple(float(v) for v in mean)
+            std_out = tuple(float(v) for v in std)
+        elif return_std and plan.supports_return_std:
             mean, std = plan.estimator_.predict(x, return_std=True)
             preds = tuple(float(v) for v in mean)
             std_out = tuple(float(v) for v in std)
@@ -106,11 +136,13 @@ def predict_interval(
     Methods
     -------
     ``posterior_std``
-        Gaussian intervals from ``return_std`` (BayesianRidge / GPR).
+        Gaussian intervals from ``return_std`` (BayesianRidge / GPR / NGBoost).
     ``split_conformal``
         Distribution-free intervals/sets using the train-only conformal quantile.
     ``both``
         Prefer conformal bounds when available; still return posterior std.
+    ``mapie`` / ``mapie_cv_plus`` / ``mapie_jackknife_plus``
+        MAPIE-backed intervals/sets from the fitted wrapper.
     """
     if plan is None:
         raise ValidationError("No ProbabilisticPlan. Call fit_probabilistic first.")
@@ -132,6 +164,16 @@ def predict_interval(
         "(conformal quantile was fit on a train carve, if enabled).",
     ]
     warnings: list[str] = []
+
+    if plan.backend == "mapie":
+        return _mapie_intervals(
+            plan,
+            x,
+            part_name=part_name,
+            alpha=resolved_alpha,
+            disclosures=disclosures,
+            warnings=warnings,
+        )
 
     if plan.task == "regression":
         return _regression_intervals(
@@ -155,6 +197,58 @@ def predict_interval(
     )
 
 
+def _mapie_intervals(
+    plan: ProbabilisticPlan,
+    x: np.ndarray,
+    *,
+    part_name: str,
+    alpha: float,
+    disclosures: list[str],
+    warnings: list[str],
+) -> ProbabilisticIntervalResult:
+    if plan.task == "regression":
+        point, lower, upper, used = mapie_predict_interval(
+            plan.estimator_, x, task="regression", alpha=alpha
+        )
+        disclosures.append(f"MAPIE regression intervals via method={plan.estimator_name}.")
+        return ProbabilisticIntervalResult(
+            partition=part_name,
+            estimator_name=plan.estimator_name,
+            task=plan.task,
+            n_rows=len(point),
+            alpha=alpha,
+            method=used,
+            lower=lower,
+            upper=upper,
+            point=point,
+            std=None,
+            prediction_sets=None,
+            disclosures=tuple(disclosures),
+            warnings=tuple(warnings),
+        )
+
+    point_raw, sets = mapie_predict_sets(
+        plan.estimator_, x, alpha=alpha, task="classification"
+    )
+    point = tuple(decode_predictions(np.asarray(point_raw), plan.label_encoder_))
+    disclosures.append(f"MAPIE classification prediction sets method={plan.estimator_name}.")
+    return ProbabilisticIntervalResult(
+        partition=part_name,
+        estimator_name=plan.estimator_name,
+        task=plan.task,
+        n_rows=len(point),
+        alpha=alpha,
+        method="mapie",
+        lower=None,
+        upper=None,
+        point=point,
+        std=None,
+        prediction_sets=sets,
+        disclosures=tuple(disclosures),
+        warnings=tuple(warnings),
+    )
+
+
 def _regression_intervals(
     plan: ProbabilisticPlan,
     x: np.ndarray,
@@ -166,7 +260,11 @@ def _regression_intervals(
     warnings: list[str],
 ) -> ProbabilisticIntervalResult:
     std_out: tuple[float, ...] | None = None
-    if plan.supports_return_std:
+    if plan.backend == "ngboost" and plan.supports_return_std:
+        mean, std = ngboost_predict_std(plan.estimator_, x)
+        point = tuple(float(v) for v in mean)
+        std_out = tuple(float(v) for v in std)
+    elif plan.supports_return_std:
         mean, std = plan.estimator_.predict(x, return_std=True)
         point = tuple(float(v) for v in mean)
         std_out = tuple(float(v) for v in std)
@@ -195,8 +293,6 @@ def _regression_intervals(
             used = "posterior_std"
         else:
             lo, hi = regression_intervals(np.asarray(point), plan.conformal_quantile_)
-            # If alpha differs from plan.alpha, rescale residual quantile
-            # under exchangeability only when alphas match; otherwise warn.
             if abs(alpha - plan.alpha) > 1e-12:
                 warnings.append(
                     f"Requested alpha={alpha} differs from plan.alpha={plan.alpha}; "
@@ -208,7 +304,7 @@ def _regression_intervals(
                 f"Split-conformal half-width q̂={plan.conformal_quantile_:.6g}."
             )
 
-    if want_std and plan.supports_return_std and std_out is not None:
+    if want_std and std_out is not None:
         z = norm_ppf(1.0 - alpha / 2.0)
         std_lo = tuple(p - z * s for p, s in zip(point, std_out, strict=True))
         std_hi = tuple(p + z * s for p, s in zip(point, std_out, strict=True))
@@ -220,12 +316,11 @@ def _regression_intervals(
             used = "posterior_std"
         else:
             used = "both"
-            # Keep conformal bounds as primary lower/upper; std still returned.
             disclosures.append(
                 "Primary lower/upper are split-conformal; std is the "
                 "model posterior predictive standard deviation."
             )
-    elif want_std and not plan.supports_return_std:
+    elif want_std and std_out is None:
         warnings.append(
             "posterior_std requested but estimator lacks return_std support."
         )
@@ -234,7 +329,7 @@ def _regression_intervals(
         raise ValidationError(
             f"Could not build regression intervals with method={method!r}. "
             "Enable conformal=True and/or use bayesian_ridge / "
-            "gaussian_process_regressor."
+            "gaussian_process_regressor / ngboost_regressor."
         )
 
     return ProbabilisticIntervalResult(

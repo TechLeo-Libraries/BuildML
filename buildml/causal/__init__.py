@@ -24,15 +24,16 @@ Honesty (this package):
     never populate or satisfy these assumptions.
   - Native sklearn nuisance models for T-learner, IPW, and AIPW ATE with
     train-only fit and optional bootstrap uncertainty.
-  - Optional simple placebo / random-confounder sensitivity disclosures —
-    **not** a full DoWhy refutation suite.
+  - Optional DoWhy (``buildml[causal-industry]``): causal graph from declared
+    confounders, identification, industry refutation suite.
+  - Optional EconML (``buildml[causal-industry]``): DML, CausalForestDML,
+    PolicyTree on declared backdoor sets.
   - **Not** causal discovery, **not** IV / front-door (instruments refused
-    until an IV path exists), **not** a DoWhy/EconML required dependency.
+    until an IV path exists).
 
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. No
-``buildml[causal]`` extra is required for ``import buildml``. Optional
-DoWhy/EconML was considered and skipped so the Session path stays honest
-and dependency-light for this depth.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Industry causal
+backends install via ``buildml[causal-industry]`` (dowhy, econml). EDA /
+association paths never satisfy CausalAssumptions.
 
 Lazy imports — core never grows heavy causal stacks.
 """
@@ -45,6 +46,7 @@ __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
     "CausalAssumptions",
+    "CausalBackend",
     "CausalConfig",
     "CausalEstimateResult",
     "CausalEstimand",
@@ -64,6 +66,7 @@ __all__ = [
     "save_causal_bundle",
     "causal_status",
     "causal_status_for_session",
+    "causal_capability_matrix",
 ]
 
 
@@ -79,6 +82,7 @@ def declare_causal_assumptions(**kwargs: Any) -> Any:
 def __getattr__(name: str) -> Any:
     if name in {
         "CausalAssumptions",
+        "CausalBackend",
         "CausalConfig",
         "CausalEstimand",
         "CausalIdentification",
@@ -127,4 +131,8 @@ def __getattr__(name: str) -> Any:
         from buildml.causal import explain_hooks as hooks
 
         return getattr(hooks, name)
+    if name == "causal_capability_matrix":
+        from buildml.causal.catalog import causal_capability_matrix
+
+        return causal_capability_matrix
     raise AttributeError(f"module 'buildml.causal' has no attribute {name!r}")

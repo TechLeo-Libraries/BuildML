@@ -16,6 +16,7 @@ from sklearn.metrics import (
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
+from buildml.federated.catalog import resolve_backend
 from buildml.federated.features import (
     client_ids_in_frame,
     decode_predictions,
@@ -24,6 +25,7 @@ from buildml.federated.features import (
     matrix_from_frame,
 )
 from buildml.federated.results import FederatedEvalResult, FederatedPlan
+from buildml.federated.types import FederatedBackend
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -33,6 +35,7 @@ def evaluate_federated(
     plan: FederatedPlan,
     split_plan: SplitPlan | None,
     *,
+    backend: FederatedBackend | None = None,
     partition: PartitionOrAll = "validation",
     per_client: bool = True,
 ) -> FederatedEvalResult:
@@ -44,6 +47,15 @@ def evaluate_federated(
     """
     if plan is None:
         raise ValidationError("No FederatedPlan. Call fit_federated first.")
+
+    if backend is not None:
+        resolved = resolve_backend(backend, method=plan.method)
+        plan_backend = str(getattr(plan, "backend", "native") or "native")
+        if resolved != plan_backend:
+            raise ValidationError(
+                f"backend={backend!r} does not match FederatedPlan.backend="
+                f"{plan_backend!r}. Refit or omit backend= on evaluate."
+            )
 
     if partition == "all":
         frame = dataset._ensure_pandas()
@@ -68,7 +80,8 @@ def evaluate_federated(
     disclosures = [
         "Federated evaluation scores a holdout partition; rows were never "
         "used for local client updates during fit_federated.",
-        f"Global model: method={plan.method}, estimator={plan.estimator_name}, "
+        f"Global model: backend={getattr(plan, 'backend', 'native')}, "
+        f"method={plan.method}, estimator={plan.estimator_name}, "
         f"n_rounds_completed={len(plan.round_history)}, "
         f"n_clients_trained={len(plan.client_ids)}.",
         "Honesty: local FL simulation metrics — not a networked FL benchmark.",

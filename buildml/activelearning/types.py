@@ -5,13 +5,29 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-ActiveLearningStrategy = Literal[
+SklearnActiveLearningStrategy = Literal[
     "least_confidence",
     "margin",
     "entropy",
     "committee",
     "expected_model_change_lite",
 ]
+IndustryActiveLearningStrategy = Literal[
+    "core_set",
+    "qbc_kl",
+    "qbc_variation_ratios",
+]
+TorchActiveLearningStrategy = Literal[
+    "bald",
+    "mc_dropout",
+]
+
+ActiveLearningStrategy = (
+    SklearnActiveLearningStrategy
+    | IndustryActiveLearningStrategy
+    | TorchActiveLearningStrategy
+)
+ActiveLearningBackend = Literal["sklearn", "industry", "torch"]
 
 ActiveLearningEstimator = Literal[
     "logistic_regression",
@@ -24,6 +40,7 @@ class ActiveLearningConfig:
     """User-facing active-learning knobs (serializable summary)."""
 
     strategy: ActiveLearningStrategy = "margin"
+    backend: ActiveLearningBackend | None = None
     base_estimator: ActiveLearningEstimator = "logistic_regression"
     columns: tuple[str, ...] | None = None
     random_state: int | None = 0
@@ -33,10 +50,16 @@ class ActiveLearningConfig:
     prefer_reduce_components: bool = True
     committee_size: int = 5
     auto_refit: bool = True
+    # Torch backend
+    epochs: int = 60
+    learning_rate: float = 1e-3
+    mc_samples: int = 20
+    device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "strategy": self.strategy,
+            "backend": self.backend,
             "base_estimator": self.base_estimator,
             "columns": None if self.columns is None else list(self.columns),
             "random_state": self.random_state,
@@ -46,4 +69,8 @@ class ActiveLearningConfig:
             "prefer_reduce_components": self.prefer_reduce_components,
             "committee_size": self.committee_size,
             "auto_refit": self.auto_refit,
+            "epochs": self.epochs,
+            "learning_rate": self.learning_rate,
+            "mc_samples": self.mc_samples,
+            "device": self.device,
         }

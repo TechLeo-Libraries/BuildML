@@ -1,0 +1,117 @@
+{
+  "benchmark": "semisupervised_partial_labels",
+  "capability_matrix": {
+    "backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "label_propagation",
+          "label_spreading",
+          "self_training"
+        ],
+        "modality": "tabular",
+        "notes": "Core sklearn semi_supervised estimators; always available."
+      },
+      "industry": {
+        "available": true,
+        "extra": "semisupervised-industry",
+        "methods": [
+          "pseudo_label_xgb",
+          "pseudo_label_lgbm"
+        ],
+        "modality": "tabular",
+        "notes": "Iterative pseudo-labeling with XGBoost/LightGBM when installed. Falls back to sklearn self_training when industry extra missing."
+      },
+      "torch": {
+        "available": true,
+        "extra": "torch",
+        "methods": [
+          "fixmatch_tabular",
+          "mixmatch_tabular"
+        ],
+        "modality": "tabular",
+        "notes": "FixMatch/MixMatch-style consistency + pseudo-label training for numeric tabular features (buildml[torch])."
+      },
+      "hf": {
+        "available": false,
+        "extra": "ssl",
+        "methods": [
+          "text_pseudo_label"
+        ],
+        "modality": "text",
+        "notes": "Sentence-transformer embeddings + pseudo-label self-training on a single text feature column (buildml[ssl])."
+      }
+    },
+    "ssl_integration": {
+      "documented_pipeline": [
+        "fit_ssl_pretext (train-only representation learning)",
+        "transform_ssl or reduce_dimensions on SSL embeddings",
+        "fit_semisupervised with partial labels on embedding columns"
+      ],
+      "finetune_ssl_head": "Labeled train rows only \u2014 use fit_semisupervised when unlabeled train rows should participate via propagation/pseudo-labels."
+    },
+    "label_convention": {
+      "unlabeled": "target NaN/NA/None by default (unlabeled_marker optional)",
+      "internal": "sklearn -1 for industry/torch/sklearn paths"
+    },
+    "evaluation": {
+      "metrics": [
+        "accuracy",
+        "f1_macro",
+        "f1_weighted",
+        "precision_macro",
+        "recall_macro"
+      ],
+      "holdout_rule": "labeled rows only; unlabeled holdout never scored as truth"
+    },
+    "default_backend_when_installed": "torch",
+    "default_method_when_installed": "pseudo_label_xgb",
+    "install_hints": {
+      "semisupervised-industry": "pip install 'buildml[semisupervised-industry]'  # XGBoost/LightGBM pseudo-label paths",
+      "torch": "pip install 'buildml[torch]'  # FixMatch/MixMatch tabular consistency training",
+      "ssl": "pip install 'buildml[ssl]'  # HF text pseudo-label via sentence-transformers"
+    },
+    "non_goals": [
+      "Full computer-vision FixMatch on raw pixels",
+      "Active-learning query loops (see buildml.activelearning)",
+      "Self-supervised pretext without labels (see buildml.selfsupervised)",
+      "Anomaly novelty detection (see buildml.anomaly)"
+    ],
+    "torch_spec_present": true,
+    "industry_extra_present": true,
+    "xgboost_present": true,
+    "lightgbm_present": true,
+    "hf_text_present": false
+  },
+  "results": [
+    {
+      "backend": "sklearn",
+      "method": "label_propagation",
+      "n_labeled_train": 84,
+      "n_unlabeled_train": 156,
+      "test_accuracy": 0.9875,
+      "test_f1_macro": 0.9874980465697765
+    },
+    {
+      "backend": "sklearn",
+      "method": "self_training",
+      "n_labeled_train": 84,
+      "n_unlabeled_train": 156,
+      "test_accuracy": 0.9875,
+      "test_f1_macro": 0.9874980465697765
+    },
+    {
+      "backend": "industry",
+      "method": "pseudo_label_xgb",
+      "n_labeled_train": 84,
+      "n_unlabeled_train": 156,
+      "test_accuracy": 0.975,
+      "test_f1_macro": 0.975
+    }
+  ],
+  "best_method": "label_propagation",
+  "best_backend": "sklearn",
+  "sklearn_baseline_accuracy": 0.9875,
+  "floor_note": "Industry/torch backends should meet or exceed sklearn baseline on this synthetic partial-label task when extras are installed."
+}

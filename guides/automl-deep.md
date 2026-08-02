@@ -2,7 +2,8 @@
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Randomized/grid AutoML is core. Optuna method needs `buildml[optuna]`.
+> Randomized/grid/evolutionary AutoML is core. Optuna backend needs
+> `buildml[automl]`. Industry adapters need `buildml[automl-industry]`.
 > See [installation](../docs/installation.rst).
 
 This guide covers Session AutoML: joint model-family and fold-local preprocess
@@ -41,14 +42,26 @@ digital twins, AV/robotics, TTS, full COCO suite) stay out.
 
 | Concern | Single-estimator search | `run_automl` |
 | --- | --- | --- |
-| Estimator | One fixed model you chose | Catalog of families |
+| Estimator | One fixed model you chose | Catalog of families (+ industry GBDT when installed) |
 | Preprocess | Optional knobs on one recipe | Discrete strategy search (impute/scale/encode/select) |
-| Ensembles | Bring your own | Optional voting of top families |
-| Extra | Optuna only for `optuna_search`; `evolutionary_search` is in-tree | Optuna only when `method='optuna'` |
+| Backends | Optuna for `optuna_search`; GA for `evolutionary_search` | `native`, `optuna`, `flaml`, `autogluon` |
+| Ensembles | Bring your own | Optional voting/stacking of top families |
 | Honesty | Train-only CV | Same + nested / validation modes |
 
 Use single-estimator search when the model family is already decided. Use
 AutoML when family and preprocess strategy are part of the decision.
+
+### Capability matrix
+
+```python
+from buildml.automl import automl_capability_matrix
+
+matrix = automl_capability_matrix()
+# matrix["backends"]["flaml"]["available"]  # True when buildml[automl-industry] installed
+```
+
+Industry backends (`flaml`, `autogluon`) fit on **train only** and disclose
+that fold-local recipe search is bypassed. Nested selection is **native-only**.
 
 ---
 
@@ -106,17 +119,23 @@ Default regression families: `ridge`, `lasso`, `random_forest`,
 `gradient_boosting`, `knn`, `decision_tree`.
 
 Default recipe strategies include passthrough, impute-only, impute+scale,
-one-hot/ordinal encode variants, and select (univariate / variance).
+one-hot/ordinal encode variants, select (univariate / variance), and
+expanded combinations (13 strategies).
 
-Cap exploration with `n_trials`, `families=...`, and
-`AutoMLBudget(max_trials=..., max_families=..., max_recipe_strategies=...)`.
+Cap exploration with `n_trials`, `time_budget`, `families=...`, and
+`AutoMLBudget(max_trials=..., max_families=..., max_recipe_strategies=...,
+max_time_seconds=..., study_storage=..., enable_pruning=...)`.
+
+When `buildml[automl-industry]` is installed, native search also includes
+LightGBM, XGBoost, and CatBoost families (`include_industry_families=True`).
 
 ---
 
 ## Optional ensembles inside AutoML
 
-When `include_ensembles=True`, AutoML scores a small number of **voting**
-ensembles built from diverse top single-model families under a shared recipe.
+When `include_ensembles=True`, AutoML scores **voting** and/or **stacking**
+ensembles (`ensemble_mode='voting'|'stacking'|'both'`) built from diverse
+top single-model families under a shared recipe.
 This is not a substitute for native `fit_stacking` / `fit_blending` when you
 want CV OOF meta features or an explicit train-inner blend holdout.
 
@@ -151,6 +170,8 @@ session.save_pipeline("artifacts/automl_pipeline", evaluate_partition="test")
 ## Non-blocking residuals
 
 - No dedicated AutoML dashboard charts (use classical plot boards / evaluate)
-- Stacking/blending are not auto-searched as full strategies (voting only when
-  `include_ensembles=True`; use native ensemble APIs for stack/blend)
-- Catalog deliberately omits SVM kernels, deep nets, and arbitrary Pipeline DAGs
+- Industry adapters (FLAML/AutoGluon) do not support nested CV or fold-local recipes
+- Full AutoGluon multi-modal / multimodel export not wrapped — tabular TabularPredictor only
+- Stacking inside AutoML uses sklearn Stacking* with fixed meta-estimators (not full native `fit_stacking` OOF path)
+- Catalog deliberately omits deep nets and arbitrary Pipeline DAGs
+- Benchmark: `python benchmarks/automl/tabular_search.py` (skips unavailable backends)

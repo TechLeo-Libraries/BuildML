@@ -12,6 +12,8 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "method": payload.get("method"),
+        "backend": payload.get("backend"),
+        "modality": payload.get("modality"),
         "n_train_rows": payload.get("n_train_rows"),
         "n_labeled_train": payload.get("n_labeled_train"),
         "n_unlabeled_train": payload.get("n_unlabeled_train"),
@@ -60,6 +62,8 @@ def semisupervised_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for semi-supervised learning."""
+    from buildml.semisupervised.catalog import semisupervised_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -78,6 +82,8 @@ def semisupervised_status(
         disclosures.extend(
             [
                 f"SemiSupervisedPlan method={getattr(plan, 'method', None)}, "
+                f"backend={getattr(plan, 'backend', 'sklearn')}, "
+                f"modality={getattr(plan, 'modality', 'tabular')}, "
                 f"n_labeled_train={getattr(plan, 'n_labeled_train', None)}, "
                 f"n_unlabeled_train={getattr(plan, 'n_unlabeled_train', None)}.",
                 "Unlabeled targets use NaN missingness by default (sklearn -1 internally).",
@@ -111,6 +117,9 @@ def semisupervised_status(
         "present": enabled or saw,
         "has_semisupervised_plan": enabled,
         "method": None if plan is None else getattr(plan, "method", None),
+        "backend": None if plan is None else getattr(plan, "backend", "sklearn"),
+        "modality": None if plan is None else getattr(plan, "modality", "tabular"),
+        "capability_matrix": semisupervised_capability_matrix(),
         "n_labeled_train": None if plan is None else getattr(plan, "n_labeled_train", None),
         "n_unlabeled_train": (
             None if plan is None else getattr(plan, "n_unlabeled_train", None)

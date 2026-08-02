@@ -22,6 +22,7 @@ from buildml.kg.fit import fit_kg
 from buildml.kg.predict import predict_links, score_triples
 from buildml.kg.query import query_kg
 from buildml.kg.types import (
+    KgBackend,
     KgMethod,
     KgNorm,
     KgQueryMode,
@@ -35,6 +36,7 @@ Direction = Literal["out", "in", "both"]
 def fit_kg_op(
     session,
     *,
+    backend: KgBackend | None = None,
     method: KgMethod = "transe",
     head_column: str | None = None,
     relation_column: str | None = None,
@@ -50,6 +52,9 @@ def fit_kg_op(
 ):
     """Fit a KG embedding model on Session train triples only.
 
+    Backends: ``native`` (numpy TransE/DistMult) or ``pykeen`` (RotatE/ComplEx
+    when ``buildml[kg-industry]`` is installed).
+
     Notes
     -----
     **Leakage:** Requires a split. Vocabularies, embeddings, and adjacency
@@ -61,6 +66,7 @@ def fit_kg_op(
     plan, result = fit_kg(
         session.dataset,
         session._split_plan,
+        backend=backend,
         method=method,
         head_column=head_column,
         relation_column=relation_column,
@@ -83,6 +89,7 @@ def fit_kg_op(
     session._record(
         "fit_kg",
         {
+            "backend": backend,
             "method": method,
             "head_column": head_column,
             "relation_column": relation_column,

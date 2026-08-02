@@ -7,7 +7,6 @@ from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
-from sklearn.cluster import AgglomerativeClustering, DBSCAN, KMeans
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
@@ -19,6 +18,7 @@ from buildml.data.splits import (
     frame_for_partition,
 )
 from buildml.ingest.detect import schema_from_dataframe
+from buildml.unsupervised.backends import fit_backend, predict_backend
 from buildml.unsupervised.features import matrix_from_frame, resolve_cluster_columns
 from buildml.unsupervised.results import ClusterAssignResult, ClusterFitResult, ClusterPlan
 from buildml.unsupervised.types import ClusterConfig, ClusterMethod
@@ -39,23 +39,30 @@ def fit_clusterer(
     linkage: str = "ward",
     eps: float = 0.5,
     min_samples: int = 5,
+    gmm_covariance_type: str = "full",
+    gmm_max_components: int = 10,
+    gmm_select_by: str = "bic",
+    hdbscan_min_cluster_size: int = 5,
+    hdbscan_min_samples: int | None = None,
+    spectral_affinity: str = "nearest_neighbors",
+    spectral_n_neighbors: int = 10,
+    optics_min_samples: int = 5,
+    optics_xi: float = 0.05,
+    optics_min_cluster_size: float | None = None,
+    bandwidth: float | None = None,
+    latent_dim: int = 10,
+    pretrain_epochs: int = 50,
+    finetune_epochs: int = 100,
+    batch_size: int = 256,
+    learning_rate: float = 1e-3,
     prefer_reduce_components: bool = True,
     reduce_plan: Any | None = None,
     label_column: str = "cluster_id",
+    auto_k: bool = False,
+    auto_k_min: int = 2,
+    auto_k_max: int = 10,
 ) -> tuple[ClusterPlan, ClusterFitResult]:
-    """Fit a clusterer on the train partition only.
-
-    Parameters
-    ----------
-    method:
-        ``kmeans`` (native predict), ``agglomerative`` (nearest-centroid assign
-        on holdout with disclosure), or ``dbscan`` (nearest-core / noise).
-    n_clusters:
-        Required for kmeans/agglomerative; ignored for dbscan (density decides).
-    prefer_reduce_components:
-        When True and a ``ReducePlan`` is attached with component columns on
-        the frame, cluster those components instead of raw features.
-    """
+    """Fit a clusterer on the train partition only."""
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
     if not label_column or not str(label_column).replace("_", "").isalnum():
@@ -71,79 +78,7 @@ def fit_clusterer(
     )
     x = matrix_from_frame(train, cols)
     n_train = int(x.shape[0])
-    warnings: list[str] = []
 
-    if method == "kmeans":
-        if n_clusters is None or int(n_clusters) < 2:
-            raise ValidationError("kmeans requires n_clusters >= 2")
-        if int(n_clusters) > n_train:
-            raise ValidationError(
-                f"n_clusters={n_clusters} exceeds n_train_rows={n_train}"
-            )
-        estimator = KMeans(
-            n_clusters=int(n_clusters),
-            random_state=random_state,
-            n_init=n_init,
-            max_iter=max_iter,
-        )
-        labels = estimator.fit_predict(x)
-        centroids = np.asarray(estimator.cluster_centers_, dtype=float)
-        centroid_ids = tuple(range(int(n_clusters)))
-        assign_strategy = "native"
-        inertia = float(estimator.inertia_)
-        core_idx: tuple[int, ...] = ()
-    elif method == "agglomerative":
-        if n_clusters is None or int(n_clusters) < 2:
-            raise ValidationError("agglomerative requires n_clusters >= 2")
-        if int(n_clusters) > n_train:
-            raise ValidationError(
-                f"n_clusters={n_clusters} exceeds n_train_rows={n_train}"
-            )
-        estimator = AgglomerativeClustering(
-            n_clusters=int(n_clusters),
-            linkage=linkage,
-        )
-        labels = estimator.fit_predict(x)
-        centroids, centroid_ids = _centroids_from_labels(x, labels)
-        assign_strategy = "nearest_centroid"
-        inertia = None
-        core_idx = ()
-        disclosures.append(
-            "AgglomerativeClustering has no native predict for new rows; "
-            "holdout assign uses nearest train-cluster centroid (disclosed approximation)."
-        )
-    elif method == "dbscan":
-        if eps <= 0:
-            raise ValidationError("dbscan eps must be > 0")
-        if min_samples < 1:
-            raise ValidationError("dbscan min_samples must be >= 1")
-        estimator = DBSCAN(eps=float(eps), min_samples=int(min_samples))
-        labels = estimator.fit_predict(x)
-        unique = sorted({int(v) for v in labels if int(v) >= 0})
-        n_clusters = len(unique)
-        if n_clusters < 1:
-            warnings.append(
-                "DBSCAN found no non-noise clusters on train; check eps/min_samples "
-                "and scaling. Holdout assign will label most points as noise (-1)."
-            )
-        centroids, centroid_ids = (
-            _centroids_from_labels(x, labels) if unique else (None, ())
-        )
-        core_idx = tuple(int(i) for i in getattr(estimator, "core_sample_indices_", []))
-        assign_strategy = "nearest_core"
-        inertia = None
-        disclosures.append(
-            "DBSCAN holdout assign uses nearest train core sample within eps; "
-            "points farther than eps are labeled noise (-1). This is not refitting."
-        )
-        disclosures.append(
-            "DBSCAN cluster count is density-driven; n_clusters is observed, not requested."
-        )
-    else:
-        raise ValidationError(f"Unsupported cluster method '{method}'")
-
-    label_list = [int(v) for v in np.asarray(labels).tolist()]
-    sizes = {int(k): int(v) for k, v in sorted(Counter(label_list).items())}
     config = ClusterConfig(
         method=method,
         n_clusters=n_clusters,
@@ -154,38 +89,63 @@ def fit_clusterer(
         linkage=linkage,
         eps=eps,
         min_samples=min_samples,
+        gmm_covariance_type=gmm_covariance_type,
+        gmm_max_components=gmm_max_components,
+        gmm_select_by=gmm_select_by,
+        hdbscan_min_cluster_size=hdbscan_min_cluster_size,
+        hdbscan_min_samples=hdbscan_min_samples,
+        spectral_affinity=spectral_affinity,
+        spectral_n_neighbors=spectral_n_neighbors,
+        optics_min_samples=optics_min_samples,
+        optics_xi=optics_xi,
+        optics_min_cluster_size=optics_min_cluster_size,
+        bandwidth=bandwidth,
+        latent_dim=latent_dim,
+        pretrain_epochs=pretrain_epochs,
+        finetune_epochs=finetune_epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
         prefer_reduce_components=prefer_reduce_components,
         label_column=label_column,
+        auto_k=auto_k,
+        auto_k_min=auto_k_min,
+        auto_k_max=auto_k_max,
     )
+    outcome = fit_backend(x, config, n_train=n_train)
+    disclosures = list(disclosures) + list(outcome.disclosures)
+
+    label_list = [int(v) for v in np.asarray(outcome.labels).tolist()]
+    sizes = {int(k): int(v) for k, v in sorted(Counter(label_list).items())}
     plan = ClusterPlan(
         method=method,
         columns=tuple(cols),
         label_column=label_column,
-        n_clusters=n_clusters,
+        n_clusters=outcome.n_clusters,
         n_train_rows=n_train,
         train_labels_=tuple(label_list),
         cluster_sizes_=sizes,
-        assign_strategy=assign_strategy,
-        estimator_=estimator,
-        centroids_=centroids,
-        centroid_label_ids_=centroid_ids,
-        core_sample_indices_=core_idx,
+        assign_strategy=outcome.assign_strategy,
+        estimator_=outcome.estimator,
+        centroids_=outcome.centroids,
+        centroid_label_ids_=outcome.centroid_ids,
+        core_sample_indices_=outcome.core_idx,
         disclosures=tuple(disclosures),
-        warnings=tuple(warnings),
+        warnings=tuple(outcome.warnings),
         used_reduce_components=used_reduce,
-        config=config.to_dict(),
+        config={**config.to_dict(), **outcome.extra},
     )
     result = ClusterFitResult(
         method=method,
-        n_clusters=n_clusters,
+        n_clusters=outcome.n_clusters,
         n_train_rows=n_train,
         columns=tuple(cols),
         cluster_sizes=sizes,
-        assign_strategy=assign_strategy,
+        assign_strategy=outcome.assign_strategy,
         used_reduce_components=used_reduce,
         disclosures=tuple(disclosures),
-        warnings=tuple(warnings),
-        inertia=inertia if method == "kmeans" else None,
+        warnings=tuple(outcome.warnings),
+        inertia=outcome.inertia,
+        diagnostics=dict(outcome.extra),
     )
     return plan, result
 
@@ -198,22 +158,13 @@ def assign_clusters(
     partition: PartitionOrAll = "test",
     attach: bool = False,
 ) -> tuple[Dataset | None, ClusterAssignResult]:
-    """Assign cluster labels using a train-fitted plan (no refit).
-
-    Parameters
-    ----------
-    partition:
-        ``train``, ``validation``, ``test``, or ``all`` (full frame).
-    attach:
-        When True, write ``plan.label_column`` onto a copy of the dataset and
-        return the mutated Dataset as the first tuple element.
-    """
+    """Assign cluster labels using a train-fitted plan (no refit)."""
     frame, part_name = _frame_for_assign(dataset, split_plan, partition)
     missing = [c for c in plan.columns if c not in frame.columns]
     if missing:
         raise ValidationError(f"Cluster plan columns missing from dataset: {missing}")
     x = matrix_from_frame(frame, list(plan.columns))
-    labels = _predict_labels(plan, x)
+    labels = predict_backend(plan, x)
     label_list = [int(v) for v in labels.tolist()]
     n_noise = sum(1 for v in label_list if v < 0)
     disclosures = list(plan.disclosures)
@@ -275,77 +226,3 @@ def _frame_for_assign(
             "Call session.split(...) first, or use partition='all'."
         )
     return frame_for_partition(dataset, split_plan, partition), str(partition)
-
-
-def _predict_labels(plan: ClusterPlan, x: np.ndarray) -> np.ndarray:
-    method = plan.method
-    if method == "kmeans":
-        return np.asarray(plan.estimator_.predict(x), dtype=int)
-    if method == "agglomerative":
-        if plan.centroids_ is None or len(plan.centroids_) == 0:
-            raise ValidationError("Agglomerative plan is missing train centroids")
-        return _nearest_centroid_labels(
-            x, plan.centroids_, label_ids=plan.centroid_label_ids_
-        )
-    if method == "dbscan":
-        return _dbscan_assign(plan, x)
-    raise ValidationError(f"Unsupported cluster method '{method}'")
-
-
-def _centroids_from_labels(
-    x: np.ndarray, labels: np.ndarray
-) -> tuple[np.ndarray | None, tuple[int, ...]]:
-    ids = sorted({int(v) for v in labels if int(v) >= 0})
-    if not ids:
-        return None, ()
-    centers = []
-    for label in ids:
-        mask = np.asarray(labels) == label
-        centers.append(x[mask].mean(axis=0))
-    return np.asarray(centers, dtype=float), tuple(ids)
-
-
-def _nearest_centroid_labels(
-    x: np.ndarray,
-    centroids: np.ndarray,
-    *,
-    label_ids: tuple[int, ...],
-) -> np.ndarray:
-    dists = ((x[:, None, :] - centroids[None, :, :]) ** 2).sum(axis=2)
-    nearest = np.asarray(dists.argmin(axis=1), dtype=int)
-    if not label_ids:
-        return nearest
-    mapping = np.asarray(label_ids, dtype=int)
-    return mapping[nearest]
-
-
-def _dbscan_assign(plan: ClusterPlan, x: np.ndarray) -> np.ndarray:
-    estimator = plan.estimator_
-    eps = float(getattr(estimator, "eps", plan.config.get("eps", 0.5)))
-    cores = getattr(estimator, "components_", None)
-    labels_arr = getattr(estimator, "labels_", None)
-    core_idx = list(plan.core_sample_indices_)
-    if cores is None or len(core_idx) == 0 or labels_arr is None:
-        return np.full(shape=(x.shape[0],), fill_value=-1, dtype=int)
-    cores_arr = np.asarray(cores, dtype=float)
-    core_lab = np.asarray(labels_arr, dtype=int)[np.asarray(core_idx, dtype=int)]
-    if cores_arr.shape[0] != core_lab.shape[0]:
-        if plan.centroids_ is not None and len(plan.centroids_) > 0:
-            raw = _nearest_centroid_labels(
-                x, plan.centroids_, label_ids=plan.centroid_label_ids_
-            )
-            dists = np.sqrt(
-                ((x[:, None, :] - plan.centroids_[None, :, :]) ** 2).sum(axis=2)
-            )
-            nearest = dists.min(axis=1)
-            out = raw.copy()
-            out[nearest > eps] = -1
-            return out.astype(int)
-        return np.full(shape=(x.shape[0],), fill_value=-1, dtype=int)
-
-    dists = np.sqrt(((x[:, None, :] - cores_arr[None, :, :]) ** 2).sum(axis=2))
-    nearest_i = dists.argmin(axis=1)
-    nearest_d = dists[np.arange(x.shape[0]), nearest_i]
-    out = core_lab[nearest_i].astype(int)
-    out[nearest_d > eps] = -1
-    return out

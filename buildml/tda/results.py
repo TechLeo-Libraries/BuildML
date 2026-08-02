@@ -12,7 +12,7 @@ import numpy as np
 class TdaPlan:
     """Train-fitted TDA transformer (+ optional supervised head).
 
-    Persist via ``buildml.tda_bundle.v1``. Distinct from Session checkpoints.
+    Persist via ``buildml.tda_bundle.v2`` (v1 bundles remain loadable).
     """
 
     vectorization: str
@@ -30,6 +30,7 @@ class TdaPlan:
     head: str
     used_reduce_components: bool
     standardize: bool
+    backend: str = "native"
     mean_: np.ndarray | None = field(default=None, repr=False)
     scale_: np.ndarray | None = field(default=None, repr=False)
     train_x_: np.ndarray = field(default_factory=lambda: np.zeros((0, 0)), repr=False)
@@ -39,12 +40,14 @@ class TdaPlan:
     label_encoder_: Any = field(default=None, repr=False)
     classes_: tuple[Any, ...] = ()
     train_tda_features_: np.ndarray | None = field(default=None, repr=False)
+    mapper_summary_: dict[str, Any] | None = field(default=None, repr=False)
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "vectorization": self.vectorization,
             "columns": list(self.columns),
             "homology_dims": list(self.homology_dims),
@@ -61,6 +64,7 @@ class TdaPlan:
             "used_reduce_components": self.used_reduce_components,
             "standardize": self.standardize,
             "has_head": self.head_estimator_ is not None,
+            "mapper_summary": None if self.mapper_summary_ is None else dict(self.mapper_summary_),
             "classes": list(self.classes_),
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
@@ -80,6 +84,7 @@ class TdaFitResult:
     columns: tuple[str, ...]
     task: str | None
     head: str
+    backend: str = "native"
     train_score: float | None = None
     used_reduce_components: bool = False
     disclosures: tuple[str, ...] = ()
@@ -87,6 +92,7 @@ class TdaFitResult:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "vectorization": self.vectorization,
             "n_train_rows": self.n_train_rows,
             "feature_dim": self.feature_dim,
@@ -103,7 +109,7 @@ class TdaFitResult:
 
     def show(self) -> None:
         print(
-            f"TdaFit · {self.vectorization} · knn={self.knn} · "
+            f"TdaFit · {self.backend} · {self.vectorization} · knn={self.knn} · "
             f"dim={self.feature_dim} · n_train={self.n_train_rows} · head={self.head}"
         )
         if self.train_score is not None:
@@ -163,7 +169,9 @@ class TdaEvalResult:
     task: str
     n_rows: int
     metrics: dict[str, float] = field(default_factory=dict)
+    diagram_distances: dict[str, float] = field(default_factory=dict)
     vectorization: str = "persistence_image"
+    backend: str = "native"
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
@@ -173,7 +181,9 @@ class TdaEvalResult:
             "task": self.task,
             "n_rows": self.n_rows,
             "metrics": dict(self.metrics),
+            "diagram_distances": dict(self.diagram_distances),
             "vectorization": self.vectorization,
+            "backend": self.backend,
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
         }

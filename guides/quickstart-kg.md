@@ -3,6 +3,7 @@
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Core path (numpy TransE / DistMult) — no Neo4j, no extra required.
+> Industry path: `pip install 'buildml[kg-industry]'` for PyKEEN RotatE/ComplEx.
 > See [installation](../docs/installation.rst).
 
 Session knowledge-graph learning on `(head, relation, tail)` triples.
@@ -105,7 +106,7 @@ session.save_kg_bundle("artifacts/kg_demo_bundle")
 
 | Path | What it is |
 |------|------------|
-| **KG (this)** | Triples → TransE/DistMult + symbolic query |
+| **KG (this)** | Triples → native or PyKEEN embeddings + symbolic query |
 | Graph ML | Node table + `set_graph` edges → node classification |
 | RAG | Chunk corpus → embed/retrieve/generate |
 | Recommenders | User–item interactions → top-K CF |
@@ -115,5 +116,5 @@ session.save_kg_bundle("artifacts/kg_demo_bundle")
 ## Tracker
 
 - Recommenders **PASS**; LTR **PASS**
-- Knowledge graphs (this guide) — Phase-1 bar
-- Next after KG PASS: **optimisation / decision helpers**
+- Knowledge graphs (this guide) — **PASS** (R5.6 industry depth)
+- Next: **probabilistic** (R5.7)

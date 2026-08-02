@@ -6,26 +6,43 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import (
-    HistGradientBoostingClassifier,
-    IsolationForest,
-)
-from sklearn.neighbors import LocalOutlierFactor
-from sklearn.svm import OneClassSVM
 
+from buildml.anomaly.adapters.pyod import build_pyod_estimator, pyod_anomaly_scores
+from buildml.anomaly.adapters.sklearn import (
+    build_sklearn_unsupervised_estimator,
+    sklearn_anomaly_scores,
+)
+from buildml.anomaly.adapters.supervised import (
+    build_supervised_estimator,
+    supervised_anomaly_scores,
+)
+from buildml.anomaly.adapters.torch_ae import build_torch_autoencoder, torch_ae_anomaly_scores
+from buildml.anomaly.catalog import resolve_backend_method
 from buildml.anomaly.features import matrix_from_frame, resolve_anomaly_columns
 from buildml.anomaly.results import AnomalyFitResult, AnomalyPlan
-from buildml.anomaly.types import AnomalyConfig, AnomalyMethod, AnomalyMode, ThresholdPolicy
+from buildml.anomaly.types import (
+    AnomalyBackend,
+    AnomalyConfig,
+    AnomalyMethod,
+    AnomalyMode,
+    ThresholdPolicy,
+)
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
+
+SUPERVISED_METHODS = {"supervised_hgb", "supervised_xgb", "supervised_lgbm"}
+SKLEARN_METHODS = {"isolation_forest", "lof", "one_class_svm"}
+PYOD_METHODS = {"hbos", "copod", "ecod", "deepsvdd"}
+TORCH_METHODS = {"autoencoder"}
 
 
 def fit_detector(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: AnomalyBackend | None = None,
     method: AnomalyMethod = "isolation_forest",
     mode: AnomalyMode = "unsupervised",
     columns: list[str] | None = None,
@@ -40,6 +57,9 @@ def fit_detector(
     nu: float = 0.05,
     kernel: str = "rbf",
     gamma: str | float = "scale",
+    latent_dim: int = 8,
+    ae_epochs: int = 40,
+    ae_batch_size: int = 64,
     normal_label_column: str | None = None,
     normal_label_value: Any = 0,
     positive_label: Any = 1,
@@ -50,19 +70,18 @@ def fit_detector(
 ) -> tuple[AnomalyPlan, AnomalyFitResult]:
     """Fit an anomaly detector on the train partition only.
 
-    Modes
-    -----
-    unsupervised:
-        Fit on all train rows (may contain anomalies). Typical for IsolationForest
-        with a contamination prior.
-    novelty:
-        Fit on a **normal-only** train subset defined by ``normal_label_column``
-        / ``normal_label_value``. This is semi-supervised novelty detection —
-        not unlabeled clustering and not a full fraud platform.
-    supervised:
-        Fit a binary classifier (``supervised_hgb``) when a binary target role
-        exists. Scores are positive-class probabilities; classical imbalance
-        metrics belong on ``evaluate_anomaly``.
+    Backends
+    --------
+    sklearn (default):
+        IsolationForest, LOF, One-Class SVM — core dependency.
+    pyod (``buildml[anomaly-industry]``):
+        HBOS, COPOD, ECOD, DeepSVDD industry detectors.
+    torch (``buildml[torch]``):
+        Tabular autoencoder reconstruction-error scoring.
+
+    Supervised fraud scorers (``mode='supervised'``):
+        ``supervised_hgb`` (core), ``supervised_xgb`` / ``supervised_lgbm``
+        when ``buildml[anomaly-industry]`` is installed.
 
     Score convention: higher ``anomaly_score`` = more anomalous. Thresholds and
     train alert rates are always disclosed on the plan.
@@ -72,9 +91,17 @@ def fit_detector(
     _validate_names(flag_column, score_column)
     if not 0.0 < float(contamination) < 0.5:
         raise ValidationError("contamination must be in (0, 0.5)")
+    if threshold_policy == "validation_tuned":
+        raise ValidationError(
+            "threshold_policy='validation_tuned' is set by tune_anomaly_threshold "
+            "after fit. Fit with contamination/quantile/score_threshold first."
+        )
 
     mode = _resolve_mode(method, mode)
-    _validate_mode_method(mode, method)
+    resolved_backend, resolved_method = resolve_backend_method(
+        backend=backend, method=method, mode=mode
+    )
+    _validate_mode_method(mode, resolved_method)
 
     train = frame_for_partition(dataset, split_plan, "train")
     n_train = int(len(train))
@@ -83,14 +110,16 @@ def fit_detector(
         "Thresholds and alert rates are explicit; this is not a streaming fraud platform "
         "and makes no causal fraud claims.",
         "EDA IsolationForest screens and Session.handle_outliers fences are not this API.",
+        f"Backend={resolved_backend}, method={resolved_method}.",
     ]
+    disclosures.extend(_score_calibration_disclosures(resolved_backend, resolved_method))
     warnings: list[str] = []
 
     fit_frame, fit_disclosures, fit_warnings = _select_fit_rows(
         dataset,
         train,
         mode=mode,
-        method=method,
+        method=resolved_method,
         normal_label_column=normal_label_column,
         normal_label_value=normal_label_value,
         positive_label=positive_label,
@@ -122,19 +151,28 @@ def fit_detector(
             positive_label=positive_label,
             label_column=None,
         )
-        estimator = HistGradientBoostingClassifier(random_state=random_state)
+        estimator = build_supervised_estimator(
+            method=resolved_method,  # type: ignore[arg-type]
+            random_state=random_state,
+        )
         estimator.fit(x_fit, y_fit)
         disclosures.append(
-            "Supervised mode fits HistGradientBoostingClassifier on train labels only. "
+            f"Supervised mode fits {resolved_method} on train labels only. "
             "Prefer PR-AUC / precision@k / recall@k under class imbalance; accuracy alone "
             "is often misleading."
         )
-        # Score the full train partition for threshold calibration disclosure.
         x_train = matrix_from_frame(train, cols)
-        train_scores = _anomaly_scores(estimator, method="supervised_hgb", x=x_train)
+        train_scores = anomaly_scores(
+            estimator,
+            backend=resolved_backend,
+            method=resolved_method,
+            x=x_train,
+        )
     else:
         estimator = _build_unsupervised_estimator(
-            method=method,
+            backend=resolved_backend,
+            method=resolved_method,
+            x_fit=x_fit,
             contamination=contamination,
             random_state=random_state,
             n_estimators=n_estimators,
@@ -143,10 +181,17 @@ def fit_detector(
             nu=nu,
             kernel=kernel,
             gamma=gamma,
+            latent_dim=latent_dim,
+            ae_epochs=ae_epochs,
+            ae_batch_size=ae_batch_size,
         )
-        estimator.fit(x_fit)
         x_train = matrix_from_frame(train, cols)
-        train_scores = _anomaly_scores(estimator, method=method, x=x_train)
+        train_scores = anomaly_scores(
+            estimator,
+            backend=resolved_backend,
+            method=resolved_method,
+            x=x_train,
+        )
 
     threshold, thr_disclosures = _resolve_threshold(
         train_scores,
@@ -154,7 +199,7 @@ def fit_detector(
         contamination=contamination,
         score_threshold=score_threshold,
         quantile=quantile,
-        method=method,
+        method=resolved_method,
         mode=mode,
     )
     disclosures.extend(thr_disclosures)
@@ -170,7 +215,8 @@ def fit_detector(
         )
 
     config = AnomalyConfig(
-        method=method,
+        method=resolved_method,  # type: ignore[arg-type]
+        backend=resolved_backend,
         mode=mode,
         columns=tuple(cols),
         random_state=random_state,
@@ -184,6 +230,9 @@ def fit_detector(
         nu=nu,
         kernel=kernel,
         gamma=gamma,
+        latent_dim=latent_dim,
+        ae_epochs=ae_epochs,
+        ae_batch_size=ae_batch_size,
         normal_label_column=normal_label_column,
         normal_label_value=normal_label_value,
         positive_label=positive_label,
@@ -192,8 +241,9 @@ def fit_detector(
         score_column=score_column,
     )
     plan = AnomalyPlan(
-        method=method,
+        method=resolved_method,
         mode=mode,
+        backend=resolved_backend,
         columns=tuple(cols),
         n_train_rows=n_train,
         n_fit_rows=n_fit,
@@ -214,8 +264,9 @@ def fit_detector(
         config=config.to_dict(),
     )
     result = AnomalyFitResult(
-        method=method,
+        method=resolved_method,
         mode=mode,
+        backend=resolved_backend,
         n_train_rows=n_train,
         n_fit_rows=n_fit,
         columns=tuple(cols),
@@ -231,37 +282,56 @@ def fit_detector(
     return plan, result
 
 
-def anomaly_scores(plan: AnomalyPlan, x: np.ndarray) -> np.ndarray:
-    """Compute higher-is-more-anomalous scores from a frozen plan."""
-    return _anomaly_scores(plan.estimator_, method=plan.method, x=x)
+def anomaly_scores(
+    plan_or_estimator: AnomalyPlan | Any,
+    x: np.ndarray | None = None,
+    *,
+    backend: str | None = None,
+    method: str | None = None,
+) -> np.ndarray:
+    """Compute higher-is-more-anomalous scores from a frozen plan or raw estimator."""
+    if isinstance(plan_or_estimator, AnomalyPlan):
+        plan = plan_or_estimator
+        if x is None:
+            raise ValidationError("x is required when passing an AnomalyPlan")
+        return _anomaly_scores(
+            plan.estimator_,
+            backend=plan.backend,
+            method=plan.method,
+            x=x,
+        )
+    if x is None:
+        raise ValidationError("x is required")
+    if backend is None or method is None:
+        raise ValidationError("backend and method are required for raw estimator scoring")
+    return _anomaly_scores(plan_or_estimator, backend=backend, method=method, x=x)
 
 
-def _anomaly_scores(estimator: Any, *, method: str, x: np.ndarray) -> np.ndarray:
-    if method == "supervised_hgb":
-        proba = np.asarray(estimator.predict_proba(x), dtype=float)
-        # Positive class is index 1 when classes_ are sorted [neg, pos] — use classes_.
-        classes = list(getattr(estimator, "classes_", [0, 1]))
-        if len(classes) == 1:
-            # Degenerate single-class train — all probability mass on that class.
-            return np.zeros(shape=(x.shape[0],), dtype=float)
-        # Prefer class label 1 when present; else last class.
-        if 1 in classes:
-            idx = classes.index(1)
-        else:
-            idx = len(classes) - 1
-        return proba[:, idx]
-    if method in {"isolation_forest", "lof"}:
-        # sklearn: lower score_samples => more abnormal
-        return -np.asarray(estimator.score_samples(x), dtype=float)
-    if method == "one_class_svm":
-        # sklearn: negative decision_function => outlier
-        return -np.asarray(estimator.decision_function(x), dtype=float)
-    raise ValidationError(f"Unsupported anomaly method '{method}'")
+def _anomaly_scores(
+    estimator: Any,
+    *,
+    backend: str,
+    method: str,
+    x: np.ndarray,
+) -> np.ndarray:
+    if method in SUPERVISED_METHODS:
+        return supervised_anomaly_scores(estimator, method=method, x=x)
+    if backend == "sklearn":
+        return sklearn_anomaly_scores(estimator, method=method, x=x)
+    if backend == "pyod":
+        return pyod_anomaly_scores(estimator, method=method, x=x)
+    if backend == "torch" and method == "autoencoder":
+        return torch_ae_anomaly_scores(estimator, x=x)
+    raise ValidationError(
+        f"Unsupported anomaly scoring backend='{backend}' method='{method}'"
+    )
 
 
 def _build_unsupervised_estimator(
     *,
-    method: AnomalyMethod,
+    backend: str,
+    method: str,
+    x_fit: np.ndarray,
     contamination: float,
     random_state: int | None,
     n_estimators: int,
@@ -270,30 +340,66 @@ def _build_unsupervised_estimator(
     nu: float,
     kernel: str,
     gamma: str | float,
+    latent_dim: int,
+    ae_epochs: int,
+    ae_batch_size: int,
 ) -> Any:
-    if method == "isolation_forest":
-        return IsolationForest(
-            n_estimators=int(n_estimators),
+    if backend == "sklearn":
+        est = build_sklearn_unsupervised_estimator(
+            method=method,  # type: ignore[arg-type]
+            contamination=contamination,
+            random_state=random_state,
+            n_estimators=n_estimators,
             max_samples=max_samples,
-            contamination=float(contamination),
+            n_neighbors=n_neighbors,
+            nu=nu,
+            kernel=kernel,
+            gamma=gamma,
+        )
+        est.fit(x_fit)
+        return est
+    if backend == "pyod":
+        est = build_pyod_estimator(
+            method=method,  # type: ignore[arg-type]
+            contamination=contamination,
+            random_state=random_state,
+            n_neighbors=n_neighbors,
+        )
+        est.fit(x_fit)
+        return est
+    if backend == "torch" and method == "autoencoder":
+        return build_torch_autoencoder(
+            x_fit,
+            latent_dim=latent_dim,
+            epochs=ae_epochs,
+            batch_size=ae_batch_size,
             random_state=random_state,
         )
-    if method == "lof":
-        if n_neighbors < 2:
-            raise ValidationError("lof n_neighbors must be >= 2")
-        return LocalOutlierFactor(
-            n_neighbors=int(n_neighbors),
-            contamination=float(contamination),
-            novelty=True,
-        )
-    if method == "one_class_svm":
-        if not 0.0 < float(nu) <= 1.0:
-            raise ValidationError("one_class_svm nu must be in (0, 1]")
-        return OneClassSVM(kernel=kernel, gamma=gamma, nu=float(nu))
-    raise ValidationError(
-        f"Method '{method}' is not an unsupervised/novelty detector. "
-        "Use mode='supervised' with method='supervised_hgb'."
-    )
+    raise ValidationError(f"Unsupported backend='{backend}' method='{method}'")
+
+
+def _score_calibration_disclosures(backend: str, method: str) -> list[str]:
+    if backend == "sklearn" and method in SKLEARN_METHODS:
+        return [
+            "Score calibration (sklearn): inverted score_samples / decision_function "
+            "so higher anomaly_score = more anomalous."
+        ]
+    if backend == "pyod":
+        return [
+            "Score calibration (PyOD): decision_function scores; higher = more anomalous. "
+            "Holdout score scale may differ from sklearn detectors — compare via ranking metrics."
+        ]
+    if backend == "torch" and method == "autoencoder":
+        return [
+            "Score calibration (torch AE): per-row MSE reconstruction error on train-fitted "
+            "autoencoder; not calibrated to probability — use validation threshold tuning."
+        ]
+    if method in SUPERVISED_METHODS:
+        return [
+            f"Score calibration ({method}): positive-class probability; "
+            "not guaranteed well-calibrated under extreme imbalance."
+        ]
+    return []
 
 
 def _resolve_threshold(
@@ -338,7 +444,6 @@ def _resolve_threshold(
         q = float(contamination if quantile is None else quantile)
         if not 0.0 < q < 1.0:
             raise ValidationError("quantile must be in (0, 1)")
-        # Top-q fraction: threshold at (1-q) quantile of scores
         thr = float(np.quantile(scores, 1.0 - q))
         disclosures.append(
             f"Quantile threshold at top {q:.4f} of train anomaly scores "
@@ -369,7 +474,7 @@ def _select_fit_rows(
     train: pd.DataFrame,
     *,
     mode: AnomalyMode,
-    method: AnomalyMethod,
+    method: str,
     normal_label_column: str | None,
     normal_label_value: Any,
     positive_label: Any,
@@ -387,7 +492,6 @@ def _select_fit_rows(
     if mode == "novelty":
         label_col = normal_label_column
         if label_col is None:
-            # Allow target role as the normal/anomaly label source.
             targets = dataset.role_columns(ColumnRole.TARGET)
             if len(targets) == 1:
                 label_col = targets[0]
@@ -416,10 +520,10 @@ def _select_fit_rows(
             f"{label_col}=={normal_label_value!r}; excluded {n_excluded} row(s). "
             "Holdout scoring uses the frozen detector (no refit)."
         )
-        if method == "supervised_hgb":
+        if method in SUPERVISED_METHODS:
             raise ValidationError(
                 "novelty mode is for unsupervised detectors; use mode='supervised' "
-                "with method='supervised_hgb'."
+                "with a supervised scorer."
             )
         if int(mask.sum()) < 5:
             n_unique = int(pd.Series(train[label_col]).nunique(dropna=True))
@@ -438,10 +542,9 @@ def _select_fit_rows(
         return fit_frame, disclosures, warnings
 
     if mode == "supervised":
-        if method != "supervised_hgb":
+        if method not in SUPERVISED_METHODS:
             raise ValidationError(
-                "supervised mode requires method='supervised_hgb' "
-                "(binary classifier scores as anomaly probabilities)."
+                f"supervised mode requires a supervised scorer; got '{method}'."
             )
         targets = dataset.role_columns(ColumnRole.TARGET)
         if not targets:
@@ -454,7 +557,6 @@ def _select_fit_rows(
             "patterns with imbalance-honest metrics on evaluate_anomaly. "
             "It is not graph fraud, online streaming, or causal attribution."
         )
-        # Fit on all labeled train rows (standard supervised contract).
         return train, disclosures, warnings
 
     raise ValidationError(f"Unsupported anomaly mode '{mode}'")
@@ -495,21 +597,22 @@ def _binary_labels(
     return y
 
 
-def _resolve_mode(method: AnomalyMethod, mode: AnomalyMode) -> AnomalyMode:
-    if method == "supervised_hgb" and mode != "supervised":
+def _resolve_mode(method: str, mode: AnomalyMode) -> AnomalyMode:
+    if method in SUPERVISED_METHODS and mode != "supervised":
         return "supervised"
     return mode
 
 
-def _validate_mode_method(mode: AnomalyMode, method: AnomalyMethod) -> None:
-    unsupervised_methods = {"isolation_forest", "lof", "one_class_svm"}
+def _validate_mode_method(mode: AnomalyMode, method: str) -> None:
+    unsupervised_methods = SKLEARN_METHODS | PYOD_METHODS | TORCH_METHODS
     if mode in {"unsupervised", "novelty"} and method not in unsupervised_methods:
         raise ValidationError(
-            f"mode='{mode}' supports methods {sorted(unsupervised_methods)}; "
-            f"got '{method}'."
+            f"mode='{mode}' supports unsupervised/novelty methods; got '{method}'."
         )
-    if mode == "supervised" and method != "supervised_hgb":
-        raise ValidationError("mode='supervised' requires method='supervised_hgb'")
+    if mode == "supervised" and method not in SUPERVISED_METHODS:
+        raise ValidationError(
+            f"mode='supervised' requires a supervised scorer; got '{method}'."
+        )
 
 
 def _score_stats(scores: np.ndarray) -> dict[str, float]:

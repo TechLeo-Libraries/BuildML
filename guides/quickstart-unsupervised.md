@@ -2,7 +2,9 @@
 
 > **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
 > install Session 2.x. Install 2.x from GitHub (or an editable checkout).
-> Clustering uses core sklearn — no optional extra is required.
+> Clustering uses core sklearn. Optional industry depth:
+> `pip install "buildml[unsupervised]"` (HDBSCAN + UMAP) and/or
+> `pip install "buildml[torch]"` (DEC/IDEC deep clustering).
 > See [installation](../docs/installation.rst).
 
 Leakage-safe clustering on the same `Session` as classical ML: history, explain

@@ -255,7 +255,7 @@ def test_session_upsert_delete_hybrid_and_walkthrough_status() -> None:
             },
         ]
     )
-    session.rag_embed_and_index(chunk_size=128, chunk_overlap=0)
+    session.rag_embed_and_index(chunk_size=128, chunk_overlap=0, embedder="hashing")
     hybrid = session.rag_retrieve("systems programming rust", k=2, mode="hybrid")
     assert hybrid.mode == "hybrid"
     filtered = session.rag_retrieve(

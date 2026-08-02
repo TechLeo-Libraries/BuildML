@@ -61,6 +61,7 @@ def test_core_import_and_catalog() -> None:
     import buildml.metalearning as metalearning
 
     assert hasattr(metalearning, "fit_metalearning")
+    assert hasattr(metalearning, "metalearning_capability_matrix")
     assert hasattr(Session, "fit_metalearning")
     for name in (
         "fit_metalearning",

@@ -9,6 +9,10 @@ import numpy as np
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.activelearning.adapters.scikit_activeml import score_industry_pool
+from buildml.activelearning.adapters.sklearn import score_sklearn_pool
+from buildml.activelearning.adapters.torch_uncertainty import score_torch_pool
+from buildml.activelearning.catalog import resolve_backend_strategy
 from buildml.activelearning.fit import pool_masks_from_plan
 from buildml.activelearning.results import ActiveLearningPlan, ActiveLearningQueryResult
 from buildml.activelearning.types import ActiveLearningStrategy
@@ -21,6 +25,7 @@ def suggest_query(
     *,
     batch_size: int | None = None,
     strategy: ActiveLearningStrategy | None = None,
+    backend: str | None = None,
 ) -> ActiveLearningQueryResult:
     """Suggest unlabeled *train* indices for the user to label.
 
@@ -32,12 +37,13 @@ def suggest_query(
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
-    # Hard leakage guard: pool must be a subset of train indices.
     train_set = set(split_plan.train_indices)
     test_set = set(split_plan.test_indices or ())
     val_set = set(split_plan.validation_indices or ())
 
-    _, x_pool, _, pool_indices = pool_masks_from_plan(dataset, plan, split_plan)
+    _, x_pool, _, pool_indices, x_labeled, y_labeled = pool_masks_from_plan(
+        dataset, plan, split_plan
+    )
     for idx in pool_indices:
         if idx not in train_set:
             raise ValidationError(
@@ -50,6 +56,11 @@ def suggest_query(
             )
 
     resolved_strategy = strategy or plan.strategy
+    resolved_backend = backend or plan.backend
+    _, resolved_strategy = resolve_backend_strategy(
+        backend=resolved_backend, strategy=resolved_strategy
+    )
+
     requested = int(batch_size if batch_size is not None else (plan.config or {}).get("batch_size", 5))
     if requested < 1:
         raise ValidationError("batch_size must be >= 1.")
@@ -57,7 +68,8 @@ def suggest_query(
     budget_remaining = _budget_remaining(plan)
     warnings: list[str] = []
     disclosures = [
-        f"Query strategy={resolved_strategy!r}; pool is train unlabeled rows only.",
+        f"Query backend={resolved_backend}, strategy={resolved_strategy!r}; "
+        "pool is train unlabeled rows only.",
         "Suggested indices require human labels via label_rows — no oracle in core.",
         "Validation/test partitions are never used as the query pool.",
     ]
@@ -97,8 +109,15 @@ def suggest_query(
             warnings=tuple(warnings),
         )
 
-    scores = _score_pool(plan, x_pool, resolved_strategy)
-    order = np.argsort(-scores)  # higher score = more informative / uncertain
+    scores = _score_pool(
+        plan,
+        x_pool,
+        resolved_backend,
+        resolved_strategy,
+        x_labeled=x_labeled,
+        y_labeled=y_labeled,
+    )
+    order = np.argsort(-scores)
     take = min(requested, len(pool_indices))
     chosen_local = order[:take]
     indices = tuple(pool_indices[i] for i in chosen_local)
@@ -118,7 +137,6 @@ def suggest_query(
     )
 
 
-# Alias matching the job brief.
 query_indices = suggest_query
 
 
@@ -131,58 +149,32 @@ def _budget_remaining(plan: ActiveLearningPlan) -> int | None:
 def _score_pool(
     plan: ActiveLearningPlan,
     x_pool: np.ndarray,
+    backend: str,
     strategy: str,
+    *,
+    x_labeled: np.ndarray,
+    y_labeled: np.ndarray,
 ) -> np.ndarray:
-    if strategy in {"least_confidence", "margin", "entropy", "expected_model_change_lite"}:
-        if not hasattr(plan.estimator_, "predict_proba"):
-            raise ValidationError(
-                f"Strategy {strategy!r} requires predict_proba on the base estimator."
-            )
-        proba = np.asarray(plan.estimator_.predict_proba(x_pool), dtype=float)
-        proba = np.clip(proba, 1e-12, 1.0)
-        if strategy == "least_confidence":
-            return 1.0 - proba.max(axis=1)
-        if strategy == "margin":
-            # Smaller margin ⇒ higher uncertainty. Score = -(top1 - top2).
-            part = np.partition(proba, -2, axis=1)
-            top2 = part[:, -2:]
-            margin = top2.max(axis=1) - top2.min(axis=1)
-            return -margin
-        if strategy == "entropy":
-            return -np.sum(proba * np.log(proba), axis=1)
-        # expected_model_change_lite: ||x|| * (1 - p_max) as a gradient-magnitude proxy
-        # for multiclass logistic / similar linear decision surfaces.
-        conf = proba.max(axis=1)
-        norms = np.linalg.norm(x_pool, axis=1)
-        return norms * (1.0 - conf)
-
-    if strategy == "committee":
-        committee = plan.committee_
-        if committee is None:
-            raise ValidationError(
-                "Committee strategy requires a fitted committee. "
-                "Call fit_active_learner(strategy='committee')."
-            )
-        # Vote entropy across bagged members.
-        member_preds = []
-        estimators = getattr(committee, "estimators_", None)
-        if not estimators:
-            raise ValidationError("Committee has no fitted estimators_.")
-        for est in estimators:
-            member_preds.append(np.asarray(est.predict(x_pool)))
-        votes = np.vstack(member_preds)  # (n_members, n_pool)
-        n_members = votes.shape[0]
-        # Per-row vote entropy over observed class codes.
-        scores = np.zeros(votes.shape[1], dtype=float)
-        for j in range(votes.shape[1]):
-            _, counts = np.unique(votes[:, j], return_counts=True)
-            p = counts.astype(float) / float(n_members)
-            p = np.clip(p, 1e-12, 1.0)
-            scores[j] = float(-np.sum(p * np.log(p)))
-        return scores
-
-    raise ValidationError(
-        f"Unsupported active-learning strategy {strategy!r}. "
-        "Supported: least_confidence, margin, entropy, committee, "
-        "expected_model_change_lite."
+    if backend == "torch":
+        mc_samples = int((plan.config or {}).get("mc_samples", 20))
+        return score_torch_pool(
+            strategy=strategy,  # type: ignore[arg-type]
+            x_pool=x_pool,
+            estimator=plan.estimator_,
+            mc_samples=mc_samples,
+        )
+    if backend == "industry":
+        return score_industry_pool(
+            strategy=strategy,
+            x_labeled=x_labeled,
+            y_labeled=y_labeled,
+            x_pool=x_pool,
+            estimator=plan.estimator_,
+            committee=plan.committee_,
+        )
+    return score_sklearn_pool(
+        strategy=strategy,
+        x_pool=x_pool,
+        estimator=plan.estimator_,
+        committee=plan.committee_,
     )

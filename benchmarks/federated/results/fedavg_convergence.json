@@ -1,0 +1,104 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "native": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "fedavg",
+          "fedprox"
+        ],
+        "estimators": [
+          "sgd_classifier",
+          "sgd_regressor",
+          "logistic_regression",
+          "ridge",
+          "linear_regression"
+        ],
+        "aggregation": "in-process weighted coef_/intercept_ averaging",
+        "client_weighting": "sample_size (n_k / \u03a3 n_k)",
+        "secure_aggregation": false,
+        "network_runtime": false,
+        "notes": "Default core path: local FedAvg/FedProx simulation on Session train rows partitioned by a client/group column. No optional extra required."
+      },
+      "flower": {
+        "available": true,
+        "extra": "federated-industry",
+        "methods": [
+          "fedavg",
+          "fedprox"
+        ],
+        "estimators": [
+          "sgd_classifier",
+          "sgd_regressor",
+          "logistic_regression",
+          "ridge",
+          "linear_regression"
+        ],
+        "aggregation": "Flower NumPyClient local fit + flwr weighted ndarray aggregation (still in-process simulation)",
+        "client_weighting": "sample_size via flwr.server.strategy.aggregate",
+        "secure_aggregation": false,
+        "network_runtime": false,
+        "notes": "Uses Flower (flwr) NumPyClient wrappers over Session client partitions and Flower's weighted aggregation helpers. Still runs locally unless you deploy a real Flower ServerApp/ClientApp yourself \u2014 not a turnkey production FL network stack."
+      }
+    },
+    "default_backend_when_installed": "flower",
+    "install_hints": {
+      "federated-industry": "pip install 'buildml[federated-industry]'  # Flower (flwr) NumPyClient + aggregation adapter"
+    },
+    "non_goals": [
+      "Cryptographic secure aggregation (not implemented on any backend)",
+      "Differential privacy guarantees from simulation alone",
+      "Ray / gRPC production Flower deployment from Session.fit_federated",
+      "Non-linear tree/neural FedAvg zoo without coef_/intercept_ path",
+      "OpenFL / TensorFlow Federated replacement claims"
+    ],
+    "industry_extra_present": true,
+    "honesty": "Both backends are honest local simulations on Session data. backend='flower' uses Flower libraries for client/aggregation wiring but does not start a networked FL deployment unless you operate one separately."
+  },
+  "rounds_requested": 8,
+  "runs": [
+    {
+      "backend": "native",
+      "n_clients": 8,
+      "n_rounds_completed": 8,
+      "final_train_metric": 1.0,
+      "validation_accuracy": 1.0,
+      "metrics_over_rounds": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "monotone_non_decreasing_last": true
+    },
+    {
+      "backend": "flower",
+      "n_clients": 8,
+      "n_rounds_completed": 8,
+      "final_train_metric": 1.0,
+      "validation_accuracy": 1.0,
+      "metrics_over_rounds": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "monotone_non_decreasing_last": true
+    }
+  ],
+  "summary": {
+    "n_runs": 2,
+    "native_final_train_metric": 1.0,
+    "native_validation_accuracy": 1.0,
+    "flower_validation_accuracy": 1.0
+  }
+}

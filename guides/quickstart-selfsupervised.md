@@ -1,22 +1,19 @@
 # Self-supervised quickstart
 
-> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
-> install Session 2.x. Install 2.x from GitHub (or an editable checkout).
-> The masked-tabular path uses core sklearn — no optional extra is required.
-> Vision/audio/speech freeze/finetune still uses `buildml[torch]` /
-> `buildml[speech]` via `load_pretrained_backbone`.
-> See [installation](../docs/installation.rst).
+> **Install (GitHub 2.x):**
+> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git#egg=buildml[torch]"`
 
-Honest Session-shaped SSL: **pretext on train features → export representations →
-supervised head on labeled train**. Not BERT-from-scratch.
+Industry-default SSL uses **Torch** when installed (`simclr_tabular` default).
+Legacy sklearn `masked_tabular` remains as deprecated fallback.
 
 **Go deeper:** [Self-supervised deep](selfsupervised-deep.md) ·
-[Semi-supervised](quickstart-semisupervised.md) ·
 [Pretrained backbones](pretrained-backbones.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md).
 
 ```bash
-pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+pip install "buildml[torch]"
+# optional text SSL:
+pip install "buildml[ssl]"
 ```
 
 ```python
@@ -38,33 +35,35 @@ session = (
     .scale(method="standard")
 )
 
-pre = session.fit_ssl_pretext(
-    method="masked_tabular",
-    latent_dim=8,
-    mask_ratio=0.2,
-    max_iter=120,
-)
-print(pre.latent_dim, pre.reconstruction_mae)
-
-# Optional: attach embedding columns for classical Session.fit
-session.transform_ssl(partition="all", attach=True)
+# Default: simclr_tabular when torch installed
+pre = session.fit_ssl_pretext(latent_dim=8, epochs=30, batch_size=32)
+print(pre.method, pre.pretext_loss)
 
 head = session.finetune_ssl_head(estimator="logistic_regression")
-print(head.n_labeled_train, head.estimator_name)
-
 ev = session.evaluate_ssl(partition="test")
 print(ev.metrics)
 
-bundle = session.save_ssl_bundle("artifacts/ssl_bundle")
+bundle = session.save_ssl_bundle("artifacts/ssl_bundle")  # buildml.ssl_bundle.v2
 ```
 
-Vision/audio/speech transfer (separate optional path — not tabular masked AE):
+Other tabular methods: `byol_tabular`, `vicreg_tabular`, `mae_tabular`, `vae_tabular`.
+
+Text SSL (`buildml[ssl]`):
 
 ```python
-# requires buildml[torch] / torchvision as documented
-session.load_pretrained_backbone("resnet18", weight_mode="mock", freeze=True)
-session.attach_backbone_head(n_classes=2)
+session.fit_ssl_pretext(method="hf_text_ssl", text_column="text", latent_dim=384)
 ```
 
-**Not this API:** contrastive foundation-model zoos, training BERT from scratch,
-or semi-supervised label propagation (`fit_semisupervised`).
+Vision SSL (`buildml[vision]`):
+
+```python
+session.fit_ssl_pretext(
+    method="vision_ssl",
+    image_column="path",
+    backbone="resnet18",
+    weight_mode="mock",
+    epochs=5,
+)
+```
+
+**Deprecated:** `method="masked_tabular"` (sklearn MLP) — migrate to Torch methods.

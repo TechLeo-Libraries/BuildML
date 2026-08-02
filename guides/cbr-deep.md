@@ -13,19 +13,53 @@ reuse/adapt → optional retain, explanation traces, and a dedicated bundle.
 | `evaluate_cbr` | Holdout accuracy/RMSE (+ mean neighbor distance) |
 | `retain_cbr` | Lite retain with disclosure; refuse holdout indices |
 | `save_cbr_bundle` / `load_cbr_bundle` | `buildml.cbr_bundle.v1` |
+| `cbr_capability_matrix()` | Honest backend / extra matrix |
+
+## Backends (R6.7 industry depth)
+
+| `backend` | Extra | Retrieval |
+| --- | --- | --- |
+| `sklearn` (fallback) | core | Exact kNN — euclidean / manhattan / cosine / mixed |
+| `industry` (default when installed) | `buildml[cbr-industry]` | hnswlib (preferred) or faiss ANN on numeric features |
+| `embedding` | `buildml[rag]` or `buildml[ssl]` | sentence-transformer case embeddings (+ optional numeric concat) |
+| `torch` | `buildml[torch]` | Learned metric MLP encoder + kNN |
+
+Pass `backend=` on `fit_cbr`, `retrieve_cases`, and `predict_cbr`. Case
+influence traces (`CaseTrace`) are preserved for all backends.
+
+```python
+matrix = Session.cbr_capability_matrix()
+print(matrix["default_backend_when_installed"])
+
+session.fit_cbr(backend="industry", metric="euclidean", k=5)
+# or backend=None → honest default when cbr-industry is installed
+```
+
+Text/hybrid cases:
+
+```python
+session.fit_cbr(
+    backend="embedding",
+    text_columns=["description"],
+    text_model_name="sentence-transformers/all-MiniLM-L6-v2",
+    metric="cosine",
+    k=7,
+)
+```
 
 ## Distance metrics (documented)
 
 | `metric` | Definition |
 | --- | --- |
-| `euclidean` | L2 on (optionally z-scored) numeric features |
-| `manhattan` | L1 on (optionally z-scored) numeric features |
-| `cosine` | `1 - cosine_similarity` on numeric features |
-| `mixed` | Gower-style: range-normalized numeric \|Δ\| + categorical mismatch, weighted by feature counts |
+| `euclidean` | L2 on (optionally z-scored) numeric or embedding features |
+| `manhattan` | L1 on (optionally z-scored) numeric features (**sklearn only**) |
+| `cosine` | `1 - cosine_similarity` on numeric or embedding features |
+| `mixed` | Gower-style: range-normalized numeric \|Δ\| + categorical mismatch (**sklearn only**) |
 
 Categorical columns are **explicit** via `categorical_columns=` (used by
-`mixed`). Train-fit transforms (mean/scale, ranges, cat vocabularies) are
-frozen at `fit_cbr` and reused at score/retain time.
+`mixed` on the sklearn backend). Train-fit transforms (mean/scale, ranges, cat
+vocabularies, encoders, ANN indexes) are frozen at `fit_cbr` and reused at
+score/retain time.
 
 ## Reuse / adapt
 
@@ -44,11 +78,14 @@ frozen at `fit_cbr` and reused at score/retain time.
 | --- | --- | --- |
 | Memory | Train tabular cases (features + solution) | Text corpus / chunks |
 | Goal | Reuse/adapt a label or numeric outcome | Ground generation / citations |
-| Extras | Core (numpy/sklearn) | Often `buildml[rag]` |
+| Extras | Core + optional `cbr-industry` / `rag` for embeddings | `buildml[rag]` |
 | Bundle | `buildml.cbr_bundle.v1` | `buildml.rag_bundle.v1` |
+| Traces | `CaseTrace` — which cases influenced the prediction | Chunk citations for generation |
 
-Sharing “nearest neighbors” does **not** make CBR a RAG submodule. Do not call
-CBR “tabular RAG.”
+Sharing “nearest neighbors” or sentence-transformers does **not** make CBR a
+RAG submodule. Do not call CBR “tabular RAG.” CBR embeds **cases with
+solutions** for supervised-style reuse; RAG retrieves **documents** for
+grounding LLM output.
 
 ## Leakage discipline
 
@@ -57,7 +94,7 @@ CBR “tabular RAG.”
 - Holdout partitions: retrieve / predict / evaluate only.
 - `retain_cbr` hard-refuses validation/test **label** indices and requires
   `source_disclosure`.
-- Distance transforms are never refit on holdout or retained rows.
+- Distance transforms and ANN indexes are never refit on holdout or retained rows.
 - Bundles store the plan; Session checkpoints do **not**.
 
 ## Anti-patterns
@@ -68,8 +105,14 @@ CBR “tabular RAG.”
   nearest).
 - Routing CBR through `rag_retrieve` / `rag_generate`.
 - Expecting `checkpoint_load` to restore `CbrPlan`.
+- Calling embedding backend “RAG” because it uses sentence-transformers.
 
 ## Bundle boundary
 
 See `buildml.cbr.checkpoint.CHECKPOINT_BOUNDARY`. Reload workflow via
 `checkpoint_load`; reload the learner via `load_cbr_bundle`.
+
+## Benchmark
+
+`benchmarks/cbr/retrieval_accuracy.py` — k vs holdout accuracy and retrieve
+latency for sklearn / industry / torch backends (skips missing extras).

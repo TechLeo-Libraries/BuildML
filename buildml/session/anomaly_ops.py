@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
+from buildml.anomaly.catalog import anomaly_capability_matrix
 from buildml.anomaly.checkpoint import load_anomaly_bundle, save_anomaly_bundle
 from buildml.anomaly.evaluate import evaluate_anomaly
 from buildml.anomaly.explain_hooks import (
@@ -14,7 +15,14 @@ from buildml.anomaly.explain_hooks import (
 )
 from buildml.anomaly.fit import fit_detector
 from buildml.anomaly.score import score_anomalies
-from buildml.anomaly.types import AnomalyMethod, AnomalyMode, ThresholdPolicy
+from buildml.anomaly.threshold import apply_threshold_tune, tune_anomaly_threshold
+from buildml.anomaly.types import (
+    AnomalyBackend,
+    AnomalyMethod,
+    AnomalyMode,
+    ThresholdPolicy,
+    ThresholdTuningMetric,
+)
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
 
@@ -24,6 +32,7 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_anomaly(
     session,
     *,
+    backend: AnomalyBackend | None = None,
     method: AnomalyMethod = "isolation_forest",
     mode: AnomalyMode = "unsupervised",
     columns: list[str] | None = None,
@@ -38,6 +47,9 @@ def fit_anomaly(
     nu: float = 0.05,
     kernel: str = "rbf",
     gamma: str | float = "scale",
+    latent_dim: int = 8,
+    ae_epochs: int = 40,
+    ae_batch_size: int = 64,
     normal_label_column: str | None = None,
     normal_label_value: Any = 0,
     positive_label: Any = 1,
@@ -47,19 +59,15 @@ def fit_anomaly(
 ) -> Any:
     """Fit an anomaly detector on the train partition only.
 
-    Integrates with ``Session.reduce_dimensions`` when component columns are
-    present. Distinct from EDA IsolationForest screens and
-    ``Session.handle_outliers``.
-
-    Notes
-    -----
-    **Leakage:** Requires a split. Detector is learned on train only (novelty
-    mode further restricts to a normal-only train subset).
+    ``backend`` selects sklearn (core), pyod (``buildml[anomaly-industry]``), or
+    torch (``buildml[torch]``). ``method`` must belong to the backend catalog —
+    see ``anomaly_capability_matrix()``.
     """
     session.assert_can_fit("train")
     plan, result = fit_detector(
         session.dataset,
         session._split_plan,
+        backend=backend,
         method=method,
         mode=mode,
         columns=columns,
@@ -74,6 +82,9 @@ def fit_anomaly(
         nu=nu,
         kernel=kernel,
         gamma=gamma,
+        latent_dim=latent_dim,
+        ae_epochs=ae_epochs,
+        ae_batch_size=ae_batch_size,
         normal_label_column=normal_label_column,
         normal_label_value=normal_label_value,
         positive_label=positive_label,
@@ -86,9 +97,11 @@ def fit_anomaly(
     session._anomaly_fit_result = result
     session._anomaly_score_result = None
     session._anomaly_eval_result = None
+    session._anomaly_threshold_tune_result = None
     session._record(
         "fit_anomaly",
         {
+            "backend": backend,
             "method": method,
             "mode": mode,
             "columns": columns,
@@ -107,6 +120,62 @@ def fit_anomaly(
         result_summary=fit_result_summary(result),
     )
     return result
+
+
+def tune_anomaly_threshold_op(
+    session,
+    *,
+    partition: PartitionName = "validation",
+    label_column: str | None = None,
+    positive_label: Any | None = None,
+    metric: ThresholdTuningMetric = "f1",
+    fbeta: float = 2.0,
+    allow_test_tuning: bool = False,
+    update_plan: bool = True,
+) -> Any:
+    """Tune anomaly threshold on validation labels (leakage-safe)."""
+    plan = getattr(session, "_anomaly_plan", None)
+    if plan is None:
+        raise ValidationError("No anomaly plan. Call fit_anomaly(...) first.")
+    resolved = partition
+    split = session._split_plan
+    if (
+        partition == "validation"
+        and split is not None
+        and not split.validation_indices
+    ):
+        resolved = "train"
+    result = tune_anomaly_threshold(
+        session.dataset,
+        plan,
+        session._split_plan,
+        partition=resolved,
+        label_column=label_column,
+        positive_label=positive_label,
+        metric=metric,
+        fbeta=fbeta,
+        allow_test_tuning=allow_test_tuning,
+    )
+    if update_plan:
+        apply_threshold_tune(plan, result)
+    session._anomaly_threshold_tune_result = result
+    session._anomaly_score_result = None
+    session._anomaly_eval_result = None
+    session._record(
+        "tune_anomaly_threshold",
+        {
+            "partition": resolved,
+            "metric": metric,
+            "update_plan": update_plan,
+            "threshold": result.threshold,
+        },
+        result_summary=result.to_dict(),
+    )
+    return result
+
+
+def anomaly_capability_matrix_op() -> dict[str, Any]:
+    return anomaly_capability_matrix()
 
 
 def score_anomalies_op(
@@ -207,6 +276,7 @@ def save_anomaly_bundle_op(session, path: str | Path) -> Path:
         result_summary={
             "path": str(out),
             "method": plan.method,
+            "backend": plan.backend,
             "mode": plan.mode,
             "threshold": plan.threshold_,
         },
@@ -221,9 +291,15 @@ def load_anomaly_bundle_op(session, path: str | Path) -> Any:
     session._anomaly_fit_result = None
     session._anomaly_score_result = None
     session._anomaly_eval_result = None
+    session._anomaly_threshold_tune_result = None
     session._record(
         "load_anomaly_bundle",
-        {"path": str(path), "method": plan.method, "mode": plan.mode},
+        {
+            "path": str(path),
+            "method": plan.method,
+            "backend": plan.backend,
+            "mode": plan.mode,
+        },
         result_summary=plan.to_dict(),
     )
     return session

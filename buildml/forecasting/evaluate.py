@@ -47,9 +47,9 @@ def evaluate_forecast(
     split_plan: SplitPlan | None,
     *,
     partition: PartitionName = "test",
-    strategy: ForecastEvalStrategy | Literal["rolling_one_step", "origin"] = (
-        "rolling_one_step"
-    ),
+    strategy: ForecastEvalStrategy | Literal[
+        "rolling_one_step", "origin", "rolling_origin"
+    ] = ("rolling_one_step"),
 ) -> ForecastEvalResult:
     """Score a train-fitted ForecastPlan on a holdout partition.
 
@@ -63,6 +63,10 @@ def evaluate_forecast(
         Fixed origin at the end of prior partitions; recursive multi-step
         forecast of length ``len(partition)`` compared to holdout actuals.
         Harder and often worse than rolling — disclosed.
+    rolling_origin:
+        Rolling-origin backtest: walk holdout in windows of ``plan.horizon``,
+        scoring each window from an expanding history (train + prior holdout
+        actuals). Reports pooled MAE/RMSE/MAPE across windows.
 
     Metrics
     -------
@@ -136,10 +140,18 @@ def evaluate_forecast(
             "Compare origin vs rolling_one_step; large gaps often mean weak "
             "multi-step recursion rather than useless one-step skill."
         )
+    elif strategy == "rolling_origin":
+        preds, acts = _rolling_origin_predictions(
+            plan, history, actuals, exog=exog, window=int(plan.horizon)
+        )
+        disclosures.append(
+            "rolling_origin scores consecutive horizon-sized windows from "
+            "expanding actual history (M4-style rolling-origin protocol)."
+        )
     else:
         raise ValidationError(
             f"Unsupported evaluate strategy '{strategy}'. "
-            "Use 'rolling_one_step' or 'origin'."
+            "Use 'rolling_one_step', 'origin', or 'rolling_origin'."
         )
 
     y_true = np.asarray(acts, dtype=float)
@@ -169,3 +181,35 @@ def evaluate_forecast(
         warnings=tuple(warnings),
         recommendations=tuple(recommendations),
     )
+
+
+def _rolling_origin_predictions(
+    plan: ForecastPlan,
+    history: list[float],
+    actuals: np.ndarray,
+    *,
+    exog: np.ndarray | None = None,
+    window: int = 1,
+) -> tuple[tuple[float, ...], tuple[float, ...]]:
+    """Rolling-origin windows over the holdout partition."""
+    actuals = np.asarray(actuals, dtype=float).reshape(-1)
+    window = max(1, int(window))
+    working = list(float(v) for v in history)
+    all_preds: list[float] = []
+    all_acts: list[float] = []
+    i = 0
+    n = int(actuals.shape[0])
+    while i < n:
+        w = min(window, n - i)
+        exog_slice = None
+        if exog is not None:
+            exog_slice = exog[i : i + w]
+        gen = origin_predictions(plan, working, w, future_exog=exog_slice)
+        preds, _ = gen
+        acts = actuals[i : i + w]
+        all_preds.extend(float(v) for v in preds[:w])
+        all_acts.extend(float(v) for v in acts.tolist())
+        for j in range(w):
+            working.append(float(actuals[i + j]))
+        i += w
+    return tuple(all_preds), tuple(all_acts)

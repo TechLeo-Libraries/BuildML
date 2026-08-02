@@ -5,9 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-AutoMLMethod = Literal["grid", "randomized", "optuna"]
+AutoMLMethod = Literal["grid", "randomized", "optuna", "evolutionary"]
+AutoMLBackend = Literal["native", "optuna", "flaml", "autogluon"]
 AutoMLSelection = Literal["cv", "nested", "validation"]
-CandidateKind = Literal["single", "voting"]
+CandidateKind = Literal["single", "voting", "stacking"]
+EnsembleMode = Literal["voting", "stacking", "both"]
 
 
 @dataclass(slots=True)
@@ -18,6 +20,11 @@ class AutoMLBudget:
     max_families: int | None = None
     max_recipe_strategies: int | None = None
     max_ensemble_trials: int = 4
+    max_time_seconds: float | None = None
+    study_storage: str | None = None
+    enable_pruning: bool = True
+    multi_objective: bool = False
+    secondary_metric: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -25,6 +32,11 @@ class AutoMLBudget:
             "max_families": self.max_families,
             "max_recipe_strategies": self.max_recipe_strategies,
             "max_ensemble_trials": self.max_ensemble_trials,
+            "max_time_seconds": self.max_time_seconds,
+            "study_storage": self.study_storage,
+            "enable_pruning": self.enable_pruning,
+            "multi_objective": self.multi_objective,
+            "secondary_metric": self.secondary_metric,
         }
 
 
@@ -32,6 +44,7 @@ class AutoMLBudget:
 class AutoMLConfig:
     """User-facing AutoML knobs (serializable summary)."""
 
+    backend: AutoMLBackend = "native"
     method: AutoMLMethod = "randomized"
     selection: AutoMLSelection = "cv"
     task: Literal["classification", "regression", "auto"] = "auto"
@@ -49,6 +62,7 @@ class AutoMLConfig:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "selection": self.selection,
             "task": self.task,

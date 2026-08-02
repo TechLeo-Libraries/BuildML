@@ -17,6 +17,7 @@ class RecommenderPlan:
     """
 
     method: str
+    backend: str
     user_column: str
     item_column: str
     rating_column: str | None
@@ -43,9 +44,15 @@ class RecommenderPlan:
         default_factory=lambda: np.zeros(0), repr=False
     )
     item_feature_columns: tuple[str, ...] = ()
+    user_feature_columns: tuple[str, ...] = ()
     item_features_: np.ndarray | None = field(default=None, repr=False)
     item_feature_mean_: np.ndarray | None = field(default=None, repr=False)
     item_feature_scale_: np.ndarray | None = field(default=None, repr=False)
+    # Industry backend fitted state (implicit ALS/BPR, LightFM)
+    backend_model_: Any = field(default=None, repr=False)
+    user_item_csr_: Any = field(default=None, repr=False)
+    lightfm_user_features_: Any = field(default=None, repr=False)
+    lightfm_item_features_: Any = field(default=None, repr=False)
     cold_start: str = "popularity"
     min_rating: float | None = None
     disclosures: tuple[str, ...] = ()
@@ -55,6 +62,7 @@ class RecommenderPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "user_column": self.user_column,
             "item_column": self.item_column,
             "rating_column": self.rating_column,
@@ -67,6 +75,7 @@ class RecommenderPlan:
             "n_user_ids": len(self.user_ids),
             "n_item_ids": len(self.item_ids),
             "item_feature_columns": list(self.item_feature_columns),
+            "user_feature_columns": list(self.user_feature_columns),
             "cold_start": self.cold_start,
             "min_rating": self.min_rating,
             "global_mean": self.global_mean_,
@@ -81,6 +90,7 @@ class RecommenderFitResult:
     """Outcome of fitting a recommender on train interactions."""
 
     method: str
+    backend: str
     n_train_interactions: int
     n_users: int
     n_items: int
@@ -96,6 +106,7 @@ class RecommenderFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "n_train_interactions": self.n_train_interactions,
             "n_users": self.n_users,
             "n_items": self.n_items,
@@ -111,7 +122,8 @@ class RecommenderFitResult:
 
     def show(self) -> None:
         print(
-            f"RecommenderFit · {self.method} · feedback={self.feedback} · "
+            f"RecommenderFit · {self.method} · backend={self.backend} · "
+            f"feedback={self.feedback} · "
             f"users={self.n_users} · items={self.n_items} · "
             f"interactions={self.n_train_interactions}"
         )

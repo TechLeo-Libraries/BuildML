@@ -62,8 +62,18 @@ def rag_ingest_corpus(
     return session
 
 
-def rag_chunk(session, *, size: int = 512, overlap: int = 64) -> Session:
-    """Chunk the active RAG corpus with size + overlap (requires ``buildml[rag]``)."""
+def rag_chunk(
+    session,
+    *,
+    size: int = 512,
+    overlap: int = 64,
+    strategy: str = "fixed",
+) -> Session:
+    """Chunk the active RAG corpus (fixed or recursive strategy).
+
+    ``strategy="recursive"`` splits on paragraph/line/sentence boundaries before
+    applying size/overlap (LangChain/LlamaIndex parity). Requires ``buildml[rag]``.
+    """
     from buildml.rag.chunk import chunk_documents
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.types import ChunkConfig
@@ -71,10 +81,15 @@ def rag_chunk(session, *, size: int = 512, overlap: int = 64) -> Session:
     require_rag_stack(feature="RAG chunking")
     if session._rag_corpus is None:
         raise ValidationError("No RAG corpus. Call rag_ingest_corpus(...) first.")
-    result = chunk_documents(session._rag_corpus, config=ChunkConfig(size=size, overlap=overlap))
+    result = chunk_documents(
+        session._rag_corpus,
+        config=ChunkConfig(size=size, overlap=overlap, strategy=strategy),  # type: ignore[arg-type]
+    )
     session._rag_chunks = result
     session._record(
-        "rag_chunk", {"size": size, "overlap": overlap}, result_summary=result.to_dict()
+        "rag_chunk",
+        {"size": size, "overlap": overlap, "strategy": strategy},
+        result_summary=result.to_dict(),
     )
     return session
 
@@ -82,17 +97,18 @@ def rag_chunk(session, *, size: int = 512, overlap: int = 64) -> Session:
 def rag_embed_and_index(
     session,
     *,
-    embedder: Any | None = None,
+    embedder: Any | None = "auto",
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
+    chunk_strategy: str | None = None,
     device: str | None = None,
 ) -> Session:
     """Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
 
     Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
-    Default embedder is ``buildml.hashing_embed.v1`` (lexical/hashed, not semantic).
-    Pass ``embedder="auto"`` to prefer sentence-transformers when importable, or
-    ``embedder="sentence-transformers"`` for an explicit semantic path.
+    Default embedder is ``auto``: sentence-transformers when ``buildml[rag]`` is
+    installed, else explicit hashing fallback with disclosure.
+    Pass ``embedder="hashing"`` for deterministic CI / lexical-only paths.
     ``device`` applies to sentence-transformer backends; hashing stays CPU-only.
     """
     from buildml.rag.extras import require_rag_stack
@@ -102,8 +118,18 @@ def rag_embed_and_index(
     require_rag_stack(feature="RAG embed and index")
     if session._rag_corpus is None:
         raise ValidationError("No RAG corpus. Call rag_ingest_corpus(...) first.")
+    from buildml.rag.types import ChunkConfig
+
+    chunk_cfg = None
+    if chunk_strategy is not None:
+        chunk_cfg = ChunkConfig(
+            size=chunk_size or 512,
+            overlap=chunk_overlap or 64,
+            strategy=chunk_strategy,  # type: ignore[arg-type]
+        )
     index = build_index(
         session._rag_corpus,
+        chunk_config=chunk_cfg,
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         embedder=embedder,
@@ -142,17 +168,33 @@ def rag_retrieve(
 ) -> Any:
     """Retrieve ranked chunks (dense / BM25 / hybrid) against the active RAG index.
 
-    Defaults: ``mode="dense"``, no metadata filters, ``rerank=False``. Hybrid
-    defaults to RRF (``rrf_k=60``). Cross-encoder rerank requires ``buildml[rag]``.
+    Defaults: ``mode="hybrid"`` (BM25 + dense RRF) when ``buildml[rag]`` is installed,
+    else ``mode="dense"``. Metadata filters and cross-encoder rerank are opt-in.
     """
+    from buildml.rag.defaults import default_retrieve_config
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.retrieve import retrieve
+
     from buildml.rag.types import RetrieveConfig
 
     require_rag_stack(feature="RAG retrieve")
     if session._rag_index is None:
         raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-    cfg = config if config is not None else RetrieveConfig(k=k, mode=mode or "dense")
+    cfg = config if config is not None else default_retrieve_config(k=k)
+    if mode is not None:
+        cfg = RetrieveConfig(
+            k=int(k),
+            mode=mode,  # type: ignore[arg-type]
+            fusion=cfg.fusion,
+            rrf_k=cfg.rrf_k,
+            dense_weight=cfg.dense_weight,
+            bm25_k1=cfg.bm25_k1,
+            bm25_b=cfg.bm25_b,
+            filters=cfg.filters,
+            rerank=cfg.rerank if rerank is None else rerank,
+            rerank_model=cfg.rerank_model,
+            rerank_candidates=cfg.rerank_candidates,
+        )
     result = retrieve(
         session._rag_index,
         query,

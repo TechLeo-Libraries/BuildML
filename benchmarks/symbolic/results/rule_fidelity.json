@@ -1,0 +1,121 @@
+{
+  "benchmark": "symbolic_rule_fidelity",
+  "capability_matrix": {
+    "backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "sources": [
+          "declared",
+          "decision_tree",
+          "decision_list"
+        ],
+        "modality": "tabular",
+        "notes": "Native rule induction: sklearn DecisionTree path export and sequential-covering decision lists. Always available."
+      },
+      "industry": {
+        "available": false,
+        "extra": "symbolic-industry",
+        "methods": [],
+        "modality": "tabular",
+        "notes": "Interpretable-model rule export via skope-rules (SkopeRules) and imodels (RuleFit, BoostedRules) when installed."
+      }
+    },
+    "neuro_symbolic_backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "modes": [
+          "constraint_overlay",
+          "rules_as_features",
+          "constraint_repair"
+        ],
+        "base_estimators": [
+          "logistic_regression",
+          "ridge",
+          "random_forest",
+          "decision_tree"
+        ],
+        "notes": "sklearn base + symbolic rule hybrid (core fallback)."
+      },
+      "torch": {
+        "available": true,
+        "extra": "torch",
+        "spec_present": true,
+        "modes": [
+          "constraint_overlay",
+          "rules_as_features",
+          "constraint_repair"
+        ],
+        "methods": [
+          "concept_bottleneck_lite",
+          "neural_additive_lite"
+        ],
+        "notes": "Lite tabular concept-bottleneck and neural-additive models with the same symbolic overlay / features / repair modes."
+      }
+    },
+    "constraint_verification": {
+      "available": false,
+      "extra": "symbolic-industry",
+      "scope": "Optional SAT check on hard constraint rule antecedents via Z3 (verify_constraints=True on fit). Not a full SMT product."
+    },
+    "evaluation": {
+      "metrics": [
+        "accuracy",
+        "f1_macro",
+        "rmse",
+        "r2",
+        "rule_coverage"
+      ],
+      "trace_fields": [
+        "fired_rule_ids",
+        "chosen_rule_id",
+        "neural_prediction",
+        "repaired"
+      ]
+    },
+    "default_symbolic_backend_when_installed": "sklearn",
+    "default_industry_method_when_installed": "skope_rules",
+    "default_neuro_backend_when_installed": "torch",
+    "install_hints": {
+      "symbolic-industry": "pip install 'buildml[symbolic-industry]'  # skope-rules + imodels + optional Z3 constraint checks",
+      "torch": "pip install 'buildml[torch]'  # concept-bottleneck / neural-additive neuro-symbolic bases"
+    },
+    "non_goals": [
+      "Full Prolog / ASP logic programming product",
+      "Logic Tensor Networks / differentiable theorem proving",
+      "AGI symbolic reasoners",
+      "Fuzzy-logic standalone product",
+      "Complete Z3 SMT solver product (verification is optional lite check)"
+    ],
+    "skope_rules_present": false,
+    "imodels_present": false,
+    "z3_present": false,
+    "torch_spec_present": true,
+    "industry_extra_present": false
+  },
+  "runs": [
+    {
+      "backend": "sklearn",
+      "source": "decision_tree",
+      "method": null,
+      "n_rules": 11,
+      "provenance": "induced_tree",
+      "test_accuracy": 0.9125,
+      "blackbox_accuracy": 0.925,
+      "fidelity_ratio": 0.9864864864864864,
+      "rule_coverage": 1.0
+    },
+    {
+      "backend": "sklearn",
+      "source": "decision_list",
+      "method": null,
+      "n_rules": 7,
+      "provenance": "induced_list",
+      "test_accuracy": 0.925,
+      "blackbox_accuracy": 0.925,
+      "fidelity_ratio": 1.0,
+      "rule_coverage": 0.875
+    }
+  ]
+}

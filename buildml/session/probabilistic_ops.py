@@ -22,6 +22,7 @@ from buildml.probabilistic.fit import fit_probabilistic
 from buildml.probabilistic.predict import predict_interval, predict_probabilistic
 from buildml.probabilistic.types import (
     IntervalMethod,
+    ProbabilisticBackend,
     ProbabilisticEstimator,
     ProbabilisticTask,
 )
@@ -32,6 +33,7 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_probabilistic_op(
     session,
     *,
+    backend: str | None = None,
     estimator: ProbabilisticEstimator = "bayesian_ridge",
     task: ProbabilisticTask | None = None,
     columns: list[str] | None = None,
@@ -42,20 +44,26 @@ def fit_probabilistic_op(
     interval_method: IntervalMethod | None = None,
     prefer_reduce_components: bool = True,
     n_restarts_optimizer: int = 0,
+    n_estimators: int = 100,
+    learning_rate: float = 0.05,
 ) -> Any:
     """Fit a Bayesian / probabilistic estimator on Session train.
 
     Notes
     -----
+    **Backends:** ``native`` (sklearn + in-tree conformal), ``mapie`` and
+    ``ngboost`` when ``buildml[probabilistic-industry]`` is installed.
+
     **Leakage:** Requires a split. Fit and optional split-conformal calibration
     use train only (conformal carve never touches validation/test). Honesty:
-    sklearn BayesianRidge / GP / GaussianNB + optional conformal — not a
-    PyMC/Stan MCMC platform. Classical ``Session.calibration()`` is unchanged.
+    uncertainty quantification for tabular estimators — not PyMC/Stan MCMC.
+    Classical ``Session.calibration()`` is unchanged.
     """
     session.assert_can_fit("train")
     plan, result = fit_probabilistic(
         session.dataset,
         session._split_plan,
+        backend=backend,  # type: ignore[arg-type]
         estimator=estimator,
         task=task,
         columns=columns,
@@ -66,6 +74,8 @@ def fit_probabilistic_op(
         interval_method=interval_method,
         prefer_reduce_components=prefer_reduce_components,
         n_restarts_optimizer=n_restarts_optimizer,
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
         reduce_plan=getattr(session, "_reduce_plan", None),
     )
     session._probabilistic_plan = plan
@@ -76,6 +86,7 @@ def fit_probabilistic_op(
     session._record(
         "fit_probabilistic",
         {
+            "backend": backend,
             "estimator": estimator,
             "task": task,
             "columns": columns,
@@ -86,6 +97,8 @@ def fit_probabilistic_op(
             "interval_method": interval_method,
             "prefer_reduce_components": prefer_reduce_components,
             "n_restarts_optimizer": n_restarts_optimizer,
+            "n_estimators": n_estimators,
+            "learning_rate": learning_rate,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),

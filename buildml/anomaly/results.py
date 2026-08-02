@@ -7,6 +7,36 @@ from typing import Any
 
 
 @dataclass(slots=True)
+class AnomalyThresholdTuneResult:
+    """Outcome of validation-only threshold tuning for a frozen AnomalyPlan."""
+
+    partition: str
+    metric: str
+    old_threshold: float
+    threshold: float
+    n_rows: int
+    alert_rate: float
+    label_column: str
+    positive_rate: float
+    tune_metrics: dict[str, float] = field(default_factory=dict)
+    disclosures: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "partition": self.partition,
+            "metric": self.metric,
+            "old_threshold": self.old_threshold,
+            "threshold": self.threshold,
+            "n_rows": self.n_rows,
+            "alert_rate": self.alert_rate,
+            "label_column": self.label_column,
+            "positive_rate": self.positive_rate,
+            "tune_metrics": dict(self.tune_metrics),
+            "disclosures": list(self.disclosures),
+        }
+
+
+@dataclass(slots=True)
 class AnomalyPlan:
     """Train-fitted anomaly detector plan (estimator + score/threshold contract).
 
@@ -23,6 +53,7 @@ class AnomalyPlan:
 
     method: str
     mode: str
+    backend: str
     columns: tuple[str, ...]
     n_train_rows: int
     n_fit_rows: int
@@ -45,6 +76,7 @@ class AnomalyPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "mode": self.mode,
             "columns": list(self.columns),
             "n_train_rows": self.n_train_rows,
@@ -72,6 +104,7 @@ class AnomalyFitResult:
 
     method: str
     mode: str
+    backend: str
     n_train_rows: int
     n_fit_rows: int
     columns: tuple[str, ...]
@@ -87,6 +120,7 @@ class AnomalyFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "mode": self.mode,
             "n_train_rows": self.n_train_rows,
             "n_fit_rows": self.n_fit_rows,
@@ -103,7 +137,7 @@ class AnomalyFitResult:
 
     def show(self) -> None:
         print(
-            f"AnomalyFit · {self.method} · mode={self.mode} · "
+            f"AnomalyFit · {self.backend}/{self.method} · mode={self.mode} · "
             f"n_fit={self.n_fit_rows}/{self.n_train_rows} · "
             f"threshold={self.threshold:.6g} ({self.threshold_policy}) · "
             f"train_alert_rate={self.train_alert_rate:.4f}"

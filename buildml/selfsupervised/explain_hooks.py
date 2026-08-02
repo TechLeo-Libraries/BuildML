@@ -11,9 +11,11 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "method": payload.get("method"),
+        "modality": payload.get("modality"),
         "n_train_rows": payload.get("n_train_rows"),
         "latent_dim": payload.get("latent_dim"),
         "reconstruction_mae": payload.get("reconstruction_mae"),
+        "pretext_loss": payload.get("pretext_loss"),
         "used_reduce_components": payload.get("used_reduce_components"),
     }
 
@@ -84,14 +86,17 @@ def selfsupervised_status(
         disclosures.extend(
             [
                 f"SelfSupervisedPlan method={getattr(plan, 'method', None)}, "
+                f"modality={getattr(plan, 'modality', 'tabular')}, "
                 f"latent_dim={getattr(plan, 'latent_dim', None)}, "
+                f"pretext_loss={getattr(plan, 'pretext_loss_', None)}, "
                 f"reconstruction_mae={getattr(plan, 'reconstruction_mae_', None)}.",
                 "Story: unlabeled(+labeled) train pretext → representation export → "
                 "supervised/semi-supervised head on labeled train.",
                 "Session checkpoints do not embed SelfSupervisedPlan; use "
-                "save_ssl_bundle / load_ssl_bundle.",
-                "Not BERT-from-scratch. Vision/audio/speech transfer: "
-                "load_pretrained_backbone / attach_backbone_head.",
+                "save_ssl_bundle / load_ssl_bundle (buildml.ssl_bundle.v2).",
+                "Torch tabular defaults: simclr_tabular, byol_tabular, vicreg_tabular. "
+                "Legacy masked_tabular (sklearn) is deprecated.",
+                "Vision/audio/speech transfer also: load_pretrained_backbone / attach_backbone_head.",
             ]
         )
         for note in getattr(plan, "disclosures", ()) or ():
@@ -128,9 +133,10 @@ def selfsupervised_status(
         "eval": eval_payload,
         "disclosures": disclosures,
         "boundary": (
-            "Self-supervised hooks learn train-only tabular representations via "
-            "masked reconstruction, then attach a supervised head. Distinct from "
-            "semi-supervised label propagation and from Torch zoo backbone transfer."
+            "Self-supervised hooks learn train-only representations via Torch "
+            "(SimCLR/BYOL/VICReg/MAE/VAE) or deprecated sklearn masked_tabular, "
+            "then attach a supervised head. Distinct from semi-supervised label "
+            "propagation and from Torch zoo backbone transfer."
         ),
     }
 

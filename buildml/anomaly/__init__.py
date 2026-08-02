@@ -10,30 +10,15 @@ Phase 1 (**complete** with this package):
   5. Anomaly / fraud detection — dedicated path beyond EDA IsolationForest.
      **This module.**
 
-Phase 2 progress (depth-first; do not spray stubs):
-  1. Semi-supervised — done (see ``buildml.semisupervised``).
-  2. Self-supervised hooks — done (see ``buildml.selfsupervised``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit) — done (``buildml.online``); next = multi-task.
-  Later: graph (causal done in ``buildml.causal``; probabilistic in ``buildml.probabilistic``)
-  (separate assumption objects; EDA stays associational), graph ML,
-  evolutionary search/NAS-lite, symbolic/neuro-symbolic, CBR, imitation + RL,
-  allowlisted LLM tool agents, TDA, recommenders / LTR / KG / optimisation /
-  synthetic-data / NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
+Industry depth (R5.2):
+  - Core sklearn: IsolationForest, LOF, One-Class SVM.
+  - PyOD (``buildml[anomaly-industry]``): HBOS, COPOD, ECOD, DeepSVDD.
+  - Torch autoencoder reconstruction error (``buildml[torch]``).
+  - Supervised fraud scorers: HGB (core), XGBoost/LightGBM (industry extra).
 
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
-  - Not a full fraud platform (no graph fraud, no online streaming product).
-  - No causal fraud claims; thresholds and alert rates are always disclosed.
-  - EDA IsolationForest screens and ``Session.handle_outliers`` fences are not
-    this API. Novelty mode is normal-only semi-supervised fit, not Phase 2
-    semi-supervised representation learning.
-
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Anomaly detectors
-use core sklearn — no optional extra required for ``import buildml``.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Industry PyOD and
+GBDT fraud scorers use ``buildml[anomaly-industry]``. Torch AE uses
+``buildml[torch]``.
 
 Lazy imports — core never grows heavy anomaly stacks.
 """
@@ -45,6 +30,7 @@ from typing import Any
 __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
+    "AnomalyBackend",
     "AnomalyConfig",
     "AnomalyEvalResult",
     "AnomalyFitResult",
@@ -52,19 +38,31 @@ __all__ = [
     "AnomalyMode",
     "AnomalyPlan",
     "AnomalyScoreResult",
+    "AnomalyThresholdTuneResult",
     "ThresholdPolicy",
+    "ThresholdTuningMetric",
+    "anomaly_capability_matrix",
     "anomaly_status",
     "anomaly_status_for_session",
     "evaluate_anomaly",
     "fit_detector",
+    "list_anomaly_methods",
     "load_anomaly_bundle",
     "save_anomaly_bundle",
     "score_anomalies",
+    "tune_anomaly_threshold",
 ]
 
 
 def __getattr__(name: str) -> Any:
-    if name in {"AnomalyMethod", "AnomalyMode", "ThresholdPolicy", "AnomalyConfig"}:
+    if name in {
+        "AnomalyMethod",
+        "AnomalyMode",
+        "AnomalyBackend",
+        "ThresholdPolicy",
+        "ThresholdTuningMetric",
+        "AnomalyConfig",
+    }:
         from buildml.anomaly import types as types_mod
 
         return getattr(types_mod, name)
@@ -73,6 +71,7 @@ def __getattr__(name: str) -> Any:
         "AnomalyFitResult",
         "AnomalyScoreResult",
         "AnomalyEvalResult",
+        "AnomalyThresholdTuneResult",
     }:
         from buildml.anomaly import results as results_mod
 
@@ -89,6 +88,14 @@ def __getattr__(name: str) -> Any:
         from buildml.anomaly.evaluate import evaluate_anomaly
 
         return evaluate_anomaly
+    if name == "tune_anomaly_threshold":
+        from buildml.anomaly.threshold import tune_anomaly_threshold
+
+        return tune_anomaly_threshold
+    if name in {"anomaly_capability_matrix", "list_anomaly_methods"}:
+        from buildml.anomaly import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",

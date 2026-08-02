@@ -23,6 +23,21 @@ from buildml.optimize.results import DecisionPlan
 from buildml.optimize.types import CostModel
 
 
+def _effective_fit_result(plan: DecisionPlan, fit_result: FitResult) -> FitResult:
+    """Use auxiliary industry estimator when stored on the plan."""
+    aux = getattr(plan, "aux_estimator_", None)
+    if aux is None:
+        return fit_result
+    return FitResult(
+        estimator=aux,
+        task=fit_result.task,
+        feature_columns=tuple(fit_result.feature_columns),
+        target_column=fit_result.target_column,
+        n_train_rows=fit_result.n_train_rows,
+        weight_column=fit_result.weight_column,
+    )
+
+
 def fit_threshold_policy(
     dataset: Dataset,
     split_plan: SplitPlan,
@@ -145,6 +160,7 @@ def apply_threshold_policy(
     """Apply a frozen binary threshold to model positive-class probabilities."""
     if plan.threshold is None:
         raise ValidationError("DecisionPlan has no threshold.")
+    fit_result = _effective_fit_result(plan, fit_result)
     x, _y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)  # type: ignore[arg-type]
     x = x[list(fit_result.feature_columns)]
     if not hasattr(fit_result.estimator, "predict_proba"):

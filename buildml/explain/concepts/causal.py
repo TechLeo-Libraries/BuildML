@@ -215,5 +215,61 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             worked_example_pattern="save_causal_bundle('artifacts/causal_bundle').",
             related_concepts=("causal-assumptions", "leakage-boundary"),
         ),
+        _note(
+            key="causal-dowhy",
+            title="DoWhy backend: graph, identification, refutation",
+            summary="When buildml[causal-industry] is installed, backend='dowhy' builds a DAG from declared confounders, identifies ATE, and exposes DoWhy refuters.",
+            definition=(
+                "DoWhy CausalModel with treatment, outcome, common_causes=confounders, "
+                "and a caller-declared DAG (confounders→treatment/outcome, treatment→outcome). "
+                "Not causal discovery — the graph encodes assumptions only."
+            ),
+            intuition=(
+                "Industry-standard identification + refutation layered on the same "
+                "CausalAssumptions gate as native sklearn."
+            ),
+            formal_idea="Backdoor identification via DoWhy; estimation via backdoor.linear_regression or propensity methods.",
+            why_it_matters=("Refutation suite (placebo, random common cause, unobserved confounder) beyond native disclosures."),
+            how_buildml_uses=(
+                "fit_causal(backend='dowhy', method='backdoor_linear'); "
+                "refute_causal(kind='random_common_cause')."
+            ),
+            interpretation_rules=(
+                "Passing refutation is not proof of identification; failing refutation is a warning.",
+            ),
+            assumptions=("Same CausalAssumptions gate as native; graph reflects declared confounders only."),
+            failure_modes=("Misspecified graph; refutation false negatives."),
+            anti_patterns=("Treating DoWhy refutation p-values as assumption validation."),
+            worked_example_pattern="fit_causal(backend='dowhy') → refute_causal('add_unobserved_common_cause').",
+            related_concepts=("causal-assumptions", "causal-ate-backdoor", "causal-eda-boundary"),
+        ),
+        _note(
+            key="causal-econml",
+            title="EconML backend: DML, CausalForest, policy learning",
+            summary="When buildml[causal-industry] is installed, backend='econml' runs DML/CausalForestDML/PolicyTree on declared backdoor confounders.",
+            definition=(
+                "EconML double/debiased ML estimators with sklearn first-stage models "
+                "on Session train. causal_forest exposes CATE heterogeneity std; "
+                "policy_tree learns a treatment assignment rule — not a deployment product."
+            ),
+            intuition=(
+                "Industry DML for ATE with optional heterogeneity; still requires "
+                "explicit CausalAssumptions — no EDA shortcut."
+            ),
+            formal_idea="DML orthogonal scores for ATE; forest variants for CATE surfaces.",
+            why_it_matters=("Heterogeneous effects and policy exploration beyond scalar ATE."),
+            how_buildml_uses=(
+                "fit_causal(backend='econml', method='dml'); "
+                "fit_causal(backend='econml', method='causal_forest')."
+            ),
+            interpretation_rules=(
+                "CATE std describes estimated heterogeneity — not proof of true effect variation.",
+            ),
+            assumptions=("CausalAssumptions + correct nuisance models under DML theory."),
+            failure_modes=("Weak overlap; forest overfit on small n."),
+            anti_patterns=("Shipping policy_tree output without domain review."),
+            worked_example_pattern="fit_causal(backend='econml', method='dml', bootstrap_samples=50).",
+            related_concepts=("causal-assumptions", "causal-ate-backdoor", "causal-aipw"),
+        ),
     )
 }

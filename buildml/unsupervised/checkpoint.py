@@ -1,4 +1,4 @@
-"""Unsupervised bundle persistence (distinct from Session checkpoints / Torch / RAG)."""
+"""Unsupervised bundle persistence (v2 + v1 migration)."""
 
 from __future__ import annotations
 
@@ -13,12 +13,15 @@ from buildml._version import __version__
 from buildml.core.errors import ValidationError
 from buildml.unsupervised.results import ClusterEvalResult, ClusterFitResult, ClusterPlan
 
-BUNDLE_FORMAT = "buildml.unsupervised_bundle.v1"
+BUNDLE_FORMAT_V1 = "buildml.unsupervised_bundle.v1"
+BUNDLE_FORMAT_V2 = "buildml.unsupervised_bundle.v2"
+BUNDLE_FORMAT = BUNDLE_FORMAT_V2
 CHECKPOINT_BOUNDARY = (
     "Unsupervised bundles, classical pipeline bundles, Torch trainer bundles, RAG "
     "bundles, and Session checkpoints are complementary, not interchangeable. "
-    "A unsupervised bundle (buildml.unsupervised_bundle.v1) stores a train-fitted "
+    f"A unsupervised bundle ({BUNDLE_FORMAT_V2}) stores a train-fitted "
     "ClusterPlan (estimator + feature contract + assign strategy disclosures). "
+    "Legacy v1 bundles remain loadable. "
     "A Session checkpoint stores data, roles, splits, history, and optional classical "
     "preprocess plans; it does not embed the clusterer. "
     "Reload tabular workflow via checkpoint_load; reload clustering via "
@@ -33,12 +36,7 @@ def save_unsupervised_bundle(
     fit_result: ClusterFitResult | None = None,
     eval_result: ClusterEvalResult | None = None,
 ) -> Path:
-    """Write an unsupervised bundle directory (``buildml.unsupervised_bundle.v1``).
-
-    Layout
-    ------
-    ``meta.json``, ``cluster_plan.joblib``.
-    """
+    """Write an unsupervised bundle directory (``buildml.unsupervised_bundle.v2``)."""
     if plan is None:
         raise ValidationError("No ClusterPlan to save.")
     destination = Path(path)
@@ -70,13 +68,14 @@ def load_unsupervised_bundle(path: str | Path) -> ClusterPlan:
     if not meta_path.is_file() or not plan_path.is_file():
         raise ValidationError(
             f"Incomplete unsupervised bundle at {root}. "
-            f"Expected meta.json and cluster_plan.joblib ({BUNDLE_FORMAT})."
+            f"Expected meta.json and cluster_plan.joblib ({BUNDLE_FORMAT_V2} or {BUNDLE_FORMAT_V1})."
         )
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     fmt = meta.get("format")
-    if fmt != BUNDLE_FORMAT:
+    if fmt not in {BUNDLE_FORMAT_V1, BUNDLE_FORMAT_V2}:
         raise ValidationError(
-            f"Unsupported unsupervised bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
+            f"Unsupported unsupervised bundle format {fmt!r}; "
+            f"expected {BUNDLE_FORMAT_V2} or {BUNDLE_FORMAT_V1}."
         )
     loaded = joblib.load(plan_path)
     if isinstance(loaded, ClusterPlan):
@@ -88,7 +87,6 @@ def load_unsupervised_bundle(path: str | Path) -> ClusterPlan:
     plan = loaded["plan"]
     if not isinstance(plan, ClusterPlan):
         raise ValidationError("Loaded plan object is not a ClusterPlan")
-    # Rebind arrays if present (defensive for older payloads)
     if loaded.get("centroids") is not None and plan.centroids_ is None:
         plan.centroids_ = np.asarray(loaded["centroids"], dtype=float)
     if loaded.get("centroid_label_ids") and not plan.centroid_label_ids_:

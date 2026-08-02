@@ -33,12 +33,13 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "Training on holdout partitions is leakage.",
             ),
             how_buildml_uses=(
-                "Session.fit_federated → evaluate_federated / predict_federated.",
+                "Session.fit_federated(backend='native'|'flower') → "
+                "evaluate_federated / predict_federated.",
                 "Client column from role='group' or client_column=.",
             ),
             interpretation_rules=(
-                "Read n_clients, round_history, global + per-client holdout metrics, disclosures.",
-                "Disclosures state this is not Flower/OpenFL and not secure aggregation.",
+                "Read backend, n_clients, round_history, global + per-client holdout metrics, disclosures.",
+                "Disclosures state simulation limits — not secure aggregation; flower still local by default.",
             ),
             assumptions=(
                 "Exactly one target; a client/group column; numeric non-null features; "
@@ -56,9 +57,49 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
             related_concepts=(
                 "federated-fedavg",
                 "federated-fedprox",
+                "federated-flower-backend",
                 "federated-bundle-boundary",
                 "leakage-boundary",
             ),
+        ),
+        _note(
+            key="federated-flower-backend",
+            title="Flower (flwr) backend — NumPyClient + aggregation (still local sim)",
+            summary=(
+                "backend='flower' with buildml[federated-industry] wraps Session "
+                "client partitions as Flower NumPyClients and aggregates with flwr."
+            ),
+            definition=(
+                "When flwr is installed, fit_federated can route through Flower: "
+                "each client partition becomes a NumPyClient, local fit delegates "
+                "to the same sklearn linear/SGD path, and flwr.server.strategy.aggregate "
+                "performs weighted averaging. This still executes in-process on "
+                "Session data unless you deploy a real Flower runtime yourself."
+            ),
+            intuition=(
+                "Same classroom FedAvg exercise, but the averaging math goes "
+                "through Flower's library instead of BuildML's native helper."
+            ),
+            formal_idea="Flower FedAvg weighted ndarray aggregation over client updates.",
+            why_it_matters=(
+                "Industry library integration without claiming a production FL network stack.",
+            ),
+            how_buildml_uses=(
+                "pip install 'buildml[federated-industry]' then "
+                "fit_federated(backend='flower', method='fedavg').",
+            ),
+            interpretation_rules=(
+                "Check plan.backend=='flower', round_history aggregation field, disclosures.",
+            ),
+            assumptions=("Same linear/SGD coef path as native; flwr extra installed.",),
+            failure_modes=("Requesting flower without flwr raises MissingExtraError.",),
+            anti_patterns=(
+                "Claiming Flower backend implies gRPC deployment or secure aggregation.",
+            ),
+            worked_example_pattern=(
+                "fit_federated(backend='flower', n_rounds=5) → export_round_history(plan, path).",
+            ),
+            related_concepts=("federated-simulation", "federated-fedavg", "federated-bundle-boundary"),
         ),
         _note(
             key="federated-fedavg",

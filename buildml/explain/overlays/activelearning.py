@@ -36,9 +36,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         parameters=(
             _p(
                 "strategy",
-                "least_confidence | margin | entropy | committee | expected_model_change_lite",
+                "least_confidence | margin | entropy | committee | expected_model_change_lite | "
+                "core_set | qbc_kl | qbc_variation_ratios | bald | mc_dropout",
                 "Default query strategy for suggest_query.",
                 "margin",
+            ),
+            _p(
+                "backend",
+                "sklearn | industry | torch | None",
+                "Query backend; None infers from strategy / installed extras.",
+                None,
             ),
             _p(
                 "base_estimator",
@@ -132,7 +139,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("batch_size", "int | None", "Override default batch size from the plan."),
             _p(
                 "strategy",
-                "least_confidence | margin | entropy | committee | expected_model_change_lite | None",
+                "least_confidence | margin | entropy | committee | expected_model_change_lite | "
+                "core_set | qbc_kl | qbc_variation_ratios | bald | mc_dropout | None",
                 "Optional strategy override for this round.",
             ),
         ),

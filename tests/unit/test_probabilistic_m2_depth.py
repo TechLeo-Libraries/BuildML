@@ -143,7 +143,7 @@ def test_conformal_refuses_holdout_by_construction() -> None:
 
 def test_unknown_estimator_rejected() -> None:
     session = _reg_session()
-    with pytest.raises(ValidationError, match="Unknown probabilistic"):
+    with pytest.raises(ValidationError, match="not valid|Unknown"):
         fit_probabilistic(
             session.dataset,
             session.split_plan,

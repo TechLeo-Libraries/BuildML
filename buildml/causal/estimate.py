@@ -108,6 +108,8 @@ def estimate_causal(
     frame = partition_frame(dataset, split_plan, partition)
     validate_columns_present(frame, plan.assumptions)
 
+    backend = str(getattr(plan, "backend", "native") or "native")
+
     # Re-encode treatment with the plan's level mapping.
     control, treated = plan.treatment_levels
     if frame[plan.treatment_column].isna().any():
@@ -133,29 +135,41 @@ def estimate_causal(
             f"(n={n}, treated={n_treated}, control={n_control})."
         )
 
-    ate, extras = estimate_ate_from_models(
-        x,
-        t,
-        y,
-        method=plan.method,
-        mu0=plan.mu0_,
-        mu1=plan.mu1_,
-        propensity=plan.propensity_,
-        clip_propensity=plan.clip_propensity,
-    )
+    warnings: list[str] = []
+    if backend == "econml":
+        from buildml.causal.adapters.econml import score_econml_partition
+
+        ate, extras = score_econml_partition(plan, x, t, y)
+    elif backend == "dowhy":
+        ate = float(plan.ate)
+        extras = {}
+        warnings.append(
+            "DoWhy backend reports train-identified ATE; partition re-estimation "
+            "is not performed — use native/econml for holdout ATE scoring."
+        )
+    else:
+        ate, extras = estimate_ate_from_models(
+            x,
+            t,
+            y,
+            method=plan.method,
+            mu0=plan.mu0_,
+            mu1=plan.mu1_,
+            propensity=plan.propensity_,
+            clip_propensity=plan.clip_propensity,
+        )
 
     n_boot = plan.bootstrap_samples if bootstrap_samples is None else int(bootstrap_samples)
     seed = plan.config.get("random_state") if random_state is None else random_state
     ate_std = ate_ci_low = ate_ci_high = None
     disclosures = [
-        f"ATE estimated on partition={partition!r} with fitted train nuisances "
-        f"(method={plan.method}).",
+        f"ATE estimated on partition={partition!r} "
+        f"(backend={backend}, method={plan.method}).",
         "This does not replace CausalAssumptions; identification remains "
         "caller-declared backdoor adjustment.",
         "EDA / association screens are not used here.",
     ]
-    warnings: list[str] = []
-    if n_boot and n_boot > 0:
+    if n_boot and n_boot > 0 and backend == "native":
         boots = _bootstrap_scores(
             x,
             t,

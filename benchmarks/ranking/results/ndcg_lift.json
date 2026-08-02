@@ -1,0 +1,25 @@
+{
+  "capability_matrix": {
+    "default_backend": "industry",
+    "default_method": "lambdarank_lgbm",
+    "industry_available": true
+  },
+  "k": 5,
+  "baseline_pointwise": {
+    "backend": "sklearn",
+    "method": "pointwise",
+    "n_train_queries": 30,
+    "ndcg_at_k": 0.7856193350236874,
+    "map_at_k": 1.0,
+    "mrr_at_k": 1.0
+  },
+  "industry_default": {
+    "backend": "industry",
+    "method": "lambdarank_lgbm",
+    "n_train_queries": 30,
+    "ndcg_at_k": 0.7143712067578809,
+    "map_at_k": 1.0,
+    "mrr_at_k": 1.0
+  },
+  "ndcg_lift_vs_pointwise": -0.0906903955764509
+}

@@ -3,6 +3,7 @@
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > TDA path: `pip install "buildml[tda]"` (ripser + persim)
+> Industry: `pip install "buildml[tda-industry]"` (giotto-tda + Betti curves)
 > See [installation](../docs/installation.rst).
 
 Local Vietoris–Rips persistence on kNN train neighborhoods, train-fitted
@@ -60,9 +61,15 @@ session.save_tda_bundle("artifacts/tda_demo_bundle")
 
 | `vectorization` | Backend | Notes |
 |-----------------|---------|-------|
-| `persistence_image` | persim | Default; birth×persistence raster |
-| `landscape` | in-tree | Layered tents on a train-fitted t-grid |
-| `silhouette` | in-tree | Weighted average of tents |
+| `persistence_image` | persim / gtda | Default; birth×persistence raster |
+| `landscape` | in-tree / gtda | Layered tents on a train-fitted t-grid |
+| `silhouette` | in-tree | Weighted average of tents (native only) |
+| `betti_curve` | gtda | Industry backend only |
+| `persistence_landscape` | gtda | Industry backend only |
+
+```python
+Session.tda_capability_matrix()  # honest backend / vectorization matrix
+```
 
 ---
 
@@ -72,14 +79,14 @@ session.save_tda_bundle("artifacts/tda_demo_bundle")
 |------|----------|
 | Fit | Train-only NN index, vectorizer ranges, optional head |
 | Transform / eval | Frozen pipeline; no refit on holdout |
-| Extra | `buildml[tda]` required; `import buildml` stays light |
+| Extra | `buildml[tda]` native; `buildml[tda-industry]` giotto |
 | Scope | PH + vectorization → sklearn — not Mapper-at-scale |
 
 ---
 
 ## Next
 
-TDA **PASS**. Phase 3 application systems start at
+TDA **PASS (R5.9 industry depth)**. Phase 3 application systems start at
 [recommendation systems](quickstart-recommenders.md); after that PASS:
 search/LTR, knowledge graphs, optimisation helpers, synthetic-data — one at a
 time.

@@ -26,16 +26,28 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_ssl_pretext_op(
     session,
     *,
-    method: SelfSupervisedMethod = "masked_tabular",
+    method: SelfSupervisedMethod | None = None,
     columns: list[str] | None = None,
+    text_column: str | None = None,
+    image_column: str | None = None,
     random_state: int | None = 0,
     latent_dim: int = 16,
     hidden: tuple[int, ...] | list[int] = (64,),
     mask_ratio: float = 0.15,
     n_mask_views: int = 3,
     max_iter: int = 200,
+    epochs: int = 40,
+    batch_size: int = 64,
+    learning_rate: float = 1e-3,
+    temperature: float = 0.5,
+    projector_dim: int = 32,
+    projector_hidden: tuple[int, ...] | list[int] = (64,),
     prefer_reduce_components: bool = True,
     representation_prefix: str = "ssl_emb",
+    backbone: str = "resnet18",
+    weight_mode: str = "mock",
+    hf_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+    device: str = "cpu",
 ) -> Any:
     """Fit a self-supervised pretext encoder on the train partition only."""
     session.assert_can_fit("train")
@@ -44,15 +56,27 @@ def fit_ssl_pretext_op(
         session._split_plan,
         method=method,
         columns=columns,
+        text_column=text_column,
+        image_column=image_column,
         random_state=random_state,
         latent_dim=latent_dim,
         hidden=hidden,
         mask_ratio=mask_ratio,
         n_mask_views=n_mask_views,
         max_iter=max_iter,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        temperature=temperature,
+        projector_dim=projector_dim,
+        projector_hidden=projector_hidden,
         prefer_reduce_components=prefer_reduce_components,
         reduce_plan=getattr(session, "_reduce_plan", None),
         representation_prefix=representation_prefix,
+        backbone=backbone,
+        weight_mode=weight_mode,
+        hf_model_name=hf_model_name,
+        device=device,
     )
     session._ssl_plan = plan
     session._ssl_fit_result = result
@@ -63,15 +87,27 @@ def fit_ssl_pretext_op(
     session._record(
         "fit_ssl_pretext",
         {
-            "method": method,
+            "method": result.method,
+            "modality": getattr(result, "modality", "tabular"),
             "columns": columns,
+            "text_column": text_column,
+            "image_column": image_column,
             "latent_dim": latent_dim,
             "hidden": list(hidden),
             "mask_ratio": mask_ratio,
             "n_mask_views": n_mask_views,
             "max_iter": max_iter,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "temperature": temperature,
+            "projector_dim": projector_dim,
             "prefer_reduce_components": prefer_reduce_components,
             "representation_prefix": representation_prefix,
+            "backbone": backbone,
+            "weight_mode": weight_mode,
+            "hf_model_name": hf_model_name,
+            "device": device,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),
@@ -183,7 +219,7 @@ def evaluate_ssl_op(
 
 
 def save_ssl_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active SSL plan (+ optional head) as ``buildml.selfsupervised_bundle.v1``."""
+    """Persist the active SSL plan (+ optional head) as ``buildml.ssl_bundle.v2``."""
     plan = getattr(session, "_ssl_plan", None)
     if plan is None:
         raise ValidationError("No SSL plan. Call fit_ssl_pretext(...) first.")

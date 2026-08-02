@@ -57,6 +57,37 @@ def score_distmult(
     return np.sum(h * r * t, axis=-1)
 
 
+def score_rotate(
+    heads: np.ndarray,
+    relations: np.ndarray,
+    tails: np.ndarray,
+    entity_emb: np.ndarray,
+    relation_emb: np.ndarray,
+) -> np.ndarray:
+    """Higher is better: negative RotatE distance in complex space."""
+    h = entity_emb[heads]
+    r_phase = relation_emb[relations]
+    t = entity_emb[tails]
+    rotation = np.exp(1j * r_phase)
+    diff = h * rotation - t
+    dist = np.linalg.norm(diff, axis=-1)
+    return -dist.astype(float)
+
+
+def score_complex(
+    heads: np.ndarray,
+    relations: np.ndarray,
+    tails: np.ndarray,
+    entity_emb: np.ndarray,
+    relation_emb: np.ndarray,
+) -> np.ndarray:
+    """Higher is better: ComplEx trilinear score Re(<h, r, conj(t)>)."""
+    h = entity_emb[heads]
+    r = relation_emb[relations]
+    t = entity_emb[tails]
+    return np.real(np.sum(h * r * np.conj(t), axis=-1)).astype(float)
+
+
 def score_triples_batch(
     method: str,
     heads: np.ndarray,
@@ -73,6 +104,10 @@ def score_triples_batch(
         )
     if method == "distmult":
         return score_distmult(heads, relations, tails, entity_emb, relation_emb)
+    if method == "rotate":
+        return score_rotate(heads, relations, tails, entity_emb, relation_emb)
+    if method == "complex":
+        return score_complex(heads, relations, tails, entity_emb, relation_emb)
     raise ValidationError(f"Unknown KG method: {method!r}")
 
 

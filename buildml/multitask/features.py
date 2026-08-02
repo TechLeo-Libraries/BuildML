@@ -21,6 +21,7 @@ __all__ = [
     "resolve_target_columns",
     "resolve_multitask_columns",
     "infer_task_type",
+    "infer_task_kinds",
     "encode_multitask_y",
     "decode_multitask_predictions",
 ]
@@ -104,10 +105,29 @@ def resolve_multitask_columns(
     return filtered, used_reduce, out
 
 
+def infer_task_kinds(
+    frame: pd.DataFrame,
+    target_columns: Sequence[str],
+) -> dict[str, str]:
+    """Infer per-target classification vs regression kinds."""
+    kinds: dict[str, str] = {}
+    for col in target_columns:
+        series = frame[col]
+        if series.isna().any():
+            raise ValidationError(
+                f"Multi-task target {col!r} contains nulls on the train "
+                "partition. Impute or drop nulls before fit_multitask."
+            )
+        kinds[str(col)] = "regression" if _looks_regression(series) else "classification"
+    return kinds
+
+
 def infer_task_type(
     frame: pd.DataFrame,
     target_columns: Sequence[str],
     task: str,
+    *,
+    allow_mixed: bool = False,
 ) -> tuple[str, list[str]]:
     """Resolve classification vs regression; refuse mixed-type targets.
 
@@ -119,6 +139,18 @@ def infer_task_type(
         _assert_targets_compatible(frame, target_columns, task)
         disclosures.append(f"Multi-task task taken from explicit task={task!r}.")
         return task, disclosures
+
+    if task == "mixed":
+        kinds = infer_task_kinds(frame, target_columns)
+        unique = set(kinds.values())
+        if len(unique) < 2:
+            raise ValidationError(
+                "task='mixed' requires both classification and regression targets."
+            )
+        disclosures.append(
+            f"Multi-task task='mixed' with per-target kinds={kinds}."
+        )
+        return "mixed", disclosures
 
     if task != "auto":
         raise ValidationError(
@@ -144,11 +176,18 @@ def infer_task_type(
         detail = {
             col: kind for col, kind in zip(target_columns, kinds, strict=True)
         }
+        if allow_mixed:
+            disclosures.append(
+                f"Multi-task task='auto' inferred mixed kinds={detail} "
+                "(torch shared-trunk path)."
+            )
+            return "mixed", disclosures
         raise ValidationError(
             "Mixed classification/regression multi-task targets are not "
-            f"supported (inferred kinds={detail}). Use same-type targets, or "
-            "pass task='classification' / task='regression' only when every "
-            "target is compatible with that task."
+            f"supported for this backend (inferred kinds={detail}). Use "
+            "same-type targets, backend='torch' with "
+            "method='shared_trunk_multihead', or pass task='classification' / "
+            "'regression' only when every target is compatible."
         )
     resolved = kinds[0]
     disclosures.append(
@@ -163,10 +202,53 @@ def encode_multitask_y(
     target_columns: Sequence[str],
     *,
     task: str,
+    task_kinds: dict[str, str] | None = None,
     label_encoders: dict[str, Any] | None = None,
 ) -> tuple[np.ndarray, dict[str, Any], dict[str, tuple[Any, ...]]]:
     """Build a 2D target matrix; LabelEncode per classification task."""
     from sklearn.preprocessing import LabelEncoder
+
+    if task == "mixed":
+        if not task_kinds:
+            raise ValidationError("task='mixed' requires task_kinds= metadata.")
+        encoders: dict[str, Any] = dict(label_encoders or {})
+        classes: dict[str, tuple[Any, ...]] = {}
+        cols = []
+        for col in target_columns:
+            kind = task_kinds[str(col)]
+            if kind == "regression":
+                series = frame[col]
+                if not pd.api.types.is_numeric_dtype(series):
+                    raise ValidationError(
+                        f"Mixed multi-task regression target {col!r} must be numeric."
+                    )
+                cols.append(series.to_numpy(dtype=float))
+                continue
+            series = frame[col]
+            values = series.astype(str)
+            if col not in encoders:
+                enc = LabelEncoder()
+                codes = enc.fit_transform(values)
+                encoders[col] = enc
+            else:
+                enc = encoders[col]
+                known = {str(c) for c in enc.classes_}
+                unknown = sorted(set(values) - known)
+                if unknown:
+                    raise ValidationError(
+                        f"Multi-task target {col!r} saw unseen class label(s): "
+                        f"{unknown}."
+                    )
+                codes = enc.transform(values)
+            if len(enc.classes_) < 2:
+                raise ValidationError(
+                    f"Multi-task classification target {col!r} needs >= 2 classes "
+                    f"(found {tuple(enc.classes_)!r})."
+                )
+            classes[col] = tuple(enc.classes_)
+            cols.append(np.asarray(codes))
+        y = np.column_stack(cols)
+        return y, encoders, classes
 
     if task == "regression":
         cols = []
@@ -225,6 +307,7 @@ def decode_multitask_predictions(
     *,
     task: str,
     label_encoders: dict[str, Any],
+    task_kinds: dict[str, str] | None = None,
 ) -> dict[str, tuple[Any, ...]]:
     """Decode a (n, n_tasks) prediction matrix into per-task tuples."""
     arr = np.asarray(raw)
@@ -238,7 +321,12 @@ def decode_multitask_predictions(
     out: dict[str, tuple[Any, ...]] = {}
     for i, col in enumerate(target_columns):
         col_pred = arr[:, i]
-        if task == "classification":
+        kind = (
+            task_kinds.get(str(col), task)
+            if task == "mixed" and task_kinds
+            else task
+        )
+        if kind == "classification":
             enc = label_encoders[col]
             codes = np.rint(col_pred).astype(int)
             decoded = enc.inverse_transform(codes)

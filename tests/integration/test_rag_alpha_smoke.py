@@ -38,13 +38,16 @@ def test_rag_alpha_gate_smoke(tmp_path: Path) -> None:
     session = Session()
     session.rag_ingest_corpus(docs)
     session.rag_chunk(size=160, overlap=32)
-    session.rag_embed_and_index()
+    session.rag_embed_and_index(embedder="hashing")
     assert session.rag_index_result is not None
     assert session.rag_index_result.embedder_id == "buildml.hashing_embed.v1"
     assert session.rag_index_result.n_chunks >= 3
 
-    dense = session.rag_retrieve("retrieval corpus contamination indexed answers", k=3)
-    assert dense.mode == "dense"
+    dense = session.rag_retrieve(
+        "retrieval corpus contamination indexed answers",
+        k=3,
+        mode="dense",
+    )
     assert len(dense.hits) == 3
     assert dense.hits[0].doc_id in {"ml", "rag", "leak"}
 

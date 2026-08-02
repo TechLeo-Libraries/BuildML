@@ -25,7 +25,7 @@ CHECKPOINT_BOUNDARY = (
     "KG bundles, Graph ML bundles, recommender bundles, RAG bundles, and "
     "Session checkpoints are complementary, not interchangeable. A KG bundle "
     "(buildml.kg_bundle.v1) stores a train-fitted KgPlan (entity/relation "
-    "vocabularies, TransE/DistMult embeddings, train adjacency). A Session "
+    "vocabularies, embedding weights, train adjacency). A Session "
     "checkpoint stores data, roles, splits, and history; it does not embed "
     "the KG plan. Reload tabular workflow via checkpoint_load; reload the KG "
     "via load_kg_bundle. Honesty: Session KG learning/query — not Neo4j, not "

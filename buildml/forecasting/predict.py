@@ -11,6 +11,7 @@ from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.forecasting.features import lag_feature_row, ordered_frame, target_series
+from buildml.forecasting.backends import industry_predict, industry_one_step
 from buildml.forecasting.results import ForecastGenerateResult, ForecastPlan
 
 
@@ -23,6 +24,23 @@ def _predict_next(
 ) -> float:
     """Predict one step ahead from history (past values only)."""
     method = plan.method
+    if plan.industry_estimator_ is not None:
+        if step > 1 and plan.method not in {"prophet", "nbeats"}:
+            # Multi-step industry forecast in one call for statsmodels
+            preds = industry_predict(
+                plan.industry_estimator_,
+                steps=step,
+                history=history,
+                exog_future=None if exog_row is None else exog_row.reshape(1, -1),
+            )
+            return float(preds[step - 1])
+        preds = industry_predict(
+            plan.industry_estimator_,
+            steps=1,
+            history=history,
+            exog_future=None if exog_row is None else exog_row.reshape(1, -1),
+        )
+        return float(preds[0])
     if method == "naive":
         assert plan.baseline_value_ is not None
         return float(plan.baseline_value_)
@@ -92,8 +110,47 @@ def generate_forecast(
     if not hist:
         raise ValidationError("Forecast history is empty")
 
-    exog_mat: np.ndarray | None = None
     warnings: list[str] = []
+
+    if plan.industry_estimator_ is not None:
+        exog_mat_ind = None
+        if plan.exog_columns:
+            if future_exog is None:
+                raise ValidationError(
+                    "Industry exog plan requires future_exog for horizon generation."
+                )
+            exog_mat_ind = np.asarray(
+                future_exog if not isinstance(future_exog, pd.DataFrame)
+                else future_exog.loc[:, list(plan.exog_columns)].to_numpy(),
+                dtype=float,
+            )
+            if exog_mat_ind.ndim == 1:
+                exog_mat_ind = exog_mat_ind.reshape(-1, 1)
+        preds_tuple = industry_predict(
+            plan.industry_estimator_,
+            steps=h,
+            history=hist,
+            exog_future=exog_mat_ind,
+        )
+        disclosures = [
+            f"Industry horizon generate (backend={plan.backend}, method={plan.method}); no refit.",
+        ]
+        if plan.method in {"prophet", "nbeats"}:
+            disclosures.append(
+                "Prophet/N-BEATS use model-native multi-step paths; "
+                "not recursive lag composition."
+            )
+        return ForecastGenerateResult(
+            method=plan.method,
+            horizon=h,
+            origin=origin,
+            predictions=preds_tuple,
+            timestamps=(),
+            disclosures=tuple(disclosures),
+            warnings=tuple(warnings),
+        )
+
+    exog_mat: np.ndarray | None = None
     disclosures = [
         f"Horizon generate from origin={origin} with frozen ForecastPlan "
         f"(method={plan.method}); no refit.",
@@ -234,6 +291,12 @@ def rolling_one_step_predictions(
                     "rolling seasonal_naive"
                 )
             yhat = float(working[-period])
+        elif plan.method in {"lag_ridge", "lag_hgb"}:
+            yhat = _predict_next(plan, working, step=1, exog_row=row)
+        elif plan.industry_estimator_ is not None:
+            yhat = industry_one_step(
+                plan.industry_estimator_, working, exog_row=row
+            )
         else:
             yhat = _predict_next(plan, working, step=1, exog_row=row)
         preds.append(float(yhat))

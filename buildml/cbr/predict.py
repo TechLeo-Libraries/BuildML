@@ -7,13 +7,15 @@ from typing import Any, Literal
 
 import numpy as np
 
-from buildml.cbr.cases import CaseTrace, distance_weights, pairwise_distances
+from buildml.cbr.cases import CaseTrace, distance_weights
 from buildml.cbr.retrieve import (
     _partition_frame,
+    _plan_with_backend,
     encode_query_features,
     neighbor_pack_for_row,
 )
 from buildml.cbr.results import CbrPlan, CbrPredictResult
+from buildml.cbr.retrieval_engine import retrieve_neighbor_batches
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan
@@ -29,6 +31,7 @@ def predict_cbr(
     partition: PartitionOrAll = "test",
     k: int | None = None,
     return_traces: bool = True,
+    backend: str | None = None,
 ) -> CbrPredictResult:
     """Retrieve neighbors and reuse/adapt solutions (no case-base update)."""
     frame, indices = _partition_frame(dataset, split_plan, partition)
@@ -38,20 +41,20 @@ def predict_cbr(
 
     q_num, q_cat = encode_query_features(frame, plan)
     memory = plan.case_base
-    dists = pairwise_distances(
+    active_plan = _plan_with_backend(plan, backend)
+    orders, drows = retrieve_neighbor_batches(
+        active_plan,
         q_num,
-        memory.numeric_matrix,
-        metric=plan.metric,
-        query_cat=q_cat,
-        memory_cat=memory.categorical_matrix,
-        numeric_ranges=memory.numeric_ranges_,
-        eps=plan.distance_eps,
+        q_cat,
+        k=kk,
+        query_frame=frame if active_plan.backend == "embedding" else None,
     )
 
     predictions: list[Any] = []
     traces: list[CaseTrace] = []
     for i in range(len(frame)):
-        neighbors, dvals, order = neighbor_pack_for_row(plan, dists[i], kk)
+        order = orders[i]
+        neighbors, dvals, order = neighbor_pack_for_row(active_plan, order, drows[i])
         weights = distance_weights(dvals, eps=plan.distance_eps)
         pred, notes = reuse_solutions(
             neighbors=[c.solution for c in neighbors],

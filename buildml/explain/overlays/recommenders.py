@@ -35,9 +35,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         parameters=(
             _p(
                 "method",
-                "item_knn | user_knn | svd | nmf | content",
-                "Recommender algorithm.",
-                "item_knn",
+                "item_knn | user_knn | svd | nmf | content | als | bpr | lightfm | None",
+                "Recommender algorithm; None applies feedback-aware default.",
+                None,
+            ),
+            _p(
+                "backend",
+                "sklearn | implicit | lightfm | None",
+                "Backend routing; inferred from method when omitted.",
+                None,
             ),
             _p("user_column", "str", "User id column (required)."),
             _p("item_column", "str", "Item id column (required)."),
@@ -53,8 +59,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "item_feature_columns",
                 "list[str] | None",
-                "Numeric item features for method='content'.",
+                "Numeric item features for method='content' or LightFM hybrid.",
             ),
+            _p(
+                "user_feature_columns",
+                "list[str] | None",
+                "Numeric user features for LightFM hybrid.",
+            ),
+            _p("n_iterations", "int", "implicit ALS/BPR iterations.", 15),
+            _p("lightfm_epochs", "int", "LightFM training epochs.", 10),
             _p(
                 "cold_start",
                 "popularity | skip",
@@ -83,6 +96,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         concepts=(
             "recommender-collaborative-filtering",
             "recommender-content-based",
+            "recommender-industry-backends",
             "recommender-cold-start",
             "recommender-bundle-boundary",
             "leakage-boundary",

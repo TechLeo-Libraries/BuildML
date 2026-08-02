@@ -108,6 +108,11 @@ def partial_fit_online(
     estimator_obj = plan.estimator_
     used_refit = False
     update_mode = "partial_fit"
+    drift_events_before = (
+        len(getattr(estimator_obj, "drift_events_", []) or [])
+        if hasattr(estimator_obj, "drift_events_")
+        else 0
+    )
     try:
         if hasattr(estimator_obj, "partial_fit"):
             if plan.task == "classification":
@@ -135,14 +140,24 @@ def partial_fit_online(
             f"partial_fit_online failed for estimator={plan.estimator_name!r}: {exc}"
         ) from exc
 
-    drift_notes = tuple(
+    drift_note_list = list(
         chunk_drift_notes(
             x,
             plan.init_feature_means_,
             columns=plan.columns,
-            enabled=drift_on,
+            enabled=drift_on
+            and str((plan.config or {}).get("drift_detector", "mean_shift")) == "mean_shift",
         )
     )
+    if drift_on and hasattr(estimator_obj, "drift_events_"):
+        after_events = getattr(estimator_obj, "drift_events_", []) or []
+        if len(after_events) > drift_events_before:
+            for event in after_events[drift_events_before:]:
+                drift_note_list.append(
+                    f"River {event.get('detector')} drift on update "
+                    f"(n_seen={event.get('n_seen')})."
+                )
+    drift_notes = tuple(drift_note_list)
     disclosures.extend(drift_notes)
 
     seen = list(plan.seen_train_indices)
@@ -162,6 +177,7 @@ def partial_fit_online(
             "update_mode": update_mode,
             "used_refit_fallback": used_refit,
             "drift_notes": list(drift_notes),
+            "backend": plan.backend,
         }
     )
     remaining = 0
@@ -188,6 +204,7 @@ def partial_fit_online(
         classes_=plan.classes_,
         seen_train_indices=tuple(seen),
         update_history=tuple(history),
+        backend=plan.backend,
         estimator_=estimator_obj,
         label_encoder_=label_encoder,
         init_feature_means_=plan.init_feature_means_,

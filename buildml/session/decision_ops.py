@@ -33,6 +33,7 @@ def fit_decision_policy_op(
     session,
     *,
     method: DecisionMethod = "threshold",
+    backend: str | None = None,
     partition: TuningPartition = "validation",
     allow_test_tuning: bool = False,
     fp_cost: float | None = None,
@@ -71,6 +72,7 @@ def fit_decision_policy_op(
         session._split_plan,
         session._fit_result,
         method=method,
+        backend=backend,  # type: ignore[arg-type]
         partition=partition,
         allow_test_tuning=allow_test_tuning,
         fp_cost=fp_cost,
@@ -101,6 +103,7 @@ def fit_decision_policy_op(
         "fit_decision_policy",
         {
             "method": method,
+            "backend": backend,
             "partition": partition,
             "allow_test_tuning": allow_test_tuning,
             "fp_cost": fp_cost,
@@ -219,3 +222,9 @@ def load_decision_bundle_op(session, path: str | Path):
         result_summary={"path": str(path), "method": plan.method},
     )
     return session
+
+
+def decision_capability_matrix_op() -> dict[str, Any]:
+    from buildml.optimize.catalog import decision_capability_matrix
+
+    return decision_capability_matrix()

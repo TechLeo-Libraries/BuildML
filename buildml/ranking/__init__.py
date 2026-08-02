@@ -4,7 +4,7 @@ Phase coverage (internal tracker — depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1–2 complete. Phase 3 — Application systems:
   Recommendation systems (**PASS**).
-  **Search / learning-to-rank (this module)** — **PASS**.
+  **Search / learning-to-rank (this module)** — **PASS** (R6.8 industry depth).
   Knowledge graphs — **PASS**. Optimisation / decision helpers — **PASS**.
   Synthetic-data systems — **PASS** (``buildml.synthetic``).
 
@@ -12,15 +12,16 @@ Honesty (this package):
   - Tabular query–item (or query–document) feature rows with relevance labels.
   - Train-only fit; prefer ``group_split`` on ``query_column`` so test queries'
     labels never enter training.
-  - Algorithms: pointwise relevance regression (Ridge / HistGradientBoosting)
-    and pairwise RankSVM-lite (LinearSVC on within-query differences).
+  - Backends: sklearn pointwise/pairwise fallback; industry GBDT rankers
+    (LightGBM LambdaRank, XGBoost rank:ndcg, CatBoost YetiRank) via
+    ``buildml[ranking-industry]``; optional torch listwise-lite via
+    ``buildml[torch]``.
   - Ranking metrics: graded nDCG@K, MAP@K, MRR@K (macro over queries).
   - **Not** a search-engine product, **not** RAG retrieve/generate,
     **not** recommender user–item CF.
 
-Dependency policy: core stays numpy/pandas/sklearn. LightGBM/XGBoost LambdaMART
-is intentionally not required; optional extras only if a complete path is added
-later.
+Dependency policy: core stays numpy/pandas/sklearn. Industry rankers and torch
+listwise are optional extras with honest capability matrix disclosure.
 
 Lazy imports — keep the core import graph light.
 """
@@ -34,6 +35,7 @@ __all__ = [
     "CHECKPOINT_BOUNDARY",
     "PairwiseEstimator",
     "PointwiseEstimator",
+    "RankerBackend",
     "RankerConfig",
     "RankerEvalResult",
     "RankerFitResult",
@@ -42,8 +44,10 @@ __all__ = [
     "RankResult",
     "evaluate_ranker",
     "fit_ranker",
+    "list_ranking_methods",
     "load_ranker_bundle",
     "rank",
+    "ranking_capability_matrix",
     "ranking_status",
     "ranking_status_for_session",
     "save_ranker_bundle",
@@ -52,6 +56,7 @@ __all__ = [
 
 def __getattr__(name: str) -> Any:
     if name in {
+        "RankerBackend",
         "RankerConfig",
         "RankerMethod",
         "PointwiseEstimator",
@@ -94,4 +99,12 @@ def __getattr__(name: str) -> Any:
         from buildml.ranking import explain_hooks as hooks
 
         return getattr(hooks, name)
+    if name == "ranking_capability_matrix":
+        from buildml.ranking.catalog import ranking_capability_matrix
+
+        return ranking_capability_matrix
+    if name == "list_ranking_methods":
+        from buildml.ranking.catalog import list_ranking_methods
+
+        return list_ranking_methods
     raise AttributeError(f"module 'buildml.ranking' has no attribute {name!r}")

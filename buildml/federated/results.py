@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 
@@ -32,6 +34,7 @@ class FederatedPlan:
     round_history: tuple[dict[str, Any], ...]
     estimator_: Any = field(repr=False)
     label_encoder_: Any = field(repr=False, default=None)
+    backend: str = "native"
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     used_reduce_components: bool = False
@@ -39,6 +42,7 @@ class FederatedPlan:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "estimator_name": self.estimator_name,
             "task": self.task,
@@ -79,11 +83,13 @@ class FederatedFitResult:
     final_train_metric: float | None
     round_history: tuple[dict[str, Any], ...]
     used_reduce_components: bool = False
+    backend: str = "native"
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "estimator_name": self.estimator_name,
             "task": self.task,
@@ -101,6 +107,31 @@ class FederatedFitResult:
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
         }
+
+
+def export_round_history(
+    plan: FederatedPlan,
+    path: str | Path,
+    *,
+    include_disclosures: bool = False,
+) -> Path:
+    """Export ``round_history`` (and optional disclosures) to JSON."""
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    payload: dict[str, Any] = {
+        "backend": plan.backend,
+        "method": plan.method,
+        "estimator_name": plan.estimator_name,
+        "client_column": plan.client_column,
+        "n_clients": len(plan.client_ids),
+        "n_rounds_completed": len(plan.round_history),
+        "round_history": [dict(r) for r in plan.round_history],
+    }
+    if include_disclosures:
+        payload["disclosures"] = list(plan.disclosures)
+        payload["warnings"] = list(plan.warnings)
+    destination.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return destination
 
 
 @dataclass(slots=True)

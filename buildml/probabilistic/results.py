@@ -16,6 +16,7 @@ class ProbabilisticPlan:
     not a probabilistic-programming / MCMC platform (PyMC/Stan).
     """
 
+    backend: str
     estimator_name: str
     task: str
     columns: tuple[str, ...]
@@ -41,6 +42,7 @@ class ProbabilisticPlan:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "estimator_name": self.estimator_name,
             "task": self.task,
             "columns": list(self.columns),
@@ -66,6 +68,7 @@ class ProbabilisticPlan:
 class ProbabilisticFitResult:
     """Outcome of fitting a probabilistic / Bayesian estimator on train."""
 
+    backend: str
     estimator_name: str
     task: str
     n_train_rows: int
@@ -78,12 +81,14 @@ class ProbabilisticFitResult:
     interval_method: str
     classes: tuple[Any, ...] | None
     conformal_quantile: float | None = None
+    mapie_method: str | None = None
     used_reduce_components: bool = False
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "estimator_name": self.estimator_name,
             "task": self.task,
             "n_train_rows": self.n_train_rows,
@@ -96,6 +101,7 @@ class ProbabilisticFitResult:
             "interval_method": self.interval_method,
             "classes": None if self.classes is None else list(self.classes),
             "conformal_quantile": self.conformal_quantile,
+            "mapie_method": self.mapie_method,
             "used_reduce_components": self.used_reduce_components,
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),

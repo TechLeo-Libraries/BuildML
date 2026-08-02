@@ -1,4 +1,4 @@
-"""Optional RAG dependency gate."""
+"""Optional RAG dependency gates."""
 
 from __future__ import annotations
 
@@ -11,11 +11,9 @@ from buildml.core.errors import MissingExtraError
 def require_rag_stack(*, feature: str = "RAG") -> None:
     """Gate Session RAG entrypoints.
 
-    M1's default hashing embedder + NumPy cosine store use core numpy/sklearn, so
-    this check always succeeds when BuildML itself is importable. Semantic
-    sentence-transformer backends still call :func:`require_sentence_transformers`.
-    The install contract remains ``pip install 'buildml[rag]'`` for the declared
-    optional pins and future store backends.
+    Hashing embedder + NumPy cosine store use core numpy/sklearn and always work.
+    Semantic sentence-transformer backends call :func:`require_sentence_transformers`.
+    Install contract: ``pip install 'buildml[rag]'`` for HF embeddings and rerank.
     """
     _ = feature
     return None
@@ -36,11 +34,7 @@ def require_sentence_transformers(
 
 
 def rag_available() -> bool:
-    """Return True when optional semantic RAG deps can be imported.
-
-    The hashing default path does not require this; Session retrieve still works
-    without sentence-transformers.
-    """
+    """Return True when optional semantic RAG deps can be imported."""
     if importlib.util.find_spec("sentence_transformers") is None:
         return False
     try:
@@ -48,3 +42,17 @@ def rag_available() -> bool:
     except (ImportError, OSError):
         return False
     return True
+
+
+def require_langchain_community(*, feature: str = "LangChain RAG adapter") -> Any:
+    """Import langchain_community or raise :class:`MissingExtraError` for rag-advanced."""
+    try:
+        import langchain_community
+    except ImportError as exc:
+        raise MissingExtraError("rag-advanced", feature) from exc
+    return langchain_community
+
+
+def rag_advanced_available() -> bool:
+    """True when ``buildml[rag-advanced]`` LangChain pins are importable."""
+    return importlib.util.find_spec("langchain_community") is not None

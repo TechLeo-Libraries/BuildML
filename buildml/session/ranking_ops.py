@@ -19,6 +19,7 @@ from buildml.ranking.rank import rank
 from buildml.ranking.types import (
     PairwiseEstimator,
     PointwiseEstimator,
+    RankerBackend,
     RankerMethod,
 )
 
@@ -28,7 +29,8 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_ranker_op(
     session,
     *,
-    method: RankerMethod = "pointwise",
+    backend: RankerBackend | None = None,
+    method: RankerMethod | str | None = None,
     query_column: str | None = None,
     item_column: str | None = None,
     relevance_column: str | None = None,
@@ -39,6 +41,11 @@ def fit_ranker_op(
     relevance_threshold: float = 0.0,
     alpha: float = 1.0,
     C: float = 1.0,
+    n_estimators: int = 120,
+    learning_rate: float = 0.08,
+    hidden_dim: int = 64,
+    epochs: int = 40,
+    device: str = "cpu",
     random_state: int | None = 0,
 ):
     """Fit a tabular ranker on Session train rows only.
@@ -47,12 +54,13 @@ def fit_ranker_op(
     -----
     **Leakage:** Requires a split. Prefer ``group_split`` on ``query_column``
     so test queries' labels never appear in train. Distinct from RAG and from
-    recommender CF.
+    recommender CF. See ``ranking_capability_matrix()`` for backends.
     """
     session.assert_can_fit("train")
     plan, result = fit_ranker(
         session.dataset,
         session._split_plan,
+        backend=backend,
         method=method,
         query_column=query_column,
         item_column=item_column,
@@ -64,6 +72,11 @@ def fit_ranker_op(
         relevance_threshold=relevance_threshold,
         alpha=alpha,
         C=C,
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
+        hidden_dim=hidden_dim,
+        epochs=epochs,
+        device=device,
         random_state=random_state,
     )
     session._ranker_plan = plan
@@ -73,7 +86,8 @@ def fit_ranker_op(
     session._record(
         "fit_ranker",
         {
-            "method": method,
+            "backend": plan.backend,
+            "method": plan.method,
             "query_column": query_column,
             "item_column": item_column,
             "relevance_column": relevance_column,
@@ -86,6 +100,11 @@ def fit_ranker_op(
             "relevance_threshold": relevance_threshold,
             "alpha": alpha,
             "C": C,
+            "n_estimators": n_estimators,
+            "learning_rate": learning_rate,
+            "hidden_dim": hidden_dim,
+            "epochs": epochs,
+            "device": device,
             "random_state": random_state,
         },
         warnings=tuple(result.warnings),
@@ -100,6 +119,7 @@ def rank_op(
     partition: PartitionOrAll | None = None,
     query_ids: Sequence[Any] | None = None,
     k: int = 10,
+    backend: RankerBackend | None = None,
 ):
     """Order items for queries in a partition or an explicit query id list."""
     plan = getattr(session, "_ranker_plan", None)
@@ -114,6 +134,7 @@ def rank_op(
         partition=partition,
         query_ids=query_ids,
         k=k,
+        backend=backend,
     )
     session._ranker_rank_result = result
     session._record(
@@ -122,6 +143,7 @@ def rank_op(
             "partition": partition,
             "query_ids": None if query_ids is None else list(query_ids),
             "k": k,
+            "backend": backend,
         },
         warnings=tuple(result.warnings),
         result_summary=rank_result_summary(result),
@@ -134,6 +156,7 @@ def evaluate_ranker_op(
     *,
     partition: PartitionOrAll = "test",
     k: int = 10,
+    backend: RankerBackend | None = None,
 ):
     """Evaluate per-query ranking metrics on a holdout partition."""
     plan = getattr(session, "_ranker_plan", None)
@@ -145,11 +168,12 @@ def evaluate_ranker_op(
         session._split_plan,
         partition=partition,
         k=k,
+        backend=backend,
     )
     session._ranker_eval_result = result
     session._record(
         "evaluate_ranker",
-        {"partition": partition, "k": k},
+        {"partition": partition, "k": k, "backend": backend},
         warnings=tuple(result.warnings),
         result_summary=eval_result_summary(result),
     )

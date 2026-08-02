@@ -22,7 +22,7 @@ CHECKPOINT_BOUNDARY = (
     "preprocess plans; it does not embed the graph learner. Reload tabular "
     "workflow via checkpoint_load; reload the learner via load_graph_bundle. "
     "Honesty: node classification with NetworkX metrics + sklearn and/or a "
-    "small pure-Torch GCN — not PyG, not Neo4j/KG."
+    "small pure-Torch GCN and/or PyG GCN/GraphSAGE/GAT — not Neo4j/KG."
 )
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.kg.catalog import resolve_backend_method
 from buildml.kg.features import (
     build_adjacency,
     build_triples,
@@ -16,10 +17,89 @@ from buildml.kg.features import (
 )
 from buildml.kg.models import fit_embeddings
 from buildml.kg.results import KgFitResult, KgPlan
-from buildml.kg.types import KgConfig, KgMethod, KgNorm
+from buildml.kg.types import KgBackend, KgConfig, KgMethod, KgNorm
 
 
 def fit_kg(
+    dataset: Dataset,
+    split_plan: SplitPlan | None,
+    *,
+    backend: KgBackend | None = None,
+    method: KgMethod = "transe",
+    head_column: str | None = None,
+    relation_column: str | None = None,
+    tail_column: str | None = None,
+    embedding_dim: int = 50,
+    epochs: int = 40,
+    batch_size: int = 256,
+    learning_rate: float = 0.01,
+    margin: float = 1.0,
+    neg_ratio: int = 1,
+    norm: KgNorm = "l1",
+    random_state: int | None = 0,
+) -> tuple[KgPlan, KgFitResult]:
+    """Fit a leakage-safe KG embedding model on the Session **train** partition.
+
+    Backends
+    --------
+    native (default):
+        Pure-numpy TransE / DistMult with disclosed uniform negative sampling.
+    pykeen (``buildml[kg-industry]``):
+        PyKEEN pipeline for TransE, DistMult, RotatE, ComplEx on train triples.
+
+    Pipeline
+    --------
+    1. Resolve head / relation / tail columns.
+    2. Materialize unique train triples only (never test).
+    3. Build entity/relation vocabularies from train.
+    4. Train embeddings with the selected backend.
+    5. Store train adjacency for symbolic neighborhood/path/typed queries.
+
+    Honesty: Session KG learning/query — not a Neo4j / graph-DB product,
+    not Graph ML node classification, not RAG.
+    """
+    resolved_backend, resolved_method = resolve_backend_method(
+        backend=backend,
+        method=str(method),
+    )
+    if resolved_backend == "pykeen":
+        from buildml.kg.adapters.pykeen import fit_pykeen
+
+        return fit_pykeen(
+            dataset,
+            split_plan,
+            method=resolved_method,
+            head_column=head_column,
+            relation_column=relation_column,
+            tail_column=tail_column,
+            embedding_dim=embedding_dim,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            margin=margin,
+            neg_ratio=neg_ratio,
+            norm=norm,
+            random_state=random_state,
+        )
+    return _fit_native(
+        dataset,
+        split_plan,
+        method=resolved_method,  # type: ignore[arg-type]
+        head_column=head_column,
+        relation_column=relation_column,
+        tail_column=tail_column,
+        embedding_dim=embedding_dim,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        margin=margin,
+        neg_ratio=neg_ratio,
+        norm=norm,
+        random_state=random_state,
+    )
+
+
+def _fit_native(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
@@ -36,24 +116,14 @@ def fit_kg(
     norm: KgNorm = "l1",
     random_state: int | None = 0,
 ) -> tuple[KgPlan, KgFitResult]:
-    """Fit a leakage-safe KG embedding model on the Session **train** partition.
-
-    Pipeline
-    --------
-    1. Resolve head / relation / tail columns.
-    2. Materialize unique train triples only (never test).
-    3. Build entity/relation vocabularies from train.
-    4. Train TransE or DistMult with uniform negative sampling.
-    5. Store train adjacency for symbolic neighborhood/path/typed queries.
-
-    Honesty: Session KG learning/query — not a Neo4j / graph-DB product,
-    not Graph ML node classification, not RAG.
-    """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
     if method not in {"transe", "distmult"}:
-        raise ValidationError(f"Unknown KG method: {method!r}")
+        raise ValidationError(
+            f"Native backend supports transe/distmult; got {method!r}. "
+            "Use backend='pykeen' for rotate/complex."
+        )
     if int(embedding_dim) < 2:
         raise ValidationError("embedding_dim must be >= 2.")
     if int(epochs) < 1:
@@ -128,7 +198,7 @@ def fit_kg(
     )
 
     disclosures.append(
-        f"{method}: trained on {len(heads_i)} unique train triples; "
+        f"native/{method}: trained on {len(heads_i)} unique train triples; "
         f"entities={len(entity_ids)}, relations={len(relation_ids)}, "
         f"dim={embedding_dim}, epochs={epochs}."
     )
@@ -152,6 +222,7 @@ def fit_kg(
         disclosures.append("DistMult scoring: <h, r, t> = sum(h*r*t).")
 
     config = KgConfig(
+        backend="native",
         method=method,
         head_column=head_col,
         relation_column=rel_col,
@@ -167,7 +238,9 @@ def fit_kg(
     )
 
     plan = KgPlan(
+        backend="native",
         method=method,
+        embedding_kind="real",
         head_column=head_col,
         relation_column=rel_col,
         tail_column=tail_col,
@@ -197,6 +270,7 @@ def fit_kg(
         config=config.to_dict(),
     )
     result = KgFitResult(
+        backend="native",
         method=method,
         n_train_triples=plan.n_train_triples,
         n_entities=plan.n_entities,

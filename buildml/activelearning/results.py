@@ -15,6 +15,7 @@ class ActiveLearningPlan:
     """
 
     strategy: str
+    backend: str
     base_estimator: str
     columns: tuple[str, ...]
     target_column: str
@@ -38,6 +39,7 @@ class ActiveLearningPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "strategy": self.strategy,
+            "backend": self.backend,
             "base_estimator": self.base_estimator,
             "columns": list(self.columns),
             "target_column": self.target_column,
@@ -63,6 +65,7 @@ class ActiveLearningFitResult:
     """Outcome of fitting / refitting the active learner on labeled train rows."""
 
     strategy: str
+    backend: str
     base_estimator: str
     n_train_rows: int
     n_labeled_train: int
@@ -79,6 +82,7 @@ class ActiveLearningFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "strategy": self.strategy,
+            "backend": self.backend,
             "base_estimator": self.base_estimator,
             "n_train_rows": self.n_train_rows,
             "n_labeled_train": self.n_labeled_train,

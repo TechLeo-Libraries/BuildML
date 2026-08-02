@@ -53,6 +53,7 @@ def predict_multitask(
         plan.target_columns,
         task=plan.task,
         label_encoders=plan.label_encoders_,
+        task_kinds=plan.task_kinds_ or None,
     )
 
     disclosures = [

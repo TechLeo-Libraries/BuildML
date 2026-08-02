@@ -1,13 +1,13 @@
 # Quickstart: Symbolic + Neuro-symbolic AI
 
-Session path for **tabular if-then rules** and a **sklearn + rules hybrid**.
-Induce rules from train (`decision_tree` / `decision_list`) or compile
-expert-declared rules; predict with explanation traces; persist via
+Session path for **tabular if-then rules** and a **base-model + rules hybrid**.
+Induce rules from train (sklearn tree/list or industry skope-rules/imodels) or
+compile expert-declared rules; predict with explanation traces; persist via
 `buildml.symbolic_bundle.v1`.
 
-Honesty: **not** an AGI symbolic reasoner, Prolog engine, or Z3 SMT solver.
-Core stays light (numpy / pandas / sklearn). Fuzzy logic and full expert-system
-products remain out of scope.
+Honesty: **not** an AGI symbolic reasoner, Prolog engine, or full Z3 SMT product.
+Core stays light (numpy / pandas / sklearn). Optional industry depth via
+`buildml[symbolic-industry]`; torch neuro-symbolic via `buildml[torch]`.
 
 **Go deeper:** [Symbolic deep](symbolic-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md)
@@ -29,9 +29,15 @@ session = (
     .scale(method="standard")
 )
 
-# Symbolic: induce a decision-tree rule list on train only
-fit = session.fit_symbolic(source="decision_tree", task="classification")
-print(fit.n_rules, fit.provenance)
+# Inspect honest defaults (industry when installed, else sklearn)
+print(Session.symbolic_capability_matrix()["default_symbolic_backend_when_installed"])
+
+# Symbolic: sklearn decision-tree rules (always available)
+fit = session.fit_symbolic(backend="sklearn", source="decision_tree", task="classification")
+print(fit.backend, fit.n_rules, fit.provenance)
+
+# Industry rule export when buildml[symbolic-industry] is installed:
+# fit = session.fit_symbolic(backend="industry", method="skope_rules")
 
 pred = session.predict_symbolic(partition="test", return_traces=True)
 print(pred.traces[0].fired_rule_ids, pred.traces[0].chosen_rule_id)
@@ -53,22 +59,30 @@ constraints = [
     }
 ]
 neuro = session.fit_neuro_symbolic(
+    backend="sklearn",
     mode="constraint_overlay",
     base_estimator="logistic_regression",
     task="classification",
     rules=constraints,
     rule_source="declared",
 )
-print(neuro.mode, neuro.rule_provenance, neuro.n_rules)
+print(neuro.backend, neuro.mode, neuro.rule_provenance, neuro.n_rules)
 print(session.evaluate_neuro_symbolic(partition="test").metrics)
+
+# Torch lite concept-bottleneck when buildml[torch] is installed:
+# session.fit_neuro_symbolic(backend="torch", base_estimator="concept_bottleneck_lite")
 ```
 
 | In scope | Out of scope |
 | --- | --- |
-| Declared / tree / decision-list rules | Prolog / Z3 / AGI reasoners |
+| sklearn + industry rule induction | Prolog / full Z3 product / AGI reasoners |
 | Rule-firing traces | Full expert-system product |
 | Neuro-symbolic overlay / features / repair | Fuzzy logic product; LTN research stack |
+| Optional Z3 lite constraint check | Complete SMT verification product |
 | `buildml.symbolic_bundle.v1` | Session checkpoint embedding the plan |
+
+Benchmark: `python benchmarks/symbolic/rule_fidelity.py` (rule accuracy vs
+black-box RandomForest on tabular reference data).
 
 Next Phase 2 item after symbolic: **Case-based reasoning**
 ([quickstart-cbr](quickstart-cbr.md)).

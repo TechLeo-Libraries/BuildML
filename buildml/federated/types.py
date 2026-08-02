@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
+FederatedBackend = Literal["native", "flower"]
+
 FederatedMethod = Literal["fedavg", "fedprox"]
 
 FederatedTask = Literal["classification", "regression"]
@@ -22,6 +24,7 @@ FederatedEstimator = Literal[
 class FederatedConfig:
     """User-facing federated-learning knobs (serializable summary)."""
 
+    backend: FederatedBackend = "native"
     method: FederatedMethod = "fedavg"
     estimator: FederatedEstimator = "sgd_classifier"
     task: FederatedTask = "classification"
@@ -37,6 +40,7 @@ class FederatedConfig:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "estimator": self.estimator,
             "task": self.task,

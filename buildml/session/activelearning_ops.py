@@ -21,7 +21,11 @@ from buildml.activelearning.explain_hooks import (
 from buildml.activelearning.fit import fit_active_learner
 from buildml.activelearning.label import label_rows
 from buildml.activelearning.query import suggest_query
-from buildml.activelearning.types import ActiveLearningEstimator, ActiveLearningStrategy
+from buildml.activelearning.types import (
+    ActiveLearningBackend,
+    ActiveLearningEstimator,
+    ActiveLearningStrategy,
+)
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -29,6 +33,7 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_active_learner_op(
     session,
     *,
+    backend: ActiveLearningBackend | None = None,
     strategy: ActiveLearningStrategy = "margin",
     base_estimator: ActiveLearningEstimator = "logistic_regression",
     columns: list[str] | None = None,
@@ -39,6 +44,10 @@ def fit_active_learner_op(
     prefer_reduce_components: bool = True,
     committee_size: int = 5,
     auto_refit: bool = True,
+    epochs: int = 60,
+    learning_rate: float = 1e-3,
+    mc_samples: int = 20,
+    device: str = "cpu",
 ) -> Any:
     """Fit / initialize the active learner on labeled train rows only.
 
@@ -53,6 +62,7 @@ def fit_active_learner_op(
     plan, result = fit_active_learner(
         session.dataset,
         session._split_plan,
+        backend=backend,
         strategy=strategy,
         base_estimator=base_estimator,
         columns=columns,
@@ -63,6 +73,10 @@ def fit_active_learner_op(
         prefer_reduce_components=prefer_reduce_components,
         committee_size=committee_size,
         auto_refit=auto_refit,
+        epochs=epochs,
+        learning_rate=learning_rate,
+        mc_samples=mc_samples,
+        device=device,
         reduce_plan=getattr(session, "_reduce_plan", None),
         prior_plan=prior,
     )
@@ -74,6 +88,7 @@ def fit_active_learner_op(
     session._record(
         "fit_active_learner",
         {
+            "backend": backend,
             "strategy": strategy,
             "base_estimator": base_estimator,
             "columns": columns,
@@ -84,6 +99,10 @@ def fit_active_learner_op(
             "prefer_reduce_components": prefer_reduce_components,
             "committee_size": committee_size,
             "auto_refit": auto_refit,
+            "epochs": epochs,
+            "learning_rate": learning_rate,
+            "mc_samples": mc_samples,
+            "device": device,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),

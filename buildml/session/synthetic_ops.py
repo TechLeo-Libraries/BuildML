@@ -16,12 +16,14 @@ from buildml.synthetic.explain_hooks import (
 )
 from buildml.synthetic.fit import fit_synthesizer
 from buildml.synthetic.sample import sample_and_maybe_merge
-from buildml.synthetic.types import EvalMode, MergeMode, SynthesizerMethod
+from buildml.synthetic.types import EvalBackend, EvalMode, MergeMode, SyntheticBackend, SynthesizerMethod
+from buildml.synthetic.validation import validate_synthetic
 
 
 def fit_synthesizer_op(
     session,
     *,
+    backend: SyntheticBackend | None = None,
     method: SynthesizerMethod = "gaussian_copula",
     columns: Sequence[str] | None = None,
     random_state: int = 42,
@@ -30,6 +32,8 @@ def fit_synthesizer_op(
     target_column: str | None = None,
     k_neighbors: int = 5,
     sampling_strategy: str | float | dict[str, float] = "auto",
+    epochs: int = 300,
+    batch_size: int = 500,
 ):
     """Fit a tabular synthesizer on Session **train** only.
 
@@ -48,6 +52,7 @@ def fit_synthesizer_op(
     plan, result = fit_synthesizer(
         session.dataset,
         session._split_plan,
+        backend=backend,
         method=method,
         columns=columns,
         random_state=random_state,
@@ -56,6 +61,8 @@ def fit_synthesizer_op(
         target_column=target_column,
         k_neighbors=k_neighbors,
         sampling_strategy=sampling_strategy,
+        epochs=epochs,
+        batch_size=batch_size,
     )
     session._synthesizer_plan = plan
     session._synthetic_fit_result = result
@@ -64,6 +71,7 @@ def fit_synthesizer_op(
     session._record(
         "fit_synthesizer",
         {
+            "backend": backend,
             "method": method,
             "columns": None if columns is None else list(columns),
             "random_state": random_state,
@@ -72,6 +80,8 @@ def fit_synthesizer_op(
             "target_column": target_column,
             "k_neighbors": k_neighbors,
             "sampling_strategy": sampling_strategy,
+            "epochs": epochs,
+            "batch_size": batch_size,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),
@@ -87,6 +97,7 @@ def sample_synthetic_op(
     condition: dict[str, Any] | None = None,
     merge_mode: MergeMode = "none",
     provenance_column: str = "_synthetic",
+    validate: bool = False,
 ):
     """Sample from the frozen synthesizer; optionally extend train with provenance."""
     plan = getattr(session, "_synthesizer_plan", None)
@@ -108,10 +119,21 @@ def sample_synthetic_op(
         merge_mode=merge_mode,
         provenance_column=provenance_column,
     )
+    if validate and result.frame is not None:
+        validation = validate_synthetic(plan, result.frame)
+        result.warnings = tuple(
+            list(result.warnings)
+            + list(validation.warnings)
+            + ([f"validate_synthetic passed={validation.passed}"] if validation.passed else [])
+        )
+        if not validation.passed:
+            result.warnings = tuple(
+                list(result.warnings)
+                + [f"validate_synthetic failed {validation.n_failed} check(s)."]
+            )
     if new_ds is not None and new_split is not None:
         session._dataset = new_ds
         session._split_plan = new_split
-        # Clear classical fit — train membership changed
         if getattr(session, "_fit_result", None) is not None:
             session._fit_result = None
             result.warnings = tuple(
@@ -130,6 +152,7 @@ def sample_synthetic_op(
             "condition": condition,
             "merge_mode": merge_mode,
             "provenance_column": provenance_column,
+            "validate": validate,
         },
         warnings=tuple(result.warnings),
         result_summary=sample_result_summary(result),
@@ -141,6 +164,7 @@ def evaluate_synthetic_op(
     session,
     *,
     mode: EvalMode = "fidelity",
+    eval_backend: EvalBackend = "auto",
     partition: PartitionName = "test",
     n_synthetic: int | None = None,
     random_state: int = 0,
@@ -157,6 +181,7 @@ def evaluate_synthetic_op(
         session._split_plan,
         plan,
         mode=mode,
+        eval_backend=eval_backend,
         partition=str(partition),
         n_synthetic=n_synthetic,
         random_state=random_state,
@@ -167,6 +192,7 @@ def evaluate_synthetic_op(
         "evaluate_synthetic",
         {
             "mode": mode,
+            "eval_backend": eval_backend,
             "partition": partition,
             "n_synthetic": n_synthetic,
             "random_state": random_state,
@@ -176,6 +202,12 @@ def evaluate_synthetic_op(
         result_summary=eval_result_summary(result),
     )
     return result
+
+
+def synthetic_capability_matrix_op() -> dict[str, Any]:
+    from buildml.synthetic.catalog import synthetic_capability_matrix
+
+    return synthetic_capability_matrix()
 
 
 def save_synthetic_bundle_op(session, path: str | Path) -> Path:

@@ -1,47 +1,96 @@
 # Meta-learning deep guide
 
+> **Install (GitHub 2.x):**
+> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> See [installation](../docs/installation.rst).
+
 Practical Session-facing meta-learning for tabular few-shot / episodic
-protocols. This is **not** a foundation-model meta-learning platform and does
-**not** claim MAML-at-scale.
+protocols. This is **not** a foundation-model meta-learning platform, **not**
+MAML-at-scale, and **not** EconML-style causal meta (see [Causal deep](causal-deep.md)).
+
+**Related:** [Quickstart](quickstart-meta-learning.md) ·
+[Multi-task](multi-task-deep.md) ·
+[Artifacts](artifacts-checkpoints-bundles.md).
+
+---
+
+## What this is / is not
+
+| Is | Is not |
+| --- | --- |
+| Episodic few-shot on a task/group column | Single-task `Session.fit` |
+| sklearn / torch / industry backend routing | Vision Mini-ImageNet benchmarks |
+| Held-out task ids + novel-task eval disclosure | Silent overlap between meta-train and holdout tasks |
+| `buildml.metalearning_bundle.v1` persistence | Session checkpoint embedding the meta-learner |
+
+---
+
+## Backends and install
+
+| Backend | Extra | Methods |
+| --- | --- | --- |
+| `sklearn` (default) | none | `prototypical`, `warm_start` |
+| `torch` | `buildml[torch]` | `prototypical_torch` (MLP encoder + prototype loss) |
+| `industry` | `buildml[metalearning-industry,torch]` | `maml`, `reptile` (learn2learn first-order tabular) |
+
+```python
+from buildml.metalearning import metalearning_capability_matrix
+metalearning_capability_matrix()
+```
+
+When extras are installed, industry/torch become honest defaults for their
+method families. Sklearn remains the fallback when extras are absent.
+
+```bash
+pip install "buildml[torch]"
+pip install "buildml[metalearning-industry,torch]"
+pip install "buildml[production]"  # includes metalearning-industry + torch
+```
+
+---
 
 ## Mental model
 
 1. A **task** is the set of rows sharing a task/group id.
-2. **Meta-train** runs on the train partition only (optionally holding out a
-   fraction of train task ids for internal checks).
-3. An **episode** samples a balanced support set (`k_shot` per class) and a
-   query set from one task.
+2. **Meta-train** runs on the train partition only (optionally holding out train
+   task ids → `held_out_task_ids`).
+3. An **episode** samples balanced support (`k_shot` per class) + query rows.
 4. **Adapt** freezes the meta-train plan and fits only on a support set.
-5. **Evaluate** prefers novel task ids on holdout partitions; overlapping
-   task ids are allowed only with a clear disclosure.
+5. **Evaluate** prefers novel task ids on holdout partitions; overlapping ids
+   are disclosed.
+
+---
 
 ## Algorithms
 
-### `prototypical`
+### `prototypical` (sklearn)
 
-Tabular nearest-centroid few-shot (ProtoNet-style geometry without a learned
-neural embedding):
+Nearest-centroid few-shot on tabular features — no learned neural embedding.
 
-- Support → class mean vectors in feature space
-- Query → nearest prototype (euclidean)
+### `warm_start` (sklearn)
 
-Features may already be Session-scaled / reduced. Honesty: this is a complete
-practical baseline, not a claimed neural ProtoNet.
+Pooled `logistic_regression` / `sgd_classifier` meta-init → clone + refit on
+support. Honest warm initialization — **not** second-order MAML.
 
-### `warm_start`
+### `prototypical_torch` (torch)
 
-1. Fit a pooled `logistic_regression` or `sgd_classifier` on meta-train rows
-   (`init_estimator_`).
-2. `adapt_to_task` clones that init and refits on the support set.
+Small MLP encoder trained with episodic prototype cross-entropy. Adapt/eval use
+embedding-space nearest prototypes. Small-scale tabular ProtoNet — not vision
+ProtoNet claims.
 
-Honesty: transfer via warm initialization + fast adapt — **not** MAML /
-Reptile second-order meta-gradients.
+### `maml` / `reptile` (industry)
+
+First-order tabular MAML/Reptile with learn2learn when installed. Inner-loop
+SGD on support, meta-update across episodic tasks. Honest small-scale task
+adaptation — not second-order MAML-at-scale.
+
+---
 
 ## Session API
 
 | Method | Role |
 | --- | --- |
-| `fit_metalearning` | Meta-train on train tasks |
+| `fit_metalearning` | Meta-train on train tasks (`backend=`, `method=`) |
 | `adapt_to_task` | Fast adapt to one task support set |
 | `evaluate_metalearning` | Episodic holdout metrics |
 | `save_metalearning_bundle` / `load_metalearning_bundle` | `buildml.metalearning_bundle.v1` |
@@ -49,41 +98,62 @@ Reptile second-order meta-gradients.
 Properties: `metalearning_plan`, `metalearning_fit_result`,
 `metalearning_adapt_result`, `metalearning_eval_result`.
 
-## Task column
+```python
+session.fit_metalearning(
+    backend="torch",
+    method="prototypical_torch",
+    k_shot=5,
+    n_episodes=20,
+    meta_epochs=40,
+)
+session.evaluate_metalearning(partition="validation", prefer_novel_tasks=True)
+```
 
-- Prefer `role="group"` on the task identifier column, **or**
-- Pass `task_column=` explicitly.
+---
 
-The task column is excluded from features. Exactly one `role="target"` is
-required (multi-target joint fitting belongs on `fit_multitask`).
+## Episodic metrics
+
+| Metric | Where |
+| --- | --- |
+| `meta_train_accuracy` | Fit result — episodic query accuracy during meta-train |
+| `mean_accuracy`, `mean_f1_macro` | Eval result — holdout episodic aggregate |
+| `held_out_task_ids` | Plan — internal train task holdout from fit |
+| `novel_task_ids` / `overlapping_task_ids` | Eval disclosure |
+
+Benchmark: `python benchmarks/metalearning/few_shot_adaptation.py`
+
+---
 
 ## Leakage discipline
 
 - Meta-train requires a split and uses **train only**.
 - Validation/test are never used for meta-training.
-- `evaluate_metalearning` discloses when holdout task ids overlap meta-train
-  (not true out-of-task generalization). Prefer task-disjoint splits or the
-  fit-time `held_out_task_ids` when evaluating `partition="train"`.
+- `evaluate_metalearning` discloses overlapping task ids.
 - Null features are refused (impute/scale first).
+
+---
 
 ## Bundles vs checkpoints
 
-`buildml.metalearning_bundle.v1` stores `MetaLearningPlan` (protocol +
-feature/task contract + label encoder + optional warm-start init). Session
-checkpoints do **not** embed the meta-learner. See
-[Artifacts](artifacts-checkpoints-bundles.md).
+`buildml.metalearning_bundle.v1` stores `MetaLearningPlan` (backend, protocol,
+feature/task contract, label encoder, optional warm-start init or torch/industry
+meta-learner). Session checkpoints do **not** embed the meta-learner.
+
+---
 
 ## AI allowlist
 
 Teaching-critical tools: `fit_metalearning`, `adapt_to_task`,
 `evaluate_metalearning`, plus save/load bundle.
 
+---
+
 ## Residuals (honest)
 
 - Classification-focused surface (shared global label space).
-- No Torch meta-learning / learned embeddings.
-- No MAML/Reptile second-order loops.
+- Tabular-only; no vision/audio episodic suites.
+- Industry MAML is first-order / small-scale — not full second-order MAML.
 - Random row splits may place the same task id in train and holdout — disclosed.
+- Causal meta / EconML-style estimation lives in `buildml.causal`, not here.
 
-Next Phase 2 item after meta-learning (now shipped): **federated learning**
-(see [Federated deep](federated-deep.md)).
+Next Phase 2 R6 item: **symbolic / neuro-symbolic** learning.

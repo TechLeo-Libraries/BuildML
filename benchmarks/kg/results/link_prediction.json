@@ -1,0 +1,107 @@
+{
+  "benchmark": "kg_link_prediction",
+  "capability_matrix": {
+    "backends": {
+      "native": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "transe",
+          "distmult"
+        ],
+        "embedding_engine": "pure-numpy SGD",
+        "negative_sampling": "uniform head/tail corruption (disclosed neg_ratio)",
+        "symbolic_query": true,
+        "filtered_mrr_hits": true
+      },
+      "pykeen": {
+        "available": true,
+        "extra": "kg-industry",
+        "methods": [
+          "transe",
+          "distmult",
+          "rotate",
+          "complex"
+        ],
+        "embedding_engine": "PyKEEN pipeline (torch)",
+        "negative_sampling": "PyKEEN sLCWA / LCWA (disclosed on fit)",
+        "symbolic_query": true,
+        "filtered_mrr_hits": true,
+        "notes": "RotatE and ComplEx require buildml[kg-industry]. Train-only triples materialized from Session train partition; holdout never enters PyKEEN training factory."
+      }
+    },
+    "evaluation_metrics": [
+      "mrr",
+      "hits_at_1",
+      "hits_at_3",
+      "hits_at_k",
+      "mean_rank"
+    ],
+    "link_prediction_modes": [
+      "tail",
+      "head",
+      "relation"
+    ],
+    "query_modes": [
+      "neighbors",
+      "path",
+      "typed"
+    ],
+    "default_backend_when_installed": "pykeen",
+    "install_hints": {
+      "kg-industry": "pip install 'buildml[kg-industry]'  # PyKEEN RotatE / ComplEx / TransE / DistMult pipeline"
+    },
+    "non_goals": [
+      "Neo4j / Cypher graph-database product",
+      "Graph ML node classification (set_graph / fit_graph)",
+      "RAG retrieve/generate",
+      "Full PyG graph learning product scope",
+      "Automatic ontology / schema inference"
+    ],
+    "industry_extra_present": true,
+    "pykeen_import_honesty": "pykeen backend 'available' reflects package install (find_spec). PyKEEN training also requires a working torch install \u2014 broken wheels may fail at require_pykeen / require_torch.",
+    "train_only_honesty": "All backends fit on Session train triples only. Vocabularies, embeddings, and symbolic adjacency exclude holdout triples."
+  },
+  "pykeen_available": true,
+  "runs": [
+    {
+      "backend": "native",
+      "method": "transe",
+      "n_entities": 40,
+      "n_relations": 4,
+      "n_train_triples": 230,
+      "embedding_dim": 32,
+      "metrics": {
+        "mrr": 0.07998092012090158,
+        "hits_at_1": 0.0,
+        "hits_at_3": 0.0390625,
+        "hits_at_10": 0.2421875,
+        "mean_rank": 20.171875
+      },
+      "n_triples_scored": 64,
+      "n_skipped_unknown": 0
+    },
+    {
+      "backend": "native",
+      "method": "distmult",
+      "n_entities": 40,
+      "n_relations": 4,
+      "n_train_triples": 230,
+      "embedding_dim": 32,
+      "metrics": {
+        "mrr": 0.09684147167817195,
+        "hits_at_1": 0.0078125,
+        "hits_at_3": 0.0546875,
+        "hits_at_10": 0.265625,
+        "mean_rank": 18.4296875
+      },
+      "n_triples_scored": 64,
+      "n_skipped_unknown": 0
+    },
+    {
+      "backend": "pykeen",
+      "skipped": true,
+      "reason": "pykeen installed but torch not usable"
+    }
+  ]
+}

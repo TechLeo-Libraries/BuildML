@@ -1,18 +1,18 @@
 # Quickstart: Causal ML
 
 Session path for **assumption-declared** backdoor ATE estimation: declare
-`CausalAssumptions`, fit train-only T-learner / IPW / AIPW nuisance models,
-estimate effects with optional bootstrap CIs, run simple sensitivity checks,
-and persist via `buildml.causal_bundle.v1`.
+`CausalAssumptions`, fit train-only models (native / DoWhy / EconML when
+installed), estimate effects with optional bootstrap CIs, run sensitivity
+checks, and persist via `buildml.causal_bundle.v1`.
 
 **Critical boundary:** EDA / associations / feature importance remain
 **associational**. They never identify causal effects and never populate
 `CausalAssumptions`. Estimation **refuses** without an explicit declaration
 (including unconfoundedness + positivity acknowledgements).
 
-Honesty: native sklearn nuisances — **not** a DoWhy / EconML platform, **not**
-causal discovery, **not** IV / front-door (instruments are refused until an IV
-path exists).
+Honesty: native sklearn nuisances ship with core BuildML. Install
+`buildml[causal-industry]` for DoWhy refutation and EconML DML/CATE/policy
+paths. **Not** causal discovery, **not** IV / front-door (instruments refused).
 
 **Go deeper:** [Causal deep](causal-deep.md) ·
 [EDA / Teaching Studio](eda-teaching-studio.md) (still non-causal) ·
@@ -22,6 +22,9 @@ path exists).
 import numpy as np
 import pandas as pd
 from buildml import Session
+from buildml.causal import causal_capability_matrix
+
+print(causal_capability_matrix()["default_backend_when_installed"])
 
 rng = np.random.default_rng(0)
 n = 400
@@ -47,8 +50,16 @@ session.declare_causal_assumptions(
     acknowledge_positivity=True,
 )
 
-fit = session.fit_causal(method="aipw", bootstrap_samples=50)
+# Native (always available)
+fit = session.fit_causal(backend="native", method="aipw", bootstrap_samples=50)
 print(fit.ate, fit.ate_ci_low, fit.ate_ci_high)
+
+# DoWhy when buildml[causal-industry] is installed:
+# fit = session.fit_causal(backend="dowhy", method="backdoor_linear")
+# ref = session.refute_causal(kind="random_common_cause")
+
+# EconML when installed:
+# fit = session.fit_causal(backend="econml", method="dml", bootstrap_samples=50)
 
 ev = session.evaluate_causal(partition="validation")
 print(ev.metrics, ev.ate)
@@ -62,10 +73,9 @@ session.save_causal_bundle("artifacts/causal_bundle")
 | In scope | Out of scope |
 | --- | --- |
 | Declared backdoor ATE | Causal discovery / graph learning |
-| T-learner / IPW / AIPW | DoWhy / EconML required deps |
-| Train-only nuisances + bootstrap | IV / front-door (instruments refused) |
-| Placebo / random-confounder disclose | Full DoWhy refutation suite |
-| Distinct `buildml.causal_bundle.v1` | Causality from EDA alone |
+| native + optional DoWhy/EconML | IV / front-door (instruments refused) |
+| Train-only fit + bootstrap | Causality from EDA alone |
+| DoWhy refutation when installed | Proof of unconfoundedness from holdout |
+| Distinct `buildml.causal_bundle.v1` | Multi-valued / continuous treatment |
 
-Phase 2 Graph ML / GNNs is next in the tracker after Causal (see
-[quickstart-graph.md](quickstart-graph.md)).
+Next in R5 tracker: **Federated** (R5.5).

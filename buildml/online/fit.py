@@ -5,18 +5,12 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 import numpy as np
-from sklearn.linear_model import (
-    PassiveAggressiveClassifier,
-    PassiveAggressiveRegressor,
-    Perceptron,
-    SGDClassifier,
-    SGDRegressor,
-)
-from sklearn.naive_bayes import BernoulliNB, MultinomialNB
 
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.online.adapters import build_online_estimator, resolve_online_task
+from buildml.online.catalog import resolve_backend_estimator, resolve_drift_detector
 from buildml.online.features import (
     carve_train_chunk,
     encode_classification_targets,
@@ -26,26 +20,15 @@ from buildml.online.features import (
     train_partition_frame,
 )
 from buildml.online.results import OnlineFitResult, OnlinePlan
-from buildml.online.types import OnlineConfig, OnlineEstimator, OnlineTask
-
-_CLASSIFIERS = {
-    "sgd_classifier",
-    "passive_aggressive_classifier",
-    "perceptron",
-    "multinomial_nb",
-    "bernoulli_nb",
-}
-_REGRESSORS = {
-    "sgd_regressor",
-    "passive_aggressive_regressor",
-}
+from buildml.online.types import OnlineBackend, OnlineConfig, OnlineDriftDetector, OnlineTask
 
 
 def fit_online(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
-    estimator: OnlineEstimator = "sgd_classifier",
+    backend: OnlineBackend | None = None,
+    estimator: str = "sgd_classifier",
     task: OnlineTask | None = None,
     columns: list[str] | None = None,
     random_state: int | None = 0,
@@ -56,9 +39,26 @@ def fit_online(
     prefer_reduce_components: bool = True,
     allow_refit_fallback: bool = False,
     drift_disclose: bool = True,
+    drift_detector: OnlineDriftDetector | None = None,
+    buffer_size: int = 512,
+    epochs_per_update: int = 5,
+    batch_size: int = 64,
+    learning_rate: float = 1e-3,
+    ewc_lambda: float = 100.0,
+    hidden_dim: int = 64,
+    device: str = "cpu",
     reduce_plan: Any | None = None,
 ) -> tuple[OnlinePlan, OnlineFitResult]:
     """Warm-start an incremental estimator on the first train chunk.
+
+    Backends
+    --------
+    sklearn (default):
+        Sklearn ``partial_fit`` family — always available.
+    industry (``buildml[online-industry]``):
+        River streaming models with ADWIN / Page-Hinkley drift hooks.
+    torch (``buildml[torch]``):
+        Lite replay-buffer or EWC tabular MLP continual learner.
 
     Class discovery (classifiers)
     -----------------------------
@@ -77,8 +77,15 @@ def fit_online(
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
-    est_key = str(estimator).lower().replace("-", "_")
-    resolved_task = _resolve_task(est_key, task)
+    resolved_backend, est_key = resolve_backend_estimator(
+        backend=backend,
+        estimator=estimator,
+    )
+    resolved_drift = resolve_drift_detector(
+        backend=resolved_backend,
+        drift_detector=drift_detector,
+    )
+    resolved_task = resolve_online_task(resolved_backend, est_key, task)
     target = dataset.require_target()
     train = train_partition_frame(dataset, split_plan)
     cols, used_reduce, disclosures = resolve_online_columns(
@@ -147,14 +154,25 @@ def fit_online(
     else:
         y = regression_targets(chunk[target])
 
-    estimator_obj = _build_estimator(est_key, random_state)
+    estimator_obj = build_online_estimator(
+        resolved_backend,
+        est_key,
+        random_state=random_state,
+        drift_detector=resolved_drift,
+        n_features=x.shape[1],
+        buffer_size=buffer_size,
+        epochs_per_update=epochs_per_update,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        ewc_lambda=ewc_lambda,
+        hidden_dim=hidden_dim,
+        device=device,
+    )
     used_refit = False
     update_mode = "partial_fit"
     try:
         if hasattr(estimator_obj, "partial_fit"):
             if resolved_task == "classification":
-                # sklearn expects the original class labels or integer codes
-                # matching classes=. Pass the encoder's class codes range.
                 class_codes = np.arange(len(classes_tuple or ()))
                 estimator_obj.partial_fit(x, y, classes=class_codes)
             else:
@@ -179,7 +197,9 @@ def fit_online(
     init_means = tuple(float(v) for v in x.mean(axis=0))
     disclosures.extend(
         [
-            "Online / continual learning uses sklearn partial_fit on train "
+            f"Backend={resolved_backend}, estimator={est_key}, "
+            f"drift_detector={resolved_drift}.",
+            "Online / continual learning uses partial_fit on train "
             "chunks carved from the Session train partition (or role-aligned "
             "user frames).",
             "Validation/test partitions are never used for incremental updates.",
@@ -190,6 +210,11 @@ def fit_online(
             f"Update mode for init: {update_mode}.",
         ]
     )
+    if resolved_backend == "torch":
+        disclosures.append(
+            "Torch continual path is a lite replay/EWC tabular MLP — not a "
+            "full lifelong-learning research implementation."
+        )
     if allow_refit_fallback:
         disclosures.append(
             "allow_refit_fallback=True: if an estimator lacks partial_fit, "
@@ -203,7 +228,8 @@ def fit_online(
         )
 
     config = OnlineConfig(
-        estimator=est_key,  # type: ignore[arg-type]
+        estimator=est_key,
+        backend=resolved_backend,
         task=resolved_task,
         columns=tuple(cols),
         random_state=random_state,
@@ -213,6 +239,14 @@ def fit_online(
         prefer_reduce_components=prefer_reduce_components,
         allow_refit_fallback=allow_refit_fallback,
         drift_disclose=drift_disclose,
+        drift_detector=resolved_drift,  # type: ignore[arg-type]
+        buffer_size=int(buffer_size),
+        epochs_per_update=int(epochs_per_update),
+        batch_size=int(batch_size),
+        learning_rate=float(learning_rate),
+        ewc_lambda=float(ewc_lambda),
+        hidden_dim=int(hidden_dim),
+        device=device,
     )
     history = (
         {
@@ -222,6 +256,7 @@ def fit_online(
             "indices": list(chunk_indices),
             "update_mode": update_mode,
             "used_refit_fallback": used_refit,
+            "backend": resolved_backend,
         },
     )
     plan = OnlinePlan(
@@ -237,6 +272,7 @@ def fit_online(
         classes_=classes_tuple,
         seen_train_indices=tuple(chunk_indices),
         update_history=history,
+        backend=resolved_backend,
         estimator_=estimator_obj,
         label_encoder_=label_encoder,
         init_feature_means_=init_means,
@@ -259,47 +295,9 @@ def fit_online(
         used_refit_fallback=used_refit,
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
+        backend=resolved_backend,
     )
     return plan, result
-
-
-def _resolve_task(estimator: str, task: OnlineTask | None) -> OnlineTask:
-    if estimator in _CLASSIFIERS:
-        if task == "regression":
-            raise ValidationError(
-                f"Estimator {estimator!r} is a classifier; task cannot be "
-                "'regression'."
-            )
-        return "classification"
-    if estimator in _REGRESSORS:
-        if task == "classification":
-            raise ValidationError(
-                f"Estimator {estimator!r} is a regressor; task cannot be "
-                "'classification'."
-            )
-        return "regression"
-    raise ValidationError(
-        f"Unknown online estimator={estimator!r}. "
-        f"Supported: {sorted(_CLASSIFIERS | _REGRESSORS)}"
-    )
-
-
-def _build_estimator(name: str, random_state: int | None) -> Any:
-    if name == "sgd_classifier":
-        return SGDClassifier(loss="log_loss", random_state=random_state)
-    if name == "sgd_regressor":
-        return SGDRegressor(random_state=random_state)
-    if name == "passive_aggressive_classifier":
-        return PassiveAggressiveClassifier(random_state=random_state)
-    if name == "passive_aggressive_regressor":
-        return PassiveAggressiveRegressor(random_state=random_state)
-    if name == "perceptron":
-        return Perceptron(random_state=random_state)
-    if name == "multinomial_nb":
-        return MultinomialNB()
-    if name == "bernoulli_nb":
-        return BernoulliNB()
-    raise ValidationError(f"Unsupported online estimator '{name}'")
 
 
 def _maybe_refit_fallback(

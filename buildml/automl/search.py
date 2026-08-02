@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import product
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
-from sklearn.ensemble import VotingClassifier, VotingRegressor
+from sklearn.ensemble import StackingClassifier, StackingRegressor, VotingClassifier, VotingRegressor
 from sklearn.model_selection import ParameterSampler
 from sklearn.pipeline import Pipeline as SkPipeline
 
@@ -21,7 +22,14 @@ from buildml.automl.spaces import (
     family_by_name,
     recipe_strategies,
 )
-from buildml.automl.types import AutoMLBudget, AutoMLConfig, AutoMLMethod, AutoMLSelection
+from buildml.automl.types import (
+    AutoMLBackend,
+    AutoMLBudget,
+    AutoMLConfig,
+    AutoMLMethod,
+    AutoMLSelection,
+    EnsembleMode,
+)
 from buildml.core.errors import LeakageError, ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
@@ -51,17 +59,53 @@ CvStrategy = Literal["auto", "kfold", "stratified", "group", "stratified_group",
 
 @dataclass(slots=True)
 class _Candidate:
-    kind: Literal["single", "voting"]
+    kind: Literal["single", "voting", "stacking"]
     family: str
     recipe: RecipeStrategy
     params: dict[str, Any]
     ensemble_bases: tuple[str, ...] = ()
 
 
+def export_comparison_metrics(result: AutoMLResult, path: str | Path) -> Path:
+    """Export ranked trial comparison metrics to JSON for downstream analysis."""
+    import json
+    from pathlib import Path as PathType
+
+    destination = PathType(path)
+    payload = {
+        "ranking_metric": result.ranking_metric,
+        "backend": result.config.get("backend", "native"),
+        "method": result.method,
+        "selection": result.selection,
+        "best_family": result.best_family,
+        "best_score": result.best_score,
+        "outer_score_mean": result.outer_score_mean,
+        "trials": [
+            {
+                "trial": t.trial,
+                "kind": t.kind,
+                "family": t.family,
+                "recipe_strategy": t.recipe_strategy,
+                "mean_score": t.mean_score,
+                "std_score": t.std_score,
+                "mean_metrics": dict(t.mean_metrics),
+                "params": dict(t.params),
+            }
+            for t in result.trials
+        ],
+        "disclosures": list(result.disclosures),
+        "limitations": list(result.limitations),
+    }
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return destination
+
+
 def run_automl(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: AutoMLBackend = "native",
     task: TaskType = "auto",
     method: AutoMLMethod = "randomized",
     selection: AutoMLSelection = "cv",
@@ -72,7 +116,9 @@ def run_automl(
     ranking_metric: str | None = None,
     families: tuple[str, ...] | list[str] | None = None,
     include_recipe_search: bool = True,
+    include_industry_families: bool = True,
     include_ensembles: bool = False,
+    ensemble_mode: EnsembleMode = "voting",
     max_ensemble_bases: int = 3,
     preprocess: PreprocessRecipe | None = None,
     session_preprocess_applied: bool = False,
@@ -81,6 +127,7 @@ def run_automl(
     random_state: int | None = 0,
     groups: pd.Series | None = None,
     budget: AutoMLBudget | None = None,
+    time_budget: float | None = None,
 ) -> tuple[AutoMLPlan, AutoMLResult, FitResult | None]:
     """Search model families and fold-local preprocess strategies on train only.
 
@@ -95,7 +142,19 @@ def run_automl(
     ----------
     method:
         ``randomized`` (default, no extra), ``grid`` (small exhaustive catalog),
-        or ``optuna`` (requires ``buildml[optuna]``).
+        ``optuna`` (requires ``buildml[automl]``), or ``evolutionary`` (in-tree GA).
+    backend:
+        ``native`` (default), ``optuna`` (deepened Optuna path),
+        ``flaml`` or ``autogluon`` (industry adapters; ``buildml[automl-industry]``).
+    include_industry_families:
+        When True and ``buildml[automl-industry]`` GBDT libs are installed, extend
+        the native catalog with LightGBM / XGBoost / CatBoost families.
+    ensemble_mode:
+        When ``include_ensembles=True``, score ``voting``, ``stacking``, or ``both``
+        ensembles of diverse top families.
+    time_budget:
+        Optional wall-clock cap (seconds). Industry backends use this directly;
+        native search stops after the current trial when exceeded.
     selection:
         ``cv`` — rank by train-fold CV;
         ``nested`` — outer train folds after inner selection (honest post-selection
@@ -126,8 +185,12 @@ def run_automl(
         preprocess=preprocess,
         allow_session_global_preprocess=allow_session_global_preprocess,
     )
-    if method not in {"grid", "randomized", "optuna"}:
+    if backend not in {"native", "optuna", "flaml", "autogluon"}:
+        raise ValidationError(f"Unsupported AutoML backend: {backend!r}")
+    if method not in {"grid", "randomized", "optuna", "evolutionary"}:
         raise ValidationError(f"Unsupported AutoML method: {method!r}")
+    if ensemble_mode not in {"voting", "stacking", "both"}:
+        raise ValidationError(f"Unsupported ensemble_mode: {ensemble_mode!r}")
     if selection not in {"cv", "nested", "validation"}:
         raise ValidationError(f"Unsupported AutoML selection: {selection!r}")
     if selection == "validation" and not split_plan.validation_indices:
@@ -143,7 +206,43 @@ def run_automl(
     budget = budget or AutoMLBudget(max_trials=n_trials)
     if budget.max_trials < 1:
         raise ValidationError("budget.max_trials must be >= 1")
+    if time_budget is not None:
+        budget.max_time_seconds = float(time_budget)
     n_trials = min(int(n_trials), int(budget.max_trials))
+
+    # Industry adapters — train-only, disclosed internal preprocessing.
+    if backend == "flaml":
+        from buildml.automl.adapters.flaml import run_flaml_adapter
+
+        return run_flaml_adapter(
+            dataset,
+            split_plan,
+            task=task,
+            selection=selection,
+            ranking_metric=ranking_metric,
+            time_budget=time_budget,
+            budget=budget,
+            random_state=random_state,
+            refit=refit,
+        )
+    if backend == "autogluon":
+        from buildml.automl.adapters.autogluon import run_autogluon_adapter
+
+        return run_autogluon_adapter(
+            dataset,
+            split_plan,
+            task=task,
+            selection=selection,
+            ranking_metric=ranking_metric,
+            time_budget=time_budget,
+            budget=budget,
+            random_state=random_state,
+            refit=refit,
+        )
+
+    effective_method: AutoMLMethod = method
+    if backend == "optuna":
+        effective_method = "optuna"
 
     x_train, y_train, feature_cols, target, _sw = _feature_target_frames(
         dataset, split_plan, "train"
@@ -165,6 +264,7 @@ def run_automl(
         resolved_task,
         names=families,
         max_families=budget.max_families,
+        include_industry=include_industry_families,
     )
     recipes = recipe_strategies(
         include_recipe_search=include_recipe_search,
@@ -173,7 +273,8 @@ def run_automl(
     )
 
     config = AutoMLConfig(
-        method=method,
+        backend=backend,
+        method=effective_method,
         selection=selection,
         task=resolved_task,
         n_trials=n_trials,
@@ -186,18 +287,27 @@ def run_automl(
         random_state=random_state,
         families=tuple(f.name for f in fams),
         budget=budget,
+        extras={
+            "ensemble_mode": ensemble_mode,
+            "include_industry_families": include_industry_families,
+            "time_budget_seconds": budget.max_time_seconds,
+        },
     )
+
+    import time as _time
+
+    started = _time.monotonic()
 
     candidates = _build_candidates(
         fams,
         recipes,
-        method=method,
+        method=effective_method,
         n_trials=n_trials,
         random_state=random_state,
         include_ensembles=False,  # ensemble trials added after single ranking
     )
 
-    if method == "optuna":
+    if effective_method == "optuna":
         trials = _run_optuna_trials(
             dataset,
             split_plan,
@@ -213,6 +323,27 @@ def run_automl(
             session_preprocess_applied=session_preprocess_applied,
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
+            budget=budget,
+            started=started,
+        )
+    elif effective_method == "evolutionary":
+        trials = _run_evolutionary_trials(
+            dataset,
+            split_plan,
+            fams=fams,
+            recipes=recipes,
+            task=resolved_task,
+            metric=metric,
+            n_trials=n_trials,
+            cv=cv,
+            cv_strategy=cv_strategy,
+            selection=selection,
+            groups=groups,
+            session_preprocess_applied=session_preprocess_applied,
+            allow_session_global_preprocess=allow_session_global_preprocess,
+            random_state=random_state,
+            started=started,
+            budget=budget,
         )
     else:
         trials = _score_candidates(
@@ -256,6 +387,7 @@ def run_automl(
             random_state=random_state,
             max_bases=max_ensemble_bases,
             max_ensemble_trials=budget.max_ensemble_trials,
+            ensemble_mode=ensemble_mode,
         )
         if ens_trials:
             trials.extend(ens_trials)
@@ -271,7 +403,7 @@ def run_automl(
             split_plan,
             fams=fams,
             recipes=recipes,
-            method=method,
+            method=effective_method,
             task=resolved_task,
             metric=metric,
             n_trials=max(4, min(n_trials, 12)),
@@ -291,19 +423,28 @@ def run_automl(
 
     best = trials[0]
     disclosures = _disclosures(
-        method=method,
+        backend=backend,
+        method=effective_method,
         selection=selection,
         fams=fams,
         recipes=recipes,
         include_ensembles=include_ensembles,
+        ensemble_mode=ensemble_mode,
         metric=metric,
         n_trials=len(trials),
+        budget=budget,
         session_global_override=bool(
             session_preprocess_applied and allow_session_global_preprocess
         ),
     )
     warnings = list(nested_warnings)
-    limitations = _limitations(selection=selection, method=method, n_trials=len(trials))
+    limitations = _limitations(
+        backend=backend,
+        selection=selection,
+        method=effective_method,
+        n_trials=len(trials),
+        budget=budget,
+    )
     recommendations = _recommendations(
         selection=selection,
         best=best,
@@ -337,7 +478,7 @@ def run_automl(
 
     plan = AutoMLPlan(
         task=resolved_task,
-        method=method,
+        method=effective_method,
         selection=selection,
         ranking_metric=metric,
         best_family=best.family,
@@ -363,7 +504,7 @@ def run_automl(
     )
     result = AutoMLResult(
         task=resolved_task,
-        method=method,
+        method=effective_method,
         selection=selection,
         ranking_metric=metric,
         trials=trials,
@@ -604,11 +745,26 @@ def _build_estimator(
             fam = fam_map[base_name]
             named.append((base_name, fam.build(random_state)))
         if task == "classification":
-            # Prefer soft when all support predict_proba.
             if all(hasattr(est, "predict_proba") for _, est in named):
                 return VotingClassifier(estimators=named, voting="soft")
             return VotingClassifier(estimators=named, voting="hard")
         return VotingRegressor(estimators=named)
+    if cand.kind == "stacking":
+        named = []
+        for base_name in cand.ensemble_bases:
+            fam = fam_map[base_name]
+            named.append((base_name, fam.build(random_state)))
+        if task == "classification":
+            from sklearn.linear_model import LogisticRegression
+
+            return StackingClassifier(
+                estimators=named,
+                final_estimator=LogisticRegression(max_iter=500),
+                cv=3,
+            )
+        from sklearn.linear_model import Ridge
+
+        return StackingRegressor(estimators=named, final_estimator=Ridge(), cv=3)
     fam = fam_map[cand.family]
     return fam.build(random_state, **cand.params)
 
@@ -631,11 +787,11 @@ def _score_ensemble_candidates(
     random_state: int | None,
     max_bases: int,
     max_ensemble_trials: int,
+    ensemble_mode: EnsembleMode = "voting",
 ) -> list[AutoMLTrial]:
-    """Build voting candidates from diverse top single-model families."""
+    """Build voting/stacking candidates from diverse top single-model families."""
     fam_map = {f.name: f for f in fams}
     recipe_map = {r.name: r for r in recipes}
-    # Pick best trial per family.
     best_by_family: dict[str, AutoMLTrial] = {}
     for trial in single_trials:
         if trial.kind != "single":
@@ -648,54 +804,60 @@ def _score_ensemble_candidates(
         return []
 
     ens_trials: list[AutoMLTrial] = []
-    # Top recipe among leaders.
     top_recipe_name = ordered[0].recipe_strategy
     recipe = recipe_map.get(top_recipe_name, recipes[0])
+    kinds: list[Literal["voting", "stacking"]] = []
+    if ensemble_mode in {"voting", "both"}:
+        kinds.append("voting")
+    if ensemble_mode in {"stacking", "both"}:
+        kinds.append("stacking")
 
-    for n_bases in range(2, min(max_bases, len(ordered)) + 1):
-        if len(ens_trials) >= max_ensemble_trials:
-            break
-        bases = tuple(t.family for t in ordered[:n_bases])
-        cand = _Candidate(
-            kind="voting",
-            family="+".join(bases),
-            recipe=recipe,
-            params={},
-            ensemble_bases=bases,
-        )
-        estimator = _build_estimator(cand, fam_map, task=task, random_state=random_state)
-        score_pack = _score_one(
-            dataset,
-            split_plan,
-            estimator,
-            recipe=recipe.recipe,
-            task=task,
-            metric=metric,
-            cv=cv,
-            cv_strategy=cv_strategy,
-            selection=selection,
-            groups=groups,
-            session_preprocess_applied=session_preprocess_applied,
-            allow_session_global_preprocess=allow_session_global_preprocess,
-        )
-        if score_pack is None:
-            continue
-        mean_score, std_score, mean_metrics, std_metrics = score_pack
-        ens_trials.append(
-            AutoMLTrial(
-                trial=10_000 + len(ens_trials),
-                kind="voting",
-                family=cand.family,
-                recipe_strategy=recipe.name,
+    for kind in kinds:
+        for n_bases in range(2, min(max_bases, len(ordered)) + 1):
+            if len(ens_trials) >= max_ensemble_trials:
+                break
+            bases = tuple(t.family for t in ordered[:n_bases])
+            family_label = "+".join(bases)
+            cand = _Candidate(
+                kind=kind,
+                family=family_label,
+                recipe=recipe,
                 params={},
-                recipe=recipe.recipe.to_dict(),
-                mean_score=mean_score,
-                std_score=std_score,
-                mean_metrics=mean_metrics,
-                std_metrics=std_metrics,
                 ensemble_bases=bases,
             )
-        )
+            estimator = _build_estimator(cand, fam_map, task=task, random_state=random_state)
+            score_pack = _score_one(
+                dataset,
+                split_plan,
+                estimator,
+                recipe=recipe.recipe,
+                task=task,
+                metric=metric,
+                cv=cv,
+                cv_strategy=cv_strategy,
+                selection=selection,
+                groups=groups,
+                session_preprocess_applied=session_preprocess_applied,
+                allow_session_global_preprocess=allow_session_global_preprocess,
+            )
+            if score_pack is None:
+                continue
+            mean_score, std_score, mean_metrics, std_metrics = score_pack
+            ens_trials.append(
+                AutoMLTrial(
+                    trial=10_000 + len(ens_trials),
+                    kind=kind,
+                    family=cand.family,
+                    recipe_strategy=recipe.name,
+                    params={},
+                    recipe=recipe.recipe.to_dict(),
+                    mean_score=mean_score,
+                    std_score=std_score,
+                    mean_metrics=mean_metrics,
+                    std_metrics=std_metrics,
+                    ensemble_bases=bases,
+                )
+            )
     return ens_trials
 
 
@@ -715,23 +877,54 @@ def _run_optuna_trials(
     session_preprocess_applied: bool,
     allow_session_global_preprocess: bool,
     random_state: int | None,
+    budget: AutoMLBudget,
+    started: float,
 ) -> list[AutoMLTrial]:
-    try:
-        import optuna
-    except ImportError as exc:
-        from buildml.core.errors import MissingExtraError
+    from buildml.automl.extras import require_optuna
 
-        raise MissingExtraError("optuna", "AutoML Optuna search") from exc
+    optuna = require_optuna(feature="Optuna AutoML backend")
+    import time as _time
 
     higher_is_better = metric not in _LOWER_IS_BETTER
-    direction = "maximize" if higher_is_better else "minimize"
+    secondary = budget.secondary_metric
+    multi_obj = bool(budget.multi_objective and secondary)
+    if multi_obj:
+        directions = [
+            "maximize" if higher_is_better else "minimize",
+            "maximize" if secondary not in _LOWER_IS_BETTER else "minimize",
+        ]
+    else:
+        directions = ["maximize" if higher_is_better else "minimize"]
+
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     sampler = optuna.samplers.TPESampler(seed=random_state)
-    study = optuna.create_study(direction=direction, sampler=sampler)
+    pruner = (
+        optuna.pruners.MedianPruner(n_startup_trials=3, n_warmup_steps=1)
+        if budget.enable_pruning
+        else optuna.pruners.NopPruner()
+    )
+    study_kwargs: dict[str, Any] = {"sampler": sampler, "pruner": pruner}
+    if budget.study_storage:
+        study_kwargs["storage"] = budget.study_storage
+        study_kwargs["study_name"] = "buildml_automl"
+        study_kwargs["load_if_exists"] = True
+
+    if multi_obj:
+        study = optuna.create_study(directions=directions, **study_kwargs)
+    else:
+        study = optuna.create_study(
+            direction=directions[0],
+            **study_kwargs,
+        )
     fam_map = {f.name: f for f in fams}
     trial_rows: list[AutoMLTrial] = []
 
-    def _objective(trial: Any) -> float:
+    def _objective(trial: Any) -> float | tuple[float, float]:
+        if budget.max_time_seconds is not None:
+            elapsed = _time.monotonic() - started
+            if elapsed >= budget.max_time_seconds:
+                raise optuna.exceptions.OptunaError("AutoML time budget exceeded")
+
         fam_name = trial.suggest_categorical("family_name", [f.name for f in fams])
         fam = fam_map[fam_name]
         recipe_name = trial.suggest_categorical("recipe_strategy", [r.name for r in recipes])
@@ -740,13 +933,13 @@ def _run_optuna_trials(
         for key, choices in fam.param_distributions.items():
             if not choices:
                 continue
-            # Optuna categoricals need hashable values; map None via labels.
+            param_key = f"param__{fam.name}__{key}"
             if any(c is None for c in choices):
                 labels = [str(c) for c in choices]
-                picked = trial.suggest_categorical(f"param__{key}", labels)
+                picked = trial.suggest_categorical(param_key, labels)
                 params[key] = next(c for c in choices if str(c) == picked)
             else:
-                params[key] = trial.suggest_categorical(f"param__{key}", list(choices))
+                params[key] = trial.suggest_categorical(param_key, list(choices))
 
         cand = _Candidate("single", fam.name, recipe, params)
         estimator = _build_estimator(cand, fam_map, task=task, random_state=random_state)
@@ -765,9 +958,12 @@ def _run_optuna_trials(
             allow_session_global_preprocess=allow_session_global_preprocess,
         )
         if score_pack is None:
-            # Fail the trial softly toward worse scores.
+            if multi_obj:
+                bad = float("-inf") if higher_is_better else float("inf")
+                return bad, bad
             return float("-inf") if higher_is_better else float("inf")
         mean_score, std_score, mean_metrics, std_metrics = score_pack
+        secondary_score = float(mean_metrics.get(secondary, mean_score)) if secondary else mean_score
         trial_rows.append(
             AutoMLTrial(
                 trial=int(trial.number),
@@ -782,10 +978,207 @@ def _run_optuna_trials(
                 std_metrics=std_metrics,
             )
         )
+        if budget.enable_pruning:
+            trial.report(mean_score, step=0)
+            if trial.should_prune():
+                raise optuna.exceptions.TrialPruned()
+        if multi_obj:
+            return mean_score, secondary_score
         return mean_score
 
     study.optimize(_objective, n_trials=n_trials)
     return trial_rows
+
+
+def _run_evolutionary_trials(
+    dataset: Dataset,
+    split_plan: SplitPlan,
+    *,
+    fams: list[ModelFamily],
+    recipes: list[RecipeStrategy],
+    task: Literal["classification", "regression"],
+    metric: str,
+    n_trials: int,
+    cv: int | Any,
+    cv_strategy: CvStrategy,
+    selection: AutoMLSelection,
+    groups: pd.Series | None,
+    session_preprocess_applied: bool,
+    allow_session_global_preprocess: bool,
+    random_state: int | None,
+    started: float,
+    budget: AutoMLBudget,
+) -> list[AutoMLTrial]:
+    """Evolutionary search over family × recipe × param catalog (native GA)."""
+    import time as _time
+
+    from buildml.model.selection import (
+        _mutate_individual,
+        _parse_evolutionary_genes,
+        _sample_evolutionary_individual,
+        _tournament_select,
+        _uniform_crossover,
+    )
+
+    fam_map = {f.name: f for f in fams}
+    population_size = max(4, min(12, n_trials // 2))
+    n_generations = max(1, n_trials // population_size)
+    eval_budget = min(n_trials, population_size * n_generations)
+    higher = metric not in _LOWER_IS_BETTER
+
+    param_space: dict[str, Any] = {
+        "family_name": [f.name for f in fams],
+        "recipe_strategy": [r.name for r in recipes],
+    }
+    for fam in fams:
+        for key, choices in fam.param_distributions.items():
+            param_space[f"{fam.name}__{key}"] = list(choices) if choices else [None]
+
+    genes = _parse_evolutionary_genes(param_space=param_space, recipe_space=None)
+    if not genes:
+        return _score_candidates(
+            dataset,
+            split_plan,
+            _build_candidates(
+                fams,
+                recipes,
+                method="randomized",
+                n_trials=n_trials,
+                random_state=random_state,
+                include_ensembles=False,
+            ),
+            task=task,
+            metric=metric,
+            cv=cv,
+            cv_strategy=cv_strategy,
+            selection=selection,
+            groups=groups,
+            session_preprocess_applied=session_preprocess_applied,
+            allow_session_global_preprocess=allow_session_global_preprocess,
+            random_state=random_state,
+            fams=fams,
+        )
+
+    rng = np.random.default_rng(random_state)
+    scored: dict[tuple[tuple[str, Any], ...], AutoMLTrial] = {}
+
+    def _genome_key(individual: dict[str, Any]) -> tuple[tuple[str, Any], ...]:
+        return tuple(sorted((str(k), v) for k, v in individual.items()))
+
+    def _evaluate(individual: dict[str, Any]) -> AutoMLTrial:
+        key = _genome_key(individual)
+        cached = scored.get(key)
+        if cached is not None:
+            return cached
+        if len(scored) >= eval_budget:
+            return AutoMLTrial(
+                trial=-1,
+                kind="single",
+                family="budget_exhausted",
+                recipe_strategy="",
+                mean_score=float("-inf") if higher else float("inf"),
+            )
+        if budget.max_time_seconds is not None:
+            if _time.monotonic() - started >= budget.max_time_seconds:
+                return AutoMLTrial(
+                    trial=-1,
+                    kind="single",
+                    family="time_budget_exhausted",
+                    recipe_strategy="",
+                    mean_score=float("-inf") if higher else float("inf"),
+                )
+
+        fam_name = str(individual.get("family_name", fams[0].name))
+        recipe_name = str(individual.get("recipe_strategy", recipes[0].name))
+        fam = fam_map.get(fam_name, fams[0])
+        recipe = next((r for r in recipes if r.name == recipe_name), recipes[0])
+        params = {
+            key.split("__", 1)[1]: individual[gene]
+            for gene in individual
+            if gene.startswith(f"{fam.name}__")
+            for key in [gene]
+        }
+        cand = _Candidate("single", fam.name, recipe, params)
+        estimator = _build_estimator(cand, fam_map, task=task, random_state=random_state)
+        score_pack = _score_one(
+            dataset,
+            split_plan,
+            estimator,
+            recipe=recipe.recipe,
+            task=task,
+            metric=metric,
+            cv=cv,
+            cv_strategy=cv_strategy,
+            selection=selection,
+            groups=groups,
+            session_preprocess_applied=session_preprocess_applied,
+            allow_session_global_preprocess=allow_session_global_preprocess,
+        )
+        if score_pack is None:
+            row = AutoMLTrial(
+                trial=len(scored),
+                kind="single",
+                family=fam.name,
+                recipe_strategy=recipe.name,
+                params=params,
+                mean_score=float("-inf") if higher else float("inf"),
+            )
+        else:
+            mean_score, std_score, mean_metrics, std_metrics = score_pack
+            row = AutoMLTrial(
+                trial=len(scored),
+                kind="single",
+                family=fam.name,
+                recipe_strategy=recipe.name,
+                params=dict(params),
+                recipe=recipe.recipe.to_dict(),
+                mean_score=mean_score,
+                std_score=std_score,
+                mean_metrics=mean_metrics,
+                std_metrics=std_metrics,
+            )
+        scored[key] = row
+        return row
+
+    population = [_sample_evolutionary_individual(genes, rng) for _ in range(population_size)]
+    fitness = [_evaluate(ind) for ind in population]
+
+    for _generation in range(n_generations):
+        ranked_idx = sorted(
+            range(len(population)),
+            key=lambda i: fitness[i].mean_score,
+            reverse=higher,
+        )
+        if _generation + 1 >= n_generations or len(scored) >= eval_budget:
+            break
+        next_pop: list[dict[str, Any]] = []
+        next_fit: list[AutoMLTrial] = []
+        for elite_rank in ranked_idx[:2]:
+            next_pop.append(dict(population[elite_rank]))
+            next_fit.append(fitness[elite_rank])
+        while len(next_pop) < population_size:
+            if len(scored) >= eval_budget:
+                filler = ranked_idx[len(next_pop) % len(ranked_idx)]
+                next_pop.append(dict(population[filler]))
+                next_fit.append(fitness[filler])
+                continue
+            p1 = _tournament_select(population, fitness, 3, higher, rng)
+            p2 = _tournament_select(population, fitness, 3, higher, rng)
+            if rng.random() < 0.7:
+                child, _sib = _uniform_crossover(p1, p2, genes, rng)
+            else:
+                child = dict(p1)
+            child = _mutate_individual(child, genes, 0.2, rng)
+            next_pop.append(child)
+            next_fit.append(_evaluate(child))
+        population = next_pop[:population_size]
+        fitness = next_fit[:population_size]
+
+    trials = [t for t in scored.values() if t.family not in {"budget_exhausted", "time_budget_exhausted"}]
+    trials.sort(key=lambda t: t.mean_score, reverse=higher)
+    for i, trial in enumerate(trials):
+        trial.trial = i
+    return trials
 
 
 def _nested_outer_estimate(
@@ -1001,9 +1394,9 @@ def _refit_best(
         ensemble_bases=tuple(best.ensemble_bases),
     )
     # Fix family for voting: _build_estimator uses ensemble_bases.
-    if best.kind == "voting":
+    if best.kind in {"voting", "stacking"}:
         cand = _Candidate(
-            kind="voting",
+            kind=best.kind,
             family=best.family,
             recipe=cand.recipe,
             params={},
@@ -1092,13 +1485,16 @@ def _recipe_kwargs_from_dict(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _disclosures(
     *,
+    backend: AutoMLBackend,
     method: AutoMLMethod,
     selection: AutoMLSelection,
     fams: list[ModelFamily],
     recipes: list[RecipeStrategy],
     include_ensembles: bool,
+    ensemble_mode: EnsembleMode,
     metric: str,
     n_trials: int,
+    budget: AutoMLBudget,
     session_global_override: bool,
 ) -> list[str]:
     tips = [
@@ -1108,8 +1504,8 @@ def _disclosures(
             "not causal discovery, and not a fully automated AI scientist."
         ),
         (
-            f"Selection method={method}, mode={selection}, ranking_metric={metric}, "
-            f"n_trials_scored={n_trials}."
+            f"Backend={backend}, method={method}, selection={selection}, "
+            f"ranking_metric={metric}, n_trials_scored={n_trials}."
         ),
         (
             f"Families searched: {[f.name for f in fams]}; "
@@ -1121,10 +1517,14 @@ def _disclosures(
             "validation selection / final refit) only."
         ),
     ]
+    if budget.max_time_seconds is not None:
+        tips.append(f"time_budget={budget.max_time_seconds}s cap disclosed.")
+    if budget.max_trials:
+        tips.append(f"trial_budget={budget.max_trials} cap disclosed.")
     if include_ensembles:
         tips.append(
-            "Optional voting ensembles of diverse top families were scored under the "
-            "same leakage contract; stacking/blending remain separate Session APIs."
+            f"Optional {ensemble_mode} ensembles of diverse top families were scored "
+            "under the same leakage contract."
         )
     if selection == "nested":
         tips.append(
@@ -1141,26 +1541,41 @@ def _disclosures(
             "allow_session_global_preprocess=True was set; Session-global prep may have "
             "poisoned fold honesty."
         )
-    if method == "optuna":
-        tips.append("Optuna TPE adapted over family/recipe/param categoricals (buildml[optuna]).")
+    if method == "optuna" or backend == "optuna":
+        tips.append(
+            "Optuna TPE with optional pruning/study persistence (buildml[automl])."
+        )
+        if budget.multi_objective and budget.secondary_metric:
+            tips.append(
+                f"Multi-objective Optuna: primary={metric}, secondary={budget.secondary_metric}."
+            )
+    if method == "evolutionary":
+        tips.append("Native evolutionary (GA) search over family/recipe/param genes.")
+    if backend in {"flaml", "autogluon"}:
+        tips.append(
+            f"Industry backend={backend} bypasses fold-local recipe search; "
+            "internal preprocessing applies on train only."
+        )
     return tips
 
 
 def _limitations(
     *,
+    backend: AutoMLBackend,
     selection: AutoMLSelection,
     method: AutoMLMethod,
     n_trials: int,
+    budget: AutoMLBudget,
 ) -> list[str]:
-    return [
+    out = [
         (
             f"Trial budget and catalog size bound exploration "
-            f"({n_trials} scored trials, method={method})."
+            f"({n_trials} scored trials, backend={backend}, method={method})."
         ),
-        "Default catalogs omit SVM kernels, deep nets, and exotic preprocess graphs.",
+        "Default catalogs omit deep nets and arbitrary sklearn Pipeline DAGs.",
         (
             "Recipe strategy search covers impute/scale/encode/select combinations — "
-            "not arbitrary sklearn Pipeline DAGs."
+            "not arbitrary preprocess graphs."
         ),
         (
             "selection='cv' rankings are optimistic relative to a true outer holdout; "
@@ -1172,6 +1587,13 @@ def _limitations(
             )
         ),
     ]
+    if backend in {"flaml", "autogluon"}:
+        out.append(
+            "Industry adapters do not support nested CV or fold-local recipe strategy search."
+        )
+    if budget.max_time_seconds is not None:
+        out.append("Time budget may stop search before all trial slots are explored.")
+    return out
 
 
 def _recommendations(

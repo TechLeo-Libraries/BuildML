@@ -42,6 +42,7 @@ class WorkflowWalkthroughReport:
     ensemble_status: dict[str, Any] = field(default_factory=dict)
     automl_status: dict[str, Any] = field(default_factory=dict)
     forecasting_status: dict[str, Any] = field(default_factory=dict)
+    timeseries_status: dict[str, Any] = field(default_factory=dict)
     anomaly_status: dict[str, Any] = field(default_factory=dict)
     semisupervised_status: dict[str, Any] = field(default_factory=dict)
     selfsupervised_status: dict[str, Any] = field(default_factory=dict)
@@ -84,6 +85,7 @@ class WorkflowWalkthroughReport:
             "ensemble_status": dict(self.ensemble_status),
             "automl_status": dict(self.automl_status),
             "forecasting_status": dict(self.forecasting_status),
+            "timeseries_status": dict(self.timeseries_status),
             "anomaly_status": dict(self.anomaly_status),
             "semisupervised_status": dict(self.semisupervised_status),
             "selfsupervised_status": dict(self.selfsupervised_status),
@@ -166,6 +168,7 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
         ensemble_status=ensemble_status_for_walkthrough(session),
         automl_status=automl_status_for_walkthrough(session),
         forecasting_status=forecasting_status_for_walkthrough(session),
+        timeseries_status=timeseries_status_for_walkthrough(session),
         anomaly_status=anomaly_status_for_walkthrough(session),
         semisupervised_status=semisupervised_status_for_walkthrough(session),
         selfsupervised_status=selfsupervised_status_for_walkthrough(session),
@@ -242,6 +245,13 @@ def forecasting_status_for_walkthrough(session: Any) -> dict[str, Any]:
     from buildml.forecasting.explain_hooks import forecasting_status_for_session
 
     return forecasting_status_for_session(session)
+
+
+def timeseries_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual time-series analysis disclosure for walkthrough."""
+    from buildml.timeseries.explain_hooks import timeseries_status_for_session
+
+    return timeseries_status_for_session(session)
 
 
 def anomaly_status_for_walkthrough(session: Any) -> dict[str, Any]:

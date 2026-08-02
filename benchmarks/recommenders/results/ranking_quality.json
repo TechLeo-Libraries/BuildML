@@ -1,0 +1,180 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "item_knn",
+          "user_knn",
+          "svd",
+          "nmf",
+          "content"
+        ],
+        "feedback": [
+          "explicit",
+          "implicit"
+        ],
+        "features": "dense numpy/sklearn CF + content profiles"
+      },
+      "implicit": {
+        "available": true,
+        "extra": "recommenders-industry",
+        "methods": [
+          "als",
+          "bpr"
+        ],
+        "feedback": [
+          "implicit"
+        ],
+        "features": "ALS / BPR on sparse implicit-feedback matrices",
+        "notes": "Default backend for feedback='implicit' when the extra is installed. Explicit ratings are not supported on this path."
+      },
+      "lightfm": {
+        "available": false,
+        "extra": "recommenders-industry",
+        "methods": [
+          "lightfm"
+        ],
+        "feedback": [
+          "explicit",
+          "implicit"
+        ],
+        "features": "Hybrid WARP/BPR with optional user/item side features"
+      }
+    },
+    "ranking_metrics": [
+      "precision_at_k",
+      "recall_at_k",
+      "ndcg_at_k",
+      "map_at_k"
+    ],
+    "cold_start_policies": [
+      "popularity",
+      "skip"
+    ],
+    "default_method_for_feedback": {
+      "explicit": "item_knn",
+      "implicit": "als"
+    },
+    "default_backend_when_installed": "implicit",
+    "install_hints": {
+      "recommenders-industry": "pip install 'buildml[recommenders-industry]'  # implicit (ALS/BPR) + LightFM hybrid recommenders"
+    },
+    "non_goals": [
+      "Netflix-scale feature store / multi-stage cascade",
+      "Streaming online recsys product",
+      "Full surprise/recommenders library zoo",
+      "RAG document retrieve/generate"
+    ],
+    "industry_extra_present": true
+  },
+  "runs": [
+    {
+      "method": "item_knn",
+      "backend": "sklearn",
+      "feedback": "explicit",
+      "n_users": 50,
+      "n_items": 40,
+      "metrics": {
+        "precision_at_k": 0.06444444444444446,
+        "recall_at_k": 0.3581481481481481,
+        "ndcg_at_k": 0.16941380486001142,
+        "map_at_k": 0.08517048794826573
+      },
+      "n_users_scored": 45
+    },
+    {
+      "method": "svd",
+      "backend": "sklearn",
+      "feedback": "explicit",
+      "n_users": 50,
+      "n_items": 40,
+      "metrics": {
+        "precision_at_k": 0.06000000000000001,
+        "recall_at_k": 0.3088888888888889,
+        "ndcg_at_k": 0.1746962167398761,
+        "map_at_k": 0.10761875367430923
+      },
+      "n_users_scored": 45
+    },
+    {
+      "method": "nmf",
+      "backend": "sklearn",
+      "feedback": "explicit",
+      "n_users": 50,
+      "n_items": 40,
+      "metrics": {
+        "precision_at_k": 0.060000000000000005,
+        "recall_at_k": 0.36814814814814817,
+        "ndcg_at_k": 0.16952062449728247,
+        "map_at_k": 0.09210758377425043
+      },
+      "n_users_scored": 45
+    },
+    {
+      "method": "content",
+      "backend": "sklearn",
+      "feedback": "explicit",
+      "n_users": 50,
+      "n_items": 40,
+      "metrics": {
+        "precision_at_k": 0.04000000000000001,
+        "recall_at_k": 0.28888888888888886,
+        "ndcg_at_k": 0.11490518164910021,
+        "map_at_k": 0.05567019400352734
+      },
+      "n_users_scored": 45
+    },
+    {
+      "method": "als",
+      "backend": "implicit",
+      "feedback": "implicit",
+      "n_users": 50,
+      "n_items": 40,
+      "metrics": {
+        "precision_at_k": 0.05111111111111113,
+        "recall_at_k": 0.3333333333333333,
+        "ndcg_at_k": 0.16070092922588766,
+        "map_at_k": 0.09077601410934745
+      },
+      "n_users_scored": 45
+    },
+    {
+      "method": "bpr",
+      "backend": "implicit",
+      "feedback": "implicit",
+      "n_users": 50,
+      "n_items": 40,
+      "metrics": {
+        "precision_at_k": 0.04888888888888889,
+        "recall_at_k": 0.28962962962962957,
+        "ndcg_at_k": 0.14578771348751074,
+        "map_at_k": 0.08266519694297472
+      },
+      "n_users_scored": 45
+    },
+    {
+      "method": "als",
+      "backend": "implicit",
+      "feedback": "implicit",
+      "n_users": 50,
+      "n_items": 40,
+      "metrics": {
+        "precision_at_k": 0.05111111111111113,
+        "recall_at_k": 0.3333333333333333,
+        "ndcg_at_k": 0.16070092922588766,
+        "map_at_k": 0.09077601410934745
+      },
+      "n_users_scored": 45
+    },
+    {
+      "method": "lightfm",
+      "backend": "lightfm",
+      "skipped": true,
+      "reason": "lightfm not installed"
+    }
+  ],
+  "implicit_available": true,
+  "lightfm_available": false
+}

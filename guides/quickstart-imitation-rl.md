@@ -3,6 +3,7 @@
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Optional Gymnasium path: `pip install "buildml[rl]"`
+> Industry SB3 + imitation: `pip install "buildml[rl-industry]"`
 > See [installation](../docs/installation.rst).
 
 Behavioral cloning from demonstration tables, contextual bandits on logged
@@ -126,6 +127,36 @@ session.save_rl_bundle("artifacts/rl_gym_demo_bundle")
 
 ---
 
+## Optional SB3 PPO (`buildml[rl-industry]`)
+
+```python
+# pip install "buildml[rl-industry]"
+from buildml import Session
+import pandas as pd
+
+session = (
+    Session.ingest(pd.DataFrame({"a": [0.0, 1.0], "y": [0, 1]}))
+    .set_roles({"a": "feature", "y": "target"})
+    .split(test_size=0.5, random_state=0)
+)
+
+fit = session.fit_rl(
+    backend="industry",
+    mode="gym_sb3",
+    algorithm="ppo",
+    env_id="CartPole-v1",
+    total_timesteps=20_000,
+)
+print(fit.train_metrics)
+
+ev = session.evaluate_rl(n_episodes=15)
+print(ev.metrics["mean_return"])
+
+session.save_rl_bundle("artifacts/rl_sb3_demo_bundle")
+```
+
+---
+
 ## Honesty checklist
 
 | Claim | Reality in BuildML |
@@ -133,10 +164,11 @@ session.save_rl_bundle("artifacts/rl_gym_demo_bundle")
 | BC / bandit fit | Train partition only |
 | Bandit holdout scores | Offline DM / IPS (disclosed) |
 | Gym path | Optional `buildml[rl]`; small discrete envs |
+| SB3 industry | Optional `buildml[rl-industry]`; PPO/DQN/A2C |
 | Robotics / MuJoCo | **Out of scope** |
 
 ---
 
 ## Next
 
-IL+RL is **PASS**. Next Phase 2 depth item: [Topological Data Analysis](quickstart-tda.md).
+IL+RL industry depth is **PASS** (R6.11). R6 sweep complete. Next: application systems.

@@ -1,8 +1,9 @@
 # Federated learning (deep)
 
 Practical Session-facing **federated learning simulation** for research,
-teaching, and workflows. This is **not** a distributed FL network stack
-(Flower/OpenFL) and does **not** implement cryptographic secure aggregation.
+teaching, and workflows. Both backends are honest **local simulations** on
+Session data — not turnkey production FL networking, and **no** cryptographic
+secure aggregation.
 
 ## What BuildML means by “federated”
 
@@ -17,6 +18,33 @@ round:
 
 Validation/test partitions are never used for local updates.
 
+## Backends
+
+| Backend | Extra | Behavior |
+| --- | --- | --- |
+| `native` | none (core) | In-process weighted `coef_` / `intercept_` averaging |
+| `flower` | `buildml[federated-industry]` | Flower NumPyClient wrappers over Session partitions + `flwr` weighted aggregation |
+
+Install industry extra:
+
+```bash
+pip install 'buildml[federated-industry]'  # flwr>=1.5
+```
+
+Capability matrix:
+
+```python
+from buildml.federated import federated_capability_matrix
+print(federated_capability_matrix())
+```
+
+When `flwr` is installed and `backend=` is omitted, `fit_federated` defaults
+to `flower`. Pass `backend="native"` to force the core path.
+
+**Honesty:** `backend="flower"` still runs in-process on Session partitions
+unless you deploy a real Flower ServerApp/ClientApp yourself. Do not claim
+gRPC networking, Ray production sim, or secure aggregation from Session APIs.
+
 ## Algorithms (depth over breadth)
 
 | Method | Behavior |
@@ -30,23 +58,26 @@ Supported estimators (must expose `coef_` / `intercept_`):
 - Regression: `sgd_regressor`, `ridge`, `linear_regression`
 
 SGD paths use `partial_fit`; full-fit models use `.fit` (with `warm_start`
-when available). Prefer completing this FedAvg path deeply over stubbing a
-zoo of FL algorithms.
+when available).
 
 ## Session API
 
 | API | Role |
 | --- | --- |
-| `fit_federated` | Train-only federated rounds |
-| `evaluate_federated` | Global + optional per-client holdout metrics |
-| `predict_federated` | Global predictions (no update) |
+| `fit_federated(backend=...)` | Train-only federated rounds |
+| `evaluate_federated(backend=...)` | Global + optional per-client holdout metrics |
+| `predict_federated(backend=...)` | Global predictions (no update) |
 | `save_federated_bundle` / `load_federated_bundle` | `buildml.federated_bundle.v1` |
+| `export_round_history(plan, path)` | JSON export of round metrics/weights |
 
 Properties: `federated_plan`, `federated_fit_result`,
 `federated_eval_result`, `federated_predict_result`.
 
 Client identity: single `role="group"` column, or explicit `client_column=`.
 The client column is excluded from features.
+
+Round history includes `client_weights`, `total_weight`, and `weighting`:
+`sample_size` for auditability.
 
 ## Leakage discipline
 
@@ -60,12 +91,12 @@ The client column is excluded from features.
 
 Aggregation is **in-process**. The orchestrator sees client coefficient
 updates. Do **not** claim differential privacy, secure multi-party
-computation, or cryptographic secure aggregation from this path.
+computation, or cryptographic secure aggregation from either backend.
 
 ## Bundle boundary
 
 `buildml.federated_bundle.v1` stores `FederatedPlan` (global estimator +
-client contract + round history). Session checkpoints store
+client contract + round history + `backend`). Session checkpoints store
 data/roles/splits/history — they do **not** embed the federated model.
 Reload tabular workflow via `checkpoint_load`; reload the learner via
 `load_federated_bundle`.
@@ -74,14 +105,23 @@ Reload tabular workflow via `checkpoint_load`; reload the learner via
 
 Teaching-critical tools: `fit_federated`, `evaluate_federated`,
 `predict_federated`, plus save/load bundle. Walkthrough exposes
-`federated_status`. Explain overlays cover leakage, privacy limits, and
-bundle boundaries.
+`federated_status` with `backend`. Explain overlays cover leakage, privacy
+limits, native vs Flower honesty, and bundle boundaries.
+
+## Benchmark
+
+```bash
+python benchmarks/federated/fedavg_convergence.py
+```
+
+Writes `benchmarks/federated/results/fedavg_convergence.json` with native and
+optional Flower convergence curves.
 
 ## Explicit non-goals
 
-- No Flower / OpenFL / gRPC client runtime.
-- No cryptographic secure aggregation.
+- No turnkey Flower gRPC / Ray production deployment from Session alone.
+- No cryptographic secure aggregation on any backend.
 - No FedOpt / SCAFFOLD / neural FedAvg zoo (unless later implemented for real).
 - No causal APIs.
 
-Next Phase 2 item: **Bayesian / probabilistic ML**.
+Next Phase 2 item: **Knowledge graphs (KG)**.

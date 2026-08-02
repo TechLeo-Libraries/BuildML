@@ -7,8 +7,9 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from buildml.core.errors import ValidationError
+from buildml.rag.generate import EchoGroundedProvider, generate_grounded, score_faithfulness
 from buildml.rag.index import RagIndex, build_index
-from buildml.rag.results import ConfigCompareResult, CorpusHandle, RagEvalResult
+from buildml.rag.results import ConfigCompareResult, CorpusHandle, RagEvalResult, RagGenerateEvalResult
 from buildml.rag.retrieve import retrieve
 from buildml.rag.types import EvalConfig, RelevanceMode, RetrieveConfig
 
@@ -292,4 +293,87 @@ def compare_retrieval_configs(
             f"k={k}",
             "Each row rebuilds its own index; scores are not shared across rows.",
         ),
+    )
+
+
+def _token_overlap(a: str, b: str) -> float:
+    import re
+
+    ta = {t for t in re.findall(r"[A-Za-z0-9_]+", a.lower()) if t}
+    tb = {t for t in re.findall(r"[A-Za-z0-9_]+", b.lower()) if t}
+    if not ta or not tb:
+        return 0.0
+    return float(len(ta & tb) / len(ta))
+
+
+def evaluate_generation(
+    index: RagIndex,
+    examples: Sequence[Mapping[str, Any]],
+    *,
+    k: int = 5,
+    retrieve_config: RetrieveConfig | None = None,
+    provider: Any | None = None,
+) -> RagGenerateEvalResult:
+    """Score grounded generation with faithfulness + answer-relevance heuristics.
+
+    Each example mapping needs ``query`` and ``reference_answer`` (gold text).
+    Uses :class:`EchoGroundedProvider` when no provider is supplied (CI-safe).
+    """
+    if index is None:
+        raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
+    if not examples:
+        raise ValidationError("evaluate_generation requires at least one example.")
+    from buildml.rag.defaults import default_retrieve_config
+
+    cfg = retrieve_config or default_retrieve_config(k=k)
+    resolved_provider = provider or EchoGroundedProvider()
+    faith_scores: list[float] = []
+    rel_scores: list[float] = []
+    cite_cov: list[float] = []
+    per_query: list[dict[str, Any]] = []
+    for i, row in enumerate(examples):
+        if not isinstance(row, Mapping):
+            raise ValidationError(f"examples[{i}] must be a mapping.")
+        query = row.get("query")
+        reference = row.get("reference_answer") or row.get("answer")
+        if not query or not reference:
+            raise ValidationError(f"examples[{i}] needs query and reference_answer.")
+        gen = generate_grounded(
+            index,
+            str(query),
+            resolved_provider,
+            k=k,
+            retrieve_config=cfg,
+        )
+        faith = gen.faithfulness or score_faithfulness(
+            gen.answer,
+            gen.citations,
+            context=gen.prompt_context,
+        )
+        relevance = _token_overlap(gen.answer, str(reference))
+        faith_scores.append(faith.score)
+        rel_scores.append(relevance)
+        cite_cov.append(faith.citation_marker_coverage)
+        per_query.append(
+            {
+                "query": query,
+                "reference_answer": reference,
+                "answer": gen.answer,
+                "faithfulness": faith.to_dict(),
+                "answer_relevance": relevance,
+            }
+        )
+    n = len(examples)
+    return RagGenerateEvalResult(
+        n_queries=n,
+        mean_faithfulness=float(sum(faith_scores) / n),
+        mean_answer_relevance=float(sum(rel_scores) / n),
+        citation_coverage=float(sum(cite_cov) / n),
+        per_query=tuple(per_query),
+        disclosures=(
+            f"retrieve_mode={cfg.mode}",
+            f"k={k}",
+            "Faithfulness and answer relevance are cheap lexical heuristics, not NLI judges.",
+        ),
+        warnings=(),
     )

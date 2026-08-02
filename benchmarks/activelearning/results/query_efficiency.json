@@ -1,0 +1,233 @@
+{
+  "benchmark": "activelearning_query_efficiency",
+  "capability_matrix": {
+    "backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "strategies": [
+          "least_confidence",
+          "margin",
+          "entropy",
+          "committee",
+          "expected_model_change_lite"
+        ],
+        "modality": "tabular",
+        "notes": "Core sklearn classifiers + bagging committee; uncertainty and vote-entropy query strategies \u2014 always available."
+      },
+      "industry": {
+        "available": true,
+        "extra": "activelearning-industry",
+        "strategies": [
+          "core_set",
+          "qbc_kl",
+          "qbc_variation_ratios"
+        ],
+        "modality": "tabular",
+        "notes": "CoreSet + QBC KL/variation-ratio query strategies via native numpy/sklearn scoring. Optional scikit-activeml in buildml[activelearning-industry] for enhanced hosts."
+      },
+      "torch": {
+        "available": true,
+        "extra": "torch",
+        "strategies": [
+          "bald",
+          "mc_dropout"
+        ],
+        "modality": "tabular",
+        "notes": "MC-dropout tabular classifier with BALD and MC-dropout entropy query scoring (buildml[torch])."
+      }
+    },
+    "human_label_boundary": {
+      "label_rows": "Session-primary human-in-the-loop operation \u2014 NOT AI-allowlisted.",
+      "suggest_query": "Returns indices only; never invents labels."
+    },
+    "vs_semisupervised": {
+      "active_learning": "Interactive query loop: suggest_query \u2192 human label_rows \u2192 refit.",
+      "semi_supervised": "Passive missing labels: propagation/pseudo-label without oracle loop."
+    },
+    "evaluation": {
+      "metrics": [
+        "accuracy",
+        "f1_macro",
+        "f1_weighted",
+        "precision_macro",
+        "recall_macro"
+      ],
+      "holdout_rule": "labeled holdout rows only; pool never scored as truth"
+    },
+    "default_backend_when_installed": "torch",
+    "default_strategy_when_installed": "bald",
+    "install_hints": {
+      "activelearning-industry": "pip install 'buildml[activelearning-industry]'  # scikit-activeml CoreSet / QBC enhancements",
+      "torch": "pip install 'buildml[torch]'  # BALD / MC-dropout deep query strategies"
+    },
+    "non_goals": [
+      "Oracle label synthesis in library core",
+      "Querying validation/test partitions",
+      "Semi-supervised passive propagation (see buildml.semisupervised)",
+      "Stream-based active learning product surfaces"
+    ],
+    "industry_extra_present": true,
+    "scikit_activeml_present": true,
+    "torch_spec_present": true
+  },
+  "budgets": [
+    0,
+    5,
+    10,
+    20,
+    30
+  ],
+  "results": [
+    {
+      "backend": "sklearn",
+      "strategy": "margin",
+      "curve": [
+        {
+          "label_budget": 0,
+          "labels_used": 0,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 5,
+          "labels_used": 5,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 10,
+          "labels_used": 10,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 20,
+          "labels_used": 20,
+          "test_accuracy": 1.0,
+          "test_f1_macro": 1.0
+        },
+        {
+          "label_budget": 30,
+          "labels_used": 30,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        }
+      ],
+      "final_accuracy": 0.9875
+    },
+    {
+      "backend": "sklearn",
+      "strategy": "entropy",
+      "curve": [
+        {
+          "label_budget": 0,
+          "labels_used": 0,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 5,
+          "labels_used": 5,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 10,
+          "labels_used": 10,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 20,
+          "labels_used": 20,
+          "test_accuracy": 1.0,
+          "test_f1_macro": 1.0
+        },
+        {
+          "label_budget": 30,
+          "labels_used": 30,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        }
+      ],
+      "final_accuracy": 0.9875
+    },
+    {
+      "backend": "industry",
+      "strategy": "core_set",
+      "curve": [
+        {
+          "label_budget": 0,
+          "labels_used": 0,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 5,
+          "labels_used": 5,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 10,
+          "labels_used": 10,
+          "test_accuracy": 1.0,
+          "test_f1_macro": 1.0
+        },
+        {
+          "label_budget": 20,
+          "labels_used": 20,
+          "test_accuracy": 1.0,
+          "test_f1_macro": 1.0
+        },
+        {
+          "label_budget": 30,
+          "labels_used": 30,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        }
+      ],
+      "final_accuracy": 0.9875
+    },
+    {
+      "backend": "industry",
+      "strategy": "qbc_kl",
+      "curve": [
+        {
+          "label_budget": 0,
+          "labels_used": 0,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 5,
+          "labels_used": 5,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 10,
+          "labels_used": 10,
+          "test_accuracy": 0.975,
+          "test_f1_macro": 0.975
+        },
+        {
+          "label_budget": 20,
+          "labels_used": 20,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        },
+        {
+          "label_budget": 30,
+          "labels_used": 30,
+          "test_accuracy": 0.9875,
+          "test_f1_macro": 0.9874980465697765
+        }
+      ],
+      "final_accuracy": 0.9875
+    }
+  ],
+  "sklearn_baseline_final_accuracy": 0.9875,
+  "floor_note": "Industry/torch backends should track or beat sklearn margin/entropy on this synthetic query-efficiency curve when extras are installed."
+}

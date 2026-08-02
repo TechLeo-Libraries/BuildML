@@ -64,33 +64,38 @@ KG_NOTES: dict[str, ConceptNote] = {
         ),
         _note(
             key="kg-transe-distmult",
-            title="TransE and DistMult embeddings (numpy)",
+            title="KG embedding backends (native + PyKEEN)",
             summary=(
-                "method='transe' uses translation distance; method='distmult' "
-                "uses a trilinear product. Both train with margin ranking + "
-                "uniform negative sampling."
+                "backend='native': numpy TransE/DistMult. backend='pykeen': "
+                "RotatE/ComplEx/TransE/DistMult via buildml[kg-industry]. "
+                "Both use margin ranking with disclosed negative sampling."
             ),
             definition=(
-                "TransE scores −‖h+r−t‖; DistMult scores ⟨h,r,t⟩=Σ h⊙r⊙t. "
-                "Negatives corrupt head or tail uniformly on train triples."
+                "Native TransE scores −‖h+r−t‖; DistMult scores ⟨h,r,t⟩. "
+                "PyKEEN adds RotatE (complex rotation) and ComplEx "
+                "(complex trilinear). Negatives corrupt head/tail on train triples."
             ),
             intuition=(
                 "TransE treats a relation as a vector you add to the head to "
-                "reach the tail. DistMult multiplies aligned embedding dims."
+                "reach the tail. RotatE rotates head embeddings in complex space. "
+                "ComplEx uses complex-valued bilinear products."
             ),
             formal_idea=(
-                "min Σ max(0, γ − s(pos) + s(neg)) with disclosed neg_ratio."
+                "min Σ max(0, γ − s(pos) + s(neg)) with disclosed neg_ratio; "
+                "PyKEEN uses sLCWA/LCWA on train factory."
             ),
             why_it_matters=(
-                "Real embedding models, not stubs — still Session-scale numpy.",
+                "Industry-standard KGE models when PyKEEN installed; "
+                "numpy fallback stays core-only.",
                 "Negative sampling must be disclosed; holdout never corrupted in.",
             ),
             how_buildml_uses=(
-                "fit_kg(method='transe'|'distmult', embedding_dim=..., "
+                "Session.fit_kg(backend='native'|'pykeen', method='transe'|"
+                "'distmult'|'rotate'|'complex', embedding_dim=..., "
                 "epochs=..., neg_ratio=...).",
             ),
             interpretation_rules=(
-                "Read disclosures for neg_ratio and scoring formula.",
+                "Read disclosures for backend, neg_ratio, and scoring formula.",
                 "Loss alone is not ranking quality — use evaluate_kg.",
             ),
             assumptions=("Dense embeddings fit in memory for the train catalog."),
@@ -100,7 +105,8 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "Training negatives from test triples.",
             ),
             worked_example_pattern=(
-                "fit_kg(method='distmult', epochs=50) → predict_links(mode='tail')."
+                "fit_kg(backend='pykeen', method='rotate', epochs=50) → "
+                "predict_links(mode='tail')."
             ),
             related_concepts=("kg-triples", "kg-link-prediction"),
         ),

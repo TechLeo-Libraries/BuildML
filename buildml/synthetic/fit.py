@@ -8,6 +8,8 @@ from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
+from buildml.synthetic.adapters.sdv import SdvTabularGenerator
+from buildml.synthetic.catalog import resolve_backend_method
 from buildml.synthetic.features import (
     assert_train_only_fit,
     require_split,
@@ -21,14 +23,16 @@ from buildml.synthetic.models import (
     build_column_specs,
 )
 from buildml.synthetic.results import SynthesizerFitResult, SynthesizerPlan
-from buildml.synthetic.types import SynthesizerConfig, SynthesizerMethod
+from buildml.synthetic.types import SyntheticBackend, SynthesizerConfig, SynthesizerMethod
+from buildml.synthetic.validation import enrich_specs_with_train_stats
 
 
 PRIVACY_DISCLOSURE = (
     "Privacy honesty: synthetic generators are not a differential-privacy "
     "product. Bootstrap can emit near-duplicates of train rows; Gaussian "
-    "copula and SMOTE can still memorize or leak training structure. Do not "
-    "treat samples as anonymized releases without a dedicated privacy review."
+    "copula, SMOTE, and SDV deep models can still memorize or leak training "
+    "structure. Do not treat samples as anonymized releases without a dedicated "
+    "privacy review."
 )
 
 RESAMPLE_CROSSLINK = (
@@ -43,6 +47,7 @@ def fit_synthesizer(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
+    backend: SyntheticBackend | None = None,
     method: SynthesizerMethod = "gaussian_copula",
     columns: Sequence[str] | None = None,
     random_state: int = 42,
@@ -51,35 +56,30 @@ def fit_synthesizer(
     target_column: str | None = None,
     k_neighbors: int = 5,
     sampling_strategy: str | float | dict[str, float] = "auto",
+    epochs: int = 300,
+    batch_size: int = 500,
 ) -> tuple[SynthesizerPlan, SynthesizerFitResult]:
     """Fit a tabular synthesizer on the Session **train** partition only.
 
-    Methods
-    -------
-    bootstrap
-        Row resampling with replacement; optional Gaussian smoothing
-        (``smooth_sigma`` × column std) on continuous/integer columns.
-    gaussian_copula
-        Mixed-type Gaussian copula (empirical CDF + correlation); categoricals
-        participate via frequency-bin latent scores.
-    smote
-        Reusable SMOTE wrapper (requires ``buildml[imbalanced]``). Distinct
-        from ``Session.resample`` — does not mutate Session until merge.
+    Backends
+    --------
+    native (default when SDV absent):
+        bootstrap, gaussian_copula, smote (``buildml[imbalanced]`` for smote).
+    sdv (``buildml[synthetic-industry]`` when installed):
+        ctgan, tvae, copulagan via SDV single-table synthesizers.
 
     Honesty
     -------
     Never fits on validation/test. Not a differential-privacy product.
     """
-    if method not in {"bootstrap", "gaussian_copula", "smote"}:
-        raise ValidationError(
-            f"Unknown synthesizer method: {method!r}. "
-            "Expected bootstrap | gaussian_copula | smote."
-        )
+    resolved_backend, resolved_method = resolve_backend_method(
+        backend=backend,
+        method=method,
+    )
     split = require_split(split_plan)
     assert_train_only_fit("train")
     train = require_train_frame(dataset, split)
 
-    # Resolve target for SMOTE
     tgt = target_column
     if tgt is None:
         for name, role in dataset.roles.items():
@@ -92,12 +92,14 @@ def fit_synthesizer(
         train,
         columns=columns,
         target_column=tgt,
-        method=method,
+        method=resolved_method,
     )
     train_sub = train[cols].copy()
     specs = build_column_specs(train_sub)
+    specs = enrich_specs_with_train_stats(train_sub, specs)
     config = SynthesizerConfig(
-        method=method,
+        method=resolved_method,
+        backend=resolved_backend,
         partition="train",
         columns=list(cols),
         random_state=int(random_state),
@@ -106,10 +108,13 @@ def fit_synthesizer(
         target_column=tgt,
         k_neighbors=int(k_neighbors),
         sampling_strategy=sampling_strategy,
+        epochs=int(epochs),
+        batch_size=int(batch_size),
     )
 
     disclosures = [
-        f"method={method!r} fitted on partition='train' only (n={len(train_sub)}).",
+        f"backend={resolved_backend!r} method={resolved_method!r} "
+        f"fitted on partition='train' only (n={len(train_sub)}).",
         PRIVACY_DISCLOSURE,
         RESAMPLE_CROSSLINK,
         "Holdout partitions are never used to fit the generator.",
@@ -117,7 +122,26 @@ def fit_synthesizer(
     warnings: list[str] = []
 
     generator: Any
-    if method == "bootstrap":
+    if resolved_backend == "sdv":
+        generator = SdvTabularGenerator.fit(
+            train_sub,
+            specs,
+            method=resolved_method,  # type: ignore[arg-type]
+            epochs=epochs,
+            batch_size=batch_size,
+            random_state=random_state,
+        )
+        disclosures.append(
+            f"SDV {resolved_method.upper()} synthesizer (buildml[synthetic-industry]); "
+            f"epochs={epochs}, batch_size={batch_size}. Deep generative model — "
+            "not differential privacy."
+        )
+        if len(train_sub) < 100:
+            warnings.append(
+                "SDV deep synthesizers are data-hungry; small train sets may "
+                "underfit or overfit — prefer native gaussian_copula for n<100."
+            )
+    elif resolved_method == "bootstrap":
         if smooth_sigma < 0:
             raise ValidationError("smooth_sigma must be >= 0.")
         generator = BootstrapGenerator.fit(
@@ -135,7 +159,7 @@ def fit_synthesizer(
             disclosures.append(
                 "Plain bootstrap: samples are resampled train rows (with replacement)."
             )
-    elif method == "gaussian_copula":
+    elif resolved_method == "gaussian_copula":
         generator = GaussianCopulaGenerator.fit(
             train_sub,
             specs,
@@ -144,7 +168,7 @@ def fit_synthesizer(
         )
         disclosures.append(
             "Gaussian copula models rank correlations via a multivariate normal "
-            "latent; marginals use empirical CDFs (not a deep generative model / CTGAN)."
+            "latent; marginals use empirical CDFs (native fallback — not SDV CTGAN)."
         )
     else:
         generator = SmoteGenerator.fit(
@@ -169,7 +193,8 @@ def fit_synthesizer(
 
     roles_snapshot = {k: v.value for k, v in dataset.roles.items()}
     plan = SynthesizerPlan(
-        method=method,
+        method=resolved_method,
+        backend=resolved_backend,
         partition_fitted="train",
         columns=tuple(cols),
         column_specs=specs,
@@ -184,7 +209,8 @@ def fit_synthesizer(
     )
     kinds = {s.name: s.kind for s in specs}
     fit_result = SynthesizerFitResult(
-        method=method,
+        method=resolved_method,
+        backend=resolved_backend,
         partition="train",
         n_rows=int(len(train_sub)),
         n_columns=int(len(cols)),

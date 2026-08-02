@@ -50,11 +50,24 @@ def evaluate_ssl(
     if target not in frame.columns:
         raise ValidationError(f"Target column {target!r} missing from evaluation frame.")
     missing = [c for c in ssl_plan.columns if c not in frame.columns]
-    if missing:
-        raise ValidationError(f"Missing SSL feature columns: {missing}")
-
-    x = matrix_from_frame(frame, list(ssl_plan.columns))
-    emb = np.asarray(ssl_plan.encoder_.transform(x), dtype=float)
+    modality = getattr(ssl_plan, "modality", "tabular")
+    if modality == "text":
+        col = ssl_plan.columns[0]
+        if col not in frame.columns:
+            raise ValidationError(f"Missing text column {col!r}.")
+        emb = np.asarray(
+            ssl_plan.encoder_.transform(frame[col].astype(str).tolist()), dtype=float
+        )
+    elif modality == "vision":
+        col = ssl_plan.columns[0]
+        if col not in frame.columns:
+            raise ValidationError(f"Missing image column {col!r}.")
+        emb = np.asarray(ssl_plan.encoder_.transform(frame[col].tolist()), dtype=float)
+    else:
+        if missing:
+            raise ValidationError(f"Missing SSL feature columns: {missing}")
+        x = matrix_from_frame(frame, list(ssl_plan.columns))
+        emb = np.asarray(ssl_plan.encoder_.transform(x), dtype=float)
     unlabeled = is_unlabeled_mask(frame[target], unlabeled_marker)
     n_rows = int(len(frame))
     n_unlabeled = int(unlabeled.sum())

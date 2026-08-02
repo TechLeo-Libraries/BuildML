@@ -5,7 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-RankerMethod = Literal["pointwise", "pairwise"]
+RankerBackend = Literal["sklearn", "industry", "torch"]
+RankerMethod = Literal[
+    "pointwise",
+    "pairwise",
+    "lambdarank_lgbm",
+    "rank_ndcg_xgb",
+    "yetirank_catboost",
+    "listwise_lite",
+]
 PointwiseEstimator = Literal["ridge", "hgb"]
 PairwiseEstimator = Literal["ranksvm"]
 
@@ -14,6 +22,7 @@ PairwiseEstimator = Literal["ranksvm"]
 class RankerConfig:
     """User-facing ranker knobs (serializable summary)."""
 
+    backend: RankerBackend = "sklearn"
     method: RankerMethod = "pointwise"
     query_column: str | None = None
     item_column: str | None = None
@@ -27,9 +36,15 @@ class RankerConfig:
     random_state: int | None = 0
     alpha: float = 1.0
     C: float = 1.0
+    n_estimators: int = 120
+    learning_rate: float = 0.08
+    hidden_dim: int = 64
+    epochs: int = 40
+    device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "query_column": self.query_column,
             "item_column": self.item_column,
@@ -45,4 +60,9 @@ class RankerConfig:
             "random_state": self.random_state,
             "alpha": self.alpha,
             "C": self.C,
+            "n_estimators": self.n_estimators,
+            "learning_rate": self.learning_rate,
+            "hidden_dim": self.hidden_dim,
+            "epochs": self.epochs,
+            "device": self.device,
         }

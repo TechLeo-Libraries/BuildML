@@ -22,25 +22,31 @@ class SelfSupervisedPlan:
     representation_prefix: str
     representation_columns: tuple[str, ...]
     encoder_: Any = field(repr=False)
+    modality: str = "tabular"
     reconstruction_mae_: float | None = None
+    pretext_loss_: float | None = None
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     used_reduce_components: bool = False
     config: dict[str, Any] = field(default_factory=dict)
+    bundle_format: str = "buildml.ssl_bundle.v2"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "modality": self.modality,
             "columns": list(self.columns),
             "n_train_rows": self.n_train_rows,
             "latent_dim": self.latent_dim,
             "representation_prefix": self.representation_prefix,
             "representation_columns": list(self.representation_columns),
             "reconstruction_mae": self.reconstruction_mae_,
+            "pretext_loss": self.pretext_loss_,
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
             "used_reduce_components": self.used_reduce_components,
             "config": dict(self.config),
+            "bundle_format": self.bundle_format,
         }
 
 
@@ -54,6 +60,8 @@ class SelfSupervisedFitResult:
     latent_dim: int
     reconstruction_mae: float | None
     representation_columns: tuple[str, ...]
+    modality: str = "tabular"
+    pretext_loss: float | None = None
     used_reduce_components: bool = False
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -61,10 +69,12 @@ class SelfSupervisedFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "modality": self.modality,
             "n_train_rows": self.n_train_rows,
             "columns": list(self.columns),
             "latent_dim": self.latent_dim,
             "reconstruction_mae": self.reconstruction_mae,
+            "pretext_loss": self.pretext_loss,
             "representation_columns": list(self.representation_columns),
             "used_reduce_components": self.used_reduce_components,
             "disclosures": list(self.disclosures),

@@ -11,6 +11,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
+        "backend": payload.get("backend"),
         "vectorization": payload.get("vectorization"),
         "n_train_rows": payload.get("n_train_rows"),
         "feature_dim": payload.get("feature_dim"),
@@ -65,7 +66,9 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
         "task": payload.get("task"),
         "n_rows": payload.get("n_rows"),
         "metrics": payload.get("metrics"),
+        "diagram_distances": payload.get("diagram_distances"),
         "vectorization": payload.get("vectorization"),
+        "backend": payload.get("backend"),
     }
 
 
@@ -78,6 +81,8 @@ def tda_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for TDA."""
+    from buildml.tda.catalog import tda_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -96,13 +101,15 @@ def tda_status(
     if enabled:
         disclosures.extend(
             [
-                f"TdaPlan vectorization={getattr(plan, 'vectorization', None)}, "
+                f"TdaPlan backend={getattr(plan, 'backend', 'native')}, "
+                f"vectorization={getattr(plan, 'vectorization', None)}, "
                 f"knn={getattr(plan, 'knn', None)}, "
                 f"feature_dim={getattr(plan, 'feature_dim', None)}, "
                 f"head={getattr(plan, 'head', None)}.",
                 "Session checkpoints do not embed TdaPlan; use "
                 "save_tda_bundle / load_tda_bundle.",
-                "Requires buildml[tda] (ripser + persim). import buildml stays light.",
+                "Native: buildml[tda] (ripser+persim). "
+                "Industry: buildml[tda-industry] (giotto-tda).",
             ]
         )
         for note in getattr(plan, "disclosures", ()) or ():
@@ -127,19 +134,25 @@ def tda_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_tda_plan": enabled,
+        "backend": None if plan is None else getattr(plan, "backend", "native"),
         "vectorization": None if plan is None else getattr(plan, "vectorization", None),
         "knn": None if plan is None else getattr(plan, "knn", None),
         "feature_dim": None if plan is None else getattr(plan, "feature_dim", None),
         "head": None if plan is None else getattr(plan, "head", None),
         "task": None if plan is None else getattr(plan, "task", None),
+        "mapper_summary": None
+        if plan is None
+        else getattr(plan, "mapper_summary_", None),
         "has_fit_result": fit_result is not None,
         "has_eval_result": eval_result is not None,
         "has_transform_result": transform_result is not None,
         "eval": eval_payload,
+        "capability_matrix": tda_capability_matrix(),
         "disclosures": disclosures,
         "boundary": (
             "TDA is a Session domain path: persistent homology + vectorization "
-            "→ optional sklearn head. Not a Mapper research suite."
+            "→ optional sklearn head. Native (ripser) or giotto (tda-industry). "
+            "Not a Mapper research suite."
         ),
     }
 

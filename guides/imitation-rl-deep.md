@@ -1,9 +1,28 @@
 # Imitation + RL — deep guide
 
-> **Install:** core BC/bandit need no extra. Gymnasium path: `pip install "buildml[rl]"`.
+> **Install:** core BC/bandit need no extra. Gymnasium REINFORCE: `pip install "buildml[rl]"`.
+> Industry SB3 + imitation BC/GAIL: `pip install "buildml[rl-industry]"`.
 
-This guide covers leakage, offline metrics, bundles, and honesty boundaries for
-`buildml.rl` / Session IL+RL APIs. Pair with [quickstart-imitation-rl.md](quickstart-imitation-rl.md).
+This guide covers leakage, offline metrics, bundles, capability matrix, and honesty
+boundaries for `buildml.rl` / Session IL+RL APIs. Pair with
+[quickstart-imitation-rl.md](quickstart-imitation-rl.md).
+
+---
+
+## Capability matrix
+
+```python
+from buildml.rl import rl_capability_matrix
+
+print(rl_capability_matrix())
+```
+
+Backends default when installed (`backend=None`):
+
+| Surface | sklearn (core) | native (`buildml[rl]`) | industry (`buildml[rl-industry]`) |
+| --- | --- | --- | --- |
+| Imitation | BC estimators | — | `bc_mlp`, `gail_lite` |
+| RL | contextual bandit | `gym_reinforce` | `gym_sb3` (PPO/DQN/A2C) |
 
 ---
 
@@ -13,7 +32,7 @@ This guide covers leakage, offline metrics, bundles, and honesty boundaries for
 | --- | --- |
 | `fit_imitation` / `predict_imitation_action` / `evaluate_imitation` | Behavioral cloning |
 | `save_imitation_bundle` / `load_imitation_bundle` | `buildml.imitation_bundle.v1` |
-| `fit_rl` / `act_rl` / `evaluate_rl` | Contextual bandit or `gym_reinforce` |
+| `fit_rl` / `act_rl` / `evaluate_rl` | Contextual bandit, REINFORCE-lite, or SB3 |
 | `save_rl_bundle` / `load_rl_bundle` | `buildml.rl_bundle.v1` |
 
 Package: `buildml.rl` (lazy imports). Core stays numpy/pandas/sklearn.
@@ -22,12 +41,13 @@ Package: `buildml.rl` (lazy imports). Core stays numpy/pandas/sklearn.
 
 ## Behavioral cloning
 
-- Demonstrations = train rows: state features → action column (default: Dataset target).
-- Classification estimators: `logistic_regression`, `hist_gradient_boosting`.
-- Regression estimators: `ridge`, `hist_gradient_boosting_regressor`.
-- Holdout metrics compare predicted actions to demonstration actions
-  (`accuracy`/`macro_f1` or `rmse`/`mae`/`r2`).
-- **Not** inverse RL; **not** DAgger (compounding-error mitigation) by default.
+- `backend="sklearn"` (default when industry absent): demonstration tables on train.
+- `backend="industry"`: MLP BC via imitation+SB3 (`method="bc_mlp"`) or small-budget
+  GAIL (`method="gail_lite"`, requires `env_id=` with compatible demo obs dim).
+- Classification estimators (sklearn): `logistic_regression`, `hist_gradient_boosting`.
+- Regression estimators (sklearn): `ridge`, `hist_gradient_boosting_regressor`.
+- Holdout metrics compare predicted actions to demonstration actions.
+- **Not** inverse RL; **not** DAgger by default; **not** batch offline RL.
 
 Leakage: `assert_can_fit("train")` / `assert_fit_partition`. Validation/test never
 update the cloning policy.
@@ -36,7 +56,7 @@ update the cloning policy.
 
 ## Contextual bandits
 
-Algorithms:
+Algorithms (`backend="sklearn"`, `mode="contextual_bandit"`):
 
 | Algorithm | Behavior |
 | --- | --- |
@@ -44,33 +64,42 @@ Algorithms:
 | `epsilon_greedy` | Per-arm Ridge reward models + ε exploration |
 | `softmax` | Softmax over predicted rewards |
 
-Required columns:
-
-- Context features (numeric; reduce components honored when present)
-- `action_column` (discrete arms; defaults to target)
-- `reward_column` (numeric). If omitted, a column named `reward` is used when present.
-
 ### Offline evaluation (disclosed)
 
-`evaluate_rl` for bandits sets `offline=True` and reports:
-
-- **direct_method** — mean predicted reward under π(x)
-- **ips** — inverse propensity scoring using a train-fitted π_b(a\|x)
-- **action_match_rate** / **mean_logged_reward_on_match**
-
-These are **not** online A/B lifts. Confounding and positivity failures can bias IPS.
+`evaluate_rl` for bandits sets `offline=True` and reports DM / IPS / action_match_rate.
+These are **not** online A/B lifts.
 
 ---
 
-## Gymnasium REINFORCE-lite
+## Gymnasium REINFORCE-lite (`buildml[rl]`)
 
-- Extra: `buildml[rl]` → `gymnasium`
-- Policy: linear softmax; update: REINFORCE with returns-to-go + mean baseline
-- Requires discrete `action_space.n` and Box-like observations
-- Session hosts the checkpointed policy; tabular partitions are not the gradient signal
+- `backend="native"`, `mode="gym_reinforce"`
+- Linear softmax REINFORCE teaching loop on discrete envs
 - `evaluate_rl` rolls out episodes (`offline=False`)
 
-Honesty: teaching / small-env path — **not** MuJoCo, robotics stacks, or multi-agent sims.
+---
+
+## Stable-Baselines3 industry path (`buildml[rl-industry]`)
+
+- `backend="industry"`, `mode="gym_sb3"`
+- Algorithms: `ppo`, `dqn`, `a2c`
+- Honest small-env sim (CartPole-class) — **not** MuJoCo, robotics, AV, multi-agent
+- Ray RLlib intentionally omitted (prefer clean SB3 adapter)
+- **Offline RL** (CQL/IQL/batch RL) is out of scope and disclosed in the capability matrix
+
+```python
+session.fit_rl(
+    backend="industry",
+    mode="gym_sb3",
+    algorithm="ppo",
+    env_id="CartPole-v1",
+    total_timesteps=25_000,
+)
+ev = session.evaluate_rl(n_episodes=20)
+print(ev.metrics["mean_return"])
+```
+
+Benchmark: `python benchmarks/rl/policy_return.py` (BC baseline vs SB3 return).
 
 ---
 
@@ -80,33 +109,29 @@ Honesty: teaching / small-env path — **not** MuJoCo, robotics stacks, or multi
 | --- | --- | --- |
 | Session checkpoint | data, roles, splits, history | IL/RL policies |
 | `buildml.imitation_bundle.v1` | `ImitationPlan` | dataset / splits |
-| `buildml.rl_bundle.v1` | `RlPlan` | dataset / splits |
-
-Reload workflow with `checkpoint_load`; reload policies with
-`load_imitation_bundle` / `load_rl_bundle`.
+| `buildml.rl_bundle.v1` | `RlPlan` (bandit, REINFORCE, or SB3) | dataset / splits |
 
 ---
 
 ## Walkthrough / AI / catalog
 
-- Walkthrough exposes `imitation_status` and `rl_status`.
-- AI allowlist includes fit/predict/evaluate/act + bundle tools.
+- Walkthrough exposes `imitation_status` and `rl_status` with `capability_matrix`.
+- AI allowlist includes fit/predict/evaluate/act + bundle tools with `backend=` knobs.
 - Concept keys: `imitation-behavioral-cloning`, `rl-contextual-bandit`,
-  `rl-offline-metrics`, `rl-gym-reinforce`, bundle boundaries.
+  `rl-offline-metrics`, `rl-gym-reinforce`, `rl-sb3-industry`, bundle boundaries.
 
 ---
 
 ## Failure modes
 
 - Fitting BC/bandit without a split → leakage error
-- Bandit without `reward_column` (and no `reward` column) → validation error
-- Gym without `buildml[rl]` → `MissingExtraError`
-- Continuous-action Gym envs → unsupported in this lite path
+- Bandit without `reward_column` → validation error
+- Gym/SB3 without extras → `MissingExtraError`
+- `gail_lite` without matching `env_id` obs dim → validation error
+- Continuous-action Gym envs → unsupported in lite paths
 
 ---
 
 ## Tracker
 
-IL+RL is **PASS** vs the Phase-1 bar. Next depth item:
-[Topological Data Analysis](tda-deep.md) → then application systems
-(recommenders first).
+IL+RL industry depth is **PASS** (R6.11). R6 sweep complete.

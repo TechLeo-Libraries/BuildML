@@ -2,18 +2,30 @@
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core path — uses sklearn + transitive `scipy.optimize` for LP allocation.
-> No PuLP / OR-Tools extra. See [installation](../docs/installation.rst).
+> Core path — sklearn + transitive `scipy.optimize` for LP allocation.
+> Industry solvers: `pip install 'buildml[optimize-industry]'` (PuLP, OR-Tools,
+> CVXPY, XGBoost). See [installation](../docs/installation.rst).
 
 Session decision helpers over **ML scores, costs, and constrained allocations**.
-Cost-sensitive thresholds wrap the same engine as classical `tune_threshold`;
-multiclass cost matrices, top-K capacity, knapsack-lite, and continuous LP
-budget shares persist as a `DecisionPlan` bundle.
+Cost-sensitive thresholds wrap the same engine as classical `tune_threshold`
+(or XGB/calibrated when installed); multiclass cost matrices, top-K capacity,
+knapsack (native or MIP), and continuous LP budget shares persist as a
+`DecisionPlan` bundle.
 
-**Not** a general operations-research platform, MIP suite, or digital twin.
+**Not** a general operations-research platform, arbitrary MIP suite, or digital twin.
 
 Runnable mirror: [`examples/decision_threshold_loop.py`](../examples/decision_threshold_loop.py).
 Deep guide: [optimize-deep.md](optimize-deep.md).
+
+---
+
+## Capability matrix
+
+```python
+from buildml import Session
+
+print(Session.decision_capability_matrix()["default_backend_when_installed"])
+```
 
 ---
 
@@ -51,25 +63,22 @@ fit = session.fit_decision_policy(
     partition="validation",
     fp_cost=1.0,
     fn_cost=5.0,
+    backend="native",  # or "xgb" / "calibrated" when installed
 )
 print(fit.to_dict())
 
-# Classical diagnostic explorer still available (same cost engine):
-# session.tune_threshold(partition="validation", fp_cost=1.0, fn_cost=5.0)
-
 applied = session.apply_decisions(partition="test")
-print(applied.to_dict())
-
 eval_result = session.evaluate_decisions(partition="test")
 print(eval_result.to_dict())
 
-# Allocation example: top-K under capacity using model scores + row costs
+# MIP knapsack when optimize-industry is installed
 session.fit_decision_policy(
     method="knapsack",
     partition="validation",
     budget=40.0,
     cost_column="cost",
     score_source="model_proba",
+    backend="pulp",  # auto-defaults to pulp/ortools when installed
 )
 print(session.apply_decisions(partition="test").selected_ids[:10])
 
@@ -89,8 +98,9 @@ session.save_decision_bundle("artifacts/decision_demo_bundle")
 
 ## Honesty
 
-Decision helpers for ML scores/costs/allocations — not PuLP/OR-Tools, not a
-digital twin. `tune_threshold` remains the classical diagnostic sweep;
+Decision helpers for ML scores/costs/allocations — scoped PuLP/OR-Tools MIP
+knapsack and CVXPY LP only; not a general OR platform or digital twin.
+`tune_threshold` remains the classical diagnostic sweep;
 `fit_decision_policy(method="threshold")` persists the chosen operating point.
 
 Phase-3 synthetic-data systems: **PASS** → [quickstart-synthetic.md](quickstart-synthetic.md).

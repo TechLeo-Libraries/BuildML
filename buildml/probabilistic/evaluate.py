@@ -73,7 +73,7 @@ def evaluate_probabilistic(
     disclosures = [
         "Probabilistic evaluation scores a holdout partition; rows were never "
         "used for fit or conformal calibration.",
-        f"estimator={plan.estimator_name}, alpha={resolved_alpha}, "
+        f"backend={plan.backend}, estimator={plan.estimator_name}, alpha={resolved_alpha}, "
         f"interval_method={plan.interval_method}.",
         "Classical Session.calibration() is unchanged and still targets "
         "classical fit(...) classifiers; this path reports NLL/Brier directly.",
@@ -124,11 +124,33 @@ def evaluate_probabilistic(
 
     if plan.task == "regression":
         y_num = y_true.to_numpy(dtype=float)
-        if plan.supports_return_std:
+        if plan.backend == "mapie":
+            from buildml.probabilistic.adapters.mapie import mapie_predict_interval
+
+            point, _, _, _ = mapie_predict_interval(
+                plan.estimator_, x, task="regression", alpha=resolved_alpha
+            )
+            y_hat = np.asarray(point, dtype=float)
+        elif plan.backend == "ngboost":
+            from buildml.probabilistic.adapters.ngboost import (
+                ngboost_crps_regression,
+                ngboost_predict_std,
+            )
+
+            mean, std = ngboost_predict_std(plan.estimator_, x)
+            y_hat = np.asarray(mean, dtype=float)
+            std_arr = np.asarray(std, dtype=float)
+            metrics["nll"] = float(_gaussian_nll(y_num, y_hat, std_arr))
+            try:
+                metrics["crps"] = ngboost_crps_regression(plan.estimator_, x, y_num)
+            except Exception as exc:  # noqa: BLE001
+                warnings.append(f"CRPS skipped: {exc}")
+        elif plan.supports_return_std:
             mean, std = plan.estimator_.predict(x, return_std=True)
             y_hat = np.asarray(mean, dtype=float)
             std_arr = np.asarray(std, dtype=float)
             metrics["nll"] = float(_gaussian_nll(y_num, y_hat, std_arr))
+            metrics["crps"] = float(_gaussian_crps(y_num, y_hat, std_arr))
         else:
             y_hat = np.asarray(plan.estimator_.predict(x), dtype=float)
         metrics["mae"] = float(mean_absolute_error(y_num, y_hat))
@@ -164,8 +186,16 @@ def evaluate_probabilistic(
         except ValidationError as exc:
             warnings.append(f"Interval metrics skipped: {exc}")
     else:
-        raw = plan.estimator_.predict(x)
-        preds = decode_predictions(raw, plan.label_encoder_)
+        if plan.backend == "mapie":
+            from buildml.probabilistic.adapters.mapie import mapie_predict_sets
+
+            point_raw, _ = mapie_predict_sets(
+                plan.estimator_, x, alpha=resolved_alpha, task="classification"
+            )
+            preds = decode_predictions(np.asarray(point_raw), plan.label_encoder_)
+        else:
+            raw = plan.estimator_.predict(x)
+            preds = decode_predictions(raw, plan.label_encoder_)
         y_true_s = y_true.astype(str).to_numpy()
         y_pred_s = np.asarray([str(v) for v in preds])
         metrics["accuracy"] = float(accuracy_score(y_true_s, y_pred_s))
@@ -176,7 +206,15 @@ def evaluate_probabilistic(
             f1_score(y_true_s, y_pred_s, average="weighted", zero_division=0)
         )
         if plan.supports_predict_proba:
-            proba = np.asarray(plan.estimator_.predict_proba(x), dtype=float)
+            if plan.backend == "mapie":
+                from buildml.probabilistic.adapters.mapie import MapieWrapper
+
+                handle = plan.estimator_
+                est = handle.estimator if isinstance(handle, MapieWrapper) else handle
+                base = getattr(est, "estimator", est)
+                proba = np.asarray(base.predict_proba(x), dtype=float)
+            else:
+                proba = np.asarray(plan.estimator_.predict_proba(x), dtype=float)
             classes = [str(c) for c in (plan.classes_ or ())]
             # Align log_loss labels with probability columns.
             metrics["nll"] = float(
@@ -189,7 +227,7 @@ def evaluate_probabilistic(
                 metrics["brier"] = float(brier_score_loss(y_bin, pos))
                 metrics["ece"] = float(_expected_calibration_error(y_bin, pos))
 
-        if plan.conformal_quantile_ is not None:
+        if plan.conformal_quantile_ is not None or plan.backend == "mapie":
             try:
                 interval = predict_interval(
                     dataset,
@@ -247,6 +285,22 @@ def _gaussian_nll(y: np.ndarray, mean: np.ndarray, std: np.ndarray) -> float:
     m = np.asarray(mean, dtype=float)
     yy = np.asarray(y, dtype=float)
     return float(np.mean(0.5 * np.log(2 * np.pi * s**2) + 0.5 * ((yy - m) / s) ** 2))
+
+
+def _gaussian_crps(y: np.ndarray, mean: np.ndarray, std: np.ndarray) -> float:
+    """Average CRPS under Gaussian predictive (closed form)."""
+    from scipy.stats import norm
+
+    s = np.maximum(np.asarray(std, dtype=float), 1e-12)
+    m = np.asarray(mean, dtype=float)
+    yy = np.asarray(y, dtype=float)
+    z = (yy - m) / s
+    crps = s * (
+        z * (2 * norm.cdf(z) - 1)
+        + 2 * norm.pdf(z)
+        - 1.0 / np.sqrt(np.pi)
+    )
+    return float(np.mean(crps))
 
 
 def _winkler_interval_score(

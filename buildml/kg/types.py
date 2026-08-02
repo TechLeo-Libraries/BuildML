@@ -5,16 +5,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-KgMethod = Literal["transe", "distmult"]
+KgBackend = Literal["native", "pykeen"]
+KgMethod = Literal["transe", "distmult", "rotate", "complex"]
 KgNorm = Literal["l1", "l2"]
 LinkPredictionMode = Literal["tail", "head", "relation"]
 KgQueryMode = Literal["neighbors", "path", "typed"]
+EmbeddingKind = Literal["real", "rotate", "complex"]
 
 
 @dataclass(slots=True)
 class KgConfig:
     """User-facing knowledge-graph knobs (serializable summary)."""
 
+    backend: KgBackend = "native"
     method: KgMethod = "transe"
     head_column: str | None = None
     relation_column: str | None = None
@@ -30,6 +33,7 @@ class KgConfig:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "head_column": self.head_column,
             "relation_column": self.relation_column,

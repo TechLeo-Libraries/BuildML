@@ -70,18 +70,19 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     _operation(
         "fit_graph",
         OperationKind.MODEL,
-        "Fit graph node classification (classical or pure-Torch GCN).",
+        "Fit graph node classification (classical, pure-Torch GCN, or PyG).",
         "Train-only labels; inductive train-induced subgraph by default.",
         "Graph fit step.",
         (
             "Require SplitPlan and GraphSpec.",
             "Classical: NetworkX metrics + sklearn (buildml[graph]).",
-            "GCN: pure-Torch 1–2 layer GCN (buildml[torch]; no PyG).",
+            "GCN: pure-Torch 1–2 layer GCN (buildml[torch]).",
+            "PyG: GCNConv / SAGEConv / GATConv (buildml[graph-pyg]).",
             "Inductive fit uses train–train edges only.",
             "Never use validation/test labels for fitting.",
         ),
         parameters=(
-            _p("method", "classical | gcn", "Learning path.", "classical"),
+            _p("method", "classical | gcn | pyg", "Learning path.", "classical"),
             _p("task", "node_classification", "Currently only node_classification.", "node_classification"),
             _p(
                 "mode",
@@ -96,9 +97,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "Sklearn head for classical.",
                 "logistic_regression",
             ),
-            _p("hidden_dim", "int", "GCN hidden size.", 32),
-            _p("n_layers", "int", "GCN layers in {1,2}.", 2),
-            _p("epochs", "int", "GCN training epochs.", 80),
+            _p("pyg_model", "gcn | graphsage | gat", "PyG conv when method=pyg.", "gcn"),
+            _p("hidden_dim", "int", "GNN hidden size.", 32),
+            _p("n_layers", "int", "GNN layers in {1,2}.", 2),
+            _p("heads", "int", "GAT attention heads.", 4),
+            _p("epochs", "int", "GNN training epochs.", 80),
             _p("learning_rate", "float", "GCN Adam lr.", 0.01),
             _p("weight_decay", "float", "GCN Adam weight decay.", 5e-4),
             _p("dropout", "float", "GCN dropout.", 0.1),
@@ -116,9 +119,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After set_graph and split.",),
         alternatives=("load_graph_bundle.",),
         rationale=(
-            "Ship two honest node-classification paths with explicit leakage modes.",
+            "Ship classical, pure-Torch, and PyG node-classification paths "
+            "with explicit leakage modes.",
         ),
-        assumptions=("Binary/multiclass node labels; numeric features for GCN.",),
+        assumptions=("Binary/multiclass node labels; numeric features for GNN paths.",),
         failures=(
             "No GraphSpec; no train–train edges (inductive); missing extras.",
         ),
@@ -127,7 +131,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Inductive fit using holdout–holdout edges — filtered out.",
         ),
         anti_patterns=(
-            "Calling this a PyG research suite or Neo4j product.",
+            "Treating this as a full PyG algorithm zoo or Neo4j product.",
             "Ignoring mode disclosures when comparing to papers.",
         ),
         state_changes=("Stores graph_plan and fit result; clears predict/eval.",),
@@ -136,6 +140,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         concepts=(
             "graph-classical-features",
             "graph-gcn",
+            "graph-pyg",
             "graph-inductive-transductive",
             "leakage-boundary",
         ),

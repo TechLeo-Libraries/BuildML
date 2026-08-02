@@ -139,6 +139,7 @@ def label_rows(
         new_plan, fit_result = fit_active_learner(
             new_dataset,
             split_plan,
+            backend=plan.backend,  # type: ignore[arg-type]
             strategy=plan.strategy,  # type: ignore[arg-type]
             base_estimator=plan.base_estimator,  # type: ignore[arg-type]
             columns=list(plan.columns),
@@ -151,6 +152,10 @@ def label_rows(
             ),
             committee_size=int((plan.config or {}).get("committee_size", 5)),
             auto_refit=bool((plan.config or {}).get("auto_refit", True)),
+            epochs=int((plan.config or {}).get("epochs", 60)),
+            learning_rate=float((plan.config or {}).get("learning_rate", 1e-3)),
+            mc_samples=int((plan.config or {}).get("mc_samples", 20)),
+            device=str((plan.config or {}).get("device", "cpu")),
             reduce_plan=reduce_plan,
             prior_plan=plan,
         )

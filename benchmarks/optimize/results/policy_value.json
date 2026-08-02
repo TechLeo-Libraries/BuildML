@@ -1,0 +1,153 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "native": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "threshold",
+          "cost_matrix",
+          "topk",
+          "knapsack",
+          "lp_allocate"
+        ],
+        "solvers": {
+          "threshold": "threshold_report / sklearn sweep",
+          "knapsack": "numpy DP or density-greedy",
+          "lp_allocate": "scipy.optimize.linprog (HiGHS)"
+        },
+        "notes": "Always-available fallback: classical threshold sweep, multiclass Bayes cost matrix, top-K, knapsack-lite, scipy LP."
+      },
+      "pulp": {
+        "available": false,
+        "extra": "optimize-industry",
+        "methods": [
+          "knapsack"
+        ],
+        "solvers": {
+          "knapsack": "0-1 integer MIP (PuLP + CBC)"
+        },
+        "notes": "Exact 0-1 knapsack via binary integer program. Scoped to single-constraint selection \u2014 not a general MIP suite."
+      },
+      "ortools": {
+        "available": true,
+        "extra": "optimize-industry",
+        "methods": [
+          "knapsack"
+        ],
+        "solvers": {
+          "knapsack": "0-1 integer MIP (OR-Tools SCIP/CBC)"
+        },
+        "notes": "Exact 0-1 knapsack via OR-Tools MIP. Alternative to PuLP when ortools is installed without pulp."
+      },
+      "cvxpy": {
+        "available": true,
+        "extra": "optimize-industry",
+        "methods": [
+          "lp_allocate"
+        ],
+        "solvers": {
+          "lp_allocate": "convex LP (CVXPY + default solver)"
+        },
+        "notes": "Continuous fractional budget allocation. Same problem class as native linprog \u2014 CVXPY when convex modelling hooks are needed."
+      },
+      "calibrated": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "threshold"
+        ],
+        "solvers": {
+          "threshold": "CalibratedClassifierCV + cost sweep"
+        },
+        "notes": "Platt/isotonic calibration of Session.fit estimator on train, then validation cost-sensitive threshold selection."
+      },
+      "xgb": {
+        "available": true,
+        "extra": "optimize-industry",
+        "methods": [
+          "threshold"
+        ],
+        "solvers": {
+          "threshold": "XGBClassifier scale_pos_weight + validation sweep"
+        },
+        "notes": "Cost-sensitive gradient-boosted classifier trained on train; threshold tuned on validation expected cost."
+      }
+    },
+    "allocation_vs_threshold": {
+      "threshold": "Binary operating point on scores \u2014 wraps tune_threshold engine or industry cost-sensitive classifiers.",
+      "allocation": "topk / knapsack / lp_allocate over candidate scores and costs."
+    },
+    "leakage_discipline": {
+      "default_partition": "validation",
+      "test_tuning": "requires allow_test_tuning=True + disclosure"
+    },
+    "default_backend_when_installed": "xgb",
+    "default_knapsack_backend_when_installed": "ortools",
+    "default_lp_backend_when_installed": "native",
+    "default_threshold_backend_when_installed": "xgb",
+    "install_hints": {
+      "optimize-industry": "pip install 'buildml[optimize-industry]'  # PuLP / OR-Tools MIP knapsack, CVXPY LP, XGB cost-sensitive thresholds"
+    },
+    "non_goals": [
+      "General mixed-integer programming platform",
+      "Multi-period stochastic OR / digital twin",
+      "Causal decision analysis",
+      "Production fleet scheduling"
+    ],
+    "industry_extra_present": true,
+    "pulp_present": false,
+    "ortools_present": true,
+    "cvxpy_present": true,
+    "cvxpy_import_honesty": "cvxpy backend 'available' reflects package install (find_spec). Broken wheels may fail at require_cvxpy \u2014 prefer native linprog unless convex hooks are explicitly needed.",
+    "xgboost_present": true,
+    "mip_present": true
+  },
+  "fp_cost": 1.0,
+  "fn_cost": 8.0,
+  "runs": [
+    {
+      "label": "cost_optimal_native",
+      "threshold": 0.05,
+      "backend": "native",
+      "expected_cost_total": 96.0,
+      "realized_cost": 96.0,
+      "f1": 0.37662337662337664,
+      "precision": 0.232,
+      "recall": 1.0
+    },
+    {
+      "label": "baseline_threshold_0.5",
+      "threshold": 0.5,
+      "backend": "native",
+      "expected_cost_total": 208.0,
+      "realized_cost": 208.0,
+      "f1": 0.1951219512195122,
+      "precision": 0.3333333333333333,
+      "recall": 0.13793103448275862
+    },
+    {
+      "label": "cost_optimal_xgb",
+      "threshold": 0.2,
+      "backend": "xgb",
+      "expected_cost_total": 53.0,
+      "realized_cost": 53.0,
+      "f1": 0.6190476190476191,
+      "precision": 0.4727272727272727,
+      "recall": 0.896551724137931
+    },
+    {
+      "label": "cost_optimal_calibrated",
+      "threshold": 0.05,
+      "backend": "calibrated",
+      "expected_cost_total": 96.0,
+      "realized_cost": 96.0,
+      "f1": 0.37662337662337664,
+      "precision": 0.232,
+      "recall": 1.0
+    }
+  ],
+  "cost_lift_vs_baseline_0.5": 0.5384615384615384,
+  "optimize_industry_available": true,
+  "xgboost_available": true
+}

@@ -10,6 +10,7 @@ import pandas as pd
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
+from buildml.rl.adapters.stable_baselines3 import SB3PolicyWrapper, evaluate_sb3_policy
 from buildml.rl.act import act_rl
 from buildml.rl.bandit import LinUCBPolicy, RewardModelBandit, offline_bandit_metrics
 from buildml.rl.features import encode_discrete_actions, matrix_from_frame
@@ -39,6 +40,14 @@ def evaluate_rl(
     """
     if plan.mode == "gym_reinforce":
         return _eval_gym(
+            plan,
+            n_episodes=n_episodes,
+            max_steps=max_steps,
+            random_state=random_state,
+            deterministic=deterministic,
+        )
+    if plan.mode == "gym_sb3":
+        return _eval_sb3(
             plan,
             n_episodes=n_episodes,
             max_steps=max_steps,
@@ -192,5 +201,42 @@ def _eval_gym(
             "Gymnasium evaluation rolls out the policy in the env (online returns).",
             "Requires buildml[rl] (gymnasium).",
             "Honesty: small-env teaching loop — not MuJoCo/robotics.",
+        ),
+    )
+
+
+def _eval_sb3(
+    plan: RlPlan,
+    *,
+    n_episodes: int | None,
+    max_steps: int | None,
+    random_state: int | None,
+    deterministic: bool,
+) -> RlEvalResult:
+    policy = plan.policy_
+    if not isinstance(policy, SB3PolicyWrapper):
+        raise ValidationError("gym_sb3 plan is missing an SB3PolicyWrapper.")
+    if plan.env_id is None:
+        raise ValidationError("gym_sb3 plan is missing env_id.")
+    cfg = plan.config or {}
+    metrics = evaluate_sb3_policy(
+        policy,
+        env_id=plan.env_id,
+        n_episodes=int(n_episodes if n_episodes is not None else 20),
+        max_steps=int(max_steps if max_steps is not None else cfg.get("max_steps", 500)),
+        random_state=random_state,
+        deterministic=deterministic,
+    )
+    return RlEvalResult(
+        partition=None,
+        mode=plan.mode,
+        n_rows=int(metrics.get("n_eval_episodes", 0)),
+        metrics=metrics,
+        offline=False,
+        disclosures=(
+            "SB3 evaluation rolls out the policy in the env (online returns).",
+            "Requires buildml[rl-industry] (stable-baselines3 + gymnasium + imitation).",
+            "Honesty: small-env teaching loop — not MuJoCo/robotics/AV.",
+            "Offline RL (batch RL) is out of scope; bandit IPS/DM are separate.",
         ),
     )

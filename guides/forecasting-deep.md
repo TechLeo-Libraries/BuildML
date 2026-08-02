@@ -2,7 +2,9 @@
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Classical forecasting is **core** (numpy/pandas/sklearn). No forecast extra.
+> Core lag/baseline always available. Industry defaults:
+> `pip install "buildml[timeseries]"` (statsmodels ETS/ARIMA/SARIMAX).
+> Prophet: `buildml[timeseries-prophet]`. N-BEATS: `buildml[timeseries-ml]`.
 > See [installation](../docs/installation.rst).
 
 Depth guide for BuildML's classical forecasting Session path: temporal roles,
@@ -22,10 +24,10 @@ exogenous support, bundles, and honesty bounds.
 | --- | --- |
 | Session API with history / explain / walkthrough | A toy stub without metrics or bundles |
 | Train-only fit + holdout eval | Fit-on-full-frame "evaluation" |
-| Lag tabularization + strong baselines | Full econometrics / ARIMA product suite |
+| Lag tabularization + strong baselines | Full econometrics lab / digital twin |
 | Univariate default + optional numeric exog | Silent multivariate identification claims |
-| `buildml.forecast_bundle.v1` | Session checkpoint substitute |
-| Core sklearn | Torch sequence forecaster / digital twin |
+| `buildml.forecast_bundle.v2` (v1 loadable) | Session checkpoint substitute |
+| statsmodels ETS/ARIMA when `[timeseries]` | Torch sequence forecaster in this package |
 
 Phase 1 order (depth-first, **complete**): unsupervised → ensembles → AutoML →
 **forecasting** → anomaly (see [Anomaly deep](anomaly-deep.md)). Explicit
@@ -74,14 +76,20 @@ bad.fit_forecast(method="naive")  # refused
 
 ## Methods
 
-| Method | Role |
-| --- | --- |
-| `naive` | Last train value |
-| `mean` | Train mean |
-| `drift` | Linear extrapolation from first→last train point |
-| `seasonal_naive` | Repeat last `seasonal_period` (default `max(lags)`) |
-| `lag_ridge` | Ridge on lag (+ optional exog) features; recursive generate |
-| `lag_hgb` | `HistGradientBoostingRegressor` on lag/exog features |
+| Method | Role | Extra |
+| --- | --- | --- |
+| `auto` | ETS if statsmodels else `lag_ridge` | timeseries |
+| `naive` | Last train value | — |
+| `mean` | Train mean | — |
+| `drift` | Linear extrapolation from first→last train point | — |
+| `seasonal_naive` | Repeat last `seasonal_period` | — |
+| `lag_ridge` | Ridge on lag (+ optional exog) features | — |
+| `lag_hgb` | HistGradientBoosting on lag/exog features | — |
+| `ets` | Holt-Winters exponential smoothing | timeseries |
+| `arima` / `auto_arima` | ARIMA (auto = lightweight AIC grid) | timeseries |
+| `sarimax` | Seasonal ARIMAX with optional exog | timeseries |
+| `prophet` | Facebook Prophet | timeseries-prophet |
+| `nbeats` | N-BEATS via neuralforecast | timeseries-ml |
 
 Prefer baselines before claiming lag-model value on the **same** split and
 eval strategy.
@@ -101,7 +109,10 @@ roll = session.evaluate_forecast(partition="test", strategy="rolling_one_step")
 
 # Harder multi-step protocol
 origin = session.evaluate_forecast(partition="test", strategy="origin")
-print(roll.metrics, origin.metrics)
+
+# Rolling-origin backtest (M4-style windows)
+rolling_origin = session.evaluate_forecast(partition="test", strategy="rolling_origin")
+print(roll.metrics, origin.metrics, rolling_origin.metrics)
 ```
 
 Metrics: **MAE**, **RMSE**, **MAPE**. MAPE may be NaN near zero actuals —
@@ -143,7 +154,8 @@ restored.load_forecast_bundle(path)
 print(restored.generate_forecast(horizon=7).predictions)
 ```
 
-Format: `buildml.forecast_bundle.v1` (`meta.json` + `forecast_plan.joblib`).
+Format: `buildml.forecast_bundle.v2` (`meta.json` + `forecast_plan.joblib`).
+v1 bundles remain loadable.
 Not interchangeable with Session checkpoints, classical pipelines, Torch, RAG,
 unsupervised, ensemble, or AutoML bundles. See
 [Artifacts](artifacts-checkpoints-bundles.md).

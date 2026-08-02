@@ -48,6 +48,7 @@ def test_low_level_pretext_head_eval(tmp_path: Path) -> None:
     plan, fit = fit_ssl_pretext(
         session.dataset,
         session.split_plan,
+        method="masked_tabular",
         latent_dim=5,
         max_iter=70,
         prefer_reduce_components=False,
@@ -82,7 +83,7 @@ def test_head_skips_unlabeled_train() -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_ssl_pretext(latent_dim=4, max_iter=50, random_state=0)
+    session.fit_ssl_pretext(method="masked_tabular", latent_dim=4, max_iter=50, random_state=0)
     # Blank half of train labels
     rng = np.random.default_rng(7)
     full = session.to_pandas().copy()

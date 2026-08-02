@@ -5,19 +5,23 @@
 > the RAG extra. See [installation](../docs/installation.rst).
 
 Optional retrieval path on the same `Session` as classical ML and Torch: history,
-explain catalog, and distinct artifact kinds. The default hashing embedder uses
-core numpy/sklearn. Install the RAG extra for optional sentence-transformer /
-cross-encoder backends.
+explain catalog, and distinct artifact kinds.
+
+**Recommended install (semantic defaults):**
+
+```bash
+pip install "buildml[rag]"   # sentence-transformers + transformers
+# optional LangChain adapter:
+pip install "buildml[rag-advanced]"
+```
+
+With `buildml[rag]` installed, defaults are **sentence-transformers embeddings**
+and **hybrid BM25+dense retrieval**. Without the extra, BuildML falls back to
+lexical hashing + dense-only retrieve (CI-safe, disclosed in results).
 
 **Go deeper:** [RAG deep](rag-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md) ·
 [AI tools](ai-tools-operator-patterns.md) (RAG on the allowlist).
-
-```bash
-# After a GitHub / editable 2.x install:
-pip install "buildml[rag]"
-# or: pip install "buildml[rag] @ git+https://github.com/TechLeo-Libraries/BuildML.git"
-```
 
 Classical `Session.fit` and Torch `*_torch` stay unchanged. RAG methods use the
 `rag_*` prefix and store results in `session.rag_index_result` /
@@ -63,27 +67,25 @@ docs = [
 
 session = Session()
 session.rag_ingest_corpus(docs)
-session.rag_chunk(size=160, overlap=32)
-session.rag_embed_and_index()  # default: buildml.hashing_embed.v1
+session.rag_chunk(size=160, overlap=32, strategy="recursive")
+session.rag_embed_and_index()  # auto: ST when buildml[rag] installed
 
-dense = session.rag_retrieve("corpus contamination indexed answers", k=3)
-hybrid = session.rag_retrieve(
-    "corpus contamination indexed answers",
-    k=3,
-    mode="hybrid",  # dense + BM25, RRF fusion by default
-)
-print(dense.hits[0].doc_id, hybrid.hits[0].doc_id)
+# Default retrieve is hybrid (BM25 + dense RRF) when rag extra is present
+hybrid = session.rag_retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag_retrieve("corpus contamination indexed answers", k=3, mode="dense")
+print(hybrid.mode, dense.hits[0].doc_id)
+
+# Explicit lexical fallback (no model download):
+# session.rag_embed_and_index(embedder="hashing")
 
 from buildml.rag.generate import EchoGroundedProvider
 
 answer = session.rag_generate(
     "What causes evaluation contamination?",
-    provider=EchoGroundedProvider(),  # offline; or ai_configure(...) for a real LLM
+    provider=EchoGroundedProvider(),
     k=3,
 )
 print(answer.answer, [c.doc_id for c in answer.citations])
-# Cheap faithfulness heuristic on GenerateResult (citation markers + token overlap):
-print(getattr(answer, "faithfulness", None))
 
 metrics = session.rag_evaluate(
     {
@@ -92,67 +94,26 @@ metrics = session.rag_evaluate(
     },
     k=3,
 )
-print(metrics.recall_at_k, metrics.mrr, metrics.ndcg_at_k, metrics.hit_rate_at_k)
+print(metrics.recall_at_k, metrics.mrr, metrics.ndcg_at_k)
 
-session.rag_upsert([{"doc_id": "new", "text": "Chunk update without full rebuild."}])
-session.rag_delete(doc_ids=["new"])
-
-bundle = session.save_rag_bundle("artifacts/rag_bundle")
+session.save_rag_bundle("artifacts/rag_bundle")
 ```
 
-Reload into a fresh Session:
+## Extras
 
-```python
-restored = Session().load_rag_bundle(bundle)
-again = restored.rag_retrieve("corpus contamination indexed answers", k=3)
-assert again.hits[0].doc_id == dense.hits[0].doc_id
-```
+| Extra | Purpose |
+| --- | --- |
+| `buildml[rag]` | HF sentence-transformers embeddings + cross-encoder rerank (recommended) |
+| `buildml[rag-advanced]` | Optional LangChain QA adapter over BuildML retrieval hits |
 
-Optional semantic embedder (requires `buildml[rag]` sentence-transformers pin):
+## Explicit fallbacks
 
-```python
-from buildml.rag.embed import SentenceTransformerEmbedder
+- `embedder="hashing"` — sklearn HashingVectorizer (lexical, deterministic CI)
+- `mode="dense"` — cosine-only retrieve (no BM25 fusion)
+- `rerank=False` — skip cross-encoder (default)
 
-session.rag_embed_and_index(
-    embedder=SentenceTransformerEmbedder("sentence-transformers/all-MiniLM-L6-v2"),
-    device="cpu",
-)
-```
+## Related
 
-Explain catalog coverage:
-
-```python
-before = session.explain("rag_retrieve", moment="before")
-print(before.operation, before.prerequisites)
-```
-
-## Artifacts
-
-| Artifact | Schema | Contains | Does not contain |
-| --- | --- | --- | --- |
-| Session checkpoint | existing checkpoint formats | data, roles, splits, history | vector index, chunk embeddings |
-| Torch trainer bundle | `buildml.torch_bundle.v1` | weights, optimizer, TrainConfig | RAG index |
-| RAG bundle | `buildml.rag_bundle.v1` | chunk config, embedder id/dim, embeddings, chunk metadata | Session dataset rows, Torch weights |
-
-Layout: `<path>/meta.json` + `<path>/chunks.jsonl` + `<path>/embeddings.npy`.
-
-## Known limits (honest)
-
-- **Hashing default is lexical, not semantic.** `buildml.hashing_embed.v1` is
-  deterministic and CPU-only (no model download). Use
-  `embedder="sentence-transformers"` or `embedder="auto"` for semantic embeddings
-  when `buildml[rag]` is installed.
-- **Local-first.** Default store is in-process NumPy cosine top-k. No hosted
-  vector-DB product path in this alpha.
-- **Generate needs a provider.** `rag_generate` is grounded (citations + CONTEXT)
-  but does not embed a paid LLM; pass `provider=` or call `ai_configure`.
-  Faithfulness on `GenerateResult` is a cheap lexical/citation heuristic — not
-  an NLI or LLM-as-judge product.
-- **No dedicated RAG dashboard UI.** Catalog, structured results, and
-  walkthrough `rag_status` are the teaching surfaces.
-- **Eval hygiene is caller-owned.** Index corpus and gold query/qrel sets must
-  stay separate; documents marked `eval_only` refuse indexing (`LeakageError`).
-- **CI merge gate.** RAG job runs on Python 3.11–3.12 CPU. GPU embed/rerank is
-  optional when hardware and pins allow; not a PR blocker.
-
-See [glossary](glossary.md).
+- [RAG deep guide](rag-deep.md)
+- [Artifacts](artifacts-checkpoints-bundles.md)
+- [AI operator safety](ai-operator-safety.md)

@@ -102,7 +102,7 @@ def test_refuse_holdout_indices() -> None:
 
 def test_unknown_estimator() -> None:
     session = _ready_session()
-    with pytest.raises(ValidationError, match="Unknown online estimator"):
+    with pytest.raises(ValidationError, match="Unknown online estimator|not valid for backend"):
         session.fit_online(estimator="hist_gradient_boosting")  # type: ignore[arg-type]
 
 

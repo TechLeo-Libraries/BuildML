@@ -1,4 +1,4 @@
-"""Online / continual learning domain (sklearn ``partial_fit`` family).
+"""Online / continual learning domain (sklearn ``partial_fit`` + industry backends).
 
 Phase coverage (internal tracker — depth-first; do not spray stubs)
 ------------------------------------------------------------------
@@ -8,7 +8,7 @@ Phase 2:
   1. Semi-supervised learning — done (``buildml.semisupervised``).
   2. Self-supervised learning hooks — done (``buildml.selfsupervised``).
   3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit) — **this module**.
+  4. Online / continual (partial_fit + River + torch continual) — **this module**.
   5. Multi-task learning — done (``buildml.multitask``).
   6. Meta-learning — done (``buildml.metalearning``).
   7. Federated learning — done (``buildml.federated``).
@@ -31,9 +31,10 @@ Honesty (this package):
   - Classifiers require a ``classes`` vocabulary on first fit (explicit or
     discovered from the full train target column — labels only).
 
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Online learning
-uses the sklearn ``partial_fit`` family — no optional extra required for
-``import buildml``.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Sklearn
+``partial_fit`` is the default path. River streaming + drift detectors require
+``buildml[online-industry]``; torch replay/EWC continual paths require
+``buildml[torch]``.
 
 Lazy imports — core never grows heavy streaming stacks.
 """
@@ -55,7 +56,9 @@ __all__ = [
     "OnlineUpdateResult",
     "evaluate_online",
     "fit_online",
+    "list_online_estimators",
     "load_online_bundle",
+    "online_capability_matrix",
     "online_status",
     "online_status_for_session",
     "partial_fit",
@@ -113,4 +116,12 @@ def __getattr__(name: str) -> Any:
         from buildml.online import explain_hooks as hooks
 
         return getattr(hooks, name)
+    if name == "online_capability_matrix":
+        from buildml.online.catalog import online_capability_matrix
+
+        return online_capability_matrix
+    if name == "list_online_estimators":
+        from buildml.online.catalog import list_online_estimators
+
+        return list_online_estimators
     raise AttributeError(f"module 'buildml.online' has no attribute {name!r}")

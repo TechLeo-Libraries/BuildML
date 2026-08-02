@@ -18,6 +18,8 @@ from buildml.recommenders.models import (
     score_user_knn,
     top_k_from_scores,
 )
+from buildml.recommenders.adapters.implicit_lib import score_implicit_model
+from buildml.recommenders.adapters.lightfm import score_lightfm_model
 from buildml.recommenders.results import RecommendResult, RecommenderPlan
 
 
@@ -32,6 +34,27 @@ def _scores_for_user(
         exclude = plan.matrix_[user_idx] != 0
 
     method = plan.method
+    backend = plan.backend
+    if backend == "implicit":
+        if plan.backend_model_ is None:
+            raise ValidationError("RecommenderPlan missing implicit backend model.")
+        return score_implicit_model(
+            plan.backend_model_,
+            user_idx,
+            n_items=plan.n_items,
+            exclude_mask=exclude,
+        )
+    if backend == "lightfm":
+        if plan.backend_model_ is None:
+            raise ValidationError("RecommenderPlan missing LightFM backend model.")
+        return score_lightfm_model(
+            plan.backend_model_,
+            user_idx,
+            n_items=plan.n_items,
+            exclude_mask=exclude,
+            user_features=plan.lightfm_user_features_,
+            item_features=plan.lightfm_item_features_,
+        )
     if method == "item_knn":
         if plan.similarity_ is None:
             raise ValidationError("RecommenderPlan missing item similarity.")

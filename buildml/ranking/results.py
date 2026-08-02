@@ -17,15 +17,16 @@ class RankerPlan:
     """
 
     method: str
-    query_column: str
-    item_column: str
-    relevance_column: str
-    feature_columns: tuple[str, ...]
-    pointwise_estimator: str
-    pairwise_estimator: str
-    n_train_rows: int
-    n_train_queries: int
-    n_features: int
+    backend: str = "sklearn"
+    query_column: str = ""
+    item_column: str = ""
+    relevance_column: str = ""
+    feature_columns: tuple[str, ...] = ()
+    pointwise_estimator: str = "ridge"
+    pairwise_estimator: str = "ranksvm"
+    n_train_rows: int = 0
+    n_train_queries: int = 0
+    n_features: int = 0
     feature_mean_: np.ndarray = field(
         default_factory=lambda: np.zeros(0), repr=False
     )
@@ -40,6 +41,11 @@ class RankerPlan:
     alpha: float = 1.0
     C: float = 1.0
     random_state: int | None = 0
+    n_estimators: int = 120
+    learning_rate: float = 0.08
+    hidden_dim: int = 64
+    epochs: int = 40
+    device: str = "cpu"
     group_split_disclosed: bool = False
     split_kind: str | None = None
     disclosures: tuple[str, ...] = ()
@@ -49,6 +55,7 @@ class RankerPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "query_column": self.query_column,
             "item_column": self.item_column,
             "relevance_column": self.relevance_column,
@@ -63,6 +70,11 @@ class RankerPlan:
             "alpha": self.alpha,
             "C": self.C,
             "random_state": self.random_state,
+            "n_estimators": self.n_estimators,
+            "learning_rate": self.learning_rate,
+            "hidden_dim": self.hidden_dim,
+            "epochs": self.epochs,
+            "device": self.device,
             "group_split_disclosed": self.group_split_disclosed,
             "split_kind": self.split_kind,
             "disclosures": list(self.disclosures),
@@ -76,12 +88,13 @@ class RankerFitResult:
     """Outcome of fitting a ranker on train query–item rows."""
 
     method: str
-    n_train_rows: int
     n_train_queries: int
     n_features: int
     query_column: str
     item_column: str
     relevance_column: str
+    backend: str = "sklearn"
+    n_train_rows: int = 0
     feature_columns: tuple[str, ...] = ()
     pointwise_estimator: str | None = None
     pairwise_estimator: str | None = None
@@ -92,6 +105,7 @@ class RankerFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "n_train_rows": self.n_train_rows,
             "n_train_queries": self.n_train_queries,
             "n_features": self.n_features,
@@ -108,7 +122,7 @@ class RankerFitResult:
 
     def show(self) -> None:
         print(
-            f"RankerFit · {self.method} · queries={self.n_train_queries} · "
+            f"RankerFit · {self.backend}/{self.method} · queries={self.n_train_queries} · "
             f"rows={self.n_train_rows} · features={self.n_features}"
         )
         for tip in self.disclosures[:6]:

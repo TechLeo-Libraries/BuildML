@@ -6,14 +6,21 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 ForecastMethod = Literal[
+    "auto",
     "naive",
     "seasonal_naive",
     "drift",
     "mean",
     "lag_ridge",
     "lag_hgb",
+    "arima",
+    "auto_arima",
+    "ets",
+    "sarimax",
+    "prophet",
+    "nbeats",
 ]
-ForecastEvalStrategy = Literal["rolling_one_step", "origin"]
+ForecastEvalStrategy = Literal["rolling_one_step", "origin", "rolling_origin"]
 
 
 @dataclass(slots=True)
@@ -34,6 +41,12 @@ class ForecastConfig:
     max_iter: int = 100
     max_depth: int | None = 3
     learning_rate: float = 0.1
+    # statsmodels
+    order: tuple[int, int, int] | None = None
+    seasonal_order: tuple[int, int, int, int] | None = None
+    # neuralforecast N-BEATS
+    nbeats_input_size: int = 24
+    nbeats_horizon: int = 7
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -49,4 +62,10 @@ class ForecastConfig:
             "max_iter": self.max_iter,
             "max_depth": self.max_depth,
             "learning_rate": self.learning_rate,
+            "order": None if self.order is None else list(self.order),
+            "seasonal_order": None
+            if self.seasonal_order is None
+            else list(self.seasonal_order),
+            "nbeats_input_size": self.nbeats_input_size,
+            "nbeats_horizon": self.nbeats_horizon,
         }

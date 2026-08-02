@@ -19,7 +19,7 @@ from buildml.online.explain_hooks import (
 )
 from buildml.online.fit import fit_online
 from buildml.online.predict import predict_online
-from buildml.online.types import OnlineEstimator, OnlineTask
+from buildml.online.types import OnlineBackend, OnlineDriftDetector, OnlineEstimator, OnlineTask
 from buildml.online.update import partial_fit_online
 
 PartitionOrAll = PartitionName | Literal["all"]
@@ -28,7 +28,8 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_online_op(
     session,
     *,
-    estimator: OnlineEstimator = "sgd_classifier",
+    backend: OnlineBackend | None = None,
+    estimator: OnlineEstimator | str = "sgd_classifier",
     task: OnlineTask | None = None,
     columns: list[str] | None = None,
     random_state: int | None = 0,
@@ -39,6 +40,14 @@ def fit_online_op(
     prefer_reduce_components: bool = True,
     allow_refit_fallback: bool = False,
     drift_disclose: bool = True,
+    drift_detector: OnlineDriftDetector | None = None,
+    buffer_size: int = 512,
+    epochs_per_update: int = 5,
+    batch_size: int = 64,
+    learning_rate: float = 1e-3,
+    ewc_lambda: float = 100.0,
+    hidden_dim: int = 64,
+    device: str = "cpu",
 ) -> Any:
     """Warm-start an incremental estimator on the first train chunk.
 
@@ -53,7 +62,8 @@ def fit_online_op(
     plan, result = fit_online(
         session.dataset,
         session._split_plan,
-        estimator=estimator,
+        backend=backend,
+        estimator=str(estimator),
         task=task,
         columns=columns,
         random_state=random_state,
@@ -64,6 +74,14 @@ def fit_online_op(
         prefer_reduce_components=prefer_reduce_components,
         allow_refit_fallback=allow_refit_fallback,
         drift_disclose=drift_disclose,
+        drift_detector=drift_detector,
+        buffer_size=buffer_size,
+        epochs_per_update=epochs_per_update,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        ewc_lambda=ewc_lambda,
+        hidden_dim=hidden_dim,
+        device=device,
         reduce_plan=getattr(session, "_reduce_plan", None),
     )
     session._online_plan = plan
@@ -74,6 +92,7 @@ def fit_online_op(
     session._record(
         "fit_online",
         {
+            "backend": plan.backend,
             "estimator": estimator,
             "task": task,
             "columns": columns,
@@ -85,6 +104,7 @@ def fit_online_op(
             "prefer_reduce_components": prefer_reduce_components,
             "allow_refit_fallback": allow_refit_fallback,
             "drift_disclose": drift_disclose,
+            "drift_detector": (plan.config or {}).get("drift_detector"),
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),
@@ -131,6 +151,7 @@ def evaluate_online_op(
     session,
     *,
     partition: PartitionOrAll = "validation",
+    drift_check: bool = True,
 ) -> Any:
     """Evaluate the online learner on a holdout partition (never for updates)."""
     plan = getattr(session, "_online_plan", None)
@@ -149,11 +170,12 @@ def evaluate_online_op(
         plan,
         session._split_plan,
         partition=resolved,
+        drift_check=drift_check,
     )
     session._online_eval_result = result
     session._record(
         "evaluate_online",
-        {"partition": resolved},
+        {"partition": resolved, "drift_detected": result.drift_detected},
         warnings=tuple(result.warnings),
         result_summary=eval_result_summary(result),
     )
@@ -201,6 +223,7 @@ def save_online_bundle_op(session, path: str | Path) -> Path:
         {"path": str(out)},
         result_summary={
             "path": str(out),
+            "backend": plan.backend,
             "estimator_name": plan.estimator_name,
             "n_seen_rows": plan.n_seen_rows,
             "n_updates": plan.n_updates,
@@ -219,7 +242,7 @@ def load_online_bundle_op(session, path: str | Path) -> Any:
     session._online_predict_result = None
     session._record(
         "load_online_bundle",
-        {"path": str(path), "estimator_name": plan.estimator_name},
+        {"path": str(path), "backend": plan.backend, "estimator_name": plan.estimator_name},
         result_summary=plan.to_dict(),
     )
     return session

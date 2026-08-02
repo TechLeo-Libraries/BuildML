@@ -12,6 +12,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "task": payload.get("task"),
+        "backend": payload.get("backend"),
         "metric": payload.get("metric"),
         "reuse": payload.get("reuse"),
         "k": payload.get("k"),
@@ -122,6 +123,7 @@ def cbr_status(
         disclosures.extend(
             [
                 f"CbrPlan task={getattr(cbr_plan, 'task', None)}, "
+                f"backend={getattr(cbr_plan, 'backend', None)}, "
                 f"metric={getattr(cbr_plan, 'metric', None)}, "
                 f"reuse={getattr(cbr_plan, 'reuse', None)}, "
                 f"k={getattr(cbr_plan, 'k', None)}, "
@@ -158,6 +160,7 @@ def cbr_status(
         "present": enabled or saw,
         "has_cbr_plan": cbr_plan is not None,
         "task": None if cbr_plan is None else getattr(cbr_plan, "task", None),
+        "backend": None if cbr_plan is None else getattr(cbr_plan, "backend", None),
         "metric": None if cbr_plan is None else getattr(cbr_plan, "metric", None),
         "reuse": None if cbr_plan is None else getattr(cbr_plan, "reuse", None),
         "k": None if cbr_plan is None else getattr(cbr_plan, "k", None),

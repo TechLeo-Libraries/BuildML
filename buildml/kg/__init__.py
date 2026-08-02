@@ -5,15 +5,15 @@ Phase coverage (internal tracker — depth-first; do not spray stubs)
 Phase 1–2 complete. Phase 3 — Application systems:
   Recommendation systems (**PASS**).
   Search / LTR (**PASS**).
-  **Knowledge graphs (this module)** — **PASS** (Phase-1 bar).
+  **Knowledge graphs (this module)** — **PASS** (industry depth R5.6).
   Optimisation / decision helpers (**PASS** — see ``buildml.optimize``).
   Synthetic-data systems (**PASS** — see ``buildml.synthetic``).
 
 Honesty (this package):
   - Session rows are (head, relation, tail) triples.
   - Train-only materialization; never trains on holdout triples.
-  - Algorithms: pure-numpy TransE and DistMult with disclosed uniform
-    negative sampling (core — no Neo4j, no torch required).
+  - Backends: ``native`` (pure-numpy TransE/DistMult) and ``pykeen``
+    (RotatE/ComplEx/TransE/DistMult via ``buildml[kg-industry]``).
   - Link prediction: score_triples / predict_links (tail|head|relation);
     evaluate_kg reports filtered MRR and Hits@K.
   - Symbolic query_kg: neighbors / path / typed over the **train** adjacency
@@ -21,10 +21,10 @@ Honesty (this package):
   - **Not** Graph ML node classification (``set_graph`` / ``fit_graph``),
     **not** a graph-database product, **not** RAG retrieve/generate.
 
-Dependency policy: core stays numpy/pandas/sklearn. TransE/DistMult-lite
+Dependency policy: core stays numpy/pandas/sklearn. Native TransE/DistMult
 are justified in core (small dense embeddings + SGD; Session-scale graphs).
-Optional ``buildml[graph]`` (NetworkX) is unused here — adjacency BFS is
-pure-Python on the train triple store.
+Optional ``buildml[kg-industry]`` adds PyKEEN industry models behind
+``backend='pykeen'``.
 
 Lazy imports — keep the core import graph light.
 """
@@ -40,6 +40,7 @@ __all__ = [
     "KgEvalResult",
     "KgFitResult",
     "KgMethod",
+    "KgBackend",
     "KgNorm",
     "KgPlan",
     "KgQueryMode",
@@ -49,8 +50,10 @@ __all__ = [
     "ScoreTriplesResult",
     "evaluate_kg",
     "fit_kg",
+    "kg_capability_matrix",
     "kg_status",
     "kg_status_for_session",
+    "list_kg_methods",
     "load_kg_bundle",
     "predict_links",
     "query_kg",
@@ -63,6 +66,7 @@ def __getattr__(name: str) -> Any:
     if name in {
         "KgConfig",
         "KgMethod",
+        "KgBackend",
         "KgNorm",
         "LinkPredictionMode",
         "KgQueryMode",
@@ -101,6 +105,10 @@ def __getattr__(name: str) -> Any:
         from buildml.kg.evaluate import evaluate_kg
 
         return evaluate_kg
+    if name in {"kg_capability_matrix", "list_kg_methods"}:
+        from buildml.kg import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",
@@ -111,7 +119,12 @@ def __getattr__(name: str) -> Any:
 
         return getattr(checkpoint_mod, name)
     if name in {"kg_status", "kg_status_for_session"}:
-        from buildml.kg import explain_hooks as hooks
+        from buildml.kg.explain_hooks import (
+            kg_status,
+            kg_status_for_session,
+        )
 
-        return getattr(hooks, name)
+        if name == "kg_status":
+            return kg_status
+        return kg_status_for_session
     raise AttributeError(f"module 'buildml.kg' has no attribute {name!r}")

@@ -136,7 +136,7 @@ def test_resample_still_works_alongside_synthetic() -> None:
 def test_unknown_method_raises() -> None:
     session = _session_with_cats()
     with pytest.raises(ValidationError, match="Unknown synthesizer"):
-        session.fit_synthesizer(method="ctgan")  # type: ignore[arg-type]
+        session.fit_synthesizer(method="not_a_real_method")  # type: ignore[arg-type]
 
 
 def test_column_specs_mixed() -> None:

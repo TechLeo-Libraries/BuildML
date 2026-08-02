@@ -21,7 +21,7 @@ from buildml.metalearning.explain_hooks import (
     fit_result_summary,
 )
 from buildml.metalearning.fit import fit_metalearning
-from buildml.metalearning.types import MetaLearningBaseEstimator, MetaLearningMethod
+from buildml.metalearning.types import MetaLearningBaseEstimator
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -29,7 +29,8 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_metalearning_op(
     session,
     *,
-    method: MetaLearningMethod = "prototypical",
+    backend: str | None = None,
+    method: str = "prototypical",
     task_column: str | None = None,
     columns: list[str] | None = None,
     n_way: int | None = None,
@@ -40,6 +41,13 @@ def fit_metalearning_op(
     random_state: int | None = 0,
     prefer_reduce_components: bool = True,
     task_holdout_fraction: float = 0.25,
+    meta_epochs: int = 40,
+    inner_lr: float = 0.05,
+    inner_steps: int = 5,
+    meta_lr: float = 1e-3,
+    embed_dim: int = 32,
+    hidden_dim: int = 64,
+    device: str = "cpu",
 ) -> Any:
     """Meta-train on episodic tasks carved from the train partition only.
 
@@ -54,7 +62,8 @@ def fit_metalearning_op(
     plan, result = fit_metalearning(
         session.dataset,
         session._split_plan,
-        method=method,
+        backend=backend,  # type: ignore[arg-type]
+        method=method,  # type: ignore[arg-type]
         task_column=task_column,
         columns=columns,
         n_way=n_way,
@@ -65,6 +74,13 @@ def fit_metalearning_op(
         random_state=random_state,
         prefer_reduce_components=prefer_reduce_components,
         task_holdout_fraction=task_holdout_fraction,
+        meta_epochs=meta_epochs,
+        inner_lr=inner_lr,
+        inner_steps=inner_steps,
+        meta_lr=meta_lr,
+        embed_dim=embed_dim,
+        hidden_dim=hidden_dim,
+        device=device,
         reduce_plan=getattr(session, "_reduce_plan", None),
     )
     session._metalearning_plan = plan
@@ -74,6 +90,7 @@ def fit_metalearning_op(
     session._record(
         "fit_metalearning",
         {
+            "backend": backend,
             "method": method,
             "task_column": task_column,
             "columns": columns,
@@ -85,6 +102,13 @@ def fit_metalearning_op(
             "random_state": random_state,
             "prefer_reduce_components": prefer_reduce_components,
             "task_holdout_fraction": task_holdout_fraction,
+            "meta_epochs": meta_epochs,
+            "inner_lr": inner_lr,
+            "inner_steps": inner_steps,
+            "meta_lr": meta_lr,
+            "embed_dim": embed_dim,
+            "hidden_dim": hidden_dim,
+            "device": device,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),

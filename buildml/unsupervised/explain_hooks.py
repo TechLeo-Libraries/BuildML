@@ -20,6 +20,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         "assign_strategy": payload.get("assign_strategy"),
         "used_reduce_components": payload.get("used_reduce_components"),
         "inertia": payload.get("inertia"),
+        "diagnostics": payload.get("diagnostics"),
         "cluster_sizes": payload.get("cluster_sizes"),
     }
 

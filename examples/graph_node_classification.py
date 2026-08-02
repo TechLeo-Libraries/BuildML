@@ -1,8 +1,9 @@
 """Graph example: set_graph → classical fit → eval → bundle.
 
 Requires: pip install 'buildml[graph]'
-Honesty: node classification with NetworkX metrics + sklearn — not PyG,
-not Neo4j/KG.
+Honesty: node classification with NetworkX metrics + sklearn. Optional PyG
+path: ``fit_graph(method='pyg', pyg_model='graphsage')`` with ``buildml[graph-pyg]``.
+Not Neo4j/KG.
 """
 
 from __future__ import annotations

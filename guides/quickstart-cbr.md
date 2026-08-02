@@ -7,7 +7,8 @@ explain which cases influenced the answer, and persist via
 
 Honesty: **not** RAG (document retrieval for generation), **not** a vector DB
 product, **not** a full cognitive CBR research suite. Core stays light
-(numpy / pandas / sklearn distances).
+(numpy / pandas / sklearn exact kNN); industry backends activate when extras
+are installed.
 
 **Go deeper:** [CBR deep](cbr-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md)
@@ -29,13 +30,16 @@ session = (
     .scale(method="standard")
 )
 
+# backend=None → industry ANN when buildml[cbr-industry] installed, else sklearn
+print(Session.cbr_capability_matrix()["default_backend_when_installed"])
+
 fit = session.fit_cbr(
     task="classification",
     metric="euclidean",
     reuse="distance_weighted",
     k=5,
 )
-print(fit.n_cases, fit.metric, fit.reuse)
+print(fit.backend, fit.n_cases, fit.metric, fit.reuse)
 
 neighbors = session.retrieve_cases(partition="test", k=3)
 print(neighbors.traces[0].neighbor_case_ids, neighbors.traces[0].distances)
@@ -52,9 +56,14 @@ session.save_cbr_bundle("artifacts/cbr_bundle")
 | In scope | Out of scope |
 | --- | --- |
 | Train-only case memory | Building memory from Session test |
-| euclidean / manhattan / cosine / mixed | Vector DB / ANN products |
+| sklearn exact kNN + industry ANN | Vector DB / Pinecone products |
+| Text embedding cases (`backend='embedding'`) | RAG `rag_generate` / citations |
 | Majority / distance-weighted / local Ridge | Full revise cognitive suite |
-| CaseTrace explanations | RAG `rag_generate` / citations |
-| `buildml.cbr_bundle.v1` | Session checkpoint embedding the plan |
+| CaseTrace explanations (all backends) | Session checkpoint embedding the plan |
+| `buildml.cbr_bundle.v1` | Calling CBR “tabular RAG” |
 
-Next Phase 2 item after this: **Imitation learning + Reinforcement learning**.
+Optional extras: `buildml[cbr-industry]` (hnswlib ANN), `buildml[rag|ssl]`
+(text embeddings), `buildml[torch]` (learned metric encoder). Included in
+`buildml[production]`.
+
+Next Phase 2 item after this: **Learning to rank (LTR)**.

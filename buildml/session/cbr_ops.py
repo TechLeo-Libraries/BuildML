@@ -30,6 +30,7 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_cbr_op(
     session,
     *,
+    backend: str | None = None,
     task: CbrTask | None = None,
     metric: CbrMetric = "euclidean",
     reuse: CbrReuseMode = "distance_weighted",
@@ -37,10 +38,14 @@ def fit_cbr_op(
     k: int = 5,
     columns: list[str] | None = None,
     categorical_columns: list[str] | None = None,
+    text_columns: list[str] | None = None,
+    text_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
     standardize: bool = True,
     distance_eps: float = 1e-8,
     random_state: int | None = 0,
     prefer_reduce_components: bool = True,
+    torch_epochs: int = 40,
+    device: str = "cpu",
 ) -> Any:
     """Build a case base from Session train.
 
@@ -53,6 +58,7 @@ def fit_cbr_op(
     plan, result = fit_cbr(
         session.dataset,
         session._split_plan,
+        backend=backend,  # type: ignore[arg-type]
         task=task,
         metric=metric,
         reuse=reuse,
@@ -60,11 +66,15 @@ def fit_cbr_op(
         k=k,
         columns=columns,
         categorical_columns=categorical_columns,
+        text_columns=text_columns,
+        text_model_name=text_model_name,
         standardize=standardize,
         distance_eps=distance_eps,
         random_state=random_state,
         prefer_reduce_components=prefer_reduce_components,
         reduce_plan=getattr(session, "_reduce_plan", None),
+        torch_epochs=torch_epochs,
+        device=device,
     )
     session._cbr_plan = plan
     session._cbr_fit_result = result
@@ -75,6 +85,7 @@ def fit_cbr_op(
     session._record(
         "fit_cbr",
         {
+            "backend": backend,
             "task": task,
             "metric": metric,
             "reuse": reuse,
@@ -82,10 +93,14 @@ def fit_cbr_op(
             "k": k,
             "columns": columns,
             "categorical_columns": categorical_columns,
+            "text_columns": text_columns,
+            "text_model_name": text_model_name,
             "standardize": standardize,
             "distance_eps": distance_eps,
             "random_state": random_state,
             "prefer_reduce_components": prefer_reduce_components,
+            "torch_epochs": torch_epochs,
+            "device": device,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),
@@ -98,6 +113,7 @@ def retrieve_cases_op(
     *,
     partition: PartitionOrAll = "test",
     k: int | None = None,
+    backend: str | None = None,
 ) -> Any:
     """Retrieve k nearest cases for a partition (no reuse)."""
     plan = getattr(session, "_cbr_plan", None)
@@ -109,11 +125,12 @@ def retrieve_cases_op(
         session._split_plan,
         partition=partition,
         k=k,
+        backend=backend,
     )
     session._cbr_retrieve_result = result
     session._record(
         "retrieve_cases",
-        {"partition": partition, "k": k},
+        {"partition": partition, "k": k, "backend": backend},
         warnings=tuple(result.warnings),
         result_summary=retrieve_result_summary(result),
     )
@@ -126,6 +143,7 @@ def predict_cbr_op(
     partition: PartitionOrAll = "test",
     k: int | None = None,
     return_traces: bool = True,
+    backend: str | None = None,
 ) -> Any:
     """Predict via retrieve + reuse (no case-base update)."""
     plan = getattr(session, "_cbr_plan", None)
@@ -138,6 +156,7 @@ def predict_cbr_op(
         partition=partition,
         k=k,
         return_traces=return_traces,
+        backend=backend,
     )
     session._cbr_predict_result = result
     session._record(
@@ -146,6 +165,7 @@ def predict_cbr_op(
             "partition": partition,
             "k": k,
             "return_traces": return_traces,
+            "backend": backend,
         },
         warnings=tuple(result.warnings),
         result_summary=predict_result_summary(result),

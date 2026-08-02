@@ -59,6 +59,7 @@ def evaluate_causal(
 
     frame = partition_frame(dataset, split_plan, resolved)
     validate_columns_present(frame, plan.assumptions)
+    backend = str(getattr(plan, "backend", "native") or "native")
 
     control, treated = plan.treatment_levels
     t = np.where(frame[plan.treatment_column].to_numpy() == treated, 1, 0).astype(int)
@@ -68,13 +69,13 @@ def evaluate_causal(
     metrics: dict[str, float] = {}
     warnings: list[str] = []
     disclosures = [
-        f"Causal evaluate on partition={resolved!r} with train-fitted nuisances.",
+        f"Causal evaluate on partition={resolved!r} (backend={backend}).",
         "Holdout metrics are predictive checks — not proof of unconfoundedness.",
         "Identification remains the caller-declared CausalAssumptions "
         "(EDA is associational and does not identify effects).",
     ]
 
-    if plan.mu0_ is not None and plan.mu1_ is not None:
+    if backend == "native" and plan.mu0_ is not None and plan.mu1_ is not None:
         mu0_hat = _predict_outcome(plan.mu0_, x)
         mu1_hat = _predict_outcome(plan.mu1_, x)
         y_hat = np.where(t == 1, mu1_hat, mu0_hat)
@@ -89,7 +90,7 @@ def evaluate_causal(
             except ValueError:
                 warnings.append("Could not compute outcome Brier score on holdout.")
 
-    if plan.propensity_ is not None:
+    if backend == "native" and plan.propensity_ is not None:
         e_hat = np.clip(
             _predict_propensity(plan.propensity_, x),
             plan.clip_propensity[0],
@@ -111,16 +112,26 @@ def evaluate_causal(
         if metrics["propensity_max"] >= plan.clip_propensity[1] - 1e-12:
             warnings.append("Propensity hit clip ceiling on holdout — overlap concern.")
 
-    ate, extras = estimate_ate_from_models(
-        x,
-        t,
-        y,
-        method=plan.method,
-        mu0=plan.mu0_,
-        mu1=plan.mu1_,
-        propensity=plan.propensity_,
-        clip_propensity=plan.clip_propensity,
-    )
+    if backend == "econml":
+        from buildml.causal.adapters.econml import score_econml_partition
+
+        ate, extras = score_econml_partition(plan, x, t, y)
+    elif backend == "native":
+        ate, extras = estimate_ate_from_models(
+            x,
+            t,
+            y,
+            method=plan.method,
+            mu0=plan.mu0_,
+            mu1=plan.mu1_,
+            propensity=plan.propensity_,
+            clip_propensity=plan.clip_propensity,
+        )
+    else:
+        ate = float(plan.ate)
+        extras = {}
+    if plan.cate_std is not None:
+        metrics["train_cate_std"] = float(plan.cate_std)
     for key, value in extras.items():
         metrics[key] = float(value)
 

@@ -310,29 +310,17 @@ def reduce_dimensions(
     session,
     *,
     columns: list[str] | None = None,
-    method: Literal['pca'] = "pca",
+    method: Literal["pca", "umap", "tsne"] = "pca",
     n_components: int | float | None = None,
     drop_input_columns: bool = True,
     prefix: str = "pc",
+    random_state: int | None = 0,
+    umap_n_neighbors: int = 15,
+    umap_min_dist: float = 0.1,
+    tsne_perplexity: float = 30.0,
+    tsne_learning_rate: str | float = "auto",
 ) -> Session:
-    """Fit dimensionality reduction on train and replace numeric columns.
-
-    Parameters
-    ----------
-    method:
-        Currently ``pca`` only.
-    n_components:
-        Integer count, float variance target in (0, 1], or ``None`` for the
-        maximum feasible components.
-    prefix:
-        Output column prefix (``pc_1``, ``pc_2``, …).
-
-    Notes
-    -----
-    **Leakage:** Requires a split. The rotation is learned on train only.
-    Explained variance is unsupervised and is not predictive utility.
-    Scale numeric inputs first when magnitudes differ.
-    """
+    """Fit dimensionality reduction on train and replace numeric columns."""
     session.assert_can_fit("train")
     plan = fit_reducer(
         session.dataset,
@@ -342,6 +330,11 @@ def reduce_dimensions(
         n_components=n_components,
         drop_input_columns=drop_input_columns,
         prefix=prefix,
+        random_state=random_state,
+        umap_n_neighbors=umap_n_neighbors,
+        umap_min_dist=umap_min_dist,
+        tsne_perplexity=tsne_perplexity,
+        tsne_learning_rate=tsne_learning_rate,
     )
     session._dataset, result = transform_reducer(session.dataset, plan)
     session._reduce_plan = plan

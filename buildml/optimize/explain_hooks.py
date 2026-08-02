@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from buildml.optimize.catalog import decision_capability_matrix
+
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     if fit_result is None:
@@ -11,6 +13,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "method": payload.get("method"),
+        "backend": payload.get("backend"),
         "partition": payload.get("partition"),
         "n_rows": payload.get("n_rows"),
         "threshold": payload.get("threshold"),
@@ -115,6 +118,7 @@ def decision_status(
         "enabled": enabled,
         "present": enabled or saw,
         "has_decision_plan": enabled,
+        "capability_matrix": decision_capability_matrix(),
         "method": None if plan is None else getattr(plan, "method", None),
         "partition_fitted": (
             None if plan is None else getattr(plan, "partition_fitted", None)
@@ -128,9 +132,11 @@ def decision_status(
         "boundary": (
             "Optimisation / decision helpers are a Session domain path: "
             "cost-sensitive thresholds, multiclass cost matrices, top-K / "
-            "knapsack-lite / LP allocation over ML scores. Not a general "
-            "operations-research platform. tune_threshold remains available "
-            "as the classical diagnostic sweep."
+            "knapsack / LP allocation over ML scores. Native scipy/numpy "
+            "fallback; PuLP/OR-Tools MIP knapsack, CVXPY LP, and XGB "
+            "cost-sensitive thresholds via buildml[optimize-industry]. "
+            "Not a general operations-research platform. tune_threshold "
+            "remains available as the classical diagnostic sweep."
         ),
     }
 

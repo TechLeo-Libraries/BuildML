@@ -36,9 +36,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Refuse partition='test' unless allow_test_tuning=True.",
             "threshold: wrap classical threshold_report; persist DecisionPlan.",
             "cost_matrix: Bayes action under user C.",
-            "topk/knapsack/lp_allocate: constrained selection over scores.",
-        ),
+                "topk/knapsack/lp_allocate: constrained selection over scores.",
+                "backend= routes to PuLP/OR-Tools MIP, CVXPY LP, or XGB/calibrated thresholds.",
+            ),
         parameters=(
+            _p(
+                "backend",
+                "native | pulp | ortools | cvxpy | calibrated | xgb",
+                "Solver/scorer backend (see decision_capability_matrix).",
+                None,
+            ),
             _p(
                 "method",
                 "threshold | cost_matrix | topk | knapsack | lp_allocate",

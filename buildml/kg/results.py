@@ -26,6 +26,8 @@ class KgPlan:
     n_relations: int
     entity_ids: tuple[Any, ...]
     relation_ids: tuple[Any, ...]
+    backend: str = "native"
+    embedding_kind: str = "real"
     entity_index_: dict[Any, int] = field(default_factory=dict, repr=False)
     relation_index_: dict[Any, int] = field(default_factory=dict, repr=False)
     # Train triple index arrays (entity/relation integer ids)
@@ -67,6 +69,8 @@ class KgPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
+            "embedding_kind": self.embedding_kind,
             "head_column": self.head_column,
             "relation_column": self.relation_column,
             "tail_column": self.tail_column,
@@ -99,6 +103,7 @@ class KgFitResult:
     head_column: str
     relation_column: str
     tail_column: str
+    backend: str = "native"
     epochs_run: int = 0
     final_loss: float | None = None
     neg_ratio: int = 1
@@ -108,6 +113,7 @@ class KgFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "n_train_triples": self.n_train_triples,
             "n_entities": self.n_entities,
             "n_relations": self.n_relations,
@@ -125,7 +131,7 @@ class KgFitResult:
     def show(self) -> None:
         loss = "n/a" if self.final_loss is None else f"{self.final_loss:.6f}"
         print(
-            f"KgFit · {self.method} · entities={self.n_entities} · "
+            f"KgFit · {self.backend}/{self.method} · entities={self.n_entities} · "
             f"relations={self.n_relations} · triples={self.n_train_triples} · "
             f"dim={self.embedding_dim} · loss={loss}"
         )

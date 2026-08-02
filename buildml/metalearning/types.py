@@ -5,7 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-MetaLearningMethod = Literal["prototypical", "warm_start"]
+MetaLearningBackend = Literal["sklearn", "torch", "industry"]
+
+MetaLearningMethod = Literal[
+    "prototypical",
+    "warm_start",
+    "prototypical_torch",
+    "maml",
+    "reptile",
+]
 
 MetaLearningBaseEstimator = Literal[
     "logistic_regression",
@@ -17,6 +25,7 @@ MetaLearningBaseEstimator = Literal[
 class MetaLearningConfig:
     """User-facing meta-learning knobs (serializable summary)."""
 
+    backend: MetaLearningBackend = "sklearn"
     method: MetaLearningMethod = "prototypical"
     task_column: str | None = None
     columns: tuple[str, ...] | None = None
@@ -28,9 +37,17 @@ class MetaLearningConfig:
     random_state: int | None = 0
     prefer_reduce_components: bool = True
     task_holdout_fraction: float = 0.25
+    meta_epochs: int = 40
+    inner_lr: float = 0.05
+    inner_steps: int = 5
+    meta_lr: float = 1e-3
+    embed_dim: int = 32
+    hidden_dim: int = 64
+    device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "task_column": self.task_column,
             "columns": None if self.columns is None else list(self.columns),
@@ -42,4 +59,11 @@ class MetaLearningConfig:
             "random_state": self.random_state,
             "prefer_reduce_components": self.prefer_reduce_components,
             "task_holdout_fraction": self.task_holdout_fraction,
+            "meta_epochs": self.meta_epochs,
+            "inner_lr": self.inner_lr,
+            "inner_steps": self.inner_steps,
+            "meta_lr": self.meta_lr,
+            "embed_dim": self.embed_dim,
+            "hidden_dim": self.hidden_dim,
+            "device": self.device,
         }

@@ -24,18 +24,24 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "fit_kg",
         OperationKind.MODEL,
         "Fit a knowledge-graph embedding model on train triples.",
-        "TransE or DistMult with uniform negative sampling — train only.",
+        "native: numpy TransE/DistMult; pykeen: RotatE/ComplEx when installed.",
         "KG fit step.",
         (
             "Require SplitPlan.",
             "Resolve head_column / relation_column / tail_column.",
             "Materialize unique train triples; build entity/relation vocab.",
-            "Train embeddings; store train adjacency for query_kg.",
+            "Train embeddings via native or PyKEEN backend; store train adjacency.",
         ),
         parameters=(
             _p(
+                "backend",
+                "native | pykeen",
+                "Embedding backend (pykeen requires buildml[kg-industry]).",
+                "native",
+            ),
+            _p(
                 "method",
-                "transe | distmult",
+                "transe | distmult | rotate | complex",
                 "Embedding model family.",
                 "transe",
             ),

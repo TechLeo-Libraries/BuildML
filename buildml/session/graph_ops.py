@@ -26,6 +26,7 @@ from buildml.graph.types import (
     GraphMode,
     GraphSpec,
     GraphTask,
+    PyGModel,
 )
 
 PartitionOrAll = PartitionName | Literal["all"]
@@ -100,6 +101,8 @@ def fit_graph_op(
     dropout: float = 0.1,
     random_state: int | None = 0,
     include_graph_metrics: bool = True,
+    pyg_model: PyGModel = "gcn",
+    heads: int = 4,
 ) -> Any:
     """Fit graph node classification on Session train nodes.
 
@@ -108,7 +111,8 @@ def fit_graph_op(
     **Leakage:** Requires a split. Labels from train only.
     **Inductive (default):** train-induced subgraph for fit.
     **Transductive:** full topology; train-label-only supervision (disclosed).
-    Classical needs ``buildml[graph]``; GCN needs ``buildml[torch]``.
+    Classical needs ``buildml[graph]``; GCN needs ``buildml[torch]``;
+    PyG needs ``buildml[graph-pyg]`` (``pyg_model``: gcn/graphsage/gat).
     """
     spec = getattr(session, "_graph_spec", None)
     if spec is None:
@@ -133,6 +137,8 @@ def fit_graph_op(
         dropout=dropout,
         random_state=random_state,
         include_graph_metrics=include_graph_metrics,
+        pyg_model=pyg_model,
+        heads=heads,
     )
     session._graph_plan = plan
     session._graph_fit_result = result
@@ -154,6 +160,8 @@ def fit_graph_op(
             "dropout": dropout,
             "random_state": random_state,
             "include_graph_metrics": include_graph_metrics,
+            "pyg_model": pyg_model,
+            "heads": heads,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),

@@ -12,6 +12,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "method": payload.get("method"),
+        "backend": payload.get("backend"),
         "n_train_interactions": payload.get("n_train_interactions"),
         "n_users": payload.get("n_users"),
         "n_items": payload.get("n_items"),
@@ -80,6 +81,7 @@ def recommender_status(
         disclosures.extend(
             [
                 f"RecommenderPlan method={getattr(plan, 'method', None)}, "
+                f"backend={getattr(plan, 'backend', None)}, "
                 f"users={getattr(plan, 'n_users', None)}, "
                 f"items={getattr(plan, 'n_items', None)}, "
                 f"feedback={getattr(plan, 'feedback', None)}.",
@@ -112,6 +114,7 @@ def recommender_status(
         "present": enabled or saw,
         "has_recommender_plan": enabled,
         "method": None if plan is None else getattr(plan, "method", None),
+        "backend": None if plan is None else getattr(plan, "backend", None),
         "n_users": None if plan is None else getattr(plan, "n_users", None),
         "n_items": None if plan is None else getattr(plan, "n_items", None),
         "feedback": None if plan is None else getattr(plan, "feedback", None),

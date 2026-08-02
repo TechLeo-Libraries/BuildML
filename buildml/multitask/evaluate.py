@@ -114,13 +114,22 @@ def evaluate_multitask(
         plan.target_columns,
         task=plan.task,
         label_encoders=plan.label_encoders_,
+        task_kinds=plan.task_kinds_ or None,
     )
 
-    if plan.task == "classification":
+    task_kinds = plan.task_kinds_ or {
+        col: plan.task for col in plan.target_columns
+    }
+
+    if plan.task in {"classification", "mixed"} or any(
+        task_kinds.get(col) == "classification" for col in plan.target_columns
+    ):
         accs: list[float] = []
         f1s: list[float] = []
         f1ws: list[float] = []
         for col in plan.target_columns:
+            if task_kinds.get(col) != "classification":
+                continue
             y_true = frame[col].astype(str).to_numpy()
             y_pred = np.asarray([str(v) for v in preds[col]])
             task_metrics = {
@@ -132,20 +141,28 @@ def evaluate_multitask(
                     f1_score(y_true, y_pred, average="weighted", zero_division=0)
                 ),
             }
-            per_task[col] = task_metrics
+            per_task[col] = {**per_task.get(col, {}), **task_metrics}
             accs.append(task_metrics["accuracy"])
             f1s.append(task_metrics["f1_macro"])
             f1ws.append(task_metrics["f1_weighted"])
-        metrics = {
-            "mean_accuracy": float(np.mean(accs)),
-            "mean_f1_macro": float(np.mean(f1s)),
-            "mean_f1_weighted": float(np.mean(f1ws)),
-        }
-    else:
+        if accs:
+            metrics.update(
+                {
+                    "mean_accuracy": float(np.mean(accs)),
+                    "mean_f1_macro": float(np.mean(f1s)),
+                    "mean_f1_weighted": float(np.mean(f1ws)),
+                }
+            )
+
+    if plan.task in {"regression", "mixed"} or any(
+        task_kinds.get(col) == "regression" for col in plan.target_columns
+    ):
         maes: list[float] = []
         rmses: list[float] = []
         r2s: list[float] = []
         for col in plan.target_columns:
+            if task_kinds.get(col) != "regression":
+                continue
             y_true = frame[col].to_numpy(dtype=float)
             y_hat = np.asarray(preds[col], dtype=float)
             task_metrics = {
@@ -153,15 +170,18 @@ def evaluate_multitask(
                 "rmse": float(np.sqrt(mean_squared_error(y_true, y_hat))),
                 "r2": float(r2_score(y_true, y_hat)),
             }
-            per_task[col] = task_metrics
+            per_task[col] = {**per_task.get(col, {}), **task_metrics}
             maes.append(task_metrics["mae"])
             rmses.append(task_metrics["rmse"])
             r2s.append(task_metrics["r2"])
-        metrics = {
-            "mean_mae": float(np.mean(maes)),
-            "mean_rmse": float(np.mean(rmses)),
-            "mean_r2": float(np.mean(r2s)),
-        }
+        if maes:
+            metrics.update(
+                {
+                    "mean_mae": float(np.mean(maes)),
+                    "mean_rmse": float(np.mean(rmses)),
+                    "mean_r2": float(np.mean(r2s)),
+                }
+            )
 
     return MultiTaskEvalResult(
         partition=part_name,

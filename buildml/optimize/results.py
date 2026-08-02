@@ -62,6 +62,8 @@ class DecisionPlan:
     cost_scale_: float = 1.0
     # Bayes action lookup is recomputed from cost_matrix + proba at apply time
     cost_matrix_: np.ndarray | None = field(default=None, repr=False)
+    # Industry threshold backends (xgb / calibrated) persist auxiliary estimators
+    aux_estimator_: Any | None = field(default=None, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -120,10 +122,12 @@ class DecisionFitResult:
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     metrics: dict[str, float] = field(default_factory=dict)
+    backend: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "partition": self.partition,
             "n_rows": self.n_rows,
             "threshold": self.threshold,

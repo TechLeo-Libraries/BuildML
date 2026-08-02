@@ -11,6 +11,7 @@ from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.ingest.detect import schema_from_dataframe
+from buildml.synthetic.adapters.sdv import SdvTabularGenerator
 from buildml.synthetic.models import (
     BootstrapGenerator,
     GaussianCopulaGenerator,
@@ -47,6 +48,10 @@ def sample_synthetic(
         )
     elif isinstance(generator, SmoteGenerator):
         frame = generator.sample(n_rows, random_state=random_state)
+    elif isinstance(generator, SdvTabularGenerator):
+        frame = generator.sample(
+            n_rows, random_state=random_state, condition=condition
+        )
     else:
         raise ValidationError(
             f"Unsupported generator type on SynthesizerPlan: {type(generator)!r}."

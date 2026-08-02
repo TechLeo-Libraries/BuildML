@@ -1,0 +1,171 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "native": {
+        "available": true,
+        "extra": null,
+        "estimators": [
+          "bayesian_ridge",
+          "gaussian_process_regressor",
+          "gaussian_process_classifier",
+          "gaussian_nb"
+        ],
+        "tasks": [
+          "regression",
+          "classification"
+        ],
+        "uncertainty": [
+          "posterior_std (BayesianRidge/GPR)",
+          "predict_proba (GPC/GaussianNB)",
+          "split_conformal (in-tree absolute-residual / 1\u2212p(y))"
+        ],
+        "conformal": "in-tree split conformal carved from Session train only"
+      },
+      "mapie": {
+        "available": true,
+        "extra": "probabilistic-industry",
+        "methods": [
+          "split",
+          "cv_plus",
+          "jackknife_plus"
+        ],
+        "tasks": [
+          "regression",
+          "classification"
+        ],
+        "uncertainty": [
+          "split conformal (prefit + train carve)",
+          "cv_plus (cross-validation+ on train)",
+          "jackknife_plus (when MAPIE supports prefit jackknife+)"
+        ],
+        "notes": "jackknife_plus via MAPIE method='plus' with cv='prefit' carve"
+      },
+      "ngboost": {
+        "available": true,
+        "extra": "probabilistic-industry",
+        "estimators": [
+          "ngboost_regressor",
+          "ngboost_classifier"
+        ],
+        "tasks": [
+          "regression",
+          "classification"
+        ],
+        "uncertainty": [
+          "natural-gradient boosting predictive distributions",
+          "NLL / CRPS from pred_dist",
+          "optional in-tree split conformal overlay"
+        ]
+      }
+    },
+    "evaluation_metrics": {
+      "regression": [
+        "mae",
+        "rmse",
+        "r2",
+        "nll",
+        "crps",
+        "interval_coverage",
+        "mean_interval_width",
+        "interval_score"
+      ],
+      "classification": [
+        "accuracy",
+        "f1_macro",
+        "f1_weighted",
+        "nll",
+        "brier",
+        "ece",
+        "set_coverage",
+        "mean_set_size"
+      ]
+    },
+    "interval_methods": [
+      "posterior_std",
+      "split_conformal",
+      "both",
+      "none",
+      "mapie_cv_plus",
+      "mapie_jackknife_plus"
+    ],
+    "default_backend_when_installed": "mapie",
+    "default_mapie_method": "split",
+    "install_hints": {
+      "probabilistic-industry": "pip install 'buildml[probabilistic-industry]'  # MAPIE conformal (split/CV+/jackknife+) + NGBoost uncertainty"
+    },
+    "non_goals": [
+      "PyMC / Stan / NumPyro MCMC platform",
+      "Bayesian deep nets",
+      "Full MAPIE algorithm zoo beyond split/CV+/jackknife+"
+    ],
+    "industry_extra_present": true,
+    "classical_calibration_unchanged": "Session.calibration() remains for classical fit(...) classifiers; evaluate_probabilistic reports NLL/Brier/ECE for probabilistic plans."
+  },
+  "runs": [
+    {
+      "backend": "native",
+      "estimator": "bayesian_ridge",
+      "task": "regression",
+      "n_fit_rows": 96,
+      "n_conformal_calib_rows": 24,
+      "validation_interval_coverage": 0.9333333333333333,
+      "validation_nll": 0.3175546215459563,
+      "validation_crps": 0.1843661548257729,
+      "test_interval_coverage": 0.88,
+      "test_mean_interval_width": 1.2155848092830697,
+      "interval_method": "both"
+    },
+    {
+      "backend": "native",
+      "estimator": "gaussian_process_regressor",
+      "task": "regression",
+      "n_fit_rows": 96,
+      "n_conformal_calib_rows": 24,
+      "validation_interval_coverage": 0.9,
+      "validation_nll": 0.44463674697162076,
+      "validation_crps": 0.21519958678314816,
+      "test_interval_coverage": 0.92,
+      "test_mean_interval_width": 1.414490229987619,
+      "interval_method": "both"
+    },
+    {
+      "backend": "mapie",
+      "estimator": "split",
+      "task": "regression",
+      "n_fit_rows": 96,
+      "n_conformal_calib_rows": 24,
+      "validation_interval_coverage": 0.9333333333333333,
+      "validation_nll": null,
+      "validation_crps": null,
+      "test_interval_coverage": 0.88,
+      "test_mean_interval_width": 1.2393153853721364,
+      "interval_method": "mapie"
+    },
+    {
+      "backend": "mapie",
+      "estimator": "cv_plus",
+      "task": "regression",
+      "n_fit_rows": 120,
+      "n_conformal_calib_rows": 0,
+      "validation_interval_coverage": 0.9333333333333333,
+      "validation_nll": null,
+      "validation_crps": null,
+      "test_interval_coverage": 0.88,
+      "test_mean_interval_width": 1.2829643023369577,
+      "interval_method": "mapie"
+    },
+    {
+      "backend": "ngboost",
+      "estimator": "ngboost_regressor",
+      "task": "regression",
+      "n_fit_rows": 96,
+      "n_conformal_calib_rows": 24,
+      "validation_interval_coverage": 0.9,
+      "validation_nll": 7.509259574722124,
+      "validation_crps": 0.36448627076747164,
+      "test_interval_coverage": 0.88,
+      "test_mean_interval_width": 1.8525624899982966,
+      "interval_method": "split_conformal"
+    }
+  ]
+}

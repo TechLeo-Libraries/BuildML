@@ -19,7 +19,7 @@ from buildml.semisupervised.explain_hooks import (
 )
 from buildml.semisupervised.fit import fit_semisupervised
 from buildml.semisupervised.predict import predict_semisupervised
-from buildml.semisupervised.types import SemiSupervisedMethod
+from buildml.semisupervised.types import SemiSupervisedBackend, SemiSupervisedMethod
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -27,6 +27,7 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_semisupervised_op(
     session,
     *,
+    backend: SemiSupervisedBackend | None = None,
     method: SemiSupervisedMethod = "label_propagation",
     columns: list[str] | None = None,
     random_state: int | None = 0,
@@ -39,6 +40,14 @@ def fit_semisupervised_op(
     criterion: str = "threshold",
     k_best: int = 10,
     max_self_train_iter: int = 10,
+    epochs: int = 40,
+    batch_size: int = 64,
+    learning_rate: float = 1e-3,
+    consistency_weight: float = 1.0,
+    mixup_alpha: float = 0.75,
+    device: str = "cpu",
+    text_column: str | None = None,
+    text_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
     unlabeled_marker: Any = None,
     prefer_reduce_components: bool = True,
 ) -> Any:
@@ -53,6 +62,7 @@ def fit_semisupervised_op(
     plan, result = fit_semisupervised(
         session.dataset,
         session._split_plan,
+        backend=backend,
         method=method,
         columns=columns,
         random_state=random_state,
@@ -65,6 +75,14 @@ def fit_semisupervised_op(
         criterion=criterion,
         k_best=k_best,
         max_self_train_iter=max_self_train_iter,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        consistency_weight=consistency_weight,
+        mixup_alpha=mixup_alpha,
+        device=device,
+        text_column=text_column,
+        text_model_name=text_model_name,
         unlabeled_marker=unlabeled_marker,
         prefer_reduce_components=prefer_reduce_components,
         reduce_plan=getattr(session, "_reduce_plan", None),
@@ -76,6 +94,7 @@ def fit_semisupervised_op(
     session._record(
         "fit_semisupervised",
         {
+            "backend": backend,
             "method": method,
             "columns": columns,
             "kernel": kernel,
@@ -87,6 +106,14 @@ def fit_semisupervised_op(
             "criterion": criterion,
             "k_best": k_best,
             "max_self_train_iter": max_self_train_iter,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "learning_rate": learning_rate,
+            "consistency_weight": consistency_weight,
+            "mixup_alpha": mixup_alpha,
+            "device": device,
+            "text_column": text_column,
+            "text_model_name": text_model_name,
             "unlabeled_marker": unlabeled_marker,
             "prefer_reduce_components": prefer_reduce_components,
         },
@@ -182,6 +209,7 @@ def save_semisupervised_bundle_op(session, path: str | Path) -> Path:
         result_summary={
             "path": str(out),
             "method": plan.method,
+            "backend": getattr(plan, "backend", "sklearn"),
             "n_labeled_train": plan.n_labeled_train,
             "n_unlabeled_train": plan.n_unlabeled_train,
         },
@@ -198,7 +226,7 @@ def load_semisupervised_bundle_op(session, path: str | Path) -> Any:
     session._semisupervised_eval_result = None
     session._record(
         "load_semisupervised_bundle",
-        {"path": str(path), "method": plan.method},
+        {"path": str(path), "method": plan.method, "backend": getattr(plan, "backend", "sklearn")},
         result_summary=plan.to_dict(),
     )
     return session

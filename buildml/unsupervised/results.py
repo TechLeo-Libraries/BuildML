@@ -13,7 +13,7 @@ class ClusterPlan:
     """Train-fitted clustering plan (estimator + feature contract).
 
     Distinct from classical preprocess plans (``ReducePlan``) and from Session
-    checkpoints. Persist via ``buildml.unsupervised_bundle.v1``.
+    checkpoints. Persist via ``buildml.unsupervised_bundle.v2`` (v1 loadable).
     """
 
     method: str
@@ -67,6 +67,7 @@ class ClusterFitResult:
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     inertia: float | None = None
+    diagnostics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -80,6 +81,7 @@ class ClusterFitResult:
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
             "inertia": self.inertia,
+            "diagnostics": dict(self.diagnostics),
         }
 
     def show(self) -> None:
@@ -134,6 +136,7 @@ class ClusterEvalResult:
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     recommendations: tuple[str, ...] = ()
+    diagnostics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -146,6 +149,7 @@ class ClusterEvalResult:
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
             "recommendations": list(self.recommendations),
+            "diagnostics": dict(self.diagnostics),
         }
 
     def show(self) -> None:

@@ -1,32 +1,16 @@
 """Unsupervised learning domain (clustering + train-fit / holdout-assign path).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**):
-  1. Unsupervised learning — clustering Session path integrating with
-     ``Session.reduce_dimensions`` (PCA). **This module.**
-  2. Ensemble learning — native stacking/voting/blending (see
-     ``buildml.ensemble``).
-  3. AutoML — pipeline/model search beyond HPO (done; see ``buildml.automl``).
-  4. Time-series forecasting — done (see ``buildml.forecasting``).
-  5. Anomaly / fraud detection — done (see ``buildml.anomaly``).
+Industry-depth coverage (Phase R2):
+  - Clustering: k-means, agglomerative, DBSCAN, GMM+BIC, HDBSCAN, spectral,
+    OPTICS, mean-shift, DEC/IDEC (Torch).
+  - Reduction: PCA (core), UMAP/t-SNE (viz + cluster pipeline input).
+  - Validation: silhouette, Davies–Bouldin, Calinski–Harabasz, stability,
+    elbow/inertia, transductive disclosures.
 
-Phase 2 progress:
-  1. Semi-supervised — done (``buildml.semisupervised``).
-  2. Self-supervised hooks — done (``buildml.selfsupervised``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual — done (``buildml.online``); next = multi-task.
-  Later: graph (causal done in ``buildml.causal``; probabilistic in ``buildml.probabilistic``)
-  (EDA stays associational), graph, evolutionary, symbolic, CBR, IL+RL, TDA,
-  recommenders / LTR / KG / optimisation / synthetic / NLP-CV deepenings.
-  Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Clustering uses
-core sklearn — no optional extra required for ``import buildml``.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Industry defaults
+when extras installed:
+  - ``buildml[unsupervised]`` → hdbscan, umap-learn
+  - ``buildml[torch]`` → DEC/IDEC deep clustering
 
 Lazy imports — core never grows heavy unsupervised stacks.
 """
@@ -37,6 +21,8 @@ from typing import Any
 
 __all__ = [
     "BUNDLE_FORMAT",
+    "BUNDLE_FORMAT_V1",
+    "BUNDLE_FORMAT_V2",
     "CHECKPOINT_BOUNDARY",
     "AssignStrategy",
     "ClusterAssignResult",
@@ -45,9 +31,12 @@ __all__ = [
     "ClusterFitResult",
     "ClusterMethod",
     "ClusterPlan",
+    "ReduceMethod",
     "assign_clusters",
     "evaluate_clustering",
     "fit_clusterer",
+    "list_cluster_methods",
+    "list_reduce_methods",
     "load_unsupervised_bundle",
     "save_unsupervised_bundle",
     "unsupervised_status",
@@ -56,7 +45,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
-    if name in {"ClusterMethod", "AssignStrategy", "ClusterConfig"}:
+    if name in {"ClusterMethod", "AssignStrategy", "ClusterConfig", "ReduceMethod"}:
         from buildml.unsupervised import types as types_mod
 
         return getattr(types_mod, name)
@@ -77,8 +66,14 @@ def __getattr__(name: str) -> Any:
         from buildml.unsupervised.evaluate import evaluate_clustering
 
         return evaluate_clustering
+    if name in {"list_cluster_methods", "list_reduce_methods"}:
+        from buildml.unsupervised import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "BUNDLE_FORMAT",
+        "BUNDLE_FORMAT_V1",
+        "BUNDLE_FORMAT_V2",
         "CHECKPOINT_BOUNDARY",
         "save_unsupervised_bundle",
         "load_unsupervised_bundle",

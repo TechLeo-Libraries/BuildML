@@ -21,6 +21,8 @@ class ImitationPlan:
     action_column: str
     n_train_rows: int
     classes_: tuple[Any, ...] | None
+    backend: str = "sklearn"
+    method: str | None = None
     label_encoder_: Any = field(repr=False, default=None)
     estimator_: Any = field(repr=False, default=None)
     disclosures: tuple[str, ...] = ()
@@ -34,7 +36,9 @@ class ImitationPlan:
             "kind": "imitation",
             "mode": "behavioral_cloning",
             "task": self.task,
+            "backend": self.backend,
             "estimator": self.estimator,
+            "method": self.method,
             "columns": list(self.columns),
             "action_column": self.action_column,
             "n_train_rows": self.n_train_rows,
@@ -56,6 +60,8 @@ class ImitationFitResult:
     n_train_rows: int
     columns: tuple[str, ...]
     action_column: str
+    backend: str = "sklearn"
+    method: str | None = None
     classes: tuple[Any, ...] | None = None
     train_score: float | None = None
     disclosures: tuple[str, ...] = ()
@@ -64,7 +70,9 @@ class ImitationFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "task": self.task,
+            "backend": self.backend,
             "estimator": self.estimator,
+            "method": self.method,
             "n_train_rows": self.n_train_rows,
             "columns": list(self.columns),
             "action_column": self.action_column,
@@ -135,6 +143,7 @@ class RlPlan:
     n_train_rows: int
     n_arms: int
     arms_: tuple[Any, ...]
+    backend: str = "sklearn"
     label_encoder_: Any = field(repr=False, default=None)
     policy_: Any = field(repr=False, default=None)
     propensity_model_: Any = field(repr=False, default=None)
@@ -150,6 +159,7 @@ class RlPlan:
         return {
             "kind": "rl",
             "mode": self.mode,
+            "backend": self.backend,
             "algorithm": self.algorithm,
             "columns": list(self.columns),
             "action_column": self.action_column,
@@ -176,6 +186,7 @@ class RlFitResult:
     n_train_rows: int
     n_arms: int
     columns: tuple[str, ...]
+    backend: str = "sklearn"
     action_column: str | None = None
     reward_column: str | None = None
     env_id: str | None = None
@@ -186,6 +197,7 @@ class RlFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "mode": self.mode,
+            "backend": self.backend,
             "algorithm": self.algorithm,
             "n_train_rows": self.n_train_rows,
             "n_arms": self.n_arms,

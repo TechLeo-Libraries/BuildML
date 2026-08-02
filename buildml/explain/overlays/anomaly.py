@@ -28,13 +28,19 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         (
             "Require a SplitPlan and refuse fit without train.",
             "Resolve numeric columns; prefer ReducePlan component columns when present.",
-            "Fit isolation_forest, lof, one_class_svm, or supervised_hgb per mode.",
+            "Fit isolation_forest, lof, one_class_svm, PyOD, torch AE, or supervised scorers per mode.",
             "Calibrate a disclosed threshold; record train alert rate and score stats.",
         ),
         parameters=(
             _p(
+                "backend",
+                "sklearn | pyod | torch",
+                "Detector backend (see anomaly_capability_matrix).",
+                None,
+            ),
+            _p(
                 "method",
-                "isolation_forest | lof | one_class_svm | supervised_hgb",
+                "catalog method for backend or supervised scorer",
                 "Detector / scorer algorithm.",
                 "isolation_forest",
             ),

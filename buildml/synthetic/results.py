@@ -24,6 +24,7 @@ class SynthesizerPlan:
     column_specs: tuple[ColumnSchemaSpec, ...]
     n_rows_fitted: int
     random_state: int
+    backend: str = "native"
     config: dict[str, Any] = field(default_factory=dict)
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -35,6 +36,7 @@ class SynthesizerPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "partition_fitted": self.partition_fitted,
             "columns": list(self.columns),
             "column_specs": [spec.to_dict() for spec in self.column_specs],
@@ -57,6 +59,7 @@ class SynthesizerFitResult:
     partition: str
     n_rows: int
     n_columns: int
+    backend: str = "native"
     column_kinds: dict[str, str] = field(default_factory=dict)
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -65,6 +68,7 @@ class SynthesizerFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "partition": self.partition,
             "n_rows": self.n_rows,
             "n_columns": self.n_columns,

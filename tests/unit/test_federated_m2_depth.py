@@ -54,6 +54,7 @@ def test_low_level_logistic_fedavg() -> None:
     plan, fit = fit_federated(
         session.dataset,
         session.split_plan,
+        backend="native",
         method="fedavg",
         estimator="logistic_regression",
         n_rounds=3,
@@ -86,6 +87,7 @@ def test_fedprox_requires_mu() -> None:
         fit_federated(
             session.dataset,
             session.split_plan,
+            backend="native",
             method="fedprox",
             mu=0.0,
             reduce_plan=session._reduce_plan,
@@ -97,6 +99,7 @@ def test_fedprox_runs() -> None:
     plan, fit = fit_federated(
         session.dataset,
         session.split_plan,
+        backend="native",
         method="fedprox",
         estimator="sgd_classifier",
         mu=0.05,
@@ -128,6 +131,7 @@ def test_explicit_client_column() -> None:
     plan, fit = fit_federated(
         session.dataset,
         session.split_plan,
+        backend="native",
         method="fedavg",
         client_column="client_id",
         n_rounds=2,
@@ -167,6 +171,7 @@ def test_regression_ridge_path() -> None:
     plan, fit = fit_federated(
         session.dataset,
         session.split_plan,
+        backend="native",
         method="fedavg",
         estimator="ridge",
         n_rounds=3,
@@ -188,6 +193,6 @@ def test_explain_before_prereq() -> None:
     session = _session()
     before = session.explain("evaluate_federated", moment="before")
     assert before.prerequisite_status.get("federated-plan") is False
-    session.fit_federated(method="fedavg", n_rounds=2)
+    session.fit_federated(backend="native", method="fedavg", n_rounds=2)
     after = session.explain("evaluate_federated", moment="before")
     assert after.prerequisite_status.get("federated-plan") is True

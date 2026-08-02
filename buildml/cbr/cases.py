@@ -83,6 +83,12 @@ class CaseBase:
     numeric_scale_: np.ndarray | None = field(repr=False, default=None)
     numeric_ranges_: np.ndarray | None = field(repr=False, default=None)
     cat_vocabularies_: tuple[tuple[Any, ...], ...] = ()
+    # Industry / embedding / torch retrieval artifacts (train-fit; never refit).
+    search_matrix_: np.ndarray | None = field(repr=False, default=None)
+    ann_index_: Any = field(repr=False, default=None)
+    ann_library_: str | None = None
+    text_embedder_id_: str | None = None
+    torch_encoder_: Any = field(repr=False, default=None)
     disclosures: tuple[str, ...] = ()
     n_retained: int = 0
 

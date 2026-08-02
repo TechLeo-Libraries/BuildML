@@ -1,0 +1,134 @@
+{
+  "benchmark": "rl_policy_return",
+  "capability_matrix": {
+    "imitation_backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "logistic_regression",
+          "hist_gradient_boosting",
+          "ridge",
+          "hist_gradient_boosting_regressor"
+        ],
+        "modality": "tabular",
+        "notes": "Behavioral cloning from demonstration tables on train only \u2014 always available sklearn fallback."
+      },
+      "industry": {
+        "available": false,
+        "extra": "rl-industry",
+        "methods": [
+          "bc_mlp",
+          "gail_lite"
+        ],
+        "modality": "tabular (+ env for gail_lite)",
+        "notes": "MLP BC via imitation+SB3 (bc_mlp) and small-budget GAIL-lite when env-compatible demos are provided (buildml[rl-industry])."
+      }
+    },
+    "rl_backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "modes": [
+          "contextual_bandit"
+        ],
+        "algorithms": [
+          "linucb",
+          "epsilon_greedy",
+          "softmax"
+        ],
+        "modality": "tabular",
+        "notes": "Contextual bandits (LinUCB / epsilon-greedy / softmax) on logged train rows; offline DM/IPS evaluation disclosed."
+      },
+      "native": {
+        "available": true,
+        "extra": "rl",
+        "modes": [
+          "gym_reinforce"
+        ],
+        "algorithms": [
+          "reinforce_linear_softmax"
+        ],
+        "modality": "gymnasium",
+        "notes": "REINFORCE-lite linear softmax on small discrete Gymnasium envs (buildml[rl])."
+      },
+      "industry": {
+        "available": false,
+        "extra": "rl-industry",
+        "modes": [
+          "gym_sb3"
+        ],
+        "algorithms": [
+          "ppo",
+          "dqn",
+          "a2c"
+        ],
+        "modality": "gymnasium",
+        "notes": "Stable-Baselines3 PPO/DQN/A2C on honest small Gymnasium sims (buildml[rl-industry]). Not robotics/AV/multi-agent."
+      }
+    },
+    "evaluation": {
+      "imitation_metrics_classification": [
+        "accuracy",
+        "macro_f1",
+        "weighted_f1"
+      ],
+      "imitation_metrics_regression": [
+        "rmse",
+        "mae",
+        "r2"
+      ],
+      "bandit_offline_metrics": [
+        "direct_method",
+        "ips",
+        "action_match_rate",
+        "mean_logged_reward_on_match"
+      ],
+      "gym_metrics": [
+        "mean_return",
+        "std_return",
+        "n_eval_episodes"
+      ],
+      "holdout_rule": "BC/bandit fit on train only; bandit holdout is offline DM/IPS.",
+      "offline_rl_disclosure": "BuildML does not ship batch offline RL (CQL/IQL/Decision Transformer). Bandit IPS/DM and imitation-from-demos are disclosed offline paths."
+    },
+    "default_imitation_backend_when_installed": "sklearn",
+    "default_rl_backend_when_installed": "native",
+    "default_rl_mode_when_installed": "gym_reinforce",
+    "install_hints": {
+      "rl": "pip install 'buildml[rl]'  # Gymnasium REINFORCE-lite teaching loop",
+      "rl-industry": "pip install 'buildml[rl-industry]'  # SB3 PPO/DQN/A2C + imitation BC/GAIL-lite"
+    },
+    "non_goals": [
+      "MuJoCo / robotics product stacks",
+      "Autonomous-vehicle / multi-agent world sims",
+      "Ray RLlib integration (prefer clean SB3 adapter)",
+      "Batch offline RL without explicit offline-RL disclosure"
+    ],
+    "gymnasium_present": true,
+    "stable_baselines3_present": true,
+    "imitation_present": false,
+    "rl_industry_extra_present": false
+  },
+  "env_id": "CartPole-v1",
+  "results": [
+    {
+      "backend": "sklearn",
+      "method": "behavioral_cloning",
+      "train_score": 0.9963235294117647,
+      "eval_accuracy": 1.0,
+      "eval_macro_f1": 1.0,
+      "n_train_rows": 272
+    },
+    {
+      "backend": "native",
+      "method": "reinforce_linear_softmax",
+      "train_mean_return": 55.875,
+      "eval_mean_return": 126.9,
+      "n_episodes": 120
+    }
+  ],
+  "bc_eval_accuracy": 1.0,
+  "sb3_eval_mean_return": null,
+  "floor_note": "SB3 PPO should exceed sklearn BC demonstration accuracy as an env return metric when buildml[rl-industry] is installed \u2014 different metrics (offline BC accuracy vs online env return)."
+}

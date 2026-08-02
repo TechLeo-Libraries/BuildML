@@ -32,11 +32,15 @@ def test_session_rag_vertical_slice(tmp_path) -> None:
     session = Session()
     session.rag_ingest_corpus(docs)
     session.rag_chunk(size=160, overlap=32)
-    session.rag_embed_and_index()  # default hashing embedder
+    session.rag_embed_and_index(embedder="hashing")
     assert session.rag_index_result is not None
     assert session.rag_index_result.embedder_id == "buildml.hashing_embed.v1"
 
-    retrieved = session.rag_retrieve("retrieval corpus contamination indexed answers", k=3)
+    retrieved = session.rag_retrieve(
+        "retrieval corpus contamination indexed answers",
+        k=3,
+        mode="dense",
+    )
     assert len(retrieved.hits) == 3
     assert retrieved.hits[0].doc_id in {"ml", "rag", "leak"}
 

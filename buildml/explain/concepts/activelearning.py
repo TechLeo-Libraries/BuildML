@@ -87,12 +87,16 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
         ),
         _note(
             key="activelearning-uncertainty",
-            title="Uncertainty and committee query strategies",
-            summary="least_confidence / margin / entropy use predict_proba; committee uses bagged vote entropy; expected_model_change_lite is a gradient-magnitude proxy.",
+            title="Uncertainty, committee, CoreSet, and BALD query strategies",
+            summary=(
+                "sklearn: least_confidence / margin / entropy / committee / EMC-lite; "
+                "industry: CoreSet + QBC KL; torch: BALD + MC-dropout."
+            ),
             definition=(
                 "Uncertainty sampling ranks unlabeled points by model doubt. "
                 "Query-by-committee ranks by disagreement among bagged clones. "
-                "expected_model_change_lite scores ||x||(1-p_max) as a lite proxy."
+                "Industry CoreSet diversifies the pool via scikit-activeml. "
+                "Torch BALD uses MC-dropout disagreement; mc_dropout uses predictive entropy."
             ),
             intuition=(
                 "Ask about the examples the model is least sure of — or where a "

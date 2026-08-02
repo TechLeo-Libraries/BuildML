@@ -20,13 +20,28 @@ def transform_tda(
     split_plan: SplitPlan | None,
     *,
     partition: str = "test",
+    backend: str | None = None,
 ) -> TdaTransformResult:
     """Apply the train-fitted TDA transformer to a partition (no refit).
 
     Leakage discipline: NearestNeighbors index, scaler, and vectorizer ranges
     stay frozen from train. Holdout rows never update the PH pipeline.
     """
-    require_tda_stack(feature="transform_tda")
+    if backend is not None and str(backend) != str(getattr(plan, "backend", "native")):
+        raise ValidationError(
+            f"backend={backend!r} does not match fitted plan backend="
+            f"{getattr(plan, 'backend', 'native')!r}."
+        )
+    plan_backend = str(getattr(plan, "backend", "native"))
+    if plan_backend == "giotto":
+        require_tda_stack(feature="transform_tda (giotto uses shared extras gate)")
+        from buildml.tda.adapters.giotto import (
+            transform_diagrams_giotto,
+            vectorize_giotto_diagrams,
+        )
+    else:
+        require_tda_stack(feature="transform_tda")
+
     if plan is None:
         raise ValidationError("No TdaPlan. Call fit_tda(...) first.")
     if plan.nn_ is None or plan.train_x_ is None or not plan.vectorizer_state_:
@@ -48,8 +63,12 @@ def transform_tda(
     rows: list[np.ndarray] = []
     for i in range(len(x)):
         cloud = local_point_cloud(x[i], plan.nn_, plan.train_x_, knn=plan.knn)
-        dgms = compute_rips_diagrams(cloud, maxdim=plan.maxdim, thresh=plan.thresh)
-        rows.append(vectorize_diagrams(dgms, plan.vectorizer_state_))
+        if plan_backend == "giotto":
+            dgms = transform_diagrams_giotto(cloud, plan=plan)
+            rows.append(vectorize_giotto_diagrams(dgms, plan.vectorizer_state_))
+        else:
+            dgms = compute_rips_diagrams(cloud, maxdim=plan.maxdim, thresh=plan.thresh)
+            rows.append(vectorize_diagrams(dgms, plan.vectorizer_state_))
     features = np.vstack(rows) if rows else np.zeros((0, plan.feature_dim), dtype=float)
 
     return TdaTransformResult(
@@ -60,6 +79,6 @@ def transform_tda(
         features=features,
         vectorization=plan.vectorization,
         disclosures=(
-            "Transform used frozen train NN index + vectorizer ranges (no refit).",
+            f"Transform used frozen train NN index + vectorizer ({plan_backend}; no refit).",
         ),
     )

@@ -8,9 +8,15 @@ import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
 
-from buildml.core.errors import ValidationError
+from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.forecasting.backends import fit_industry_backend
+from buildml.forecasting.catalog import (
+    CORE_BASELINE_METHODS,
+    resolve_default_method,
+    method_requires_extra,
+)
 from buildml.forecasting.features import (
     assert_partition_time_order,
     assert_temporal_split,
@@ -31,7 +37,7 @@ def fit_forecaster(
     dataset: Dataset,
     split_plan: SplitPlan | None,
     *,
-    method: ForecastMethod = "lag_ridge",
+    method: ForecastMethod = "auto",
     horizon: int = 1,
     lags: list[int] | tuple[int, ...] | None = None,
     seasonal_period: int | None = None,
@@ -43,14 +49,21 @@ def fit_forecaster(
     max_iter: int = 100,
     max_depth: int | None = 3,
     learning_rate: float = 0.1,
+    order: tuple[int, int, int] | None = None,
+    seasonal_order: tuple[int, int, int, int] | None = None,
+    nbeats_input_size: int = 24,
+    nbeats_horizon: int | None = None,
 ) -> tuple[ForecastPlan, ForecastFitResult]:
     """Fit a classical forecaster on the train partition only.
 
     Parameters
     ----------
     method:
-        Baseline (``naive``, ``seasonal_naive``, ``drift``, ``mean``) or
-        lag-tabular model (``lag_ridge``, ``lag_hgb``).
+        ``auto`` picks ETS when statsmodels installed else ``lag_ridge``.
+        Baselines (``naive``, ``seasonal_naive``, ``drift``, ``mean``) or
+        lag-tabular (``lag_ridge``, ``lag_hgb``). With ``buildml[timeseries]``:
+        ``arima``, ``auto_arima``, ``ets``, ``sarimax``. Prophet / N-BEATS
+        behind ``timeseries-prophet`` / ``timeseries-ml``.
     horizon:
         Default forecast horizon stored on the plan (generate may override).
     lags:
@@ -70,6 +83,11 @@ def fit_forecaster(
     assert_fit_partition(split_plan, "train")
     assert_temporal_split(split_plan)
     assert split_plan is not None
+    method = resolve_default_method(method)  # type: ignore[arg-type]
+    extra_req = method_requires_extra(method)
+    if extra_req is not None:
+        raise MissingExtraError(extra_req, f"{method} forecasting")
+
     if horizon < 1:
         raise ValidationError("horizon must be >= 1")
 
@@ -103,6 +121,8 @@ def fit_forecaster(
         )
 
     estimator: Any = None
+    industry_estimator: Any = None
+    backend = "sklearn"
     baseline: float | None = None
     drift_slope: float | None = None
     seasonal_history: tuple[float, ...] = ()
@@ -174,6 +194,37 @@ def fit_forecaster(
                 "lag_hgb: HistGradientBoostingRegressor on lag/exog features; "
                 "recursive multi-step generate; not a sequence neural net."
             )
+    elif method not in CORE_BASELINE_METHODS:
+        exog_mat = None
+        if exog:
+            exog_mat = train.loc[:, list(exog)].to_numpy(dtype=float)
+            if np.isnan(exog_mat).any():
+                raise ValidationError(
+                    "Exogenous columns contain nulls; impute before fit_forecast"
+                )
+        nb_h = int(nbeats_horizon if nbeats_horizon is not None else horizon)
+        outcome = fit_industry_backend(
+            y,
+            method=method,
+            seasonal_period=seasonal_period,
+            exog=exog_mat,
+            order=order,
+            seasonal_order=seasonal_order,
+            random_state=random_state,
+            nbeats_input_size=nbeats_input_size,
+            nbeats_horizon=nb_h,
+            max_iter=max_iter,
+        )
+        industry_estimator = outcome.estimator
+        backend = outcome.backend
+        disclosures.extend(outcome.disclosures)
+        warnings.extend(outcome.warnings)
+        n_fit = n_train
+        if method == "nbeats":
+            disclosures.append(
+                "N-BEATS generate uses the neuralforecast model directly; "
+                "rolling eval may refit slices (disclosed in evaluate)."
+            )
     else:
         raise ValidationError(f"Unsupported forecast method '{method}'")
 
@@ -190,6 +241,10 @@ def fit_forecaster(
         max_iter=max_iter,
         max_depth=max_depth,
         learning_rate=learning_rate,
+        order=order,
+        seasonal_order=seasonal_order,
+        nbeats_input_size=nbeats_input_size,
+        nbeats_horizon=int(nbeats_horizon if nbeats_horizon is not None else horizon),
     )
     plan = ForecastPlan(
         method=method,
@@ -211,6 +266,8 @@ def fit_forecaster(
         warnings=tuple(warnings),
         config=config.to_dict(),
         univariate=univariate,
+        backend=backend,
+        industry_estimator_=industry_estimator,
     )
     result = ForecastFitResult(
         method=method,

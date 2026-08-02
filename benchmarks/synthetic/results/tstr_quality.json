@@ -1,0 +1,104 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "native": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "bootstrap",
+          "gaussian_copula",
+          "smote"
+        ],
+        "notes": "Bootstrap / Gaussian copula (mixed types) / SMOTE wrap. Core numpy/scipy/sklearn; SMOTE needs buildml[imbalanced]."
+      },
+      "sdv": {
+        "available": false,
+        "extra": "synthetic-industry",
+        "methods": [
+          "ctgan",
+          "tvae",
+          "copulagan"
+        ],
+        "notes": "SDV CTGAN / TVAE / CopulaGAN deep tabular synthesizers (buildml[synthetic-industry]). Not differential privacy."
+      }
+    },
+    "evaluation": {
+      "builtin": {
+        "available": true,
+        "extra": null,
+        "modes": [
+          "fidelity",
+          "tstr"
+        ],
+        "metrics": [
+          "mean_ks",
+          "mean_tv",
+          "corr_l1",
+          "score",
+          "tstr_gap_vs_trtr"
+        ]
+      },
+      "sdmetrics": {
+        "available": false,
+        "extra": "synthetic-industry",
+        "modes": [
+          "fidelity"
+        ],
+        "metrics": [
+          "sdmetrics_overall",
+          "sdmetrics_column_shapes",
+          "sdmetrics_column_pair_trends"
+        ],
+        "notes": "SDMetrics QualityReport when sdmetrics is installed; falls back to built-in KS/TV/corr fidelity otherwise."
+      }
+    },
+    "validation": {
+      "builtin": {
+        "available": true,
+        "checks": [
+          "columns_present",
+          "row_count",
+          "null_rate_tolerance",
+          "categorical_vocabulary",
+          "numeric_range_tolerance"
+        ]
+      },
+      "great_expectations": {
+        "available": false,
+        "extra": null,
+        "notes": "Optional GE PandasDataset expectations when great_expectations is separately installed; built-in validation always runs."
+      }
+    },
+    "default_backend_when_installed": "native",
+    "default_eval_backend_when_installed": "builtin",
+    "install_hints": {
+      "synthetic-industry": "pip install 'buildml[synthetic-industry]'  # SDV CTGAN/TVAE/CopulaGAN + SDMetrics quality reports",
+      "imbalanced": "pip install 'buildml[imbalanced]'  # native method='smote' via imbalanced-learn"
+    },
+    "cross_links": {
+      "resample": "Session.resample is class-balance preprocessing (mutates train). fit_synthesizer fits a reusable generator; merge is explicit."
+    },
+    "non_goals": [
+      "Differential privacy guarantees",
+      "Time-series / sequential SDV models in this tabular path",
+      "Full SDV multi-table / relational synthesis",
+      "Membership-inference or anonymization audits"
+    ],
+    "industry_extra_present": false,
+    "synthetic_vs_resample": "Synthetic path: reusable generator + optional extend_train merge. Resample path: in-place class rebalance preprocess."
+  },
+  "runs": [
+    {
+      "backend": "native",
+      "method": "gaussian_copula",
+      "n_rows_fitted": 267,
+      "tstr_score": 1.0,
+      "tstr_gap_vs_trtr": 0.0,
+      "mean_ks": 0.11377742108079186,
+      "corr_l1": 0.07431205481316253,
+      "sdmetrics_overall": null,
+      "tstr_delta_vs_copula": 0.0
+    }
+  ],
+  "baseline_method": "gaussian_copula"
+}

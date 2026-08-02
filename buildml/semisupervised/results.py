@@ -22,7 +22,9 @@ class SemiSupervisedPlan:
     n_labeled_train: int
     n_unlabeled_train: int
     classes_: tuple[Any, ...]
-    estimator_: Any = field(repr=False)
+    backend: str = "sklearn"
+    modality: str = "tabular"
+    estimator_: Any = field(default=None, repr=False)
     label_encoder_: Any = field(repr=False, default=None)
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -32,6 +34,8 @@ class SemiSupervisedPlan:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
+            "modality": self.modality,
             "columns": list(self.columns),
             "target_column": self.target_column,
             "n_train_rows": self.n_train_rows,
@@ -56,6 +60,8 @@ class SemiSupervisedFitResult:
     columns: tuple[str, ...]
     target_column: str
     classes: tuple[Any, ...]
+    backend: str = "sklearn"
+    modality: str = "tabular"
     used_reduce_components: bool = False
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -63,6 +69,8 @@ class SemiSupervisedFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
+            "modality": self.modality,
             "n_train_rows": self.n_train_rows,
             "n_labeled_train": self.n_labeled_train,
             "n_unlabeled_train": self.n_unlabeled_train,

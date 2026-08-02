@@ -126,6 +126,76 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             related_concepts=("metalearning-episodic", "metalearning-prototypical"),
         ),
         _note(
+            key="metalearning-torch-prototypical",
+            title="Torch tabular prototypical (deep encoder)",
+            summary="MLP encoder + embedding-space nearest prototypes for few-shot tabular tasks.",
+            definition=(
+                "method='prototypical_torch' with backend='torch' trains a small MLP "
+                "encoder with episodic prototype cross-entropy, then adapts via "
+                "embedding-space class means."
+            ),
+            intuition=(
+                "Learn a shared sketch space across tasks, then few-shot classify "
+                "by nearest class sketch."
+            ),
+            formal_idea=(
+                "φ_θ = MLP; c_k = mean({φ_θ(x) : x ∈ S, y=k}); "
+                "ŷ = argmin_k ||φ_θ(x) − c_k||₂."
+            ),
+            why_it_matters=(
+                "Honest deep few-shot baseline without vision ProtoNet claims.",
+            ),
+            how_buildml_uses=(
+                "fit_metalearning(backend='torch', method='prototypical_torch').",
+            ),
+            interpretation_rules=(
+                "Compare meta_train_accuracy and holdout mean_accuracy vs sklearn prototypical.",
+            ),
+            assumptions=("buildml[torch] installed; numeric tabular features.",),
+            failure_modes=("Torch missing; insufficient episodic rows.",),
+            anti_patterns=("Claiming image ProtoNet or foundation-model meta-learning.",),
+            worked_example_pattern=(
+                "fit_metalearning(backend='torch', method='prototypical_torch', k_shot=5)."
+            ),
+            related_concepts=("metalearning-episodic", "metalearning-prototypical", "metalearning-maml"),
+        ),
+        _note(
+            key="metalearning-maml",
+            title="Industry tabular MAML/Reptile (first-order)",
+            summary="Inner-loop support adapt + outer episodic meta-update — small-scale, not MAML-at-scale.",
+            definition=(
+                "backend='industry' with method='maml' or 'reptile' runs first-order "
+                "tabular meta-learning with optional learn2learn MAML wrapper."
+            ),
+            intuition=(
+                "Practice quick retunes on many small jobs so the starting weights "
+                "help on the next job's few labels."
+            ),
+            formal_idea=(
+                "θ' = θ − α∇_θ L_S(θ); meta-update from query loss or Reptile "
+                "interpolation toward θ'."
+            ),
+            why_it_matters=(
+                "Provides honest task-adaptation beyond warm-start without "
+                "second-order MAML-at-scale claims."
+            ),
+            how_buildml_uses=(
+                "fit_metalearning(backend='industry', method='maml'); adapt_to_task.",
+            ),
+            interpretation_rules=(
+                "Read inner_steps, meta_train_accuracy, novel_task_ids on eval.",
+            ),
+            assumptions=("Torch available; shared classification label space.",),
+            failure_modes=("Support too small for inner loop; torch missing.",),
+            anti_patterns=(
+                "Equating with EconML causal meta or full second-order MAML papers.",
+            ),
+            worked_example_pattern=(
+                "fit_metalearning(backend='industry', method='maml', inner_steps=5)."
+            ),
+            related_concepts=("metalearning-episodic", "metalearning-warm-start"),
+        ),
+        _note(
             key="metalearning-bundle-boundary",
             title="Meta-learning bundle boundary",
             summary="buildml.metalearning_bundle.v1 stores MetaLearningPlan; Session checkpoints do not embed it.",

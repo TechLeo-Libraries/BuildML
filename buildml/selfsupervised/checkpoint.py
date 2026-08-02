@@ -1,4 +1,4 @@
-"""Self-supervised bundle persistence (distinct from Session checkpoints / Torch)."""
+"""Self-supervised bundle persistence (v2 Torch + v1 legacy migration)."""
 
 from __future__ import annotations
 
@@ -18,18 +18,20 @@ from buildml.selfsupervised.results import (
     SelfSupervisedPlan,
 )
 
-BUNDLE_FORMAT = "buildml.selfsupervised_bundle.v1"
+BUNDLE_FORMAT_V1 = "buildml.selfsupervised_bundle.v1"
+BUNDLE_FORMAT_V2 = "buildml.ssl_bundle.v2"
+BUNDLE_FORMAT = BUNDLE_FORMAT_V2
 CHECKPOINT_BOUNDARY = (
     "Self-supervised bundles, semi-supervised bundles, Torch trainer bundles, "
     "pretrained zoo backbones, classical pipeline bundles, RAG bundles, and "
     "Session checkpoints are complementary, not interchangeable. "
-    "A self-supervised bundle (buildml.selfsupervised_bundle.v1) stores a "
-    "train-fitted SelfSupervisedPlan (masked tabular encoder + feature contract) "
-    "and optionally an SSLHeadPlan. "
+    f"A self-supervised bundle ({BUNDLE_FORMAT_V2}) stores a train-fitted "
+    "SelfSupervisedPlan (Torch or legacy sklearn encoder + feature contract) "
+    "and optionally an SSLHeadPlan. Legacy v1 bundles remain loadable. "
     "A Session checkpoint stores data, roles, splits, history, and optional "
     "classical preprocess plans; it does not embed the SSL encoder. "
     "Reload tabular workflow via checkpoint_load; reload SSL via "
-    "load_ssl_bundle. Vision/audio/speech transfer remains "
+    "load_ssl_bundle. Vision/audio/speech transfer also supports "
     "load_pretrained_backbone / attach_backbone_head."
 )
 
@@ -43,15 +45,17 @@ def save_ssl_bundle(
     head_fit_result: SSLHeadFitResult | None = None,
     eval_result: SelfSupervisedEvalResult | None = None,
 ) -> Path:
-    """Write a self-supervised bundle directory (``buildml.selfsupervised_bundle.v1``)."""
+    """Write a self-supervised bundle directory."""
     if plan is None:
         raise ValidationError("No SelfSupervisedPlan to save.")
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
+    bundle_format = getattr(plan, "bundle_format", BUNDLE_FORMAT_V2)
     payload = {"plan": plan, "head_plan": head_plan}
     joblib.dump(payload, destination / "ssl_plan.joblib")
+    _maybe_save_torch_state(destination, plan)
     meta: dict[str, Any] = {
-        "format": BUNDLE_FORMAT,
+        "format": bundle_format,
         "buildml_version": __version__,
         "compatibility": CHECKPOINT_BOUNDARY,
         "plan": plan.to_dict(),
@@ -72,25 +76,79 @@ def load_ssl_bundle(path: str | Path) -> tuple[SelfSupervisedPlan, SSLHeadPlan |
     if not meta_path.is_file() or not plan_path.is_file():
         raise ValidationError(
             f"Incomplete self-supervised bundle at {root}. "
-            f"Expected meta.json and ssl_plan.joblib ({BUNDLE_FORMAT})."
+            f"Expected meta.json and ssl_plan.joblib."
         )
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     fmt = meta.get("format")
-    if fmt != BUNDLE_FORMAT:
+    if fmt not in {BUNDLE_FORMAT_V1, BUNDLE_FORMAT_V2}:
         raise ValidationError(
-            f"Unsupported self-supervised bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
+            f"Unsupported self-supervised bundle format {fmt!r}; "
+            f"expected {BUNDLE_FORMAT_V1} or {BUNDLE_FORMAT_V2}."
         )
     loaded = joblib.load(plan_path)
     if isinstance(loaded, SelfSupervisedPlan):
-        return loaded, None
-    if not isinstance(loaded, dict) or "plan" not in loaded:
+        plan = loaded
+        head = None
+    elif isinstance(loaded, dict) and "plan" in loaded:
+        plan = loaded["plan"]
+        head = loaded.get("head_plan")
+    else:
         raise ValidationError(
             "ssl_plan.joblib must contain a SelfSupervisedPlan or a payload with key 'plan'."
         )
-    plan = loaded["plan"]
     if not isinstance(plan, SelfSupervisedPlan):
         raise ValidationError("Loaded plan object is not a SelfSupervisedPlan")
-    head = loaded.get("head_plan")
     if head is not None and not isinstance(head, SSLHeadPlan):
         raise ValidationError("Loaded head_plan object is not an SSLHeadPlan")
+    _maybe_restore_torch_state(root, plan)
+    if fmt == BUNDLE_FORMAT_V1:
+        plan.bundle_format = BUNDLE_FORMAT_V1  # type: ignore[attr-defined]
     return plan, head
+
+
+def _maybe_save_torch_state(destination: Path, plan: SelfSupervisedPlan) -> None:
+    encoder = plan.encoder_
+    if hasattr(encoder, "state_dict") and callable(encoder.state_dict):
+        try:
+            state = encoder.state_dict()
+        except ValidationError:
+            return
+        torch_path = destination / "encoder_torch.json"
+        # Torch tensors saved separately
+        from buildml.dl.extras import torch_available
+
+        if not torch_available():
+            return
+        import torch
+
+        payload_path = destination / "encoder_torch.pt"
+        torch.save(state, payload_path)
+        torch_path.write_text(
+            json.dumps({"path": "encoder_torch.pt", "method": plan.method}, indent=2),
+            encoding="utf-8",
+        )
+
+
+def _maybe_restore_torch_state(root: Path, plan: SelfSupervisedPlan) -> None:
+    meta_path = root / "encoder_torch.json"
+    pt_path = root / "encoder_torch.pt"
+    if not meta_path.is_file() or not pt_path.is_file():
+        return
+    from buildml.dl.extras import require_torch
+
+    torch = require_torch(feature="SSL bundle restore")
+    state = torch.load(pt_path, map_location="cpu", weights_only=False)
+    method = str(state.get("method", plan.method))
+    if method in {
+        "simclr_tabular",
+        "byol_tabular",
+        "vicreg_tabular",
+        "mae_tabular",
+        "vae_tabular",
+    }:
+        from buildml.selfsupervised.torch.encoder import TorchTabularSSLEncoder
+
+        plan.encoder_ = TorchTabularSSLEncoder.from_state_dict(state)
+    elif method == "vision_ssl":
+        # Vision restore kept minimal — joblib encoder retained when pt missing
+        pass

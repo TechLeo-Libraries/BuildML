@@ -5,19 +5,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-AnomalyMethod = Literal[
-    "isolation_forest",
-    "lof",
-    "one_class_svm",
-    "supervised_hgb",
-]
+SklearnAnomalyMethod = Literal["isolation_forest", "lof", "one_class_svm"]
+PyODAnomalyMethod = Literal["hbos", "copod", "ecod", "deepsvdd"]
+TorchAnomalyMethod = Literal["autoencoder"]
+SupervisedAnomalyMethod = Literal["supervised_hgb", "supervised_xgb", "supervised_lgbm"]
+
+AnomalyMethod = (
+    SklearnAnomalyMethod | PyODAnomalyMethod | TorchAnomalyMethod | SupervisedAnomalyMethod
+)
+AnomalyBackend = Literal["sklearn", "pyod", "torch"]
 AnomalyMode = Literal["unsupervised", "novelty", "supervised"]
 ThresholdPolicy = Literal[
     "contamination",
     "quantile",
     "score_threshold",
     "decision_zero",
+    "validation_tuned",
 ]
+ThresholdTuningMetric = Literal["f1", "fbeta", "precision_at_contamination", "youden"]
 
 
 @dataclass(slots=True)
@@ -25,6 +30,7 @@ class AnomalyConfig:
     """User-facing anomaly knobs (serializable summary)."""
 
     method: AnomalyMethod = "isolation_forest"
+    backend: AnomalyBackend | None = None
     mode: AnomalyMode = "unsupervised"
     columns: tuple[str, ...] | None = None
     random_state: int | None = 0
@@ -35,12 +41,16 @@ class AnomalyConfig:
     # IsolationForest
     n_estimators: int = 100
     max_samples: str | int | float = "auto"
-    # LOF
+    # LOF / PyOD neighborhood-style
     n_neighbors: int = 20
     # One-Class SVM
     nu: float = 0.05
     kernel: str = "rbf"
     gamma: str | float = "scale"
+    # Torch autoencoder
+    latent_dim: int = 8
+    ae_epochs: int = 40
+    ae_batch_size: int = 64
     # Novelty / supervised labels
     normal_label_column: str | None = None
     normal_label_value: Any = 0
@@ -52,6 +62,7 @@ class AnomalyConfig:
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "mode": self.mode,
             "columns": None if self.columns is None else list(self.columns),
             "random_state": self.random_state,
@@ -65,6 +76,9 @@ class AnomalyConfig:
             "nu": self.nu,
             "kernel": self.kernel,
             "gamma": self.gamma,
+            "latent_dim": self.latent_dim,
+            "ae_epochs": self.ae_epochs,
+            "ae_batch_size": self.ae_batch_size,
             "normal_label_column": self.normal_label_column,
             "normal_label_value": self.normal_label_value,
             "positive_label": self.positive_label,

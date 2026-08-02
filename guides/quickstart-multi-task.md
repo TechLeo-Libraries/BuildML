@@ -2,20 +2,23 @@
 
 > **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
 > install Session 2.x. Install 2.x from GitHub (or an editable checkout).
-> Multi-task uses core sklearn MultiOutput / Chain façades — no optional extra.
-> See [installation](../docs/installation.rst).
+> Core sklearn MultiOutput / Chain needs no extra; industry GBDT and torch
+> multi-head use optional extras. See [installation](../docs/installation.rst).
 
 Shared-feature multi-target fitting: assign multiple `role="target"` columns
 (or pass `targets=`), `fit_multitask` on train only, then
 `evaluate_multitask` / `predict_multitask` on holdout, and save a distinct
-bundle. Honesty: sklearn MultiOutput / Chain — **not** a deep multi-head MTL
-research platform. Classical `Session.fit` remains single-target.
+bundle. Backends: **sklearn** (core), **industry** (`buildml[multitask-industry]`),
+**torch** (`buildml[torch]` for shared-trunk multi-head). Classical
+`Session.fit` remains single-target.
 
 **Go deeper:** [Multi-task deep](multi-task-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md).
 
 ```bash
 pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+# optional industry depth:
+pip install "buildml[multitask-industry,torch]"
 ```
 
 ```python
@@ -23,6 +26,9 @@ import numpy as np
 import pandas as pd
 
 from buildml import Session
+from buildml.multitask import multitask_capability_matrix
+
+print(multitask_capability_matrix()["default_backend_when_installed"])
 
 rng = np.random.default_rng(0)
 n = 240
@@ -40,11 +46,12 @@ session = (
 )
 
 fit = session.fit_multitask(
+    backend="sklearn",
     method="multi_output",
     task="classification",
     base_estimator="logistic_regression",
 )
-print(fit.n_tasks, fit.target_columns)
+print(fit.backend, fit.n_tasks, fit.target_columns)
 
 ev = session.evaluate_multitask(partition="validation")
 print(ev.metrics)           # unweighted means across tasks
@@ -57,11 +64,11 @@ session.save_multitask_bundle("artifacts/multitask_bundle")
 
 | In scope | Out of scope |
 | --- | --- |
-| sklearn `MultiOutput*` / `*Chain` on shared features | Deep multi-head MTL / Torch rewrite |
-| Same-type tasks (all cls or all reg) | Mixed classification + regression targets |
+| sklearn / industry GBDT / torch shared-trunk on shared features | Deep MTL research platform |
+| Same-type tasks on sklearn/industry | Mixed cls+reg except torch multi-head |
 | ≥2 targets via roles or `targets=` | Auto-switching classical `Session.fit` |
 | Per-task + aggregate holdout metrics | Causal multi-task / federated MTL |
 | Distinct `buildml.multitask_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item after multi-task (now shipped): **meta-learning**
+Next Phase 2 item after multi-task industry depth (R6.4): **meta-learning**
 (see [Meta-learning quickstart](quickstart-meta-learning.md)).

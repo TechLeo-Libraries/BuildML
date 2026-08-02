@@ -1,0 +1,135 @@
+{
+  "capability_matrix": {
+    "backends": {
+      "native": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "grid",
+          "randomized",
+          "optuna",
+          "evolutionary"
+        ],
+        "fold_local_recipes": true,
+        "industry_gbdt_families": true,
+        "ensemble_voting": true,
+        "ensemble_stacking": true,
+        "nested_cv": true,
+        "validation_selection": true,
+        "time_budget": true,
+        "trial_budget": true,
+        "study_persistence": false,
+        "multi_objective": false,
+        "pruning": false
+      },
+      "optuna": {
+        "available": true,
+        "extra": "automl",
+        "methods": [
+          "optuna"
+        ],
+        "fold_local_recipes": true,
+        "industry_gbdt_families": true,
+        "ensemble_voting": true,
+        "ensemble_stacking": true,
+        "nested_cv": true,
+        "validation_selection": true,
+        "time_budget": true,
+        "trial_budget": true,
+        "study_persistence": true,
+        "multi_objective": true,
+        "pruning": true
+      },
+      "flaml": {
+        "available": false,
+        "extra": "automl-industry",
+        "methods": [
+          "flaml"
+        ],
+        "fold_local_recipes": false,
+        "industry_gbdt_families": true,
+        "ensemble_voting": false,
+        "ensemble_stacking": false,
+        "nested_cv": false,
+        "validation_selection": true,
+        "time_budget": true,
+        "trial_budget": false,
+        "study_persistence": false,
+        "multi_objective": false,
+        "pruning": false,
+        "notes": "FLAML runs internal model selection on train-only data; fold-local PreprocessRecipe search is bypassed. Session test never enters FLAML fit."
+      },
+      "autogluon": {
+        "available": false,
+        "extra": "automl-industry",
+        "methods": [
+          "autogluon"
+        ],
+        "fold_local_recipes": false,
+        "industry_gbdt_families": true,
+        "ensemble_voting": false,
+        "ensemble_stacking": false,
+        "nested_cv": false,
+        "validation_selection": true,
+        "time_budget": true,
+        "trial_budget": false,
+        "study_persistence": false,
+        "multi_objective": false,
+        "pruning": false,
+        "notes": "AutoGluon TabularPredictor runs internal stacking on train-only data; fold-local recipe search is bypassed. Session test never enters fit."
+      }
+    },
+    "optional_gbdt_families": {
+      "lightgbm": true,
+      "xgboost": true,
+      "catboost": false
+    },
+    "default_backend_when_installed": "optuna",
+    "install_hints": {
+      "automl": "pip install 'buildml[automl]'  # Optuna-backed search",
+      "automl-industry": "pip install 'buildml[automl-industry]'  # FLAML and/or AutoGluon + LightGBM/XGBoost/CatBoost families"
+    },
+    "non_goals": [
+      "Neural architecture search (NAS)",
+      "Causal discovery",
+      "Fully automated AI scientist",
+      "Session-global preprocess as safe CV"
+    ]
+  },
+  "backends_tested": [
+    "native",
+    "optuna"
+  ],
+  "n_trials": 8,
+  "time_budget": null,
+  "runs": [
+    {
+      "backend": "native",
+      "best_family": "logistic",
+      "best_recipe_strategy": "impute_scale_select_k20",
+      "selection_score": 0.8624425078673443,
+      "test_accuracy": 0.875,
+      "test_f1_weighted": 0.8747826086956522,
+      "n_trials": 6,
+      "disclosures_head": [
+        "AutoML searches a finite disclosed catalog of model families and fold-local preprocess strategies \u2014 not neural architecture search (NAS), not causal discovery, and not a fully automated AI scientist.",
+        "Backend=native, method=randomized, selection=cv, ranking_metric=f1_weighted, n_trials_scored=6.",
+        "Families searched: ['logistic', 'random_forest', 'gradient_boosting']; recipe strategies: ['passthrough', 'impute_median', 'impute_mean', 'impute_scale', 'impute_most_frequent_scale', 'impute_minmax', 'impute_scale_onehot', 'impute_scale_ordinal', 'impute_encode_onehot', 'impute_scale_select', 'impute_scale_select_k20', 'impute_scale_variance', 'impute_minmax_onehot']."
+      ]
+    },
+    {
+      "backend": "optuna",
+      "best_family": "logistic",
+      "best_recipe_strategy": "impute_encode_onehot",
+      "selection_score": 0.8624425078673443,
+      "test_accuracy": 0.875,
+      "test_f1_weighted": 0.8747826086956522,
+      "n_trials": 8,
+      "disclosures_head": [
+        "AutoML searches a finite disclosed catalog of model families and fold-local preprocess strategies \u2014 not neural architecture search (NAS), not causal discovery, and not a fully automated AI scientist.",
+        "Backend=optuna, method=optuna, selection=cv, ranking_metric=f1_weighted, n_trials_scored=8.",
+        "Families searched: ['logistic', 'random_forest', 'gradient_boosting']; recipe strategies: ['passthrough', 'impute_median', 'impute_mean', 'impute_scale', 'impute_most_frequent_scale', 'impute_minmax', 'impute_scale_onehot', 'impute_scale_ordinal', 'impute_encode_onehot', 'impute_scale_select', 'impute_scale_select_k20', 'impute_scale_variance', 'impute_minmax_onehot']."
+      ]
+    }
+  ]
+}

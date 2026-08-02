@@ -13,11 +13,12 @@ partitions.
   train↔holdout edges; holdout↔holdout dropped.
 - `transductive`: full topology with train-label-only supervision (disclosed).
 
-**Two complete paths:**
+**Three complete paths:**
 1. Classical — NetworkX metrics + sklearn (`pip install 'buildml[graph]'`)
-2. Pure-Torch GCN — no PyTorch Geometric (`pip install 'buildml[torch]'`)
+2. Pure-Torch GCN — dense adjacency, no PyG (`pip install 'buildml[torch]'`)
+3. PyTorch Geometric — GCN / GraphSAGE / GAT (`pip install 'buildml[graph-pyg]'`)
 
-Honesty: not a Neo4j/KG product, not a PyG research zoo, not link-prediction
+Honesty: not a Neo4j/KG product, not a full PyG algorithm zoo, not link-prediction
 depth in this surface.
 
 **Go deeper:** [Graph deep](graph-deep.md) ·
@@ -58,6 +59,9 @@ session.scale(columns=["f1", "f2"], method="standard")
 fit = session.fit_graph(method="classical", mode="inductive")
 print(fit.train_accuracy, fit.n_edges_fit)
 
+# PyG path (when buildml[graph-pyg] installed):
+# fit = session.fit_graph(method="pyg", pyg_model="graphsage", epochs=60)
+
 ev = session.evaluate_graph(partition="validation")
 print(ev.metrics)
 
@@ -67,8 +71,8 @@ session.save_graph_bundle("artifacts/graph_bundle")
 | In scope | Out of scope |
 | --- | --- |
 | Node classification | Neo4j / knowledge-graph product |
-| Classical NetworkX + sklearn | Full GNN paper zoo (GAT, etc.) |
-| Pure-Torch GCN (no PyG) | Link prediction product depth |
+| Classical NetworkX + sklearn | Full PyG paper zoo beyond GCN/SAGE/GAT |
+| Pure-Torch GCN + PyG GCN/SAGE/GAT | Link prediction product depth |
 | Inductive / transductive modes | Graph-level classify zoo |
 | Distinct `buildml.graph_bundle.v1` | Silent full-graph train as "inductive" |
 

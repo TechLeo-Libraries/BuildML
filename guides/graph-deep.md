@@ -2,7 +2,7 @@
 
 BuildML’s graph path is a **Session-facing node classification** surface over
 an edge list plus a node feature table. It is intentionally not a graph
-database and not a PyTorch Geometric research suite.
+database and not an exhaustive PyG research suite.
 
 ## Mental model
 
@@ -24,14 +24,22 @@ database and not a PyTorch Geometric research suite.
 | Method | Extra | What it does |
 | --- | --- | --- |
 | `classical` | `buildml[graph]` (NetworkX) | Degree, clustering, PageRank, avg neighbor degree, optional betweenness (n≤200) + tabular features → logistic regression or random forest |
-| `gcn` | `buildml[torch]` | 1–2 layer Kipf–Welling GCN on symmetric normalized adjacency; train-mask CE |
+| `gcn` | `buildml[torch]` | 1–2 layer Kipf–Welling GCN on symmetric normalized dense adjacency; train-mask CE |
+| `pyg` | `buildml[graph-pyg]` | PyTorch Geometric GCNConv / SAGEConv / GATConv via `pyg_model=`; sparse `edge_index`; train-mask CE |
 
-### Why not PyTorch Geometric?
+### Why a separate `graph-pyg` extra?
 
-PyG couples tightly to specific Torch/CUDA builds and is heavy for the core
-install story. A small dense-adjacency GCN (Session guard: ≤5000 nodes) is an
-honest message-passing path with only `buildml[torch]`. Classical topology
-features stay behind `buildml[graph]`. `import buildml` requires neither.
+PyTorch Geometric couples tightly to specific Torch/CUDA builds and pulls a
+heavy stack. Keeping it behind `buildml[graph-pyg]` preserves a light core
+install while still shipping industry GNN depth when requested. The pure-Torch
+`gcn` path remains available with only `buildml[torch]` for environments that
+avoid PyG.
+
+```python
+from buildml.graph import graph_capability_matrix
+
+print(graph_capability_matrix()["backends"])
+```
 
 ## Leakage discipline
 
@@ -44,14 +52,14 @@ features stay behind `buildml[graph]`. `import buildml` requires neither.
 
 ## Bundle boundary
 
-`buildml.graph_bundle.v1` stores `GraphPlan` (GraphSpec + estimator/GCN +
+`buildml.graph_bundle.v1` stores `GraphPlan` (GraphSpec + estimator/GCN/PyG +
 label encoder). Session checkpoints do **not** embed the graph learner.
 
 ## Residuals (honest)
 
 - Node classification only (no link prediction / graph-level classify depth).
-- Not Neo4j / KG (separate roadmap item).
-- Not GAT / GraphSAGE product zoo (GCN-lite only for the neural path).
-- Dense adjacency size guard (≤5000 nodes).
+- Not Neo4j / KG (separate `buildml.kg` path).
+- PyG surface ships GCN / GraphSAGE / GAT only — not GIN, PNA, etc.
+- Size guard (≤5000 nodes) for dense adjacency (gcn) and Session materialization.
 - Default `scale()` may mutate numeric `node_id` columns — call `set_graph`
   first (ids are snapshotted) or `scale(columns=[...features...])` explicitly.

@@ -1,34 +1,14 @@
 """Semi-supervised learning domain (scarce labels + unlabeled train rows).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
+Industry depth (R6.1):
+  - Core sklearn: LabelPropagation, LabelSpreading, SelfTrainingClassifier.
+  - Industry (``buildml[semisupervised-industry]``): XGBoost/LightGBM pseudo-label.
+  - Torch (``buildml[torch]``): FixMatch/MixMatch-style tabular consistency.
+  - HF text (``buildml[ssl]``): sentence-transformer embeddings + pseudo-label.
 
-Phase 2:
-  1. Semi-supervised learning — **this module (PASS)**.
-  2. Self-supervised learning hooks — done (``buildml.selfsupervised``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit) — done (``buildml.online``).
-  5. Multi-task learning — done (``buildml.multitask``).
-  6. Meta-learning — done (``buildml.metalearning``).
-  7. Federated learning — done (``buildml.federated``).
-  8. Bayesian / probabilistic — done (``buildml.probabilistic``); next = Causal.
-  Later: graph, evolutionary,
-  symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
-  NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
-  - Not active learning (querying an oracle) and not self-supervised pretext.
-  - Anomaly novelty (normal-only fit) is a different Session path.
-  - Validation/test never invent labels for model selection without disclosure.
-  - Pseudo-labels are train-fit artifacts; eval scores labeled holdout only.
-
-Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Semi-supervised
-methods use core sklearn — no optional extra required for ``import buildml``.
+Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Industry GBDT,
+Torch consistency, and HF text paths use optional extras. Sklearn remains the
+honest fallback when extras are missing.
 
 Lazy imports — core never grows heavy semi-supervised stacks.
 """
@@ -40,6 +20,7 @@ from typing import Any
 __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
+    "SemiSupervisedBackend",
     "SemiSupervisedConfig",
     "SemiSupervisedEvalResult",
     "SemiSupervisedFitResult",
@@ -48,16 +29,22 @@ __all__ = [
     "SemiSupervisedPredictResult",
     "evaluate_semisupervised",
     "fit_semisupervised",
+    "list_semisupervised_methods",
     "load_semisupervised_bundle",
     "predict_semisupervised",
     "save_semisupervised_bundle",
+    "semisupervised_capability_matrix",
     "semisupervised_status",
     "semisupervised_status_for_session",
 ]
 
 
 def __getattr__(name: str) -> Any:
-    if name in {"SemiSupervisedMethod", "SemiSupervisedConfig"}:
+    if name in {
+        "SemiSupervisedMethod",
+        "SemiSupervisedBackend",
+        "SemiSupervisedConfig",
+    }:
         from buildml.semisupervised import types as types_mod
 
         return getattr(types_mod, name)
@@ -82,6 +69,10 @@ def __getattr__(name: str) -> Any:
         from buildml.semisupervised.evaluate import evaluate_semisupervised
 
         return evaluate_semisupervised
+    if name in {"semisupervised_capability_matrix", "list_semisupervised_methods"}:
+        from buildml.semisupervised import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {
         "BUNDLE_FORMAT",
         "CHECKPOINT_BOUNDARY",

@@ -3,9 +3,11 @@
 Local FedAvg-style simulation on Session data partitioned by a client/group
 column: `fit_federated` runs train-only local updates, aggregates
 `coef_` / `intercept_`, then `evaluate_federated` / `predict_federated` on
-holdout. Persist via `buildml.federated_bundle.v1`. Honesty: **not** a
-distributed FL platform (Flower/OpenFL); **not** cryptographic secure
-aggregation.
+holdout. Persist via `buildml.federated_bundle.v1`.
+
+**Backends:** `native` (core) or `flower` with `pip install 'buildml[federated-industry]'`.
+Both are honest in-process simulations — not production FL networking; **not**
+cryptographic secure aggregation.
 
 **Go deeper:** [Federated learning deep](federated-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md)
@@ -48,12 +50,13 @@ session = (
 )
 
 fit = session.fit_federated(
+    backend="native",
     method="fedavg",
     estimator="sgd_classifier",
     n_rounds=5,
     local_epochs=2,
 )
-print(fit.n_clients, fit.final_train_metric, len(fit.round_history))
+print(fit.backend, fit.n_clients, fit.final_train_metric, len(fit.round_history))
 
 ev = session.evaluate_federated(partition="validation", per_client=True)
 print(ev.metrics, ev.n_clients_evaluated)
@@ -66,10 +69,10 @@ session.save_federated_bundle("artifacts/federated_bundle")
 
 | In scope | Out of scope |
 | --- | --- |
-| Local FedAvg / FedProx on client/group column | Flower / OpenFL / networked FL runtime |
+| Native + optional Flower (`flwr`) backends | Turnkey gRPC / Ray FL deployment |
+| Local FedAvg / FedProx on client/group column | Cryptographic secure aggregation |
 | sklearn linear/SGD coefficient averaging | Non-linear trees / neural FedAvg |
-| Train-only local updates; holdout eval | Cryptographic secure aggregation |
+| Train-only local updates; holdout eval | Claiming production FL from simulation |
 | Distinct `buildml.federated_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item after federated: **Bayesian / probabilistic ML** (now shipped;
-see [quickstart-probabilistic](quickstart-probabilistic.md)).
+Next Phase 2 item: **Knowledge graphs (KG)**.

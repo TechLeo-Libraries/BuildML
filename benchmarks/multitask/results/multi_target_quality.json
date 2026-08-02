@@ -1,0 +1,122 @@
+{
+  "benchmark": "multitask_multi_target_quality",
+  "capability_matrix": {
+    "backends": {
+      "sklearn": {
+        "available": true,
+        "extra": null,
+        "methods": [
+          "multi_output",
+          "classifier_chain",
+          "regressor_chain"
+        ],
+        "modality": "tabular",
+        "notes": "Core sklearn MultiOutput / Chain fa\u00e7ades; always available. Same-type targets only (all classification or all regression)."
+      },
+      "industry": {
+        "available": true,
+        "extra": "multitask-industry",
+        "methods": [
+          "multi_output_xgb",
+          "multi_output_lgbm",
+          "multi_output_catboost"
+        ],
+        "modality": "tabular",
+        "notes": "XGBoost/LightGBM/CatBoost multi-target estimators when installed. Regression uses native multi-target where supported; classification uses honest MultiOutputClassifier wrappers. Same-type targets only."
+      },
+      "torch": {
+        "available": true,
+        "extra": "torch",
+        "methods": [
+          "shared_trunk_multihead"
+        ],
+        "modality": "tabular",
+        "notes": "Shared MLP trunk with per-task heads and joint training (buildml[torch]). Supports mixed classification+regression targets via separate heads \u2014 not a research MTL platform."
+      }
+    },
+    "evaluation": {
+      "metrics_classification": [
+        "accuracy",
+        "f1_macro",
+        "f1_weighted"
+      ],
+      "metrics_regression": [
+        "mae",
+        "rmse",
+        "r2"
+      ],
+      "aggregates": "Unweighted means across tasks; mixed torch plans report cls/reg aggregates separately.",
+      "holdout_rule": "validation/test never used for fitting"
+    },
+    "default_backend_when_installed": "industry",
+    "default_method_when_installed": "multi_output_xgb",
+    "install_hints": {
+      "multitask-industry": "pip install 'buildml[multitask-industry]'  # XGBoost/LightGBM/CatBoost multi-target paths",
+      "torch": "pip install 'buildml[torch]'  # shared-trunk multi-head joint training"
+    },
+    "non_goals": [
+      "Universal deep MTL research platform or task-affinity search",
+      "Multi-label binary-relevance zoos",
+      "Causal or federated multi-task",
+      "ClassifierChain/RegressorChain on industry GBDT backends"
+    ],
+    "torch_spec_present": true,
+    "industry_extra_present": true,
+    "xgboost_present": true,
+    "lightgbm_present": true,
+    "catboost_present": false
+  },
+  "results": [
+    {
+      "backend": "sklearn",
+      "method": "multi_output",
+      "task": "classification",
+      "n_tasks": 2,
+      "metrics": {
+        "mean_accuracy": 0.9916666666666667,
+        "mean_f1_macro": 0.99137683242311,
+        "mean_f1_weighted": 0.9916930152342627
+      },
+      "score": 0.9916666666666667
+    },
+    {
+      "backend": "sklearn",
+      "method": "multi_output",
+      "task": "regression",
+      "n_tasks": 2,
+      "metrics": {
+        "mean_mae": 0.06816659173941939,
+        "mean_rmse": 0.08257176267168545,
+        "mean_r2": 0.9938668892502966
+      },
+      "score": 0.9938668892502966
+    },
+    {
+      "backend": "industry",
+      "method": "multi_output_xgb",
+      "task": "classification",
+      "n_tasks": 2,
+      "metrics": {
+        "mean_accuracy": 1.0,
+        "mean_f1_macro": 1.0,
+        "mean_f1_weighted": 1.0
+      },
+      "score": 1.0
+    },
+    {
+      "backend": "industry",
+      "method": "multi_output_xgb",
+      "task": "regression",
+      "n_tasks": 2,
+      "metrics": {
+        "mean_mae": 0.20724567415239942,
+        "mean_rmse": 0.36373661637341537,
+        "mean_r2": 0.904336347041718
+      },
+      "score": 0.904336347041718
+    }
+  ],
+  "sklearn_cls_accuracy": 0.9916666666666667,
+  "sklearn_reg_r2": 0.9938668892502966,
+  "floor_note": "Industry/torch backends should meet or exceed sklearn baseline on these synthetic multi-target tasks when extras are installed."
+}

@@ -24,7 +24,7 @@ __all__ = [
     "IndexConfig",
     "IndexResult",
     "RagEvalResult",
-    "RagIndex",
+    "RagGenerateEvalResult",
     "RetrieveConfig",
     "RetrieveResult",
     "SentenceTransformerEmbedder",
@@ -35,6 +35,7 @@ __all__ = [
     "corpus_from_documents",
     "corpus_from_frame",
     "evaluate_retrieval",
+    "evaluate_generation",
     "generate_from_retrieve",
     "generate_grounded",
     "load_rag_bundle",
@@ -76,6 +77,7 @@ def __getattr__(name: str) -> Any:
         "GenerateResult",
         "IndexResult",
         "RagEvalResult",
+        "RagGenerateEvalResult",
         "RetrieveResult",
     }:
         from buildml.rag import results
@@ -105,7 +107,7 @@ def __getattr__(name: str) -> Any:
         from buildml.rag import hybrid
 
         return getattr(hybrid, name)
-    if name in {"evaluate_retrieval", "compare_retrieval_configs"}:
+    if name in {"evaluate_retrieval", "evaluate_generation", "compare_retrieval_configs"}:
         from buildml.rag import evaluate as evaluate_mod
 
         return getattr(evaluate_mod, name)

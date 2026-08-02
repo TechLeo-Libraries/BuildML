@@ -2,7 +2,8 @@
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core path (numpy/sklearn pointwise + RankSVM-lite) — no extra required.
+> Core sklearn path — no extra required. For GBDT rankers:
+> `pip install "buildml[ranking-industry]"`.
 > See [installation](../docs/installation.rst).
 
 Session tabular learning-to-rank on query–item (or query–document) feature
@@ -28,7 +29,6 @@ rng = np.random.default_rng(0)
 rows = []
 for q in range(40):
     for item in range(8):
-        # Higher feature alignment → higher relevance
         f1 = float(rng.normal(q % 5, 1.0))
         f2 = float(rng.normal(item, 1.0))
         rel = float(max(0, int(3 - abs(f1 - (q % 5)) + (item % 3 == 0))))
@@ -59,13 +59,18 @@ session = (
     .group_split(test_size=0.25, validation_size=0.15, random_state=0)
 )
 
+# Sklearn fallback (always works):
 fit = session.fit_ranker(
+    backend="sklearn",
     method="pointwise",
     query_column="query_id",
     item_column="item_id",
     pointwise_estimator="ridge",
 )
 print(fit.to_dict())
+
+# Or omit backend/method to use industry default when installed:
+# fit = session.fit_ranker(query_column="query_id", item_column="item_id")
 
 ranked = session.rank(partition="test", k=5)
 print(ranked.to_dict())
@@ -78,12 +83,16 @@ session.save_ranker_bundle("artifacts/ranker_demo_bundle")
 
 ---
 
-## Methods
+## Backends
 
-| `method` | Idea |
-|----------|------|
-| `pointwise` | Ridge or HistGradientBoostingRegressor on graded relevance (default) |
-| `pairwise` | RankSVM-lite: LinearSVC on within-query feature differences |
+| `backend` | Extra | Methods |
+|-----------|-------|---------|
+| `sklearn` | core | `pointwise`, `pairwise` |
+| `industry` | `ranking-industry` | `lambdarank_lgbm`, `rank_ndcg_xgb`, `yetirank_catboost` |
+| `torch` | `torch` | `listwise_lite` |
+
+When extras are installed, `fit_ranker()` defaults to the industry backend.
+Use `Session.ranking_capability_matrix()` to inspect what is available.
 
 Prefer `group_split` with `query_id` as `role='group'` so holdout queries
 (and their labels) never appear in train.
@@ -98,9 +107,13 @@ Prefer `group_split` with `query_id` as `role='group'` so holdout queries
 | [Recommenders](quickstart-recommenders.md) | User–item interactions (CF / content) |
 | [RAG](quickstart-rag.md) | Document chunks via embeddings / hybrid retrieve |
 
+Same metric names (nDCG, MRR) can appear in all three — **do not compare**
+`evaluate_ranker`, `evaluate_recommender`, and `rag_evaluate` numbers directly.
+
 ---
 
 ## Next
 
 - Deep dive: [ranking-deep.md](ranking-deep.md)
-- After LTR PASS (depth-first): knowledge graphs → optimisation helpers
+- Benchmark: `benchmarks/ranking/ndcg_lift.py`
+- After LTR PASS: optimisation helpers (R6.9)

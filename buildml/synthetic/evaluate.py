@@ -18,10 +18,12 @@ from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, frame_for_partition
+from buildml.synthetic.adapters.sdmetrics_eval import sdmetrics_quality_scores
+from buildml.synthetic.extras import sdmetrics_available
 from buildml.synthetic.features import require_split
 from buildml.synthetic.results import SyntheticEvalResult, SynthesizerPlan
 from buildml.synthetic.sample import sample_synthetic
-from buildml.synthetic.types import EvalMode
+from buildml.synthetic.types import EvalBackend, EvalMode
 
 
 def evaluate_synthetic(
@@ -30,6 +32,7 @@ def evaluate_synthetic(
     plan: SynthesizerPlan,
     *,
     mode: EvalMode = "fidelity",
+    eval_backend: EvalBackend = "auto",
     partition: str = "test",
     n_synthetic: int | None = None,
     random_state: int = 0,
@@ -41,8 +44,9 @@ def evaluate_synthetic(
     -----
     fidelity
         Column-wise KS (continuous/integer) and total-variation (categorical),
-        plus continuous pairwise correlation L1. Compared against the named
-        real partition (default test) — **not** a privacy audit.
+        plus continuous pairwise correlation L1. When ``eval_backend='sdmetrics'``
+        or ``eval_backend='auto'`` with SDMetrics installed, also reports
+        SDMetrics QualityReport scores.
     tstr
         Train-on-Synthetic, Test-on-Real: fit a simple sklearn estimator on
         synthetic samples, score on the real holdout partition. Discloses that
@@ -85,6 +89,17 @@ def evaluate_synthetic(
 
     if mode == "fidelity":
         metrics, per_column = _fidelity_metrics(real_sub, syn_sub, plan)
+        resolved_eval = _resolve_eval_backend(eval_backend)
+        if resolved_eval == "sdmetrics":
+            sdv_meta = _plan_sdv_metadata(plan)
+            sd_metrics, sd_warn = sdmetrics_quality_scores(
+                real_sub, syn_sub, metadata=sdv_meta
+            )
+            metrics.update(sd_metrics)
+            warnings.extend(sd_warn)
+            disclosures.append(
+                "SDMetrics QualityReport scores appended (buildml[synthetic-industry])."
+            )
         disclosures.append(
             "Fidelity metrics: KS distance (cont/int), total variation (cat), "
             "mean absolute correlation difference (cont)."
@@ -226,6 +241,28 @@ def _total_variation(real: pd.Series, syn: pd.Series) -> float:
     s = syn.astype("string").fillna("__NA__").value_counts(normalize=True)
     keys = sorted(set(r.index) | set(s.index))
     return 0.5 * float(sum(abs(r.get(k, 0.0) - s.get(k, 0.0)) for k in keys))
+
+
+def _resolve_eval_backend(eval_backend: EvalBackend) -> str:
+    if eval_backend == "auto":
+        return "sdmetrics" if sdmetrics_available() else "builtin"
+    if eval_backend not in {"builtin", "sdmetrics"}:
+        raise ValidationError(f"Unknown eval_backend: {eval_backend!r}")
+    if eval_backend == "sdmetrics" and not sdmetrics_available():
+        from buildml.core.errors import MissingExtraError
+
+        raise MissingExtraError(
+            "synthetic-industry",
+            "eval_backend='sdmetrics'",
+        )
+    return eval_backend
+
+
+def _plan_sdv_metadata(plan: SynthesizerPlan) -> Any | None:
+    generator = plan.generator_
+    if generator is not None and hasattr(generator, "metadata"):
+        return getattr(generator, "metadata")
+    return None
 
 
 def _infer_task(y: pd.Series) -> str:

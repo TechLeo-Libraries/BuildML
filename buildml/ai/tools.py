@@ -180,7 +180,7 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                     "k": {"type": "integer", "description": "Number of hits (default 5)."},
                     "mode": {
                         "type": "string",
-                        "description": "dense, bm25, or hybrid.",
+                        "description": "hybrid (default when rag installed), dense, or bm25.",
                         "enum": ["dense", "bm25", "hybrid"],
                     },
                 },
@@ -247,7 +247,7 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                 "properties": {
                     "embedder": {
                         "type": "string",
-                        "description": "hashing (default), auto, or sentence-transformers.",
+                        "description": "auto (default, ST when rag installed), hashing, or model id.",
                     },
                 },
                 "required": [],
@@ -1257,7 +1257,18 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "properties": {
                     "method": {
                         "type": "string",
-                        "enum": ["kmeans", "agglomerative", "dbscan"],
+                        "enum": [
+                            "kmeans",
+                            "agglomerative",
+                            "dbscan",
+                            "gmm",
+                            "hdbscan",
+                            "spectral",
+                            "optics",
+                            "mean_shift",
+                            "dec",
+                            "idec",
+                        ],
                         "description": "Clustering algorithm.",
                     },
                     "n_clusters": {
@@ -1332,7 +1343,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="save_unsupervised_bundle",
             description=(
-                "Persist the active ClusterPlan as buildml.unsupervised_bundle.v1. "
+                "Persist the active ClusterPlan as buildml.unsupervised_bundle.v2. "
                 "Distinct from Session checkpoints and Torch/RAG bundles."
             ),
             parameters={
@@ -1349,7 +1360,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ),
         ToolSpec(
             name="load_unsupervised_bundle",
-            description="Load a buildml.unsupervised_bundle.v1 ClusterPlan into the Session.",
+            description="Load a buildml.unsupervised_bundle.v2 (or v1) ClusterPlan into the Session.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -1586,9 +1597,13 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["native", "optuna", "flaml", "autogluon"],
+                    },
                     "method": {
                         "type": "string",
-                        "enum": ["randomized", "grid", "optuna"],
+                        "enum": ["randomized", "grid", "optuna", "evolutionary"],
                     },
                     "selection": {
                         "type": "string",
@@ -1596,10 +1611,19 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     },
                     "n_trials": {
                         "type": "integer",
-                        "description": "Trial budget (randomized/optuna).",
+                        "description": "Trial budget (native backends).",
+                    },
+                    "time_budget": {
+                        "type": "number",
+                        "description": "Optional wall-clock cap in seconds.",
                     },
                     "include_recipe_search": {"type": "boolean"},
+                    "include_industry_families": {"type": "boolean"},
                     "include_ensembles": {"type": "boolean"},
+                    "ensemble_mode": {
+                        "type": "string",
+                        "enum": ["voting", "stacking", "both"],
+                    },
                     "task": {
                         "type": "string",
                         "enum": ["classification", "regression", "auto"],
@@ -1674,9 +1698,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_forecast",
             description=(
-                "Fit a classical forecaster on the train partition only "
-                "(naive/seasonal_naive/drift/mean/lag_ridge/lag_hgb). "
-                "Requires time_split; refuses shuffled splits. Write operation."
+                "Fit a forecaster on the train partition only. "
+                "auto=ETS when statsmodels installed else lag_ridge. "
+                "Baselines, lag models, ARIMA/ETS/SARIMAX (timeseries extra), "
+                "Prophet (timeseries-prophet), N-BEATS (timeseries-ml). "
+                "Requires time_split. Write operation."
             ),
             parameters={
                 "type": "object",
@@ -1684,12 +1710,19 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "method": {
                         "type": "string",
                         "enum": [
+                            "auto",
                             "naive",
                             "seasonal_naive",
                             "drift",
                             "mean",
                             "lag_ridge",
                             "lag_hgb",
+                            "arima",
+                            "auto_arima",
+                            "ets",
+                            "sarimax",
+                            "prophet",
+                            "nbeats",
                         ],
                         "description": "Forecast algorithm.",
                     },
@@ -1745,7 +1778,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="evaluate_forecast",
             description=(
                 "Evaluate the train-fitted ForecastPlan with MAE/RMSE/MAPE "
-                "(rolling_one_step or origin). Not a full econometrics suite."
+                "(rolling_one_step, origin, or rolling_origin)."
             ),
             parameters={
                 "type": "object",
@@ -1756,7 +1789,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     },
                     "strategy": {
                         "type": "string",
-                        "enum": ["rolling_one_step", "origin"],
+                        "enum": ["rolling_one_step", "origin", "rolling_origin"],
                     },
                 },
                 "required": [],
@@ -1769,7 +1802,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="save_forecast_bundle",
             description=(
-                "Persist the active ForecastPlan as buildml.forecast_bundle.v1. "
+                "Persist the active ForecastPlan as buildml.forecast_bundle.v2. "
                 "Distinct from Session checkpoints and Torch/RAG bundles."
             ),
             parameters={
@@ -1786,7 +1819,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ),
         ToolSpec(
             name="load_forecast_bundle",
-            description="Load a buildml.forecast_bundle.v1 ForecastPlan into the Session.",
+            description="Load a buildml.forecast_bundle.v2 (or v1) ForecastPlan into the Session.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -1800,22 +1833,96 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             catalog_operation="load_forecast_bundle",
         ),
         ToolSpec(
+            name="analyze_timeseries",
+            description=(
+                "Run time-series analysis on train scope: STL decomposition, "
+                "ACF/PACF, ADF/KPSS, changepoints, rolling/spectral features. "
+                "Requires time_split. Industry defaults with buildml[timeseries]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "scope": {"type": "string", "enum": ["train", "all"]},
+                    "decompose_method": {
+                        "type": "string",
+                        "enum": ["stl", "classical", "moving_average"],
+                    },
+                    "seasonal_period": {"type": "integer"},
+                    "include_decompose": {"type": "boolean"},
+                    "include_diagnostics": {"type": "boolean"},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="analyze_timeseries",
+            read_only=True,
+            catalog_operation="analyze_timeseries",
+        ),
+        ToolSpec(
+            name="ts_decompose",
+            description="STL/classical seasonal decomposition (train-only default).",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "scope": {"type": "string", "enum": ["train", "all"]},
+                    "decompose_method": {
+                        "type": "string",
+                        "enum": ["stl", "classical", "moving_average"],
+                    },
+                    "seasonal_period": {"type": "integer"},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="ts_decompose",
+            read_only=True,
+            catalog_operation="ts_decompose",
+        ),
+        ToolSpec(
+            name="ts_diagnostics",
+            description="ACF/PACF and ADF/KPSS stationarity diagnostics.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "acf_lags": {"type": "integer"},
+                    "pacf_lags": {"type": "integer"},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="ts_diagnostics",
+            read_only=True,
+            catalog_operation="ts_diagnostics",
+        ),
+        ToolSpec(
             name="fit_anomaly",
             description=(
-                "Fit an anomaly/fraud detector on the train partition only "
-                "(isolation_forest, lof, one_class_svm, or supervised_hgb). "
+                "Fit an anomaly/fraud detector on the train partition only. "
+                "Backends: sklearn (core), pyod (anomaly-industry), torch (autoencoder). "
                 "Distinct from EDA IsolationForest screens. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "pyod", "torch"],
+                        "description": "Detector backend (see anomaly_capability_matrix).",
+                    },
                     "method": {
                         "type": "string",
                         "enum": [
                             "isolation_forest",
                             "lof",
                             "one_class_svm",
+                            "hbos",
+                            "copod",
+                            "ecod",
+                            "deepsvdd",
+                            "autoencoder",
                             "supervised_hgb",
+                            "supervised_xgb",
+                            "supervised_lgbm",
                         ],
                         "description": "Detector / scorer algorithm.",
                     },
@@ -1912,6 +2019,41 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             catalog_operation="evaluate_anomaly",
         ),
         ToolSpec(
+            name="tune_anomaly_threshold",
+            description=(
+                "Tune anomaly threshold on validation labels (leakage-safe). "
+                "Same discipline as tune_threshold; never test unless allow_test_tuning."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "type": "string",
+                        "enum": ["train", "validation", "test"],
+                    },
+                    "metric": {
+                        "type": "string",
+                        "enum": ["f1", "fbeta", "precision_at_contamination", "youden"],
+                    },
+                    "k": {"type": "integer", "description": "Unused; reserved."},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="tune_anomaly_threshold",
+            read_only=False,
+            catalog_operation="tune_anomaly_threshold",
+        ),
+        ToolSpec(
+            name="anomaly_capability_matrix",
+            description="Return honest anomaly backend/method capability matrix.",
+            parameters={"type": "object", "properties": {}, "required": []},
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="anomaly_capability_matrix",
+            read_only=True,
+            catalog_operation="anomaly_capability_matrix",
+        ),
+        ToolSpec(
             name="save_anomaly_bundle",
             description=(
                 "Persist the active AnomalyPlan as buildml.anomaly_bundle.v1. "
@@ -1948,28 +2090,51 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_semisupervised",
             description=(
                 "Fit a semi-supervised classifier on scarce labeled + unlabeled "
-                "train rows (label_propagation, label_spreading, self_training). "
-                "Target NaNs mark unlabeled. Write operation."
+                "train rows. Backends: sklearn (default), industry (XGB/LGBM "
+                "pseudo-label), torch (FixMatch/MixMatch tabular), hf (text "
+                "pseudo-label). Target NaNs mark unlabeled. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "torch", "hf"],
+                        "description": "Semi-supervised backend (honest default when omitted).",
+                    },
                     "method": {
                         "type": "string",
                         "enum": [
                             "label_propagation",
                             "label_spreading",
                             "self_training",
+                            "pseudo_label_xgb",
+                            "pseudo_label_lgbm",
+                            "fixmatch_tabular",
+                            "mixmatch_tabular",
+                            "text_pseudo_label",
                         ],
                     },
                     "base_estimator": {
                         "type": "string",
                         "enum": ["logistic_regression", "hist_gradient_boosting"],
-                        "description": "Self-training base classifier.",
+                        "description": "Sklearn self-training base classifier.",
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "description": "Pseudo-label confidence threshold.",
                     },
                     "n_neighbors": {
                         "type": "integer",
                         "description": "Graph neighborhood size.",
+                    },
+                    "epochs": {
+                        "type": "integer",
+                        "description": "Torch consistency training epochs.",
+                    },
+                    "text_column": {
+                        "type": "string",
+                        "description": "Text feature column for hf backend.",
                     },
                     "prefer_reduce_components": {"type": "boolean"},
                 },
@@ -2153,6 +2318,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "torch"],
+                    },
                     "strategy": {
                         "type": "string",
                         "enum": [
@@ -2161,6 +2330,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "entropy",
                             "committee",
                             "expected_model_change_lite",
+                            "core_set",
+                            "qbc_kl",
+                            "qbc_variation_ratios",
+                            "bald",
+                            "mc_dropout",
                         ],
                     },
                     "base_estimator": {
@@ -2196,6 +2370,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "entropy",
                             "committee",
                             "expected_model_change_lite",
+                            "core_set",
+                            "qbc_kl",
+                            "qbc_variation_ratios",
+                            "bald",
+                            "mc_dropout",
                         ],
                     },
                 },
@@ -2271,23 +2450,23 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             parameters={
                 "type": "object",
                 "properties": {
-                    "estimator": {
+                    "backend": {
                         "type": "string",
-                        "enum": [
-                            "sgd_classifier",
-                            "sgd_regressor",
-                            "passive_aggressive_classifier",
-                            "passive_aggressive_regressor",
-                            "perceptron",
-                            "multinomial_nb",
-                            "bernoulli_nb",
-                        ],
+                        "enum": ["sklearn", "industry", "torch"],
                     },
+                    "estimator": {"type": "string"},
                     "chunk_size": {"type": "integer"},
                     "n_init": {"type": "integer"},
                     "prefer_reduce_components": {"type": "boolean"},
                     "allow_refit_fallback": {"type": "boolean"},
                     "drift_disclose": {"type": "boolean"},
+                    "drift_detector": {
+                        "type": "string",
+                        "enum": ["mean_shift", "adwin", "page_hinkley", "none"],
+                    },
+                    "buffer_size": {"type": "integer"},
+                    "epochs_per_update": {"type": "integer"},
+                    "device": {"type": "string"},
                 },
                 "required": [],
             },
@@ -2372,23 +2551,31 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_multitask",
             description=(
-                "Fit a multi-target MultiOutput / Chain estimator on train only. "
-                "Requires >=2 same-type targets. Write operation."
+                "Fit a multi-target estimator on train only (sklearn/industry/torch). "
+                "Requires >=2 targets. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "torch"],
+                    },
                     "method": {
                         "type": "string",
                         "enum": [
                             "multi_output",
                             "classifier_chain",
                             "regressor_chain",
+                            "multi_output_xgb",
+                            "multi_output_lgbm",
+                            "multi_output_catboost",
+                            "shared_trunk_multihead",
                         ],
                     },
                     "task": {
                         "type": "string",
-                        "enum": ["classification", "regression", "auto"],
+                        "enum": ["classification", "regression", "auto", "mixed"],
                     },
                     "base_estimator": {
                         "type": "string",
@@ -2400,6 +2587,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         ],
                     },
                     "prefer_reduce_components": {"type": "boolean"},
+                    "epochs": {"type": "integer"},
+                    "batch_size": {"type": "integer"},
+                    "learning_rate": {"type": "number"},
+                    "device": {"type": "string"},
                 },
                 "required": [],
             },
@@ -2472,9 +2663,19 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "torch", "industry"],
+                    },
                     "method": {
                         "type": "string",
-                        "enum": ["prototypical", "warm_start"],
+                        "enum": [
+                            "prototypical",
+                            "warm_start",
+                            "prototypical_torch",
+                            "maml",
+                            "reptile",
+                        ],
                     },
                     "task_column": {"type": "string"},
                     "k_shot": {"type": "integer"},
@@ -2486,6 +2687,9 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     },
                     "prefer_reduce_components": {"type": "boolean"},
                     "task_holdout_fraction": {"type": "number"},
+                    "meta_epochs": {"type": "integer"},
+                    "inner_lr": {"type": "number"},
+                    "inner_steps": {"type": "integer"},
                 },
                 "required": [],
             },
@@ -2582,12 +2786,17 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_federated",
             description=(
                 "Simulate federated averaging on Session train clients "
-                "(local FedAvg/FedProx). Needs a client/group column and one "
-                "target. Not a distributed FL platform. Write operation."
+                "(local FedAvg/FedProx). backend='native' or 'flower' when "
+                "buildml[federated-industry] installed. Needs a client/group "
+                "column and one target. Not a networked FL deployment. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["native", "flower"],
+                    },
                     "method": {
                         "type": "string",
                         "enum": ["fedavg", "fedprox"],
@@ -2698,13 +2907,17 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_probabilistic",
             description=(
-                "Fit a Bayesian / probabilistic sklearn estimator "
-                "(BayesianRidge / GP / GaussianNB) with optional train-only "
-                "split conformal. Not a PyMC/Stan platform. Write operation."
+                "Fit a Bayesian / probabilistic estimator with uncertainty "
+                "(native sklearn, optional MAPIE conformal, optional NGBoost). "
+                "Not a PyMC/Stan platform. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["native", "mapie", "ngboost"],
+                    },
                     "estimator": {
                         "type": "string",
                         "enum": [
@@ -2712,6 +2925,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "gaussian_process_regressor",
                             "gaussian_process_classifier",
                             "gaussian_nb",
+                            "split",
+                            "cv_plus",
+                            "jackknife_plus",
+                            "ngboost_regressor",
+                            "ngboost_classifier",
                         ],
                     },
                     "task": {
@@ -2728,10 +2946,15 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "split_conformal",
                             "both",
                             "none",
+                            "mapie",
+                            "mapie_cv_plus",
+                            "mapie_jackknife_plus",
                         ],
                     },
                     "prefer_reduce_components": {"type": "boolean"},
                     "n_restarts_optimizer": {"type": "integer"},
+                    "n_estimators": {"type": "integer"},
+                    "learning_rate": {"type": "number"},
                 },
                 "required": [],
             },
@@ -2886,17 +3109,31 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_causal",
             description=(
-                "Fit train-only T-learner / IPW / AIPW under declared "
-                "CausalAssumptions and estimate backdoor ATE. Refuses without "
-                "assumptions. Not DoWhy/EconML; not causal discovery. "
-                "Write operation."
+                "Fit train-only causal models under declared CausalAssumptions "
+                "and estimate backdoor ATE. Backends: native (T-learner/IPW/AIPW), "
+                "dowhy, econml when buildml[causal-industry] installed. Refuses "
+                "without assumptions. Not causal discovery. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["native", "dowhy", "econml"],
+                    },
                     "method": {
                         "type": "string",
-                        "enum": ["t_learner", "ipw", "aipw"],
+                        "enum": [
+                            "t_learner",
+                            "ipw",
+                            "aipw",
+                            "backdoor_linear",
+                            "backdoor_propensity_score",
+                            "backdoor_propensity_weighting",
+                            "dml",
+                            "causal_forest",
+                            "policy_tree",
+                        ],
                     },
                     "bootstrap_samples": {"type": "integer"},
                     "random_state": {"type": "integer"},
@@ -2956,15 +3193,23 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="refute_causal",
             description=(
-                "Simple placebo_treatment or random_confounder sensitivity "
-                "disclosure. Not a full DoWhy refutation suite."
+                "Refutation / sensitivity disclosure. Native: placebo_treatment, "
+                "random_confounder. DoWhy backend adds random_common_cause, "
+                "add_unobserved_common_cause, data_subset, placebo_outcome."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "kind": {
                         "type": "string",
-                        "enum": ["placebo_treatment", "random_confounder"],
+                        "enum": [
+                            "placebo_treatment",
+                            "random_confounder",
+                            "random_common_cause",
+                            "add_unobserved_common_cause",
+                            "data_subset",
+                            "placebo_outcome",
+                        ],
                     },
                     "random_state": {"type": "integer"},
                 },
@@ -3044,7 +3289,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_graph",
             description=(
                 "Fit graph node classification: classical NetworkX+sklearn "
-                "(buildml[graph]) or pure-Torch GCN (buildml[torch]; no PyG). "
+                "(buildml[graph]), pure-Torch GCN (buildml[torch]), or PyG "
+                "GCN/GraphSAGE/GAT (buildml[graph-pyg]). "
                 "Default inductive train-induced subgraph. Write operation."
             ),
             parameters={
@@ -3052,7 +3298,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "properties": {
                     "method": {
                         "type": "string",
-                        "enum": ["classical", "gcn"],
+                        "enum": ["classical", "gcn", "pyg"],
                     },
                     "mode": {
                         "type": "string",
@@ -3062,8 +3308,13 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "type": "string",
                         "enum": ["logistic_regression", "random_forest"],
                     },
+                    "pyg_model": {
+                        "type": "string",
+                        "enum": ["gcn", "graphsage", "gat"],
+                    },
                     "epochs": {"type": "integer"},
                     "hidden_dim": {"type": "integer"},
+                    "heads": {"type": "integer"},
                     "random_state": {"type": "integer"},
                     "include_graph_metrics": {"type": "boolean"},
                 },
@@ -3151,15 +3402,23 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_symbolic",
             description=(
                 "Compile or induce tabular if-then rules on Session train "
-                "(declared / decision_tree / decision_list). Not Prolog/Z3/AGI. "
-                "Write operation."
+                "(sklearn tree/list or industry skope-rules/imodels when installed). "
+                "Not Prolog/Z3/AGI. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry"],
+                    },
                     "source": {
                         "type": "string",
                         "enum": ["declared", "decision_tree", "decision_list"],
+                    },
+                    "method": {
+                        "type": "string",
+                        "enum": ["skope_rules", "rulefit", "boosted_rules"],
                     },
                     "task": {
                         "type": "string",
@@ -3170,6 +3429,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "max_rules": {"type": "integer"},
                     "random_state": {"type": "integer"},
                     "prefer_reduce_components": {"type": "boolean"},
+                    "verify_constraints": {"type": "boolean"},
                 },
                 "required": [],
             },
@@ -3223,13 +3483,17 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_neuro_symbolic",
             description=(
-                "Fit sklearn + symbolic hybrid (constraint_overlay / "
+                "Fit sklearn or lite torch + symbolic hybrid (constraint_overlay / "
                 "rules_as_features / constraint_repair) on Session train. "
                 "Not a deep neuro-symbolic research platform. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "torch"],
+                    },
                     "mode": {
                         "type": "string",
                         "enum": [
@@ -3245,7 +3509,13 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "ridge",
                             "random_forest",
                             "decision_tree",
+                            "concept_bottleneck_lite",
+                            "neural_additive_lite",
                         ],
+                    },
+                    "torch_method": {
+                        "type": "string",
+                        "enum": ["concept_bottleneck_lite", "neural_additive_lite"],
                     },
                     "task": {
                         "type": "string",
@@ -3259,6 +3529,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "max_depth": {"type": "integer"},
                     "max_rules": {"type": "integer"},
                     "random_state": {"type": "integer"},
+                    "torch_epochs": {"type": "integer"},
+                    "device": {"type": "string"},
                 },
                 "required": [],
             },
@@ -3347,12 +3619,16 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_cbr",
             description=(
                 "Build a tabular case memory from Session train "
-                "(euclidean/manhattan/cosine/mixed). Case→solution CBR — "
+                "(sklearn/industry/embedding/torch backends). Case→solution CBR — "
                 "not RAG. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "embedding", "torch"],
+                    },
                     "task": {
                         "type": "string",
                         "enum": ["classification", "regression"],
@@ -3375,6 +3651,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "enum": ["none", "offset"],
                     },
                     "k": {"type": "integer"},
+                    "text_columns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "text_model_name": {"type": "string"},
                     "standardize": {"type": "boolean"},
                     "distance_eps": {"type": "number"},
                     "random_state": {"type": "integer"},
@@ -3401,6 +3682,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "enum": ["train", "validation", "test", "all"],
                     },
                     "k": {"type": "integer"},
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "embedding", "torch"],
+                    },
                 },
                 "required": [],
             },
@@ -3423,6 +3708,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     },
                     "k": {"type": "integer"},
                     "return_traces": {"type": "boolean"},
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "embedding", "torch"],
+                    },
                 },
                 "required": [],
             },
@@ -3519,6 +3808,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry"],
+                    },
                     "task": {
                         "type": "string",
                         "enum": ["classification", "regression"],
@@ -3532,7 +3825,13 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "hist_gradient_boosting_regressor",
                         ],
                     },
+                    "method": {
+                        "type": "string",
+                        "enum": ["bc_mlp", "gail_lite"],
+                    },
                     "action_column": {"type": "string"},
+                    "env_id": {"type": "string"},
+                    "n_epochs": {"type": "integer"},
                     "random_state": {"type": "integer"},
                     "prefer_reduce_components": {"type": "boolean"},
                 },
@@ -3615,20 +3914,31 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_rl",
             description=(
-                "Fit contextual bandit (core) or Gymnasium REINFORCE-lite "
-                "(buildml[rl]). Offline bandit metrics disclosed. Not MuJoCo/"
-                "robotics. Write operation."
+                "Fit contextual bandit (core), Gymnasium REINFORCE-lite (buildml[rl]), "
+                "or SB3 PPO/DQN/A2C (buildml[rl-industry]). Offline bandit metrics "
+                "disclosed. Not MuJoCo/robotics. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "native", "industry"],
+                    },
                     "mode": {
                         "type": "string",
-                        "enum": ["contextual_bandit", "gym_reinforce"],
+                        "enum": ["contextual_bandit", "gym_reinforce", "gym_sb3"],
                     },
                     "algorithm": {
                         "type": "string",
-                        "enum": ["linucb", "epsilon_greedy", "softmax"],
+                        "enum": [
+                            "linucb",
+                            "epsilon_greedy",
+                            "softmax",
+                            "ppo",
+                            "dqn",
+                            "a2c",
+                        ],
                     },
                     "action_column": {"type": "string"},
                     "reward_column": {"type": "string"},
@@ -3642,6 +3952,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "max_steps": {"type": "integer"},
                     "learning_rate": {"type": "number"},
                     "gamma": {"type": "number"},
+                    "total_timesteps": {"type": "integer"},
                 },
                 "required": [],
             },
@@ -3731,16 +4042,26 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_tda",
             description=(
-                "Fit topological features on train (ripser local VR + persim/"
-                "silhouette vectorization) with optional sklearn head. Requires "
-                "buildml[tda]. Not a Mapper research suite. Write operation."
+                "Fit topological features on train (native ripser or giotto-tda "
+                "backend) with optional sklearn head. Requires buildml[tda] or "
+                "buildml[tda-industry]. Not a Mapper research suite. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["native", "giotto"],
+                    },
                     "vectorization": {
                         "type": "string",
-                        "enum": ["persistence_image", "landscape", "silhouette"],
+                        "enum": [
+                            "persistence_image",
+                            "landscape",
+                            "silhouette",
+                            "betti_curve",
+                            "persistence_landscape",
+                        ],
                     },
                     "knn": {"type": "integer"},
                     "n_bins": {"type": "integer"},
@@ -3763,6 +4084,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "random_state": {"type": "integer"},
                     "prefer_reduce_components": {"type": "boolean"},
                     "max_points_guard": {"type": "integer"},
+                    "subsample_strategy": {
+                        "type": "string",
+                        "enum": ["error", "random", "stratified"],
+                    },
+                    "mapper": {"type": "boolean"},
                 },
                 "required": [],
             },
@@ -3813,7 +4139,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="evaluate_tda",
             description=(
-                "Score the TDA head on a holdout partition (frozen train pipeline)."
+                "Score the TDA head on a holdout partition (frozen train pipeline); "
+                "optional persim Wasserstein/bottleneck diagram distances."
             ),
             parameters={
                 "type": "object",
@@ -3822,6 +4149,16 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "type": "string",
                         "enum": ["train", "validation", "test", "all"],
                     },
+                    "backend": {
+                        "type": "string",
+                        "enum": ["native", "giotto"],
+                    },
+                    "compare_diagram_distances": {"type": "boolean"},
+                    "diagram_distance_metric": {
+                        "type": "string",
+                        "enum": ["wasserstein", "bottleneck"],
+                    },
+                    "diagram_distance_dim": {"type": "integer"},
                 },
                 "required": [],
             },
@@ -3832,7 +4169,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ),
         ToolSpec(
             name="save_tda_bundle",
-            description="Persist TdaPlan as buildml.tda_bundle.v1.",
+            description="Persist TdaPlan as buildml.tda_bundle.v2.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -3847,7 +4184,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ),
         ToolSpec(
             name="load_tda_bundle",
-            description="Load a buildml.tda_bundle.v1 plan into the Session.",
+            description="Load a buildml.tda_bundle.v2 plan into the Session (v1 compatible).",
             parameters={
                 "type": "object",
                 "properties": {
@@ -3864,15 +4201,30 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_recommender",
             description=(
                 "Fit a recommender on train user–item interactions (item/user "
-                "kNN, SVD/NMF, or content). Requires user_column and item_column. "
-                "Not RAG and not EDA Recommendation Findings. Write operation."
+                "kNN, SVD/NMF, content, or industry ALS/BPR/LightFM when "
+                "recommenders-industry extra installed). Requires user_column "
+                "and item_column. Not RAG and not EDA Recommendation Findings. "
+                "Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "method": {
                         "type": "string",
-                        "enum": ["item_knn", "user_knn", "svd", "nmf", "content"],
+                        "enum": [
+                            "item_knn",
+                            "user_knn",
+                            "svd",
+                            "nmf",
+                            "content",
+                            "als",
+                            "bpr",
+                            "lightfm",
+                        ],
+                    },
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "implicit", "lightfm"],
                     },
                     "user_column": {"type": "string"},
                     "item_column": {"type": "string"},
@@ -3888,6 +4240,12 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "type": "array",
                         "items": {"type": "string"},
                     },
+                    "user_feature_columns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "n_iterations": {"type": "integer"},
+                    "lightfm_epochs": {"type": "integer"},
                     "cold_start": {
                         "type": "string",
                         "enum": ["popularity", "skip"],
@@ -3977,19 +4335,46 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             catalog_operation="load_recommender_bundle",
         ),
         ToolSpec(
+            name="ranking_capability_matrix",
+            description=(
+                "Return honest tabular LTR backend/method capability matrix "
+                "(sklearn fallback, industry GBDT rankers, torch listwise-lite). "
+                "Distinguishes LTR from RAG and recommenders."
+            ),
+            parameters={"type": "object", "properties": {}, "required": []},
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="ranking_capability_matrix",
+            read_only=True,
+            catalog_operation="ranking_capability_matrix",
+        ),
+        ToolSpec(
             name="fit_ranker",
             description=(
-                "Fit tabular learning-to-rank on train query–item feature rows "
-                "(pointwise Ridge/HGB or pairwise RankSVM-lite). Requires "
-                "query_column and item_column. Prefer group_split on query id. "
+                "Fit tabular learning-to-rank on train query–item feature rows. "
+                "Backends: sklearn pointwise/pairwise fallback; industry "
+                "LightGBM LambdaRank / XGBoost rank:ndcg / CatBoost YetiRank "
+                "(buildml[ranking-industry]); torch listwise-lite (buildml[torch]). "
+                "Requires query_column and item_column. Prefer group_split on query id. "
                 "Not RAG and not recommender CF. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "torch"],
+                        "description": "LTR backend (see ranking_capability_matrix).",
+                    },
                     "method": {
                         "type": "string",
-                        "enum": ["pointwise", "pairwise"],
+                        "enum": [
+                            "pointwise",
+                            "pairwise",
+                            "lambdarank_lgbm",
+                            "rank_ndcg_xgb",
+                            "yetirank_catboost",
+                            "listwise_lite",
+                        ],
                     },
                     "query_column": {"type": "string"},
                     "item_column": {"type": "string"},
@@ -4010,6 +4395,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "relevance_threshold": {"type": "number"},
                     "alpha": {"type": "number"},
                     "C": {"type": "number"},
+                    "n_estimators": {"type": "integer"},
+                    "learning_rate": {"type": "number"},
+                    "hidden_dim": {"type": "integer"},
+                    "epochs": {"type": "integer"},
+                    "device": {"type": "string"},
                     "random_state": {"type": "integer"},
                 },
                 "required": ["query_column", "item_column"],
@@ -4033,6 +4423,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "enum": ["train", "validation", "test", "all"],
                     },
                     "k": {"type": "integer"},
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "torch"],
+                    },
                 },
                 "required": [],
             },
@@ -4055,6 +4449,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "enum": ["train", "validation", "test", "all"],
                     },
                     "k": {"type": "integer"},
+                    "backend": {
+                        "type": "string",
+                        "enum": ["sklearn", "industry", "torch"],
+                    },
                 },
                 "required": [],
             },
@@ -4097,16 +4495,21 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_kg",
             description=(
                 "Fit knowledge-graph embeddings on train (head, relation, tail) "
-                "triples (TransE or DistMult, numpy). Requires head_column, "
-                "relation_column, tail_column. Not Graph ML node-classify, not "
-                "Neo4j, not RAG. Write operation."
+                "triples. Backends: native (numpy TransE/DistMult) or pykeen "
+                "(RotatE/ComplEx when buildml[kg-industry] installed). Requires "
+                "head_column, relation_column, tail_column. Not Graph ML "
+                "node-classify, not Neo4j, not RAG. Write operation."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["native", "pykeen"],
+                    },
                     "method": {
                         "type": "string",
-                        "enum": ["transe", "distmult"],
+                        "enum": ["transe", "distmult", "rotate", "complex"],
                     },
                     "head_column": {"type": "string"},
                     "relation_column": {"type": "string"},
@@ -4257,12 +4660,26 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             catalog_operation="load_kg_bundle",
         ),
         ToolSpec(
+            name="decision_capability_matrix",
+            description=(
+                "Honest capability matrix for decision-policy backends "
+                "(native scipy/numpy, PuLP/OR-Tools MIP, CVXPY LP, XGB/calibrated "
+                "thresholds). Read-only catalog."
+            ),
+            parameters={"type": "object", "properties": {}, "required": []},
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="decision_capability_matrix",
+            read_only=True,
+            catalog_operation="decision_capability_matrix",
+        ),
+        ToolSpec(
             name="fit_decision_policy",
             description=(
                 "Fit a decision policy on train/validation: threshold "
-                "(wraps tune_threshold engine), cost_matrix, topk, knapsack, "
-                "or lp_allocate. Test tuning requires allow_test_tuning=True. "
-                "Not a general OR platform."
+                "(wraps tune_threshold engine or XGB/calibrated when installed), "
+                "cost_matrix, topk, knapsack (PuLP/OR-Tools MIP when installed), "
+                "or lp_allocate (CVXPY when installed). Test tuning requires "
+                "allow_test_tuning=True. Not a general OR platform."
             ),
             parameters={
                 "type": "object",
@@ -4276,6 +4693,20 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "knapsack",
                             "lp_allocate",
                         ],
+                    },
+                    "backend": {
+                        "type": "string",
+                        "enum": [
+                            "native",
+                            "pulp",
+                            "ortools",
+                            "cvxpy",
+                            "calibrated",
+                            "xgb",
+                        ],
+                        "description": (
+                            "Solver/scorer backend (see decision_capability_matrix)."
+                        ),
                     },
                     "partition": {
                         "type": "string",
@@ -4397,18 +4828,43 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             catalog_operation="load_decision_bundle",
         ),
         ToolSpec(
+            name="synthetic_capability_matrix",
+            description=(
+                "Honest capability matrix for synthetic backends (native vs SDV) "
+                "and evaluation paths (builtin fidelity/TSTR vs SDMetrics)."
+            ),
+            parameters={"type": "object", "properties": {}, "required": []},
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="synthetic_capability_matrix",
+            read_only=True,
+            catalog_operation="synthetic_capability_matrix",
+        ),
+        ToolSpec(
             name="fit_synthesizer",
             description=(
-                "Fit a train-only tabular synthesizer: bootstrap, gaussian_copula, "
-                "or smote (requires buildml[imbalanced]). Distinct from resample. "
-                "Not differential privacy."
+                "Fit a train-only tabular synthesizer. Native: bootstrap, "
+                "gaussian_copula, smote (buildml[imbalanced]). SDV industry: "
+                "ctgan, tvae, copulagan (buildml[synthetic-industry]). "
+                "Distinct from resample. Not differential privacy."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "backend": {
+                        "type": "string",
+                        "enum": ["native", "sdv"],
+                        "description": "Backend (see synthetic_capability_matrix).",
+                    },
                     "method": {
                         "type": "string",
-                        "enum": ["bootstrap", "gaussian_copula", "smote"],
+                        "enum": [
+                            "bootstrap",
+                            "gaussian_copula",
+                            "smote",
+                            "ctgan",
+                            "tvae",
+                            "copulagan",
+                        ],
                     },
                     "columns": {
                         "type": "array",
@@ -4420,6 +4876,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "target_column": {"type": "string"},
                     "k_neighbors": {"type": "integer"},
                     "sampling_strategy": {},
+                    "epochs": {"type": "integer", "description": "SDV training epochs."},
+                    "batch_size": {"type": "integer", "description": "SDV batch size."},
                 },
                 "required": [],
             },
@@ -4444,6 +4902,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "enum": ["none", "extend_train"],
                     },
                     "provenance_column": {"type": "string"},
+                    "validate": {
+                        "type": "boolean",
+                        "description": "Run built-in validate_synthetic on sample.",
+                    },
                 },
                 "required": [],
             },
@@ -4464,6 +4926,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "mode": {
                         "type": "string",
                         "enum": ["fidelity", "tstr"],
+                    },
+                    "eval_backend": {
+                        "type": "string",
+                        "enum": ["auto", "builtin", "sdmetrics"],
+                        "description": "Fidelity eval backend (SDMetrics when installed).",
                     },
                     "partition": {
                         "type": "string",

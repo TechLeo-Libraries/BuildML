@@ -27,6 +27,7 @@ def test_core_import_and_catalog() -> None:
     import buildml.kg as kg
 
     assert hasattr(kg, "fit_kg")
+    assert hasattr(kg, "kg_capability_matrix")
     assert hasattr(Session, "fit_kg")
     for op in (
         "fit_kg",

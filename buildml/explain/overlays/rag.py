@@ -78,6 +78,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         parameters=(
             _p("size", "int", "Chunk character size.", 512),
             _p("overlap", "int", "Overlap between adjacent chunks.", 64),
+            _p("strategy", "fixed | recursive", "Chunk splitting strategy.", "fixed"),
         ),
         inputs=("Active RAG corpus.",),
         outputs=("ChunkResult stored on the Session.",),
@@ -106,7 +107,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Store RagIndex and IndexResult on the Session.",
         ),
         parameters=(
-            _p("embedder", "str | callable | Embedder | None", "Default hashing; callable or ST override."),
+            _p("embedder", "str | callable | Embedder | None", "Default auto (ST when rag installed); hashing fallback.", "auto"),
             _p("chunk_size", "int | None", "Optional chunk size when chunking inside this call."),
             _p("chunk_overlap", "int | None", "Optional chunk overlap when chunking inside this call."),
         ),
@@ -152,7 +153,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         parameters=(
             _p("query", "str", "Query text.", required=True),
             _p("k", "int", "Number of hits to return.", 5),
-            _p("mode", "str", "dense (default), bm25, or hybrid.", "dense"),
+            _p("mode", "str", "hybrid (default when rag installed), dense, or bm25.", "hybrid"),
             _p("fusion", "str | None", "Hybrid fusion: rrf (default) or weighted.", None),
             _p("filters", "dict | None", "Equality filters on chunk metadata.", None),
             _p("rerank", "bool | str", "False (default), True/'cross-encoder', or model id.", False),

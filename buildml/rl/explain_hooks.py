@@ -11,7 +11,9 @@ def imitation_fit_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "task": payload.get("task"),
+        "backend": payload.get("backend"),
         "estimator": payload.get("estimator"),
+        "method": payload.get("method"),
         "n_train_rows": payload.get("n_train_rows"),
         "action_column": payload.get("action_column"),
         "train_score": payload.get("train_score"),
@@ -52,6 +54,7 @@ def rl_fit_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "mode": payload.get("mode"),
+        "backend": payload.get("backend"),
         "algorithm": payload.get("algorithm"),
         "n_train_rows": payload.get("n_train_rows"),
         "n_arms": payload.get("n_arms"),
@@ -93,6 +96,8 @@ def imitation_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for imitation learning."""
+    from buildml.rl.catalog import rl_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -154,6 +159,7 @@ def imitation_status(
         "has_fit_result": fit_result is not None,
         "has_eval_result": eval_result is not None,
         "eval": eval_payload,
+        "capability_matrix": rl_capability_matrix(),
         "disclosures": disclosures,
         "boundary": (
             "Imitation learning here is behavioral cloning from demonstration "
@@ -179,6 +185,8 @@ def rl_status(
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Factual walkthrough disclosure for reinforcement learning."""
+    from buildml.rl.catalog import rl_capability_matrix
+
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -197,12 +205,14 @@ def rl_status(
         disclosures.extend(
             [
                 f"RlPlan mode={getattr(rl_plan, 'mode', None)}, "
+                f"backend={getattr(rl_plan, 'backend', None)}, "
                 f"algorithm={getattr(rl_plan, 'algorithm', None)}, "
                 f"n_arms={getattr(rl_plan, 'n_arms', None)}, "
                 f"env_id={getattr(rl_plan, 'env_id', None)}.",
                 "Contextual bandits fit on train logged data only; "
                 "holdout metrics are offline (DM/IPS).",
                 "gym_reinforce requires buildml[rl] and hosts an env policy on the Session.",
+                "gym_sb3 requires buildml[rl-industry] (SB3 PPO/DQN/A2C).",
                 "Session checkpoints do not embed RlPlan; use save_rl_bundle / load_rl_bundle.",
                 "Honesty: Session bandit / small-env RL — not MuJoCo/robotics/multi-agent.",
             ]
@@ -236,10 +246,11 @@ def rl_status(
         "has_fit_result": fit_result is not None,
         "has_eval_result": eval_result is not None,
         "eval": eval_payload,
+        "capability_matrix": rl_capability_matrix(),
         "disclosures": disclosures,
         "boundary": (
-            "RL here covers contextual bandits on Session tables and an optional "
-            "Gymnasium REINFORCE-lite loop. Not a MuJoCo / robotics / multi-agent platform."
+            "RL here covers contextual bandits, REINFORCE-lite, and optional SB3 "
+            "on small Gymnasium envs. Not MuJoCo / robotics / multi-agent."
         ),
     }
 

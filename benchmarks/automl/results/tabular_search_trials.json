@@ -1,0 +1,134 @@
+{
+  "ranking_metric": "f1_weighted",
+  "backend": "native",
+  "method": "randomized",
+  "selection": "cv",
+  "best_family": "knn",
+  "best_score": 0.836429901495261,
+  "outer_score_mean": null,
+  "trials": [
+    {
+      "trial": 0,
+      "kind": "single",
+      "family": "knn",
+      "recipe_strategy": "impute_scale",
+      "mean_score": 0.836429901495261,
+      "std_score": 0.07429985455237209,
+      "mean_metrics": {
+        "accuracy": 0.8366013071895425,
+        "balanced_accuracy": 0.8366666666666666,
+        "f1_macro": 0.8363643092564662,
+        "f1_weighted": 0.836429901495261
+      },
+      "params": {
+        "n_neighbors": 11
+      }
+    },
+    {
+      "trial": 1,
+      "kind": "single",
+      "family": "xgboost",
+      "recipe_strategy": "impute_scale_select",
+      "mean_score": 0.8100189644923891,
+      "std_score": 0.04945987248084403,
+      "mean_metrics": {
+        "accuracy": 0.8104575163398694,
+        "balanced_accuracy": 0.8102564102564104,
+        "f1_macro": 0.8098877741173339,
+        "f1_weighted": 0.8100189644923891
+      },
+      "params": {
+        "n_estimators": 140,
+        "max_depth": 3,
+        "learning_rate": 0.03
+      }
+    },
+    {
+      "trial": 2,
+      "kind": "single",
+      "family": "random_forest",
+      "recipe_strategy": "impute_scale_select_k20",
+      "mean_score": 0.8037001777004948,
+      "std_score": 0.07066349442210763,
+      "mean_metrics": {
+        "accuracy": 0.8039215686274509,
+        "balanced_accuracy": 0.8043589743589744,
+        "f1_macro": 0.8037253043452504,
+        "f1_weighted": 0.8037001777004948
+      },
+      "params": {
+        "n_estimators": 80,
+        "min_samples_leaf": 2,
+        "max_depth": null
+      }
+    },
+    {
+      "trial": 3,
+      "kind": "single",
+      "family": "lightgbm",
+      "recipe_strategy": "impute_encode_onehot",
+      "mean_score": 0.8025625653155516,
+      "std_score": 0.03759329235560179,
+      "mean_metrics": {
+        "accuracy": 0.8039215686274509,
+        "balanced_accuracy": 0.8048717948717948,
+        "f1_macro": 0.8026605057352184,
+        "f1_weighted": 0.8025625653155516
+      },
+      "params": {
+        "num_leaves": 63,
+        "n_estimators": 60,
+        "learning_rate": 0.03
+      }
+    },
+    {
+      "trial": 4,
+      "kind": "single",
+      "family": "knn",
+      "recipe_strategy": "impute_scale_ordinal",
+      "mean_score": 0.7707126759392319,
+      "std_score": 0.03002031145036289,
+      "mean_metrics": {
+        "accuracy": 0.7712418300653594,
+        "balanced_accuracy": 0.771025641025641,
+        "f1_macro": 0.7706116863237259,
+        "f1_weighted": 0.7707126759392319
+      },
+      "params": {
+        "n_neighbors": 3
+      }
+    },
+    {
+      "trial": 5,
+      "kind": "single",
+      "family": "decision_tree",
+      "recipe_strategy": "impute_scale_variance",
+      "mean_score": 0.7644942554419677,
+      "std_score": 0.038988752670179844,
+      "mean_metrics": {
+        "accuracy": 0.7647058823529411,
+        "balanced_accuracy": 0.7646153846153846,
+        "f1_macro": 0.7644135802469135,
+        "f1_weighted": 0.7644942554419677
+      },
+      "params": {
+        "min_samples_leaf": 2,
+        "max_depth": 8
+      }
+    }
+  ],
+  "disclosures": [
+    "AutoML searches a finite disclosed catalog of model families and fold-local preprocess strategies \u2014 not neural architecture search (NAS), not causal discovery, and not a fully automated AI scientist.",
+    "Backend=native, method=randomized, selection=cv, ranking_metric=f1_weighted, n_trials_scored=6.",
+    "Families searched: ['logistic', 'random_forest', 'gradient_boosting', 'knn', 'decision_tree', 'lightgbm', 'xgboost']; recipe strategies: ['passthrough', 'impute_median', 'impute_mean', 'impute_scale', 'impute_most_frequent_scale', 'impute_minmax', 'impute_scale_onehot', 'impute_scale_ordinal', 'impute_encode_onehot', 'impute_scale_select', 'impute_scale_select_k20', 'impute_scale_variance', 'impute_minmax_onehot'].",
+    "Session test never enters selection scoring or fold membership.",
+    "Fold-local PreprocessRecipe steps refit on fold-train (or full train for validation selection / final refit) only.",
+    "trial_budget=8 cap disclosed."
+  ],
+  "limitations": [
+    "Trial budget and catalog size bound exploration (6 scored trials, backend=native, method=randomized).",
+    "Default catalogs omit deep nets and arbitrary sklearn Pipeline DAGs.",
+    "Recipe strategy search covers impute/scale/encode/select combinations \u2014 not arbitrary preprocess graphs.",
+    "selection='cv' rankings are optimistic relative to a true outer holdout; prefer nested or validation+final test confirm."
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "methods": [
+    {
+      "method": "naive",
+      "rolling_mae": 1.6858178245896425,
+      "rolling_rmse": 1.9528959710825564,
+      "origin_mae": 2.138748355614196,
+      "origin_rmse": 2.3974754505015867
+    },
+    {
+      "method": "seasonal_naive",
+      "rolling_mae": 0.43129200092123876,
+      "rolling_rmse": 0.5069691010378828,
+      "origin_mae": 3.1388398128824146,
+      "origin_rmse": 3.727025730783792
+    },
+    {
+      "method": "lag_ridge",
+      "rolling_mae": 0.2847935148306351,
+      "rolling_rmse": 0.35165825683766894,
+      "origin_mae": 0.2895568588102142,
+      "origin_rmse": 0.36339918811829675
+    },
+    {
+      "method": "ets",
+      "rolling_mae": 3.345590113218177,
+      "rolling_rmse": 4.0314496202651044,
+      "origin_mae": 3.277273626146325,
+      "origin_rmse": 3.911588887527361
+    },
+    {
+      "method": "auto_arima",
+      "rolling_mae": 2.983393927654433,
+      "rolling_rmse": 3.6596932653648513,
+      "origin_mae": 3.2359342206497623,
+      "origin_rmse": 3.8657504510741734
+    }
+  ],
+  "statsmodels": true
+}

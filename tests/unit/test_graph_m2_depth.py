@@ -11,9 +11,10 @@ import importlib.util
 from buildml import Session
 from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.explain.sync import REQUIRED_AI_TOOL_SESSION_METHODS
-from buildml.graph.extras import networkx_available
+from buildml.graph.extras import networkx_available, pyg_available
 
 _TORCH_SPEC = importlib.util.find_spec("torch") is not None
+_PYG_SPEC = pyg_available()
 
 
 def _community_graph(n_per: int = 40, seed: int = 7) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -134,6 +135,57 @@ def test_gcn_inductive_path() -> None:
     assert fit.train_accuracy is not None and fit.train_accuracy > 0.5
     ev = session.evaluate_graph(partition="test")
     assert ev.metrics["accuracy"] >= 0.45
+
+
+@pytest.mark.skipif(not _PYG_SPEC, reason="buildml[graph-pyg] / torch-geometric missing")
+@pytest.mark.skipif(
+    __import__("sys").platform.startswith("win"),
+    reason="torch/PyG DLL import can AV on some Windows Python 3.13 setups",
+)
+def test_pyg_graphsage_inductive_path() -> None:
+    session = _session()
+    fit = session.fit_graph(
+        method="pyg",
+        pyg_model="graphsage",
+        mode="inductive",
+        epochs=40,
+        hidden_dim=16,
+        random_state=0,
+    )
+    assert fit.method == "pyg"
+    assert fit.train_accuracy is not None and fit.train_accuracy > 0.5
+    ev = session.evaluate_graph(partition="test")
+    assert ev.metrics["accuracy"] >= 0.45
+
+
+@pytest.mark.skipif(not _PYG_SPEC, reason="buildml[graph-pyg] / torch-geometric missing")
+@pytest.mark.skipif(
+    __import__("sys").platform.startswith("win"),
+    reason="torch/PyG DLL import can AV on some Windows Python 3.13 setups",
+)
+def test_pyg_gat_inductive_path() -> None:
+    session = _session()
+    fit = session.fit_graph(
+        method="pyg",
+        pyg_model="gat",
+        mode="inductive",
+        epochs=40,
+        hidden_dim=16,
+        heads=2,
+        random_state=0,
+    )
+    assert fit.method == "pyg"
+    assert fit.train_accuracy is not None and fit.train_accuracy > 0.5
+
+
+def test_graph_capability_matrix() -> None:
+    from buildml.graph.catalog import graph_capability_matrix
+
+    matrix = graph_capability_matrix()
+    assert "classical" in matrix["backends"]
+    assert "gcn" in matrix["backends"]
+    assert "pyg" in matrix["backends"]
+    assert matrix["backends"]["pyg"]["methods"] == ["gcn", "graphsage", "gat"]
 
 
 def test_refuse_fit_without_set_graph() -> None:

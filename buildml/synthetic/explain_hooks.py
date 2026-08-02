@@ -11,6 +11,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "method": payload.get("method"),
+        "backend": payload.get("backend"),
         "partition": payload.get("partition"),
         "n_rows": payload.get("n_rows"),
         "n_columns": payload.get("n_columns"),
@@ -120,11 +121,12 @@ def synthetic_status(
         "disclosures": disclosures,
         "boundary": (
             "Synthetic-data systems are a Session domain path: train-fitted "
-            "bootstrap / Gaussian copula / SMOTE generators with "
-            "sample_synthetic, fidelity or TSTR evaluate_synthetic, and "
-            "optional extend_train merge with provenance. Not SDV/CTGAN "
-            "stacks in core; not differential privacy. "
-            "Session.resample remains the class-balance preprocess path."
+            "native bootstrap / Gaussian copula / SMOTE generators plus optional "
+            "SDV CTGAN/TVAE/CopulaGAN (buildml[synthetic-industry]). "
+            "sample_synthetic, fidelity or TSTR evaluate_synthetic, optional "
+            "validate_synthetic, and extend_train merge with provenance. "
+            "Not differential privacy. Session.resample remains the class-balance "
+            "preprocess path."
         ),
     }
 

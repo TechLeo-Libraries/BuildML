@@ -18,12 +18,15 @@ class CbrPlan:
     """
 
     task: str
+    backend: str
     metric: str
     reuse: str
     adapt: str
     k: int
     columns: tuple[str, ...]
     categorical_columns: tuple[str, ...]
+    text_columns: tuple[str, ...]
+    text_model_name: str
     target_column: str
     n_train_rows: int
     case_base: CaseBase
@@ -40,12 +43,15 @@ class CbrPlan:
         return {
             "kind": "cbr",
             "task": self.task,
+            "backend": self.backend,
             "metric": self.metric,
             "reuse": self.reuse,
             "adapt": self.adapt,
             "k": self.k,
             "columns": list(self.columns),
             "categorical_columns": list(self.categorical_columns),
+            "text_columns": list(self.text_columns),
+            "text_model_name": self.text_model_name,
             "target_column": self.target_column,
             "n_train_rows": self.n_train_rows,
             "n_cases": self.case_base.n_cases,
@@ -66,6 +72,7 @@ class CbrFitResult:
     """Outcome of building a case base on Session train."""
 
     task: str
+    backend: str
     metric: str
     reuse: str
     k: int
@@ -82,6 +89,7 @@ class CbrFitResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "task": self.task,
+            "backend": self.backend,
             "metric": self.metric,
             "reuse": self.reuse,
             "k": self.k,
@@ -154,6 +162,7 @@ class CbrRetrieveResult:
     metric: str
     n_queries: int
     traces: tuple[CaseTrace, ...]
+    backend: str = "sklearn"
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
@@ -162,6 +171,7 @@ class CbrRetrieveResult:
             "partition": self.partition,
             "k": self.k,
             "metric": self.metric,
+            "backend": self.backend,
             "n_queries": self.n_queries,
             "n_traces": len(self.traces),
             "disclosures": list(self.disclosures),

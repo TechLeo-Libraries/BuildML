@@ -15,6 +15,7 @@ class MetaLearningPlan:
     few-shot / episodic meta-learning — not foundation-model MAML-at-scale.
     """
 
+    backend: str
     method: str
     columns: tuple[str, ...]
     target_column: str
@@ -30,6 +31,7 @@ class MetaLearningPlan:
     meta_train_accuracy: float | None
     label_encoder_: Any = field(repr=False)
     init_estimator_: Any = field(repr=False, default=None)
+    meta_learner_: Any = field(repr=False, default=None)
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     used_reduce_components: bool = False
@@ -37,6 +39,7 @@ class MetaLearningPlan:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "columns": list(self.columns),
             "target_column": self.target_column,
@@ -63,6 +66,7 @@ class MetaLearningPlan:
 class MetaLearningFitResult:
     """Outcome of a train-only meta-learning fit."""
 
+    backend: str
     method: str
     n_train_rows: int
     columns: tuple[str, ...]
@@ -80,6 +84,7 @@ class MetaLearningFitResult:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "backend": self.backend,
             "method": self.method,
             "n_train_rows": self.n_train_rows,
             "columns": list(self.columns),

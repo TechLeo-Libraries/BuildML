@@ -11,7 +11,11 @@ RecommenderMethod = Literal[
     "svd",
     "nmf",
     "content",
+    "als",
+    "bpr",
+    "lightfm",
 ]
+RecommenderBackend = Literal["sklearn", "implicit", "lightfm"]
 FeedbackMode = Literal["explicit", "implicit"]
 ColdStartPolicy = Literal["skip", "popularity"]
 
@@ -21,6 +25,7 @@ class RecommenderConfig:
     """User-facing recommender knobs (serializable summary)."""
 
     method: RecommenderMethod = "item_knn"
+    backend: RecommenderBackend | None = None
     user_column: str | None = None
     item_column: str | None = None
     rating_column: str | None = None
@@ -30,12 +35,16 @@ class RecommenderConfig:
     k: int = 10
     min_rating: float | None = None
     item_feature_columns: tuple[str, ...] | None = None
+    user_feature_columns: tuple[str, ...] | None = None
     cold_start: ColdStartPolicy = "popularity"
     random_state: int | None = 0
+    n_iterations: int = 15
+    lightfm_epochs: int = 10
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "method": self.method,
+            "backend": self.backend,
             "user_column": self.user_column,
             "item_column": self.item_column,
             "rating_column": self.rating_column,
@@ -49,6 +58,13 @@ class RecommenderConfig:
                 if self.item_feature_columns is None
                 else list(self.item_feature_columns)
             ),
+            "user_feature_columns": (
+                None
+                if self.user_feature_columns is None
+                else list(self.user_feature_columns)
+            ),
             "cold_start": self.cold_start,
             "random_state": self.random_state,
+            "n_iterations": self.n_iterations,
+            "lightfm_epochs": self.lightfm_epochs,
         }

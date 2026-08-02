@@ -720,16 +720,20 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "base_estimator",
+                "threshold",
                 "n_neighbors",
+                "epochs",
+                "text_column",
                 "prefer_reduce_components",
             )
             if key in call.arguments
         }
         result = session.fit_semisupervised(**kwargs)
         return (
-            f"Fitted semi-supervised method={result.method} "
+            f"Fitted semi-supervised backend={result.backend} method={result.method} "
             f"n_labeled={result.n_labeled_train} n_unlabeled={result.n_unlabeled_train}",
             tuple(state_changes),
         )
@@ -819,6 +823,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "strategy",
                 "base_estimator",
                 "batch_size",
@@ -829,7 +834,7 @@ def _dispatch_tool(
         }
         result = session.fit_active_learner(**kwargs)
         return (
-            f"Fitted active learner strategy={result.strategy} "
+            f"Fitted active learner backend={result.backend} strategy={result.strategy} "
             f"n_labeled={result.n_labeled_train} "
             f"n_unlabeled_pool={result.n_unlabeled_pool}",
             tuple(state_changes),
@@ -932,17 +937,23 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "task",
                 "base_estimator",
                 "prefer_reduce_components",
+                "epochs",
+                "batch_size",
+                "learning_rate",
+                "device",
             )
             if key in call.arguments
         }
         result = session.fit_multitask(**kwargs)
         return (
-            f"Fitted multi-task method={result.method} task={result.task} "
-            f"n_tasks={result.n_tasks} targets={list(result.target_columns)}",
+            f"Fitted multi-task backend={result.backend} method={result.method} "
+            f"task={result.task} n_tasks={result.n_tasks} "
+            f"targets={list(result.target_columns)}",
             tuple(state_changes),
         )
 
@@ -975,6 +986,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "task_column",
                 "k_shot",
@@ -983,12 +995,15 @@ def _dispatch_tool(
                 "base_estimator",
                 "prefer_reduce_components",
                 "task_holdout_fraction",
+                "meta_epochs",
+                "inner_lr",
+                "inner_steps",
             )
             if key in call.arguments
         }
         result = session.fit_metalearning(**kwargs)
         return (
-            f"Fitted meta-learning method={result.method} "
+            f"Fitted meta-learning backend={result.backend} method={result.method} "
             f"n_meta_train_tasks={result.n_meta_train_tasks} "
             f"k_shot={result.k_shot} "
             f"meta_train_accuracy={result.meta_train_accuracy}",
@@ -1046,6 +1061,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "estimator",
                 "client_column",
@@ -1060,7 +1076,7 @@ def _dispatch_tool(
         }
         result = session.fit_federated(**kwargs)
         return (
-            f"Fitted federated method={result.method} "
+            f"Fitted federated backend={result.backend} method={result.method} "
             f"estimator={result.estimator_name} "
             f"n_clients={result.n_clients} "
             f"n_rounds={result.n_rounds} "
@@ -1203,6 +1219,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "bootstrap_samples",
                 "random_state",
@@ -1213,8 +1230,8 @@ def _dispatch_tool(
         }
         result = session.fit_causal(**kwargs)
         return (
-            f"Fitted causal method={result.method} ate={result.ate} "
-            f"n_train_rows={result.n_train_rows}",
+            f"Fitted causal backend={result.backend} method={result.method} "
+            f"ate={result.ate} n_train_rows={result.n_train_rows}",
             tuple(state_changes),
         )
 
@@ -1284,8 +1301,10 @@ def _dispatch_tool(
                 "method",
                 "mode",
                 "classical_estimator",
+                "pyg_model",
                 "epochs",
                 "hidden_dim",
+                "heads",
                 "random_state",
                 "include_graph_metrics",
             )
@@ -1433,29 +1452,35 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "task",
                 "metric",
                 "reuse",
                 "adapt",
                 "k",
+                "text_columns",
+                "text_model_name",
                 "standardize",
                 "distance_eps",
                 "random_state",
                 "prefer_reduce_components",
+                "torch_epochs",
+                "device",
             )
             if key in call.arguments
         }
         result = session.fit_cbr(**kwargs)
         return (
-            f"Fitted CBR task={result.task} metric={result.metric} "
-            f"reuse={result.reuse} k={result.k} n_cases={result.n_cases}",
+            f"Fitted CBR backend={result.backend} task={result.task} "
+            f"metric={result.metric} reuse={result.reuse} k={result.k} "
+            f"n_cases={result.n_cases}",
             tuple(state_changes),
         )
 
     elif call.tool_name == "retrieve_cases":
         kwargs = {
             key: call.arguments[key]
-            for key in ("partition", "k")
+            for key in ("partition", "k", "backend")
             if key in call.arguments
         }
         result = session.retrieve_cases(**kwargs)
@@ -1464,7 +1489,7 @@ def _dispatch_tool(
     elif call.tool_name == "predict_cbr":
         kwargs = {
             key: call.arguments[key]
-            for key in ("partition", "k", "return_traces")
+            for key in ("partition", "k", "return_traces", "backend")
             if key in call.arguments
         }
         result = session.predict_cbr(**kwargs)
@@ -1644,6 +1669,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "vectorization",
                 "knn",
                 "n_bins",
@@ -1654,12 +1680,14 @@ def _dispatch_tool(
                 "random_state",
                 "prefer_reduce_components",
                 "max_points_guard",
+                "subsample_strategy",
+                "mapper",
             )
             if key in call.arguments
         }
         result = session.fit_tda(**kwargs)
         return (
-            f"Fitted TDA vectorization={result.vectorization} "
+            f"Fitted TDA backend={result.backend} vectorization={result.vectorization} "
             f"feature_dim={result.feature_dim} head={result.head} "
             f"n_train_rows={result.n_train_rows}",
             tuple(state_changes),
@@ -1686,7 +1714,13 @@ def _dispatch_tool(
     elif call.tool_name == "evaluate_tda":
         kwargs = {
             key: call.arguments[key]
-            for key in ("partition",)
+            for key in (
+                "partition",
+                "backend",
+                "compare_diagram_distances",
+                "diagram_distance_metric",
+                "diagram_distance_dim",
+            )
             if key in call.arguments
         }
         result = session.evaluate_tda(**kwargs)
@@ -1833,6 +1867,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "head_column",
                 "relation_column",
@@ -1850,7 +1885,7 @@ def _dispatch_tool(
         }
         result = session.fit_kg(**kwargs)
         return (
-            f"Fitted KG method={result.method} "
+            f"Fitted KG backend={result.backend} method={result.method} "
             f"entities={result.n_entities} relations={result.n_relations} "
             f"triples={result.n_train_triples} dim={result.embedding_dim}",
             tuple(state_changes),
@@ -1921,6 +1956,7 @@ def _dispatch_tool(
             key: call.arguments[key]
             for key in (
                 "method",
+                "backend",
                 "partition",
                 "allow_test_tuning",
                 "fp_cost",
@@ -1989,6 +2025,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "columns",
                 "random_state",
@@ -1997,14 +2034,16 @@ def _dispatch_tool(
                 "target_column",
                 "k_neighbors",
                 "sampling_strategy",
+                "epochs",
+                "batch_size",
             )
             if key in call.arguments
         }
         result = session.fit_synthesizer(**kwargs)
         return (
-            f"Fitted synthesizer method={result.method} "
-            f"partition={result.partition} n={result.n_rows} "
-            f"cols={result.n_columns}",
+            f"Fitted synthesizer backend={getattr(result, 'backend', 'native')} "
+            f"method={result.method} partition={result.partition} "
+            f"n={result.n_rows} cols={result.n_columns}",
             tuple(state_changes),
         )
 
@@ -2016,6 +2055,7 @@ def _dispatch_tool(
                 "random_state",
                 "merge_mode",
                 "provenance_column",
+                "validate",
             )
             if key in call.arguments
         }
@@ -2032,6 +2072,7 @@ def _dispatch_tool(
             key: call.arguments[key]
             for key in (
                 "mode",
+                "eval_backend",
                 "partition",
                 "n_synthetic",
                 "random_state",
@@ -2560,8 +2601,11 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         changes.append(f"Will load anomaly bundle from {path}.")
 
     elif tool_name == "fit_semisupervised":
+        backend = arguments.get("backend", "sklearn")
         method = arguments.get("method", "label_propagation")
-        changes.append(f"Will fit semi-supervised method={method} on train only.")
+        changes.append(
+            f"Will fit semi-supervised backend={backend} method={method} on train only."
+        )
 
     elif tool_name == "save_semisupervised_bundle":
         path = arguments.get("path", "")
@@ -2624,9 +2668,11 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         changes.append(f"Will load online bundle from {path}.")
 
     elif tool_name == "fit_multitask":
+        backend = arguments.get("backend")
         method = arguments.get("method", "multi_output")
         changes.append(
-            f"Will fit multi-task learner method={method} on train targets."
+            f"Will fit multi-task learner backend={backend} method={method} "
+            "on train targets."
         )
 
     elif tool_name == "save_multitask_bundle":
@@ -2656,11 +2702,12 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         changes.append(f"Will load meta-learning bundle from {path}.")
 
     elif tool_name == "fit_federated":
+        backend = arguments.get("backend", "native")
         method = arguments.get("method", "fedavg")
         estimator = arguments.get("estimator", "sgd_classifier")
         changes.append(
-            f"Will simulate federated method={method} estimator={estimator} "
-            "on train clients (local FL simulation)."
+            f"Will simulate federated backend={backend} method={method} "
+            f"estimator={estimator} on train clients (local FL simulation)."
         )
 
     elif tool_name == "save_federated_bundle":
@@ -2720,7 +2767,7 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         changes.append(
             f"Will fit graph method={method} mode={mode} "
             "(train labels only; classical needs buildml[graph], "
-            "gcn needs buildml[torch])."
+            "gcn needs buildml[torch], pyg needs buildml[graph-pyg])."
         )
 
     elif tool_name == "save_graph_bundle":
@@ -2846,9 +2893,12 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         changes.append(f"Will load ranker bundle from {path}.")
 
     elif tool_name == "fit_kg":
+        backend = arguments.get("backend", "native")
+        method = arguments.get("method", "transe")
         changes.append(
-            "Will fit KG embeddings on train triples "
-            "(TransE/DistMult; not Graph ML node-classify; not Neo4j; not RAG)."
+            f"Will fit KG embeddings on train triples "
+            f"(backend={backend}, method={method}; not Graph ML node-classify; "
+            "not Neo4j; not RAG)."
         )
 
     elif tool_name == "save_kg_bundle":
@@ -2861,9 +2911,11 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
 
     elif tool_name == "fit_decision_policy":
         method = arguments.get("method", "threshold")
+        backend = arguments.get("backend")
         partition = arguments.get("partition", "validation")
+        backend_note = f", backend={backend}" if backend else ""
         changes.append(
-            f"Will fit decision policy method={method} on partition={partition} "
+            f"Will fit decision policy method={method}{backend_note} on partition={partition} "
             "(ML score/cost/allocation helpers — not a general OR platform; "
             "test tuning requires allow_test_tuning=True)."
         )

@@ -9,7 +9,12 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.model.diagnostics import DiagnosticReport
 from buildml.model.supervised import FitResult
-from buildml.optimize.allocate import select_knapsack, select_lp_allocate, select_topk
+from buildml.optimize.allocate import (
+    select_knapsack_with_backend,
+    select_lp_allocate_with_backend,
+    select_topk,
+)
+from buildml.optimize.catalog import DecisionBackendName, resolve_backend
 from buildml.optimize.features import (
     assert_tuning_partition,
     column_scores,
@@ -21,6 +26,7 @@ from buildml.optimize.policies import fit_cost_matrix_policy, fit_threshold_poli
 from buildml.optimize.results import DecisionFitResult, DecisionPlan
 from buildml.optimize.types import (
     AllocationObjective,
+    DecisionBackend,
     DecisionConfig,
     DecisionMethod,
     KnapsackSolver,
@@ -35,6 +41,7 @@ def fit_decision_policy(
     fit_result: FitResult | None,
     *,
     method: DecisionMethod = "threshold",
+    backend: DecisionBackend | None = None,
     partition: TuningPartition = "validation",
     allow_test_tuning: bool = False,
     fp_cost: float | None = None,
@@ -69,7 +76,13 @@ def fit_decision_policy(
     knapsack
         0-1 knapsack-lite (exact DP when costs near-integral, else greedy).
     lp_allocate
-        Continuous budget shares via ``scipy.optimize.linprog``.
+        Continuous budget shares via ``scipy.optimize.linprog`` or CVXPY when
+        ``backend='cvxpy'`` (``buildml[optimize-industry]``).
+
+    backend
+        Solver / scorer backend (see ``decision_capability_matrix()``).
+        Defaults to industry when installed (PuLP/OR-Tools knapsack MIP,
+        CVXPY LP, XGB cost-sensitive threshold); otherwise native scipy/numpy.
 
     Honesty: decision helpers for ML scores/costs/allocations — not a general
     operations-research platform or digital twin. Never tunes on Session test
@@ -80,8 +93,26 @@ def fit_decision_policy(
     if method not in {"threshold", "cost_matrix", "topk", "knapsack", "lp_allocate"}:
         raise ValidationError(f"Unknown decision method: {method!r}")
 
+    resolved_backend: DecisionBackendName | None = None
+    if method == "knapsack":
+        resolved_backend = resolve_backend(method="knapsack", backend=backend)  # type: ignore[arg-type]
+    elif method == "lp_allocate":
+        resolved_backend = resolve_backend(method="lp_allocate", backend=backend)  # type: ignore[arg-type]
+    elif method == "threshold":
+        if backend is not None:
+            resolved_backend = resolve_backend(method="threshold", backend=backend)  # type: ignore[arg-type]
+        elif fp_cost is not None or fn_cost is not None:
+            resolved_backend = resolve_backend(method="threshold", backend=None)  # type: ignore[arg-type]
+        else:
+            resolved_backend = "native"
+    elif backend is not None and backend != "native":
+        raise ValidationError(
+            f"backend={backend!r} is not supported for method={method!r}."
+        )
+
     config = DecisionConfig(
         method=method,
+        backend=resolved_backend if resolved_backend is not None else backend,
         partition=partition,
         allow_test_tuning=allow_test_tuning,
         fp_cost=fp_cost,
@@ -107,20 +138,56 @@ def fit_decision_policy(
     if method == "threshold":
         if fit_result is None:
             raise ValidationError("method='threshold' requires Session.fit(...).")
-        plan, metrics, diagnostic = fit_threshold_policy(
-            dataset,
-            split,
-            fit_result,
-            partition=partition,
-            allow_test_tuning=allow_test_tuning,
-            fp_cost=fp_cost,
-            fn_cost=fn_cost,
-            tp_benefit=tp_benefit,
-            tn_benefit=tn_benefit,
-        )
+        threshold_backend = resolved_backend or "native"
+        if threshold_backend == "xgb":
+            from buildml.optimize.adapters.xgb_threshold import fit_xgb_threshold_policy
+
+            plan, metrics, diagnostic = fit_xgb_threshold_policy(
+                dataset,
+                split,
+                fit_result,
+                partition=partition,
+                allow_test_tuning=allow_test_tuning,
+                fp_cost=fp_cost,
+                fn_cost=fn_cost,
+                tp_benefit=tp_benefit,
+                tn_benefit=tn_benefit,
+            )
+        elif threshold_backend == "calibrated":
+            from buildml.optimize.adapters.calibrated_threshold import (
+                fit_calibrated_threshold_policy,
+            )
+
+            plan, metrics, diagnostic = fit_calibrated_threshold_policy(
+                dataset,
+                split,
+                fit_result,
+                partition=partition,
+                allow_test_tuning=allow_test_tuning,
+                fp_cost=fp_cost,
+                fn_cost=fn_cost,
+                tp_benefit=tp_benefit,
+                tn_benefit=tn_benefit,
+            )
+        else:
+            plan, metrics, diagnostic = fit_threshold_policy(
+                dataset,
+                split,
+                fit_result,
+                partition=partition,
+                allow_test_tuning=allow_test_tuning,
+                fp_cost=fp_cost,
+                fn_cost=fn_cost,
+                tp_benefit=tp_benefit,
+                tn_benefit=tn_benefit,
+            )
+            if threshold_backend == "native":
+                plan.config = {**plan.config, "backend": "native"}
+                plan.operating_points = {**plan.operating_points, "backend": "native"}
         plan.config = {**plan.config, **config.to_dict()}
         fit_res = DecisionFitResult(
             method=method,
+            backend=str(plan.config.get("backend") or threshold_backend),
             partition=partition,
             n_rows=plan.n_rows_fitted,
             threshold=plan.threshold,
@@ -178,9 +245,11 @@ def fit_decision_policy(
         min_score=min_score,
         lp_max_fraction=lp_max_fraction,
         config=config,
+        backend=resolved_backend,
     )
     fit_res = DecisionFitResult(
         method=method,
+        backend=str(plan.config.get("backend") or resolved_backend or "native"),
         partition=partition,
         n_rows=plan.n_rows_fitted,
         n_selected=plan.n_selected_at_fit,
@@ -216,6 +285,7 @@ def _fit_allocation_policy(
     min_score: float | None,
     lp_max_fraction: float,
     config: DecisionConfig,
+    backend: DecisionBackendName | None = None,
 ) -> tuple[DecisionPlan, dict[str, float]]:
     frame = partition_frame(dataset, split, partition)
     values, costs, ids, used_score_source = _resolve_allocation_inputs(
@@ -234,8 +304,7 @@ def _fit_allocation_policy(
     disclosures = [
         f"method={method!r} allocation on partition={partition}.",
         "Constrained selection over ML scores/costs — not a general OR / MIP suite.",
-        "No PuLP/OR-Tools dependency; knapsack uses numpy DP/greedy; "
-        "lp_allocate uses scipy.optimize.linprog (transitive via sklearn).",
+        f"backend={backend or 'native'} solver routing via decision_capability_matrix.",
     ]
     warnings: list[str] = []
     if partition == "test" and allow_test_tuning:
@@ -255,10 +324,11 @@ def _fit_allocation_policy(
     elif method == "knapsack":
         if budget is None:
             raise ValidationError("method='knapsack' requires budget >= 0.")
-        selection = select_knapsack(
+        selection = select_knapsack_with_backend(
             values,
             costs,
             budget=float(budget),
+            backend=backend,
             solver=knapsack_solver,
             min_score=min_score,
             ids=ids,
@@ -274,17 +344,21 @@ def _fit_allocation_policy(
     elif method == "lp_allocate":
         if budget is None:
             raise ValidationError("method='lp_allocate' requires budget >= 0.")
-        selection = select_lp_allocate(
+        selection = select_lp_allocate_with_backend(
             values,
             costs,
             budget=float(budget),
+            backend=backend,
             max_fraction=float(lp_max_fraction),
             min_score=min_score,
             ids=ids,
         )
-        solver_used = "linprog"
+        solver_used = str(selection.get("solver_used", "linprog"))
         approximate = False
-        disclosures.append("LP is continuous fractional allocation (not integer MIP).")
+        if backend == "cvxpy":
+            disclosures.append("LP solved via CVXPY convex program.")
+        else:
+            disclosures.append("LP is continuous fractional allocation (not integer MIP).")
     else:
         raise ValidationError(f"Unknown allocation method: {method!r}")
 
@@ -319,6 +393,7 @@ def _fit_allocation_policy(
         operating_points={
             "solver_used": solver_used,
             "approximate": approximate,
+            "backend": str(selection.get("backend") or backend or "native"),
         },
     )
     metrics = {

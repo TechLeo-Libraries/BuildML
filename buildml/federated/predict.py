@@ -7,8 +7,10 @@ from typing import Literal
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
+from buildml.federated.catalog import resolve_backend
 from buildml.federated.features import decode_predictions, matrix_from_frame
 from buildml.federated.results import FederatedPlan, FederatedPredictResult
+from buildml.federated.types import FederatedBackend
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -18,11 +20,21 @@ def predict_federated(
     plan: FederatedPlan,
     split_plan: SplitPlan | None,
     *,
+    backend: FederatedBackend | None = None,
     partition: PartitionOrAll = "test",
 ) -> FederatedPredictResult:
     """Predict with the global federated estimator (no local update / no leakage)."""
     if plan is None:
         raise ValidationError("No FederatedPlan. Call fit_federated first.")
+
+    if backend is not None:
+        resolved = resolve_backend(backend, method=plan.method)
+        plan_backend = str(getattr(plan, "backend", "native") or "native")
+        if resolved != plan_backend:
+            raise ValidationError(
+                f"backend={backend!r} does not match FederatedPlan.backend="
+                f"{plan_backend!r}. Refit or omit backend= on predict."
+            )
 
     if partition == "all":
         frame = dataset._ensure_pandas()
@@ -58,7 +70,8 @@ def predict_federated(
         predictions=preds,
         disclosures=(
             "predict_federated does not update client or global models.",
-            f"Predictions from global estimator={plan.estimator_name} after "
+            f"Predictions from backend={getattr(plan, 'backend', 'native')} "
+            f"global estimator={plan.estimator_name} after "
             f"{len(plan.round_history)} federated round(s).",
             "Honesty: local FL simulation — not a distributed FL platform.",
         ),

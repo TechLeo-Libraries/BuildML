@@ -12,6 +12,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
     return {
         "method": payload.get("method"),
+        "backend": payload.get("backend"),
         "estimator_name": payload.get("estimator_name"),
         "task": payload.get("task"),
         "n_train_rows": payload.get("n_train_rows"),
@@ -83,7 +84,8 @@ def federated_status(
     if enabled:
         disclosures.extend(
             [
-                f"FederatedPlan method={getattr(plan, 'method', None)}, "
+                f"FederatedPlan backend={getattr(plan, 'backend', 'native')}, "
+                f"method={getattr(plan, 'method', None)}, "
                 f"estimator={getattr(plan, 'estimator_name', None)}, "
                 f"client_column={getattr(plan, 'client_column', None)}, "
                 f"n_clients={len(getattr(plan, 'client_ids', ()) or ())}, "
@@ -92,8 +94,9 @@ def federated_status(
                 "validation/test are evaluation-only.",
                 "Session checkpoints do not embed FederatedPlan; use "
                 "save_federated_bundle / load_federated_bundle.",
-                "Honesty: local FedAvg-style simulation — not a distributed "
-                "FL platform; not cryptographic secure aggregation.",
+                "Honesty: local FedAvg-style simulation — not a networked "
+                "FL deployment unless you operate Flower separately; not "
+                "cryptographic secure aggregation.",
             ]
         )
         for note in getattr(plan, "disclosures", ()) or ():
@@ -131,6 +134,7 @@ def federated_status(
         "present": enabled or saw,
         "has_federated_plan": enabled,
         "method": None if plan is None else getattr(plan, "method", None),
+        "backend": None if plan is None else getattr(plan, "backend", "native"),
         "estimator_name": (
             None if plan is None else getattr(plan, "estimator_name", None)
         ),
@@ -153,9 +157,11 @@ def federated_status(
         "disclosures": disclosures,
         "boundary": (
             "Federated learning provides a local FedAvg / FedProx simulation "
-            "on Session data partitioned by a client/group column. Holdout is "
-            "evaluation-only. Not a distributed FL platform (Flower/OpenFL); "
-            "not cryptographic secure aggregation; not causal."
+            "on Session data partitioned by a client/group column. "
+            "backend='native' uses in-process coef aggregation; "
+            "backend='flower' uses Flower NumPyClient + flwr aggregation "
+            "(still local unless you deploy Flower). Holdout is "
+            "evaluation-only. Not cryptographic secure aggregation; not causal."
         ),
     }
 

@@ -49,6 +49,7 @@ def main() -> None:
     )
 
     fit = session.fit_federated(
+        backend="native",
         method="fedavg",
         estimator="sgd_classifier",
         n_rounds=6,
@@ -56,7 +57,7 @@ def main() -> None:
         client_fraction=1.0,
     )
     print(
-        f"method={fit.method} estimator={fit.estimator_name} "
+        f"backend={fit.backend} method={fit.method} estimator={fit.estimator_name} "
         f"n_clients={fit.n_clients} "
         f"final_train_metric={fit.final_train_metric}"
     )

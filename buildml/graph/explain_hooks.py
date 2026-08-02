@@ -98,8 +98,8 @@ def graph_status(
                 "Node splits via Session.split; structure via set_graph.",
                 "Session checkpoints do not embed GraphPlan; use "
                 "save_graph_bundle / load_graph_bundle.",
-                "Honesty: classical NetworkX+sklearn and/or pure-Torch GCN "
-                "— not PyG, not Neo4j/KG.",
+                "Honesty: classical NetworkX+sklearn, pure-Torch GCN, "
+                "and/or PyG GCN/GraphSAGE/GAT — not Neo4j/KG.",
             ]
         )
         for note in getattr(plan, "disclosures", ()) or ():
@@ -142,7 +142,7 @@ def graph_status(
             "Graph ML is node classification over an edge list + node feature "
             "table. Inductive mode fits on the train-induced subgraph; "
             "transductive uses full topology with train-label-only supervision. "
-            "Not a knowledge-graph / Neo4j product; not a PyG research suite."
+            "Not a knowledge-graph / Neo4j product; PyG path is GCN/SAGE/GAT only."
         ),
     }
 

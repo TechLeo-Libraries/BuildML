@@ -75,6 +75,8 @@ def load_probabilistic_bundle(path: str | Path) -> ProbabilisticPlan:
         )
     loaded = joblib.load(plan_path)
     if isinstance(loaded, ProbabilisticPlan):
+        if not getattr(loaded, "backend", None):
+            loaded.backend = "native"
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:
         raise ValidationError(
@@ -84,4 +86,6 @@ def load_probabilistic_bundle(path: str | Path) -> ProbabilisticPlan:
     plan = loaded["plan"]
     if not isinstance(plan, ProbabilisticPlan):
         raise ValidationError("Loaded plan object is not a ProbabilisticPlan")
+    if not getattr(plan, "backend", None):
+        plan.backend = "native"
     return plan

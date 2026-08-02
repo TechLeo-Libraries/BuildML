@@ -44,6 +44,7 @@ pip install "buildml[onnx]"       # optional ONNX checker for export_torch
 pip install "buildml[rag]"        # optional dense/rerank backends
 pip install "buildml[ai]"         # LLM operator (alias: buildml[llm])
 pip install "buildml[all-classical]"
+pip install "buildml[production]"  # industry-depth ML domains (see below)
 ```
 
 From a source checkout:
@@ -192,6 +193,39 @@ learning curves, and permutation importance are covered in the
 [classical quickstart](guides/quickstart-classical.md) and
 [workflow guide](docs/workflow-guide.rst).
 
+## Industry depth / optional extras
+
+Core `import buildml` stays light (numpy, pandas, scikit-learn). Domain depth
+and industry backends are **optional extras** — install only what you need.
+
+**One-shot depth install** — R6 refinement is **complete**; `buildml[production]`
+pulls every Phase 2 thin-layer domain plus all `*-industry` adapters:
+
+```bash
+pip install "buildml[production]"
+```
+
+`buildml[production]` aggregates `torch`, `ssl`, `rag`, `rag-advanced`, `tda`,
+`unsupervised`, `timeseries` (+ prophet / neuralforecast), `graph`, `graph-pyg`,
+`optuna`, `automl`, `rl`, and every `*-industry` extra (`automl-industry`,
+`anomaly-industry`, `semisupervised-industry`, `activelearning-industry`,
+`online-industry`, `multitask-industry`, `metalearning-industry`,
+`recommenders-industry`, `causal-industry`, `federated-industry`, `kg-industry`,
+`probabilistic-industry`, `symbolic-industry`, `cbr-industry`, `ranking-industry`,
+`optimize-industry`, `synthetic-industry`, `rl-industry`, `tda-industry`).
+It does **not** include dashboard, serve, or AI operator extras.
+
+Each refined domain exposes an honest **capability matrix** (e.g.
+`Session.automl_capability_matrix()`, `Session.anomaly_capability_matrix()`,
+`buildml.multitask.multitask_capability_matrix()`) that
+reports which backends are installed and which methods are available — use it
+before picking a backend in production code.
+
+Benchmark smoke scripts under [`benchmarks/`](benchmarks/) (25 domain runners,
+including all R6 domains) exercise core paths with graceful skips when industry
+libs are absent; CI runs them on Linux with a core-only install via
+`scripts/run_benchmark_smokes.py`.
+
 ## Optional extras
 
 Core `import buildml` does not require Torch, RAG backends, or an LLM provider.
@@ -206,8 +240,9 @@ unchanged.
 | Pretrained | `buildml[pretrained]` | Combines `vision` + `speech` for curated backbone hooks |
 | Serve | `buildml[serve]` | Managed local FastAPI serving (`buildml-serve` / `Session.serve_bundle`) for pipeline + TorchScript |
 | RAG | `buildml[rag]` | Ingest → chunk → embed → retrieve → **generate** → evaluate; hashing default, semantic optional |
-| Graph | `buildml[graph]` | NetworkX classical node features for Graph ML (`fit_graph(method='classical')`); GCN uses `buildml[torch]` (no PyG) |
+| Graph | `buildml[graph]` | NetworkX classical node features (`fit_graph(method='classical')`); pure-Torch GCN uses `buildml[torch]`; PyG GCN/SAGE/GAT uses `buildml[graph-pyg]` |
 | RL | `buildml[rl]` | Optional Gymnasium REINFORCE-lite for `fit_rl(mode='gym_reinforce')`; BC + contextual bandits stay core |
+| RL industry | `buildml[rl-industry]` | SB3 PPO/DQN/A2C + imitation BC MLP / GAIL-lite; defaults when installed (`backend='industry'`) |
 | TDA | `buildml[tda]` | Persistent homology (ripser) + persistence images (persim); landscapes/silhouettes in-tree |
 | AI | `buildml[ai]` | Advisor, multi-step plan/execute, optional allowlisted autonomy; classical + RAG + Torch tools; BYO API key |
 | Dashboard | `buildml[dashboard]` | Interactive local EDA via `eda_app()` |
@@ -220,25 +255,25 @@ Runnable quickstarts:
 - [AutoML](guides/quickstart-automl.md) (family + recipe search beyond HPO; Optuna optional)
 - [Forecasting](guides/quickstart-forecasting.md) (time_split lag/baseline forecasts; no extra)
 - [Anomaly / fraud](guides/quickstart-anomaly.md) (IsolationForest/LOF/OCSVM + supervised; no extra)
-- [Semi-supervised](guides/quickstart-semisupervised.md) (label propagation / spreading / self-training; no extra)
+- [Semi-supervised](guides/quickstart-semisupervised.md) (sklearn fallback + industry/torch/HF backends via extras)
 - [Self-supervised](guides/quickstart-selfsupervised.md) (masked tabular pretext → embeddings → head; no extra)
-- [Active learning](guides/quickstart-active-learning.md) (train-pool query → human labels → refit; no extra)
+- [Active learning](guides/quickstart-active-learning.md) (train-pool query → human labels → refit; sklearn core; industry/torch via extras)
 - [Online / continual](guides/quickstart-online-learning.md) (train-chunk `partial_fit` → eval; no extra)
-- [Multi-task](guides/quickstart-multi-task.md) (MultiOutput / Chain → per-task eval; no extra)
-- [Meta-learning](guides/quickstart-meta-learning.md) (episodic few-shot prototypical / warm_start; no extra)
+- [Multi-task](guides/quickstart-multi-task.md) (sklearn MultiOutput / Chain core; `multitask-industry` + `torch` for GBDT multi-target / shared-trunk multi-head)
+- [Meta-learning](guides/quickstart-meta-learning.md) (episodic few-shot; sklearn / torch / industry backends)
 - [Federated](guides/quickstart-federated.md) (local FedAvg / FedProx simulation; no extra)
 - [Bayesian / probabilistic](guides/quickstart-probabilistic.md) (BayesianRidge / GP / NB + train-only conformal; no extra)
 - [Causal ML](guides/quickstart-causal.md) (assumption-declared backdoor ATE; no extra)
-- [Graph ML](guides/quickstart-graph.md) (node classify: NetworkX classical + pure-Torch GCN; `buildml[graph]` / `buildml[torch]`)
-- [Symbolic / neuro-symbolic](guides/quickstart-symbolic.md) (declared/tree rules + sklearn hybrid; no extra)
-- [Case-based reasoning](guides/quickstart-cbr.md) (train case memory → retrieve/reuse; ≠ RAG; no extra)
-- [Imitation + RL](guides/quickstart-imitation-rl.md) (BC + contextual bandit core; optional Gymnasium via `buildml[rl]`)
+- [Graph ML](guides/quickstart-graph.md) (node classify: NetworkX classical + pure-Torch GCN + PyG GCN/SAGE/GAT; `buildml[graph]` / `buildml[torch]` / `buildml[graph-pyg]`)
+- [Symbolic / neuro-symbolic](guides/quickstart-symbolic.md) (sklearn tree/list + optional skope-rules/imodels + torch CBN/NAM; `symbolic-industry` / `torch`)
+- [Case-based reasoning](guides/quickstart-cbr.md) (train case memory → retrieve/reuse; ≠ RAG; `cbr-industry` optional)
+- [Imitation + RL](guides/quickstart-imitation-rl.md) (BC + contextual bandit core; REINFORCE via `buildml[rl]`; SB3 via `buildml[rl-industry]`)
 - [TDA](guides/quickstart-tda.md) (local Vietoris–Rips + vectorization → sklearn; `buildml[tda]`)
 - [Recommenders](guides/quickstart-recommenders.md) (user/item CF + content; ranking metrics; core)
-- [Search / LTR](guides/quickstart-ranking.md) (query–item feature rows + relevance; pointwise / RankSVM-lite; core)
+- [Search / LTR](guides/quickstart-ranking.md) (query–item feature rows + relevance; sklearn fallback + industry GBDT rankers)
 - [Knowledge graphs](guides/quickstart-kg.md) (triples → TransE/DistMult + symbolic query; ≠ Graph ML / Neo4j / RAG; core)
 - [Optimisation / decisions](guides/quickstart-optimize.md) (thresholds / cost matrices / top-K / knapsack / LP; ≠ general OR; core)
-- [Synthetic data](guides/quickstart-synthetic.md) (bootstrap / Gaussian copula / SMOTE; fidelity + TSTR; ≠ DP / `resample`; core)
+- [Synthetic data](guides/quickstart-synthetic.md) (native bootstrap/copula/SMOTE + optional SDV; fidelity/TSTR/SDMetrics; ≠ DP / `resample`; `synthetic-industry` extra)
 - [Torch](guides/quickstart-torch.md)
 - [RAG](guides/quickstart-rag.md)
 - [AI operator](guides/quickstart-ai.md)

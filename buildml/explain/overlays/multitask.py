@@ -23,27 +23,34 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     _operation(
         "fit_multitask",
         OperationKind.MODEL,
-        "Fit a multi-target MultiOutput / Chain estimator on train only.",
-        "Resolve ≥2 targets, infer same-type task, fit sklearn multi-output façade.",
+        "Fit a multi-target estimator on train only (sklearn / industry / torch).",
+        "Resolve ≥2 targets, route backend=, infer task kinds, fit on train.",
         "Multi-task learning fit step.",
         (
             "Require a SplitPlan and at least two target columns (roles or targets=).",
-            "Refuse mixed classification+regression targets.",
-            "Fit MultiOutputClassifier/Regressor or ClassifierChain/RegressorChain on train.",
+            "Sklearn/industry: refuse mixed classification+regression targets.",
+            "Torch shared_trunk_multihead: joint training with per-task heads.",
             "Never use validation/test for fitting.",
             "Leave classical Session.fit single-target semantics unchanged.",
         ),
         parameters=(
             _p(
+                "backend",
+                "sklearn | industry | torch | None",
+                "Backend router; defaults to industry/torch/sklearn when installed.",
+            ),
+            _p(
                 "method",
-                "multi_output | classifier_chain | regressor_chain",
-                "Sklearn multi-output / chain façade.",
+                "multi_output | classifier_chain | regressor_chain | "
+                "multi_output_xgb | multi_output_lgbm | multi_output_catboost | "
+                "shared_trunk_multihead",
+                "Method within the selected backend.",
                 "multi_output",
             ),
             _p(
                 "task",
-                "classification | regression | auto",
-                "Task type; auto infers and refuses mixed kinds.",
+                "classification | regression | auto | mixed",
+                "Task type; mixed only on torch shared_trunk_multihead.",
                 "auto",
             ),
             _p(
@@ -77,6 +84,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "Prefix for attachable prediction columns.",
                 "multitask_pred",
             ),
+            _p("epochs", "int", "Torch training epochs.", 60),
+            _p("batch_size", "int", "Torch mini-batch size.", 64),
+            _p("learning_rate", "float", "Torch AdamW learning rate.", 1e-3),
+            _p("device", "str", "Torch device string.", "cpu"),
         ),
         inputs=(
             "Split Session with numeric features and ≥2 same-type target columns.",
@@ -92,7 +103,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Use when several related targets share features and should be learned jointly.",
         ),
         assumptions=(
-            "Targets are all classification or all regression.",
+            "Sklearn/industry: all classification or all regression.",
+            "Torch mixed: per-task heads with honest joint loss.",
             "Features are numeric and non-null.",
         ),
         failures=(

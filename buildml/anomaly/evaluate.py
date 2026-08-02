@@ -168,6 +168,12 @@ def evaluate_anomaly(
             "Novelty detectors assume the fit subset was normal-only; distribution "
             "shift in 'normal' can inflate holdout alerts."
         )
+    if plan.threshold_policy != "validation_tuned":
+        recommendations.append(
+            "When labels exist on validation, prefer session.tune_anomaly_threshold "
+            "(partition='validation') before final test evaluation — same leakage "
+            "discipline as Session.tune_threshold."
+        )
     if plan.used_reduce_components:
         recommendations.append(
             "Detector was fit in PCA component space; interpret scores via loadings "

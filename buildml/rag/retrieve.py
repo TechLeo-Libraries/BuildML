@@ -105,7 +105,8 @@ def retrieve(
 ) -> RetrieveResult:
     """Retrieve ranked chunks for ``query``.
 
-    Defaults (``RetrieveConfig``): ``mode="dense"``, no filters, no rerank.
+    Defaults (``RetrieveConfig``): ``mode="hybrid"`` when ``buildml[rag]`` is installed
+    (BM25 + dense RRF), else ``"dense"``. No filters; rerank off unless requested.
     Hybrid mode fuses dense + BM25 with ``fusion="rrf"`` (``rrf_k=60``) unless
     ``fusion="weighted"`` is set. Cross-encoder rerank requires ``buildml[rag]``.
     """
@@ -113,20 +114,22 @@ def retrieve(
         raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
     if not isinstance(query, str) or not query.strip():
         raise ValidationError("query must be a non-empty string.")
-    cfg = config or RetrieveConfig()
-    # Shallow-copy overrides without mutating the caller's config.
+    from buildml.rag.defaults import default_retrieve_config
+
+    base = config or default_retrieve_config()
+    resolved_mode = mode if mode is not None else base.mode
     cfg = RetrieveConfig(
-        k=cfg.k if k is None else int(k),
-        mode=mode or cfg.mode,
-        fusion=fusion or cfg.fusion,  # type: ignore[arg-type]
-        rrf_k=cfg.rrf_k,
-        dense_weight=cfg.dense_weight,
-        bm25_k1=cfg.bm25_k1,
-        bm25_b=cfg.bm25_b,
-        filters=filters if filters is not None else cfg.filters,
-        rerank=cfg.rerank if rerank is None else rerank,
-        rerank_model=cfg.rerank_model,
-        rerank_candidates=cfg.rerank_candidates,
+        k=base.k if k is None else int(k),
+        mode=resolved_mode,
+        fusion=fusion or base.fusion,  # type: ignore[arg-type]
+        rrf_k=base.rrf_k,
+        dense_weight=base.dense_weight,
+        bm25_k1=base.bm25_k1,
+        bm25_b=base.bm25_b,
+        filters=filters if filters is not None else base.filters,
+        rerank=base.rerank if rerank is None else rerank,
+        rerank_model=base.rerank_model,
+        rerank_candidates=base.rerank_candidates,
     )
     top_k = int(cfg.k)
     if top_k <= 0:

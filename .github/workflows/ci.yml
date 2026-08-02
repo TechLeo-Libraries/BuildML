@@ -311,3 +311,30 @@ jobs:
 
       - name: Extra-focused tests (skip-friendly)
         run: pytest ${{ matrix.tests }} -q
+
+  # Benchmark smokes (25 scripts via scripts/run_benchmark_smokes.py): core install
+  # only — each script skips optional industry backends when extras are missing.
+  # Covers R1–R6 domains (SSL through RL). Linux-only: Torch / PyG / some industry
+  # wheels are flaky or unavailable on Windows CI; do not add windows-latest here.
+  benchmarks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package (core only — benchmarks skip missing extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Benchmark smoke scripts
+        run: python scripts/run_benchmark_smokes.py --verbose

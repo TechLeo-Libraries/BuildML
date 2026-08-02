@@ -43,11 +43,7 @@ def transform_ssl(
         frame = frame_for_partition(dataset, split_plan, partition)
         part_name = str(partition)
 
-    missing = [c for c in plan.columns if c not in frame.columns]
-    if missing:
-        raise ValidationError(f"Missing feature columns for SSL transform: {missing}")
-    x = matrix_from_frame(frame, list(plan.columns))
-    emb = np.asarray(plan.encoder_.transform(x), dtype=float)
+    emb = _encode_frame(frame, plan)
     if emb.shape[1] != len(plan.representation_columns):
         raise ValidationError(
             "SSL encoder latent width drifted from plan.representation_columns."
@@ -55,7 +51,7 @@ def transform_ssl(
 
     disclosures = [
         "SSL transform reuses the train-fitted SelfSupervisedPlan (no pretext refit).",
-        "Exported columns are bottleneck representations, not reconstructions.",
+        "Exported columns are encoder representations (not reconstructions).",
     ]
     new_dataset: Dataset | None = None
     if attach:
@@ -94,3 +90,24 @@ def transform_ssl(
         disclosures=tuple(disclosures),
     )
     return new_dataset, result, emb
+
+
+def _encode_frame(frame: pd.DataFrame, plan: SelfSupervisedPlan) -> np.ndarray:
+    modality = getattr(plan, "modality", "tabular")
+    if modality == "text":
+        col = plan.columns[0]
+        if col not in frame.columns:
+            raise ValidationError(f"Missing text column {col!r} for SSL transform.")
+        texts = frame[col].astype(str).tolist()
+        return np.asarray(plan.encoder_.transform(texts), dtype=float)
+    if modality == "vision":
+        col = plan.columns[0]
+        if col not in frame.columns:
+            raise ValidationError(f"Missing image column {col!r} for SSL transform.")
+        images = frame[col].tolist()
+        return np.asarray(plan.encoder_.transform(images), dtype=float)
+    missing = [c for c in plan.columns if c not in frame.columns]
+    if missing:
+        raise ValidationError(f"Missing feature columns for SSL transform: {missing}")
+    x = matrix_from_frame(frame, list(plan.columns))
+    return np.asarray(plan.encoder_.transform(x), dtype=float)

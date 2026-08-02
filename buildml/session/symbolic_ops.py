@@ -20,7 +20,10 @@ from buildml.symbolic.results import NeuroSymbolicPlan, SymbolicPlan
 from buildml.symbolic.rules import Rule
 from buildml.symbolic.types import (
     BaseEstimatorName,
+    IndustrySymbolicMethod,
+    NeuroSymbolicBackend,
     NeuroSymbolicMode,
+    SymbolicBackend,
     SymbolicSource,
     SymbolicTask,
 )
@@ -31,7 +34,9 @@ PartitionOrAll = PartitionName | Literal["all"]
 def fit_symbolic_op(
     session,
     *,
+    backend: SymbolicBackend | None = None,
     source: SymbolicSource = "decision_tree",
+    method: IndustrySymbolicMethod | None = None,
     task: SymbolicTask | None = None,
     rules: Sequence[Mapping[str, Any] | Rule] | None = None,
     columns: list[str] | None = None,
@@ -41,6 +46,7 @@ def fit_symbolic_op(
     max_rules: int = 32,
     default_consequent: Any = None,
     prefer_reduce_components: bool = True,
+    verify_constraints: bool = False,
 ) -> Any:
     """Compile or induce a symbolic rule base on Session train.
 
@@ -53,7 +59,9 @@ def fit_symbolic_op(
     plan, result = fit_symbolic(
         session.dataset,
         session._split_plan,
+        backend=backend,
         source=source,
+        method=method,
         task=task,
         rules=rules,
         columns=columns,
@@ -64,6 +72,7 @@ def fit_symbolic_op(
         default_consequent=default_consequent,
         prefer_reduce_components=prefer_reduce_components,
         reduce_plan=getattr(session, "_reduce_plan", None),
+        verify_constraints=verify_constraints,
     )
     session._symbolic_plan = plan
     session._symbolic_fit_result = result
@@ -72,7 +81,9 @@ def fit_symbolic_op(
     session._record(
         "fit_symbolic",
         {
+            "backend": backend,
             "source": source,
+            "method": method,
             "task": task,
             "n_declared_rules": None if rules is None else len(list(rules)),
             "columns": columns,
@@ -81,6 +92,7 @@ def fit_symbolic_op(
             "min_samples_leaf": min_samples_leaf,
             "max_rules": max_rules,
             "prefer_reduce_components": prefer_reduce_components,
+            "verify_constraints": verify_constraints,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),
@@ -151,8 +163,10 @@ def predict_symbolic_op(
 def fit_neuro_symbolic_op(
     session,
     *,
+    backend: NeuroSymbolicBackend | None = None,
     mode: NeuroSymbolicMode = "constraint_overlay",
     base_estimator: BaseEstimatorName = "logistic_regression",
+    torch_method: str | None = None,
     task: SymbolicTask | None = None,
     rules: Sequence[Mapping[str, Any] | Rule] | None = None,
     rule_source: SymbolicSource = "decision_tree",
@@ -163,6 +177,8 @@ def fit_neuro_symbolic_op(
     min_samples_leaf: int = 5,
     max_rules: int = 24,
     prefer_reduce_components: bool = True,
+    torch_epochs: int = 60,
+    device: str = "cpu",
 ) -> Any:
     """Fit a sklearn + symbolic hybrid on Session train.
 
@@ -176,8 +192,10 @@ def fit_neuro_symbolic_op(
     plan, result = fit_neuro_symbolic(
         session.dataset,
         session._split_plan,
+        backend=backend,
         mode=mode,
         base_estimator=base_estimator,
+        torch_method=torch_method,
         task=task,
         rules=rules,
         rule_source=rule_source,
@@ -189,6 +207,8 @@ def fit_neuro_symbolic_op(
         max_rules=max_rules,
         prefer_reduce_components=prefer_reduce_components,
         reduce_plan=getattr(session, "_reduce_plan", None),
+        torch_epochs=torch_epochs,
+        device=device,
     )
     session._neuro_symbolic_plan = plan
     session._neuro_symbolic_fit_result = result
@@ -197,8 +217,10 @@ def fit_neuro_symbolic_op(
     session._record(
         "fit_neuro_symbolic",
         {
+            "backend": backend,
             "mode": mode,
             "base_estimator": base_estimator,
+            "torch_method": torch_method,
             "task": task,
             "rule_source": rule_source,
             "n_declared_rules": None if rules is None else len(list(rules)),
@@ -209,6 +231,8 @@ def fit_neuro_symbolic_op(
             "min_samples_leaf": min_samples_leaf,
             "max_rules": max_rules,
             "prefer_reduce_components": prefer_reduce_components,
+            "torch_epochs": torch_epochs,
+            "device": device,
         },
         warnings=tuple(result.warnings),
         result_summary=fit_result_summary(result),
@@ -345,3 +369,10 @@ def load_symbolic_bundle_op(session, path: str | Path):
         result_summary=summary,
     )
     return session
+
+
+def symbolic_capability_matrix_op() -> dict[str, Any]:
+    """Honest capability matrix for symbolic / neuro-symbolic backends."""
+    from buildml.symbolic.catalog import symbolic_capability_matrix
+
+    return symbolic_capability_matrix()

@@ -10,11 +10,10 @@ import pandas as pd
 from buildml.cbr.cases import (
     CaseTrace,
     encode_categoricals,
-    pairwise_distances,
-    top_k_indices,
 )
 from buildml.cbr.features import matrix_from_frame, standardize_apply
 from buildml.cbr.results import CbrPlan, CbrRetrieveResult
+from buildml.cbr.retrieval_engine import retrieve_neighbor_batches
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
@@ -29,6 +28,7 @@ def retrieve_cases(
     *,
     partition: PartitionOrAll = "test",
     k: int | None = None,
+    backend: str | None = None,
 ) -> CbrRetrieveResult:
     """Retrieve k nearest cases for each query row (no reuse / no refit).
 
@@ -42,20 +42,19 @@ def retrieve_cases(
 
     q_num, q_cat = encode_query_features(frame, plan)
     memory = plan.case_base
-    dists = pairwise_distances(
+    active_plan = _plan_with_backend(plan, backend)
+    orders, drows = retrieve_neighbor_batches(
+        active_plan,
         q_num,
-        memory.numeric_matrix,
-        metric=plan.metric,
-        query_cat=q_cat,
-        memory_cat=memory.categorical_matrix,
-        numeric_ranges=memory.numeric_ranges_,
-        eps=plan.distance_eps,
+        q_cat,
+        k=kk,
+        query_frame=frame if active_plan.backend == "embedding" else None,
     )
     traces: list[CaseTrace] = []
     for i in range(len(frame)):
-        order = top_k_indices(dists[i], kk)
+        order = orders[i]
         neighbors = [memory.cases[j] for j in order]
-        dvals = tuple(float(dists[i, j]) for j in order)
+        dvals = tuple(float(drows[i][j]) for j in range(len(order)))
         traces.append(
             CaseTrace(
                 query_index=indices[i],
@@ -75,6 +74,7 @@ def retrieve_cases(
         k=kk,
         metric=plan.metric,
         n_queries=len(frame),
+        backend=str(active_plan.backend),
         traces=tuple(traces),
         disclosures=(
             "Retrieval is score-only against the train-built case memory.",
@@ -124,14 +124,47 @@ def encode_query_features(
 
 def neighbor_pack_for_row(
     plan: CbrPlan,
-    distances_row: np.ndarray,
-    k: int,
+    order: np.ndarray,
+    dvals: np.ndarray,
 ) -> tuple[list[Any], np.ndarray, np.ndarray]:
     """Return neighbor Case list, distance vector, and index order."""
-    order = top_k_indices(distances_row, k)
     neighbors = [plan.case_base.cases[j] for j in order]
-    dvals = distances_row[order]
     return neighbors, dvals, order
+
+
+def _plan_with_backend(plan: CbrPlan, backend: str | None) -> CbrPlan:
+    if backend is None or str(backend) == str(plan.backend):
+        return plan
+    from buildml.cbr.catalog import resolve_backend_metric
+
+    resolved, metric = resolve_backend_metric(
+        backend=backend,  # type: ignore[arg-type]
+        metric=plan.metric,
+        text_columns=list(plan.text_columns) if plan.text_columns else None,
+    )
+    return CbrPlan(
+        task=plan.task,
+        backend=resolved,
+        metric=metric,
+        reuse=plan.reuse,
+        adapt=plan.adapt,
+        k=plan.k,
+        columns=plan.columns,
+        categorical_columns=plan.categorical_columns,
+        text_columns=plan.text_columns,
+        text_model_name=plan.text_model_name,
+        target_column=plan.target_column,
+        n_train_rows=plan.n_train_rows,
+        case_base=plan.case_base,
+        classes_=plan.classes_,
+        label_encoder_=plan.label_encoder_,
+        distance_eps=plan.distance_eps,
+        standardize=plan.standardize,
+        disclosures=plan.disclosures,
+        warnings=plan.warnings,
+        used_reduce_components=plan.used_reduce_components,
+        config=plan.config,
+    )
 
 
 def _partition_frame(
