@@ -51,6 +51,13 @@ def main() -> None:
     )
     print("answer:", answer.answer)
     print("citations:", [c.doc_id for c in answer.citations])
+    if answer.faithfulness is not None:
+        print(
+            "faithfulness grounded:",
+            answer.faithfulness.grounded,
+            "overlap:",
+            answer.faithfulness.answer_context_token_overlap,
+        )
 
     metrics = session.rag_evaluate(
         {

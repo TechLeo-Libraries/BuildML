@@ -52,13 +52,13 @@ cross-links.
 | EDA / teaching | `eda`, `eda_app`, `explain`, `workflow`, `walkthrough`, `dry_run` | [EDA / Teaching Studio](eda-teaching-studio.md) |
 | Artifacts | `checkpoint_*`, `save_model`, `save_pipeline`, `predict_from_pipeline`, torch/rag/ai artifacts | [Artifacts](artifacts-checkpoints-bundles.md) |
 | Torch tabular / text | `make_torch_loaders`, `make_text_torch_loaders`, `fit_torch`, `evaluate_torch` | [Torch quickstart](quickstart-torch.md), [Torch deep](torch-deep.md) |
-| Torch multimodal | `make_multimodal_*`, image/audio loaders, fusion `fit_torch` | [Torch deep](torch-deep.md) |
+| Torch multimodal | `make_multimodal_*`, image/audio loaders, concat/gated fusion, frozen `multimodal_preprocess` restore | [Torch deep](torch-deep.md) |
 | Torch CV / HPO / AMP / DDP / export | `cross_validate_torch`, `search_torch`, `nested_cv_torch`, `fit_torch_ddp`, `export_torch` | [Torch deep](torch-deep.md) |
-| Speech | `transcribe_speech`, `make_speech_torch_loaders`, `fit_speech_torch`, `domain_adapt_speech_torch`, refuse FM pretrain | [Speech](speech-asr-finetune.md) |
-| Pretrained backbones | `load_pretrained_backbone` | [Pretrained](pretrained-backbones.md) |
-| RAG | `rag_ingest_corpus` … `rag_generate`, `rag_evaluate`, bundle | [RAG quickstart](quickstart-rag.md), [RAG deep](rag-deep.md) |
+| Speech | `transcribe_speech`, `evaluate_asr` (WER/CER), `SpeechContract`, `make_speech_torch_loaders`, `fit_speech_torch`, `domain_adapt_speech_torch`, refuse FM pretrain | [Speech](speech-asr-finetune.md) |
+| Pretrained backbones | `list_pretrained_backbones`, `load_pretrained_backbone`, `attach_backbone_head` | [Pretrained](pretrained-backbones.md) |
+| RAG | `rag_ingest_corpus` … `rag_generate` (+ faithfulness), `rag_evaluate`, bundle | [RAG quickstart](quickstart-rag.md), [RAG deep](rag-deep.md) |
 | AI operator | `ai_configure` … `ai_run_autonomous`, transcripts | [AI quickstart](quickstart-ai.md), [AI safety](ai-operator-safety.md), [AI tools](ai-tools-operator-patterns.md) |
-| Serve / packs | `serve_bundle`, `pack_torchserve`, `prepare_tensorrt_export`, `emit_k8s_ddp_job` | [Serve & deploy](serve-deploy.md) |
+| Serve / packs | `serve_bundle` (`/metadata`, `/predict/batch`, optional local HTTPS), `pack_torchserve`, `prepare_tensorrt_export`, `emit_k8s_ddp_job`, `emit_k8s_serve_deployment` | [Serve & deploy](serve-deploy.md) |
 
 ---
 
@@ -84,13 +84,13 @@ cross-links.
 | [EDA / Teaching Studio](eda-teaching-studio.md) | Findings, HTML, live dashboard, explain/workflow |
 | [Diagnostics & model search](classical-diagnostics-search.md) | Calibration, thresholds, compare_models, grid/random/Optuna/nested |
 | [Artifacts: checkpoints vs bundles](artifacts-checkpoints-bundles.md) | What each artifact contains and does not |
-| [Torch deep](torch-deep.md) | Tabular, text, multimodal, CV/search/nested, AMP/DDP, export |
-| [Speech ASR + classify](speech-asr-finetune.md) | Stub/transformers ASR, finetune-lite, domain adapt, FM refuse |
-| [Pretrained backbones](pretrained-backbones.md) | Curated vision/audio/speech hooks; mock vs pretrained |
-| [RAG deep](rag-deep.md) | Hybrid retrieve, grounded generate, eval_only hygiene, upsert |
+| [Torch deep](torch-deep.md) | Tabular, text, multimodal (gated fusion + preprocess restore), CV/search/nested, AMP/DDP, export |
+| [Speech ASR + classify](speech-asr-finetune.md) | Stub/transformers ASR, WER/CER, SpeechContract, finetune-lite, FM refuse |
+| [Pretrained backbones](pretrained-backbones.md) | Expanded catalog, `attach_backbone_head`, mock vs pretrained |
+| [RAG deep](rag-deep.md) | Hybrid retrieve, grounded generate + faithfulness, eval_only hygiene, upsert |
 | [AI operator safety](ai-operator-safety.md) | Egress, confirm gates, autonomy residual risk |
 | [AI tools & operator patterns](ai-tools-operator-patterns.md) | Allowlist, plan execution, classical/RAG/Torch tool chains |
-| [Serve & deploy recipes](serve-deploy.md) | FastAPI, auth, TorchServe/TRT/K8s templates |
+| [Serve & deploy recipes](serve-deploy.md) | FastAPI metadata/batch/HTTPS, TorchServe compose, K8s Job + serve Deploy |
 
 ---
 

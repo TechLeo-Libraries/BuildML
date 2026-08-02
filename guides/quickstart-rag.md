@@ -78,6 +78,8 @@ answer = session.rag_generate(
     k=3,
 )
 print(answer.answer, [c.doc_id for c in answer.citations])
+# Cheap faithfulness heuristic on GenerateResult (citation markers + token overlap):
+print(getattr(answer, "faithfulness", None))
 
 metrics = session.rag_evaluate(
     {
@@ -140,6 +142,8 @@ Layout: `<path>/meta.json` + `<path>/chunks.jsonl` + `<path>/embeddings.npy`.
   vector-DB product path in this alpha.
 - **Generate needs a provider.** `rag_generate` is grounded (citations + CONTEXT)
   but does not embed a paid LLM; pass `provider=` or call `ai_configure`.
+  Faithfulness on `GenerateResult` is a cheap lexical/citation heuristic — not
+  an NLI or LLM-as-judge product.
 - **No dedicated RAG dashboard UI.** Catalog, structured results, and
   walkthrough `rag_status` are the teaching surfaces.
 - **Eval hygiene is caller-owned.** Index corpus and gold query/qrel sets must

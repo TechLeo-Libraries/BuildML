@@ -10,8 +10,8 @@
 
 BuildML provides **local managed serving** for classical pipeline bundles and
 TorchScript artifacts, plus **operator-owned recipes** for TorchServe,
-TensorRT (`trtexec`), and Kubernetes torchrun Jobs. This is not a managed
-cloud IAM / multi-cluster product.
+TensorRT (`trtexec`), and Kubernetes torchrun Jobs / serve Deployments. This is
+not a managed cloud IAM / multi-cluster product.
 
 Related: [artifacts](artifacts-checkpoints-bundles.md), [torch-deep](torch-deep.md),
 [features](../docs/features.rst).
@@ -26,6 +26,7 @@ Exposing ML scores without auth is a common incident. Defaults:
 - Optional API-key / Bearer middleware
 - Non-loopback binds require `api_keys` unless
   `allow_insecure_public_bind=True`
+- Optional local HTTPS via `ssl_certfile` / `ssl_keyfile` (both required together)
 - Prefer TLS at a reverse proxy for any non-local exposure
 
 ---
@@ -74,6 +75,29 @@ CLI equivalents:
 ```bash
 buildml-serve --bundle artifacts/pipeline --kind pipeline --api-key dev-key
 # or: python -m buildml.serving --bundle artifacts/pipeline --kind pipeline
+
+# Optional local HTTPS (both flags required):
+# buildml-serve --bundle artifacts/pipeline --ssl-certfile cert.pem --ssl-keyfile key.pem
+```
+
+### HTTP surface
+
+Managed serve exposes (OpenAPI at `/docs` / `/openapi.json`):
+
+| Route | Role |
+| --- | --- |
+| `GET /health` | Liveness |
+| `GET /metadata` | Bundle kind / contract summary |
+| `POST /predict` | Single-row (or tensor) score |
+| `POST /predict/batch` | Batch rows / inputs |
+
+Example against a running pipeline server:
+
+```bash
+curl -s http://127.0.0.1:8080/metadata
+curl -s -X POST http://127.0.0.1:8080/predict/batch \
+  -H "Content-Type: application/json" \
+  -d '{"rows":[{"age":30,"income":55},{"age":40,"income":80}]}'
 ```
 
 ---
@@ -90,11 +114,11 @@ buildml-serve --bundle artifacts/pipeline --kind pipeline --api-key dev-key
 ```
 
 Scoring contracts differ by `kind` — do not assume pipeline JSON equals
-TorchScript tensor payloads. Inspect the serving OpenAPI / docs route locally.
+TorchScript tensor payloads. Inspect `/metadata` and OpenAPI locally.
 
 ---
 
-## Use case C — Auth and public bind honesty
+## Use case C — Auth, public bind, optional local HTTPS
 
 ```python
 # Refused without keys on non-loopback (unless allow_insecure_public_bind):
@@ -110,13 +134,22 @@ TorchScript tensor payloads. Inspect the serving OpenAPI / docs route locally.
 #     host="0.0.0.0",
 #     allow_insecure_public_bind=True,
 # )
+
+# Optional local HTTPS — both cert and key required (ValidationError otherwise):
+# session.serve_bundle(
+#     "artifacts/pipeline",
+#     ssl_certfile="cert.pem",
+#     ssl_keyfile="key.pem",
+#     api_keys=["dev-key"],
+# )
 ```
 
-API keys are **not** cloud IAM. Rotate keys; terminate TLS at a proxy.
+API keys are **not** cloud IAM. Local SSL is **not** a managed cert product.
+Rotate keys; prefer a reverse proxy for production TLS.
 
 ---
 
-## Use case D — TorchServe directory pack (recipe)
+## Use case D — TorchServe directory pack + compose example
 
 ```python
 # session.export_torch("artifacts/model.ts.pt", format="torchscript")
@@ -126,6 +159,15 @@ API keys are **not** cloud IAM. Rotate keys; terminate TLS at a proxy.
 #     model_name="buildml_model",
 # )
 # Operator runs TorchServe against the directory — BuildML does not start it.
+```
+
+Repo recipe for a local compose loop (operator-run; not a managed cloud):
+
+- `deploy/torchserve/docker-compose.example.yml`
+
+```bash
+# After packing a .mar into a model-store (see pack_torchserve ARCHIVE.txt):
+# docker compose -f deploy/torchserve/docker-compose.example.yml up
 ```
 
 ---
@@ -145,7 +187,7 @@ API keys are **not** cloud IAM. Rotate keys; terminate TLS at a proxy.
 
 ---
 
-## Use case F — Kubernetes torchrun Job YAML (template)
+## Use case F — Kubernetes torchrun Job (ConfigMap + GPU)
 
 ```python
 session = Session()
@@ -157,18 +199,41 @@ session.emit_k8s_ddp_job(
     nnodes=2,
     nproc_per_node=2,
     script_path="/workspace/train.py",
+    include_configmap=True,  # default — emits ConfigMap + Job + Service
+    gpu_limit=1,             # nvidia.com/gpu requests/limits in the template
 )
 # Apply with kubectl yourself — not live multi-cluster orchestration.
 ```
 
-Also see example templates under `deploy/k8s` when present in the repo.
+Static multi-node example: `deploy/k8s/torchrun-ddp-multinode.example.yaml`.
+
+---
+
+## Use case G — Kubernetes serve Deployment (template)
+
+```python
+session = Session()
+session.emit_k8s_serve_deployment(
+    "artifacts/serve-deploy.yaml",
+    name="buildml-serve",
+    namespace="default",
+    image="python:3.12-slim",
+    replicas=1,
+    port=8080,
+    # gpu_limit=1,  # optional GPU request when your cluster schedules GPUs
+)
+# Template only — wire volumes, TLS, API keys, and RBAC yourself.
+```
+
+Static example: `deploy/k8s/serve-deployment.example.yaml`.
 
 ---
 
 ## AI operator note
 
 Pack/export helpers may appear on the AI tool allowlist
-(`pack_torchserve`, `prepare_tensorrt_export`, `emit_k8s_ddp_job`).
+(`pack_torchserve`, `prepare_tensorrt_export`, `emit_k8s_ddp_job`,
+`emit_k8s_serve_deployment`).
 **`serve_bundle` is not an AI tool** — keep process binding under human/CLI
 control ([ai-tools](ai-tools-operator-patterns.md)).
 
@@ -179,10 +244,11 @@ control ([ai-tools](ai-tools-operator-patterns.md)).
 | Limit | Honesty |
 | --- | --- |
 | Managed cloud | Not provided |
-| TLS termination | Bring your own proxy |
+| TLS termination | Local SSL pair optional; prefer your proxy for production |
 | TorchServe / TRT / K8s | Recipes/templates only |
 | Missing serve extra | `MissingExtraError` |
 | Public bind without keys | `ValidationError` |
+| Partial SSL (`ssl_certfile` xor `ssl_keyfile`) | `ValidationError` |
 
 ---
 

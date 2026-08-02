@@ -128,7 +128,14 @@ loaders and calling `evaluate_torch` is refused — keep loader kind consistent.
 
 ## Use case C — Multimodal fusion (tabular + text)
 
+Default built-in fusion (when `fit_torch` omits a module) uses **concat** late
+fusion. Pass V also ships **gated** late fusion via
+`build_multimodal_fusion(..., fusion="gated")` (aliases: `fusion_type`,
+`fusion_mode`).
+
 ```python
+from buildml.dl.multimodal import build_multimodal_fusion
+
 mm_df = pd.DataFrame(
     {
         "x1": [0.1, 0.5, 0.2, 0.9, 0.3, 0.7, 0.4, 0.8],
@@ -151,10 +158,38 @@ mm = (
     .set_roles({"x1": "feature", "text": "feature", "y": "target"})
     .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
 )
-mm.make_multimodal_torch_loaders(text_column="text")
-mm.fit_torch(epochs=5, device="cpu", mixed_precision=False)
+bundle = mm.make_multimodal_torch_loaders(text_column="text")
+# Built-in concat fusion:
+# mm.fit_torch(epochs=5, device="cpu", mixed_precision=False)
+
+# Explicit gated fusion (Pass V):
+contract = bundle.multimodal_contract
+gated = build_multimodal_fusion(contract, fusion="gated")
+mm.fit_torch(gated, epochs=5, device="cpu", mixed_precision=False)
 mm.export_torch("artifacts/mm.ts.pt", format="torchscript")
 ```
+
+### Frozen `multimodal_preprocess` restore
+
+Trainer bundles may persist train-fit multimodal stats (normalize mean/std,
+vocab, image/audio rates/layout) as `multimodal_preprocess`.
+`load_torch_bundle` restores that meta for inspection but does **not** rebuild
+DataLoaders. To rebuild loaders with the frozen stats:
+
+```python
+# After fit_torch / load_torch_bundle with multimodal_preprocess present:
+mm.make_multimodal_torch_loaders(
+    text_column="text",
+    use_saved_preprocess=True,  # reuses dl_train_result.multimodal_preprocess
+)
+# Or pass an explicit contract/dict:
+# mm.make_multimodal_torch_loaders(
+#     text_column="text",
+#     preprocess=mm.dl_train_result.multimodal_preprocess,
+# )
+```
+
+Do not pass both `preprocess=` and `use_saved_preprocess=True`.
 
 ---
 
@@ -282,7 +317,9 @@ CV as separate honesty protocols unless you know the interaction.
 - **Wrong loader kind after text/multimodal/speech fit** → `ValidationError`.
 - **DDP with 1 GPU** refused unless `allow_cpu_ddp=True`.
 - **Not** Whisper-scale FM pretrain — see speech refuse API.
-- Multimodal image/audio are honest alpha fusion helpers.
+- Multimodal image/audio are honest alpha fusion helpers (`concat` / `gated`).
+- `use_saved_preprocess=True` without prior `multimodal_preprocess` meta →
+  `ValidationError`.
 
 ---
 

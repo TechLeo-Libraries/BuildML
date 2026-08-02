@@ -8,9 +8,11 @@
 > ```
 > See [installation](../docs/installation.rst).
 
-`Session.load_pretrained_backbone` exposes **curated** ResNet/ViT, Wav2Vec2, and
-Whisper-encoder hooks with `weights=none|mock|pretrained`. This is **not** a
-full Hugging Face / TorchVision zoo product.
+`Session.load_pretrained_backbone` exposes **curated** vision / audio / speech
+encoder hooks with `weights=none|mock|pretrained`, plus
+`Session.attach_backbone_head` for a linear classify/probe head. Discover the
+shipped catalog with `list_pretrained_backbones()`. This is **not** a full
+Hugging Face / TorchVision zoo product.
 
 Related: [torch-deep](torch-deep.md), [speech](speech-asr-finetune.md),
 [features](../docs/features.rst).
@@ -30,7 +32,29 @@ preprocessing contracts, and breaking upstream changes. BuildML instead:
 
 ---
 
-## Use case — Vision backbone (mock)
+## Catalog — `list_pretrained_backbones`
+
+```python
+from buildml.dl.zoo import list_pretrained_backbones
+
+for row in list_pretrained_backbones():
+    print(row["modality"], row["architecture"], row["provider"])
+```
+
+Curated architectures (Pass V expansion):
+
+| Modality | Architectures | Provider |
+| --- | --- | --- |
+| vision | `resnet18`, `resnet34`, `resnet50`, `vit_b_16`, `vit_b_32` | torchvision |
+| audio | `wav2vec2_base`, `hubert_base` | transformers |
+| speech | `whisper_tiny_encoder`, `whisper_base_encoder` | transformers |
+
+Prefer `list_pretrained_backbones()` / `session.explain("load_pretrained_backbone")`
+over memorizing a stale table when the installed version may differ.
+
+---
+
+## Use case — Vision backbone + attach head (mock)
 
 ```python
 from buildml import Session
@@ -38,35 +62,43 @@ from buildml import Session
 session = Session()
 backbone = session.load_pretrained_backbone(
     "vision",
-    "resnet18",
+    "resnet34",  # or resnet18 / resnet50 / vit_b_16 / vit_b_32
     weights="mock",
     freeze=True,
     seed=0,
 )
-print(backbone)
+print(backbone.feature_dim, backbone.architecture)
+
+head = session.attach_backbone_head(n_classes=2, freeze_backbone=True)
+# head.module is an nn.Module (backbone + linear head); also on session.dl_backbone_head
+print(session.dl_backbone_head.n_classes)
 ```
 
-Other curated vision names (when available in your installed version) follow the
-same pattern — prefer `session.explain("load_pretrained_backbone")` for the
-current list rather than memorizing a stale zoo table.
+`attach_backbone_head` uses the last `load_pretrained_backbone` result on the
+Session. `freeze_backbone=True` freezes encoder params and trains the linear
+head (linear-probe style).
 
 ---
 
 ## Use case — Audio / speech encoders
 
 ```python
-# audio modality (e.g. wav2vec-class hooks)
-# audio_bb = session.load_pretrained_backbone("audio", "wav2vec2", weights="mock")
+# audio modality
+# audio_bb = session.load_pretrained_backbone(
+#     "audio", "hubert_base", weights="mock", freeze=True
+# )
+# # also: "wav2vec2_base"
 
 # speech encoder hook (not FM pretrain)
 # speech_bb = session.load_pretrained_backbone(
-#     "speech", "whisper_encoder", weights="mock", freeze=True
+#     "speech", "whisper_base_encoder", weights="mock", freeze=True
 # )
+# # also: "whisper_tiny_encoder"
 
 # Real weights (may download; operator-owned cache/license):
 # speech_bb = session.load_pretrained_backbone(
 #     "speech",
-#     "whisper_encoder",
+#     "whisper_tiny_encoder",
 #     weights="pretrained",
 #     model_id="openai/whisper-tiny",
 # )
@@ -88,7 +120,8 @@ current list rather than memorizing a stale zoo table.
 
 ## AI tool exposure
 
-The AI operator allowlist can call pretrained loading as a typed tool
+The AI operator allowlist can call `load_pretrained_backbone` and
+`attach_backbone_head` as typed tools
 ([ai-tools-operator-patterns](ai-tools-operator-patterns.md)). Still verify
 architecture names and weight modes before confirming execution.
 
@@ -99,6 +132,7 @@ architecture names and weight modes before confirming execution.
 - Missing `vision` / `speech` / `pretrained` extra → `MissingExtraError`.
 - Unknown architecture → validation error (not silent fallback to a random zoo model).
 - `pretrained` without network/cache → upstream download errors.
+- `attach_backbone_head` without a prior `load_pretrained_backbone` → validation error.
 - Not a substitute for `make_image_multimodal_torch_loaders` contracts.
 - Not Whisper-scale training — see `refuse_speech_foundation_pretrain`.
 

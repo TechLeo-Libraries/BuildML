@@ -72,10 +72,10 @@ print(dense.hits[0].doc_id, bm25.hits[0].doc_id, hybrid.hits[0].doc_id)
 
 ---
 
-## Use case B — Grounded generate with citations
+## Use case B — Grounded generate with citations + faithfulness
 
 ```python
-from buildml.rag.generate import EchoGroundedProvider
+from buildml.rag.generate import EchoGroundedProvider, score_faithfulness
 
 answer = session.rag_generate(
     "What causes evaluation contamination?",
@@ -85,13 +85,28 @@ answer = session.rag_generate(
 print(answer.answer)
 print([c.doc_id for c in answer.citations])
 
+# Cheap faithfulness hooks (Pass V): citation-marker coverage + lexical overlap.
+# Attached automatically on GenerateResult when score_grounding is enabled (default).
+print(answer.faithfulness)
+if answer.faithfulness is not None:
+    print(
+        answer.faithfulness.citation_marker_coverage,
+        answer.faithfulness.answer_context_token_overlap,
+        answer.faithfulness.grounded,
+    )
+
+# Standalone helper over an answer + citations:
+report = score_faithfulness(answer.answer, answer.citations)
+print(report.to_dict())
+
 # Production: configure a real chat provider (buildml[ai]) then:
 # session.ai_configure(provider="openai")
 # answer = session.rag_generate("...", k=3)  # uses configured provider
 ```
 
 Grounded generate without a provider fails clearly. Citations are first-class;
-do not treat echo providers as factual QA.
+do not treat echo providers as factual QA. Faithfulness is a **cheap heuristic**
+(not NLI / LLM-as-judge) — high overlap does not prove factual correctness.
 
 ---
 
@@ -183,6 +198,7 @@ gates ([ai-tools](ai-tools-operator-patterns.md)).
 - Semantic models need `buildml[ai]`/`[rag]` deps and download time.
 - `eval_only` contamination → `LeakageError`.
 - Generate quality depends entirely on the chat provider + retrieved context.
+- Faithfulness hooks are lexical / citation-marker heuristics, not a judge model.
 - Not a managed vector-DB cloud product.
 
 ---
