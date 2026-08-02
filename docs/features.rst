@@ -117,3 +117,22 @@ separate speech ASR/finetune-lite path are shipped; torchrun multi-node DDP,
 K8s Job templates, local managed serving (optional API keys), TorchServe
 packaging, and TensorRT plans are alpha library helpers (not multi-cluster
 orchestration, not a managed cloud, not Whisper-scale FM training from scratch).
+
+Where to read more
+------------------
+
+Capability narratives with runnable examples live in the guide set (canonical
+Markdown under ``guides/``, also rendered here):
+
+* Index / learning path: :doc:`guide-index` · :doc:`guides`
+* Classical: :doc:`classical-end-to-end`, :doc:`leakage-cv-recipes`,
+  :doc:`preprocess-depth`, :doc:`classical-diagnostics-search`
+* Engines / EDA / artifacts: :doc:`engines-polars-duckdb`,
+  :doc:`eda-teaching-studio`, :doc:`artifacts-checkpoints-bundles`
+* Torch / speech / serve: :doc:`torch-deep`, :doc:`speech-asr-finetune`,
+  :doc:`pretrained-backbones`, :doc:`serve-deploy`
+* RAG / AI: :doc:`rag-deep`, :doc:`ai-operator-safety`,
+  :doc:`ai-tools-operator-patterns`
+
+Install honesty stays unchanged: PyPI ``buildml`` is legacy 1.x until a 2.x
+wheel ships — use a GitHub or editable install for Session APIs above.

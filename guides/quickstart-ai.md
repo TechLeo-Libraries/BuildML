@@ -8,6 +8,9 @@ Optional LLM-assisted workflow guidance on the same `Session` as classical ML,
 Torch, and RAG: roles, splits, history, and explain. Install the AI extra;
 core `import buildml` never requires it.
 
+**Go deeper:** [AI operator safety](ai-operator-safety.md) ·
+[AI tools & operator patterns](ai-tools-operator-patterns.md).
+
 ```bash
 # After a GitHub / editable 2.x install:
 pip install "buildml[ai]"
