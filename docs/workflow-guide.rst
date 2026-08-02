@@ -83,12 +83,18 @@ uses ``to_pandas()``, manually select ``session.partition("train")`` for any
 fit-capable work; the full exported frame contains every partition.
 
 For selection-time honesty inside ``cv_score``, ``grid_search``,
-``optuna_search``, or ``nested_cv_score``, prefer a fold-local
+``optuna_search``, or ``nested_cv_score``, use a fold-local
 ``PreprocessRecipe`` (dates, text, impute, encode, binning, scale, reduce/PCA,
-select, outliers) instead of Session-global plans fitted on the full train
-partition. Resample and ``apply_custom_transform`` remain Session-global only.
-``Session.text_features`` / ``Session.reduce_dimensions`` are also Session-global
-unless the same steps are expressed in the recipe.
+select, outliers) on **unpoisoned** data — do not fit Session-global plans on
+the full train partition first. When Session-global fit-capable plans already
+exist, CV/search **refuse** with ``LeakageError`` even if a fold-local recipe
+is passed (recipes do not rebuild from raw/unpoisoned rows). Opt in only via
+``allow_session_global_preprocess=True`` (explicit, loud override; scores
+remain leakage-biased), or re-ingest / checkpoint-load unpoisoned data.
+Resample and ``apply_custom_transform`` remain Session-global only.
+``Session.text_features`` / ``Session.reduce_dimensions`` are also
+Session-global unless the same steps are expressed in the recipe on
+unpoisoned data.
 
 When Polars or DuckDB is configured via ``with_engine`` or path ingest,
 ``Dataset`` attaches a native handle. Path ingest with those engines loads
@@ -181,11 +187,16 @@ cross-validation folds respect row dependencies.
 
    status = session.workflow()
    before = session.explain("checkpoint_save", moment="before")
+   preview = session.dry_run(["checkpoint_save"])
+   summary = session.summarize_history()
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
-``workflow`` shows API readiness. ``explain`` gives operation-level choices
-and limits. ``walkthrough`` joins statuses to history and unresolved catalog
-risks. Available operations are possibilities, not recommendations.
+``workflow`` shows every cataloged operation as done, available, blocked, or
+skipped. ``explain`` gives operation-level choices, prerequisites, and limits.
+``dry_run`` previews calls without mutating state. ``summarize_history`` lists
+operation counts and heuristic unresolved risks. ``walkthrough`` joins statuses
+to history and unresolved catalog risks in offline HTML. Available operations
+are possibilities, not recommendations.
 
 10. Persist the right artifact
 ------------------------------

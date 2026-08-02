@@ -30,12 +30,15 @@ def torch_available() -> bool:
     """Return True when ``torch`` can be imported and initialized.
 
     Uses ``find_spec`` first so callers can cheaply detect a missing install.
-    Import failures (including OSError from broken wheels) count as unavailable.
+    Catchable import failures (including OSError from broken wheels) count as
+    unavailable. Fatal process-killing faults (some Windows AV DLL scans) cannot
+    be caught here; tests should skip on :class:`MissingExtraError` from
+    :func:`require_torch` instead of assuming ``find_spec`` alone means usable.
     """
     if importlib.util.find_spec("torch") is None:
         return False
     try:
         import torch  # noqa: F401
-    except (ImportError, OSError):
+    except Exception:
         return False
     return True

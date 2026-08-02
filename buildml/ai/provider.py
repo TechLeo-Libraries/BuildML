@@ -98,6 +98,7 @@ class MockProvider:
     """Mock provider for CI testing without real API keys.
 
     Returns canned responses and records all calls for test assertions.
+    Supports a FIFO queue of tool-call responses for multi-step workflows.
     """
 
     def __init__(
@@ -110,14 +111,31 @@ class MockProvider:
         self.tool_responses = tool_responses or {}
         self.calls: list[dict[str, Any]] = []
         self._next_tool_call: ToolCall | None = None
+        self._tool_call_queue: list[ToolCall] = []
+        self._response_queue: list[str] = []
 
     def set_next_tool_call(self, tool_name: str, arguments: dict[str, Any]) -> None:
-        """Queue a tool call for the next response."""
+        """Queue a tool call for the next response (single-slot compatibility)."""
         self._next_tool_call = ToolCall(
             tool_name=tool_name,
             arguments=arguments,
             call_id=f"call_{uuid.uuid4().hex[:8]}",
         )
+
+    def queue_tool_calls(self, calls: list[tuple[str, dict[str, Any]]]) -> None:
+        """Queue multiple tool calls returned one-per-chat turn (FIFO)."""
+        for tool_name, arguments in calls:
+            self._tool_call_queue.append(
+                ToolCall(
+                    tool_name=tool_name,
+                    arguments=arguments,
+                    call_id=f"call_{uuid.uuid4().hex[:8]}",
+                )
+            )
+
+    def queue_responses(self, texts: list[str]) -> None:
+        """Queue plain text responses returned after tool-call turns are exhausted."""
+        self._response_queue.extend(texts)
 
     def chat(
         self,
@@ -134,7 +152,6 @@ class MockProvider:
             "temperature": temperature,
         })
 
-        tool_calls: tuple[ToolCall, ...] = ()
         if self._next_tool_call is not None:
             tool_calls = (self._next_tool_call,)
             self._next_tool_call = None
@@ -146,8 +163,22 @@ class MockProvider:
                 model="mock-model",
             )
 
+        if self._tool_call_queue:
+            tool_call = self._tool_call_queue.pop(0)
+            return ProviderResponse(
+                content="",
+                tool_calls=(tool_call,),
+                finish_reason="tool_calls",
+                usage={"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+                model="mock-model",
+            )
+
+        content = self.default_response
+        if self._response_queue:
+            content = self._response_queue.pop(0)
+
         return ProviderResponse(
-            content=self.default_response,
+            content=content,
             tool_calls=(),
             finish_reason="stop",
             usage={"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
@@ -240,10 +271,18 @@ class OpenAIProvider:
         if choice.message.tool_calls:
             parsed_calls = []
             for tc in choice.message.tool_calls:
-                try:
-                    args = json.loads(tc.function.arguments)
-                except json.JSONDecodeError:
-                    args = {}
+                raw_args = tc.function.arguments
+                args: dict[str, Any] = {}
+                if isinstance(raw_args, dict):
+                    args = dict(raw_args)
+                elif isinstance(raw_args, str) and raw_args.strip():
+                    try:
+                        parsed = json.loads(raw_args)
+                        if isinstance(parsed, dict):
+                            args = parsed
+                    except json.JSONDecodeError:
+                        # Tolerant fallback: empty args; executor validates required fields.
+                        args = {}
                 parsed_calls.append(
                     ToolCall(
                         tool_name=tc.function.name,

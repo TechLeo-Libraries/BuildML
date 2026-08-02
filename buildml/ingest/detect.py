@@ -128,7 +128,7 @@ def check_materialization(
     -----
     BuildML never silently materializes huge frames: soft exceedance always
     returns guidance in the telemetry object, and hard exceedance refuses by
-    default when a hard limit is configured. Prefer lazy/out-of-core prep and
+    default when a hard limit is configured. Prefer lazy prep and
     materialize only the train design matrix at the estimator boundary.
     """
     nbytes = estimate_dataframe_bytes(frame)
@@ -136,7 +136,7 @@ def check_materialization(
     hard_exceeded = hard_limit_bytes is not None and nbytes >= hard_limit_bytes
     notes: list[str] = []
     guidance = [
-        "Prefer engine='polars' or 'duckdb' with mode='lazy'/'out_of_core' for prep.",
+        "Prefer engine='polars' or 'duckdb' with mode='lazy' for prep.",
         "Materialize only the train design matrix needed for fit/predict, not the full prep frame.",
         "Set hard_limit_bytes or BUILDML_MATERIALIZATION_HARD_LIMIT_BYTES "
         "to refuse oversized copies.",
@@ -146,7 +146,7 @@ def check_materialization(
         soft_mb = soft_limit_bytes / (1024 * 1024)
         message = (
             f"Materializing ~{mb:.1f} MiB for {context} exceeds the "
-            f"{soft_mb:.0f} MiB soft limit. Prefer lazy/out_of_core prep, then "
+            f"{soft_mb:.0f} MiB soft limit. Prefer lazy prep, then "
             "materialize only the train design matrix. Soft gates disclose risk; "
             "they do not refuse unless a hard limit is also configured."
         )
@@ -219,8 +219,6 @@ def recommend_mode(
         if row_estimate is not None and row_estimate >= 5_000_000:
             return DataMode.LAZY
         return DataMode.MEMORY
-    if byte_estimate >= LAZY_SOFT_LIMIT:
-        return DataMode.OUT_OF_CORE
     if byte_estimate >= MEMORY_SOFT_LIMIT:
         return DataMode.LAZY
     return DataMode.MEMORY

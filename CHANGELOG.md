@@ -8,8 +8,158 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pass Q after Pass P:** Torch classification paths now LabelEncoder-style remap
+  sparse/non-contiguous integer class ids to contiguous ``0..K-1`` (speech, text,
+  tabular, multimodal, CV/search). ``class_labels`` keeps original ids in index
+  order so ``n_classes = len(class_labels)`` matches CrossEntropy targets;
+  evaluate confusion matrices decode back to original ids. CI wires Pass Q tests.
+- **Pass P after Pass O:** CI torch job now runs Pass O speech/DDP/serve tests;
+  extras matrix covers `buildml[serve]`; multi-node DDP requires `LOCAL_RANK`
+  (no silent global-rank→device mapping) and writes parsed `MASTER_*` into the
+  process env; DDP rank bundles retain speech/multimodal modality metadata;
+  executor speech dispatch + serve CLI localhost/no-auth defaults covered by
+  tests; teaching overlay honesty for ASR stub (Torch not required) and
+  multi-node `LOCAL_RANK` failures.
+
+### Changed
+
+- **Pass O license:** project license switched from MIT to **Apache-2.0**
+  (`LICENSE`, `NOTICE`, `pyproject.toml`, package `__license__`, README / docs
+  mentions).
+
 ### Added
 
+- **Pass O speech FM path:** ASR transcription + classify finetune-lite behind
+  `buildml[speech]` / Torch. Session APIs `make_speech_torch_loaders`,
+  `fit_speech_torch`, `transcribe_speech` (stub CI-safe backend; optional
+  transformers Whisper-class). Honest alpha — integration/finetune, not
+  training a foundation model from scratch. Teaching sync + AI tools/executor.
+- **Pass O multi-node DDP:** `fit_torch_ddp(..., multi_node=True)` joins
+  torchrun env (`WORLD_SIZE` / `RANK` / `LOCAL_RANK` / `MASTER_ADDR` /
+  `MASTER_PORT`); clear misconfig errors; CPU multi-process still requires
+  `allow_cpu_ddp=True`. Not Kubernetes multi-cluster orchestration.
+- **Pass O managed serving:** `buildml[serve]` FastAPI server with `/health` +
+  `/predict` for classical pipeline bundles and TorchScript; CLI
+  `buildml-serve` / `python -m buildml.serving` and `Session.serve_bundle`.
+  Localhost default; no auth product claim.
+- **Pass L audio multimodal:** extend multimodal fusion to audio path/waveform
+  columns fused with tabular and/or text and/or image. Train-only audio
+  amplitude mean/std, built-in small 1D-CNN fusion branch (honest alpha — not a
+  speech foundation model), Session facades
+  (`make_multimodal_torch_loaders(..., audio_column=)` /
+  `make_audio_multimodal_torch_loaders`), `fit_torch` / `export_torch` refuse
+  silent tabular rebuilds, AI tools/executor/autonomy allowlist/planner wiring,
+  and teaching-surface sync. `soundfile` is included in `buildml[torch]` (also
+  via `buildml[audio]`) for path cells; waveform arrays work with Torch alone.
+  CI torch job runs Pass L tests with `.[torch,onnx]`.
+
+### Fixed
+
+- **Pass N leftovers after Pass M:** torch trainer bundles persist
+  `multimodal_preprocess` (audio/image stats, source SR, layout) with load-path
+  honesty (meta restored; DataLoaders not auto-rebuilt); ambiguous 2D waveform
+  arrays raise instead of silent flatten; repeat-pad kept as alpha pooling
+  choice (documented + short-clip pool-signal test) rather than widening the
+  forward/export contract with length-masked pooling.
+- **Pass M adversarial re-audit after Pass L:** short audio clips are
+  repeat-padded (not zero-filled) so default `audio_max_samples` does not wipe
+  the 1D-CNN pool; train-only amp stats use pre-pad lengths; media path/array
+  columns are refused as inferred text without `audio_column=`/`image_column=`;
+  `fit_torch` / `evaluate_torch` / `fit_torch_ddp` refuse silent tabular loader
+  rebuild after multimodal/text fit (not only `export_torch`); ONNX export uses
+  multimodal `input_layout` names; AI tool schemas/executor forward
+  `audio_sample_rate` / `audio_max_samples` / `audio_source_sample_rate`;
+  `docs/features.rst` no longer falsely claims audio multimodal is deferred.
+- **Pass K adversarial re-audit after Pass J:** ONNX export broke on Torch ≥2.9
+  (`dynamo=True` default requires `onnxscript`). Export now uses
+  `dynamo=False` and requires `buildml[onnx]` up front. AI registry/executor
+  coverage for `make_image_multimodal_torch_loaders` is regression-tested;
+  image multimodal ONNX smoke added. CI torch job installs `.[torch,onnx]`.
+  Maintainer architecture note no longer claims image multimodal is deferred.
+
+### Added
+
+- **Pass J image multimodal:** extend multimodal fusion beyond tabular⊕text to
+  include image path/array columns fused with tabular and/or text. Train-only
+  image channel mean/std, built-in CNN fusion branch, Session facades
+  (`make_multimodal_torch_loaders(..., image_column=)` /
+  `make_image_multimodal_torch_loaders`), `fit_torch` / `export_torch` wiring
+  that refuses silent tabular rebuilds, AI tools/executor/autonomy allowlist,
+  and teaching-surface sync. Pillow is included in `buildml[torch]` for path
+  cells.
+
+### Fixed
+
+- **Pass H adversarial re-audit after Pass G:** AI registry listed
+  `make_multimodal_torch_loaders` / `search_torch` / `nested_cv_torch` /
+  `export_torch` but executor had no dispatch handlers (dead wires). Tool schemas
+  now accept `param_grid` / `param_distributions`. Multimodal fusion `forward`
+  supports both tuple and dual-arg calling so TorchScript/ONNX export works.
+  Randomized Torch search seeds scipy-like `rvs` with an int (not
+  ``numpy.Generator``). CI torch/ai jobs run Pass G tests. README Torch extra
+  row matches shipped depth. Export refuses silent tabular loader rebuild after
+  text/multimodal fit.
+
+### Added
+
+- **Pass G deferred depth:** nested Torch HPO (`Session.nested_cv_torch` /
+  `search_torch` with fold-local normalize), tabular+text multimodal fusion
+  (`make_multimodal_torch_loaders` + built-in fusion module), explicit
+  `ai_run_autonomous` operator automation (confirm opt-in, allowlist, max steps,
+  blocked sample egress, transcript audit), CUDA AMP via
+  `TrainConfig.mixed_precision` / `fit_torch(..., mixed_precision=True)`,
+  single-node `fit_torch_ddp`, and TorchScript/ONNX `export_torch`. Optional
+  `buildml[onnx]` extra for ONNX checker smoke tests.
+
+### Fixed
+
+- **Pass F adversarial re-audit:** closed soft-leakage docstring/concept regressions
+  that Pass E’s line-local lint missed (`nested_cv_score` param docs still claimed
+  refuse only when no fold-local recipe is provided; Concept Academy still taught
+  “without a fold recipe → limited honesty”). Restored UTF-8 in
+  `buildml/explain/concepts/*` after cp1252 mojibake (`Â±`, `â†'`, `â€"`, Greek).
+  Copy lint now checks adjacent-line windows and rejects mojibake markers.
+  Stale DL gate/checklist copy that denied built-in MLP, text loaders, and
+  fold-local Torch CV on current HEAD was corrected.
+- **Pass E re-audit:** corrected soft-leakage teaching regressions that still claimed
+  a fold-local `PreprocessRecipe` alone bypasses Session-global CV refuse (README,
+  guides, workflow guide, overlays). Added copy-lint rule
+  `soft-leakage-false-claim`. Overlay tuple bugs (missing trailing commas) fixed.
+- Stale maintainer honesty after Phase C: fold-local Torch CV and `rag_generate`
+  are documented as shipped; architecture review / alpha-gate / phase-plan copy
+  no longer contradict HEAD.
+
+### Added
+
+- Catalog parameter auto-fill from `operation_index.json` plus stricter
+  signature↔catalog param parity; dashboard Teaching Studio concept keys are
+  gated against `CONCEPT_NOTES`.
+- Scoped mypy and Phase C domain tests (`test_dl_phase_c`, `test_rag_generate`,
+  `test_ai_phase_c`) in CI.
+- Concepts package split (`buildml/explain/concepts/{classical,dl,rag,ai}.py`)
+  replacing the monolithic hand blob.
+- **Phase D teaching sync:** generated Session operation index
+  (`buildml/explain/generated/operation_index.json`), domain catalog overlays
+  under `buildml/explain/overlays/`, and CI gate
+  `python scripts/sync_teaching_surface.py --check` so Session ↔ catalog ↔ AI
+  tools cannot drift silently. `make_text_torch_loaders` added to the default
+  AI tool allowlist.
+- **Phase C domain depth (RAG / DL / AI):** product names now match shipped
+  capability rather than thin retrieve-only / tabular-only / advisor-only slices.
+- **RAG generate:** `Session.rag_generate` grounded generation with citations,
+  pluggable chat providers (Session AI provider, `MockProvider`, or
+  `EchoGroundedProvider` for offline CI), empty-retrieval / missing-index hard
+  failures, and `embedder="auto"` (semantic when `buildml[rag]` importable).
+- **DL depth:** built-in tabular MLP + text embedding classifier; optional
+  `fit_torch()` without a hand-rolled module; classical plan disclosure /
+  `apply_plans=` bridge on `make_torch_loaders`; fold-local
+  `cross_validate_torch`; `make_text_torch_loaders` sequence/text modality.
+- **AI operator depth:** default tool registry covers classical + RAG retrieve /
+  generate + Torch train/eval/CV; plan steps carry `parameters`; multi-step
+  `ai_run_plan` can orchestrate grounded RAG and Torch tools; MockProvider
+  supports queued multi-turn tool calls.
 - Cost-sensitive `tune_threshold(fp_cost=..., fn_cost=...)` with recommended
   threshold, expected cost, and structured operating points.
 - Stronger `error_slices`: multi-column segments, richer metrics, small-n
@@ -17,10 +167,18 @@ with pre-release tags for alpha (`aN`) builds.
 - Richer `dry_run` / `summarize_history` audit UX (ranked risks, prerequisite
   graph summary, suggested next ops) surfaced on walkthrough HTML.
 
+### Changed
+
+- Session facade typing for DL/RAG/AI public results and key method signatures
+  (still a thin delegate; logic remains in domain/ops packages).
+- RAG / DL / AI maintainer locks and quickstarts updated so “no generate” is no
+  longer the product ceiling; hashing remains the CI-safe default embedder with
+  semantic path first-class behind `buildml[rag]`.
+
 ## [2.3.0a1] — AI operator alpha — 2026-08-02
 
 First AI operator alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`docs/ai-alpha-gate.md`](docs/ai-alpha-gate.md).
+known limits are defined in [`maintainers/ai-alpha-gate.md`](maintainers/ai-alpha-gate.md).
 Classical alpha remains at `2.0.0a1`; DL alpha at `2.1.0a1`; RAG alpha at
 `2.2.0a1`. This line adds optional LLM-assisted workflow guidance — **not**
 autonomous agents or auto-execution.
@@ -68,13 +226,13 @@ autonomous agents or auto-execution.
 
 ### Verification
 
-- Gate checklist: `docs/ai-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `docs/release-checklist-ai-a1.md`).
+- Gate checklist: `maintainers/ai-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `maintainers/release-checklist-ai-a1.md`).
 
 ## [2.2.0a1] — RAG alpha — 2026-08-01
 
 First retrieval (RAG) alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`docs/rag-alpha-gate.md`](docs/rag-alpha-gate.md).
+known limits are defined in [`maintainers/rag-alpha-gate.md`](maintainers/rag-alpha-gate.md).
 Classical alpha remains at `2.0.0a1`; DL alpha remains at `2.1.0a1`. This line
 adds optional retrieve / evaluate / bundle — **not** generate or an LLM operator.
 
@@ -108,13 +266,13 @@ adds optional retrieve / evaluate / bundle — **not** generate or an LLM operat
 
 ### Verification
 
-- Gate checklist: `docs/rag-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `docs/release-checklist-rag-a1.md`).
+- Gate checklist: `maintainers/rag-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `maintainers/release-checklist-rag-a1.md`).
 
 ## [2.1.0a1] — DL alpha — 2026-08-01
 
 First deep-learning alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`docs/dl-alpha-gate.md`](docs/dl-alpha-gate.md).
+known limits are defined in [`maintainers/dl-alpha-gate.md`](maintainers/dl-alpha-gate.md).
 Classical alpha remains documented at `2.0.0a1`; this line adds optional Torch.
 
 ### Added
@@ -144,13 +302,13 @@ Classical alpha remains documented at `2.0.0a1`; this line adds optional Torch.
 
 ### Verification
 
-- Gate checklist: `docs/dl-alpha-gate.md` sign-off section.
-- Tag only after remote CI is green (see `docs/release-checklist-dl-a1.md`).
+- Gate checklist: `maintainers/dl-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `maintainers/release-checklist-dl-a1.md`).
 
 ## [2.0.0a1] — classical alpha — 2026-08-01
 
 First classical-ML alpha of the BuildML 2.x `Session` API. Exit criteria and
-known limits are defined in [`docs/classical-alpha-gate.md`](docs/classical-alpha-gate.md).
+known limits are defined in [`maintainers/classical-alpha-gate.md`](maintainers/classical-alpha-gate.md).
 
 ### Added
 
@@ -180,9 +338,9 @@ known limits are defined in [`docs/classical-alpha-gate.md`](docs/classical-alph
 
 ### Verification
 
-- Local gate checklist: see `docs/classical-alpha-gate.md` sign-off section.
+- Local gate checklist: see `maintainers/classical-alpha-gate.md` sign-off section.
 - Tag only after remote CI is green on the push that includes this release
-  candidate (see `docs/release-checklist-a1.md`).
+  candidate (see `maintainers/release-checklist-a1.md`).
 
 ## [1.x]
 

@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 TaskSpec = Literal["classification", "regression", "auto"]
 DeviceName = Literal["cpu", "cuda", "mps", "auto"]
+# Runtime also accepts ``cuda:N`` device strings for single-node DDP ranks.
 SchedulerName = Literal["none", "step", "plateau", "cosine"]
 EarlyStopMode = Literal["min", "max"]
 
@@ -54,6 +55,8 @@ class TrainConfig:
     - ``early_stopping_patience=None`` (disabled). When set, monitors
       ``early_stopping_monitor`` on the validation loader (requires a validation
       partition). ``restore_best_weights=True`` reloads the best monitored epoch.
+    - ``mixed_precision=False``. When True on a CUDA device, uses autocast +
+      GradScaler. On CPU/MPS this is a documented no-op with a warning.
     """
 
     epochs: int = DEFAULT_EPOCHS
@@ -65,7 +68,7 @@ class TrainConfig:
     drop_last: bool = False
     normalize: bool = True
     seed: int = 0
-    device: DeviceName = "auto"
+    device: str = "auto"
     grad_clip_norm: float | None = DEFAULT_GRAD_CLIP_NORM
     log_every: int = 1
     early_stopping_patience: int | None = DEFAULT_EARLY_STOPPING_PATIENCE
@@ -80,6 +83,7 @@ class TrainConfig:
     scheduler_factor: float = DEFAULT_SCHEDULER_FACTOR
     scheduler_patience: int = DEFAULT_SCHEDULER_PATIENCE
     scheduler_threshold: float = DEFAULT_SCHEDULER_THRESHOLD
+    mixed_precision: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -97,15 +101,27 @@ class FeatureContract:
     normalize_std: tuple[float, ...] | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        def _jsonable(value: Any) -> Any:
+            # numpy scalars (common from pandas unique) are not JSON-serializable.
+            item = getattr(value, "item", None)
+            if callable(item):
+                try:
+                    return item()
+                except Exception:  # pragma: no cover - non-scalar edge
+                    return value
+            return value
+
         return {
             "feature_columns": list(self.feature_columns),
             "target_column": self.target_column,
             "task": self.task,
-            "class_labels": list(self.class_labels),
+            "class_labels": [_jsonable(v) for v in self.class_labels],
             "normalize_mean": None
             if self.normalize_mean is None
-            else list(self.normalize_mean),
-            "normalize_std": None if self.normalize_std is None else list(self.normalize_std),
+            else [float(v) for v in self.normalize_mean],
+            "normalize_std": None
+            if self.normalize_std is None
+            else [float(v) for v in self.normalize_std],
         }
 
     @classmethod

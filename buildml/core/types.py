@@ -20,11 +20,27 @@ class ColumnRole(str, Enum):
 
 
 class DataMode(str, Enum):
-    """How a dataset is held and processed."""
+    """How a dataset is held and processed.
+
+    ``memory`` materializes tables eagerly. ``lazy`` keeps a native lazy/scan
+    handle when an engine supports it (Polars LazyFrame). There is no separate
+    out-of-core *fitting* mode — sklearn still requires an in-memory design
+    matrix. Legacy string ``out_of_core`` is accepted as an alias of
+    ``lazy`` via :func:`coerce_data_mode`.
+    """
 
     MEMORY = "memory"
     LAZY = "lazy"
-    OUT_OF_CORE = "out_of_core"
+
+
+def coerce_data_mode(mode: DataMode | str) -> DataMode:
+    """Parse a data mode, mapping legacy ``out_of_core`` to :attr:`DataMode.LAZY`."""
+    if isinstance(mode, DataMode):
+        return mode
+    value = str(mode).strip().lower()
+    if value == "out_of_core":
+        return DataMode.LAZY
+    return DataMode(value)
 
 
 class EngineName(str, Enum):

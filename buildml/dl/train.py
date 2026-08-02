@@ -44,6 +44,34 @@ def _default_optimizer_factory(learning_rate: float) -> OptimizerFactory:
     return factory
 
 
+def _split_batch(batch: Any) -> tuple[Any, Any]:
+    """Split a loader batch into (inputs, targets).
+
+    Supports ``(xb, yb)`` and multimodal ``(x_tab, token_ids, yb)``.
+    """
+    if not isinstance(batch, (tuple, list)) or len(batch) < 2:
+        raise ValidationError("Loader batch must be (inputs..., y)")
+    if len(batch) == 2:
+        return batch[0], batch[1]
+    return tuple(batch[:-1]), batch[-1]
+
+
+def _batch_size(inputs: Any) -> int:
+    if hasattr(inputs, "shape"):
+        return int(inputs.shape[0])
+    if isinstance(inputs, (tuple, list)) and inputs:
+        return int(inputs[0].shape[0])
+    raise ValidationError("Could not infer batch size from inputs")
+
+
+def _to_device(obj: Any, device: Any) -> Any:
+    if hasattr(obj, "to"):
+        return obj.to(device)
+    if isinstance(obj, (tuple, list)):
+        return tuple(_to_device(x, device) for x in obj)
+    return obj
+
+
 def _epoch_loss(
     module: Any,
     loader: Any,
@@ -52,26 +80,41 @@ def _epoch_loss(
     device: str,
     optimizer: Any | None = None,
     grad_clip_norm: float | None = None,
+    scaler: Any | None = None,
+    use_amp: bool = False,
 ) -> float:
+    from contextlib import nullcontext
+
     torch = require_torch(feature="Torch training")
     train_mode = optimizer is not None
     module.train(train_mode)
     total = 0.0
     n = 0
     dev = torch.device(device)
-    for xb, yb in loader:
-        xb = xb.to(dev)
-        yb = yb.to(dev)
+    autocast_ctx = torch.cuda.amp.autocast(enabled=True) if use_amp else nullcontext()
+    for batch in loader:
+        xb, yb = _split_batch(batch)
+        xb = _to_device(xb, dev)
+        yb = _to_device(yb, dev)
         if train_mode:
             optimizer.zero_grad(set_to_none=True)
-        loss = loss_fn(module, xb, yb)
+        with autocast_ctx:
+            loss = loss_fn(module, xb, yb)
         if train_mode:
-            loss.backward()
-            if grad_clip_norm is not None:
-                torch.nn.utils.clip_grad_norm_(module.parameters(), grad_clip_norm)
-            optimizer.step()
-        batch_n = int(xb.shape[0])
-        total += float(loss.detach().cpu()) * batch_n
+            if scaler is not None and use_amp:
+                scaler.scale(loss).backward()
+                if grad_clip_norm is not None:
+                    scaler.unscale_(optimizer)
+                    torch.nn.utils.clip_grad_norm_(module.parameters(), grad_clip_norm)
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                if grad_clip_norm is not None:
+                    torch.nn.utils.clip_grad_norm_(module.parameters(), grad_clip_norm)
+                optimizer.step()
+        batch_n = _batch_size(xb)
+        total += float(loss.detach().float().cpu()) * batch_n
         n += batch_n
     return total / max(n, 1)
 
@@ -198,6 +241,16 @@ def train_supervised_module(
                 f"Could not restore optimizer state for resume: {exc}"
             ) from exc
 
+    use_amp = bool(cfg.mixed_precision) and str(device_spec.resolved).startswith("cuda")
+    scaler = None
+    if cfg.mixed_precision and not use_amp:
+        warnings.append(
+            "mixed_precision=True but device is not CUDA; AMP disabled (CPU/MPS no-op)."
+        )
+    if use_amp:
+        scaler = torch.cuda.amp.GradScaler()
+        warnings.append(f"CUDA AMP enabled on device {device_spec.resolved}.")
+
     scheduler = _build_scheduler(optimizer, cfg, epochs_this_call=cfg.epochs)
     if prior is not None and prior.scheduler_state is not None and scheduler is not None:
         if (prior.scheduler_name or "none") == (cfg.scheduler or "none"):
@@ -253,6 +306,8 @@ def train_supervised_module(
             device=device_spec.resolved,
             optimizer=optimizer,
             grad_clip_norm=cfg.grad_clip_norm,
+            scaler=scaler,
+            use_amp=use_amp,
         )
         row: dict[str, float] = {
             "epoch": float(epoch),
@@ -266,6 +321,7 @@ def train_supervised_module(
                 resolved_loss,
                 device=device_spec.resolved,
                 optimizer=None,
+                use_amp=use_amp,
             )
 
         if early_enabled:
@@ -331,6 +387,8 @@ def train_supervised_module(
         reason=stop_reason,
     )
 
+    mm_contract = getattr(loader_bundle, "multimodal_contract", None)
+    mm_preprocess = None if mm_contract is None else dict(mm_contract.to_dict())
     result = TrainResult(
         module=module,
         task=task,
@@ -346,6 +404,7 @@ def train_supervised_module(
         scheduler_name=str(cfg.scheduler or "none"),
         scheduler_state=None if scheduler is None else scheduler.state_dict(),
         resumed_from_epochs=start_epoch,
+        multimodal_preprocess=mm_preprocess,
     )
     result.training_curve = build_training_curve(result)
     return result

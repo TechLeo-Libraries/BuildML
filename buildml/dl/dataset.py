@@ -12,6 +12,7 @@ from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.dl.extras import require_torch
+from buildml.dl.labels import encode_class_targets, fit_class_labels
 from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
 from buildml.dl.types import FeatureContract, TaskSpec
 
@@ -103,8 +104,7 @@ def build_feature_contract(
 
     class_labels: tuple[Any, ...] = ()
     if resolved == "classification":
-        labels = sorted(pd.unique(pd.Series(y_train)))
-        class_labels = tuple(labels)
+        class_labels = fit_class_labels(y_train)
 
     arrays: dict[str, tuple[np.ndarray, np.ndarray]] = {}
     for name in ("train", "validation", "test"):
@@ -114,6 +114,8 @@ def build_feature_contract(
             x, y = partition_arrays(dataset, split_plan, name, feature_cols, target)  # type: ignore[arg-type]
         if normalize and mean is not None and std is not None and len(x):
             x = apply_standardize(x, mean, std)
+        if resolved == "classification" and len(y):
+            y = encode_class_targets(y, class_labels).astype(np.float64, copy=False)
         arrays[name] = (x, y)
 
     contract = FeatureContract(

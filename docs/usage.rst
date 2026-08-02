@@ -1,9 +1,19 @@
 Quickstart
 ==========
 
-The order matters: ingest, assign semantic roles, define evaluation
-partitions, fit preprocessing on training rows, fit a baseline, and then
-evaluate.
+BuildML enforces a deliberate order: ingest, assign roles, define partitions,
+fit preprocessing on training rows only, fit a model, then evaluate on a
+partition whose purpose you declare. Skipping a step or calling ``fit`` before
+``split`` raises a clear error rather than leaking statistics across holdouts.
+
+This page shows several realistic patterns. For a chapter-style walkthrough,
+see :doc:`quickstart-classical`.
+
+Loan approval (classification)
+------------------------------
+
+A small binary classification loop with missing values and mixed numeric
+features:
 
 .. code-block:: python
 
@@ -26,7 +36,6 @@ evaluate.
    )
    session.split(test_size=0.25, stratify=True, random_state=42)
 
-   # These plans are learned from train and then applied to every partition.
    session.impute(strategy="median")
    session.scale(method="standard")
    session.fit(LogisticRegression(max_iter=500), task="classification")
@@ -46,43 +55,204 @@ choices will be repeated:
        random_state=42,
    )
 
-Do not use a random split for related entities or future prediction when it
-would mix groups or time periods. Compute valid positional memberships and
-call ``session.inject_split(...)``.
+Imbalanced fraud detection
+--------------------------
 
-Explain choices before and after
---------------------------------
+When the positive class is rare, read prevalence on the training partition
+before trusting accuracy. Resample **train only** after the split:
 
 .. code-block:: python
 
-   before = session.explain("feature_importance", moment="before")
-   workflow = session.workflow()
+   import pandas as pd
+   from sklearn.ensemble import RandomForestClassifier
 
-   importance = session.feature_importance(partition="test", n_repeats=8)
+   from buildml import Session
+
+   # Synthetic fraud-like imbalance (5% positive)
+   rng = pd.Series(range(200))
+   frame = pd.DataFrame(
+       {
+           "amount": rng * 1.5 + 10,
+           "velocity": (rng % 7).astype(float),
+           "is_fraud": (rng % 20 == 0).astype(int),
+       }
+   )
+
+   session = (
+       Session.ingest(frame)
+       .set_roles({"amount": "feature", "velocity": "feature", "is_fraud": "target"})
+       .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+   )
+
+   # Requires: pip install "buildml[imbalanced]"
+   session.resample(sampler="smote", random_state=0)
+   session.fit(RandomForestClassifier(n_estimators=50, random_state=0))
+
+   val = session.evaluate(partition="validation")
+   test = session.evaluate(partition="test")
+   print("validation f1:", val.metrics.get("f1"))
+   print("test f1:", test.metrics.get("f1"))
+
+Resampling changes training prevalence. Validation and test rows are never
+altered. Compare against a baseline that does not resample before claiming
+improvement.
+
+House price regression
+----------------------
+
+Regression uses the same Session spine with a different task and metrics:
+
+.. code-block:: python
+
+   import pandas as pd
+   from sklearn.linear_model import Ridge
+
+   from buildml import Session
+
+   frame = pd.DataFrame(
+       {
+           "sqft": [850, 920, 1100, 1400, 1600, 1800, 2100, 2400],
+           "beds": [2, 2, 3, 3, 4, 4, 4, 5],
+           "price_k": [210, 235, 290, 360, 410, 455, 520, 610],
+       }
+   )
+
+   session = (
+       Session.ingest(frame)
+       .set_roles({"sqft": "feature", "beds": "feature", "price_k": "target"})
+       .split(test_size=0.25, random_state=42)
+       .impute(strategy="median")
+       .scale(method="standard")
+       .fit(Ridge(alpha=1.0), task="regression")
+   )
+
+   print(session.evaluate(partition="test").metrics)
+
+Group and time partitions
+-------------------------
+
+Random ``split`` assumes independent, exchangeable rows. When rows share an
+entity or time ordering, use ``group_split`` or ``time_split`` instead:
+
+.. code-block:: python
+
+   import pandas as pd
+
+   from buildml import Session
+
+   # Multiple visits per customer — random row split would leak customers
+   visits = pd.DataFrame(
+       {
+           "customer_id": [1, 1, 1, 2, 2, 3, 3, 3, 4, 4],
+           "spend": [10, 12, 15, 8, 9, 20, 22, 25, 5, 6],
+           "churned": [0, 0, 1, 0, 1, 0, 0, 1, 0, 1],
+       }
+   )
+
+   session = (
+       Session.ingest(visits)
+       .set_roles(
+           {
+               "customer_id": "group",
+               "spend": "feature",
+               "churned": "target",
+           }
+       )
+       .group_split(test_size=0.25, random_state=0)
+   )
+
+For temporal data, assign a ``time`` role and call ``time_split``. When an
+external system already defined memberships, pass positional indices to
+``inject_split``.
+
+Why Session enforces order
+--------------------------
+
+Fit-capable steps — imputation, encoding, scaling, resampling, and ``fit`` —
+require a split and learn from training rows. That guard prevents the most
+common partition leakage: computing holdout statistics during preparation.
+
+BuildML does **not** infer valid group or time boundaries, detect target
+proxies, or prove that externally supplied indices match your deployment
+assumptions. Roles and splits are explicit because those judgments belong to
+the project.
+
+Typical failure modes:
+
+* ``ValidationError: No split exists`` — call ``split``, ``group_split``,
+  ``time_split``, or ``inject_split`` before ``impute`` or ``fit``.
+* ``LeakageError`` — attempting to fit on validation or test, or resampling
+  outside train.
+* Missing extra — ``optuna_search``, ``resample``, ``eda_app``, and engine
+  adapters name the install group when an optional dependency is absent.
+
+``session.explain("impute", moment="before")`` lists prerequisites, leakage
+risks, and alternatives from the operation catalog before you mutate state.
+
+Teaching surfaces: explain, workflow, walkthrough, dry_run
+----------------------------------------------------------
+
+BuildML ships a versioned operation catalog (``buildml.explain``) linked to
+every public Session method. These APIs expose what the library knows; they
+do not certify that your split or model suits the domain.
+
+.. code-block:: python
+
+   # Prerequisites, assumptions, leakage risks, alternatives
+   before = session.explain("feature_importance", moment="before")
+
+   # Every cataloged operation: done, available, blocked, or skipped
+   steps = session.workflow()
+   for step in steps:
+       if step.status == "blocked":
+           print(step.operation, step.reasons or step.blockers)
+
+   importance = session.feature_importance(partition="validation", n_repeats=8)
    after = session.explain("feature_importance", moment="after")
 
-``before`` reports prerequisites, alternatives, assumptions, and leakage
-risks. ``after`` joins those notes to the latest recorded call and its state
-transition. An explanation reports what BuildML knows; it cannot prove that
-the chosen partition represents deployment.
+``explain(..., moment="after")`` joins catalog text to the latest recorded
+call and its state transition. ``workflow()`` resolves prerequisites for all
+public operations. ``available`` means API prerequisites pass, not that the
+step is recommended.
 
-Use ``session.dry_run(...)`` to preview intended operations without mutating
-state, and ``session.summarize_history()`` for operation counts, ranked
-unresolved risks, prerequisite-graph gaps, and suggested next operations.
-``session.walkthrough()`` repeats the same audit summary in its offline HTML.
-Train-fitted text features, PCA, and registered custom transforms are
-available as ``text_features``, ``reduce_dimensions``, and
-``apply_custom_transform``. For CV selection, prefer fold-local
-``PreprocessRecipe(text=..., reduce='pca')``; custom transforms remain
-Session-global. ``Dataset.project`` / ``Dataset.aggregate`` prefer native
-Polars/DuckDB ops when an engine handle is attached.
+Preview without mutation:
+
+.. code-block:: python
+
+   preview = session.dry_run(["impute", "scale", "fit"])
+   summary = session.summarize_history()
+   print(summary.unresolved_risks)
+
+``dry_run`` does not append history. ``summarize_history()`` counts operations,
+lists heuristic unresolved risks, and suggests next steps from the prerequisite
+graph.
+
+``walkthrough()`` joins workflow status, history, and catalog risks into one
+report and can export offline HTML:
+
+.. code-block:: python
+
+   walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
+
+Findings, recommendations, and EDA
+----------------------------------
+
+``session.eda()`` returns structured findings (observations with severity),
+evidence tables, and read-only recommendations. Recommendations name a Session
+operation but do not run it.
+
+.. code-block:: python
+
+   report = session.eda(include_plots=False)
+   for finding in report.findings[:5]:
+       print(finding.severity, finding.title)
 
 Reports and walkthroughs
 ------------------------
 
 .. code-block:: python
 
-   # Offline Teaching Studio snapshot (default; needs buildml[dashboard])
+   # Offline dashboard snapshot (default; needs buildml[dashboard])
    eda = session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
    # Optional layered research shell with matplotlib embeds
    research = session.eda(
@@ -91,10 +261,9 @@ Reports and walkthroughs
        html_format="research",
        export_figures="artifacts/eda-figures",
    )
-   # Live Teaching Studio (requires: pip install "buildml[dashboard]")
+   # Live dashboard (requires: pip install "buildml[dashboard]")
    handle = session.eda_app(port=8765)  # or session.open_eda_dashboard()
    # If port 8765 is busy: session.eda_app(port=8766)
-   # PDF briefing embeds static Plotly PNG stills (kaleido); interactive charts stay in Studio.
    evaluation = session.evaluate(
        partition="test",
        include_plots=True,
@@ -102,21 +271,35 @@ Reports and walkthroughs
    )
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
-``eda_app()`` opens interactive Plotly domain boards with Teaching Studio pages
-and Concept Academy notes. The SPA light/dark theme restyles Plotly ink, grids,
-series, heatmaps, and annotations. CSV downloads cover major evidence tables;
-**Offline HTML** downloads a self-contained snapshot of the same Studio SPA;
-the PDF briefing includes metrics, findings, teaching notes, and static chart
-stills (not interactive Plotly). ``session.eda(export_html=...)`` defaults to
-that Studio offline snapshot; use ``html_format="research"`` for the layered
-research shell.
+``eda_app()`` opens interactive Plotly domain boards with teaching notes and
+concept references. CSV downloads cover major evidence tables. Offline HTML
+downloads a self-contained snapshot of the same dashboard SPA. HTML artifacts
+embed required styles and assets so they open without a network connection.
 
-HTML artifacts embed required styles and assets so they can be opened without a
-network connection. EDA recommendations do not mutate the Session. Inspect the
-evidence, population, sample size, and stated limits before acting.
+Engines: pandas, Polars, DuckDB
+-------------------------------
 
-Checkpoint and resume
----------------------
+Pandas is the canonical sklearn-facing materialization path. Polars and DuckDB
+are optional engines for ingest, filtering, projection, and aggregation:
+
+.. code-block:: python
+
+   from buildml import Session
+   from buildml.data import portable_filter_expr
+
+   with Session.ingest("data.csv", engine="duckdb") as session:
+       narrowed = session.dataset.filter_expr(
+           portable_filter_expr("amount", ">", 100)
+       )
+
+``with session:`` calls ``close_native`` on exit so owned DuckDB connections
+are released. ``portable_filter_expr`` builds simple quoted comparisons for
+Polars and DuckDB; complex SQL remains engine-specific. Lazy Polars frames
+collect on ``to_pandas()`` / sklearn materialization — that is not out-of-core
+training.
+
+Checkpoint and pipeline round-trip
+----------------------------------
 
 .. code-block:: python
 
@@ -130,31 +313,30 @@ Checkpoint and resume
    print(restored.reattach_result.status)
 
 A checkpoint restores data, roles, partitions, history, and optional preprocess
-plan objects. Native sidecars default to ``zstd`` compression and ``auto``
-layout (single-file below 50k rows; partitioned at or above). Force
-``sidecar_layout='single'`` or ``'partitioned'`` when needed. It does not
-restore a fitted model; use ``save_model`` / ``load_model`` for estimator-only
-artifacts, or ``save_pipeline`` / ``load_pipeline`` for plans plus estimator and
-a model card. Pipeline bundles and checkpoints are complementary: neither
-embeds the other. Bundle metadata uses ``buildml.pipeline_bundle.v2`` /
-``buildml.plans.v2`` (older flat plan dicts still load). Replay restored plans
-with ``session.apply_preprocess_plans()`` or
-``buildml.preprocess.apply_preprocess_plans``; resample plans are lineage-only
-and are not reapplied at score time.
+plan objects. It does not restore a fitted model. Use ``save_model`` /
+``load_model`` for estimator-only artifacts, or ``save_pipeline`` /
+``load_pipeline`` for plans plus estimator and a model card. Pipeline bundles
+and checkpoints are complementary: neither embeds the other.
 
-DuckDB connection ownership and portable filters
-------------------------------------------------
+Replay restored plans with ``session.apply_preprocess_plans()`` or score new
+rows with ``predict_from_pipeline``. Resample plans are lineage-only at score
+time.
 
-.. code-block:: python
+Optional paths on the same Session
+----------------------------------
 
-   from buildml import Session
-   from buildml.data import portable_filter_expr
+Torch, RAG, and AI operator features attach to the same Session without
+replacing classical APIs:
 
-   with Session.ingest("data.csv", engine="duckdb") as session:
-       narrowed = session.dataset.filter_expr(
-           portable_filter_expr("amount", ">", 100)
-       )
+* :doc:`quickstart-torch` — ``make_torch_loaders``, ``make_text_torch_loaders``,
+  ``fit_torch``, ``cross_validate_torch``, ``evaluate_torch``
+* :doc:`quickstart-rag` — ``rag_ingest_corpus``, ``rag_retrieve``,
+  ``rag_generate``, ``rag_evaluate``
+* :doc:`quickstart-ai` — ``ai_advisor``, ``ai_plan``, ``ai_execute`` /
+  ``ai_run_plan`` with confirmed writes across classical, RAG, and Torch tools
 
-``with session:`` / ``with dataset:`` call ``close_native`` on exit so owned
-DuckDB connections are not leaked. ``portable_filter_expr`` builds simple
-quoted comparisons for Polars and DuckDB; complex SQL remains engine-specific.
+Teaching copy for every public Session method is kept in sync by CI
+(``scripts/sync_teaching_surface.py``). Prefer ``session.explain(...)`` over
+hand-maintained method lists when exploring the surface.
+
+See :doc:`guides` for the full Markdown tutorials.

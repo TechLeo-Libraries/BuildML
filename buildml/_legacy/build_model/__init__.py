@@ -24,7 +24,7 @@ from ._model import (
 __author__ = "Leonard Onyiriuba"
 __email__ = "leonard.c.onyiriuba@gmail.com"
 __copyright__ = "Copyright (c) 2023-2026 Leonard Onyiriuba"
-__license__ = "MIT"
+__license__ = "Apache-2.0"
 
 
 __all__ = [

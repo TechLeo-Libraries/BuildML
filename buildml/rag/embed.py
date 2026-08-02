@@ -119,7 +119,21 @@ def resolve_embedder(
     dim: int = DEFAULT_EMBED_DIM,
     device: str | None = None,
 ) -> tuple[Any, EmbedConfig]:
-    """Resolve the public embedder argument into an object + config."""
+    """Resolve the public embedder argument into an object + config.
+
+    Defaults
+    --------
+    - ``None`` / ``"hashing"`` → lexical :class:`HashingEmbedder` (CI-safe, no download).
+    - ``"auto"`` → sentence-transformers when ``buildml[rag]`` is importable, else hashing.
+    - ``"sentence-transformers"`` / ``"minilm"`` / model id → semantic path (requires extra).
+    """
+    if embedder == "auto":
+        from buildml.rag.extras import rag_available
+
+        if rag_available():
+            embedder = "sentence-transformers"
+        else:
+            embedder = "hashing"
     if embedder is None or embedder == "hashing":
         if device is not None:
             # Hashing is CPU-only; record the request without claiming GPU use.

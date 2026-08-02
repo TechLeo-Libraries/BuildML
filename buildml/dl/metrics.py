@@ -51,7 +51,27 @@ def resolve_device(requested: str = "auto") -> DeviceSpec:
     if want == "cpu":
         return DeviceSpec(requested=want, resolved="cpu")
 
-    raise ValidationError(f"Unknown device '{requested}'. Use cpu, cuda, mps, or auto.")
+    if want.startswith("cuda:"):
+        if torch.cuda.is_available():
+            try:
+                idx = int(want.split(":", 1)[1])
+            except ValueError as exc:
+                raise ValidationError(
+                    f"Unknown device '{requested}'. Use cuda:N with integer N."
+                ) from exc
+            if idx < 0 or idx >= torch.cuda.device_count():
+                warning = (
+                    f"CUDA device {idx} unavailable "
+                    f"(count={torch.cuda.device_count()}); using cpu."
+                )
+                return DeviceSpec(requested=want, resolved="cpu", fallback_warning=warning)
+            return DeviceSpec(requested=want, resolved=want)
+        warning = "CUDA was requested but is unavailable; using cpu."
+        return DeviceSpec(requested=want, resolved="cpu", fallback_warning=warning)
+
+    raise ValidationError(
+        f"Unknown device '{requested}'. Use cpu, cuda, cuda:N, mps, or auto."
+    )
 
 
 def _predict_partition(
@@ -67,8 +87,15 @@ def _predict_partition(
     truths: list[np.ndarray] = []
     dev = torch.device(device)
     with torch.no_grad():
-        for xb, yb in loader:
-            xb = xb.to(dev)
+        for batch in loader:
+            if not isinstance(batch, (tuple, list)) or len(batch) < 2:
+                raise ValidationError("Loader batch must be (inputs..., y)")
+            inputs = batch[:-1]
+            yb = batch[-1]
+            if len(inputs) == 1:
+                xb: Any = inputs[0].to(dev)
+            else:
+                xb = tuple(t.to(dev) for t in inputs)
             out = module(xb)
             if task == "classification":
                 if out.ndim == 1:
@@ -147,11 +174,18 @@ def evaluate_module(
             f1_score(y_true, y_pred, average="weighted", zero_division=0)
         )
         metrics["f1_macro"] = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
+        # Loaders encode targets to 0..K-1; class_labels[i] is the original id.
         if labels:
+            inv = np.asarray(list(labels))
+            idx_true = np.asarray(y_true, dtype=np.int64)
+            idx_pred = np.asarray(y_pred, dtype=np.int64)
+            y_true_cm = inv[idx_true]
+            y_pred_cm = inv[idx_pred]
             label_values = list(labels)
+            cm = confusion_matrix(y_true_cm, y_pred_cm, labels=label_values)
         else:
             label_values = sorted(set(np.unique(y_true)).union(set(np.unique(y_pred))))
-        cm = confusion_matrix(y_true, y_pred, labels=label_values)
+            cm = confusion_matrix(y_true, y_pred, labels=label_values)
         cm_list = cm.astype(int).tolist()
 
     early = train_result.early_stop

@@ -7,7 +7,7 @@ name = "buildml"
 version = "2.3.0a1"
 description = "BuildML — a flexible, depth-first toolkit for building ML workflows."
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [
   { name = "Leonard Onyiriuba", email = "leonard.c.onyiriuba@gmail.com" },
 ]
@@ -22,7 +22,7 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -43,8 +43,11 @@ polars = ["polars>=0.20"]
 duckdb = ["duckdb>=0.10"]
 engines = ["buildml[polars,duckdb]"]
 optuna = ["optuna>=3.4"]
-torch = ["torch>=2.2"]
+torch = ["torch>=2.2", "pillow>=9.0", "soundfile>=0.12"]
 dl = ["buildml[torch]"]
+audio = ["buildml[torch]"]
+speech = ["buildml[torch]", "transformers>=4.36"]
+onnx = ["onnx>=1.15"]
 rag = ["sentence-transformers>=2.2"]
 ai = ["openai>=1.0"]
 llm = ["buildml[ai]"]
@@ -52,6 +55,12 @@ imbalanced = ["imbalanced-learn>=0.11"]
 viz = ["matplotlib>=3.7", "seaborn>=0.13"]
 reports = ["sweetviz>=2.3", "ydata-profiling>=4.6"]
 eda = ["buildml[viz,reports]"]
+serve = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "python-multipart>=0.0.9",
+  "httpx>=0.27",
+]
 dashboard = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
@@ -63,7 +72,7 @@ dashboard = [
 ]
 excel = ["openpyxl>=3.1"]
 all-classical = ["buildml[engines,imbalanced,eda,excel,dashboard,optuna]"]
-docs = ["sphinx", "sphinx-rtd-theme"]
+docs = ["sphinx", "sphinx-rtd-theme", "myst-parser"]
 dev = [
   "pytest>=7.4",
   "pytest-cov>=4.1",
@@ -71,11 +80,15 @@ dev = [
   "mypy>=1.8",
   "build>=1.0",
   "pandas-stubs>=2.0",
-  "httpx2>=2.0",
+  "httpx>=0.27",
   "sphinx",
   "sphinx-rtd-theme",
+  "myst-parser",
   "buildml[dashboard]",
 ]
+
+[project.scripts]
+buildml-serve = "buildml.serving.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/TechLeo-Dev/BuildML"
@@ -106,6 +119,11 @@ extend-exclude = ["buildml/_legacy"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.per-file-ignores]
+# Session ops modules share a deliberate star-import surface from `_imports`.
+"buildml/session/*_ops.py" = ["F403", "F405", "UP037", "E501"]
+"buildml/session/_imports.py" = ["F401"]
+
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
@@ -113,6 +131,25 @@ warn_unused_configs = true
 ignore_missing_imports = true
 exclude = ["buildml/_legacy/", "build/", "docs/"]
 
+# NumPy >=2.5 stubs use PEP 695 `type` statements; mypy refuses to parse them
+# under python_version=3.10 (our runtime floor). Skip numpy stub internals —
+# we already treat third-party imports as untyped via ignore_missing_imports.
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+
 [[tool.mypy.overrides]]
 module = "buildml._legacy.*"
 ignore_errors = true
+
+# Gradual typing: Session facade + ops still return through untyped helpers.
+# Scoped CI covers core/explain; widen this override only with intentional cleanup.
+[[tool.mypy.overrides]]
+module = [
+  "buildml.session.*",
+  "buildml.dashboard.*",
+  "buildml.explain.overlays.*",
+  "buildml.explain.catalog",
+]
+warn_return_any = false

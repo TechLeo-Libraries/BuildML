@@ -91,6 +91,24 @@ _OPERATION_TO_TOOL: dict[str, tuple[str, dict[str, Any]]] = {
     "describe": ("describe_dataset", {}),
     "workflow": ("workflow_status", {}),
     "explain": ("explain_operation", {}),
+    "rag_retrieve": ("rag_retrieve", {}),
+    "rag_generate": ("rag_generate", {}),
+    "rag_ingest_corpus": ("rag_ingest_corpus", {}),
+    "rag_embed_and_index": ("rag_embed_and_index", {}),
+    "make_torch_loaders": ("make_torch_loaders", {}),
+    "make_text_torch_loaders": ("make_text_torch_loaders", {}),
+    "make_multimodal_torch_loaders": ("make_multimodal_torch_loaders", {}),
+    "make_image_multimodal_torch_loaders": ("make_image_multimodal_torch_loaders", {}),
+    "make_audio_multimodal_torch_loaders": ("make_audio_multimodal_torch_loaders", {}),
+    "make_speech_torch_loaders": ("make_speech_torch_loaders", {}),
+    "fit_speech_torch": ("fit_speech_torch", {}),
+    "transcribe_speech": ("transcribe_speech", {}),
+    "fit_torch": ("fit_torch", {}),
+    "evaluate_torch": ("evaluate_torch", {}),
+    "cross_validate_torch": ("cross_validate_torch", {}),
+    "search_torch": ("search_torch", {}),
+    "nested_cv_torch": ("nested_cv_torch", {}),
+    "export_torch": ("export_torch", {}),
 }
 
 
@@ -101,17 +119,21 @@ def map_plan_step_to_tool(
     """Map a plan step operation to a tool name and default arguments.
 
     Returns None if the operation is not in the tool registry.
+    Step ``parameters`` override mapped defaults when present.
     """
     op = step.operation.lower().replace("_", "").replace("-", "")
-    
+    step_params = dict(getattr(step, "parameters", None) or {})
+
     for key, (tool_name, default_args) in _OPERATION_TO_TOOL.items():
         if key.replace("_", "") in op or op in key.replace("_", ""):
             if tool_name in registry:
-                return tool_name, dict(default_args)
-    
+                merged = dict(default_args)
+                merged.update(step_params)
+                return tool_name, merged
+
     if step.operation in registry:
-        return step.operation, {}
-    
+        return step.operation, step_params
+
     return None
 
 

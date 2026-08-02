@@ -164,8 +164,564 @@ def _build_m1_tools() -> tuple[ToolSpec, ...]:
     )
 
 
+def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
+    """RAG + DL tools safe to expose behind the allowlist (Phase C)."""
+    return (
+        ToolSpec(
+            name="rag_retrieve",
+            description=(
+                "Retrieve ranked chunks from the active RAG index for a query. "
+                "Read-only; requires a prior rag_embed_and_index or load_rag_bundle."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Query text."},
+                    "k": {"type": "integer", "description": "Number of hits (default 5)."},
+                    "mode": {
+                        "type": "string",
+                        "description": "dense, bm25, or hybrid.",
+                        "enum": ["dense", "bm25", "hybrid"],
+                    },
+                },
+                "required": ["query"],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="rag_retrieve",
+            read_only=True,
+            catalog_operation="rag_retrieve",
+        ),
+        ToolSpec(
+            name="rag_generate",
+            description=(
+                "Retrieve context and generate a grounded answer with citations. "
+                "Uses the Session AI provider. Requires an active RAG index."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Question to answer."},
+                    "k": {"type": "integer", "description": "Retrieval depth (default 5)."},
+                },
+                "required": ["query"],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="rag_generate",
+            read_only=True,
+            catalog_operation="rag_generate",
+        ),
+        ToolSpec(
+            name="rag_ingest_corpus",
+            description=(
+                "Ingest text documents into the Session RAG corpus. "
+                "Write operation; clears any prior index."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "documents": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "In-memory document texts to ingest.",
+                    },
+                    "text_column": {
+                        "type": "string",
+                        "description": "Optional Session frame column to index.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="rag_ingest_corpus",
+            read_only=False,
+            catalog_operation="rag_ingest_corpus",
+        ),
+        ToolSpec(
+            name="rag_embed_and_index",
+            description=(
+                "Chunk (if needed), embed, and build the RAG vector index. "
+                "Write operation; refuses eval_only contamination."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "embedder": {
+                        "type": "string",
+                        "description": "hashing (default), auto, or sentence-transformers.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="rag_embed_and_index",
+            read_only=False,
+            catalog_operation="rag_embed_and_index",
+        ),
+        ToolSpec(
+            name="make_torch_loaders",
+            description=(
+                "Build Torch DataLoaders from current roles and split. "
+                "Requires buildml[torch]. Write operation on Session torch slots."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "batch_size": {"type": "integer", "description": "Batch size (default 32)."},
+                    "normalize": {
+                        "type": "boolean",
+                        "description": "Fit mean/std on train (default true).",
+                    },
+                    "apply_plans": {
+                        "type": "boolean",
+                        "description": "Re-apply fitted classical plans before loaders.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_torch_loaders",
+            read_only=False,
+            catalog_operation="make_torch_loaders",
+        ),
+        ToolSpec(
+            name="make_text_torch_loaders",
+            description=(
+                "Build token-id Torch DataLoaders for text/sequence classification. "
+                "Fits vocabulary on train only. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "text_column": {
+                        "type": "string",
+                        "description": "Text feature column (inferred when unique).",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
+                    "max_len": {"type": "integer", "description": "Maximum tokens per row."},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_text_torch_loaders",
+            read_only=False,
+            catalog_operation="make_text_torch_loaders",
+        ),
+        ToolSpec(
+            name="fit_torch",
+            description=(
+                "Train a Torch module (built-in MLP when module omitted) on the "
+                "train loader. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "epochs": {"type": "integer", "description": "Training epochs (default 5)."},
+                    "learning_rate": {"type": "number", "description": "Adam learning rate."},
+                    "device": {
+                        "type": "string",
+                        "description": "cpu, cuda, mps, or auto.",
+                        "enum": ["cpu", "cuda", "mps", "auto"],
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="fit_torch",
+            read_only=False,
+            catalog_operation="fit_torch",
+        ),
+        ToolSpec(
+            name="evaluate_torch",
+            description=(
+                "Evaluate the last Torch trainer on a named partition. Read-only metrics."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "type": "string",
+                        "description": "train, validation, or test.",
+                        "enum": ["train", "validation", "test"],
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="evaluate_torch",
+            read_only=True,
+            catalog_operation="evaluate_torch",
+        ),
+        ToolSpec(
+            name="cross_validate_torch",
+            description=(
+                "Fold-local Torch CV on numeric tabular features. Not nested search. "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "n_folds": {"type": "integer", "description": "Number of folds (default 3)."},
+                    "epochs": {"type": "integer", "description": "Epochs per fold."},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="cross_validate_torch",
+            read_only=False,
+            catalog_operation="cross_validate_torch",
+        ),
+        ToolSpec(
+            name="make_multimodal_torch_loaders",
+            description=(
+                "Build fused multimodal Torch DataLoaders for tabular/text/image/audio mixes "
+                "(train-only vocab, numeric normalize, image channel stats, audio amplitude "
+                "stats). Requires buildml[torch]. Audio fusion is a small 1D-CNN branch, "
+                "not a speech foundation model."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "text_column": {"type": "string", "description": "Text feature column."},
+                    "image_column": {
+                        "type": "string",
+                        "description": "Image path or array feature column.",
+                    },
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio path or waveform array feature column.",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
+                    "normalize": {
+                        "type": "boolean",
+                        "description": "Fit numeric mean/std on train (default true).",
+                    },
+                    "normalize_images": {
+                        "type": "boolean",
+                        "description": "Fit image channel mean/std on train (default true).",
+                    },
+                    "normalize_audio": {
+                        "type": "boolean",
+                        "description": "Fit audio amplitude mean/std on train (default true).",
+                    },
+                    "audio_sample_rate": {
+                        "type": "integer",
+                        "description": "Target audio sample rate (default 16000).",
+                    },
+                    "audio_max_samples": {
+                        "type": "integer",
+                        "description": (
+                            "Fixed waveform length; short clips are repeat-padded "
+                            "(default 16000)."
+                        ),
+                    },
+                    "audio_source_sample_rate": {
+                        "type": "integer",
+                        "description": "Optional source rate for array waveforms.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_multimodal_torch_loaders",
+            read_only=False,
+            catalog_operation="make_multimodal_torch_loaders",
+        ),
+        ToolSpec(
+            name="make_image_multimodal_torch_loaders",
+            description=(
+                "Build image multimodal Torch DataLoaders (image ⊕ tabular and/or text "
+                "and/or audio). Requires image_column. Train-only image channel stats. "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "image_column": {
+                        "type": "string",
+                        "description": "Image path or array feature column (required).",
+                    },
+                    "text_column": {
+                        "type": "string",
+                        "description": "Optional text feature column.",
+                    },
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Optional audio path or waveform feature column.",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
+                    "normalize_images": {
+                        "type": "boolean",
+                        "description": "Fit image channel mean/std on train (default true).",
+                    },
+                    "normalize_audio": {
+                        "type": "boolean",
+                        "description": "Fit audio amplitude mean/std on train (default true).",
+                    },
+                    "audio_sample_rate": {
+                        "type": "integer",
+                        "description": "Target audio sample rate (default 16000).",
+                    },
+                    "audio_max_samples": {
+                        "type": "integer",
+                        "description": (
+                            "Fixed waveform length; short clips are repeat-padded "
+                            "(default 16000)."
+                        ),
+                    },
+                },
+                "required": ["image_column"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_image_multimodal_torch_loaders",
+            read_only=False,
+            catalog_operation="make_image_multimodal_torch_loaders",
+        ),
+        ToolSpec(
+            name="make_audio_multimodal_torch_loaders",
+            description=(
+                "Build audio multimodal Torch DataLoaders (audio ⊕ tabular and/or text "
+                "and/or image). Requires audio_column. Train-only audio amplitude stats. "
+                "Small 1D-CNN fusion branch — not a speech foundation model. "
+                "Requires buildml[torch] (soundfile for path cells)."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio path or waveform array feature column (required).",
+                    },
+                    "text_column": {
+                        "type": "string",
+                        "description": "Optional text feature column.",
+                    },
+                    "image_column": {
+                        "type": "string",
+                        "description": "Optional image path or array feature column.",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
+                    "normalize_audio": {
+                        "type": "boolean",
+                        "description": "Fit audio amplitude mean/std on train (default true).",
+                    },
+                    "audio_sample_rate": {
+                        "type": "integer",
+                        "description": "Target audio sample rate (default 16000).",
+                    },
+                    "audio_max_samples": {
+                        "type": "integer",
+                        "description": (
+                            "Fixed waveform length; short clips are repeat-padded "
+                            "(default 16000)."
+                        ),
+                    },
+                    "audio_source_sample_rate": {
+                        "type": "integer",
+                        "description": "Optional source rate for array waveforms.",
+                    },
+                },
+                "required": ["audio_column"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_audio_multimodal_torch_loaders",
+            read_only=False,
+            catalog_operation="make_audio_multimodal_torch_loaders",
+        ),
+        ToolSpec(
+            name="search_torch",
+            description=(
+                "Inner-fold Torch hyperparameter search on the train universe. "
+                "Not a nested outer estimate. Requires param_grid or "
+                "param_distributions. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "param_grid": {
+                        "type": "object",
+                        "description": (
+                            "Grid of searchable lists (learning_rate, hidden, dropout, "
+                            "batch_size, epochs, weight_decay)."
+                        ),
+                    },
+                    "param_distributions": {
+                        "type": "object",
+                        "description": "Randomized search distributions (same keys as grid).",
+                    },
+                    "n_folds": {"type": "integer", "description": "Inner folds (default 3)."},
+                    "epochs": {"type": "integer", "description": "Epochs per trial fold."},
+                    "n_iter": {
+                        "type": "integer",
+                        "description": "Randomized trials when using distributions.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="search_torch",
+            read_only=False,
+            catalog_operation="search_torch",
+        ),
+        ToolSpec(
+            name="nested_cv_torch",
+            description=(
+                "Nested Torch CV: outer evaluation after fold-local inner hyperparameter "
+                "search. Requires param_grid or param_distributions. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "param_grid": {
+                        "type": "object",
+                        "description": (
+                            "Grid of searchable lists (learning_rate, hidden, dropout, "
+                            "batch_size, epochs, weight_decay)."
+                        ),
+                    },
+                    "param_distributions": {
+                        "type": "object",
+                        "description": "Randomized search distributions (same keys as grid).",
+                    },
+                    "outer_cv": {"type": "integer", "description": "Outer folds (default 3)."},
+                    "inner_cv": {"type": "integer", "description": "Inner folds (default 2)."},
+                    "epochs": {"type": "integer", "description": "Epochs per fit."},
+                    "n_iter": {
+                        "type": "integer",
+                        "description": "Randomized trials when using distributions.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="nested_cv_torch",
+            read_only=False,
+            catalog_operation="nested_cv_torch",
+        ),
+        ToolSpec(
+            name="export_torch",
+            description=(
+                "Export the last Torch trainer to TorchScript or ONNX (alpha escape hatch). "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Destination file path."},
+                    "format": {
+                        "type": "string",
+                        "enum": ["torchscript", "onnx"],
+                        "description": "Export format.",
+                    },
+                },
+                "required": ["path"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="export_torch",
+            read_only=False,
+            catalog_operation="export_torch",
+        ),
+        ToolSpec(
+            name="make_speech_torch_loaders",
+            description=(
+                "Build speech classification Torch DataLoaders from an audio column. "
+                "Finetune-lite path — not training a foundation model from scratch. "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio path or waveform feature column.",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 8)."},
+                    "sample_rate": {
+                        "type": "integer",
+                        "description": "Target sample rate (default 16000).",
+                    },
+                    "max_samples": {
+                        "type": "integer",
+                        "description": "Fixed waveform length (default 16000).",
+                    },
+                    "normalize_audio": {
+                        "type": "boolean",
+                        "description": "Fit amplitude mean/std on train (default true).",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_speech_torch_loaders",
+            read_only=False,
+            catalog_operation="make_speech_torch_loaders",
+        ),
+        ToolSpec(
+            name="fit_speech_torch",
+            description=(
+                "Fine-tune a tiny speech encoder + classifier head (finetune-lite). "
+                "Not Whisper-scale FM training from scratch. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio column when loaders must be built.",
+                    },
+                    "epochs": {"type": "integer", "description": "Training epochs (default 5)."},
+                    "freeze_encoder": {
+                        "type": "boolean",
+                        "description": "Train head only when true.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="fit_speech_torch",
+            read_only=False,
+            catalog_operation="fit_speech_torch",
+        ),
+        ToolSpec(
+            name="transcribe_speech",
+            description=(
+                "ASR transcription for an audio column. backend=stub is CI-safe; "
+                "backend=transformers requires buildml[speech] and may download weights. "
+                "Integration path — not FM training from scratch."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio path or waveform feature column (required).",
+                    },
+                    "backend": {
+                        "type": "string",
+                        "enum": ["stub", "transformers"],
+                        "description": "ASR backend (default stub).",
+                    },
+                    "model_id": {
+                        "type": "string",
+                        "description": "Optional Hugging Face model id for transformers.",
+                    },
+                    "partition": {
+                        "type": "string",
+                        "enum": ["train", "validation", "test", "all"],
+                        "description": "Rows to transcribe (default all).",
+                    },
+                },
+                "required": ["audio_column"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="transcribe_speech",
+            read_only=True,
+            catalog_operation="transcribe_speech",
+        ),
+    )
+
+
 def _build_m2_tools() -> tuple[ToolSpec, ...]:
-    """Build M2 expanded tool allowlist for E2E classical pipeline."""
+    """Build M2 expanded tool allowlist for E2E classical + RAG/DL pipeline."""
     return _build_m1_tools() + (
         ToolSpec(
             name="split",
@@ -434,12 +990,17 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             read_only=True,
             catalog_operation="ai_status",
         ),
-    )
+    ) + _build_rag_dl_tools()
 
 
 def build_default_registry() -> ToolRegistry:
-    """Build the default M2 tool registry."""
+    """Build the default tool registry (classical + RAG + DL allowlist)."""
     return ToolRegistry(tools=_build_m2_tools())
+
+
+def registered_tool_names() -> tuple[str, ...]:
+    """Return sorted tool names from the default registry (for tests / docs sync)."""
+    return tuple(sorted(t.name for t in _build_m2_tools()))
 
 
 class ToolRegistry:

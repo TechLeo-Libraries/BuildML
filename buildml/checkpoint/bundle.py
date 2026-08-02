@@ -15,7 +15,7 @@ import pandas as pd
 from buildml._version import __version__
 from buildml.checkpoint.validate import ReattachResult, validate_reattach
 from buildml.core.errors import ValidationError
-from buildml.core.types import ColumnRole, DataMode, EngineName, TableSchema
+from buildml.core.types import ColumnRole, DataMode, EngineName, TableSchema, coerce_data_mode
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.explain.history import HISTORY_SCHEMA_VERSION, normalize_history
@@ -245,7 +245,7 @@ def load_checkpoint(path: str | Path, *, data_only: bool = False) -> LoadedCheck
     source = str(data_path)
     if meta and reattach.status not in {"fresh_ingest", "blocked"}:
         roles = {k: ColumnRole(v) for k, v in meta.get("roles", {}).items() if k in frame.columns}
-        mode = DataMode(meta.get("mode", DataMode.MEMORY.value))
+        mode = coerce_data_mode(meta.get("mode", DataMode.MEMORY.value))
         engine = EngineName(meta.get("engine", EngineName.PANDAS.value))
         source = str(meta.get("source", source))
 

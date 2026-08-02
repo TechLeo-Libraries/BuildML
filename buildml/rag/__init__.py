@@ -11,11 +11,15 @@ __all__ = [
     "Chunk",
     "ChunkConfig",
     "ChunkResult",
+    "Citation",
     "ConfigCompareResult",
     "CorpusHandle",
     "Document",
+    "EchoGroundedProvider",
     "EmbedConfig",
     "EvalConfig",
+    "GenerateConfig",
+    "GenerateResult",
     "HashingEmbedder",
     "IndexConfig",
     "IndexResult",
@@ -24,12 +28,15 @@ __all__ = [
     "RetrieveConfig",
     "RetrieveResult",
     "SentenceTransformerEmbedder",
+    "assemble_grounded_messages",
     "build_index",
     "chunk_documents",
     "compare_retrieval_configs",
     "corpus_from_documents",
     "corpus_from_frame",
     "evaluate_retrieval",
+    "generate_from_retrieve",
+    "generate_grounded",
     "load_rag_bundle",
     "load_text_corpus",
     "rag_available",
@@ -52,6 +59,7 @@ def __getattr__(name: str) -> Any:
         "ChunkConfig",
         "EmbedConfig",
         "EvalConfig",
+        "GenerateConfig",
         "IndexConfig",
         "RetrieveConfig",
     }:
@@ -61,9 +69,11 @@ def __getattr__(name: str) -> Any:
     if name in {
         "Chunk",
         "ChunkResult",
+        "Citation",
         "ConfigCompareResult",
         "CorpusHandle",
         "Document",
+        "GenerateResult",
         "IndexResult",
         "RagEvalResult",
         "RetrieveResult",
@@ -107,4 +117,13 @@ def __getattr__(name: str) -> Any:
         from buildml.rag import checkpoint as checkpoint_mod
 
         return getattr(checkpoint_mod, name)
+    if name in {
+        "EchoGroundedProvider",
+        "assemble_grounded_messages",
+        "generate_from_retrieve",
+        "generate_grounded",
+    }:
+        from buildml.rag import generate as generate_mod
+
+        return getattr(generate_mod, name)
     raise AttributeError(f"module 'buildml.rag' has no attribute {name!r}")

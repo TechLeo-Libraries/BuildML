@@ -79,7 +79,7 @@ def test_fold_local_preprocess_records_recipe() -> None:
     assert any("Fold-local PreprocessRecipe" in tip for tip in result.limitations)
 
 
-def test_session_preprocess_limitation_flagged() -> None:
+def test_session_preprocess_cv_refused_by_default() -> None:
     session = (
         Session.ingest(_cls_frame(60))
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
@@ -87,9 +87,48 @@ def test_session_preprocess_limitation_flagged() -> None:
         .impute(strategy="median")
         .scale(method="standard")
     )
-    result = session.cv_score(LogisticRegression(max_iter=300), cv=3)
+    with pytest.raises(LeakageError, match="allow_session_global_preprocess=True|already"):
+        session.cv_score(LogisticRegression(max_iter=300), cv=3)
+
+
+def test_session_preprocess_plus_recipe_still_refused() -> None:
+    """Fold-local recipes do not unpoison Session-global transforms."""
+    session = (
+        Session.ingest(_cls_frame(60))
+        .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+        .split(test_size=0.25, stratify=True, random_state=2)
+        .impute(strategy="median")
+        .scale(method="standard")
+    )
+    recipe = PreprocessRecipe(impute="median", scale="standard")
+    with pytest.raises(LeakageError, match="already transformed|unpoisoned"):
+        session.cv_score(LogisticRegression(max_iter=300), cv=3, preprocess=recipe)
+
+    result = session.cv_score(
+        LogisticRegression(max_iter=300),
+        cv=3,
+        preprocess=recipe,
+        allow_session_global_preprocess=True,
+    )
+    assert any("already transformed" in tip for tip in result.limitations)
+
+
+def test_session_preprocess_cv_opt_in_records_limitation() -> None:
+    session = (
+        Session.ingest(_cls_frame(60))
+        .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+        .split(test_size=0.25, stratify=True, random_state=2)
+        .impute(strategy="median")
+        .scale(method="standard")
+    )
+    result = session.cv_score(
+        LogisticRegression(max_iter=300),
+        cv=3,
+        allow_session_global_preprocess=True,
+    )
     assert any(
-        "Session-global" in tip or "full train partition" in tip for tip in result.limitations
+        "allow_session_global_preprocess=True" in tip or "full train partition" in tip
+        for tip in result.limitations
     )
 
 

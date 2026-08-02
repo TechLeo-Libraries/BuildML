@@ -235,3 +235,62 @@ class ConfigCompareResult:
             "relevance_mode": self.relevance_mode,
             "disclosures": list(self.disclosures),
         }
+
+
+@dataclass(slots=True)
+class Citation:
+    """One grounded citation tied to a retrieved chunk."""
+
+    source_id: int
+    chunk_id: str
+    doc_id: str
+    score: float
+    text: str
+    rank: int
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "source_id": self.source_id,
+            "chunk_id": self.chunk_id,
+            "doc_id": self.doc_id,
+            "score": self.score,
+            "text": self.text,
+            "rank": self.rank,
+            "metadata": dict(self.metadata),
+        }
+
+
+@dataclass(slots=True)
+class GenerateResult:
+    """Grounded generation answer with citations and retrieve provenance."""
+
+    query: str
+    answer: str
+    citations: tuple[Citation, ...]
+    retrieve_result: RetrieveResult | None = None
+    provider_model: str | None = None
+    usage: dict[str, int] = field(default_factory=dict)
+    prompt_context: str = ""
+    disclosures: tuple[str, ...] = ()
+    config: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def n_citations(self) -> int:
+        return len(self.citations)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "query": self.query,
+            "answer": self.answer,
+            "n_citations": self.n_citations,
+            "citations": [c.to_dict() for c in self.citations],
+            "retrieve": None
+            if self.retrieve_result is None
+            else self.retrieve_result.to_dict(),
+            "provider_model": self.provider_model,
+            "usage": dict(self.usage),
+            "prompt_context_chars": len(self.prompt_context),
+            "disclosures": list(self.disclosures),
+            "config": dict(self.config),
+        }

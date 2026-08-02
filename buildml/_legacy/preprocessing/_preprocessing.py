@@ -10,7 +10,7 @@ import datatable as dt
 __author__ = "Leonard Onyiriuba"
 __email__ = "leonard.c.onyiriuba@gmail.com"
 __copyright__ = "Copyright (c) 2023-2026 Leonard Onyiriuba"
-__license__ = "MIT"
+__license__ = "Apache-2.0"
 
 def group_data(dataset, columns: list or tuple, column_to_groupby: str or list or tuple, aggregate_function: str, reset_index: bool = False):
     agg = ["mean", "count", "min", "max", "std", "var", "median"]

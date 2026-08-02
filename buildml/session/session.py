@@ -1,135 +1,88 @@
-"""BuildML Session — OOP facade that delegates to domain packages."""
+"""BuildML Session — thin OOP facade that delegates to domain ops."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import pandas as pd
 
-from buildml.checkpoint.bundle import load_checkpoint, save_checkpoint
 from buildml.checkpoint.validate import ReattachResult
 from buildml.core.errors import ValidationError
 from buildml.core.results import IngestReport
 from buildml.core.types import ColumnRole, DataMode, EngineName
 from buildml.data.dataset import Dataset
-from buildml.data.engines.prep import MaterializePrepResult, prepare_design_frame
-from buildml.data.splits import (
-    PartitionName,
-    SplitPlan,
-    assert_fit_partition,
-    create_group_split,
-    create_split,
-    create_time_split,
-    frame_for_partition,
-    inject_partitions,
-)
-from buildml.eda.profile import explore_dataset
+from buildml.data.engines.prep import MaterializePrepResult
+from buildml.data.splits import PartitionName, SplitPlan
 from buildml.eda.report import EDAReport
-from buildml.explain.history import (
-    make_operation_record,
-    normalize_history,
-    prior_state,
-    session_state,
-)
-from buildml.explain.resolver import explain as explain_session
-from buildml.explain.resolver import resolve_workflow
+from buildml.explain.history import normalize_history
 from buildml.explain.schemas import WorkflowStep
-from buildml.ingest.pipeline import ingest as ingest_source
-from buildml.model.compare import ModelComparison, compare_estimators
-from buildml.model.diagnostics import (
-    DiagnosticReport,
-    calibration_report,
-    learning_curve_report,
-    permutation_importance_report,
-    segment_error_report,
-    threshold_report,
-)
-from buildml.model.plot_boards import PlotBoardReport, build_eval_plot_board
-from buildml.model.selection import (
-    CVScoreResult,
-    NestedCVResult,
-    SearchResult,
-)
-from buildml.model.selection import (
-    cv_score as run_cv_score,
-)
-from buildml.model.selection import (
-    grid_search as run_grid_search,
-)
-from buildml.model.selection import (
-    nested_cv_score as run_nested_cv_score,
-)
-from buildml.model.selection import (
-    optuna_search as run_optuna_search,
-)
-from buildml.model.selection import (
-    randomized_search as run_randomized_search,
-)
-from buildml.model.supervised import (
-    EvaluateResult,
-    FitResult,
-    evaluate_estimator,
-    fit_estimator,
-    materialize_partition_design,
-    predict_estimator,
-)
-from buildml.pipeline.bundle import load_pipeline_bundle, save_pipeline_bundle
+from buildml.model.compare import ModelComparison
+from buildml.model.diagnostics import DiagnosticReport
+from buildml.model.plot_boards import PlotBoardReport
+from buildml.model.selection import CVScoreResult, NestedCVResult, SearchResult
+from buildml.model.supervised import EvaluateResult, FitResult
 from buildml.pipeline.card import ModelCard
-from buildml.pipeline.persist import load_fit_result, save_fit_result
 from buildml.pipeline.score import PipelinePredictResult
-from buildml.pipeline.score import predict_from_pipeline as run_predict_from_pipeline
-from buildml.preprocess.apply import ApplyPlansResult, apply_preprocess_plans
-from buildml.preprocess.binning import BinningPlan, fit_binning, transform_binning
-from buildml.preprocess.columns import drop_columns as drop_columns_transform
-from buildml.preprocess.custom import (
-    CustomTransformPlan,
-    CustomTransformSpec,
-    fit_custom_transform,
-    transform_custom,
-)
-from buildml.preprocess.custom import (
-    list_transforms as list_registered_transforms,
-)
-from buildml.preprocess.custom import (
-    register_transform as register_custom_transform,
-)
-from buildml.preprocess.dates import DateFeaturePlan, extract_date_features
-from buildml.preprocess.encode import EncodePlan, fit_encoder, transform_encoder
+from buildml.preprocess.apply import ApplyPlansResult
+from buildml.preprocess.binning import BinningPlan
+from buildml.preprocess.custom import CustomTransformPlan, CustomTransformSpec
+from buildml.preprocess.dates import DateFeaturePlan
+from buildml.preprocess.encode import EncodePlan
 from buildml.preprocess.fold import PreprocessRecipe
-from buildml.preprocess.imbalance import (
-    ResamplePlan,
-    list_resample_strategies,
-    resample_train,
-)
-from buildml.preprocess.impute import (
-    SimpleImputePlan,
-    fit_simple_imputer,
-    transform_simple_imputer,
-)
-from buildml.preprocess.outliers import OutlierPlan, apply_outlier_plan, fit_outlier_plan
-from buildml.preprocess.reduce import ReducePlan, fit_reducer, transform_reducer
+from buildml.preprocess.imbalance import ResamplePlan
+from buildml.preprocess.impute import SimpleImputePlan
+from buildml.preprocess.outliers import OutlierPlan
+from buildml.preprocess.reduce import ReducePlan
 from buildml.preprocess.result import PreprocessResult
-from buildml.preprocess.scale import ScalePlan, fit_scaler, transform_scaler
-from buildml.preprocess.select import (
-    FeatureSelectPlan,
-    fit_feature_selector,
-    transform_feature_selector,
+from buildml.preprocess.scale import ScalePlan
+from buildml.preprocess.select import FeatureSelectPlan
+from buildml.preprocess.text import TextFeaturePlan
+
+from . import (
+    ai_ops,
+    classical_ops,
+    data_ops,
+    dl_ops,
+    eda_ops,
+    preprocess_ops,
+    rag_ops,
+    state,
+    workflow_ops,
 )
-from buildml.preprocess.text import TextFeaturePlan, fit_text_features, transform_text_features
-from buildml.session.audit import DryRunReport, HistorySummary
-from buildml.session.audit import dry_run_session as run_dry_run
-from buildml.session.audit import summarize_history as build_history_summary
-from buildml.session.walkthrough import WorkflowWalkthroughReport, build_walkthrough
+from .audit import DryRunReport, HistorySummary
+from .walkthrough import WorkflowWalkthroughReport
+
+if TYPE_CHECKING:
+    from buildml.ai.advisor import AdvisorResult
+    from buildml.ai.executor import ExecutorProposal, ExecutorResult
+    from buildml.ai.planner import BudgetTracker, PlanExecutionResult
+    from buildml.ai.privacy import EgressConfig, EgressManifest
+    from buildml.ai.provider import ProviderConfig, ProviderProtocol
+    from buildml.ai.results import PlanResult
+    from buildml.ai.tools import ToolRegistry
+    from buildml.ai.transcript import TranscriptStore
+    from buildml.dashboard.launch import EDAAppHandle
+    from buildml.dl.cv import TorchCVResult
+    from buildml.dl.results import (
+        DLEvaluateResult,
+        TorchLoaderBundle,
+        TrainingCurveReport,
+        TrainResult,
+    )
+    from buildml.dl.types import TrainConfig
+    from buildml.rag.generate import ChatProvider as RagChatProvider
+    from buildml.rag.results import GenerateResult, IndexResult, RagEvalResult, RetrieveResult
+    from buildml.rag.types import GenerateConfig, RetrieveConfig
 
 
 class Session:
     """Primary user-facing object for BuildML 2.x workflows.
 
     A session owns ingested data, roles, splits, history, and checkpoint
-    reattach state. Methods delegate to domain packages and do not
-    reimplement transform logic.
+    reattach state. Methods delegate to domain packages / session ops and do
+    not reimplement transform or trainer logic.
 
     Examples
     --------
@@ -181,43 +134,39 @@ class Session:
         self._last_dry_run: DryRunReport | None = None
         self._last_history_summary: HistorySummary | None = None
         self._last_eda: EDAReport | None = None
-        self._eda_app_handle: Any | None = None
+        self._eda_app_handle: EDAAppHandle | None = None
         self._last_cv: CVScoreResult | None = None
         self._last_nested_cv: NestedCVResult | None = None
         self._last_search: SearchResult | None = None
         self._model_card: ModelCard | None = None
-        self._torch_loaders: Any | None = None
-        self._dl_train_result: Any | None = None
+        self._torch_loaders: TorchLoaderBundle | None = None
+        self._dl_train_result: TrainResult | None = None
+        self._dl_cv_result: TorchCVResult | None = None
+        self._dl_search_result: Any | None = None
+        self._dl_nested_cv_result: Any | None = None
+        self._dl_export_result: Any | None = None
+        self._dl_ddp_result: Any | None = None
+        self._dl_speech_result: Any | None = None
+        self._serve_handle: Any | None = None
+        self._last_pipeline_path: Path | None = None
+        self._ai_autonomy_result: Any | None = None
         self._rag_corpus: Any | None = None
         self._rag_chunks: Any | None = None
         self._rag_index: Any | None = None
-        self._rag_index_result: Any | None = None
-        self._rag_retrieve_result: Any | None = None
-        self._rag_eval_result: Any | None = None
-        self._ai_provider: Any | None = None
-        self._ai_egress_config: Any | None = None
-        self._ai_transcript: Any | None = None
+        self._rag_index_result: IndexResult | None = None
+        self._rag_retrieve_result: RetrieveResult | None = None
+        self._rag_eval_result: RagEvalResult | None = None
+        self._rag_generate_result: GenerateResult | None = None
+        self._ai_provider: ProviderProtocol | ProviderConfig | None = None
+        self._ai_egress_config: EgressConfig | None = None
+        self._ai_transcript: TranscriptStore | None = None
         self._ai_result: Any | None = None
-        self._ai_advisor_result: Any | None = None
-        self._ai_executor_result: Any | None = None
-        self._ai_registry: Any | None = None
+        self._ai_advisor_result: AdvisorResult | None = None
+        self._ai_executor_result: ExecutorProposal | ExecutorResult | None = None
+        self._ai_registry: ToolRegistry | None = None
         self._ai_max_iterations: int = 10
-        self._ai_budget_tracker: Any | None = None
-        self._ai_plan_result: Any | None = None
-
-    def close_native(self) -> None:
-        """Close an owned DuckDB connection on the session dataset, if any.
-
-        Safe to call when no dataset is attached or the engine is not DuckDB.
-        Derived Datasets that share a connection are not owners; only the root
-        handle closes the connection.
-        """
-        dataset = self._dataset
-        if dataset is None:
-            return
-        closer = getattr(dataset, "close_native", None)
-        if callable(closer):
-            closer()
+        self._ai_budget_tracker: BudgetTracker | None = None
+        self._ai_plan_result: PlanResult | None = None
 
     def __enter__(self) -> Session:
         """Return ``self`` for ``with session:`` ownership scopes."""
@@ -231,6 +180,14 @@ class Session:
     ) -> None:
         """Release owned native resources via :meth:`close_native`."""
         self.close_native()
+
+    def close_native(self) -> None:
+        """Close an owned DuckDB connection on the session dataset, if any.
+
+        Safe to call when no dataset is attached or the engine is not DuckDB.
+        Derived Datasets that share a connection are not owners; only the root
+        handle closes the connection."""
+        return data_ops.close_native(self)
 
     @classmethod
     def ingest(
@@ -273,31 +230,16 @@ class Session:
         extras.
 
         **Leakage:** Call :meth:`split` before fit-capable operations. Use
-        :meth:`assert_can_fit` to enforce train-only fit scope.
-        """
-        dataset, report = ingest_source(
-            source,
+        :meth:`assert_can_fit` to enforce train-only fit scope."""
+        return data_ops.ingest_session(
+            cls,
+            source=source,
             mode=mode,
             engine=engine,
             dry_run=dry_run,
             mock_byte_estimate=mock_byte_estimate,
             read_nrows=read_nrows,
         )
-        session = cls(dataset=dataset, ingest_report=report)
-        session._record(
-            "ingest",
-            {
-                "source_type": report.source_type,
-                "format": report.format_name,
-                "mode": report.recommended_mode.value if mode is None else str(mode),
-                "engine": report.recommended_engine.value if engine is None else str(engine),
-                "dry_run": dry_run,
-                "read_nrows": read_nrows,
-            },
-            decision_origin="automatic" if mode is None and engine is None else "explicit",
-            warnings=report.warnings,
-        )
-        return session
 
     @property
     def dataset(self) -> Dataset:
@@ -343,19 +285,8 @@ class Session:
         Returns
         -------
         Session
-            ``self`` for fluent chaining.
-        """
-        self.dataset.set_roles(mapping)
-        self._record(
-            "set_roles",
-            {
-                "mapping": {
-                    name: role.value if isinstance(role, ColumnRole) else str(role)
-                    for name, role in mapping.items()
-                }
-            },
-        )
-        return self
+            ``self`` for fluent chaining."""
+        return data_ops.set_roles(self, mapping=mapping)
 
     def split(
         self,
@@ -381,25 +312,14 @@ class Session:
         Notes
         -----
         **Leakage:** After splitting, fit-capable operations must use the train
-        partition only (:meth:`assert_can_fit`).
-        """
-        self._split_plan = create_split(
-            self.dataset,
+        partition only (:meth:`assert_can_fit`)."""
+        return data_ops.split(
+            self,
             test_size=test_size,
             validation_size=validation_size,
             random_state=random_state,
             stratify=stratify,
         )
-        self._record(
-            "split",
-            {
-                "kind": self._split_plan.kind,
-                "test_size": test_size,
-                "validation_size": validation_size,
-                "stratify": stratify,
-            },
-        )
-        return self
 
     def inject_split(
         self,
@@ -413,26 +333,13 @@ class Session:
         Parameters
         ----------
         train_indices / test_indices / validation_indices:
-            Positional indices into the current dataset.
-        """
-        self._split_plan = inject_partitions(
-            self.dataset,
+            Positional indices into the current dataset."""
+        return data_ops.inject_split(
+            self,
             train_indices=train_indices,
             test_indices=test_indices,
             validation_indices=validation_indices,
         )
-        self._record(
-            "inject_split",
-            {
-                "train_indices": list(train_indices),
-                "test_indices": list(test_indices),
-                "validation_indices": None
-                if validation_indices is None
-                else list(validation_indices),
-                "kind": "injected",
-            },
-        )
-        return self
 
     def group_split(
         self,
@@ -459,25 +366,14 @@ class Session:
         Notes
         -----
         **Leakage:** Prefer this over :meth:`split` when rows share entities
-        (customers, sites, documents). Random row splits leak across groups.
-        """
-        self._split_plan = create_group_split(
-            self.dataset,
+        (customers, sites, documents). Random row splits leak across groups."""
+        return data_ops.group_split(
+            self,
             test_size=test_size,
             validation_size=validation_size,
             random_state=random_state,
             group_column=group_column,
         )
-        self._record(
-            "group_split",
-            {
-                "kind": self._split_plan.kind,
-                "test_size": test_size,
-                "validation_size": validation_size,
-                "group_column": self._split_plan.stratify_column,
-            },
-        )
-        return self
 
     def time_split(
         self,
@@ -501,24 +397,10 @@ class Session:
         Notes
         -----
         **Leakage:** Prefer this over shuffled splits for temporal processes.
-        The splitter does not add a calendar embargo beyond strict ordering.
-        """
-        self._split_plan = create_time_split(
-            self.dataset,
-            test_size=test_size,
-            validation_size=validation_size,
-            time_column=time_column,
+        The splitter does not add a calendar embargo beyond strict ordering."""
+        return data_ops.time_split(
+            self, test_size=test_size, validation_size=validation_size, time_column=time_column
         )
-        self._record(
-            "time_split",
-            {
-                "kind": self._split_plan.kind,
-                "test_size": test_size,
-                "validation_size": validation_size,
-                "time_column": self._split_plan.stratify_column,
-            },
-        )
-        return self
 
     def partition(
         self,
@@ -529,17 +411,8 @@ class Session:
         Raises
         ------
         ValidationError
-            If no split exists.
-        """
-        if self._split_plan is None:
-            raise ValidationError("No split defined. Call split(...) or inject_split(...) first.")
-        frame = frame_for_partition(self.dataset, self._split_plan, name)  # type: ignore[arg-type]
-        self._record(
-            "partition",
-            {"name": str(name)},
-            result_summary={"name": str(name), "rows": int(len(frame))},
-        )
-        return frame
+            If no split exists."""
+        return data_ops.partition(self, name=name)
 
     def assert_can_fit(self, partition: PartitionName = "train") -> Session:
         """Enforce leakage-safe fit scope.
@@ -552,10 +425,8 @@ class Session:
         Raises
         ------
         LeakageError
-            If no split exists or partition is not train.
-        """
-        assert_fit_partition(self._split_plan, partition)
-        return self
+            If no split exists or partition is not train."""
+        return data_ops.assert_can_fit(self, partition=partition)
 
     def drop_columns(self, columns: list[str] | tuple[str, ...]) -> Session:
         """Drop columns from the current dataset.
@@ -573,11 +444,8 @@ class Session:
         Notes
         -----
         Split membership is preserved (row order unchanged). Roles for dropped
-        columns are removed.
-        """
-        self._dataset = drop_columns_transform(self.dataset, columns)
-        self._record("drop_columns", {"columns": list(columns)})
-        return self
+        columns are removed."""
+        return preprocess_ops.drop_columns(self, columns=columns)
 
     def impute(
         self,
@@ -600,20 +468,10 @@ class Session:
         Notes
         -----
         **Leakage:** Requires an existing split. Statistics are learned from
-        the train partition only, then applied to all rows.
-        """
-        self.assert_can_fit("train")
-        plan = fit_simple_imputer(
-            self.dataset,
-            self._split_plan,
-            columns=columns,
-            strategy=strategy,
-            fill_value=fill_value,
+        the train partition only, then applied to all rows."""
+        return preprocess_ops.impute(
+            self, columns=columns, strategy=strategy, fill_value=fill_value
         )
-        self._dataset = transform_simple_imputer(self.dataset, plan)
-        self._impute_plan = plan
-        self._record("impute", plan.to_dict())
-        return self
 
     @property
     def impute_plan(self) -> SimpleImputePlan | None:
@@ -648,12 +506,9 @@ class Session:
         -----
         **Leakage:** Requires a split. Vocabularies and target means are learned
         on train only. Target encoding writes out-of-fold values on train and
-        full-train means on holdouts.
-        """
-        self.assert_can_fit("train")
-        plan = fit_encoder(
-            self.dataset,
-            self._split_plan,
+        full-train means on holdouts."""
+        return preprocess_ops.encode(
+            self,
             columns=columns,
             method=method,
             min_frequency=min_frequency,
@@ -661,20 +516,6 @@ class Session:
             random_state=random_state,
             smoothing=smoothing,
         )
-        self._dataset, result = transform_encoder(
-            self.dataset,
-            plan,
-            split_plan=self._split_plan,
-        )
-        self._encode_plan = plan
-        self._last_preprocess = result
-        self._record(
-            "encode",
-            plan.to_dict(),
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return self
 
     @property
     def encode_plan(self) -> EncodePlan | None:
@@ -704,35 +545,15 @@ class Session:
         Notes
         -----
         **Leakage:** Fence statistics are learned on train only, then applied
-        with the frozen bounds. Heuristic screens are not proof of error.
-        """
-        self.assert_can_fit("train")
-        assert self._split_plan is not None
-        plan = fit_outlier_plan(
-            self.dataset,
-            self._split_plan,
+        with the frozen bounds. Heuristic screens are not proof of error."""
+        return preprocess_ops.handle_outliers(
+            self,
             columns=columns,
             method=method,
             action=action,
             iqr_multiplier=iqr_multiplier,
             zscore_threshold=zscore_threshold,
         )
-        dataset, split_plan, plan, result = apply_outlier_plan(
-            self.dataset,
-            self._split_plan,
-            plan,
-        )
-        self._dataset = dataset
-        self._split_plan = split_plan
-        self._outlier_plan = plan
-        self._last_preprocess = result
-        self._record(
-            "handle_outliers",
-            plan.to_dict(),
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return self
 
     @property
     def outlier_plan(self) -> OutlierPlan | None:
@@ -752,27 +573,10 @@ class Session:
         Notes
         -----
         **Leakage:** Edges are learned on train only. End bins use open
-        ``±inf`` edges so score-time extremes remain defined.
-        """
-        self.assert_can_fit("train")
-        plan = fit_binning(
-            self.dataset,
-            self._split_plan,
-            columns=columns,
-            strategy=strategy,
-            n_bins=n_bins,
-            encode_as=encode_as,
+        ``±inf`` edges so score-time extremes remain defined."""
+        return preprocess_ops.bin(
+            self, columns=columns, strategy=strategy, n_bins=n_bins, encode_as=encode_as
         )
-        self._dataset, result = transform_binning(self.dataset, plan)
-        self._binning_plan = plan
-        self._last_preprocess = result
-        self._record(
-            "bin",
-            plan.to_dict(),
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return self
 
     @property
     def binning_plan(self) -> BinningPlan | None:
@@ -803,12 +607,9 @@ class Session:
         Notes
         -----
         **Leakage:** Selection fits on train only. Encode categoricals and
-        impute before calling when features are non-numeric or contain nulls.
-        """
-        self.assert_can_fit("train")
-        plan = fit_feature_selector(
-            self.dataset,
-            self._split_plan,
+        impute before calling when features are non-numeric or contain nulls."""
+        return preprocess_ops.select_features(
+            self,
             strategy=strategy,
             columns=columns,
             threshold=threshold,
@@ -816,16 +617,6 @@ class Session:
             score_func=score_func,
             estimator=estimator,
         )
-        self._dataset, result = transform_feature_selector(self.dataset, plan)
-        self._feature_select_plan = plan
-        self._last_preprocess = result
-        self._record(
-            "select_features",
-            plan.to_dict(),
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return self
 
     @property
     def feature_select_plan(self) -> FeatureSelectPlan | None:
@@ -847,19 +638,8 @@ class Session:
 
         Notes
         -----
-        **Leakage:** Requires a split. Scaler is fit on train only.
-        """
-        self.assert_can_fit("train")
-        plan = fit_scaler(
-            self.dataset,
-            self._split_plan,
-            columns=columns,
-            method=method,
-        )
-        self._dataset = transform_scaler(self.dataset, plan)
-        self._scale_plan = plan
-        self._record("scale", plan.to_dict())
-        return self
+        **Leakage:** Requires a split. Scaler is fit on train only."""
+        return preprocess_ops.scale(self, columns=columns, method=method)
 
     @property
     def scale_plan(self) -> ScalePlan | None:
@@ -889,28 +669,15 @@ class Session:
         Notes
         -----
         **Leakage:** Requires a split. Vocabularies and IDF weights are learned
-        from train documents only. Missing text becomes empty strings.
-        """
-        self.assert_can_fit("train")
-        plan = fit_text_features(
-            self.dataset,
-            self._split_plan,
+        from train documents only. Missing text becomes empty strings."""
+        return preprocess_ops.text_features(
+            self,
             columns=columns,
             method=method,
             max_features=max_features,
             ngram_range=ngram_range,
             drop_input_columns=drop_input_columns,
         )
-        self._dataset, result = transform_text_features(self.dataset, plan)
-        self._text_plan = plan
-        self._last_preprocess = result
-        self._record(
-            "text_features",
-            plan.to_dict(),
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return self
 
     @property
     def text_plan(self) -> TextFeaturePlan | None:
@@ -942,28 +709,15 @@ class Session:
         -----
         **Leakage:** Requires a split. The rotation is learned on train only.
         Explained variance is unsupervised and is not predictive utility.
-        Scale numeric inputs first when magnitudes differ.
-        """
-        self.assert_can_fit("train")
-        plan = fit_reducer(
-            self.dataset,
-            self._split_plan,
+        Scale numeric inputs first when magnitudes differ."""
+        return preprocess_ops.reduce_dimensions(
+            self,
             columns=columns,
             method=method,
             n_components=n_components,
             drop_input_columns=drop_input_columns,
             prefix=prefix,
         )
-        self._dataset, result = transform_reducer(self.dataset, plan)
-        self._reduce_plan = plan
-        self._last_preprocess = result
-        self._record(
-            "reduce_dimensions",
-            plan.to_dict(),
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return self
 
     @property
     def reduce_plan(self) -> ReducePlan | None:
@@ -986,10 +740,10 @@ class Session:
         """Register a custom train-fit transform for :meth:`apply_custom_transform`.
 
         The ``fit`` callable receives only train rows for the selected columns.
-        See :func:`buildml.preprocess.register_transform` for the full contract.
-        """
-        return register_custom_transform(
-            name,
+        See :func:`buildml.preprocess.register_transform` for the full contract."""
+        return preprocess_ops.register_transform(
+            cls,
+            name=name,
             fit=fit,
             transform=transform,
             description=description,
@@ -1002,7 +756,7 @@ class Session:
     @classmethod
     def list_transforms(cls) -> tuple[CustomTransformSpec, ...]:
         """Return registered custom transforms in name order."""
-        return list_registered_transforms()
+        return preprocess_ops.list_transforms(cls)
 
     def apply_custom_transform(
         self,
@@ -1025,26 +779,10 @@ class Session:
         Notes
         -----
         **Leakage:** Requires a split. Fit sees train rows only. Score-time
-        replay requires the same name to remain registered in-process.
-        """
-        self.assert_can_fit("train")
-        plan = fit_custom_transform(
-            self.dataset,
-            self._split_plan,
-            name=name,
-            columns=columns,
-            params=params,
+        replay requires the same name to remain registered in-process."""
+        return preprocess_ops.apply_custom_transform(
+            self, name=name, columns=columns, params=params
         )
-        self._dataset, result = transform_custom(self.dataset, plan)
-        self._custom_plan = plan
-        self._last_preprocess = result
-        self._record(
-            "apply_custom_transform",
-            plan.to_dict(),
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return self
 
     @property
     def custom_plan(self) -> CustomTransformPlan | None:
@@ -1070,11 +808,8 @@ class Session:
         Notes
         -----
         Dry-run does not fit, transform, or append history. Availability means
-        API prerequisites pass, not that the operation is appropriate.
-        """
-        report = run_dry_run(self, operation, parameters=parameters)
-        self._last_dry_run = report
-        return report
+        API prerequisites pass, not that the operation is appropriate."""
+        return workflow_ops.dry_run(self, operation=operation, parameters=parameters)
 
     @property
     def last_dry_run(self) -> DryRunReport | None:
@@ -1087,11 +822,8 @@ class Session:
         Notes
         -----
         Read-only. Does not append history. Risks are heuristic review cues,
-        not proof of leakage or invalid results.
-        """
-        summary = build_history_summary(self)
-        self._last_history_summary = summary
-        return summary
+        not proof of leakage or invalid results."""
+        return workflow_ops.summarize_history(self)
 
     @property
     def last_history_summary(self) -> HistorySummary | None:
@@ -1115,24 +847,8 @@ class Session:
 
         Notes
         -----
-        **Leakage:** Fits on train only. Call after split and preparation.
-        """
-        self.assert_can_fit("train")
-        self._fit_result = fit_estimator(
-            self.dataset,
-            self._split_plan,
-            estimator,
-            task=task,
-        )
-        self._record(
-            "fit",
-            {
-                "estimator": type(estimator).__name__,
-                "task": task,
-            },
-            result_summary=self._fit_result.to_dict(),
-        )
-        return self
+        **Leakage:** Fits on train only. Call after split and preparation."""
+        return classical_ops.fit(self, estimator=estimator, task=task)
 
     @property
     def fit_result(self) -> FitResult | None:
@@ -1152,22 +868,8 @@ class Session:
         partition:
             Split partition to score.
         return_proba:
-            If True and supported, return class probabilities.
-        """
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        preds = predict_estimator(
-            self.dataset,
-            self._split_plan,
-            self._fit_result,
-            partition=partition,
-            return_proba=return_proba,
-        )
-        self._record(
-            "predict",
-            {"partition": partition, "n_rows": int(len(preds)), "proba": return_proba},
-        )
-        return preds
+            If True and supported, return class probabilities."""
+        return classical_ops.predict(self, partition=partition, return_proba=return_proba)
 
     def evaluate(
         self,
@@ -1189,44 +891,14 @@ class Session:
         include_plots / export_figures / export_html:
             Optionally build the eval plot board (requires ``buildml[viz]``)
             and persist figures/HTML. Plot board is also stored on
-            :attr:`last_plot_board`.
-        """
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        result = evaluate_estimator(
-            self.dataset,
-            self._split_plan,
-            self._fit_result,
+            :attr:`last_plot_board`."""
+        return classical_ops.evaluate(
+            self,
             partition=partition,
+            export_figures=export_figures,
+            export_html=export_html,
+            include_plots=include_plots,
         )
-        if include_plots or export_figures is not None or export_html is not None:
-            board = build_eval_plot_board(
-                self.dataset,
-                self._split_plan,
-                self._fit_result,
-                partition=partition,
-                export_figures=export_figures,
-                export_html=export_html,
-            )
-            self._last_plot_board = board
-            result.diagnostics["plot_board"] = {
-                "figure_dir": board.figure_dir,
-                "html_path": board.html_path,
-                "figure_paths": dict(board.figure_paths),
-                "skipped": list(board.skipped),
-                "interpretation": list(board.interpretation),
-            }
-        self._record(
-            "evaluate",
-            {
-                "partition": partition,
-                "include_plots": include_plots,
-                "export_figures": export_figures,
-                "export_html": export_html,
-            },
-            result_summary=result.to_dict(),
-        )
-        return result
 
     def make_torch_loaders(
         self,
@@ -1239,58 +911,61 @@ class Session:
         normalize: bool = True,
         seed: int = 0,
         task: Literal["classification", "regression", "auto"] = "auto",
-    ) -> Any:
+        apply_plans: bool = False,
+    ) -> TorchLoaderBundle:
         """Build Torch DataLoaders from current roles and split partitions.
 
         Requires ``pip install 'buildml[torch]'`` (or ``buildml[dl]``). Shuffle
         applies to the train loader only. When ``normalize`` is True, mean/std
-        are fit on train and frozen for validation/test. Classical preprocess
-        plans are not auto-applied; call them first if needed.
+        are fit on train and frozen for validation/test. Attached classical
+        plans are disclosed on the loader report; pass ``apply_plans=True`` to
+        re-apply fitted plans before building tensors.
 
         Returns
         -------
         TorchLoaderBundle
-            Loaders keyed by partition plus the feature contract.
-        """
-        from buildml.dl.loaders import make_loaders
-        from buildml.dl.types import LoaderConfig
-
-        self.assert_can_fit("train")
-        bundle = make_loaders(
-            self.dataset,
-            self._split_plan,
-            config=LoaderConfig(
-                batch_size=batch_size,
-                num_workers=num_workers,
-                pin_memory=pin_memory,
-                shuffle_train=shuffle_train,
-                drop_last=drop_last,
-                normalize=normalize,
-                seed=seed,
-            ),
+            Loaders keyed by partition plus the feature contract."""
+        return dl_ops.make_torch_loaders(
+            self,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
+            shuffle_train=shuffle_train,
+            drop_last=drop_last,
+            normalize=normalize,
+            seed=seed,
             task=task,
+            apply_plans=apply_plans,
         )
-        self._torch_loaders = bundle
-        self._record(
-            "make_torch_loaders",
-            {
-                "batch_size": batch_size,
-                "num_workers": num_workers,
-                "pin_memory": pin_memory,
-                "shuffle_train": shuffle_train,
-                "drop_last": drop_last,
-                "normalize": normalize,
-                "seed": seed,
-                "task": task,
-            },
-            result_summary=bundle.report.to_dict(),
-            warnings=tuple(bundle.report.warnings),
+
+    def make_text_torch_loaders(
+        self,
+        *,
+        text_column: str | None = None,
+        batch_size: int = 16,
+        max_len: int = 64,
+        max_vocab: int = 5000,
+        min_freq: int = 1,
+        shuffle_train: bool = True,
+        seed: int = 0,
+    ) -> TorchLoaderBundle:
+        """Build token-id DataLoaders for text classification (sequence modality).
+
+        Vocabulary is fit on train only. Requires ``buildml[torch]``."""
+        return dl_ops.make_text_torch_loaders(
+            self,
+            text_column=text_column,
+            batch_size=batch_size,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            shuffle_train=shuffle_train,
+            seed=seed,
         )
-        return bundle
 
     def fit_torch(
         self,
-        module: Any,
+        module: Any | None = None,
         *,
         loss_fn: Any | None = None,
         optimizer_factory: Any | None = None,
@@ -1303,19 +978,23 @@ class Session:
         early_stopping_monitor: str = "val_loss",
         scheduler: Literal["none", "step", "plateau", "cosine"] = "none",
         resume: bool = False,
-        config: Any | None = None,
+        config: TrainConfig | None = None,
+        hidden: tuple[int, ...] = (64, 32),
+        dropout: float = 0.1,
+        mixed_precision: bool = False,
     ) -> Session:
-        """Train a caller-supplied ``nn.Module`` on the train Torch loader.
+        """Train an ``nn.Module`` on the train Torch loader.
 
-        Requires ``pip install 'buildml[torch]'``. Delegates to
-        :func:`buildml.dl.train.train_supervised_module`. Does not replace
-        classical :meth:`fit` / :attr:`fit_result`.
+        Requires ``pip install 'buildml[torch]'``. When ``module`` is omitted,
+        builds a tabular MLP, text classifier, or multimodal fusion module from
+        the loader contract. Does not replace classical :meth:`fit`.
 
         Parameters
         ----------
         module:
-            Unfitted (or warm) ``torch.nn.Module``. When ``resume=True``, weights
-            are restored from :attr:`dl_train_result` before continuing.
+            Optional ``torch.nn.Module``. When omitted, a built-in model is
+            constructed from the active loader contract. When ``resume=True``,
+            weights are restored from :attr:`dl_train_result`.
         loss_fn:
             Optional ``(module, xb, yb) -> loss``. Defaults to CrossEntropy
             (classification) or MSE (regression).
@@ -1325,145 +1004,507 @@ class Session:
             Train-loop knobs used when ``config`` is omitted. With ``resume=True``,
             ``epochs`` are **additional** epochs.
         early_stopping_patience / early_stopping_monitor / scheduler:
-            M2 knobs when ``config`` is omitted. Patience requires a validation
-            loader. Scheduler defaults to ``none`` (see :class:`~buildml.dl.types.TrainConfig`).
+            Patience requires a validation loader. Scheduler defaults to ``none``.
         resume:
-            When True, continue from :attr:`dl_train_result` (e.g. after
-            :meth:`load_torch_bundle`), restoring optimizer/scheduler state.
+            When True, continue from :attr:`dl_train_result`.
         config:
-            Optional :class:`~buildml.dl.types.TrainConfig` overriding the
-            scalar knobs above.
-        """
-        from buildml.dl.train import train_supervised_module
-        from buildml.dl.types import TrainConfig
-
-        self.assert_can_fit("train")
-        if self._torch_loaders is None:
-            self.make_torch_loaders()
-        assert self._torch_loaders is not None
-        if config is None:
-            config = TrainConfig(
-                epochs=epochs,
-                learning_rate=learning_rate,
-                device=device,
-                grad_clip_norm=grad_clip_norm,
-                log_every=log_every,
-                early_stopping_patience=early_stopping_patience,
-                early_stopping_monitor=early_stopping_monitor,
-                scheduler=scheduler,
-                batch_size=getattr(self._torch_loaders.report, "batch_size", 32),
-                normalize=getattr(self._torch_loaders.report, "normalize", True),
-            )
-        prior = None
-        if resume:
-            if self._dl_train_result is None:
-                raise ValidationError(
-                    "resume=True requires dl_train_result. "
-                    "Call load_torch_bundle(...) or fit_torch(...) first."
-                )
-            prior = self._dl_train_result
-        result = train_supervised_module(
-            module,
-            self._torch_loaders,
-            config=config,
+            Optional :class:`~buildml.dl.types.TrainConfig` overriding scalar knobs.
+        hidden / dropout:
+            Built-in MLP / text classifier knobs when ``module`` is omitted.
+        mixed_precision:
+            When True on CUDA, enables AMP; CPU/MPS is a documented no-op."""
+        return dl_ops.fit_torch(
+            self,
+            module=module,
             loss_fn=loss_fn,
             optimizer_factory=optimizer_factory,
-            resume_from=prior,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            device=device,
+            grad_clip_norm=grad_clip_norm,
+            log_every=log_every,
+            early_stopping_patience=early_stopping_patience,
+            early_stopping_monitor=early_stopping_monitor,
+            scheduler=scheduler,
+            resume=resume,
+            config=config,
+            hidden=hidden,
+            dropout=dropout,
+            mixed_precision=mixed_precision,
         )
-        self._dl_train_result = result
-        self._record(
-            "fit_torch",
-            {
-                "module": type(module).__name__,
-                "epochs": result.n_epochs_ran,
-                "device": result.device.to_dict(),
-                "task": result.task,
-                "resume": resume,
-                "scheduler": result.scheduler_name,
-                "early_stopping_patience": result.config.early_stopping_patience,
-            },
-            result_summary=result.to_dict(),
-            warnings=tuple(result.warnings),
+
+    def make_multimodal_torch_loaders(
+        self,
+        *,
+        text_column: str | None = None,
+        numeric_columns: list[str] | None = None,
+        image_column: str | None = None,
+        audio_column: str | None = None,
+        batch_size: int = 16,
+        max_len: int = 64,
+        max_vocab: int = 5000,
+        min_freq: int = 1,
+        normalize: bool = True,
+        normalize_images: bool = True,
+        normalize_audio: bool = True,
+        image_size: tuple[int, int] = (32, 32),
+        image_channels: int = 3,
+        audio_sample_rate: int = 16_000,
+        audio_max_samples: int = 16_000,
+        audio_source_sample_rate: int | None = None,
+        shuffle_train: bool = True,
+        seed: int = 0,
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> TorchLoaderBundle:
+        """Build fused multimodal DataLoaders (tabular/text/image/audio; train-only stats)."""
+        return dl_ops.make_multimodal_torch_loaders(
+            self,
+            text_column=text_column,
+            numeric_columns=numeric_columns,
+            image_column=image_column,
+            audio_column=audio_column,
+            batch_size=batch_size,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            normalize=normalize,
+            normalize_images=normalize_images,
+            normalize_audio=normalize_audio,
+            image_size=image_size,
+            image_channels=image_channels,
+            audio_sample_rate=audio_sample_rate,
+            audio_max_samples=audio_max_samples,
+            audio_source_sample_rate=audio_source_sample_rate,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            task=task,
         )
-        return self
+
+    def make_image_multimodal_torch_loaders(
+        self,
+        *,
+        image_column: str,
+        text_column: str | None = None,
+        numeric_columns: list[str] | None = None,
+        audio_column: str | None = None,
+        batch_size: int = 16,
+        max_len: int = 64,
+        max_vocab: int = 5000,
+        min_freq: int = 1,
+        normalize: bool = True,
+        normalize_images: bool = True,
+        normalize_audio: bool = True,
+        image_size: tuple[int, int] = (32, 32),
+        image_channels: int = 3,
+        audio_sample_rate: int = 16_000,
+        audio_max_samples: int = 16_000,
+        audio_source_sample_rate: int | None = None,
+        shuffle_train: bool = True,
+        seed: int = 0,
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> TorchLoaderBundle:
+        """Build image multimodal loaders (image ⊕ tabular and/or text and/or audio).
+
+        Path cells need Pillow (bundled in ``buildml[torch]``); array cells work
+        with Torch alone.
+        """
+        return dl_ops.make_image_multimodal_torch_loaders(
+            self,
+            image_column=image_column,
+            text_column=text_column,
+            numeric_columns=numeric_columns,
+            audio_column=audio_column,
+            batch_size=batch_size,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            normalize=normalize,
+            normalize_images=normalize_images,
+            normalize_audio=normalize_audio,
+            image_size=image_size,
+            image_channels=image_channels,
+            audio_sample_rate=audio_sample_rate,
+            audio_max_samples=audio_max_samples,
+            audio_source_sample_rate=audio_source_sample_rate,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            task=task,
+        )
+
+    def make_audio_multimodal_torch_loaders(
+        self,
+        *,
+        audio_column: str,
+        text_column: str | None = None,
+        numeric_columns: list[str] | None = None,
+        image_column: str | None = None,
+        batch_size: int = 16,
+        max_len: int = 64,
+        max_vocab: int = 5000,
+        min_freq: int = 1,
+        normalize: bool = True,
+        normalize_images: bool = True,
+        normalize_audio: bool = True,
+        image_size: tuple[int, int] = (32, 32),
+        image_channels: int = 3,
+        audio_sample_rate: int = 16_000,
+        audio_max_samples: int = 16_000,
+        audio_source_sample_rate: int | None = None,
+        shuffle_train: bool = True,
+        seed: int = 0,
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> TorchLoaderBundle:
+        """Build audio multimodal loaders (audio ⊕ tabular and/or text and/or image).
+
+        Path cells need soundfile (bundled in ``buildml[torch]`` /
+        ``buildml[audio]``); waveform arrays work with Torch alone. Small 1D-CNN
+        fusion branch — not a speech foundation model.
+        """
+        return dl_ops.make_audio_multimodal_torch_loaders(
+            self,
+            audio_column=audio_column,
+            text_column=text_column,
+            numeric_columns=numeric_columns,
+            image_column=image_column,
+            batch_size=batch_size,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            normalize=normalize,
+            normalize_images=normalize_images,
+            normalize_audio=normalize_audio,
+            image_size=image_size,
+            image_channels=image_channels,
+            audio_sample_rate=audio_sample_rate,
+            audio_max_samples=audio_max_samples,
+            audio_source_sample_rate=audio_source_sample_rate,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            task=task,
+        )
+
+    def cross_validate_torch(
+        self,
+        *,
+        n_folds: int = 3,
+        epochs: int = 3,
+        batch_size: int = 32,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        normalize: bool = True,
+        seed: int = 0,
+        stratify: bool = True,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        module_factory: Any | None = None,
+    ) -> TorchCVResult:
+        """Fold-local Torch CV (normalize fit per fold; not nested search)."""
+        return dl_ops.cross_validate_torch(
+            self,
+            n_folds=n_folds,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            device=device,
+            normalize=normalize,
+            seed=seed,
+            stratify=stratify,
+            task=task,
+            module_factory=module_factory,
+        )
+
+    def search_torch(
+        self,
+        *,
+        param_grid: dict[str, list[Any]] | None = None,
+        param_distributions: dict[str, Any] | None = None,
+        inner_search: Literal["grid", "randomized", "auto"] = "auto",
+        n_iter: int = 5,
+        n_folds: int = 3,
+        epochs: int = 2,
+        batch_size: int = 32,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        normalize: bool = True,
+        seed: int = 0,
+        stratify: bool = True,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        scoring_metric: str | None = None,
+        module_factory: Any | None = None,
+    ) -> Any:
+        """Inner-fold Torch hyperparameter search on the train universe."""
+        return dl_ops.search_torch(
+            self,
+            param_grid=param_grid,
+            param_distributions=param_distributions,
+            inner_search=inner_search,
+            n_iter=n_iter,
+            n_folds=n_folds,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            device=device,
+            normalize=normalize,
+            seed=seed,
+            stratify=stratify,
+            task=task,
+            scoring_metric=scoring_metric,
+            module_factory=module_factory,
+        )
+
+    def nested_cv_torch(
+        self,
+        *,
+        param_grid: dict[str, list[Any]] | None = None,
+        param_distributions: dict[str, Any] | None = None,
+        inner_search: Literal["grid", "randomized", "auto"] = "auto",
+        n_iter: int = 5,
+        outer_cv: int = 3,
+        inner_cv: int = 2,
+        epochs: int = 2,
+        batch_size: int = 32,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        normalize: bool = True,
+        seed: int = 0,
+        stratify: bool = True,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        scoring_metric: str | None = None,
+        module_factory: Any | None = None,
+    ) -> Any:
+        """Nested Torch CV with fold-local normalize and inner hyperparameter search."""
+        return dl_ops.nested_cv_torch(
+            self,
+            param_grid=param_grid,
+            param_distributions=param_distributions,
+            inner_search=inner_search,
+            n_iter=n_iter,
+            outer_cv=outer_cv,
+            inner_cv=inner_cv,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            device=device,
+            normalize=normalize,
+            seed=seed,
+            stratify=stratify,
+            task=task,
+            scoring_metric=scoring_metric,
+            module_factory=module_factory,
+        )
+
+    def export_torch(
+        self,
+        path: str | Path,
+        *,
+        format: Literal["torchscript", "onnx"] = "torchscript",
+        opset: int = 17,
+        dynamic_batch: bool = True,
+        example_input: Any | None = None,
+    ) -> Any:
+        """Export the last Torch trainer to TorchScript or ONNX (alpha escape hatch)."""
+        return dl_ops.export_torch(
+            self,
+            path=path,
+            format=format,
+            opset=opset,
+            dynamic_batch=dynamic_batch,
+            example_input=example_input,
+        )
+
+    def fit_torch_ddp(
+        self,
+        module_factory: Any,
+        *,
+        epochs: int = 5,
+        learning_rate: float = 1e-3,
+        mixed_precision: bool = False,
+        world_size: int | None = None,
+        allow_cpu_ddp: bool = False,
+        multi_node: bool = False,
+        config: TrainConfig | None = None,
+    ) -> Any:
+        """DDP training (single-node spawn or multi-node torchrun join).
+
+        Single-node requires multi-GPU unless ``allow_cpu_ddp``. Multi-node
+        joins ``WORLD_SIZE``/``RANK``/``LOCAL_RANK``/``MASTER_ADDR``/
+        ``MASTER_PORT`` from torchrun.
+        """
+        return dl_ops.fit_torch_ddp(
+            self,
+            module_factory,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            mixed_precision=mixed_precision,
+            world_size=world_size,
+            allow_cpu_ddp=allow_cpu_ddp,
+            multi_node=multi_node,
+            config=config,
+        )
+
+    def make_speech_torch_loaders(
+        self,
+        *,
+        audio_column: str | None = None,
+        batch_size: int = 8,
+        sample_rate: int = 16_000,
+        max_samples: int = 16_000,
+        source_sample_rate: int | None = None,
+        normalize_audio: bool = True,
+        encoder_dim: int = 64,
+        shuffle_train: bool = True,
+        seed: int = 0,
+    ) -> TorchLoaderBundle:
+        """Build speech classification loaders (finetune-lite; not FM-from-scratch)."""
+        return dl_ops.make_speech_torch_loaders(
+            self,
+            audio_column=audio_column,
+            batch_size=batch_size,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            normalize_audio=normalize_audio,
+            encoder_dim=encoder_dim,
+            shuffle_train=shuffle_train,
+            seed=seed,
+        )
+
+    def fit_speech_torch(
+        self,
+        *,
+        epochs: int = 5,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        freeze_encoder: bool = False,
+        audio_column: str | None = None,
+        batch_size: int = 8,
+        sample_rate: int = 16_000,
+        max_samples: int = 16_000,
+        source_sample_rate: int | None = None,
+        normalize_audio: bool = True,
+        encoder_dim: int = 64,
+        seed: int = 0,
+    ) -> Session:
+        """Fine-tune tiny speech encoder + classifier (integration/finetune-lite)."""
+        return dl_ops.fit_speech_torch(
+            self,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            device=device,
+            freeze_encoder=freeze_encoder,
+            audio_column=audio_column,
+            batch_size=batch_size,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            normalize_audio=normalize_audio,
+            encoder_dim=encoder_dim,
+            seed=seed,
+        )
+
+    def transcribe_speech(
+        self,
+        *,
+        audio_column: str,
+        backend: Literal["stub", "transformers"] = "stub",
+        model_id: str | None = None,
+        sample_rate: int = 16_000,
+        max_samples: int = 16_000,
+        source_sample_rate: int | None = None,
+        partition: Literal["train", "validation", "test", "all"] = "all",
+    ) -> Any:
+        """ASR transcription (stub CI-safe; transformers via ``buildml[speech]``)."""
+        return dl_ops.transcribe_speech(
+            self,
+            audio_column=audio_column,
+            backend=backend,
+            model_id=model_id,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            partition=partition,
+        )
+
+    def serve_bundle(
+        self,
+        path: str | Path | None = None,
+        *,
+        kind: Literal["pipeline", "torchscript"] = "pipeline",
+        host: str = "127.0.0.1",
+        port: int = 8080,
+        title: str = "BuildML Serve",
+        blocking: bool = False,
+    ) -> Any:
+        """Launch managed local serving (``buildml[serve]``; localhost; no auth)."""
+        return dl_ops.serve_bundle(
+            self,
+            path,
+            kind=kind,
+            host=host,
+            port=port,
+            title=title,
+            blocking=blocking,
+        )
 
     @property
-    def dl_train_result(self) -> Any | None:
+    def dl_speech_result(self) -> Any | None:
+        """Last :meth:`transcribe_speech` result, if any."""
+        return self._dl_speech_result
+
+    @property
+    def dl_train_result(self) -> TrainResult | None:
         """Last Torch :class:`~buildml.dl.results.TrainResult`, if any."""
         return self._dl_train_result
 
-    def torch_training_curve(self) -> Any:
+    @property
+    def dl_cv_result(self) -> TorchCVResult | None:
+        """Last :class:`~buildml.dl.cv.TorchCVResult`, if any."""
+        return self._dl_cv_result
+
+    @property
+    def dl_search_result(self) -> Any | None:
+        """Last :meth:`search_torch` result, if any."""
+        return self._dl_search_result
+
+    @property
+    def dl_nested_cv_result(self) -> Any | None:
+        """Last :meth:`nested_cv_torch` result, if any."""
+        return self._dl_nested_cv_result
+
+    @property
+    def dl_export_result(self) -> Any | None:
+        """Last :meth:`export_torch` result, if any."""
+        return self._dl_export_result
+
+    @property
+    def dl_ddp_result(self) -> Any | None:
+        """Last :meth:`fit_torch_ddp` result, if any."""
+        return self._dl_ddp_result
+
+    def torch_training_curve(self) -> TrainingCurveReport:
         """Return structured training-curve teaching data for the last Torch run.
 
         Requires a prior :meth:`fit_torch` / :meth:`load_torch_bundle`. Torch-free
-        to read once :attr:`dl_train_result` exists.
-        """
-        from buildml.dl.curves import build_training_curve
-
-        if self._dl_train_result is None:
-            raise ValidationError(
-                "No Torch trainer. Call fit_torch(...) or load_torch_bundle(...) first."
-            )
-        curve = self._dl_train_result.training_curve
-        if curve is None:
-            curve = build_training_curve(self._dl_train_result)
-            self._dl_train_result.training_curve = curve
-        self._record(
-            "torch_training_curve",
-            {},
-            result_summary=curve.to_dict(),
-        )
-        return curve
+        to read once :attr:`dl_train_result` exists."""
+        return dl_ops.torch_training_curve(self)
 
     def evaluate_torch(
         self,
         *,
         partition: Literal["train", "validation", "test"] = "test",
         device: str | None = None,
-    ) -> Any:
+    ) -> DLEvaluateResult:
         """Evaluate the last Torch trainer on a named partition.
 
         Requires ``pip install 'buildml[torch]'``. Uses loaders from
-        :meth:`make_torch_loaders` (rebuilds them if missing).
-        """
-        from buildml.dl.metrics import evaluate_module
-
-        if self._dl_train_result is None:
-            raise ValidationError(
-                "No Torch trainer. Call fit_torch(...) or load_torch_bundle(...) first."
-            )
-        if self._torch_loaders is None:
-            self.make_torch_loaders(
-                normalize=self._dl_train_result.contract.normalize_mean is not None,
-                task=self._dl_train_result.task,
-            )
-        assert self._torch_loaders is not None
-        result = evaluate_module(
-            self._dl_train_result,
-            self._torch_loaders,
-            partition=partition,
-            device=device,
-        )
-        self._record(
-            "evaluate_torch",
-            {"partition": partition, "device": device},
-            result_summary=result.to_dict(),
-        )
-        return result
+        :meth:`make_torch_loaders` (rebuilds them if missing)."""
+        return dl_ops.evaluate_torch(self, partition=partition, device=device)
 
     def save_torch_bundle(self, path: str | Path) -> Path:
         """Persist the last Torch trainer as ``buildml.torch_bundle.v1``.
 
         Distinct from Session checkpoints and classical pipeline bundles.
-        See :data:`buildml.dl.checkpoint.CHECKPOINT_BOUNDARY`.
-        """
-        from buildml.dl.checkpoint import save_torch_bundle
-
-        if self._dl_train_result is None:
-            raise ValidationError("No Torch trainer. Call fit_torch(...) first.")
-        destination = save_torch_bundle(path, self._dl_train_result)
-        self._record("save_torch_bundle", {"path": str(destination)})
-        return destination
+        See :data:`buildml.dl.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return dl_ops.save_torch_bundle(self, path=path)
 
     def load_torch_bundle(
         self,
@@ -1474,6 +1515,9 @@ class Session:
     ) -> Session:
         """Load a Torch trainer bundle into this Session.
 
+        Restores weights plus optional multimodal preprocess meta. Does not
+        rebuild DataLoaders — remake multimodal/text loaders before scoring.
+
         Parameters
         ----------
         path:
@@ -1481,17 +1525,8 @@ class Session:
         module:
             Compatible ``nn.Module`` shell that receives ``load_state_dict``.
         map_location:
-            Optional device for ``torch.load`` (default CPU).
-        """
-        from buildml.dl.checkpoint import load_torch_bundle
-
-        self._dl_train_result = load_torch_bundle(path, module, map_location=map_location)
-        self._record(
-            "load_torch_bundle",
-            {"path": str(path), "module": type(module).__name__, "map_location": map_location},
-            result_summary=self._dl_train_result.to_dict(),
-        )
-        return self
+            Optional device for ``torch.load`` (default CPU)."""
+        return dl_ops.load_torch_bundle(self, path=path, module=module, map_location=map_location)
 
     def rag_ingest_corpus(
         self,
@@ -1509,55 +1544,16 @@ class Session:
         ``text_column`` to bridge the current Session frame. Never silently
         indexes every column.
 
-        Delegates to :mod:`buildml.rag.corpus`. Distinct from classical ingest.
-        """
-        from buildml.rag.corpus import (
-            corpus_from_documents,
-            corpus_from_frame,
-            load_text_corpus,
+        Delegates to :mod:`buildml.rag.corpus`. Distinct from classical ingest."""
+        return rag_ops.rag_ingest_corpus(
+            self,
+            source=source,
+            text_column=text_column,
+            id_column=id_column,
+            glob=glob,
+            encoding=encoding,
+            role=role,
         )
-        from buildml.rag.extras import require_rag_stack
-
-        require_rag_stack(feature="RAG corpus ingest")
-        if text_column is not None:
-            if self._dataset is None:
-                raise ValidationError(
-                    "text_column requires an attached dataset. "
-                    "Call Session.ingest(...) first or pass source= documents/path."
-                )
-            corpus = corpus_from_frame(
-                self._dataset.frame,
-                text_column=text_column,
-                id_column=id_column,
-                role=role,
-                source=f"session[{text_column}]",
-            )
-        elif source is None:
-            raise ValidationError(
-                "rag_ingest_corpus requires source= (path or documents) or text_column=."
-            )
-        elif isinstance(source, (str, Path)):
-            corpus = load_text_corpus(source, glob=glob, encoding=encoding, role=role)
-        else:
-            corpus = corpus_from_documents(source, source="memory", default_role=role)
-
-        self._rag_corpus = corpus
-        self._rag_chunks = None
-        self._rag_index = None
-        self._rag_index_result = None
-        self._rag_retrieve_result = None
-        self._rag_eval_result = None
-        self._record(
-            "rag_ingest_corpus",
-            {
-                "source": corpus.source,
-                "role": role,
-                "text_column": text_column,
-                "id_column": id_column,
-            },
-            result_summary=corpus.to_dict(),
-        )
-        return self
 
     def rag_chunk(
         self,
@@ -1566,24 +1562,7 @@ class Session:
         overlap: int = 64,
     ) -> Session:
         """Chunk the active RAG corpus with size + overlap (requires ``buildml[rag]``)."""
-        from buildml.rag.chunk import chunk_documents
-        from buildml.rag.extras import require_rag_stack
-        from buildml.rag.types import ChunkConfig
-
-        require_rag_stack(feature="RAG chunking")
-        if self._rag_corpus is None:
-            raise ValidationError("No RAG corpus. Call rag_ingest_corpus(...) first.")
-        result = chunk_documents(
-            self._rag_corpus,
-            config=ChunkConfig(size=size, overlap=overlap),
-        )
-        self._rag_chunks = result
-        self._record(
-            "rag_chunk",
-            {"size": size, "overlap": overlap},
-            result_summary=result.to_dict(),
-        )
-        return self
+        return rag_ops.rag_chunk(self, size=size, overlap=overlap)
 
     def rag_embed_and_index(
         self,
@@ -1597,42 +1576,14 @@ class Session:
 
         Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
         Default embedder is ``buildml.hashing_embed.v1`` (lexical/hashed, not semantic).
-        ``device`` applies to sentence-transformer backends; hashing stays CPU-only.
-        """
-        from buildml.rag.extras import require_rag_stack
-        from buildml.rag.index import build_index
-        from buildml.rag.results import ChunkResult
-
-        require_rag_stack(feature="RAG embed and index")
-        if self._rag_corpus is None:
-            raise ValidationError("No RAG corpus. Call rag_ingest_corpus(...) first.")
-        index = build_index(
-            self._rag_corpus,
+        ``device`` applies to sentence-transformer backends; hashing stays CPU-only."""
+        return rag_ops.rag_embed_and_index(
+            self,
+            embedder=embedder,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
-            embedder=embedder,
-            chunks=self._rag_chunks,
             device=device,
         )
-        self._rag_index = index
-        self._rag_index_result = index.to_index_result()
-        self._rag_chunks = ChunkResult(
-            chunks=index.chunks,
-            config=index.chunk_config.to_dict(),
-            n_documents=index.n_documents,
-        )
-        self._record(
-            "rag_embed_and_index",
-            {
-                "embedder_id": index.embed_config.embedder_id,
-                "dim": index.embed_config.dim,
-                "store_backend": index.index_config.store_backend,
-                "device": index.embed_config.device,
-            },
-            result_summary=self._rag_index_result.to_dict(),
-            warnings=tuple(index.warnings),
-        )
-        return self
 
     def rag_retrieve(
         self,
@@ -1648,44 +1599,17 @@ class Session:
         """Retrieve ranked chunks (dense / BM25 / hybrid) against the active RAG index.
 
         Defaults: ``mode="dense"``, no metadata filters, ``rerank=False``. Hybrid
-        defaults to RRF (``rrf_k=60``). Cross-encoder rerank requires ``buildml[rag]``.
-        """
-        from buildml.rag.extras import require_rag_stack
-        from buildml.rag.retrieve import retrieve
-        from buildml.rag.types import RetrieveConfig
-
-        require_rag_stack(feature="RAG retrieve")
-        if self._rag_index is None:
-            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-        cfg = (
-            config
-            if config is not None
-            else RetrieveConfig(k=k, mode=(mode or "dense"))  # type: ignore[arg-type]
-        )
-        result = retrieve(
-            self._rag_index,
-            query,
+        defaults to RRF (``rrf_k=60``). Cross-encoder rerank requires ``buildml[rag]``."""
+        return rag_ops.rag_retrieve(
+            self,
+            query=query,
             k=k,
-            config=cfg,
-            mode=mode,  # type: ignore[arg-type]
+            mode=mode,
+            fusion=fusion,
             filters=filters,
             rerank=rerank,
-            fusion=fusion,
+            config=config,
         )
-        self._rag_retrieve_result = result
-        self._record(
-            "rag_retrieve",
-            {
-                "query": query,
-                "k": k,
-                "mode": result.mode,
-                "fusion": result.fusion,
-                "rerank": result.rerank,
-                "filters": result.filters,
-            },
-            result_summary=result.to_dict(),
-        )
-        return result
 
     def rag_evaluate(
         self,
@@ -1699,35 +1623,48 @@ class Session:
         """Score retrieval with gold qrels (recall@k, MRR, nDCG@k, hit-rate@k).
 
         ``relevance_mode="document"`` (default) scores parent ``doc_id`` hits;
-        ``"chunk"`` scores ``chunk_id`` labels. Requires ``buildml[rag]``.
-        """
-        from buildml.rag.evaluate import evaluate_retrieval
-        from buildml.rag.extras import require_rag_stack
-
-        require_rag_stack(feature="RAG evaluate")
-        if self._rag_index is None:
-            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-        result = evaluate_retrieval(
-            self._rag_index,
-            qrels,
+        ``"chunk"`` scores ``chunk_id`` labels. Requires ``buildml[rag]``."""
+        return rag_ops.rag_evaluate(
+            self,
+            qrels=qrels,
             k=k,
-            relevance_mode=relevance_mode,  # type: ignore[arg-type]
-            retrieve_config=retrieve_config,
+            relevance_mode=relevance_mode,
             mode=mode,
+            retrieve_config=retrieve_config,
         )
-        self._rag_eval_result = result
-        self._record(
-            "rag_evaluate",
-            {
-                "k": k,
-                "n_queries": result.n_queries,
-                "relevance_mode": result.relevance_mode,
-                "retrieve_mode": result.retrieve_mode,
-            },
-            result_summary=result.to_dict(),
-            warnings=tuple(result.warnings),
+
+    def rag_generate(
+        self,
+        query: str,
+        *,
+        k: int = 5,
+        provider: RagChatProvider | None = None,
+        mode: str | None = None,
+        fusion: str | None = None,
+        filters: dict[str, Any] | None = None,
+        rerank: bool | str | None = None,
+        retrieve_config: RetrieveConfig | None = None,
+        config: GenerateConfig | None = None,
+        use_last_retrieve: bool = False,
+    ) -> GenerateResult:
+        """Retrieve context and generate a grounded answer with citations.
+
+        Requires an active RAG index and a chat provider (explicit ``provider``
+        or a prior :meth:`ai_configure`). Empty retrieval and provider failures
+        raise :class:`~buildml.core.errors.ValidationError`."""
+        return rag_ops.rag_generate(
+            self,
+            query=query,
+            k=k,
+            provider=provider,
+            mode=mode,
+            fusion=fusion,
+            filters=filters,
+            rerank=rerank,
+            retrieve_config=retrieve_config,
+            config=config,
+            use_last_retrieve=use_last_retrieve,
         )
-        return result
 
     def rag_upsert(
         self,
@@ -1738,38 +1675,8 @@ class Session:
     ) -> Session:
         """Upsert documents or chunks into the active RAG index without a full rebuild.
 
-        Replaces existing ``chunk_id`` rows and re-embeds only new/changed text.
-        """
-        from buildml.rag.extras import require_rag_stack
-
-        require_rag_stack(feature="RAG upsert")
-        if self._rag_index is None:
-            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-        if chunks is not None:
-            result = self._rag_index.upsert_chunks(chunks)
-        elif documents is not None:
-            result = self._rag_index.upsert_documents(documents, chunk=chunk)
-        else:
-            raise ValidationError("rag_upsert requires documents= or chunks=.")
-        self._rag_index_result = result
-        from buildml.rag.results import ChunkResult
-
-        self._rag_chunks = ChunkResult(
-            chunks=self._rag_index.chunks,
-            config=self._rag_index.chunk_config.to_dict(),
-            n_documents=self._rag_index.n_documents,
-        )
-        self._record(
-            "rag_upsert",
-            {
-                "n_chunks": result.n_chunks,
-                "n_documents": result.n_documents,
-                "chunk": chunk,
-            },
-            result_summary=result.to_dict(),
-            warnings=tuple(result.warnings),
-        )
-        return self
+        Replaces existing ``chunk_id`` rows and re-embeds only new/changed text."""
+        return rag_ops.rag_upsert(self, documents=documents, chunks=chunks, chunk=chunk)
 
     def rag_delete(
         self,
@@ -1778,86 +1685,38 @@ class Session:
         doc_ids: Sequence[str] | None = None,
     ) -> Session:
         """Delete chunks by id and/or parent document id from the active RAG index."""
-        from buildml.rag.extras import require_rag_stack
-        from buildml.rag.results import ChunkResult
-
-        require_rag_stack(feature="RAG delete")
-        if self._rag_index is None:
-            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-        result = self._rag_index.delete(chunk_ids=chunk_ids, doc_ids=doc_ids)
-        self._rag_index_result = result
-        self._rag_chunks = ChunkResult(
-            chunks=self._rag_index.chunks,
-            config=self._rag_index.chunk_config.to_dict(),
-            n_documents=self._rag_index.n_documents,
-        )
-        self._record(
-            "rag_delete",
-            {
-                "chunk_ids": list(chunk_ids or ()),
-                "doc_ids": list(doc_ids or ()),
-                "n_chunks": result.n_chunks,
-            },
-            result_summary=result.to_dict(),
-        )
-        return self
+        return rag_ops.rag_delete(self, chunk_ids=chunk_ids, doc_ids=doc_ids)
 
     @property
-    def rag_index_result(self) -> Any | None:
+    def rag_index_result(self) -> IndexResult | None:
         """Last :class:`~buildml.rag.results.IndexResult`, if any."""
         return self._rag_index_result
 
     @property
-    def rag_retrieve_result(self) -> Any | None:
+    def rag_retrieve_result(self) -> RetrieveResult | None:
         """Last :class:`~buildml.rag.results.RetrieveResult`, if any."""
         return self._rag_retrieve_result
 
     @property
-    def rag_eval_result(self) -> Any | None:
+    def rag_eval_result(self) -> RagEvalResult | None:
         """Last :class:`~buildml.rag.results.RagEvalResult`, if any."""
         return self._rag_eval_result
+
+    @property
+    def rag_generate_result(self) -> GenerateResult | None:
+        """Last :class:`~buildml.rag.results.GenerateResult`, if any."""
+        return self._rag_generate_result
 
     def save_rag_bundle(self, path: str | Path) -> Path:
         """Persist the active RAG index as ``buildml.rag_bundle.v1``.
 
         Distinct from Session checkpoints and Torch trainer bundles.
-        See :data:`buildml.rag.checkpoint.CHECKPOINT_BOUNDARY`.
-        """
-        from buildml.rag.checkpoint import save_rag_bundle
-        from buildml.rag.extras import require_rag_stack
-
-        require_rag_stack(feature="RAG bundle save")
-        if self._rag_index is None:
-            raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-        destination = save_rag_bundle(
-            path,
-            self._rag_index,
-            eval_result=self._rag_eval_result,
-        )
-        self._record("save_rag_bundle", {"path": str(destination)})
-        return destination
+        See :data:`buildml.rag.checkpoint.CHECKPOINT_BOUNDARY`."""
+        return rag_ops.save_rag_bundle(self, path=path)
 
     def load_rag_bundle(self, path: str | Path) -> Session:
         """Load a RAG bundle into this Session (requires ``buildml[rag]``)."""
-        from buildml.rag.checkpoint import load_rag_bundle
-        from buildml.rag.extras import require_rag_stack
-        from buildml.rag.results import ChunkResult
-
-        require_rag_stack(feature="RAG bundle load")
-        index = load_rag_bundle(path)
-        self._rag_index = index
-        self._rag_index_result = index.to_index_result()
-        self._rag_chunks = ChunkResult(
-            chunks=index.chunks,
-            config=index.chunk_config.to_dict(),
-            n_documents=index.n_documents,
-        )
-        self._record(
-            "load_rag_bundle",
-            {"path": str(path)},
-            result_summary=self._rag_index_result.to_dict(),
-        )
-        return self
+        return rag_ops.load_rag_bundle(self, path=path)
 
     def ai_configure(
         self,
@@ -1900,55 +1759,18 @@ class Session:
         Returns
         -------
         Session
-            Self for chaining.
-        """
-        from buildml.ai.planner import BudgetTracker
-        from buildml.ai.privacy import EgressConfig, EgressLevel
-        from buildml.ai.provider import MockProvider, OpenAIProvider, ProviderConfig
-        from buildml.ai.tools import build_default_registry
-        from buildml.ai.transcript import TranscriptStore
-
-        level_map = {
-            "schema_only": EgressLevel.SCHEMA_ONLY,
-            "stats_only": EgressLevel.STATS_ONLY,
-            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
-            "full_sample": EgressLevel.FULL_SAMPLE,
-        }
-        egress = level_map.get(egress_level, EgressLevel.STATS_ONLY)
-
-        config = ProviderConfig(
+            Self for chaining."""
+        return ai_ops.ai_configure(
+            self,
             provider=provider,
             model=model,
             api_key=api_key,
             api_key_env=api_key_env,
-        )
-
-        if provider == "mock":
-            self._ai_provider = MockProvider()
-        else:
-            self._ai_provider = OpenAIProvider(config)
-
-        self._ai_egress_config = EgressConfig(level=egress)
-        self._ai_transcript = TranscriptStore()
-        self._ai_registry = build_default_registry()
-        self._ai_max_iterations = max_iterations
-        self._ai_budget_tracker = BudgetTracker(
+            egress_level=egress_level,
+            max_iterations=max_iterations,
             max_tokens=max_tokens,
             max_cost_usd=max_cost_usd,
         )
-
-        self._record(
-            "ai_configure",
-            {
-                "provider": provider,
-                "model": model,
-                "egress_level": egress_level,
-                "max_iterations": max_iterations,
-                "max_tokens": max_tokens,
-                "max_cost_usd": max_cost_usd,
-            },
-        )
-        return self
 
     def ai_egress_preview(
         self,
@@ -1956,7 +1778,7 @@ class Session:
         level: str | None = None,
         allow_columns: Sequence[str] | None = None,
         deny_columns: Sequence[str] | None = None,
-    ) -> Any:
+    ) -> EgressManifest:
         """Preview what data will leave the machine before an LLM call.
 
         Returns an :class:`~buildml.ai.privacy.EgressManifest` showing columns,
@@ -1975,33 +1797,10 @@ class Session:
         Returns
         -------
         EgressManifest
-            What would leave the machine at this egress level.
-        """
-        from buildml.ai.privacy import EgressConfig, EgressLevel, build_egress_payload
-
-        base_config = self._ai_egress_config
-        if base_config is None:
-            base_config = EgressConfig(level=EgressLevel.STATS_ONLY)
-
-        level_map = {
-            "schema_only": EgressLevel.SCHEMA_ONLY,
-            "stats_only": EgressLevel.STATS_ONLY,
-            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
-            "full_sample": EgressLevel.FULL_SAMPLE,
-        }
-
-        config = EgressConfig(
-            level=level_map.get(level, base_config.level) if level else base_config.level,
-            allow_columns=tuple(allow_columns) if allow_columns else base_config.allow_columns,
-            deny_columns=tuple(deny_columns) if deny_columns else base_config.deny_columns,
+            What would leave the machine at this egress level."""
+        return ai_ops.ai_egress_preview(
+            self, level=level, allow_columns=allow_columns, deny_columns=deny_columns
         )
-
-        df: pd.DataFrame | None = None
-        if self._dataset is not None:
-            df = self._dataset.frame
-
-        _, manifest = build_egress_payload(df, config)
-        return manifest
 
     def ai_dry_run(
         self,
@@ -2024,38 +1823,8 @@ class Session:
         Returns
         -------
         dict
-            Prompt payload including messages, tools, and egress manifest.
-        """
-        from buildml.ai.advisor import build_advisor_context, build_state_digest
-        from buildml.ai.privacy import EgressConfig, EgressLevel
-        from buildml.ai.tools import ToolRegistry
-
-        base_config = self._ai_egress_config
-        if base_config is None:
-            base_config = EgressConfig(level=EgressLevel.STATS_ONLY)
-
-        level_map = {
-            "schema_only": EgressLevel.SCHEMA_ONLY,
-            "stats_only": EgressLevel.STATS_ONLY,
-            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
-            "full_sample": EgressLevel.FULL_SAMPLE,
-        }
-
-        config = EgressConfig(
-            level=level_map.get(level, base_config.level) if level else base_config.level,
-            allow_columns=base_config.allow_columns,
-            deny_columns=base_config.deny_columns,
-        )
-
-        registry = self._ai_registry or ToolRegistry()
-        messages, manifest = build_advisor_context(self, config, question, registry)
-
-        return {
-            "messages": [m.to_dict() for m in messages],
-            "tools": registry.to_openai_tools(),
-            "egress_manifest": manifest.to_dict(),
-            "state_digest": build_state_digest(self).to_dict(),
-        }
+            Prompt payload including messages, tools, and egress manifest."""
+        return ai_ops.ai_dry_run(self, question=question, level=level)
 
     def ai_advisor(
         self,
@@ -2063,7 +1832,7 @@ class Session:
         *,
         level: str | None = None,
         confirm: bool = False,
-    ) -> Any:
+    ) -> AdvisorResult:
         """Get advisory Q&A guidance about the current workflow (read-only).
 
         The advisor can describe data, explain operations, and suggest next
@@ -2088,96 +1857,8 @@ class Session:
         ------
         ValidationError
             If FULL_SAMPLE or REDACTED_SAMPLE egress is requested without
-            confirm=True.
-        """
-        from buildml.ai.advisor import run_advisor
-        from buildml.ai.explain_hooks import advisor_result_summary
-        from buildml.ai.privacy import EgressConfig, EgressLevel
-        from buildml.ai.tools import ToolRegistry
-
-        if self._ai_provider is None:
-            raise ValidationError(
-                "No AI provider configured. Call ai_configure() first."
-            )
-
-        base_config = self._ai_egress_config
-        if base_config is None:
-            base_config = EgressConfig(level=EgressLevel.STATS_ONLY)
-
-        level_map = {
-            "schema_only": EgressLevel.SCHEMA_ONLY,
-            "stats_only": EgressLevel.STATS_ONLY,
-            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
-            "full_sample": EgressLevel.FULL_SAMPLE,
-        }
-
-        resolved_level = level_map.get(level, base_config.level) if level else base_config.level
-
-        if resolved_level == EgressLevel.FULL_SAMPLE and not confirm:
-            raise ValidationError(
-                "FULL_SAMPLE egress sends raw data to the provider and requires "
-                "explicit confirmation. Pass confirm=True to proceed, or use a "
-                "safer egress level (stats_only, schema_only, redacted_sample)."
-            )
-        if resolved_level == EgressLevel.REDACTED_SAMPLE and not confirm:
-            raise ValidationError(
-                "REDACTED_SAMPLE egress sends sample rows (with PII masked) to the "
-                "provider and requires explicit confirmation. Pass confirm=True to "
-                "proceed, or use stats_only or schema_only."
-            )
-
-        config = EgressConfig(
-            level=resolved_level,
-            allow_columns=base_config.allow_columns,
-            deny_columns=base_config.deny_columns,
-        )
-
-        registry = self._ai_registry or ToolRegistry()
-
-        use_rag = getattr(self, "_rag_index", None) is not None
-        if use_rag:
-            from buildml.ai.advisor import run_advisor_with_rag
-
-            result = run_advisor_with_rag(
-                self,
-                question,
-                self._ai_provider,
-                egress_config=config,
-                registry=registry,
-                max_iterations=self._ai_max_iterations,
-            )
-        else:
-            result = run_advisor(
-                self,
-                question,
-                self._ai_provider,
-                egress_config=config,
-                registry=registry,
-                max_iterations=self._ai_max_iterations,
-            )
-
-        self._ai_result = result
-        self._ai_advisor_result = result
-
-        if self._ai_budget_tracker is not None and result.usage:
-            total_tokens = result.usage.get("total_tokens", 0)
-            self._ai_budget_tracker.record_usage(total_tokens, operation="ai_advisor")
-
-        if self._ai_transcript is not None:
-            from buildml.ai.types import Message
-
-            self._ai_transcript.add_message(Message(role="user", content=question))
-            self._ai_transcript.add_message(Message(role="assistant", content=result.answer))
-            if result.egress_manifest:
-                self._ai_transcript.add_egress_manifest(result.egress_manifest)
-
-        self._record(
-            "ai_advisor",
-            {"question": question[:100], "egress_level": config.level.value},
-            result_summary=advisor_result_summary(result),
-        )
-
-        return result
+            confirm=True."""
+        return ai_ops.ai_advisor(self, question=question, level=level, confirm=confirm)
 
     def ai_plan(
         self,
@@ -2185,7 +1866,7 @@ class Session:
         *,
         level: str | None = None,
         confirm: bool = False,
-    ) -> Any:
+    ) -> PlanResult:
         """Generate a structured workflow plan for a goal (read-only).
 
         Returns a plan with steps, prerequisites, and expected changes based
@@ -2209,75 +1890,8 @@ class Session:
         ------
         ValidationError
             If FULL_SAMPLE or REDACTED_SAMPLE egress is requested without
-            confirm=True.
-        """
-        from buildml.ai.advisor import run_plan
-        from buildml.ai.explain_hooks import plan_result_summary
-        from buildml.ai.privacy import EgressConfig, EgressLevel
-
-        if self._ai_provider is None:
-            raise ValidationError(
-                "No AI provider configured. Call ai_configure() first."
-            )
-
-        base_config = self._ai_egress_config
-        if base_config is None:
-            base_config = EgressConfig(level=EgressLevel.STATS_ONLY)
-
-        level_map = {
-            "schema_only": EgressLevel.SCHEMA_ONLY,
-            "stats_only": EgressLevel.STATS_ONLY,
-            "redacted_sample": EgressLevel.REDACTED_SAMPLE,
-            "full_sample": EgressLevel.FULL_SAMPLE,
-        }
-
-        resolved_level = level_map.get(level, base_config.level) if level else base_config.level
-
-        if resolved_level == EgressLevel.FULL_SAMPLE and not confirm:
-            raise ValidationError(
-                "FULL_SAMPLE egress sends raw data to the provider and requires "
-                "explicit confirmation. Pass confirm=True to proceed, or use a "
-                "safer egress level (stats_only, schema_only, redacted_sample)."
-            )
-        if resolved_level == EgressLevel.REDACTED_SAMPLE and not confirm:
-            raise ValidationError(
-                "REDACTED_SAMPLE egress sends sample rows (with PII masked) to the "
-                "provider and requires explicit confirmation. Pass confirm=True to "
-                "proceed, or use stats_only or schema_only."
-            )
-
-        config = EgressConfig(
-            level=resolved_level,
-            allow_columns=base_config.allow_columns,
-            deny_columns=base_config.deny_columns,
-        )
-
-        result = run_plan(self, goal, self._ai_provider, egress_config=config)
-
-        self._ai_result = result
-        self._ai_plan_result = result
-
-        if self._ai_budget_tracker is not None and result.usage:
-            total_tokens = result.usage.get("total_tokens", 0)
-            self._ai_budget_tracker.record_usage(total_tokens, operation="ai_plan")
-
-        if self._ai_transcript is not None:
-            from buildml.ai.types import Message
-
-            self._ai_transcript.add_message(Message(role="user", content=f"Plan: {goal}"))
-            self._ai_transcript.add_message(
-                Message(role="assistant", content=result.raw_response)
-            )
-            if result.egress_manifest:
-                self._ai_transcript.add_egress_manifest(result.egress_manifest)
-
-        self._record(
-            "ai_plan",
-            {"goal": goal[:100], "egress_level": config.level.value},
-            result_summary=plan_result_summary(result),
-        )
-
-        return result
+            confirm=True."""
+        return ai_ops.ai_plan(self, goal=goal, level=level, confirm=confirm)
 
     def ai_execute(
         self,
@@ -2285,7 +1899,7 @@ class Session:
         params: dict[str, Any] | None = None,
         *,
         confirm: bool = False,
-    ) -> Any:
+    ) -> ExecutorProposal | ExecutorResult:
         """Execute a single tool with propose-confirm-execute flow.
 
         Proposes the tool execution and requires explicit confirmation for
@@ -2303,46 +1917,8 @@ class Session:
         Returns
         -------
         ExecutorProposal or ExecutorResult
-            Proposal (if not confirmed) or execution result (if confirmed).
-        """
-        from buildml.ai.executor import execute_tool, propose_tool_execution
-        from buildml.ai.explain_hooks import executor_result_summary
-        from buildml.ai.tools import ToolRegistry
-
-        registry = self._ai_registry or ToolRegistry()
-
-        proposal = propose_tool_execution(tool, params or {}, registry)
-
-        if not confirm and proposal.requires_confirmation:
-            return proposal
-
-        confirmed = confirm or not proposal.requires_confirmation
-        result = execute_tool(self, proposal, confirmed, registry)
-
-        self._ai_result = result
-        self._ai_executor_result = result
-
-        if self._ai_transcript is not None:
-            self._ai_transcript.add_tool_call(proposal.tool_call, confirmed=result.confirmed)
-            if result.executed:
-                self._ai_transcript.add_tool_result(
-                    proposal.tool_call, result.result_summary
-                )
-            if result.error:
-                self._ai_transcript.add_error(result.error, proposal.tool_call)
-
-        self._record(
-            "ai_execute",
-            {
-                "tool": tool,
-                "params": params,
-                "confirmed": result.confirmed,
-                "executed": result.executed,
-            },
-            result_summary=executor_result_summary(result),
-        )
-
-        return result
+            Proposal (if not confirmed) or execution result (if confirmed)."""
+        return ai_ops.ai_execute(self, tool=tool, params=params, confirm=confirm)
 
     def ai_run_plan(
         self,
@@ -2353,7 +1929,7 @@ class Session:
         stop_on_error: bool = True,
         stop_on_unconfirmed: bool = True,
         max_steps: int | None = None,
-    ) -> Any:
+    ) -> PlanExecutionResult:
         """Execute a multi-step plan with confirmation gating.
 
         Default behavior pauses at the first step requiring confirmation that
@@ -2383,28 +1959,10 @@ class Session:
         Raises
         ------
         ValidationError
-            If no plan is provided and no prior ai_plan result exists.
-        """
-        from buildml.ai.planner import run_plan as execute_plan
-        from buildml.ai.results import PlanResult
-        from buildml.ai.tools import build_default_registry
-
-        if plan is None:
-            plan = self._ai_plan_result
-        if plan is None:
-            plan = self._ai_result
-        if not isinstance(plan, PlanResult):
-            raise ValidationError(
-                "No plan provided and no prior ai_plan result available. "
-                "Call ai_plan(goal) first or pass a PlanResult."
-            )
-
-        registry = self._ai_registry or build_default_registry()
-
-        result = execute_plan(
+            If no plan is provided and no prior ai_plan result exists."""
+        return ai_ops.ai_run_plan(
             self,
-            plan,
-            registry,
+            plan=plan,
             confirmations=confirmations,
             auto_confirm_read_only=auto_confirm_read_only,
             stop_on_error=stop_on_error,
@@ -2412,63 +1970,46 @@ class Session:
             max_steps=max_steps,
         )
 
-        self._ai_result = result
-        self._ai_plan_result = result
+    def ai_run_autonomous(
+        self,
+        goal: str,
+        *,
+        plan: Any | None = None,
+        confirm_autonomy: bool = False,
+        max_steps: int = 8,
+        tool_allowlist: Sequence[str] | None = None,
+        allow_destructive: bool = False,
+        provider_plan: bool = True,
+    ) -> Any:
+        """Explicit autonomy mode: plan-and-execute allowlisted tools under hard caps.
 
-        if self._ai_transcript is not None:
-            from buildml.ai.types import Message
-
-            self._ai_transcript.add_message(
-                Message(
-                    role="assistant",
-                    content=f"Executed plan: {result.completed_steps}/{result.total_steps} steps",
-                )
-            )
-
-        self._record(
-            "ai_run_plan",
-            {
-                "completed_steps": result.completed_steps,
-                "total_steps": result.total_steps,
-                "stopped_at_step": result.stopped_at_step,
-                "stop_reason": result.stop_reason,
-                "requires_confirmation_at": result.requires_confirmation_at,
-            },
-            result_summary={
-                "completed": result.completed_steps,
-                "total": result.total_steps,
-                "all_executed": result.all_executed,
-            },
+        Default AI remains propose→confirm→execute. This path auto-confirms only
+        after ``confirm_autonomy=True``, with max-steps, allowlist, blocked sample
+        egress, destructive gating, and transcript audit. Operator automation —
+        not unconstrained agency.
+        """
+        return ai_ops.ai_run_autonomous(
+            self,
+            goal,
+            plan=plan,
+            confirm_autonomy=confirm_autonomy,
+            max_steps=max_steps,
+            tool_allowlist=tool_allowlist,
+            allow_destructive=allow_destructive,
+            provider_plan=provider_plan,
         )
 
-        return result
-
     def ai_status(self) -> dict[str, Any]:
-        """Get AI operator status including provider, egress, and budget.
+        """Get AI operator status including provider, egress, budget, and autonomy.
 
-        Returns factual walkthrough disclosure about the current AI configuration,
-        without claiming autonomous capability or production safety.
+        Returns factual walkthrough disclosure about the current AI configuration
+        and residual autonomy risks when a prior autonomous run exists.
 
         Returns
         -------
         dict
-            Status including provider, egress level, budget, and transcript info.
-        """
-        from buildml.ai.explain_hooks import ai_status_for_session
-
-        status = ai_status_for_session(self)
-
-        if self._ai_budget_tracker is not None:
-            status["budget"] = self._ai_budget_tracker.to_dict()
-
-        status["max_iterations"] = self._ai_max_iterations
-        status["registry_tools"] = (
-            sorted(t.name for t in self._ai_registry.tools)
-            if self._ai_registry
-            else []
-        )
-
-        return status
+            Status including provider, egress level, budget, and transcript info."""
+        return ai_ops.ai_status(self)
 
     def save_ai_transcript(self, path: str | Path, *, redact: bool = True) -> Path:
         """Save the AI transcript to a JSON file (secrets redacted by default).
@@ -2486,18 +2027,8 @@ class Session:
         Returns
         -------
         Path
-            The resolved output path.
-        """
-        from buildml.ai.transcript import TranscriptStore, save_transcript
-
-        transcript = self._ai_transcript
-        if transcript is None:
-            transcript = TranscriptStore()
-
-        destination = save_transcript(transcript, path, redact=redact)
-
-        self._record("save_ai_transcript", {"path": str(destination), "redact": redact})
-        return destination
+            The resolved output path."""
+        return ai_ops.save_ai_transcript(self, path=path, redact=redact)
 
     def load_ai_transcript(self, path: str | Path) -> Session:
         """Load an AI transcript for resume or audit.
@@ -2510,21 +2041,18 @@ class Session:
         Returns
         -------
         Session
-            Self for chaining.
-        """
-        from buildml.ai.transcript import load_transcript
-
-        self._ai_transcript = load_transcript(path)
-        self._record("load_ai_transcript", {"path": str(path)})
-        return self
+            Self for chaining."""
+        return ai_ops.load_ai_transcript(self, path=path)
 
     @property
-    def ai_result(self) -> Any | None:
+    def ai_result(
+        self,
+    ) -> AdvisorResult | PlanResult | ExecutorResult | PlanExecutionResult | None:
         """Last AI result (AdvisorResult, PlanResult, or ExecutorResult)."""
         return self._ai_result
 
     @property
-    def ai_transcript(self) -> Any | None:
+    def ai_transcript(self) -> TranscriptStore | None:
         """Active AI transcript store, if any."""
         return self._ai_transcript
 
@@ -2550,14 +2078,9 @@ class Session:
         Notes
         -----
         Requires ``pip install 'buildml[viz]'``. Delegates to
-        :func:`buildml.model.plot_boards.build_eval_plot_board`.
-        """
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        board = build_eval_plot_board(
-            self.dataset,
-            self._split_plan,
-            self._fit_result,
+        :func:`buildml.model.plot_boards.build_eval_plot_board`."""
+        return classical_ops.eval_plots(
+            self,
             partition=partition,
             include_learning_curve=include_learning_curve,
             include_importance=include_importance,
@@ -2567,22 +2090,6 @@ class Session:
             export_html=export_html,
             show=show,
         )
-        self._last_plot_board = board
-        self._record(
-            "eval_plots",
-            {
-                "partition": partition,
-                "include_learning_curve": include_learning_curve,
-                "include_importance": include_importance,
-                "n_importance_repeats": n_importance_repeats,
-                "learning_curve_cv": learning_curve_cv,
-                "n_figures": len(board.figure_paths) or len(board.figures),
-                "n_skipped": len(board.skipped),
-                "figure_dir": board.figure_dir,
-                "html_path": board.html_path,
-            },
-        )
-        return board
 
     @property
     def last_plot_board(self) -> PlotBoardReport | None:
@@ -2598,30 +2105,13 @@ class Session:
         ranking_metric: str | None = None,
     ) -> ModelComparison:
         """Fit/evaluate multiple estimators and return a ranked comparison card."""
-        self.assert_can_fit("train")
-        comparison = compare_estimators(
-            self.dataset,
-            self._split_plan,
-            estimators,
+        return classical_ops.compare_models(
+            self,
+            estimators=estimators,
             task=task,
             partition=partition,
             ranking_metric=ranking_metric,
         )
-        self._last_comparison = comparison
-        # Keep the top-ranked model as the active fit for convenience.
-        winner = comparison.rows[0]["model"]
-        self._fit_result = comparison.fits[winner]
-        self._record(
-            "compare_models",
-            {
-                "estimators": list(estimators),
-                "task": task,
-                "partition": partition,
-                "ranking_metric": ranking_metric,
-            },
-            result_summary={"winner": winner, "ranking_metric": comparison.ranking_metric},
-        )
-        return comparison
 
     def cv_score(
         self,
@@ -2635,6 +2125,7 @@ class Session:
         scoring_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
     ) -> CVScoreResult:
         """Cross-validate an estimator on the train partition only.
 
@@ -2655,48 +2146,29 @@ class Session:
             Optional group labels aligned to train rows.
         preprocess:
             Optional fold-local :class:`PreprocessRecipe` refit each fold.
+        allow_session_global_preprocess:
+            Explicit opt-in when Session-global preprocess already ran.
+            Default ``False`` refuses that path even if a fold-local recipe is
+            passed (recipes do not rebuild from raw/unpoisoned rows).
 
         Notes
         -----
-        **Leakage:** If Session impute/encode/scale/text/reduce already ran,
-        that train-global preprocess is recorded as a limitation unless
-        ``preprocess`` refits fold-locally. Prefer fold-local recipes
-        (including ``text`` and ``reduce``) for selection claims that include
-        preprocessing. Custom transforms and resample stay Session-global.
-        """
-        self.assert_can_fit("train")
-        result = run_cv_score(
-            self.dataset,
-            self._split_plan,
-            estimator,
+        **Leakage:** If Session impute/encode/scale/text/reduce already ran, CV
+        refuses unless ``allow_session_global_preprocess=True``. Prefer
+        re-ingesting unpoisoned data, then fold-local recipes (including
+        ``text`` and ``reduce``) for selection claims that include
+        preprocessing. Custom transforms and resample stay Session-global."""
+        return classical_ops.cv_score(
+            self,
+            estimator=estimator,
             task=task,
             cv=cv,
             cv_strategy=cv_strategy,
             scoring_metric=scoring_metric,
             groups=groups,
             preprocess=preprocess,
-            session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
         )
-        self._last_cv = result
-        self._record(
-            "cv_score",
-            {
-                "estimator": type(estimator).__name__,
-                "task": task,
-                "cv": cv if isinstance(cv, int) else type(cv).__name__,
-                "cv_strategy": cv_strategy,
-                "scoring_metric": scoring_metric,
-                "fold_preprocess": None if preprocess is None else preprocess.to_dict(),
-            },
-            result_summary={
-                "scoring_metric": result.scoring_metric,
-                "mean": result.mean_metrics.get(result.scoring_metric),
-                "std": result.std_metrics.get(result.scoring_metric),
-                "n_splits": result.n_splits,
-                "cv_strategy": result.cv_strategy,
-            },
-        )
-        return result
 
     def nested_cv_score(
         self,
@@ -2721,6 +2193,7 @@ class Session:
         scoring_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
         warm_start_studies: bool = False,
     ) -> NestedCVResult:
         """Outer-loop estimate after inner hyperparameter / recipe-knob search.
@@ -2758,13 +2231,10 @@ class Session:
         post-selection generalization claim. Read ``mean_metrics`` /
         ``std_metrics`` for the outer estimate and
         ``outer_folds[*].best_params`` / ``best_recipe_knobs`` for chosen
-        configs (including Optuna winners).
-        """
-        self.assert_can_fit("train")
-        result = run_nested_cv_score(
-            self.dataset,
-            self._split_plan,
-            estimator,
+        configs (including Optuna winners)."""
+        return classical_ops.nested_cv_score(
+            self,
+            estimator=estimator,
             param_grid=param_grid,
             param_distributions=param_distributions,
             recipe_grid=recipe_grid,
@@ -2782,42 +2252,9 @@ class Session:
             scoring_metric=scoring_metric,
             groups=groups,
             preprocess=preprocess,
-            session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
             warm_start_studies=warm_start_studies,
         )
-        self._last_nested_cv = result
-        self._record(
-            "nested_cv_score",
-            {
-                "estimator": type(estimator).__name__,
-                "task": task,
-                "outer_cv": outer_cv if isinstance(outer_cv, int) else type(outer_cv).__name__,
-                "inner_cv": inner_cv if isinstance(inner_cv, int) else type(inner_cv).__name__,
-                "cv_strategy": cv_strategy,
-                "scoring_metric": scoring_metric,
-                "search_method": result.search_method,
-                "inner_search": inner_search,
-                "n_trials": n_trials if result.search_method == "optuna" else None,
-                "warm_start_studies": bool(warm_start_studies),
-                "recipe_grid": (
-                    None
-                    if recipe_grid is None
-                    else {k: list(v) for k, v in recipe_grid.items()}
-                ),
-                "fold_preprocess": None if preprocess is None else preprocess.to_dict(),
-            },
-            result_summary={
-                "scoring_metric": result.scoring_metric,
-                "mean": result.mean_metrics.get(result.scoring_metric),
-                "std": result.std_metrics.get(result.scoring_metric),
-                "n_outer_splits": result.n_outer_splits,
-                "n_inner_splits": result.n_inner_splits,
-                "param_stability": result.inner_selection_summary.get("param_stability"),
-                "search_method": result.search_method,
-                "warm_start_studies": result.warm_start_studies,
-            },
-        )
-        return result
 
     def grid_search(
         self,
@@ -2833,20 +2270,18 @@ class Session:
         ranking_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
         refit: bool = True,
     ) -> SearchResult:
         """Grid-search estimator params and/or fold-local recipe knobs.
 
         Ranks configurations by mean CV score, never peeking at test. When
         ``refit=True`` (default), the winning params/knobs are refit on full
-        train and become the active :attr:`fit_result`.
-        """
-        self.assert_can_fit("train")
-        result = run_grid_search(
-            self.dataset,
-            self._split_plan,
-            estimator,
-            param_grid,
+        train and become the active :attr:`fit_result`."""
+        return classical_ops.grid_search(
+            self,
+            estimator=estimator,
+            param_grid=param_grid,
             recipe_grid=recipe_grid,
             task=task,
             cv=cv,
@@ -2854,42 +2289,9 @@ class Session:
             ranking_metric=ranking_metric,
             groups=groups,
             preprocess=preprocess,
-            session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
             refit=refit,
         )
-        self._last_search = result
-        if refit and result.refit_result is not None:
-            self._fit_result = result.refit_result
-        self._record(
-            "grid_search",
-            {
-                "estimator": type(estimator).__name__,
-                "param_grid": (
-                    None
-                    if param_grid is None
-                    else {k: list(v) for k, v in param_grid.items()}
-                ),
-                "recipe_grid": (
-                    None
-                    if recipe_grid is None
-                    else {k: list(v) for k, v in recipe_grid.items()}
-                ),
-                "task": task,
-                "cv": cv if isinstance(cv, int) else type(cv).__name__,
-                "cv_strategy": cv_strategy,
-                "ranking_metric": ranking_metric,
-                "refit": refit,
-            },
-            result_summary={
-                "best_params": result.best_params,
-                "best_recipe_knobs": result.best_recipe_knobs,
-                "best_score": result.best_score,
-                "best_std": result.best_std,
-                "ranking_metric": result.ranking_metric,
-                "n_trials": len(result.trials),
-            },
-        )
-        return result
 
     def randomized_search(
         self,
@@ -2907,19 +2309,17 @@ class Session:
         ranking_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
         refit: bool = True,
     ) -> SearchResult:
         """Randomized search over estimator params and/or recipe knobs.
 
         Same leakage contract as :meth:`grid_search`: folds stay inside train;
-        the winner may be refit onto the full training partition.
-        """
-        self.assert_can_fit("train")
-        result = run_randomized_search(
-            self.dataset,
-            self._split_plan,
-            estimator,
-            param_distributions,
+        the winner may be refit onto the full training partition."""
+        return classical_ops.randomized_search(
+            self,
+            estimator=estimator,
+            param_distributions=param_distributions,
             recipe_distributions=recipe_distributions,
             n_iter=n_iter,
             random_state=random_state,
@@ -2929,44 +2329,9 @@ class Session:
             ranking_metric=ranking_metric,
             groups=groups,
             preprocess=preprocess,
-            session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
             refit=refit,
         )
-        self._last_search = result
-        if refit and result.refit_result is not None:
-            self._fit_result = result.refit_result
-        self._record(
-            "randomized_search",
-            {
-                "estimator": type(estimator).__name__,
-                "param_distributions": (
-                    None
-                    if param_distributions is None
-                    else {k: str(v) for k, v in param_distributions.items()}
-                ),
-                "recipe_distributions": (
-                    None
-                    if recipe_distributions is None
-                    else {k: str(v) for k, v in recipe_distributions.items()}
-                ),
-                "n_iter": n_iter,
-                "random_state": random_state,
-                "task": task,
-                "cv": cv if isinstance(cv, int) else type(cv).__name__,
-                "cv_strategy": cv_strategy,
-                "ranking_metric": ranking_metric,
-                "refit": refit,
-            },
-            result_summary={
-                "best_params": result.best_params,
-                "best_recipe_knobs": result.best_recipe_knobs,
-                "best_score": result.best_score,
-                "best_std": result.best_std,
-                "ranking_metric": result.ranking_metric,
-                "n_trials": len(result.trials),
-            },
-        )
-        return result
 
     def optuna_search(
         self,
@@ -2984,6 +2349,7 @@ class Session:
         ranking_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
         refit: bool = True,
     ) -> SearchResult:
         """Optuna TPE search with leakage-safe train-fold CV.
@@ -2991,13 +2357,10 @@ class Session:
         Requires ``pip install 'buildml[optuna]'``. ``param_space`` may be a
         ``trial -> dict`` callable or a declare-style mapping
         (``float`` / ``int`` / ``categorical``). ``recipe_space`` sweeps
-        fold-local recipe knobs and requires ``preprocess``.
-        """
-        self.assert_can_fit("train")
-        result = run_optuna_search(
-            self.dataset,
-            self._split_plan,
-            estimator,
+        fold-local recipe knobs and requires ``preprocess``."""
+        return classical_ops.optuna_search(
+            self,
+            estimator=estimator,
             param_space=param_space,
             recipe_space=recipe_space,
             n_trials=n_trials,
@@ -3008,36 +2371,9 @@ class Session:
             ranking_metric=ranking_metric,
             groups=groups,
             preprocess=preprocess,
-            session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
             refit=refit,
         )
-        self._last_search = result
-        if refit and result.refit_result is not None:
-            self._fit_result = result.refit_result
-        self._record(
-            "optuna_search",
-            {
-                "estimator": type(estimator).__name__,
-                "n_trials": n_trials,
-                "random_state": random_state,
-                "task": task,
-                "cv": cv if isinstance(cv, int) else type(cv).__name__,
-                "cv_strategy": cv_strategy,
-                "ranking_metric": ranking_metric,
-                "refit": refit,
-                "has_param_space": param_space is not None,
-                "has_recipe_space": recipe_space is not None,
-            },
-            result_summary={
-                "best_params": result.best_params,
-                "best_recipe_knobs": result.best_recipe_knobs,
-                "best_score": result.best_score,
-                "best_std": result.best_std,
-                "ranking_metric": result.ranking_metric,
-                "n_trials": len(result.trials),
-            },
-        )
-        return result
 
     @property
     def last_cv(self) -> CVScoreResult | None:
@@ -3062,15 +2398,9 @@ class Session:
         drop_original: bool = False,
     ) -> Session:
         """Expand datetime columns into calendar/time parts (``.dt``-correct)."""
-        self._dataset, plan = extract_date_features(
-            self.dataset,
-            columns=columns,
-            include_time=include_time,
-            drop_original=drop_original,
+        return preprocess_ops.extract_dates(
+            self, columns=columns, include_time=include_time, drop_original=drop_original
         )
-        self._date_plan = plan
-        self._record("extract_dates", plan.to_dict())
-        return self
 
     @property
     def date_plan(self) -> DateFeaturePlan | None:
@@ -3082,19 +2412,12 @@ class Session:
 
         This stores the estimator and feature contract only. Prefer
         :meth:`save_pipeline` when impute/encode/scale plans must travel with
-        the model.
-        """
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        destination = save_fit_result(path, self._fit_result)
-        self._record("save_model", {"path": str(destination)})
-        return destination
+        the model."""
+        return classical_ops.save_model(self, path=path)
 
     def load_model(self, path: str | Path) -> Session:
         """Load a previously saved fitted estimator bundle into this session."""
-        self._fit_result = load_fit_result(path)
-        self._record("load_model", {"path": str(path)})
-        return self
+        return classical_ops.load_model(self, path=path)
 
     def save_pipeline(
         self,
@@ -3119,142 +2442,18 @@ class Session:
             If set and a split exists, attach metrics from that partition to
             the model card. Use ``None`` to skip evaluation at save time.
         title:
-            Optional model-card title.
-        """
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        metrics: dict[str, dict[str, float]] = {}
-        notes = [
-            "Pipeline bundle stores fitted preprocess plans and the estimator feature contract.",
-            "It does not embed a Session checkpoint or the raw training frame.",
-            "Resample plans are lineage metadata only and are not reapplied at inference.",
-        ]
-        if evaluate_partition is not None and self._split_plan is not None:
-            try:
-                evaluation = evaluate_estimator(
-                    self.dataset,
-                    self._split_plan,
-                    self._fit_result,
-                    partition=evaluate_partition,
-                )
-                metrics[evaluate_partition] = dict(evaluation.metrics)
-            except (ValidationError, ValueError, TypeError) as exc:
-                notes.append(f"Evaluation at save time was skipped: {exc}")
-
-        from buildml.pipeline.bundle import CHECKPOINT_COMPATIBILITY
-        from buildml.pipeline.card import build_model_card, load_model_card
-
-        preprocess_summary = self._preprocess_summary()
-        card = build_model_card(
-            fit_result=self._fit_result,
-            dataset_schema=self.dataset.schema.to_dict(),
-            preprocess_summary=preprocess_summary,
-            history=self._history,
-            metrics=metrics,
-            title=title,
-            notes=notes,
-            lineage={
-                "artifact": "pipeline_bundle",
-                "contains_checkpoint": False,
-                "contains_raw_dataset": False,
-                "checkpoint_compatibility": CHECKPOINT_COMPATIBILITY,
-                "plans_present": sorted(
-                    key for key, value in preprocess_summary.items() if value is not None
-                ),
-            },
+            Optional model-card title."""
+        return classical_ops.save_pipeline(
+            self, path=path, evaluate_partition=evaluate_partition, title=title
         )
-        destination = save_pipeline_bundle(
-            path,
-            fit_result=self._fit_result,
-            impute_plan=self._impute_plan,
-            encode_plan=self._encode_plan,
-            scale_plan=self._scale_plan,
-            date_plan=self._date_plan,
-            outlier_plan=self._outlier_plan,
-            binning_plan=self._binning_plan,
-            feature_select_plan=self._feature_select_plan,
-            text_plan=self._text_plan,
-            reduce_plan=self._reduce_plan,
-            custom_plan=self._custom_plan,
-            resample_plan=self._resample_plan,
-            model_card=card,
-            dataset_schema=self.dataset.schema.to_dict(),
-            roles={k: v.value for k, v in self.dataset.roles.items()},
-            history=self._history,
-            metrics=metrics,
-            title=title,
-        )
-        self._model_card = load_model_card(destination)
-        self._record(
-            "save_pipeline",
-            {
-                "path": str(destination),
-                "evaluate_partition": evaluate_partition,
-                "has_impute": self._impute_plan is not None,
-                "has_encode": self._encode_plan is not None,
-                "has_scale": self._scale_plan is not None,
-                "has_dates": self._date_plan is not None,
-                "has_outliers": self._outlier_plan is not None,
-                "has_binning": self._binning_plan is not None,
-                "has_feature_select": self._feature_select_plan is not None,
-                "has_text": self._text_plan is not None,
-                "has_reduce": self._reduce_plan is not None,
-                "has_custom": self._custom_plan is not None,
-                "has_resample": self._resample_plan is not None,
-            },
-            result_summary={"path": str(destination), "metrics_partitions": list(metrics)},
-        )
-        return destination
 
     def load_pipeline(self, path: str | Path) -> Session:
         """Load a pipeline bundle (estimator + preprocess plans + model card).
 
         Restores :attr:`fit_result`, preprocess plan attributes, and
         :attr:`model_card`. Does not replace the dataset or split; attach
-        compatible data separately (or via :meth:`checkpoint_load`).
-        """
-        bundle = load_pipeline_bundle(path)
-        self._fit_result = bundle.fit_result
-        self._impute_plan = bundle.impute_plan
-        self._encode_plan = bundle.encode_plan
-        self._scale_plan = bundle.scale_plan
-        self._date_plan = bundle.date_plan
-        self._outlier_plan = bundle.outlier_plan
-        self._binning_plan = bundle.binning_plan
-        self._feature_select_plan = bundle.feature_select_plan
-        self._text_plan = bundle.text_plan
-        self._reduce_plan = bundle.reduce_plan
-        self._custom_plan = bundle.custom_plan
-        self._resample_plan = bundle.resample_plan
-        self._model_card = bundle.model_card
-        self._record(
-            "load_pipeline",
-            {
-                "path": str(path),
-                "estimator": bundle.fit_result.to_dict().get("estimator"),
-                "has_model_card": bundle.model_card is not None,
-                "bundle_format": bundle.bundle_format,
-                "plans_format": bundle.plans_format,
-                "plans_present": [
-                    name
-                    for name, plan in (
-                        ("impute", bundle.impute_plan),
-                        ("encode", bundle.encode_plan),
-                        ("scale", bundle.scale_plan),
-                        ("dates", bundle.date_plan),
-                        ("outliers", bundle.outlier_plan),
-                        ("binning", bundle.binning_plan),
-                        ("feature_select", bundle.feature_select_plan),
-                        ("text", bundle.text_plan),
-                        ("reduce", bundle.reduce_plan),
-                        ("custom", bundle.custom_plan),
-                        ("resample", bundle.resample_plan),
-                    )
-                    if plan is not None
-                ],
-            },
-        )
-        return self
+        compatible data separately (or via :meth:`checkpoint_load`)."""
+        return classical_ops.load_pipeline(self, path=path)
 
     def apply_preprocess_plans(
         self,
@@ -3294,38 +2493,10 @@ class Session:
         reapplied at score time.
 
         **Leakage:** Plans must already be train-fitted; this method does not
-        fit. Missing columns raise :class:`~buildml.core.errors.ValidationError`.
-        """
-        if self._dataset is None and data is None:
-            raise ValidationError("No dataset attached. Ingest data or pass data=...")
-        resolved_plans = dict(plans or {})
-        if use_session_plans:
-            for key, value in self._plan_objects().items():
-                resolved_plans.setdefault(key, value)
-        target = self.dataset if data is None else data
-        result = apply_preprocess_plans(
-            target,
-            resolved_plans,
-            split_plan=self._split_plan,
+        fit. Missing columns raise :class:`~buildml.core.errors.ValidationError`."""
+        return preprocess_ops.apply_preprocess_plans(
+            self, data=data, plans=plans, inplace=inplace, use_session_plans=use_session_plans
         )
-        mutating = inplace and (
-            data is None or (isinstance(data, Dataset) and data is self._dataset)
-        )
-        if mutating:
-            self._dataset = result.dataset
-            if result.split_plan is not None:
-                self._split_plan = result.split_plan
-        self._record(
-            "apply_preprocess_plans",
-            {
-                "inplace": mutating,
-                "applied": list(result.applied),
-                "skipped": list(result.skipped),
-            },
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return result
 
     def predict_from_pipeline(
         self,
@@ -3355,33 +2526,15 @@ class Session:
         Notes
         -----
         Does not mutate this session's dataset or fit_result. Prefer this for
-        inference-only scoring of new frames.
-        """
-        if data is None:
-            if self._dataset is None:
-                raise ValidationError("No dataset attached. Ingest data or pass data=...")
-            score_data: Dataset | pd.DataFrame = self.dataset
-        else:
-            score_data = data
-        result = run_predict_from_pipeline(
-            path,
-            score_data,
+        inference-only scoring of new frames."""
+        return classical_ops.predict_from_pipeline(
+            self,
+            path=path,
+            data=data,
             roles=roles,
             return_proba=return_proba,
             apply_plans=apply_plans,
         )
-        self._record(
-            "predict_from_pipeline",
-            {
-                "path": str(path),
-                "return_proba": return_proba,
-                "apply_plans": apply_plans,
-                "n_rows": result.n_rows,
-            },
-            warnings=result.warnings,
-            result_summary=result.to_dict(),
-        )
-        return result
 
     def prepare_design_matrix(
         self,
@@ -3395,37 +2548,14 @@ class Session:
 
         When ``columns`` is omitted and a split exists, prepares the partition
         feature+target design matrix. Disclosures record projection and any
-        sampling; sklearn still requires an in-memory matrix.
-        """
-        if columns is not None:
-            result = prepare_design_frame(
-                self.dataset,
-                columns,
-                sample_rows=sample_rows,
-                random_state=random_state,
-                context=f"session prepare_design_matrix ({partition})",
-            )
-        else:
-            self.assert_can_fit("train")
-            assert self._split_plan is not None
-            result = materialize_partition_design(
-                self.dataset,
-                self._split_plan,
-                partition,
-                sample_rows=sample_rows,
-                random_state=random_state,
-            )
-        self._record(
-            "prepare_design_matrix",
-            {
-                "partition": partition,
-                "sample_rows": sample_rows,
-                "engine": result.engine,
-                "sampled": result.sampled,
-            },
-            result_summary=result.to_dict(),
+        sampling; sklearn still requires an in-memory matrix."""
+        return classical_ops.prepare_design_matrix(
+            self,
+            partition=partition,
+            columns=columns,
+            sample_rows=sample_rows,
+            random_state=random_state,
         )
-        return result
 
     @property
     def model_card(self) -> ModelCard | None:
@@ -3471,65 +2601,18 @@ class Session:
             Optional directory for saved PNG figures.
         html_format:
             ``"studio"`` (default) writes the offline Teaching Studio; ``"research"``
-            writes the layered research HTML shell with matplotlib embeds.
-        """
-        report = explore_dataset(
-            self.dataset,
-            split_plan=self._split_plan,
+            writes the layered research HTML shell with matplotlib embeds."""
+        return eda_ops.eda(
+            self,
+            include_plots=include_plots,
+            show=show,
             sample_rows=sample_rows,
             max_columns=max_columns,
             max_plots=max_plots,
-            include_plots=include_plots,
-            show=show,
             export_html=export_html,
             export_figures=export_figures,
             html_format=html_format,
         )
-        from buildml.session.walkthrough import (
-            preprocess_scope_status,
-            rag_status_for_walkthrough,
-            torch_training_status_for_walkthrough,
-            warm_start_studies_status,
-        )
-
-        warm = warm_start_studies_status(
-            self._history,
-            last_nested_cv=self._last_nested_cv,
-        )
-        report.overview["warm_start_status"] = warm
-        report.overview["preprocess_scope_status"] = preprocess_scope_status(
-            self._history,
-            session=self,
-            last_cv=self._last_cv,
-            last_nested_cv=self._last_nested_cv,
-        )
-        report.overview["torch_training_status"] = torch_training_status_for_walkthrough(self)
-        report.overview["rag_status"] = rag_status_for_walkthrough(self)
-        self._last_eda = report
-        self._record(
-            "eda",
-            {
-                "include_plots": include_plots,
-                "show": show,
-                "sample_rows": sample_rows,
-                "max_columns": max_columns,
-                "max_plots": max_plots,
-                "export_html": export_html,
-                "export_figures": export_figures,
-                "html_format": html_format,
-            },
-            result_summary={
-                "n_rows": report.overview.get("n_rows"),
-                "n_columns": report.overview.get("n_columns"),
-                "recommendations": len(report.recommendations),
-                "narrative": len(report.narrative),
-                "plots": len(report.figures),
-                "html_path": report.html_path,
-                "html_format": html_format if export_html is not None else None,
-                "warm_start_studies": bool(warm.get("enabled")),
-            },
-        )
-        return report
 
     def eda_app(
         self,
@@ -3542,7 +2625,7 @@ class Session:
         sample_rows: int | None = None,
         max_columns: int = 100,
         blocking: bool = False,
-    ) -> Any:
+    ) -> EDAAppHandle:
         """Launch the local EDA Teaching Studio web app.
 
         Runs a FastAPI process on the local host and opens a browser to an
@@ -3568,45 +2651,18 @@ class Session:
         Returns
         -------
         EDAAppHandle
-            Handle with ``url``, ``stop()``, and ``is_running``.
-        """
-        from buildml.dashboard.launch import launch_eda_app
-
-        eda_report = report or self._last_eda
-        if eda_report is None:
-            eda_report = self.eda(
-                include_plots=False,
-                show=False,
-                sample_rows=sample_rows,
-                max_columns=max_columns,
-            )
-        roles = {}
-        if self._dataset is not None:
-            roles = {
-                str(column): getattr(role, "value", str(role))
-                for column, role in self.dataset.roles.items()
-            }
-        meta = {
-            "has_split": self._split_plan is not None,
-            "history_len": len(self._history),
-            "roles": roles,
-        }
-        handle = launch_eda_app(
-            eda_report,
+            Handle with ``url``, ``stop()``, and ``is_running``."""
+        return eda_ops.eda_app(
+            self,
+            report=report,
             host=host,
             port=port,
             open_browser=open_browser,
             title=title,
-            session_meta=meta,
+            sample_rows=sample_rows,
+            max_columns=max_columns,
             blocking=blocking,
         )
-        self._eda_app_handle = handle
-        self._record(
-            "eda_app",
-            {"host": host, "port": port, "title": title, "url": handle.url},
-            result_summary={"url": handle.url},
-        )
-        return handle
 
     def open_eda_dashboard(
         self,
@@ -3619,9 +2675,10 @@ class Session:
         sample_rows: int | None = None,
         max_columns: int = 100,
         blocking: bool = False,
-    ) -> Any:
+    ) -> EDAAppHandle:
         """Alias for :meth:`eda_app`."""
-        return self.eda_app(
+        return eda_ops.open_eda_dashboard(
+            self,
             report=report,
             host=host,
             port=port,
@@ -3647,29 +2704,10 @@ class Session:
         """Probability calibration diagnostics for the fitted classifier.
 
         Returns Brier/ECE, reliability curve points, and interpretation tips.
-        Optional figure/HTML export uses the viz extra.
-        """
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        report = calibration_report(
-            self.dataset,
-            self._split_plan,
-            self._fit_result,
-            partition=partition,
-            export_figures=export_figures,
-            export_html=export_html,
+        Optional figure/HTML export uses the viz extra."""
+        return classical_ops.calibration(
+            self, partition=partition, export_figures=export_figures, export_html=export_html
         )
-        self._last_diagnostic = report
-        self._record(
-            "calibration",
-            {
-                "partition": partition,
-                "export_figures": export_figures,
-                "export_html": export_html,
-            },
-            result_summary=report.to_dict(),
-        )
-        return report
 
     def tune_threshold(
         self,
@@ -3693,14 +2731,9 @@ class Session:
             Non-negative false-positive / false-negative costs. Provide both to
             minimize expected cost on the scored partition.
         tp_benefit, tn_benefit:
-            Optional benefits subtracted from cost for true positives / negatives.
-        """
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        report = threshold_report(
-            self.dataset,
-            self._split_plan,
-            self._fit_result,
+            Optional benefits subtracted from cost for true positives / negatives."""
+        return classical_ops.tune_threshold(
+            self,
             partition=partition,
             fp_cost=fp_cost,
             fn_cost=fn_cost,
@@ -3709,21 +2742,6 @@ class Session:
             export_figures=export_figures,
             export_html=export_html,
         )
-        self._last_diagnostic = report
-        self._record(
-            "tune_threshold",
-            {
-                "partition": partition,
-                "fp_cost": fp_cost,
-                "fn_cost": fn_cost,
-                "tp_benefit": tp_benefit,
-                "tn_benefit": tn_benefit,
-                "export_figures": export_figures,
-                "export_html": export_html,
-            },
-            result_summary=report.to_dict(),
-        )
-        return report
 
     def learning_curve(
         self,
@@ -3735,28 +2753,14 @@ class Session:
         export_html: str | Path | None = None,
     ) -> DiagnosticReport:
         """Compute learning curves on the training partition."""
-        report = learning_curve_report(
-            self.dataset,
-            self._split_plan,
-            estimator,
+        return classical_ops.learning_curve(
+            self,
+            estimator=estimator,
             task=task,
             cv=cv,
             export_figures=export_figures,
             export_html=export_html,
         )
-        self._last_diagnostic = report
-        self._record(
-            "learning_curve",
-            {
-                "estimator": type(estimator).__name__,
-                "task": task,
-                "cv": cv,
-                "export_figures": export_figures,
-                "export_html": export_html,
-            },
-            result_summary=report.to_dict(),
-        )
-        return report
 
     def feature_importance(
         self,
@@ -3767,29 +2771,13 @@ class Session:
         export_html: str | Path | None = None,
     ) -> DiagnosticReport:
         """Permutation feature importance on a holdout partition."""
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        report = permutation_importance_report(
-            self.dataset,
-            self._split_plan,
-            self._fit_result,
+        return classical_ops.feature_importance(
+            self,
             partition=partition,
             n_repeats=n_repeats,
             export_figures=export_figures,
             export_html=export_html,
         )
-        self._last_diagnostic = report
-        self._record(
-            "feature_importance",
-            {
-                "partition": partition,
-                "n_repeats": n_repeats,
-                "export_figures": export_figures,
-                "export_html": export_html,
-            },
-            result_summary=report.to_dict(),
-        )
-        return report
 
     def error_slices(
         self,
@@ -3806,33 +2794,15 @@ class Session:
         -----
         Observational only: segment gaps are not fairness proof. Prefer
         validation for exploration and keep test for a final estimate.
-        Segments with ``n < min_segment_n`` are listed under ``small_segments``.
-        """
-        if self._fit_result is None:
-            raise ValidationError("No fitted estimator. Call fit(...) first.")
-        report = segment_error_report(
-            self.dataset,
-            self._split_plan,
-            self._fit_result,
+        Segments with ``n < min_segment_n`` are listed under ``small_segments``."""
+        return classical_ops.error_slices(
+            self,
             by=by,
             partition=partition,
             max_segments=max_segments,
             min_segment_n=min_segment_n,
             export_html=export_html,
         )
-        self._last_diagnostic = report
-        self._record(
-            "error_slices",
-            {
-                "by": by if isinstance(by, str) else list(by),
-                "partition": partition,
-                "max_segments": max_segments,
-                "min_segment_n": min_segment_n,
-                "export_html": export_html,
-            },
-            result_summary=report.to_dict(),
-        )
-        return report
 
     def resample(
         self,
@@ -3850,24 +2820,14 @@ class Session:
         """Resample the **train** partition only (requires ``buildml[imbalanced]``).
 
         Validation/test rows are never altered. See
-        :meth:`resample_strategies` for strategy guidance.
-        """
-        dataset, plan, resample_plan = resample_train(
-            self.dataset,
-            self._split_plan,
-            sampler=sampler,
-            random_state=random_state,
-            sampling_strategy=sampling_strategy,
+        :meth:`resample_strategies` for strategy guidance."""
+        return preprocess_ops.resample(
+            self, sampler=sampler, random_state=random_state, sampling_strategy=sampling_strategy
         )
-        self._dataset = dataset
-        self._split_plan = plan
-        self._resample_plan = resample_plan
-        self._record("resample", resample_plan.to_dict())
-        return self
 
     def resample_strategies(self) -> list[dict[str, Any]]:
         """List imbalance resampling strategies and when to use them."""
-        return list_resample_strategies()
+        return preprocess_ops.resample_strategies(self)
 
     @property
     def resample_plan(self) -> ResamplePlan | None:
@@ -3880,16 +2840,8 @@ class Session:
         Parameters
         ----------
         engine:
-            Target engine. Defaults to the dataset's current engine setting.
-        """
-        native = self.dataset.to_engine(engine)
-        selected = self.dataset.engine if engine is None else EngineName(engine)
-        self._record(
-            "to_engine",
-            {"engine": selected.value},
-            result_summary={"engine": selected.value, "native_type": type(native).__name__},
-        )
-        return native
+            Target engine. Defaults to the dataset's current engine setting."""
+        return data_ops.to_engine(self, engine=engine)
 
     def checkpoint_save(
         self,
@@ -3912,43 +2864,14 @@ class Session:
             Optional Parquet compression for native sidecars (default ``zstd``).
         sidecar_layout:
             ``'auto'`` (default; partition at ≥50_000 rows), ``'single'``, or
-            ``'partitioned'``.
-        """
-        before = prior_state(self._history)
-        sidecar_params = {
-            "sidecar_partition_rows": sidecar_partition_rows,
-            "sidecar_compression": sidecar_compression,
-            "sidecar_layout": sidecar_layout,
-        }
-        record = make_operation_record(
-            sequence=len(self._history) + 1,
-            operation_id="checkpoint_save",
-            parameters={"path": str(path), **sidecar_params},
-            decision_origin="explicit",
-            before=before,
-            after=session_state(self),
-            result_summary={"path": str(Path(path))},
-        )
-        destination = save_checkpoint(
-            path,
-            dataset=self.dataset,
-            split_plan=self._split_plan,
-            history=[*self._history, record],
-            plans=self._plan_objects(),
+            ``'partitioned'``."""
+        return data_ops.checkpoint_save(
+            self,
+            path=path,
             sidecar_partition_rows=sidecar_partition_rows,
             sidecar_compression=sidecar_compression,
             sidecar_layout=sidecar_layout,
         )
-        record["parameters"] = {"path": str(destination), **sidecar_params}
-        record["details"] = {"path": str(destination)}
-        record["result_summary"] = {
-            "path": str(destination),
-            "plans_present": [
-                key for key, value in self._plan_objects().items() if value is not None
-            ],
-        }
-        self._history.append(record)
-        return destination
 
     @classmethod
     def checkpoint_load(cls, path: str | Path, *, data_only: bool = False) -> Session:
@@ -3965,91 +2888,31 @@ class Session:
         -----
         When ``plans.joblib`` is present, preprocess plan objects are restored
         for mid-loop resume. Checkpoints still do not embed a fitted estimator;
-        use :meth:`load_pipeline` for inference artifacts.
-        """
-        loaded = load_checkpoint(path, data_only=data_only)
-        session = cls(
-            dataset=loaded.dataset,
-            split_plan=loaded.split_plan,
-            history=loaded.history,
-            reattach_result=loaded.reattach,
-        )
-        if not data_only:
-            session._restore_plans(loaded.plans)
-        session._record(
-            "checkpoint_load",
-            {
-                "path": str(path),
-                "status": loaded.reattach.status,
-                "data_only": data_only,
-                "plans_restored": sorted(
-                    key for key, value in loaded.plans.items() if value is not None
-                ),
-            },
-        )
-        return session
+        use :meth:`load_pipeline` for inference artifacts."""
+        return data_ops.checkpoint_load_session(cls, path=path, data_only=data_only)
 
     def reattach(self, path: str | Path, *, data_only: bool = False) -> Session:
         """Replace this session state from a checkpoint path (instance helper)."""
-        loaded = load_checkpoint(path, data_only=data_only)
-        # Release any owned DuckDB connection before replacing the Dataset.
-        self.close_native()
-        self._dataset = loaded.dataset
-        self._split_plan = loaded.split_plan
-        self._history = list(loaded.history)
-        self._reattach_result = loaded.reattach
-        self._ingest_report = None
-        if data_only:
-            self._clear_plans()
-        else:
-            self._restore_plans(loaded.plans)
-        self._record(
-            "reattach",
-            {
-                "path": str(path),
-                "status": loaded.reattach.status,
-                "data_only": data_only,
-                "plans_restored": sorted(
-                    key for key, value in loaded.plans.items() if value is not None
-                ),
-            },
-        )
-        return self
+        return data_ops.reattach(self, path=path, data_only=data_only)
 
     def to_pandas(self) -> pd.DataFrame:
         """Escape hatch: copy the current dataset as a Pandas DataFrame."""
-        frame = self.dataset.to_pandas()
-        self._record(
-            "to_pandas",
-            result_summary={"rows": int(len(frame)), "columns": int(frame.shape[1])},
-        )
-        return frame
+        return data_ops.to_pandas(self)
 
     def to_parquet(self, path: str | Path) -> Path:
         """Write the current dataset to Parquet."""
-        destination = self.dataset.to_parquet(path)
-        self._record(
-            "to_parquet",
-            {"path": str(destination)},
-            result_summary={"path": str(destination)},
-        )
-        return destination
+        return data_ops.to_parquet(self, path=path)
 
     def head(self, n: int = 5) -> pd.DataFrame:
         """Preview the first rows."""
-        frame = self.dataset.head(n)
-        self._record(
-            "head",
-            {"n": n},
-            result_summary={"rows": int(len(frame)), "columns": int(frame.shape[1])},
-        )
-        return frame
+        return data_ops.head(self, n=n)
 
     def with_mode(self, mode: DataMode | str) -> Session:
-        """Record a mode override on the dataset metadata (Phase-1 marker)."""
-        self.dataset.mode = DataMode(mode)
-        self._record("with_mode", {"mode": self.dataset.mode.value})
-        return self
+        """Record a mode override on the dataset metadata.
+
+        Accepted values are ``memory`` and ``lazy``. Legacy ``out_of_core`` is
+        coerced to ``lazy`` (there is no separate out-of-core fit mode)."""
+        return data_ops.with_mode(self, mode=mode)
 
     def with_engine(self, engine: EngineName | str) -> Session:
         """Select a compute engine and attach a native handle when applicable.
@@ -4065,22 +2928,8 @@ class Session:
         :meth:`prepare_design_matrix`, :meth:`~buildml.data.dataset.Dataset.project`,
         and sample/filter helpers before Pandas materialization. Sklearn fit
         still requires an in-memory design matrix. Missing extras raise
-        :class:`~buildml.core.errors.MissingExtraError`.
-        """
-        from buildml.data.engines import get_engine
-
-        chosen = EngineName(engine)
-        get_engine(chosen)  # validates install / raises MissingExtraError
-        self.dataset.engine = chosen
-        if chosen == EngineName.PANDAS:
-            self.dataset.clear_native()
-        else:
-            self.dataset.attach_native(rebuild=True)
-        self._record(
-            "with_engine",
-            {"engine": chosen.value, "has_native": self.dataset.has_native},
-        )
-        return self
+        :class:`~buildml.core.errors.MissingExtraError`."""
+        return data_ops.with_engine(self, engine=engine)
 
     def sync_native(self) -> Session:
         """Rebuild ``Dataset.native`` from the current Pandas frame (eager).
@@ -4089,39 +2938,16 @@ class Session:
         DuckDB. Call this after external Pandas mutation of ``dataset.frame``,
         or after a transform that opted out of sync. This is not a lazy plan
         of prior steps — it converts the full current frame into the engine
-        table.
-        """
-        has_native = False
-        if self.dataset.engine != EngineName.PANDAS:
-            self.dataset.sync_native()
-            has_native = self.dataset.has_native
-        self._record(
-            "sync_native",
-            {"engine": self.dataset.engine.value, "has_native": has_native},
-        )
-        return self
+        table."""
+        return data_ops.sync_native(self)
 
     def metadata(self) -> dict[str, Any]:
         """Session/dataset metadata snapshot."""
-        payload: dict[str, Any] = {
-            "has_dataset": self._dataset is not None,
-            "ingest_report": None if self._ingest_report is None else self._ingest_report.to_dict(),
-            "split": None if self._split_plan is None else self._split_plan.to_dict(),
-            "history": self.history,
-            "reattach": None
-            if self._reattach_result is None
-            else {
-                "status": self._reattach_result.status,
-                "messages": list(self._reattach_result.messages),
-            },
-        }
-        if self._dataset is not None:
-            payload["dataset"] = self._dataset.metadata()
-        return payload
+        return data_ops.metadata(self)
 
     def workflow(self) -> tuple[WorkflowStep, ...]:
         """Resolve every public operation against current workflow state."""
-        return resolve_workflow(self)
+        return workflow_ops.workflow(self)
 
     def walkthrough(
         self,
@@ -4129,11 +2955,7 @@ class Session:
         export_html: str | Path | None = None,
     ) -> WorkflowWalkthroughReport:
         """Build a workflow walkthrough from resolver state and history."""
-        report = build_walkthrough(self)
-        if export_html is not None:
-            report.export_html(export_html)
-        self._last_walkthrough = report
-        return report
+        return workflow_ops.walkthrough(self, export_html=export_html)
 
     @property
     def last_walkthrough(self) -> WorkflowWalkthroughReport | None:
@@ -4147,70 +2969,23 @@ class Session:
         moment: Literal["before", "after"] = "before",
     ) -> Any:
         """Explain an operation before/after execution, or return the workflow."""
-        return explain_session(self, operation, moment=moment)
+        return workflow_ops.explain(self, operation=operation, moment=moment)
 
     def _session_preprocess_applied(self) -> bool:
         """True when Session-level train-global preprocess plans exist."""
-        return any(plan is not None for plan in self._plan_objects().values())
+        return state.session_preprocess_applied(self)
 
     def _plan_objects(self) -> dict[str, Any]:
-        return {
-            "impute_plan": self._impute_plan,
-            "encode_plan": self._encode_plan,
-            "scale_plan": self._scale_plan,
-            "date_plan": self._date_plan,
-            "outlier_plan": self._outlier_plan,
-            "binning_plan": self._binning_plan,
-            "feature_select_plan": self._feature_select_plan,
-            "text_plan": self._text_plan,
-            "reduce_plan": self._reduce_plan,
-            "custom_plan": self._custom_plan,
-            "resample_plan": self._resample_plan,
-        }
+        return state.plan_objects(self)
 
     def _preprocess_summary(self) -> dict[str, Any]:
-        return {
-            "impute": None if self._impute_plan is None else self._impute_plan.to_dict(),
-            "encode": None if self._encode_plan is None else self._encode_plan.to_dict(),
-            "scale": None if self._scale_plan is None else self._scale_plan.to_dict(),
-            "dates": None if self._date_plan is None else self._date_plan.to_dict(),
-            "outliers": None if self._outlier_plan is None else self._outlier_plan.to_dict(),
-            "binning": None if self._binning_plan is None else self._binning_plan.to_dict(),
-            "feature_select": (
-                None if self._feature_select_plan is None else self._feature_select_plan.to_dict()
-            ),
-            "text": None if self._text_plan is None else self._text_plan.to_dict(),
-            "reduce": None if self._reduce_plan is None else self._reduce_plan.to_dict(),
-            "custom": None if self._custom_plan is None else self._custom_plan.to_dict(),
-            "resample": None if self._resample_plan is None else self._resample_plan.to_dict(),
-        }
+        return state.preprocess_summary(self)
 
     def _restore_plans(self, plans: dict[str, Any] | None) -> None:
-        payload = plans or {}
-        self._impute_plan = payload.get("impute_plan")
-        self._encode_plan = payload.get("encode_plan")
-        self._scale_plan = payload.get("scale_plan")
-        self._date_plan = payload.get("date_plan")
-        self._outlier_plan = payload.get("outlier_plan")
-        self._binning_plan = payload.get("binning_plan")
-        self._feature_select_plan = payload.get("feature_select_plan")
-        self._text_plan = payload.get("text_plan")
-        self._reduce_plan = payload.get("reduce_plan")
-        self._custom_plan = payload.get("custom_plan")
-        self._resample_plan = payload.get("resample_plan")
+        return state.restore_plans(self, plans=plans)
 
     def _clear_plans(self) -> None:
-        self._impute_plan = None
-        self._encode_plan = None
-        self._scale_plan = None
-        self._date_plan = None
-        self._outlier_plan = None
-        self._binning_plan = None
-        self._feature_select_plan = None
-        self._text_plan = None
-        self._reduce_plan = None
-        self._custom_plan = None
-        self._resample_plan = None
+        return state.clear_plans(self)
 
     def _record(
         self,
@@ -4221,17 +2996,11 @@ class Session:
         warnings: list[str] | tuple[str, ...] = (),
         result_summary: dict[str, Any] | None = None,
     ) -> None:
-        before = prior_state(self._history)
-        after = session_state(self)
-        self._history.append(
-            make_operation_record(
-                sequence=len(self._history) + 1,
-                operation_id=action,
-                parameters=details,
-                decision_origin=decision_origin,
-                before=before,
-                after=after,
-                warnings=warnings,
-                result_summary=result_summary,
-            )
+        return state.record(
+            self,
+            action=action,
+            details=details,
+            decision_origin=decision_origin,
+            warnings=warnings,
+            result_summary=result_summary,
         )

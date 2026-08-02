@@ -18,10 +18,21 @@ BUNDLE_FORMAT = "buildml.torch_bundle.v1"
 CHECKPOINT_BOUNDARY = (
     "Torch trainer bundles and Session checkpoints are complementary, not interchangeable. "
     "A trainer bundle stores module weights, optimizer state, TrainConfig, epoch history, "
-    "and the feature/label contract (buildml.torch_bundle.v1). "
+    "the feature/label contract, and optional multimodal_preprocess meta "
+    "(image/audio stats, sample rates, layout) under buildml.torch_bundle.v1. "
+    "Load restores that meta for inspection but does not rebuild DataLoaders or "
+    "auto-apply media preprocess — remake multimodal/text loaders explicitly. "
     "A Session checkpoint stores data, roles, splits, history, and optional classical plans; "
     "it does not embed Torch weights. Reload data via checkpoint_load; reload weights via "
     "load_torch_bundle. Resume training with fit_torch(..., resume=True) after load_torch_bundle."
+)
+
+_MULTIMODAL_LOAD_WARNING = (
+    "Loaded multimodal_preprocess meta from the trainer bundle for honesty "
+    "(frozen image/audio/text stats and layout). DataLoaders were not rebuilt; "
+    "call make_multimodal_torch_loaders / make_image_multimodal_torch_loaders / "
+    "make_audio_multimodal_torch_loaders again before fit/evaluate/export. "
+    "Remaking loaders re-fits train-only stats from the current Session frame."
 )
 
 
@@ -42,6 +53,7 @@ def _meta_from_result(result: TrainResult) -> dict[str, Any]:
         "config": result.config.to_dict(),
         "device": result.device.to_dict(),
         "contract": result.contract.to_dict(),
+        "multimodal_preprocess": result.multimodal_preprocess,
         "n_train_rows": result.n_train_rows,
         "n_epochs_ran": result.n_epochs_ran,
         "history": list(result.history),
@@ -76,6 +88,7 @@ def save_torch_bundle(path: str | Path, train_result: TrainResult) -> Path:
         "config": train_result.config.to_dict(),
         "device": train_result.device.to_dict(),
         "contract": train_result.contract.to_dict(),
+        "multimodal_preprocess": train_result.multimodal_preprocess,
         "history": list(train_result.history),
         "task": train_result.task,
         "n_train_rows": train_result.n_train_rows,
@@ -147,6 +160,14 @@ def load_torch_bundle(
     module = module.to(torch.device(location))
     early_payload = payload.get("early_stop")
     early = None if early_payload is None else EarlyStopInfo.from_dict(early_payload)
+    mm_preprocess = payload.get("multimodal_preprocess")
+    if mm_preprocess is None:
+        mm_preprocess = meta.get("multimodal_preprocess")
+    if mm_preprocess is not None:
+        mm_preprocess = dict(mm_preprocess)
+    warnings = list(payload.get("warnings") or [])
+    if mm_preprocess is not None and _MULTIMODAL_LOAD_WARNING not in warnings:
+        warnings.append(_MULTIMODAL_LOAD_WARNING)
     result = TrainResult(
         module=module,
         task=payload["task"],
@@ -157,11 +178,12 @@ def load_torch_bundle(
         history=list(payload.get("history") or []),
         n_train_rows=int(payload.get("n_train_rows") or 0),
         n_epochs_ran=int(payload.get("n_epochs_ran") or 0),
-        warnings=list(payload.get("warnings") or []),
+        warnings=warnings,
         early_stop=early,
         scheduler_name=str(payload.get("scheduler_name") or cfg.scheduler or "none"),
         scheduler_state=payload.get("scheduler_state"),
         resumed_from_epochs=int(payload.get("resumed_from_epochs") or 0),
+        multimodal_preprocess=mm_preprocess,
     )
     result.training_curve = build_training_curve(result)
     return result

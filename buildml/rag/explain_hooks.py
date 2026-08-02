@@ -62,18 +62,37 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
     }
 
 
+def generate_result_summary(generate_result: Any) -> dict[str, Any]:
+    """Compact result_summary for ``rag_generate`` history."""
+    if generate_result is None:
+        return {}
+    if hasattr(generate_result, "to_dict"):
+        payload = generate_result.to_dict()
+    else:
+        payload = dict(generate_result)
+    citations = payload.get("citations") or []
+    return {
+        "query": payload.get("query"),
+        "n_citations": payload.get("n_citations", len(citations)),
+        "provider_model": payload.get("provider_model"),
+        "citation_doc_ids": [c.get("doc_id") for c in citations[:5]],
+        "answer_chars": len(str(payload.get("answer") or "")),
+    }
+
+
 def rag_status(
     *,
     index_result: Any | None = None,
     eval_result: Any | None = None,
     retrieve_result: Any | None = None,
+    generate_result: Any | None = None,
     corpus: Any | None = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for RAG index / embedder / store / eval.
+    """Factual walkthrough disclosure for RAG index / retrieve / generate.
 
-    Does not claim generate ran, does not imply Session checkpoint holds the
-    vector index, and does not treat catalog availability as production readiness.
+    Does not imply Session checkpoint holds the vector index, and does not
+    treat catalog availability as production readiness.
     """
     records = list(history or [])
     saw_rag = any(
@@ -103,6 +122,7 @@ def rag_status(
             "index": None,
             "eval": None,
             "retrieve": None,
+            "generate": None,
             "corpus": None
             if corpus is None
             else {
@@ -147,7 +167,7 @@ def rag_status(
         )
         disclosures.append(
             "Eval metrics measure ranking quality on the supplied qrels; they are not "
-            "classification accuracy and do not imply a generate step ran."
+            "classification accuracy and do not by themselves prove grounded generate quality."
         )
     else:
         disclosures.append("No rag_evaluate result is attached on this Session.")
@@ -166,6 +186,24 @@ def rag_status(
             f"rerank={retrieve_payload.get('rerank')}, "
             f"n_hits={retrieve_payload.get('n_hits')}."
         )
+
+    generate_payload = None
+    if generate_result is not None:
+        generate_payload = (
+            generate_result.to_dict()
+            if hasattr(generate_result, "to_dict")
+            else dict(generate_result)
+        )
+        disclosures.append(
+            "Last generate: "
+            f"n_citations={generate_payload.get('n_citations')}, "
+            f"provider_model={generate_payload.get('provider_model')}."
+        )
+        disclosures.append(
+            "Grounded answers cite retrieved chunks; verify claims against source text."
+        )
+    else:
+        disclosures.append("No rag_generate result is attached on this Session.")
 
     corpus_payload = None
     if corpus is not None:
@@ -197,6 +235,13 @@ def rag_status(
             "rerank": retrieve_payload.get("rerank"),
             "n_hits": retrieve_payload.get("n_hits"),
         },
+        "generate": None
+        if generate_payload is None
+        else {
+            "query": generate_payload.get("query"),
+            "n_citations": generate_payload.get("n_citations"),
+            "provider_model": generate_payload.get("provider_model"),
+        },
         "corpus": corpus_payload,
     }
 
@@ -207,6 +252,7 @@ def rag_status_for_session(session: Any) -> dict[str, Any]:
         index_result=getattr(session, "rag_index_result", None),
         eval_result=getattr(session, "rag_eval_result", None),
         retrieve_result=getattr(session, "rag_retrieve_result", None),
+        generate_result=getattr(session, "rag_generate_result", None),
         corpus=getattr(session, "_rag_corpus", None),
         history=list(getattr(session, "history", []) or []),
     )

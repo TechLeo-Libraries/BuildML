@@ -382,6 +382,249 @@ def _dispatch_tool(
         result = session.ai_status()
         return result, ()
 
+    elif call.tool_name == "rag_retrieve":
+        query = call.arguments.get("query", "")
+        if not query:
+            raise ValidationError("rag_retrieve requires a non-empty query.")
+        result = session.rag_retrieve(
+            query,
+            k=int(call.arguments.get("k", 5)),
+            mode=call.arguments.get("mode"),
+        )
+        return result, ()
+
+    elif call.tool_name == "rag_generate":
+        query = call.arguments.get("query", "")
+        if not query:
+            raise ValidationError("rag_generate requires a non-empty query.")
+        result = session.rag_generate(
+            query,
+            k=int(call.arguments.get("k", 5)),
+        )
+        return result, ()
+
+    elif call.tool_name == "rag_ingest_corpus":
+        documents = call.arguments.get("documents")
+        text_column = call.arguments.get("text_column")
+        if documents is None and text_column is None:
+            raise ValidationError("rag_ingest_corpus requires documents= or text_column=.")
+        session.rag_ingest_corpus(documents, text_column=text_column)
+        state_changes.append("Ingested RAG corpus (prior index cleared).")
+        return {"rag_corpus_ingested": True}, tuple(state_changes)
+
+    elif call.tool_name == "rag_embed_and_index":
+        embedder = call.arguments.get("embedder")
+        session.rag_embed_and_index(embedder=embedder)
+        state_changes.append("Built RAG index.")
+        return {"rag_index_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "make_torch_loaders":
+        session.make_torch_loaders(
+            batch_size=int(call.arguments.get("batch_size", 32)),
+            normalize=bool(call.arguments.get("normalize", True)),
+            apply_plans=bool(call.arguments.get("apply_plans", False)),
+        )
+        state_changes.append("Built Torch DataLoaders.")
+        return {"torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "make_text_torch_loaders":
+        kwargs: dict[str, Any] = {
+            "batch_size": int(call.arguments.get("batch_size", 16)),
+        }
+        if "text_column" in call.arguments and call.arguments["text_column"] is not None:
+            kwargs["text_column"] = call.arguments["text_column"]
+        if "max_len" in call.arguments and call.arguments["max_len"] is not None:
+            kwargs["max_len"] = int(call.arguments["max_len"])
+        session.make_text_torch_loaders(**kwargs)
+        state_changes.append("Built text Torch DataLoaders (train-only vocab).")
+        return {"text_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_torch":
+        session.fit_torch(
+            epochs=int(call.arguments.get("epochs", 5)),
+            learning_rate=float(call.arguments.get("learning_rate", 1e-3)),
+            device=call.arguments.get("device", "auto"),
+        )
+        state_changes.append("Fitted Torch module (dl_train_result updated).")
+        return {"torch_fitted": True}, tuple(state_changes)
+
+    elif call.tool_name == "evaluate_torch":
+        partition = call.arguments.get("partition", "test")
+        result = session.evaluate_torch(partition=partition)
+        return result, ()
+
+    elif call.tool_name == "cross_validate_torch":
+        result = session.cross_validate_torch(
+            n_folds=int(call.arguments.get("n_folds", 3)),
+            epochs=int(call.arguments.get("epochs", 3)),
+        )
+        state_changes.append("Completed fold-local Torch CV.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "make_multimodal_torch_loaders":
+        kwargs: dict[str, Any] = {
+            "batch_size": int(call.arguments.get("batch_size", 16)),
+            "normalize": bool(call.arguments.get("normalize", True)),
+            "normalize_images": bool(call.arguments.get("normalize_images", True)),
+            "normalize_audio": bool(call.arguments.get("normalize_audio", True)),
+        }
+        if "text_column" in call.arguments and call.arguments["text_column"] is not None:
+            kwargs["text_column"] = call.arguments["text_column"]
+        if "image_column" in call.arguments and call.arguments["image_column"] is not None:
+            kwargs["image_column"] = call.arguments["image_column"]
+        if "audio_column" in call.arguments and call.arguments["audio_column"] is not None:
+            kwargs["audio_column"] = call.arguments["audio_column"]
+        if call.arguments.get("audio_sample_rate") is not None:
+            kwargs["audio_sample_rate"] = int(call.arguments["audio_sample_rate"])
+        if call.arguments.get("audio_max_samples") is not None:
+            kwargs["audio_max_samples"] = int(call.arguments["audio_max_samples"])
+        if call.arguments.get("audio_source_sample_rate") is not None:
+            kwargs["audio_source_sample_rate"] = int(
+                call.arguments["audio_source_sample_rate"]
+            )
+        session.make_multimodal_torch_loaders(**kwargs)
+        state_changes.append(
+            "Built multimodal Torch DataLoaders "
+            "(train-only vocab/normalize/image/audio stats)."
+        )
+        return {"multimodal_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "make_image_multimodal_torch_loaders":
+        image_column = call.arguments.get("image_column")
+        if not image_column:
+            raise ValidationError(
+                "make_image_multimodal_torch_loaders requires image_column."
+            )
+        img_kwargs: dict[str, Any] = {
+            "image_column": str(image_column),
+            "batch_size": int(call.arguments.get("batch_size", 16)),
+            "normalize_images": bool(call.arguments.get("normalize_images", True)),
+            "normalize_audio": bool(call.arguments.get("normalize_audio", True)),
+        }
+        if "text_column" in call.arguments and call.arguments["text_column"] is not None:
+            img_kwargs["text_column"] = call.arguments["text_column"]
+        if "audio_column" in call.arguments and call.arguments["audio_column"] is not None:
+            img_kwargs["audio_column"] = call.arguments["audio_column"]
+        if call.arguments.get("audio_sample_rate") is not None:
+            img_kwargs["audio_sample_rate"] = int(call.arguments["audio_sample_rate"])
+        if call.arguments.get("audio_max_samples") is not None:
+            img_kwargs["audio_max_samples"] = int(call.arguments["audio_max_samples"])
+        session.make_image_multimodal_torch_loaders(**img_kwargs)
+        state_changes.append(
+            "Built image multimodal Torch DataLoaders (train-only image/channel stats)."
+        )
+        return {"image_multimodal_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "make_audio_multimodal_torch_loaders":
+        audio_column = call.arguments.get("audio_column")
+        if not audio_column:
+            raise ValidationError(
+                "make_audio_multimodal_torch_loaders requires audio_column."
+            )
+        aud_kwargs: dict[str, Any] = {
+            "audio_column": str(audio_column),
+            "batch_size": int(call.arguments.get("batch_size", 16)),
+            "normalize_audio": bool(call.arguments.get("normalize_audio", True)),
+        }
+        if "text_column" in call.arguments and call.arguments["text_column"] is not None:
+            aud_kwargs["text_column"] = call.arguments["text_column"]
+        if "image_column" in call.arguments and call.arguments["image_column"] is not None:
+            aud_kwargs["image_column"] = call.arguments["image_column"]
+        if call.arguments.get("audio_sample_rate") is not None:
+            aud_kwargs["audio_sample_rate"] = int(call.arguments["audio_sample_rate"])
+        if call.arguments.get("audio_max_samples") is not None:
+            aud_kwargs["audio_max_samples"] = int(call.arguments["audio_max_samples"])
+        if call.arguments.get("audio_source_sample_rate") is not None:
+            aud_kwargs["audio_source_sample_rate"] = int(
+                call.arguments["audio_source_sample_rate"]
+            )
+        session.make_audio_multimodal_torch_loaders(**aud_kwargs)
+        state_changes.append(
+            "Built audio multimodal Torch DataLoaders (train-only audio amplitude stats)."
+        )
+        return {"audio_multimodal_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "search_torch":
+        search_kwargs: dict[str, Any] = {
+            "n_folds": int(call.arguments.get("n_folds", 3)),
+            "epochs": int(call.arguments.get("epochs", 2)),
+            "n_iter": int(call.arguments.get("n_iter", 5)),
+        }
+        if call.arguments.get("param_grid") is not None:
+            search_kwargs["param_grid"] = call.arguments["param_grid"]
+        if call.arguments.get("param_distributions") is not None:
+            search_kwargs["param_distributions"] = call.arguments["param_distributions"]
+        result = session.search_torch(**search_kwargs)
+        state_changes.append("Completed inner-fold Torch hyperparameter search.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "nested_cv_torch":
+        nested_kwargs: dict[str, Any] = {
+            "outer_cv": int(call.arguments.get("outer_cv", 3)),
+            "inner_cv": int(call.arguments.get("inner_cv", 2)),
+            "epochs": int(call.arguments.get("epochs", 2)),
+            "n_iter": int(call.arguments.get("n_iter", 5)),
+        }
+        if call.arguments.get("param_grid") is not None:
+            nested_kwargs["param_grid"] = call.arguments["param_grid"]
+        if call.arguments.get("param_distributions") is not None:
+            nested_kwargs["param_distributions"] = call.arguments["param_distributions"]
+        result = session.nested_cv_torch(**nested_kwargs)
+        state_changes.append("Completed nested Torch CV (outer after inner search).")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "export_torch":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("export_torch requires a path argument.")
+        result = session.export_torch(
+            path,
+            format=call.arguments.get("format", "torchscript"),
+        )
+        state_changes.append(f"Exported Torch trainer to {path}.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "make_speech_torch_loaders":
+        speech_kwargs: dict[str, Any] = {
+            "batch_size": int(call.arguments.get("batch_size", 8)),
+            "normalize_audio": bool(call.arguments.get("normalize_audio", True)),
+        }
+        if call.arguments.get("audio_column") is not None:
+            speech_kwargs["audio_column"] = str(call.arguments["audio_column"])
+        if call.arguments.get("sample_rate") is not None:
+            speech_kwargs["sample_rate"] = int(call.arguments["sample_rate"])
+        if call.arguments.get("max_samples") is not None:
+            speech_kwargs["max_samples"] = int(call.arguments["max_samples"])
+        session.make_speech_torch_loaders(**speech_kwargs)
+        state_changes.append(
+            "Built speech classification Torch DataLoaders (finetune-lite)."
+        )
+        return {"speech_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_speech_torch":
+        fit_speech_kwargs: dict[str, Any] = {
+            "epochs": int(call.arguments.get("epochs", 5)),
+            "freeze_encoder": bool(call.arguments.get("freeze_encoder", False)),
+        }
+        if call.arguments.get("audio_column") is not None:
+            fit_speech_kwargs["audio_column"] = str(call.arguments["audio_column"])
+        session.fit_speech_torch(**fit_speech_kwargs)
+        state_changes.append("Fine-tuned tiny speech classifier (finetune-lite).")
+        return {"speech_torch_fitted": True}, tuple(state_changes)
+
+    elif call.tool_name == "transcribe_speech":
+        audio_column = call.arguments.get("audio_column")
+        if not audio_column:
+            raise ValidationError("transcribe_speech requires audio_column.")
+        result = session.transcribe_speech(
+            audio_column=str(audio_column),
+            backend=call.arguments.get("backend", "stub"),
+            model_id=call.arguments.get("model_id"),
+            partition=call.arguments.get("partition", "all"),
+        )
+        state_changes.append("Transcribed speech audio column (ASR integration path).")
+        return result, tuple(state_changes)
+
     else:
         raise ValidationError(f"No dispatch handler for tool: {call.tool_name}")
 
@@ -396,8 +639,18 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
             changes.append(f"Column '{col}' will be assigned role '{role}'.")
 
     elif tool_name in (
-        "describe_dataset", "explain_operation", "workflow_status", "eda_summary",
-        "dry_run_plan", "evaluate", "walkthrough", "head", "ai_status"
+        "describe_dataset",
+        "explain_operation",
+        "workflow_status",
+        "eda_summary",
+        "dry_run_plan",
+        "evaluate",
+        "walkthrough",
+        "head",
+        "ai_status",
+        "rag_retrieve",
+        "rag_generate",
+        "evaluate_torch",
     ):
         changes.append("No state changes (read-only operation).")
 
@@ -427,6 +680,61 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
     elif tool_name == "checkpoint_save":
         path = arguments.get("path", "")
         changes.append(f"Will save checkpoint to {path}.")
+
+    elif tool_name == "rag_ingest_corpus":
+        changes.append("Will ingest a RAG corpus and clear any prior index.")
+
+    elif tool_name == "rag_embed_and_index":
+        changes.append("Will embed chunks and build the RAG vector index.")
+
+    elif tool_name == "make_torch_loaders":
+        changes.append("Will build Torch DataLoaders on the Session.")
+
+    elif tool_name == "make_text_torch_loaders":
+        changes.append("Will build text Torch DataLoaders with a train-only vocabulary.")
+
+    elif tool_name == "fit_torch":
+        changes.append("Will train a Torch module and store dl_train_result.")
+
+    elif tool_name == "cross_validate_torch":
+        changes.append("Will run fold-local Torch CV and store dl_cv_result.")
+
+    elif tool_name == "make_multimodal_torch_loaders":
+        changes.append(
+            "Will build multimodal Torch DataLoaders "
+            "(train-only vocab/normalize/image/audio stats)."
+        )
+
+    elif tool_name == "make_image_multimodal_torch_loaders":
+        changes.append(
+            "Will build image multimodal Torch DataLoaders "
+            "(image ⊕ tabular and/or text and/or audio)."
+        )
+
+    elif tool_name == "make_audio_multimodal_torch_loaders":
+        changes.append(
+            "Will build audio multimodal Torch DataLoaders "
+            "(audio ⊕ tabular and/or text and/or image)."
+        )
+
+    elif tool_name == "search_torch":
+        changes.append("Will run inner-fold Torch hyperparameter search (not nested outer).")
+
+    elif tool_name == "nested_cv_torch":
+        changes.append("Will run nested Torch CV and store dl_nested_cv_result.")
+
+    elif tool_name == "export_torch":
+        path = arguments.get("path", "")
+        changes.append(f"Will export the last Torch trainer to {path}.")
+
+    elif tool_name == "make_speech_torch_loaders":
+        changes.append("Will build speech classification Torch DataLoaders (finetune-lite).")
+
+    elif tool_name == "fit_speech_torch":
+        changes.append("Will fine-tune a tiny speech classifier (not FM-from-scratch).")
+
+    elif tool_name == "transcribe_speech":
+        changes.append("Will transcribe an audio column via stub or transformers ASR.")
 
     return tuple(changes) if changes else ("Unknown state changes.",)
 

@@ -147,7 +147,7 @@ def build_eval_plot_board(
         raise ValidationError("Split required for evaluation plot boards")
 
     plt, sns = _require_viz()
-    x, y_true, _, _ = _feature_target_frames(dataset, split_plan, partition)
+    x, y_true, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
     x = x[list(fit_result.feature_columns)]
     y_pred = fit_result.estimator.predict(x)
 
@@ -636,7 +636,7 @@ def _plot_learning_curve(
 ) -> tuple[Any, list[str]]:
     from sklearn.base import clone
 
-    x_train, y_train, _, _ = _feature_target_frames(dataset, split_plan, "train")
+    x_train, y_train, _, _, _ = _feature_target_frames(dataset, split_plan, "train")
     x_train = x_train[list(fit_result.feature_columns)]
     scoring = "f1_weighted" if fit_result.task == "classification" else "r2"
     n_splits = min(cv, max(2, len(x_train) // 5))

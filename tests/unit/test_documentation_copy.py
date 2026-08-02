@@ -11,7 +11,13 @@ from pathlib import Path
 import pandas as pd
 
 from buildml import Session
-from scripts.lint_user_copy import COPY_RULES, STALE_API
+from scripts.lint_user_copy import (
+    COPY_RULES,
+    MOJIBAKE_MARKERS,
+    SOFT_LEAKAGE_FALSE_CLAIM,
+    STALE_API,
+    lint_paths,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -78,6 +84,30 @@ def test_copy_lint_rejects_approved_banned_filler_and_stale_apis() -> None:
     for text in banned:
         assert any(pattern.search(text) for _, pattern in COPY_RULES), text
     assert STALE_API.search("Call buildml.preprocessing before fitting")
+
+
+def test_copy_lint_catches_multiline_soft_leakage_and_mojibake(tmp_path: Path) -> None:
+    soft = tmp_path / "soft.py"
+    soft.write_text(
+        '"""Docs.\n'
+        "allow_session_global_preprocess:\n"
+        "    Explicit opt-in when Session-global preprocess already ran and no\n"
+        "    fold-local recipe is provided (default False; refuses otherwise).\n"
+        '"""\n',
+        encoding="utf-8",
+    )
+    soft_hits = [item for item in lint_paths([soft]) if item.rule == "soft-leakage-false-claim"]
+    assert soft_hits, "wrapped soft-leakage false claim must fail copy lint"
+
+    assert SOFT_LEAKAGE_FALSE_CLAIM.search(
+        "before CV without a fold recipe, treat preprocess honesty as limited"
+    )
+    assert MOJIBAKE_MARKERS.search("report mean\u00c2\u00b1std across folds")
+
+    baked = tmp_path / "baked.py"
+    baked.write_text('msg = "mean\u00c2\u00b1std"\n', encoding="utf-8")
+    bake_hits = [item for item in lint_paths([baked]) if item.rule == "mojibake-text"]
+    assert bake_hits
 
 
 def test_generated_prose_matches_human_tone_fixture_without_duplicates() -> None:
