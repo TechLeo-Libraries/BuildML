@@ -123,20 +123,47 @@ text_session.make_text_torch_loaders(text_column="text")
 text_session.fit_torch(epochs=3)  # builds embedding text classifier
 ```
 
+## Nested search and multimodal (Pass G)
+
+```python
+# Nested Torch HPO (outer estimate after inner search; fold-local normalize)
+nested = session.nested_cv_torch(
+    param_grid={"learning_rate": [1e-3, 1e-2], "hidden": [(32,), (64, 32)]},
+    outer_cv=3,
+    inner_cv=2,
+    epochs=2,
+)
+print(nested.mean_metrics, nested.consensus_params)
+
+# Tabular + text fusion
+mm = (
+    Session.ingest(df)
+    .set_roles({"x1": "feature", "text": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+mm.make_multimodal_torch_loaders(text_column="text")
+mm.fit_torch(epochs=5, mixed_precision=False)  # AMP is CUDA-only
+mm.export_torch("model.ts.pt", format="torchscript")
+```
+
 ## Known limits (honest)
 
 - **CPU-first merge gate.** CI runs Torch on CPU (Python 3.11–3.12). CUDA/MPS
   are supported when available with explicit fallback warnings; GPU CI is not a
   PR blocker.
-- **Tabular + text in scope.** Image / multimodal loaders are later. Built-in
-  MLP and text classifier cover the happy path; custom `nn.Module` still works.
+- **Tabular + text + tabular⊕text fusion in scope.** Image / audio multimodal
+  loaders are later. Built-in MLP, text classifier, and fusion cover the happy
+  path; custom `nn.Module` still works.
 - **Materialization.** Partition rows become tensors via the current Session
   frame (Pandas/NumPy bridge). No Polars/DuckDB zero-copy into DataLoaders.
 - **Classical plans.** Session impute/encode/scale mutate the frame and are
   disclosed on loaders; `apply_plans=True` re-applies fitted plans (no refit).
   Fold-local classical plan refit is not automatic inside `cross_validate_torch`.
-- **CV is fold-local, not nested.** No inner Torch hyperparameter search loop.
-  Do not tune early stop on test.
+- **CV + nested search.** Use `cross_validate_torch` for fold-local estimates and
+  `nested_cv_torch` / `search_torch` for hyperparameter selection. Do not tune
+  early stop on test.
+- **DDP / export.** `fit_torch_ddp` is single-node only; `export_torch` is an
+  alpha TorchScript/ONNX escape hatch, not a managed serving product.
 - **RAG / AI** are separate domains (`rag_*`, `ai_*`) that can call Torch tools.
 
 See [glossary](glossary.md).

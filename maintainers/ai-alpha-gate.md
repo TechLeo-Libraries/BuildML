@@ -96,8 +96,9 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 1. **Bring-your-own API key.** BuildML never ships, proxies, or embeds keys.
 2. **Default egress is STATS_ONLY.** Raw rows require explicit opt-in and
    confirmation. Provider sees whatever egress payload the user approved.
-3. **Propose → confirm → execute.** No autonomous agent, auto-execution, or
-   autopilot mode in this alpha.
+3. **Propose → confirm → execute is the default.** Explicit `ai_run_autonomous`
+   exists as allowlisted operator automation with hard caps; it is not
+   unconstrained agency or silent production autopilot.
 4. **Tool registry is the trust boundary.** The operator cannot execute
    arbitrary code or tools not in the allowlist.
 5. **Transcript ≠ checkpoint ≠ bundle.** Three distinct artifacts; transcripts

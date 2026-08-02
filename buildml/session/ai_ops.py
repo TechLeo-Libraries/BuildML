@@ -1,4 +1,4 @@
-"""Thin Session facades over buildml.ai (no new AI autonomy)."""
+"""Thin Session facades over buildml.ai (confirm-by-default; autonomy opt-in)."""
 
 from __future__ import annotations
 
@@ -504,17 +504,69 @@ def ai_run_plan(
     return result
 
 
-def ai_status(session) -> dict[str, Any]:
-    """Get AI operator status including provider, egress, and budget.
+def ai_run_autonomous(
+    session,
+    goal: str,
+    *,
+    plan: Any | None = None,
+    confirm_autonomy: bool = False,
+    max_steps: int = 8,
+    tool_allowlist: Sequence[str] | None = None,
+    allow_destructive: bool = False,
+    provider_plan: bool = True,
+) -> Any:
+    """Explicit autonomy mode with hard caps (see :mod:`buildml.ai.autonomous`)."""
+    from buildml.ai.autonomous import AutonomyConfig, run_autonomous
 
-    Returns factual walkthrough disclosure about the current AI configuration,
-    without claiming autonomous capability or production safety.
+    allowlist = (
+        tuple(tool_allowlist)
+        if tool_allowlist is not None
+        else AutonomyConfig().tool_allowlist
+    )
+    result = run_autonomous(
+        session,
+        goal,
+        plan=plan,
+        config=AutonomyConfig(
+            max_steps=max_steps,
+            tool_allowlist=allowlist,
+            allow_destructive=allow_destructive,
+        ),
+        registry=session._ai_registry,
+        confirm_autonomy=confirm_autonomy,
+        provider_plan=provider_plan,
+    )
+    session._ai_autonomy_result = result
+    session._ai_result = result
+    if session._ai_budget_tracker is not None and result.usage:
+        total_tokens = result.usage.get("total_tokens", 0)
+        session._ai_budget_tracker.record_usage(total_tokens, operation="ai_run_autonomous")
+    session._record(
+        "ai_run_autonomous",
+        {
+            "goal": goal[:100],
+            "confirm_autonomy": confirm_autonomy,
+            "max_steps": max_steps,
+            "completed_steps": result.completed_steps,
+            "stop_reason": result.stop_reason,
+        },
+        result_summary=result.to_dict(),
+    )
+    return result
+
+
+def ai_status(session) -> dict[str, Any]:
+    """Get AI operator status including provider, egress, budget, and autonomy.
+
+    Returns factual walkthrough disclosure about the current AI configuration.
+    Default path remains propose→confirm→execute; autonomy is opt-in only.
 
     Returns
     -------
     dict
         Status including provider, egress level, budget, and transcript info.
     """
+    from buildml.ai.autonomous import autonomy_status_dict
     from buildml.ai.explain_hooks import ai_status_for_session
 
     status = ai_status_for_session(session)
@@ -524,6 +576,7 @@ def ai_status(session) -> dict[str, Any]:
     status["registry_tools"] = (
         sorted(t.name for t in session._ai_registry.tools) if session._ai_registry else []
     )
+    status["autonomy"] = autonomy_status_dict(getattr(session, "_ai_autonomy_result", None))
     return status
 
 

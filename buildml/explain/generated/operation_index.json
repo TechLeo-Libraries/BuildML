@@ -1,5 +1,5 @@
 {
-  "n_operations": 93,
+  "n_operations": 99,
   "operations": {
     "ai_advisor": {
       "doc_summary": "Get advisory Q&A guidance about the current workflow (read-only).",
@@ -209,6 +209,64 @@
       ],
       "qualname": "Session.ai_plan"
     },
+    "ai_run_autonomous": {
+      "doc_summary": "Explicit autonomy mode: plan-and-execute allowlisted tools under hard caps.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "ai_run_autonomous",
+      "parameters": [
+        {
+          "annotation": "str",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "goal",
+          "required": true
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "plan",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "confirm_autonomy",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_steps",
+          "required": false
+        },
+        {
+          "annotation": "Sequence[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "tool_allowlist",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_destructive",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "provider_plan",
+          "required": false
+        }
+      ],
+      "qualname": "Session.ai_run_autonomous"
+    },
     "ai_run_plan": {
       "doc_summary": "Execute a multi-step plan with confirmation gating.",
       "is_classmethod": false,
@@ -261,7 +319,7 @@
       "qualname": "Session.ai_run_plan"
     },
     "ai_status": {
-      "doc_summary": "Get AI operator status including provider, egress, and budget.",
+      "doc_summary": "Get AI operator status including provider, egress, budget, and autonomy.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "ai_status",
@@ -1079,6 +1137,50 @@
       ],
       "qualname": "Session.explain"
     },
+    "export_torch": {
+      "doc_summary": "Export the last Torch trainer to TorchScript or ONNX (alpha escape hatch).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "export_torch",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        },
+        {
+          "annotation": "Literal['torchscript', 'onnx']",
+          "default": "'torchscript'",
+          "kind": "KEYWORD_ONLY",
+          "name": "format",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "17",
+          "kind": "KEYWORD_ONLY",
+          "name": "opset",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "dynamic_batch",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "example_input",
+          "required": false
+        }
+      ],
+      "qualname": "Session.export_torch"
+    },
     "extract_dates": {
       "doc_summary": "Expand datetime columns into calendar/time parts (``.dt``-correct).",
       "is_classmethod": false,
@@ -1279,9 +1381,74 @@
           "kind": "KEYWORD_ONLY",
           "name": "dropout",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "mixed_precision",
+          "required": false
         }
       ],
       "qualname": "Session.fit_torch"
+    },
+    "fit_torch_ddp": {
+      "doc_summary": "Single-node DDP training (requires multi-GPU unless allow_cpu_ddp).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_torch_ddp",
+      "parameters": [
+        {
+          "annotation": "Any",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "module_factory",
+          "required": true
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "mixed_precision",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "world_size",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_cpu_ddp",
+          "required": false
+        },
+        {
+          "annotation": "TrainConfig | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "config",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_torch_ddp"
     },
     "grid_search": {
       "doc_summary": "Grid-search estimator params and/or fold-local recipe knobs.",
@@ -1723,6 +1890,85 @@
       ],
       "qualname": "Session.load_torch_bundle"
     },
+    "make_multimodal_torch_loaders": {
+      "doc_summary": "Build fused tabular+text DataLoaders (train-only vocab + normalize).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "make_multimodal_torch_loaders",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "numeric_columns",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_len",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_vocab",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_freq",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "shuffle_train",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "seed",
+          "required": false
+        },
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        }
+      ],
+      "qualname": "Session.make_multimodal_torch_loaders"
+    },
     "make_text_torch_loaders": {
       "doc_summary": "Build token-id DataLoaders for text classification (sequence modality).",
       "is_classmethod": false,
@@ -2009,6 +2255,127 @@
         }
       ],
       "qualname": "Session.nested_cv_score"
+    },
+    "nested_cv_torch": {
+      "doc_summary": "Nested Torch CV with fold-local normalize and inner hyperparameter search.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "nested_cv_torch",
+      "parameters": [
+        {
+          "annotation": "dict[str, list[Any]] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "param_grid",
+          "required": false
+        },
+        {
+          "annotation": "dict[str, Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "param_distributions",
+          "required": false
+        },
+        {
+          "annotation": "Literal['grid', 'randomized', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "inner_search",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_iter",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "outer_cv",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "inner_cv",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "32",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "Literal['cpu', 'cuda', 'mps', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "seed",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "stratify",
+          "required": false
+        },
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "scoring_metric",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "module_factory",
+          "required": false
+        }
+      ],
+      "qualname": "Session.nested_cv_torch"
     },
     "open_eda_dashboard": {
       "doc_summary": "Alias for :meth:`eda_app`.",
@@ -3033,6 +3400,120 @@
         }
       ],
       "qualname": "Session.scale"
+    },
+    "search_torch": {
+      "doc_summary": "Inner-fold Torch hyperparameter search on the train universe.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "search_torch",
+      "parameters": [
+        {
+          "annotation": "dict[str, list[Any]] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "param_grid",
+          "required": false
+        },
+        {
+          "annotation": "dict[str, Any] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "param_distributions",
+          "required": false
+        },
+        {
+          "annotation": "Literal['grid', 'randomized', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "inner_search",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_iter",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_folds",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "32",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "Literal['cpu', 'cuda', 'mps', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "seed",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "stratify",
+          "required": false
+        },
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "scoring_metric",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "module_factory",
+          "required": false
+        }
+      ],
+      "qualname": "Session.search_torch"
     },
     "select_features": {
       "doc_summary": "Select a feature subset using train-only scores or model reliance.",

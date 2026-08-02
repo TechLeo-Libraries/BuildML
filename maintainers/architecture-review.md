@@ -56,5 +56,6 @@
 
 ## What this file is not
 
-- Not a capability wishlist for future multimodal / nested-Torch search work.
+- Pass G ships nested Torch HPO and tabular⊕text multimodal fusion; image/audio
+  multimodal and multi-node DDP remain later.
 - Not a re-litigation of 1.x `SupervisedLearning` APIs (removed/rewritten).

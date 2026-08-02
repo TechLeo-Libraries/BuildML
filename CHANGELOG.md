@@ -8,6 +8,17 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Added
+
+- **Pass G deferred depth:** nested Torch HPO (`Session.nested_cv_torch` /
+  `search_torch` with fold-local normalize), tabular+text multimodal fusion
+  (`make_multimodal_torch_loaders` + built-in fusion module), explicit
+  `ai_run_autonomous` operator automation (confirm opt-in, allowlist, max steps,
+  blocked sample egress, transcript audit), CUDA AMP via
+  `TrainConfig.mixed_precision` / `fit_torch(..., mixed_precision=True)`,
+  single-node `fit_torch_ddp`, and TorchScript/ONNX `export_torch`. Optional
+  `buildml[onnx]` extra for ONNX checker smoke tests.
+
 ### Fixed
 
 - **Pass F adversarial re-audit:** closed soft-leakage docstring/concept regressions

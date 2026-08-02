@@ -7,33 +7,52 @@ from typing import Any
 __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
+    "DDPConfig",
+    "DDPTrainResult",
     "DLEvaluateResult",
     "DeviceSpec",
     "EarlyStopInfo",
+    "ExportResult",
     "FeatureContract",
     "LoaderConfig",
     "LoaderReport",
+    "MultimodalContract",
+    "MultimodalLoaderConfig",
     "TabularMLP",
     "TextLoaderConfig",
     "TextVocab",
     "TorchCVResult",
     "TorchLoaderBundle",
+    "TorchNestedCVResult",
+    "TorchSearchResult",
     "TrainConfig",
     "TrainResult",
     "TrainingCurveReport",
+    "build_multimodal_fusion",
     "build_tabular_mlp",
     "build_text_classifier",
     "build_training_curve",
     "cross_validate_torch",
+    "ddp_cuda_device_count",
     "evaluate_module",
+    "export_module",
+    "export_onnx",
+    "export_torchscript",
+    "export_train_result",
     "load_torch_bundle",
+    "load_torchscript",
     "make_loaders",
+    "make_multimodal_loaders",
     "make_text_loaders",
+    "nested_cv_torch",
     "require_torch",
     "save_torch_bundle",
+    "search_torch",
+    "smoke_load_onnx",
     "torch_available",
     "torch_training_status",
     "train_supervised_module",
+    "train_supervised_module_ddp",
 ]
 
 
@@ -94,4 +113,43 @@ def __getattr__(name: str) -> Any:
         from buildml.dl import cv as cv_mod
 
         return getattr(cv_mod, name)
+    if name in {
+        "TorchNestedCVResult",
+        "TorchSearchResult",
+        "nested_cv_torch",
+        "search_torch",
+    }:
+        from buildml.dl import search as search_mod
+
+        return getattr(search_mod, name)
+    if name in {
+        "MultimodalContract",
+        "MultimodalLoaderConfig",
+        "build_multimodal_fusion",
+        "make_multimodal_loaders",
+    }:
+        from buildml.dl import multimodal as mm_mod
+
+        return getattr(mm_mod, name)
+    if name in {
+        "ExportResult",
+        "export_module",
+        "export_onnx",
+        "export_torchscript",
+        "export_train_result",
+        "load_torchscript",
+        "smoke_load_onnx",
+    }:
+        from buildml.dl import export as export_mod
+
+        return getattr(export_mod, name)
+    if name in {
+        "DDPConfig",
+        "DDPTrainResult",
+        "ddp_cuda_device_count",
+        "train_supervised_module_ddp",
+    }:
+        from buildml.dl import ddp as ddp_mod
+
+        return getattr(ddp_mod, name)
     raise AttributeError(f"module 'buildml.dl' has no attribute {name!r}")

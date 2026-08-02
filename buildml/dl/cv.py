@@ -1,8 +1,8 @@
 """Fold-local Torch cross-validation utilities.
 
-Fits transforms / train loops inside each fold to honor leakage rules. Nested
-Torch CV with inner hyperparameter search is not implemented here — use
-classical nested CV for that depth, or wrap this utility carefully.
+Fits transforms / train loops inside each fold to honor leakage rules. For
+nested Torch hyperparameter search (outer estimate after inner selection), use
+:func:`buildml.dl.search.nested_cv_torch` / ``Session.nested_cv_torch``.
 """
 
 from __future__ import annotations
@@ -185,7 +185,8 @@ def cross_validate_torch(
     5. Score the held-out fold.
 
     Limitations (encoded in the result):
-    - Not nested CV: no inner hyperparameter search loop.
+    - Not nested CV: no inner hyperparameter search loop (see
+      :func:`buildml.dl.search.nested_cv_torch`).
     - Classical Session plans are not auto-refit per fold unless
       ``apply_session_plans`` is provided (receives train frame + train indices).
     - Text modality is not covered; use :func:`make_text_loaders` separately.
@@ -318,7 +319,8 @@ def cross_validate_torch(
         f"Device resolved to {device_spec.resolved} (requested={device_spec.requested}).",
     )
     limitations = (
-        "Not nested Torch CV: no inner hyperparameter search / selection loop.",
+        "Not nested Torch CV: no inner hyperparameter search / selection loop "
+        "(use nested_cv_torch for that).",
         "Classical Session preprocess plans are not auto-refit per fold unless "
         "apply_session_plans is provided.",
         "Text/sequence modality is out of scope for this helper.",

@@ -13,8 +13,9 @@ Classical `Session.fit`, Torch `*_torch`, and RAG `rag_*` stay unchanged. AI
 methods use the `ai_*` prefix and store results in `session.ai_result` /
 `session.ai_transcript`.
 
-This alpha is **advisor → plan → confirmed execute**. There is no autonomous
-agent or automatic tool execution.
+This alpha defaults to **advisor → plan → confirmed execute**. Optional
+`ai_run_autonomous` is explicit operator automation under hard caps (allowlist,
+max steps, blocked sample egress, transcript audit) — not unconstrained agency.
 
 ## Bring your own API key
 
@@ -227,6 +228,23 @@ result = session.ai_advisor("Test question")
 
 CI runs with `MockProvider` only — real API keys are never required for tests.
 
+## Explicit autonomy (opt-in)
+
+Default AI stays propose→confirm→execute. For allowlisted automation with hard
+caps (max steps, tool allowlist, blocked sample egress, transcript audit):
+
+```python
+session.ai_configure(provider="mock", egress_level="stats_only")
+result = session.ai_run_autonomous(
+    "split the data and report workflow status",
+    confirm_autonomy=True,  # required
+    max_steps=5,
+)
+print(result.completed_steps, result.stop_reason, result.residual_risks)
+```
+
+This is operator automation inside an allowlist — not unconstrained agency.
+
 ## Explain catalog
 
 AI operations are documented in the explain catalog:
@@ -266,7 +284,8 @@ them. The operator is not a substitute for domain expertise.
 - **Bring-your-own API key.** BuildML never ships, proxies, or embeds keys.
 - **Default egress is STATS_ONLY.** Raw rows require explicit opt-in and
   confirmation.
-- **Propose → confirm → execute.** No autonomous agent or auto-execution.
+- **Propose → confirm → execute by default.** `ai_run_autonomous` is opt-in
+  allowlisted automation with residual risk — review transcripts.
 - **Tool registry is the trust boundary.** The operator cannot execute
   arbitrary code or tools not in the registry.
 - **Transcript ≠ checkpoint.** AI conversation history is stored separately

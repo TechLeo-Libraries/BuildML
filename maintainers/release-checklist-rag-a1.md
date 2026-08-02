@@ -60,4 +60,4 @@ Optional follow-ups (not required for the alpha gate):
 - Teaching Studio RAG cockpit redesign
 - That Session checkpoints contain the vector index
 - That classical or Torch APIs were replaced by RAG
-- Multimodal fusion or nested Torch search (still out of scope on current HEAD)
+- Image/audio multimodal (tabular⊕text fusion + nested Torch HPO ship in Pass G)

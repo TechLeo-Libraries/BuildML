@@ -142,6 +142,11 @@ class Session:
         self._torch_loaders: TorchLoaderBundle | None = None
         self._dl_train_result: TrainResult | None = None
         self._dl_cv_result: TorchCVResult | None = None
+        self._dl_search_result: Any | None = None
+        self._dl_nested_cv_result: Any | None = None
+        self._dl_export_result: Any | None = None
+        self._dl_ddp_result: Any | None = None
+        self._ai_autonomy_result: Any | None = None
         self._rag_corpus: Any | None = None
         self._rag_chunks: Any | None = None
         self._rag_index: Any | None = None
@@ -973,12 +978,13 @@ class Session:
         config: TrainConfig | None = None,
         hidden: tuple[int, ...] = (64, 32),
         dropout: float = 0.1,
+        mixed_precision: bool = False,
     ) -> Session:
         """Train an ``nn.Module`` on the train Torch loader.
 
         Requires ``pip install 'buildml[torch]'``. When ``module`` is omitted,
-        builds a tabular MLP (or text classifier for text loaders) from the
-        loader contract. Does not replace classical :meth:`fit`.
+        builds a tabular MLP, text classifier, or multimodal fusion module from
+        the loader contract. Does not replace classical :meth:`fit`.
 
         Parameters
         ----------
@@ -1001,7 +1007,9 @@ class Session:
         config:
             Optional :class:`~buildml.dl.types.TrainConfig` overriding scalar knobs.
         hidden / dropout:
-            Built-in MLP / text classifier knobs when ``module`` is omitted."""
+            Built-in MLP / text classifier knobs when ``module`` is omitted.
+        mixed_precision:
+            When True on CUDA, enables AMP; CPU/MPS is a documented no-op."""
         return dl_ops.fit_torch(
             self,
             module=module,
@@ -1019,6 +1027,36 @@ class Session:
             config=config,
             hidden=hidden,
             dropout=dropout,
+            mixed_precision=mixed_precision,
+        )
+
+    def make_multimodal_torch_loaders(
+        self,
+        *,
+        text_column: str | None = None,
+        numeric_columns: list[str] | None = None,
+        batch_size: int = 16,
+        max_len: int = 64,
+        max_vocab: int = 5000,
+        min_freq: int = 1,
+        normalize: bool = True,
+        shuffle_train: bool = True,
+        seed: int = 0,
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> TorchLoaderBundle:
+        """Build fused tabular+text DataLoaders (train-only vocab + normalize)."""
+        return dl_ops.make_multimodal_torch_loaders(
+            self,
+            text_column=text_column,
+            numeric_columns=numeric_columns,
+            batch_size=batch_size,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            normalize=normalize,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            task=task,
         )
 
     def cross_validate_torch(
@@ -1050,6 +1088,128 @@ class Session:
             module_factory=module_factory,
         )
 
+    def search_torch(
+        self,
+        *,
+        param_grid: dict[str, list[Any]] | None = None,
+        param_distributions: dict[str, Any] | None = None,
+        inner_search: Literal["grid", "randomized", "auto"] = "auto",
+        n_iter: int = 5,
+        n_folds: int = 3,
+        epochs: int = 2,
+        batch_size: int = 32,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        normalize: bool = True,
+        seed: int = 0,
+        stratify: bool = True,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        scoring_metric: str | None = None,
+        module_factory: Any | None = None,
+    ) -> Any:
+        """Inner-fold Torch hyperparameter search on the train universe."""
+        return dl_ops.search_torch(
+            self,
+            param_grid=param_grid,
+            param_distributions=param_distributions,
+            inner_search=inner_search,
+            n_iter=n_iter,
+            n_folds=n_folds,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            device=device,
+            normalize=normalize,
+            seed=seed,
+            stratify=stratify,
+            task=task,
+            scoring_metric=scoring_metric,
+            module_factory=module_factory,
+        )
+
+    def nested_cv_torch(
+        self,
+        *,
+        param_grid: dict[str, list[Any]] | None = None,
+        param_distributions: dict[str, Any] | None = None,
+        inner_search: Literal["grid", "randomized", "auto"] = "auto",
+        n_iter: int = 5,
+        outer_cv: int = 3,
+        inner_cv: int = 2,
+        epochs: int = 2,
+        batch_size: int = 32,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        normalize: bool = True,
+        seed: int = 0,
+        stratify: bool = True,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        scoring_metric: str | None = None,
+        module_factory: Any | None = None,
+    ) -> Any:
+        """Nested Torch CV with fold-local normalize and inner hyperparameter search."""
+        return dl_ops.nested_cv_torch(
+            self,
+            param_grid=param_grid,
+            param_distributions=param_distributions,
+            inner_search=inner_search,
+            n_iter=n_iter,
+            outer_cv=outer_cv,
+            inner_cv=inner_cv,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            device=device,
+            normalize=normalize,
+            seed=seed,
+            stratify=stratify,
+            task=task,
+            scoring_metric=scoring_metric,
+            module_factory=module_factory,
+        )
+
+    def export_torch(
+        self,
+        path: str | Path,
+        *,
+        format: Literal["torchscript", "onnx"] = "torchscript",
+        opset: int = 17,
+        dynamic_batch: bool = True,
+        example_input: Any | None = None,
+    ) -> Any:
+        """Export the last Torch trainer to TorchScript or ONNX (alpha escape hatch)."""
+        return dl_ops.export_torch(
+            self,
+            path=path,
+            format=format,
+            opset=opset,
+            dynamic_batch=dynamic_batch,
+            example_input=example_input,
+        )
+
+    def fit_torch_ddp(
+        self,
+        module_factory: Any,
+        *,
+        epochs: int = 5,
+        learning_rate: float = 1e-3,
+        mixed_precision: bool = False,
+        world_size: int | None = None,
+        allow_cpu_ddp: bool = False,
+        config: TrainConfig | None = None,
+    ) -> Any:
+        """Single-node DDP training (requires multi-GPU unless allow_cpu_ddp)."""
+        return dl_ops.fit_torch_ddp(
+            self,
+            module_factory,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            mixed_precision=mixed_precision,
+            world_size=world_size,
+            allow_cpu_ddp=allow_cpu_ddp,
+            config=config,
+        )
+
     @property
     def dl_train_result(self) -> TrainResult | None:
         """Last Torch :class:`~buildml.dl.results.TrainResult`, if any."""
@@ -1059,6 +1219,16 @@ class Session:
     def dl_cv_result(self) -> TorchCVResult | None:
         """Last :class:`~buildml.dl.cv.TorchCVResult`, if any."""
         return self._dl_cv_result
+
+    @property
+    def dl_search_result(self) -> Any | None:
+        """Last :meth:`search_torch` result, if any."""
+        return self._dl_search_result
+
+    @property
+    def dl_nested_cv_result(self) -> Any | None:
+        """Last :meth:`nested_cv_torch` result, if any."""
+        return self._dl_nested_cv_result
 
     def torch_training_curve(self) -> TrainingCurveReport:
         """Return structured training-curve teaching data for the last Torch run.
@@ -1547,11 +1717,40 @@ class Session:
             max_steps=max_steps,
         )
 
-    def ai_status(self) -> dict[str, Any]:
-        """Get AI operator status including provider, egress, and budget.
+    def ai_run_autonomous(
+        self,
+        goal: str,
+        *,
+        plan: Any | None = None,
+        confirm_autonomy: bool = False,
+        max_steps: int = 8,
+        tool_allowlist: Sequence[str] | None = None,
+        allow_destructive: bool = False,
+        provider_plan: bool = True,
+    ) -> Any:
+        """Explicit autonomy mode: plan-and-execute allowlisted tools under hard caps.
 
-        Returns factual walkthrough disclosure about the current AI configuration,
-        without claiming autonomous capability or production safety.
+        Default AI remains propose→confirm→execute. This path auto-confirms only
+        after ``confirm_autonomy=True``, with max-steps, allowlist, blocked sample
+        egress, destructive gating, and transcript audit. Operator automation —
+        not unconstrained agency.
+        """
+        return ai_ops.ai_run_autonomous(
+            self,
+            goal,
+            plan=plan,
+            confirm_autonomy=confirm_autonomy,
+            max_steps=max_steps,
+            tool_allowlist=tool_allowlist,
+            allow_destructive=allow_destructive,
+            provider_plan=provider_plan,
+        )
+
+    def ai_status(self) -> dict[str, Any]:
+        """Get AI operator status including provider, egress, budget, and autonomy.
+
+        Returns factual walkthrough disclosure about the current AI configuration
+        and residual autonomy risks when a prior autonomous run exists.
 
         Returns
         -------

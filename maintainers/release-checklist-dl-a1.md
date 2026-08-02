@@ -53,9 +53,8 @@ HEAD deepened several of these — do not paste this list onto current docs:
 
 - For **2.1.0a1 only:** no text/sequence loaders, no built-in MLP zoo, no
   fold-local Torch CV (those ship in Phase C — see `dl-m0-lock.md` / CHANGELOG)
-- DDP or mixed-precision product path (still out of scope on current HEAD)
+- Multi-node cluster DDP (single-node DDP / AMP / export shipped in Pass G)
 - Polars/DuckDB zero-copy into DataLoaders (still out of scope)
 - RAG / LLM operator as shipped features of the **2.1.0a1** tag (later lines)
 - That Session checkpoints contain Torch weights
-- Image / multimodal fusion or nested Torch hyperparameter search (still out of
-  scope on current HEAD)
+- Image / audio multimodal (tabular⊕text fusion + nested Torch HPO ship in Pass G)

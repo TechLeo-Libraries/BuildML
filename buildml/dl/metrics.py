@@ -51,7 +51,27 @@ def resolve_device(requested: str = "auto") -> DeviceSpec:
     if want == "cpu":
         return DeviceSpec(requested=want, resolved="cpu")
 
-    raise ValidationError(f"Unknown device '{requested}'. Use cpu, cuda, mps, or auto.")
+    if want.startswith("cuda:"):
+        if torch.cuda.is_available():
+            try:
+                idx = int(want.split(":", 1)[1])
+            except ValueError as exc:
+                raise ValidationError(
+                    f"Unknown device '{requested}'. Use cuda:N with integer N."
+                ) from exc
+            if idx < 0 or idx >= torch.cuda.device_count():
+                warning = (
+                    f"CUDA device {idx} unavailable "
+                    f"(count={torch.cuda.device_count()}); using cpu."
+                )
+                return DeviceSpec(requested=want, resolved="cpu", fallback_warning=warning)
+            return DeviceSpec(requested=want, resolved=want)
+        warning = "CUDA was requested but is unavailable; using cpu."
+        return DeviceSpec(requested=want, resolved="cpu", fallback_warning=warning)
+
+    raise ValidationError(
+        f"Unknown device '{requested}'. Use cpu, cuda, cuda:N, mps, or auto."
+    )
 
 
 def _predict_partition(
@@ -67,8 +87,15 @@ def _predict_partition(
     truths: list[np.ndarray] = []
     dev = torch.device(device)
     with torch.no_grad():
-        for xb, yb in loader:
-            xb = xb.to(dev)
+        for batch in loader:
+            if not isinstance(batch, (tuple, list)) or len(batch) < 2:
+                raise ValidationError("Loader batch must be (inputs..., y)")
+            inputs = batch[:-1]
+            yb = batch[-1]
+            if len(inputs) == 1:
+                xb: Any = inputs[0].to(dev)
+            else:
+                xb = tuple(t.to(dev) for t in inputs)
             out = module(xb)
             if task == "classification":
                 if out.ndim == 1:

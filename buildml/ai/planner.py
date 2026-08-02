@@ -97,9 +97,13 @@ _OPERATION_TO_TOOL: dict[str, tuple[str, dict[str, Any]]] = {
     "rag_embed_and_index": ("rag_embed_and_index", {}),
     "make_torch_loaders": ("make_torch_loaders", {}),
     "make_text_torch_loaders": ("make_text_torch_loaders", {}),
+    "make_multimodal_torch_loaders": ("make_multimodal_torch_loaders", {}),
     "fit_torch": ("fit_torch", {}),
     "evaluate_torch": ("evaluate_torch", {}),
     "cross_validate_torch": ("cross_validate_torch", {}),
+    "search_torch": ("search_torch", {}),
+    "nested_cv_torch": ("nested_cv_torch", {}),
+    "export_torch": ("export_torch", {}),
 }
 
 

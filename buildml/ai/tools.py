@@ -370,6 +370,95 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             read_only=False,
             catalog_operation="cross_validate_torch",
         ),
+        ToolSpec(
+            name="make_multimodal_torch_loaders",
+            description=(
+                "Build fused tabular+text Torch DataLoaders (train-only vocab + normalize). "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "text_column": {"type": "string", "description": "Text feature column."},
+                    "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
+                    "normalize": {
+                        "type": "boolean",
+                        "description": "Fit numeric mean/std on train (default true).",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_multimodal_torch_loaders",
+            read_only=False,
+            catalog_operation="make_multimodal_torch_loaders",
+        ),
+        ToolSpec(
+            name="search_torch",
+            description=(
+                "Inner-fold Torch hyperparameter search on the train universe. "
+                "Not a nested outer estimate. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "n_folds": {"type": "integer", "description": "Inner folds (default 3)."},
+                    "epochs": {"type": "integer", "description": "Epochs per trial fold."},
+                    "n_iter": {
+                        "type": "integer",
+                        "description": "Randomized trials when using distributions.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="search_torch",
+            read_only=False,
+            catalog_operation="search_torch",
+        ),
+        ToolSpec(
+            name="nested_cv_torch",
+            description=(
+                "Nested Torch CV: outer evaluation after fold-local inner hyperparameter "
+                "search. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "outer_cv": {"type": "integer", "description": "Outer folds (default 3)."},
+                    "inner_cv": {"type": "integer", "description": "Inner folds (default 2)."},
+                    "epochs": {"type": "integer", "description": "Epochs per fit."},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="nested_cv_torch",
+            read_only=False,
+            catalog_operation="nested_cv_torch",
+        ),
+        ToolSpec(
+            name="export_torch",
+            description=(
+                "Export the last Torch trainer to TorchScript or ONNX (alpha escape hatch). "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Destination file path."},
+                    "format": {
+                        "type": "string",
+                        "enum": ["torchscript", "onnx"],
+                        "description": "Export format.",
+                    },
+                },
+                "required": ["path"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="export_torch",
+            read_only=False,
+            catalog_operation="export_torch",
+        ),
     )
 
 

@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 TaskSpec = Literal["classification", "regression", "auto"]
 DeviceName = Literal["cpu", "cuda", "mps", "auto"]
+# Runtime also accepts ``cuda:N`` device strings for single-node DDP ranks.
 SchedulerName = Literal["none", "step", "plateau", "cosine"]
 EarlyStopMode = Literal["min", "max"]
 
@@ -54,6 +55,8 @@ class TrainConfig:
     - ``early_stopping_patience=None`` (disabled). When set, monitors
       ``early_stopping_monitor`` on the validation loader (requires a validation
       partition). ``restore_best_weights=True`` reloads the best monitored epoch.
+    - ``mixed_precision=False``. When True on a CUDA device, uses autocast +
+      GradScaler. On CPU/MPS this is a documented no-op with a warning.
     """
 
     epochs: int = DEFAULT_EPOCHS
@@ -65,7 +68,7 @@ class TrainConfig:
     drop_last: bool = False
     normalize: bool = True
     seed: int = 0
-    device: DeviceName = "auto"
+    device: str = "auto"
     grad_clip_norm: float | None = DEFAULT_GRAD_CLIP_NORM
     log_every: int = 1
     early_stopping_patience: int | None = DEFAULT_EARLY_STOPPING_PATIENCE
@@ -80,6 +83,7 @@ class TrainConfig:
     scheduler_factor: float = DEFAULT_SCHEDULER_FACTOR
     scheduler_patience: int = DEFAULT_SCHEDULER_PATIENCE
     scheduler_threshold: float = DEFAULT_SCHEDULER_THRESHOLD
+    mixed_precision: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

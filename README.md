@@ -191,16 +191,18 @@ Runnable quickstarts:
 - [RAG](guides/quickstart-rag.md)
 - [AI operator](guides/quickstart-ai.md)
 
-Torch covers tabular MLP and a text/sequence path, with fold-local CV (not nested
-search). RAG defaults to lexical hashing embeddings; semantic sentence-transformers
-and grounded `rag_generate` are first-class. The AI operator proposes and executes
-only registered tools after explicit confirmation (including RAG generate and Torch).
+Torch covers tabular MLP, text/sequence, tabular⊕text multimodal fusion, fold-local
+CV, nested Torch HPO, optional CUDA AMP, single-node DDP, and TorchScript/ONNX
+export. RAG defaults to lexical hashing embeddings; semantic sentence-transformers
+and grounded `rag_generate` are first-class. The AI operator defaults to
+propose→confirm→execute; optional `ai_run_autonomous` is allowlisted operator
+automation with hard caps — not unconstrained agency.
 
 ## Alpha status
 
 This is pre-release software. Bundle schema version strings, report layouts,
 and method signatures may change. There is no out-of-core sklearn training,
-first-class SHAP or fairness reporting, or fully autonomous LLM agents.
+first-class SHAP or fairness reporting, or unconstrained LLM agency.
 See [CHANGELOG.md](CHANGELOG.md) for release notes and
 [guides/glossary.md](guides/glossary.md) for terminology.
 

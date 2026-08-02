@@ -68,7 +68,7 @@ Layout:
 | Classical preprocess before loaders | Session impute/encode/scale mutate the frame; attached plans are disclosed. `apply_plans=True` re-applies fitted plans (no refit). Fold-local plan refit requires an explicit CV hook. |
 | Built-in models | Tabular MLP + embedding text classifier (`buildml.dl.models`) for the happy path |
 | Text modality | `make_text_torch_loaders` + text classifier — justifies DL beyond numeric tables |
-| Torch CV | Fold-local only; nested Torch hyperparameter search is an explicit non-goal for this lock |
+| Torch CV | Fold-local `cross_validate_torch` in Phase C; nested HPO (`nested_cv_torch` / `search_torch`) ships in Pass G |
 | Serializer | `torch.save` payload + JSON `meta.json` sidecar |
 | Device | Prefer requested device; fall back to CPU with an explicit warning when CUDA/MPS unavailable |
 | Normalize | Optional train-fit mean/std in loader path; frozen on val/test; per-fold in CV |

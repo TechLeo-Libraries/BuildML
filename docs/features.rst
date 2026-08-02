@@ -59,16 +59,21 @@ Optional extras (same Session)
 ------------------------------
 
 * **Torch** (``buildml[torch]``): tabular loaders, text/sequence loaders
-  (``make_text_torch_loaders``), built-in MLP / text classifier when
-  ``fit_torch`` omits a module, fold-local ``cross_validate_torch``, evaluation,
-  and trainer bundles. Torch CV is not nested hyperparameter search.
+  (``make_text_torch_loaders``), tabular+text multimodal fusion
+  (``make_multimodal_torch_loaders``), built-in MLP / text / fusion modules when
+  ``fit_torch`` omits a module, fold-local ``cross_validate_torch``, nested
+  ``nested_cv_torch`` / ``search_torch``, optional CUDA AMP, single-node
+  ``fit_torch_ddp``, TorchScript/ONNX ``export_torch``, evaluation, and trainer
+  bundles. Optional ``buildml[onnx]`` adds the ``onnx`` checker package.
 * **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, grounded
   ``rag_generate`` with citations, evaluate, upsert/delete, and bundle
   save/load. Hashing embeddings are the CI-safe default; semantic embedders are
   optional behind the same API.
 * **AI operator** (``buildml[ai]``): advisor, multi-step plan, confirmed execute
-  with egress controls and a typed tool allowlist spanning classical, RAG
-  (including generate), and Torch (including text loaders and fold-local CV).
+  (default), and explicit ``ai_run_autonomous`` operator automation under hard
+  caps (allowlist, max steps, blocked sample egress, transcript audit). Tool
+  allowlist spans classical, RAG, and Torch (including nested search and
+  multimodal loaders).
 
 Boundaries
 ----------
@@ -78,6 +83,7 @@ does not make causal claims from associations or feature importance. There is
 no ``OUT_OF_CORE`` sklearn training mode; engine choice does not make every
 sklearn-facing operation out-of-core. Checkpoints do not contain fitted models,
 and model bundles do not contain the Session dataset or split history. The AI
-operator guides workflows behind confirmations; it is not an autonomous agent
-and does not replace domain review of roles, splits, or metrics. Multimodal
-fusion and nested Torch search remain out of scope for this alpha.
+operator defaults to propose→confirm→execute; autonomy is opt-in automation
+inside an allowlist, not unconstrained agency, and does not replace domain
+review of roles, splits, or metrics. Image/audio multimodal and multi-node
+cluster DDP remain out of scope for this alpha.

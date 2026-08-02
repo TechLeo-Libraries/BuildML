@@ -166,11 +166,12 @@ def fit_torch(
     config: Any | None = None,
     hidden: tuple[int, ...] = (64, 32),
     dropout: float = 0.1,
+    mixed_precision: bool = False,
 ) -> Session:
     """Train an ``nn.Module`` on the train Torch loader.
 
     Requires ``pip install 'buildml[torch]'``. When ``module`` is omitted, builds
-    a tabular MLP (or text classifier when the last loaders were text) from the
+    a tabular MLP, text classifier, or multimodal fusion module from the active
     loader contract so the happy path does not require a hand-rolled network.
 
     Does not replace classical :meth:`fit` / :attr:`fit_result`.
@@ -195,6 +196,7 @@ def fit_torch(
             scheduler=scheduler,
             batch_size=getattr(session._torch_loaders.report, "batch_size", 32),
             normalize=getattr(session._torch_loaders.report, "normalize", True),
+            mixed_precision=mixed_precision,
         )
     prior = None
     if resume:
@@ -207,9 +209,32 @@ def fit_torch(
         if resume and prior is not None:
             module = prior.module
         else:
+            from buildml.dl.multimodal import build_multimodal_fusion
+
             text_vocab = getattr(session._torch_loaders, "text_vocab", None)
+            multimodal = getattr(session._torch_loaders, "multimodal_contract", None)
             contract = session._torch_loaders.contract
-            if text_vocab is not None:
+            modality = getattr(session._torch_loaders, "modality", None)
+            if multimodal is not None or modality == "tabular_text_fusion":
+                mm = multimodal
+                n_classes = max(2, len(contract.class_labels) or 2)
+                vocab_size = (
+                    int(getattr(text_vocab, "vocab_size", 0))
+                    or int((mm.vocab or {}).get("vocab_size") or 0)
+                    or len((mm.vocab or {}).get("id_to_token") or [])
+                )
+                if vocab_size < 2:
+                    raise ValidationError(
+                        "Multimodal loaders are missing vocabulary metadata for fit_torch"
+                    )
+                module = build_multimodal_fusion(
+                    len(mm.numeric_columns),
+                    vocab_size,
+                    task=contract.task,
+                    n_classes=n_classes,
+                    dropout=dropout,
+                )
+            elif text_vocab is not None and multimodal is None:
                 n_classes = max(2, len(contract.class_labels) or 2)
                 module = build_text_classifier(
                     text_vocab.vocab_size,
@@ -396,3 +421,281 @@ def load_torch_bundle(
         result_summary=session._dl_train_result.to_dict(),
     )
     return session
+
+
+def make_multimodal_torch_loaders(
+    session,
+    *,
+    text_column: str | None = None,
+    numeric_columns: list[str] | None = None,
+    batch_size: int = 16,
+    max_len: int = 64,
+    max_vocab: int = 5000,
+    min_freq: int = 1,
+    normalize: bool = True,
+    shuffle_train: bool = True,
+    seed: int = 0,
+    task: Literal["classification", "regression", "auto"] = "auto",
+) -> Any:
+    """Build fused tabular+text DataLoaders (train-only vocab + normalize).
+
+    Requires ``buildml[torch]``. Batches are ``(x_numeric, token_ids, y)``.
+    """
+    from buildml.dl.multimodal import MultimodalLoaderConfig, make_multimodal_loaders
+
+    session.assert_can_fit("train")
+    bundle = make_multimodal_loaders(
+        session.dataset,
+        session._split_plan,
+        text_column=text_column,
+        numeric_columns=numeric_columns,
+        config=MultimodalLoaderConfig(
+            batch_size=batch_size,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            normalize=normalize,
+        ),
+        task=task,
+    )
+    session._torch_loaders = bundle
+    session._record(
+        "make_multimodal_torch_loaders",
+        {
+            "text_column": text_column
+            or getattr(getattr(bundle, "multimodal_contract", None), "text_column", None),
+            "numeric_columns": list(
+                getattr(getattr(bundle, "multimodal_contract", None), "numeric_columns", ()) or ()
+            ),
+            "batch_size": batch_size,
+            "normalize": normalize,
+            "seed": seed,
+            "task": task,
+        },
+        result_summary=bundle.report.to_dict(),
+        warnings=tuple(bundle.report.warnings),
+    )
+    return bundle
+
+
+def search_torch(
+    session,
+    *,
+    param_grid: dict[str, list[Any]] | None = None,
+    param_distributions: dict[str, Any] | None = None,
+    inner_search: Literal["grid", "randomized", "auto"] = "auto",
+    n_iter: int = 5,
+    n_folds: int = 3,
+    epochs: int = 2,
+    batch_size: int = 32,
+    learning_rate: float = 0.001,
+    device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+    normalize: bool = True,
+    seed: int = 0,
+    stratify: bool = True,
+    task: Literal["classification", "regression", "auto"] = "auto",
+    scoring_metric: str | None = None,
+    module_factory: Any | None = None,
+) -> Any:
+    """Inner-fold Torch hyperparameter search on the Session train universe.
+
+    Held-out validation/test partitions are never scored. For a nested outer
+    estimate after search, use :meth:`nested_cv_torch`.
+    """
+    from buildml.dl.search import search_torch as _search
+
+    if session._dataset is None:
+        raise ValidationError("No dataset attached. Call ingest(...) first.")
+    result = _search(
+        session.dataset,
+        split_plan=session._split_plan,
+        param_grid=param_grid,
+        param_distributions=param_distributions,
+        inner_search=inner_search,
+        n_iter=n_iter,
+        n_folds=n_folds,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        device=device,
+        normalize=normalize,
+        seed=seed,
+        stratify=stratify,
+        task=task,
+        scoring_metric=scoring_metric,
+        module_factory=module_factory,
+    )
+    session._dl_search_result = result
+    session._record(
+        "search_torch",
+        {
+            "search_method": result.search_method,
+            "n_folds": n_folds,
+            "best_params": result.best_params,
+            "scoring_metric": result.scoring_metric,
+        },
+        result_summary=result.to_dict(),
+        warnings=tuple(result.warnings),
+    )
+    return result
+
+
+def nested_cv_torch(
+    session,
+    *,
+    param_grid: dict[str, list[Any]] | None = None,
+    param_distributions: dict[str, Any] | None = None,
+    inner_search: Literal["grid", "randomized", "auto"] = "auto",
+    n_iter: int = 5,
+    outer_cv: int = 3,
+    inner_cv: int = 2,
+    epochs: int = 2,
+    batch_size: int = 32,
+    learning_rate: float = 0.001,
+    device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+    normalize: bool = True,
+    seed: int = 0,
+    stratify: bool = True,
+    task: Literal["classification", "regression", "auto"] = "auto",
+    scoring_metric: str | None = None,
+    module_factory: Any | None = None,
+) -> Any:
+    """Nested Torch CV: outer evaluation after fold-local inner hyperparameter search.
+
+    Outer-eval rows never enter inner ranking. Session validation/test stay
+    untouched. Normalize stats are fit fold-locally.
+    """
+    from buildml.dl.search import nested_cv_torch as _nested
+
+    if session._dataset is None:
+        raise ValidationError("No dataset attached. Call ingest(...) first.")
+    result = _nested(
+        session.dataset,
+        split_plan=session._split_plan,
+        param_grid=param_grid,
+        param_distributions=param_distributions,
+        inner_search=inner_search,
+        n_iter=n_iter,
+        outer_cv=outer_cv,
+        inner_cv=inner_cv,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        device=device,
+        normalize=normalize,
+        seed=seed,
+        stratify=stratify,
+        task=task,
+        scoring_metric=scoring_metric,
+        module_factory=module_factory,
+    )
+    session._dl_nested_cv_result = result
+    session._record(
+        "nested_cv_torch",
+        {
+            "outer_cv": outer_cv,
+            "inner_cv": inner_cv,
+            "search_method": result.search_method,
+            "mean_metrics": result.mean_metrics,
+            "scoring_metric": result.scoring_metric,
+        },
+        result_summary=result.to_dict(),
+        warnings=tuple(result.warnings),
+    )
+    return result
+
+
+def export_torch(
+    session,
+    path: str | Path,
+    *,
+    format: Literal["torchscript", "onnx"] = "torchscript",
+    opset: int = 17,
+    dynamic_batch: bool = True,
+    example_input: Any | None = None,
+) -> Any:
+    """Export the last Torch trainer to TorchScript or ONNX.
+
+    Uses train-loader example inputs when ``example_input`` is omitted.
+    Alpha-quality escape hatch — see export result limitations.
+    """
+    from buildml.dl.export import export_train_result
+
+    if session._dl_train_result is None:
+        raise ValidationError("No Torch trainer. Call fit_torch(...) first.")
+    if session._torch_loaders is None and example_input is None:
+        session.make_torch_loaders(
+            normalize=session._dl_train_result.contract.normalize_mean is not None,
+            task=session._dl_train_result.task,
+        )
+    result = export_train_result(
+        session._dl_train_result,
+        path,
+        format=format,
+        loader_bundle=session._torch_loaders,
+        example_input=example_input,
+        opset=opset,
+        dynamic_batch=dynamic_batch,
+    )
+    session._dl_export_result = result
+    session._record(
+        "export_torch",
+        {"path": str(result.path), "format": format, "opset": opset},
+        result_summary=result.to_dict(),
+        warnings=tuple(result.warnings),
+    )
+    return result
+
+
+def fit_torch_ddp(
+    session,
+    module_factory: Any,
+    *,
+    epochs: int = 5,
+    learning_rate: float = 0.001,
+    mixed_precision: bool = False,
+    world_size: int | None = None,
+    allow_cpu_ddp: bool = False,
+    config: Any | None = None,
+) -> Any:
+    """Single-node DDP training via a fresh ``module_factory`` per process.
+
+    Requires ``torch.cuda.device_count() >= 2`` unless ``allow_cpu_ddp=True``
+    (gloo smoke only). Multi-node cluster launch is out of scope.
+    """
+    from buildml.dl.ddp import DDPConfig, train_supervised_module_ddp
+    from buildml.dl.types import TrainConfig
+
+    session.assert_can_fit("train")
+    if session._torch_loaders is None:
+        session.make_torch_loaders()
+    assert session._torch_loaders is not None
+    if config is None:
+        config = TrainConfig(
+            epochs=epochs,
+            learning_rate=learning_rate,
+            mixed_precision=mixed_precision,
+            batch_size=getattr(session._torch_loaders.report, "batch_size", 32),
+        )
+    ddp_result = train_supervised_module_ddp(
+        module_factory,
+        session._torch_loaders,
+        config=config,
+        ddp_config=DDPConfig(world_size=world_size, allow_cpu_ddp=allow_cpu_ddp),
+    )
+    if ddp_result.train_result is not None:
+        session._dl_train_result = ddp_result.train_result
+    session._dl_ddp_result = ddp_result
+    session._record(
+        "fit_torch_ddp",
+        {
+            "world_size": ddp_result.world_size,
+            "backend": ddp_result.backend,
+            "allow_cpu_ddp": allow_cpu_ddp,
+        },
+        result_summary=ddp_result.to_dict(),
+        warnings=tuple(ddp_result.warnings),
+    )
+    return ddp_result
