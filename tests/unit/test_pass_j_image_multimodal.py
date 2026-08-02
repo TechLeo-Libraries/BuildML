@@ -251,3 +251,82 @@ def test_image_alone_refused() -> None:
     )
     with pytest.raises(ValidationError, match="tabular numeric|text column"):
         session.make_image_multimodal_torch_loaders(image_column="image", image_size=(8, 8))
+
+
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_image_multimodal_onnx_export(tmp_path: Path) -> None:
+    _require_torch_or_skip()
+    pytest.importorskip("onnx")
+    session = (
+        Session.ingest(_image_tabular_frame(40))
+        .set_roles(
+            {"x1": "feature", "x2": "feature", "image": "feature", "y": "target"}
+        )
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    )
+    session.make_image_multimodal_torch_loaders(
+        image_column="image", image_size=(8, 8), batch_size=8, seed=0
+    )
+    session.fit_torch(epochs=1, device="cpu")
+    out = tmp_path / "img_mm.onnx"
+    result = session.export_torch(out, format="onnx", opset=17)
+    assert result.path.exists()
+    assert result.format == "onnx"
+    assert result.path.stat().st_size > 0
+
+
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_image_loader_bundle_slots_hold_modality_metadata() -> None:
+    """Pass J slotted TorchLoaderBundle fields must accept modality metadata."""
+    _require_torch_or_skip()
+    from buildml.dl.results import TorchLoaderBundle
+
+    session = (
+        Session.ingest(_image_tabular_frame(40))
+        .set_roles(
+            {"x1": "feature", "x2": "feature", "image": "feature", "y": "target"}
+        )
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    )
+    bundle = session.make_image_multimodal_torch_loaders(
+        image_column="image", image_size=(8, 8), batch_size=8, seed=0
+    )
+    assert isinstance(bundle, TorchLoaderBundle)
+    assert "modality" in TorchLoaderBundle.__slots__
+    assert "multimodal_contract" in TorchLoaderBundle.__slots__
+    assert "input_layout" in TorchLoaderBundle.__slots__
+    assert bundle.modality == "tabular_image_fusion"
+    assert bundle.multimodal_contract is not None
+    assert bundle.multimodal_contract.image_column == "image"
+    assert bundle.input_layout == ("numeric", "image")
+    # setattr must not raise (the pre-Pass-J slotted hole)
+    bundle.modality = "tabular_image_fusion"
+    assert session._torch_loaders.modality == "tabular_image_fusion"
+
+
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_ai_executor_dispatches_make_image_multimodal_torch_loaders() -> None:
+    """Pass K: registry tool must reach Session, not die as missing dispatch."""
+    _require_torch_or_skip()
+    from buildml.ai.executor import execute_tool, propose_tool_execution
+    from buildml.ai.tools import build_default_registry
+
+    session = (
+        Session.ingest(_image_tabular_frame(40))
+        .set_roles(
+            {"x1": "feature", "x2": "feature", "image": "feature", "y": "target"}
+        )
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+        .ai_configure(provider="mock")
+    )
+    registry = build_default_registry()
+    assert registry.get("make_image_multimodal_torch_loaders") is not None
+    proposal = propose_tool_execution(
+        "make_image_multimodal_torch_loaders",
+        {"image_column": "image", "batch_size": 8},
+        registry,
+    )
+    result = execute_tool(session, proposal, confirmed=True, registry=registry)
+    assert result.error is None, result.error
+    assert session._torch_loaders is not None
+    assert session._torch_loaders.modality == "tabular_image_fusion"

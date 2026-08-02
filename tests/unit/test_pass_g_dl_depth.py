@@ -166,6 +166,7 @@ def test_export_torchscript_roundtrip(tmp_path: Path) -> None:
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_export_onnx_smoke(tmp_path: Path) -> None:
     _require_torch_or_skip()
+    pytest.importorskip("onnx")
     session = (
         Session.ingest(_cls_frame(40))
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})

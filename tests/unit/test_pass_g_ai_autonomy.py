@@ -39,6 +39,7 @@ def test_registry_includes_pass_g_tools() -> None:
     names = set(registered_tool_names())
     for required in (
         "make_multimodal_torch_loaders",
+        "make_image_multimodal_torch_loaders",
         "search_torch",
         "nested_cv_torch",
         "export_torch",
@@ -145,7 +146,7 @@ def test_default_allowlist_is_subset_of_registry() -> None:
 
 
 def test_pass_g_tools_have_executor_dispatch() -> None:
-    """Registry tools must be wired in executor._dispatch_tool (Pass H)."""
+    """Registry tools must be wired in executor._dispatch_tool (Pass H/K)."""
     from buildml.ai.executor import execute_tool, propose_tool_execution
     from buildml.ai.tools import build_default_registry
 
@@ -176,6 +177,17 @@ def test_pass_g_tools_have_executor_dispatch() -> None:
     result = execute_tool(session, proposal, confirmed=True, registry=registry)
     assert result.error is not None
     assert "No dispatch handler" not in result.error
+
+    # Pass J/K: image multimodal tool must dispatch (missing image_column → Session error).
+    proposal = propose_tool_execution(
+        "make_image_multimodal_torch_loaders",
+        {},
+        registry,
+    )
+    result = execute_tool(session, proposal, confirmed=True, registry=registry)
+    assert result.error is not None
+    assert "No dispatch handler" not in result.error
+    assert "image_column" in result.error.lower()
 
 
 def test_search_torch_tool_schema_includes_param_grid() -> None:

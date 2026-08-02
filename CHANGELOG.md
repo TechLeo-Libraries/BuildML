@@ -8,6 +8,15 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pass K adversarial re-audit after Pass J:** ONNX export broke on Torch ≥2.9
+  (`dynamo=True` default requires `onnxscript`). Export now uses
+  `dynamo=False` and requires `buildml[onnx]` up front. AI registry/executor
+  coverage for `make_image_multimodal_torch_loaders` is regression-tested;
+  image multimodal ONNX smoke added. CI torch job installs `.[torch,onnx]`.
+  Maintainer architecture note no longer claims image multimodal is deferred.
+
 ### Added
 
 - **Pass J image multimodal:** extend multimodal fusion beyond tabular⊕text to

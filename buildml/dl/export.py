@@ -137,10 +137,20 @@ def export_onnx(
 ) -> ExportResult:
     """Export an ``nn.Module`` to ONNX.
 
-    Requires Torch's built-in ``torch.onnx`` exporter. Optional runtime smoke
-    checks need ``pip install onnx`` (and optionally ``onnxruntime``).
+    Requires ``buildml[onnx]`` (the ``onnx`` package). On Torch ≥2.9 the default
+    dynamo exporter also wants ``onnxscript``; BuildML uses the legacy
+    TorchScript-based exporter (``dynamo=False``) so multimodal dual-arg modules
+    export without that extra dependency.
     """
     torch = require_torch(feature="ONNX export")
+    try:
+        import onnx  # type: ignore[import-untyped]
+    except ImportError as exc:
+        raise MissingExtraError(
+            "onnx",
+            "ONNX export (pip install 'buildml[onnx]' or pip install onnx)",
+        ) from exc
+
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     module = module.eval()
@@ -163,31 +173,43 @@ def export_onnx(
         dynamic_axes[outs[0]] = {0: "batch"}
 
     warnings: list[str] = []
+    export_kwargs: dict[str, Any] = {
+        "input_names": names,
+        "output_names": outs,
+        "dynamic_axes": dynamic_axes or None,
+        "opset_version": int(opset),
+        "do_constant_folding": True,
+    }
+    # Torch 2.9+ defaults dynamo=True (needs onnxscript). Prefer legacy path.
+    try:
+        import inspect
+
+        if "dynamo" in inspect.signature(torch.onnx.export).parameters:
+            export_kwargs["dynamo"] = False
+            warnings.append(
+                "ONNX export used dynamo=False (legacy TorchScript exporter) "
+                "for BuildML alpha compatibility."
+            )
+    except (TypeError, ValueError):  # pragma: no cover - extremely defensive
+        pass
+
     try:
         with torch.no_grad():
-            torch.onnx.export(
-                module,
-                args if len(args) > 1 else args[0],
-                str(destination),
-                input_names=names,
-                output_names=outs,
-                dynamic_axes=dynamic_axes or None,
-                opset_version=int(opset),
-                do_constant_folding=True,
-            )
+            if "dynamo" in export_kwargs:
+                torch.onnx.export(module, args, str(destination), **export_kwargs)
+            else:
+                torch.onnx.export(
+                    module,
+                    args if len(args) > 1 else args[0],
+                    str(destination),
+                    **export_kwargs,
+                )
     except Exception as exc:  # noqa: BLE001
         raise ValidationError(f"torch.onnx.export failed: {exc}") from exc
 
     try:
-        import onnx  # type: ignore[import-untyped]
-
         model = onnx.load(str(destination))
         onnx.checker.check_model(model)
-    except ImportError:
-        warnings.append(
-            "onnx package not installed; wrote file without onnx.checker "
-            "(pip install onnx for validation)."
-        )
     except Exception as exc:  # noqa: BLE001
         warnings.append(f"onnx.checker reported issues: {exc}")
 
