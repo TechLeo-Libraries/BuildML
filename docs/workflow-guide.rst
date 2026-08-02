@@ -181,11 +181,16 @@ cross-validation folds respect row dependencies.
 
    status = session.workflow()
    before = session.explain("checkpoint_save", moment="before")
+   preview = session.dry_run(["checkpoint_save"])
+   summary = session.summarize_history()
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
-``workflow`` shows API readiness. ``explain`` gives operation-level choices
-and limits. ``walkthrough`` joins statuses to history and unresolved catalog
-risks. Available operations are possibilities, not recommendations.
+``workflow`` shows every cataloged operation as done, available, blocked, or
+skipped. ``explain`` gives operation-level choices, prerequisites, and limits.
+``dry_run`` previews calls without mutating state. ``summarize_history`` lists
+operation counts and heuristic unresolved risks. ``walkthrough`` joins statuses
+to history and unresolved catalog risks in offline HTML. Available operations
+are possibilities, not recommendations.
 
 10. Persist the right artifact
 ------------------------------

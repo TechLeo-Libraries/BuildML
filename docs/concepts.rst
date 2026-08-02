@@ -174,3 +174,86 @@ History records calls made through Session; it is not complete source-data
 provenance and does not prove that methodological choices were valid.
 
 Canonical catalog keys: ``checkpoint-integrity`` and ``reproducibility``.
+
+Teaching surfaces: explain, workflow, walkthrough, dry_run
+----------------------------------------------------------
+
+BuildML maintains a versioned **operation catalog** for every public Session
+callable. Each entry covers definition, purpose, pipeline role, mechanism,
+parameters, prerequisites, usual ordering, alternatives, assumptions, failure
+modes, leakage risks, state changes, and result reading. Shared background
+lives in **concept notes** (``buildml.explain.CONCEPT_NOTES``), linked from
+catalog entries by key.
+
+``Session.explain(operation, moment="before"|"after")`` joins catalog text to
+live Session state. A ``before`` explanation lists what must already be true
+and what could go wrong. An ``after`` explanation adds the latest recorded
+call, parameters, and state transition. Explanations report what BuildML
+knows; they cannot prove that a partition matches deployment or that roles
+exclude target proxies.
+
+``Session.workflow()`` resolves every cataloged operation to one of:
+
+* ``done`` — recorded in history or satisfied by current state;
+* ``available`` — prerequisites pass (not a recommendation to run);
+* ``blocked`` — prerequisites fail, with a reason;
+* ``skipped`` — not applicable given current task or configuration.
+
+``Session.walkthrough()`` combines workflow resolution, operation history,
+unresolved catalog risks, and optional offline HTML export. It is the audit
+view for handoff or self-review after a long session.
+
+``Session.dry_run(...)`` previews one or more operations without mutating
+state or appending history. ``Session.summarize_history()`` counts operations,
+surfaces heuristic unresolved risks, and lists suggested next steps from the
+prerequisite graph. Risks are review cues, not proof of invalid results.
+
+``Session.eda()`` and ``session.eda_app()`` add findings (observations with
+severity), evidence, and read-only recommendations. A **finding** states what
+was observed, on which partition, with what measure, and with stated limits. A
+**recommendation** proposes a response but does not mutate the Session.
+
+Canonical catalog keys: ``operation-catalog``, ``workflow-resolution``, and
+``diagnostic-uncertainty``.
+
+Engines at a practical level
+----------------------------
+
+Three engines appear in current APIs: **Pandas** (default canonical frame),
+**Polars**, and **DuckDB**. Path ingest with ``engine="polars"`` or
+``engine="duckdb"`` loads natively when the extra is installed. Session
+preprocess steps still materialize through Pandas for sklearn; native handles
+are rebuilt after transforms so ``Dataset.project``, ``Dataset.aggregate``,
+and ``prepare_design_matrix`` can prefer engine ops where implemented.
+
+Practical guidance:
+
+* Stay on Pandas for small and medium frames and the simplest mental model.
+* Use Polars or DuckDB when filtering, projecting, or aggregating large files
+  before sklearn materialization.
+* Use ``portable_filter_expr`` for simple predicates shared across Polars and
+  DuckDB; keep complex SQL engine-specific.
+* Close DuckDB with ``with session:`` or ``session.close_native()`` — root
+  datasets own the connection.
+* Lazy Polars ``LazyFrame`` plans collect at sklearn boundaries; that is not
+  out-of-core training.
+
+Checkpoint sidecars optionally store Parquet snapshots so restore can reattach
+a native handle without eager rebuild from the Pandas export. Sidecar layout,
+compression, and row thresholds are configurable on ``checkpoint_save``.
+
+Canonical catalog keys: ``data-engines`` and ``materialization-gates``.
+
+Imbalance and resampling
+------------------------
+
+Class imbalance affects which metrics matter and whether resampling helps.
+``Session.resample`` alters **training rows only** after a split. Validation
+and test partitions stay untouched. Resampling changes training prevalence; compare
+against a non-resampled baseline on the same partitions before claiming gain.
+
+``resample_strategies()`` lists available samplers and when each is reasonable.
+Resample plans are recorded for lineage and appear in pipeline bundles, but
+they are not reapplied automatically at score time.
+
+Canonical catalog key: ``class-imbalance``.
