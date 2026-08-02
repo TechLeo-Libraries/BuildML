@@ -8,10 +8,11 @@ the training partition only; validation and test rows receive frozen
 transformations. That train-only boundary is enforced in the API, not buried in
 docstrings you might miss.
 
-Version **2.3.0a1** is alpha software. Public methods, report schemas, and
-serialized bundle formats may change before a stable 2.x release. Classical
-tabular ML is the main path; deep learning, retrieval, and LLM-assisted
-operations are optional extras on the same Session.
+BuildML 2.3 alpha (`2.3.0a1`) is pre-release software. Public methods, report
+schemas, and serialized bundle formats may change before a stable 2.x release.
+The public 2.x entry point is `buildml.Session`. Classical tabular ML is the
+main path; deep learning, retrieval, and LLM-assisted operations are optional
+extras on the same Session.
 
 ## Install
 
@@ -208,9 +209,12 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes and
 - [Workflow guide](docs/workflow-guide.rst) — ordering, leakage, diagnostics
 - [Sphinx docs](docs/index.rst) — installation, API reference, legacy boundary
 
+## BuildML 1.x legacy boundary
+
 BuildML 1.x (`SupervisedLearning` and the old module layout) lives under
 `buildml/_legacy/` for reference only. It is not imported from the 2.x package
-root.
+root. There is no compatibility shim that re-exports 1.x APIs from
+`import buildml`.
 
 ## Author and license
 

@@ -58,19 +58,26 @@ Explanation, audit, and reports
 Optional extras (same Session)
 ------------------------------
 
-* **Torch** (``buildml[torch]``): tabular loaders, training loop, evaluation,
-  trainer bundles.
-* **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, evaluate,
-  bundle save/load.
-* **AI operator** (``buildml[ai]``): advisor, plan, confirmed execute with
-  egress controls and tool allowlist.
+* **Torch** (``buildml[torch]``): tabular loaders, text/sequence loaders
+  (``make_text_torch_loaders``), built-in MLP / text classifier when
+  ``fit_torch`` omits a module, fold-local ``cross_validate_torch``, evaluation,
+  and trainer bundles. Torch CV is not nested hyperparameter search.
+* **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, grounded
+  ``rag_generate`` with citations, evaluate, upsert/delete, and bundle
+  save/load. Hashing embeddings are the CI-safe default; semantic embedders are
+  optional behind the same API.
+* **AI operator** (``buildml[ai]``): advisor, multi-step plan, confirmed execute
+  with egress controls and a typed tool allowlist spanning classical, RAG
+  (including generate), and Torch (including text loaders and fold-local CV).
 
 Boundaries
 ----------
 
 BuildML does not infer valid grouped or temporal evaluation boundaries. It
-does not make causal claims from associations or feature importance. The
-selected engine does not make every sklearn-facing operation out-of-core.
-Checkpoints do not contain fitted models, and model bundles do not contain the
-Session dataset or split history. The AI operator guides workflows; it does not
-replace domain review of roles, splits, or metrics.
+does not make causal claims from associations or feature importance. There is
+no ``OUT_OF_CORE`` sklearn training mode; engine choice does not make every
+sklearn-facing operation out-of-core. Checkpoints do not contain fitted models,
+and model bundles do not contain the Session dataset or split history. The AI
+operator guides workflows behind confirmations; it is not an autonomous agent
+and does not replace domain review of roles, splits, or metrics. Multimodal
+fusion and nested Torch search remain out of scope for this alpha.

@@ -35,6 +35,9 @@ jobs:
       - name: User copy lint
         run: python scripts/lint_user_copy.py
 
+      - name: Teaching surface sync
+        run: python scripts/sync_teaching_surface.py --check
+
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 

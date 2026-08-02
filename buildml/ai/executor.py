@@ -427,6 +427,18 @@ def _dispatch_tool(
         state_changes.append("Built Torch DataLoaders.")
         return {"torch_loaders_built": True}, tuple(state_changes)
 
+    elif call.tool_name == "make_text_torch_loaders":
+        kwargs: dict[str, Any] = {
+            "batch_size": int(call.arguments.get("batch_size", 16)),
+        }
+        if "text_column" in call.arguments and call.arguments["text_column"] is not None:
+            kwargs["text_column"] = call.arguments["text_column"]
+        if "max_len" in call.arguments and call.arguments["max_len"] is not None:
+            kwargs["max_len"] = int(call.arguments["max_len"])
+        session.make_text_torch_loaders(**kwargs)
+        state_changes.append("Built text Torch DataLoaders (train-only vocab).")
+        return {"text_torch_loaders_built": True}, tuple(state_changes)
+
     elif call.tool_name == "fit_torch":
         session.fit_torch(
             epochs=int(call.arguments.get("epochs", 5)),
@@ -513,6 +525,9 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
 
     elif tool_name == "make_torch_loaders":
         changes.append("Will build Torch DataLoaders on the Session.")
+
+    elif tool_name == "make_text_torch_loaders":
+        changes.append("Will build text Torch DataLoaders with a train-only vocabulary.")
 
     elif tool_name == "fit_torch":
         changes.append("Will train a Torch module and store dl_train_result.")

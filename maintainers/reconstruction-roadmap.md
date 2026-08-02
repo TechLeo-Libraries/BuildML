@@ -300,5 +300,6 @@ M0 lock in [llm-m0-lock.md](./llm-m0-lock.md); gate in [ai-alpha-gate.md](./ai-a
 **Correctness / architecture refresh (Aug 2026):**
 
 - **Phase A** (`d0ad2d5`): weights, CV hard-refuse for Session-global prep, `OUT_OF_CORE` removal, httpx, maintainer honesty.
-- **Phase B** (this pass): Session decomposed into `data_ops` / `preprocess_ops` / `classical_ops` / `dl_ops` / `rag_ops` / `ai_ops` / `eda_ops` / `workflow_ops` / `state`; CV also refuses poisoned data + recipe without opt-in.
-- **Phase C / D:** not started — do not deepen DL/RAG/AI autonomy or rewrite explain generation yet.
+- **Phase B** (`05c9458`): Session decomposed into `data_ops` / `preprocess_ops` / `classical_ops` / `dl_ops` / `rag_ops` / `ai_ops` / `eda_ops` / `workflow_ops` / `state`; CV also refuses poisoned data + recipe without opt-in.
+- **Phase C** (`b7b1404`): deepen RAG (`rag_generate`), DL (text loaders, fold-local Torch CV, built-in models), AI multi-domain tools.
+- **Phase D** (this pass): CI-enforced teaching sync — generated Session `operation_index.json`, domain overlays under `buildml/explain/overlays/`, AI tool ↔ catalog parity gate via `scripts/sync_teaching_surface.py`.

@@ -58,4 +58,28 @@ stamps, and process theater.
 `editorial-standards.md`) because these files are maintainer records, not
 user guidance.
 
+## Teaching surface sync (Phase D)
+
+Session public callables are the source of truth for *which* operations exist.
+Human teaching prose lives in domain overlays under
+`buildml/explain/overlays/` (classical / dl / rag / ai / workflow). A generated
+Session signature index is checked in at
+`buildml/explain/generated/operation_index.json`.
+
+When you add or rename a public `Session` method, or change AI tool bindings:
+
+1. Add or update the overlay entry (definition, purpose, leakage, concepts, …).
+2. If the method should be AI-callable, register it in `buildml/ai/tools.py`
+   (and executor/planner dispatch as needed). Teaching-critical Phase C surfaces
+   are required in the default registry.
+3. Regenerate the index and verify:
+
+```powershell
+python scripts/sync_teaching_surface.py --write
+python scripts/sync_teaching_surface.py --check
+pytest tests/unit/test_teaching_surface_sync.py tests/unit/test_explain_catalog.py -q
+```
+
+CI runs `--check` on every PR. Do not hand-edit `operation_index.json`.
+
 — Leonard

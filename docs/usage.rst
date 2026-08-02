@@ -328,11 +328,15 @@ Optional paths on the same Session
 Torch, RAG, and AI operator features attach to the same Session without
 replacing classical APIs:
 
-* :doc:`quickstart-torch` — ``make_torch_loaders``, ``fit_torch``,
-  ``evaluate_torch``
+* :doc:`quickstart-torch` — ``make_torch_loaders``, ``make_text_torch_loaders``,
+  ``fit_torch``, ``cross_validate_torch``, ``evaluate_torch``
 * :doc:`quickstart-rag` — ``rag_ingest_corpus``, ``rag_retrieve``,
-  ``rag_evaluate``
-* :doc:`quickstart-ai` — ``ai_advisor``, ``ai_plan``, ``ai_execute`` with
-  confirmed writes
+  ``rag_generate``, ``rag_evaluate``
+* :doc:`quickstart-ai` — ``ai_advisor``, ``ai_plan``, ``ai_execute`` /
+  ``ai_run_plan`` with confirmed writes across classical, RAG, and Torch tools
+
+Teaching copy for every public Session method is kept in sync by CI
+(``scripts/sync_teaching_surface.py``). Prefer ``session.explain(...)`` over
+hand-maintained method lists when exploring the surface.
 
 See :doc:`guides` for the full Markdown tutorials.

@@ -10,6 +10,12 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- **Phase D teaching sync:** generated Session operation index
+  (`buildml/explain/generated/operation_index.json`), domain catalog overlays
+  under `buildml/explain/overlays/`, and CI gate
+  `python scripts/sync_teaching_surface.py --check` so Session ↔ catalog ↔ AI
+  tools cannot drift silently. `make_text_torch_loaders` added to the default
+  AI tool allowlist.
 - **Phase C domain depth (RAG / DL / AI):** product names now match shipped
   capability rather than thin retrieve-only / tabular-only / advisor-only slices.
 - **RAG generate:** `Session.rag_generate` grounded generation with citations,

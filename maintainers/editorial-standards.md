@@ -145,7 +145,12 @@ is not acceptable. When a method has no call-time parameter or no state change, 
 inputs/state-change text rather than inventing a parameter.
 
 The catalog completeness test is the change gate: adding a public callable to `Session` requires a
-substantive entry in the same change.
+substantive overlay entry in the same change (under `buildml/explain/overlays/`, not a giant
+hand-edited monolith). CI also requires
+`python scripts/sync_teaching_surface.py --check` to pass: Session ↔ generated
+`operation_index.json` ↔ catalog overlays ↔ AI tool `session_method` /
+`catalog_operation` bindings must agree. Regenerate the index with
+`python scripts/sync_teaching_surface.py --write` after Session signature changes.
 
 ## Copy-lint scope
 

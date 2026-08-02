@@ -36,3 +36,11 @@ Must include rich metrics, diagnostics (confusion/residuals), probability tools 
 ## Packaging note
 
 Heavy backends (seaborn, imbalanced-learn, etc.) may live in extras. **Analytical depth stays in core structured reports**; visuals and samplers become available with extras.
+
+## Teaching surface note
+
+Explain/walkthrough/AI teaching copy must not drift from the public Session API.
+Prefer regenerating the Session operation index and updating domain overlays over
+duplicating method lists in docs. The CI teaching-surface sync gate is part of
+the release bar for any PR that touches Session methods, AI tools, or catalog
+overlays.

@@ -35,6 +35,7 @@ def test_default_registry_includes_rag_and_dl_tools() -> None:
         "rag_ingest_corpus",
         "rag_embed_and_index",
         "make_torch_loaders",
+        "make_text_torch_loaders",
         "fit_torch",
         "evaluate_torch",
         "cross_validate_torch",

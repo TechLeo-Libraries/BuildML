@@ -20,9 +20,9 @@ For maintainer engineering notes, see [maintainers/](../maintainers/README.md).
 | Guide | Extra | Summary |
 | --- | --- | --- |
 | [Classical](quickstart-classical.md) | core | Split, preprocess, fit, evaluate, CV, teaching surfaces, bundles |
-| [Torch](quickstart-torch.md) | `buildml[torch]` | Tabular Torch loaders, training, evaluation |
-| [RAG](quickstart-rag.md) | `buildml[rag]` | Corpus ingest, retrieve, evaluate, bundle |
-| [AI operator](quickstart-ai.md) | `buildml[ai]` | Advisor, plan, confirmed execute |
+| [Torch](quickstart-torch.md) | `buildml[torch]` | Tabular + text loaders, built-in models, fold-local CV |
+| [RAG](quickstart-rag.md) | `buildml[rag]` | Ingest, retrieve, grounded generate, evaluate, bundle |
+| [AI operator](quickstart-ai.md) | `buildml[ai]` | Advisor, plan, confirmed execute across classical/RAG/Torch |
 
 ## Reference
 

@@ -284,6 +284,29 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             catalog_operation="make_torch_loaders",
         ),
         ToolSpec(
+            name="make_text_torch_loaders",
+            description=(
+                "Build token-id Torch DataLoaders for text/sequence classification. "
+                "Fits vocabulary on train only. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "text_column": {
+                        "type": "string",
+                        "description": "Text feature column (inferred when unique).",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
+                    "max_len": {"type": "integer", "description": "Maximum tokens per row."},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_text_torch_loaders",
+            read_only=False,
+            catalog_operation="make_text_torch_loaders",
+        ),
+        ToolSpec(
             name="fit_torch",
             description=(
                 "Train a Torch module (built-in MLP when module omitted) on the "
