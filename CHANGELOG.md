@@ -8,6 +8,18 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Pass H adversarial re-audit after Pass G:** AI registry listed
+  `make_multimodal_torch_loaders` / `search_torch` / `nested_cv_torch` /
+  `export_torch` but executor had no dispatch handlers (dead wires). Tool schemas
+  now accept `param_grid` / `param_distributions`. Multimodal fusion `forward`
+  supports both tuple and dual-arg calling so TorchScript/ONNX export works.
+  Randomized Torch search seeds scipy-like `rvs` with an int (not
+  ``numpy.Generator``). CI torch/ai jobs run Pass G tests. README Torch extra
+  row matches shipped depth. Export refuses silent tabular loader rebuild after
+  text/multimodal fit.
+
 ### Added
 
 - **Pass G deferred depth:** nested Torch HPO (`Session.nested_cv_torch` /

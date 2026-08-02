@@ -197,15 +197,20 @@ def build_multimodal_fusion(
             self.n_classes = int(n_classes) if task == "classification" else 1
             self.modality = "tabular_text_fusion"
 
-        def forward(self, inputs: Any) -> Any:
-            if isinstance(inputs, (tuple, list)) and len(inputs) == 2:
-                x_tab, token_ids = inputs
-            else:
-                raise ValidationError(
-                    "MultimodalFusion expects inputs=(x_numeric, token_ids); "
-                    f"got type={type(inputs).__name__}"
-                )
-            tab = self.tabular(x_tab)
+        def forward(self, x_numeric: Any, token_ids: Any | None = None) -> Any:
+            # Dual calling convention:
+            # - train/eval: module((x_numeric, token_ids))  [single tuple arg]
+            # - TorchScript/ONNX: module(x_numeric, token_ids)  [unpacked args]
+            if token_ids is None:
+                if isinstance(x_numeric, (tuple, list)) and len(x_numeric) == 2:
+                    x_numeric, token_ids = x_numeric
+                else:
+                    raise ValidationError(
+                        "MultimodalFusion expects (x_numeric, token_ids) as two "
+                        "arguments or a single 2-tuple; "
+                        f"got type={type(x_numeric).__name__}"
+                    )
+            tab = self.tabular(x_numeric)
             mask = (token_ids != self.padding_idx).unsqueeze(-1).float()
             embedded = self.embedding(token_ids) * mask
             denom = mask.sum(dim=1).clamp(min=1.0)

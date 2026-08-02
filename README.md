@@ -31,7 +31,8 @@ pip install "buildml[eda]"        # viz + reports
 pip install "buildml[dashboard]"  # local interactive EDA dashboard
 pip install "buildml[engines]"    # Polars and DuckDB adapters
 pip install "buildml[optuna]"     # Optuna hyperparameter search
-pip install "buildml[torch]"      # tabular Torch path (alias: buildml[dl])
+pip install "buildml[torch]"      # Torch DL path (alias: buildml[dl])
+pip install "buildml[onnx]"       # optional ONNX checker for export_torch
 pip install "buildml[rag]"        # optional dense/rerank backends
 pip install "buildml[ai]"         # LLM operator (alias: buildml[llm])
 pip install "buildml[all-classical]"
@@ -179,9 +180,9 @@ unchanged.
 
 | Extra | Install | What it adds |
 |-------|---------|--------------|
-| Torch | `buildml[torch]` | Tabular + text loaders, built-in MLP/text classifier, fold-local CV, bundle save/load |
+| Torch | `buildml[torch]` | Tabular + text + tabular⊕text fusion, nested HPO, AMP, single-node DDP, TorchScript/ONNX export, fold-local CV, bundles |
 | RAG | `buildml[rag]` | Ingest → chunk → embed → retrieve → **generate** → evaluate; hashing default, semantic optional |
-| AI | `buildml[ai]` | Advisor, multi-step plan/execute, classical + RAG + Torch tools; BYO API key |
+| AI | `buildml[ai]` | Advisor, multi-step plan/execute, optional allowlisted autonomy; classical + RAG + Torch tools; BYO API key |
 | Dashboard | `buildml[dashboard]` | Interactive local EDA via `eda_app()` |
 
 Runnable quickstarts:

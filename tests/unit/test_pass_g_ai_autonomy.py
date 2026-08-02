@@ -142,3 +142,50 @@ def test_default_allowlist_is_subset_of_registry() -> None:
     }
     for name in DEFAULT_AUTONOMY_ALLOWLIST:
         assert name in registry or name in builtins
+
+
+def test_pass_g_tools_have_executor_dispatch() -> None:
+    """Registry tools must be wired in executor._dispatch_tool (Pass H)."""
+    from buildml.ai.executor import execute_tool, propose_tool_execution
+    from buildml.ai.tools import build_default_registry
+
+    session = (
+        Session.ingest(_frame())
+        .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+        .split(test_size=0.25, random_state=0)
+        .ai_configure(provider="mock")
+    )
+    registry = build_default_registry()
+    # search_torch without space should fail inside Session, not "No dispatch handler".
+    proposal = propose_tool_execution("search_torch", {}, registry)
+    result = execute_tool(session, proposal, confirmed=True, registry=registry)
+    assert result.error is not None
+    assert "No dispatch handler" not in result.error
+    err = result.error.lower()
+    assert (
+        "param_grid" in err
+        or "param_distributions" in err
+        or "torch" in err  # broken/missing local torch still proves dispatch wired
+    )
+
+    proposal = propose_tool_execution(
+        "export_torch",
+        {"path": "unused.pt"},
+        registry,
+    )
+    result = execute_tool(session, proposal, confirmed=True, registry=registry)
+    assert result.error is not None
+    assert "No dispatch handler" not in result.error
+
+
+def test_search_torch_tool_schema_includes_param_grid() -> None:
+    from buildml.ai.tools import build_default_registry
+
+    registry = build_default_registry()
+    spec = registry.get("search_torch")
+    assert spec is not None
+    props = spec.parameters.get("properties", {})
+    assert "param_grid" in props
+    nested = registry.get("nested_cv_torch")
+    assert nested is not None
+    assert "param_grid" in nested.parameters.get("properties", {})

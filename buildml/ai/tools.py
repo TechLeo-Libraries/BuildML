@@ -397,11 +397,23 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             name="search_torch",
             description=(
                 "Inner-fold Torch hyperparameter search on the train universe. "
-                "Not a nested outer estimate. Requires buildml[torch]."
+                "Not a nested outer estimate. Requires param_grid or "
+                "param_distributions. Requires buildml[torch]."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "param_grid": {
+                        "type": "object",
+                        "description": (
+                            "Grid of searchable lists (learning_rate, hidden, dropout, "
+                            "batch_size, epochs, weight_decay)."
+                        ),
+                    },
+                    "param_distributions": {
+                        "type": "object",
+                        "description": "Randomized search distributions (same keys as grid).",
+                    },
                     "n_folds": {"type": "integer", "description": "Inner folds (default 3)."},
                     "epochs": {"type": "integer", "description": "Epochs per trial fold."},
                     "n_iter": {
@@ -420,14 +432,29 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             name="nested_cv_torch",
             description=(
                 "Nested Torch CV: outer evaluation after fold-local inner hyperparameter "
-                "search. Requires buildml[torch]."
+                "search. Requires param_grid or param_distributions. Requires buildml[torch]."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "param_grid": {
+                        "type": "object",
+                        "description": (
+                            "Grid of searchable lists (learning_rate, hidden, dropout, "
+                            "batch_size, epochs, weight_decay)."
+                        ),
+                    },
+                    "param_distributions": {
+                        "type": "object",
+                        "description": "Randomized search distributions (same keys as grid).",
+                    },
                     "outer_cv": {"type": "integer", "description": "Outer folds (default 3)."},
                     "inner_cv": {"type": "integer", "description": "Inner folds (default 2)."},
                     "epochs": {"type": "integer", "description": "Epochs per fit."},
+                    "n_iter": {
+                        "type": "integer",
+                        "description": "Randomized trials when using distributions.",
+                    },
                 },
                 "required": [],
             },

@@ -626,6 +626,20 @@ def export_torch(
     if session._dl_train_result is None:
         raise ValidationError("No Torch trainer. Call fit_torch(...) first.")
     if session._torch_loaders is None and example_input is None:
+        mod = session._dl_train_result.module
+        modality = getattr(mod, "modality", None)
+        if modality == "tabular_text_fusion" or hasattr(mod, "n_numeric"):
+            raise ValidationError(
+                "export_torch needs active multimodal loaders or an explicit "
+                "example_input=(x_numeric, token_ids) after multimodal fit. "
+                "Call make_multimodal_torch_loaders(...) again or pass example_input=."
+            )
+        if hasattr(mod, "vocab_size") and hasattr(mod, "embedding"):
+            raise ValidationError(
+                "export_torch needs active text loaders or an explicit example_input "
+                "after text fit. Call make_text_torch_loaders(...) again or pass "
+                "example_input=."
+            )
         session.make_torch_loaders(
             normalize=session._dl_train_result.contract.normalize_mean is not None,
             task=session._dl_train_result.task,

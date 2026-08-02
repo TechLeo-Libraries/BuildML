@@ -218,7 +218,12 @@ def _sample_distributions(
                     raise ValidationError(f"Empty distribution for {key!r}")
                 params[key] = dist[int(rng.integers(0, len(dist)))]
             elif hasattr(dist, "rvs"):
-                params[key] = dist.rvs(random_state=rng)
+                # scipy.stats prefers an int seed / RandomState; Generator often fails.
+                seed_i = int(rng.integers(0, 2**31 - 1))
+                try:
+                    params[key] = dist.rvs(random_state=seed_i)
+                except TypeError:
+                    params[key] = dist.rvs()
             else:
                 raise ValidationError(
                     f"Distribution for {key!r} must be a sequence or scipy-like rvs object"
@@ -494,12 +499,14 @@ def search_torch(
     during search. This is **not** a nested outer estimate — use
     :func:`nested_cv_torch` for that. Results include honest limitations.
     """
-    require_torch(feature="Torch hyperparameter search")
+    # Validate search space before optional Torch import so AI dispatch /
+    # missing-extra environments get a clear ValidationError first.
     method = _resolve_method(
         inner_search=inner_search,
         param_grid=param_grid,
         param_distributions=param_distributions,
     )
+    require_torch(feature="Torch hyperparameter search")
     feature_cols, target = resolve_feature_target(dataset)
     frame = dataset._ensure_pandas().copy()
     y_all = frame[target]
@@ -606,12 +613,12 @@ def nested_cv_torch(
 
     Session validation/test partitions never enter outer or inner membership.
     """
-    require_torch(feature="Torch nested CV")
     method = _resolve_method(
         inner_search=inner_search,
         param_grid=param_grid,
         param_distributions=param_distributions,
     )
+    require_torch(feature="Torch nested CV")
     feature_cols, target = resolve_feature_target(dataset)
     frame = dataset._ensure_pandas().copy()
     y_all = frame[target]

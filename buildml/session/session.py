@@ -1230,6 +1230,16 @@ class Session:
         """Last :meth:`nested_cv_torch` result, if any."""
         return self._dl_nested_cv_result
 
+    @property
+    def dl_export_result(self) -> Any | None:
+        """Last :meth:`export_torch` result, if any."""
+        return self._dl_export_result
+
+    @property
+    def dl_ddp_result(self) -> Any | None:
+        """Last :meth:`fit_torch_ddp` result, if any."""
+        return self._dl_ddp_result
+
     def torch_training_curve(self) -> TrainingCurveReport:
         """Return structured training-curve teaching data for the last Torch run.
 

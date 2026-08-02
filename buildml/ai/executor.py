@@ -461,6 +461,59 @@ def _dispatch_tool(
         state_changes.append("Completed fold-local Torch CV.")
         return result, tuple(state_changes)
 
+    elif call.tool_name == "make_multimodal_torch_loaders":
+        kwargs: dict[str, Any] = {
+            "batch_size": int(call.arguments.get("batch_size", 16)),
+            "normalize": bool(call.arguments.get("normalize", True)),
+        }
+        if "text_column" in call.arguments and call.arguments["text_column"] is not None:
+            kwargs["text_column"] = call.arguments["text_column"]
+        session.make_multimodal_torch_loaders(**kwargs)
+        state_changes.append(
+            "Built multimodal tabular+text Torch DataLoaders (train-only vocab/normalize)."
+        )
+        return {"multimodal_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "search_torch":
+        search_kwargs: dict[str, Any] = {
+            "n_folds": int(call.arguments.get("n_folds", 3)),
+            "epochs": int(call.arguments.get("epochs", 2)),
+            "n_iter": int(call.arguments.get("n_iter", 5)),
+        }
+        if call.arguments.get("param_grid") is not None:
+            search_kwargs["param_grid"] = call.arguments["param_grid"]
+        if call.arguments.get("param_distributions") is not None:
+            search_kwargs["param_distributions"] = call.arguments["param_distributions"]
+        result = session.search_torch(**search_kwargs)
+        state_changes.append("Completed inner-fold Torch hyperparameter search.")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "nested_cv_torch":
+        nested_kwargs: dict[str, Any] = {
+            "outer_cv": int(call.arguments.get("outer_cv", 3)),
+            "inner_cv": int(call.arguments.get("inner_cv", 2)),
+            "epochs": int(call.arguments.get("epochs", 2)),
+            "n_iter": int(call.arguments.get("n_iter", 5)),
+        }
+        if call.arguments.get("param_grid") is not None:
+            nested_kwargs["param_grid"] = call.arguments["param_grid"]
+        if call.arguments.get("param_distributions") is not None:
+            nested_kwargs["param_distributions"] = call.arguments["param_distributions"]
+        result = session.nested_cv_torch(**nested_kwargs)
+        state_changes.append("Completed nested Torch CV (outer after inner search).")
+        return result, tuple(state_changes)
+
+    elif call.tool_name == "export_torch":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("export_torch requires a path argument.")
+        result = session.export_torch(
+            path,
+            format=call.arguments.get("format", "torchscript"),
+        )
+        state_changes.append(f"Exported Torch trainer to {path}.")
+        return result, tuple(state_changes)
+
     else:
         raise ValidationError(f"No dispatch handler for tool: {call.tool_name}")
 
@@ -534,6 +587,21 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
 
     elif tool_name == "cross_validate_torch":
         changes.append("Will run fold-local Torch CV and store dl_cv_result.")
+
+    elif tool_name == "make_multimodal_torch_loaders":
+        changes.append(
+            "Will build multimodal tabular+text Torch DataLoaders (train-only vocab/normalize)."
+        )
+
+    elif tool_name == "search_torch":
+        changes.append("Will run inner-fold Torch hyperparameter search (not nested outer).")
+
+    elif tool_name == "nested_cv_torch":
+        changes.append("Will run nested Torch CV and store dl_nested_cv_result.")
+
+    elif tool_name == "export_torch":
+        path = arguments.get("path", "")
+        changes.append(f"Will export the last Torch trainer to {path}.")
 
     return tuple(changes) if changes else ("Unknown state changes.",)
 
