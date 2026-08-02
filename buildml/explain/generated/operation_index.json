@@ -1,5 +1,5 @@
 {
-  "n_operations": 105,
+  "n_operations": 111,
   "operations": {
     "ai_advisor": {
       "doc_summary": "Get advisory Q&A guidance about the current workflow (read-only).",
@@ -725,6 +725,99 @@
       ],
       "qualname": "Session.cv_score"
     },
+    "domain_adapt_speech_torch": {
+      "doc_summary": "Domain-adapt speech classify (finetune-lite; not FM continued pretrain).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "domain_adapt_speech_torch",
+      "parameters": [
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "Literal['cpu', 'cuda', 'mps', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "freeze_encoder",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "audio_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16000",
+          "kind": "KEYWORD_ONLY",
+          "name": "sample_rate",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_samples",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "source_sample_rate",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize_audio",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "encoder_dim",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "seed",
+          "required": false
+        }
+      ],
+      "qualname": "Session.domain_adapt_speech_torch"
+    },
     "drop_columns": {
       "doc_summary": "Drop columns from the current dataset.",
       "is_classmethod": false,
@@ -893,6 +986,64 @@
         }
       ],
       "qualname": "Session.eda_app"
+    },
+    "emit_k8s_ddp_job": {
+      "doc_summary": "Emit a Kubernetes Job YAML for torchrun DDP (template; not live orchestration).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "emit_k8s_ddp_job",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        },
+        {
+          "annotation": "str",
+          "default": "'buildml-torchrun-ddp'",
+          "kind": "KEYWORD_ONLY",
+          "name": "job_name",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'default'",
+          "kind": "KEYWORD_ONLY",
+          "name": "namespace",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'pytorch/pytorch:2.2.0-cuda12.1-cudnn8-runtime'",
+          "kind": "KEYWORD_ONLY",
+          "name": "image",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "nnodes",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "nproc_per_node",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'/workspace/train.py'",
+          "kind": "KEYWORD_ONLY",
+          "name": "script_path",
+          "required": false
+        }
+      ],
+      "qualname": "Session.emit_k8s_ddp_job"
     },
     "encode": {
       "doc_summary": "Fit categorical encoding on train and transform the full dataset.",
@@ -1943,6 +2094,57 @@
         }
       ],
       "qualname": "Session.load_pipeline"
+    },
+    "load_pretrained_backbone": {
+      "doc_summary": "Load a curated vision/audio/speech backbone (mock weights default; not a full zoo).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_pretrained_backbone",
+      "parameters": [
+        {
+          "annotation": "Literal['vision', 'audio', 'speech']",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "modality",
+          "required": true
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "architecture",
+          "required": false
+        },
+        {
+          "annotation": "Literal['none', 'mock', 'pretrained']",
+          "default": "'mock'",
+          "kind": "KEYWORD_ONLY",
+          "name": "weights",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "freeze",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "seed",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "model_id",
+          "required": false
+        }
+      ],
+      "qualname": "Session.load_pretrained_backbone"
     },
     "load_rag_bundle": {
       "doc_summary": "Load a RAG bundle into this Session (requires ``buildml[rag]``).",
@@ -3061,6 +3263,36 @@
       ],
       "qualname": "Session.optuna_search"
     },
+    "pack_torchserve": {
+      "doc_summary": "Pack TorchScript into a TorchServe model directory (does not run TorchServe).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "pack_torchserve",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "output_dir",
+          "required": true
+        },
+        {
+          "annotation": "str | Path | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "torchscript_path",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'buildml_model'",
+          "kind": "KEYWORD_ONLY",
+          "name": "model_name",
+          "required": false
+        }
+      ],
+      "qualname": "Session.pack_torchserve"
+    },
     "partition": {
       "doc_summary": "Return a copy of rows for a named partition.",
       "is_classmethod": false,
@@ -3180,6 +3412,43 @@
         }
       ],
       "qualname": "Session.prepare_design_matrix"
+    },
+    "prepare_tensorrt_export": {
+      "doc_summary": "Write a TensorRT trtexec plan for an ONNX file (does not build engines).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "prepare_tensorrt_export",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "output_dir",
+          "required": true
+        },
+        {
+          "annotation": "str | Path | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "onnx_path",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'model.engine'",
+          "kind": "KEYWORD_ONLY",
+          "name": "engine_name",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "fp16",
+          "required": false
+        }
+      ],
+      "qualname": "Session.prepare_tensorrt_export"
     },
     "rag_chunk": {
       "doc_summary": "Chunk the active RAG corpus with size + overlap (requires ``buildml[rag]``).",
@@ -3693,6 +3962,14 @@
       ],
       "qualname": "Session.reduce_dimensions"
     },
+    "refuse_speech_foundation_pretrain": {
+      "doc_summary": "Refuse FM-from-scratch / large continued-pretrain with an explicit error.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "refuse_speech_foundation_pretrain",
+      "parameters": [],
+      "qualname": "Session.refuse_speech_foundation_pretrain"
+    },
     "register_transform": {
       "doc_summary": "Register a custom train-fit transform for :meth:`apply_custom_transform`.",
       "is_classmethod": true,
@@ -4086,7 +4363,7 @@
       "qualname": "Session.select_features"
     },
     "serve_bundle": {
-      "doc_summary": "Launch managed local serving (``buildml[serve]``; localhost; no auth).",
+      "doc_summary": "Launch managed local serving (``buildml[serve]``; optional API-key auth).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "serve_bundle",
@@ -4131,6 +4408,13 @@
           "default": "False",
           "kind": "KEYWORD_ONLY",
           "name": "blocking",
+          "required": false
+        },
+        {
+          "annotation": "str | list[str] | tuple[str, ...] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "api_keys",
           "required": false
         }
       ],

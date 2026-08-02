@@ -170,7 +170,7 @@ aud.make_audio_multimodal_torch_loaders(
 )
 aud.fit_torch(epochs=5, device="cpu")
 
-# Speech ASR (stub is CI-safe) + classify finetune-lite
+# Speech ASR (stub is CI-safe) + classify finetune-lite / domain adapt
 # pip install "buildml[speech]" for transformers Whisper-class backend
 speech = (
     Session.ingest(df_with_audio)
@@ -178,15 +178,25 @@ speech = (
     .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
 )
 asr = speech.transcribe_speech(audio_column="audio", backend="stub")
-speech.fit_speech_torch(epochs=5, device="cpu", audio_column="audio")
+speech.domain_adapt_speech_torch(epochs=5, device="cpu", audio_column="audio")
+# speech.refuse_speech_foundation_pretrain()  # honest refuse for FM-from-scratch asks
+
+# Pretrained backbone hooks (mock weights = CI-safe; not a full zoo product)
+# pip install "buildml[pretrained]"  # vision+speech extras
+# backbone = session.load_pretrained_backbone("vision", "resnet18", weights="mock")
 
 # Multi-node DDP (launch under torchrun; each process runs this)
 # torchrun --nnodes=2 --nproc_per_node=2 --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT train.py
 # session.fit_torch_ddp(module_factory, multi_node=True, epochs=5)
+# session.emit_k8s_ddp_job("job.yaml", nnodes=2)  # template only — not live multi-cluster
 
 # Managed local serving (pip install "buildml[serve]")
-# classical.save_pipeline("bundle/") ; classical.serve_bundle("bundle/", kind="pipeline")
-# or: buildml-serve --bundle bundle/ --kind pipeline --host 127.0.0.1 --port 8080
+# classical.save_pipeline("bundle/")
+# classical.serve_bundle("bundle/", kind="pipeline", api_keys=["dev-key"])
+# or: buildml-serve --bundle bundle/ --kind pipeline --api-key dev-key
+# Pack helpers (operator runs TorchServe / trtexec):
+# session.export_torch("model.ts.pt"); session.pack_torchserve("torchserve_dir/")
+# session.export_torch("model.onnx", format="onnx"); session.prepare_tensorrt_export("trt_plan/")
 ```
 
 ## Known limits (honest)
@@ -211,10 +221,16 @@ speech.fit_speech_torch(epochs=5, device="cpu", audio_column="audio")
 - **CV + nested search.** Use `cross_validate_torch` for fold-local estimates and
   `nested_cv_torch` / `search_torch` for hyperparameter selection. Do not tune
   early stop on test.
-- **DDP / export / serve.** `fit_torch_ddp` supports single-node spawn and
-  torchrun multi-node (`multi_node=True`). `export_torch` is an alpha
-  TorchScript/ONNX escape hatch. Managed local serving is `buildml[serve]` /
-  `Session.serve_bundle` / `buildml-serve` (localhost; no auth).
+- **DDP / export / serve / packs.** `fit_torch_ddp` supports single-node spawn and
+  torchrun multi-node (`multi_node=True`). `emit_k8s_ddp_job` writes Job YAML
+  templates only (not live multi-cluster orchestration). `export_torch` is an
+  alpha TorchScript/ONNX escape hatch; `pack_torchserve` /
+  `prepare_tensorrt_export` write operator-owned recipes (not a cloud). Managed
+  local serving is `buildml[serve]` / `Session.serve_bundle` / `buildml-serve`
+  (localhost; optional API-key middleware — still not managed IAM).
+- **Pretrained hooks vs FM pretrain.** `load_pretrained_backbone` loads curated
+  ResNet/ViT/Wav2Vec/Whisper-encoder hooks (`weights=mock` in CI). BuildML does
+  **not** train Whisper-scale foundation models from scratch.
 - **RAG / AI** are separate domains (`rag_*`, `ai_*`) that can call Torch tools.
 
 See [glossary](glossary.md).

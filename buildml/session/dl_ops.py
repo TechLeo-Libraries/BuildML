@@ -1203,13 +1203,15 @@ def serve_bundle(
     port: int = 8080,
     title: str = "BuildML Serve",
     blocking: bool = False,
+    api_keys: str | list[str] | tuple[str, ...] | None = None,
 ) -> Any:
     """Launch BuildML managed serving for a pipeline or TorchScript artifact.
 
-    Requires ``buildml[serve]``. Defaults to localhost bind; no auth product
-    claim — put a reverse proxy in front for non-local exposure. When
-    ``path`` is omitted and ``kind="pipeline"``, uses the last saved pipeline
-    path recorded on the Session if available.
+    Requires ``buildml[serve]``. Defaults to localhost bind. Optional
+    ``api_keys`` enables Bearer / ``X-API-Key`` middleware (still not a managed
+    IAM / cloud auth product). Prefer TLS at a reverse proxy for non-local
+    exposure. When ``path`` is omitted and ``kind="pipeline"``, uses the last
+    saved pipeline path recorded on the Session if available.
     """
     from buildml.serving.launch import serve_bundle as _serve
 
@@ -1228,14 +1230,244 @@ def serve_bundle(
         port=port,
         title=title,
         blocking=blocking,
+        api_keys=api_keys,
     )
     session._serve_handle = handle
+    auth_on = api_keys is not None
     session._record(
         "serve_bundle",
-        {"path": str(resolved), "kind": kind, "host": host, "port": port},
-        result_summary={"url": handle.url, "kind": kind},
+        {
+            "path": str(resolved),
+            "kind": kind,
+            "host": host,
+            "port": port,
+            "auth": auth_on,
+        },
+        result_summary={"url": handle.url, "kind": kind, "auth": auth_on},
         warnings=(
-            "No authentication; localhost-oriented. Use a reverse proxy for exposure.",
+            (
+                "API-key/Bearer middleware enabled; still not managed IAM. "
+                "Terminate TLS at a reverse proxy for non-local exposure."
+            )
+            if auth_on
+            else (
+                "No authentication; localhost-oriented. Pass api_keys= or use a "
+                "reverse proxy for exposure."
+            ),
         ),
     )
     return handle
+
+
+def load_pretrained_backbone(
+    session,
+    modality: Literal["vision", "audio", "speech"],
+    architecture: str | None = None,
+    *,
+    weights: Literal["none", "mock", "pretrained"] = "mock",
+    freeze: bool = True,
+    seed: int = 0,
+    model_id: str | None = None,
+) -> Any:
+    """Load a curated pretrained vision/audio/speech backbone (integration hook)."""
+    from buildml.dl.zoo import load_pretrained_backbone as _load
+
+    backbone = _load(
+        modality,
+        architecture,
+        weights=weights,
+        freeze=freeze,
+        seed=seed,
+        model_id=model_id,
+    )
+    session._dl_backbone = backbone
+    session._record(
+        "load_pretrained_backbone",
+        {
+            "modality": modality,
+            "architecture": architecture,
+            "weights": weights,
+            "freeze": freeze,
+            "model_id": model_id,
+        },
+        result_summary=backbone.to_dict(),
+        warnings=tuple(backbone.warnings),
+    )
+    return backbone
+
+
+def pack_torchserve(
+    session,
+    output_dir: str | Path,
+    *,
+    torchscript_path: str | Path | None = None,
+    model_name: str = "buildml_model",
+) -> Any:
+    """Pack a TorchScript artifact into a TorchServe-ready directory layout."""
+    from buildml.dl.packaging import pack_torchserve_model
+
+    src = torchscript_path
+    if src is None:
+        export = getattr(session, "_dl_export_result", None)
+        if export is not None and getattr(export, "format", None) == "torchscript":
+            src = export.path
+    if src is None:
+        raise ValidationError(
+            "pack_torchserve requires torchscript_path= or a prior "
+            "export_torch(..., format='torchscript')."
+        )
+    result = pack_torchserve_model(src, output_dir, model_name=model_name)
+    session._dl_packaging_result = result
+    session._record(
+        "pack_torchserve",
+        {"output_dir": str(output_dir), "torchscript_path": str(src), "model_name": model_name},
+        result_summary=result.to_dict(),
+        warnings=tuple(result.warnings),
+    )
+    return result
+
+
+def prepare_tensorrt_export(
+    session,
+    output_dir: str | Path,
+    *,
+    onnx_path: str | Path | None = None,
+    engine_name: str = "model.engine",
+    fp16: bool = True,
+) -> Any:
+    """Write a TensorRT ``trtexec`` plan next to a validated ONNX artifact."""
+    from buildml.dl.packaging import prepare_tensorrt_export_plan
+
+    src = onnx_path
+    if src is None:
+        export = getattr(session, "_dl_export_result", None)
+        if export is not None and getattr(export, "format", None) == "onnx":
+            src = export.path
+    if src is None:
+        raise ValidationError(
+            "prepare_tensorrt_export requires onnx_path= or a prior "
+            "export_torch(..., format='onnx')."
+        )
+    result = prepare_tensorrt_export_plan(
+        src, output_dir, engine_name=engine_name, fp16=fp16
+    )
+    session._dl_packaging_result = result
+    session._record(
+        "prepare_tensorrt_export",
+        {
+            "output_dir": str(output_dir),
+            "onnx_path": str(src),
+            "engine_name": engine_name,
+            "fp16": fp16,
+        },
+        result_summary=result.to_dict(),
+        warnings=tuple(result.warnings),
+    )
+    return result
+
+
+def emit_k8s_ddp_job(
+    session,
+    path: str | Path,
+    *,
+    job_name: str = "buildml-torchrun-ddp",
+    namespace: str = "default",
+    image: str = "pytorch/pytorch:2.2.0-cuda12.1-cudnn8-runtime",
+    nnodes: int = 2,
+    nproc_per_node: int = 2,
+    script_path: str = "/workspace/train.py",
+) -> Any:
+    """Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only)."""
+    from buildml.dl.k8s import write_torchrun_ddp_job
+
+    result = write_torchrun_ddp_job(
+        path,
+        job_name=job_name,
+        namespace=namespace,
+        image=image,
+        nnodes=nnodes,
+        nproc_per_node=nproc_per_node,
+        script_path=script_path,
+    )
+    session._dl_k8s_result = result
+    session._record(
+        "emit_k8s_ddp_job",
+        {
+            "path": str(path),
+            "job_name": job_name,
+            "namespace": namespace,
+            "nnodes": nnodes,
+            "nproc_per_node": nproc_per_node,
+        },
+        result_summary=result.to_dict(),
+        warnings=tuple(result.limitations),
+    )
+    return result
+
+
+def domain_adapt_speech_torch(
+    session,
+    *,
+    epochs: int = 5,
+    learning_rate: float = 1e-3,
+    device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+    freeze_encoder: bool = True,
+    audio_column: str | None = None,
+    batch_size: int = 8,
+    sample_rate: int = 16_000,
+    max_samples: int = 16_000,
+    source_sample_rate: int | None = None,
+    normalize_audio: bool = True,
+    encoder_dim: int = 64,
+    seed: int = 0,
+) -> Any:
+    """Domain-adapt / finetune-lite speech classify (not FM continued pretrain)."""
+    from buildml.dl.speech import domain_adapt_speech_disclosures
+
+    result = fit_speech_torch(
+        session,
+        epochs=epochs,
+        learning_rate=learning_rate,
+        device=device,
+        freeze_encoder=freeze_encoder,
+        audio_column=audio_column,
+        batch_size=batch_size,
+        sample_rate=sample_rate,
+        max_samples=max_samples,
+        source_sample_rate=source_sample_rate,
+        normalize_audio=normalize_audio,
+        encoder_dim=encoder_dim,
+        seed=seed,
+    )
+    # Re-record under the domain-adapt name with stronger disclosures.
+    disclosures = domain_adapt_speech_disclosures()
+    session._record(
+        "domain_adapt_speech_torch",
+        {
+            "epochs": epochs,
+            "learning_rate": learning_rate,
+            "device": device,
+            "freeze_encoder": freeze_encoder,
+            "alias_of": "fit_speech_torch",
+        },
+        result_summary={
+            "disclosures": list(disclosures),
+            "train": None
+            if session.dl_train_result is None
+            else {"n_epochs_ran": session.dl_train_result.n_epochs_ran},
+        },
+        warnings=disclosures,
+    )
+    return result
+
+
+def refuse_speech_foundation_pretrain(session) -> None:
+    """Explicit refuse path for FM-from-scratch / large continued-pretrain asks."""
+    from buildml.dl.speech import refuse_foundation_model_pretrain
+
+    session._record(
+        "refuse_speech_foundation_pretrain",
+        {"requested": "foundation_model_pretrain"},
+        result_summary={"refused": True},
+    )
+    refuse_foundation_model_pretrain(requested="foundation_model_pretrain")

@@ -111,29 +111,40 @@ def create_serving_app(
     kind: BundleKind = "pipeline",
     title: str = "BuildML Serve",
     map_location: str = "cpu",
+    api_keys: str | list[str] | tuple[str, ...] | None = None,
 ) -> Any:
     """Create a FastAPI app that serves health + predict for a bundle.
 
     Security honesty
     ----------------
-    * No authentication / authorization product claim.
-    * Intended for localhost or reverse-proxy fronted deployments.
-    * Do not expose bare to the public internet.
+    * Auth is **optional** library middleware (API key / Bearer), not a managed
+      IAM / cloud identity product.
+    * Intended for localhost or reverse-proxy fronted deployments (prefer TLS
+      + auth at the proxy for internet exposure).
+    * Do not expose bare to the public internet without a reverse proxy.
     """
     _require_fastapi()
     state = load_serving_bundle(path, kind=kind, map_location=map_location)
     state.title = title
     set_serving_state(state)
 
+    from buildml.serving.auth import APIKeyAuthMiddleware, normalize_api_keys
+
+    keys = normalize_api_keys(api_keys) if api_keys is not None else frozenset()
+    auth_enabled = bool(keys)
+
     app = FastAPI(
         title=title,
         docs_url="/docs",
         redoc_url=None,
         description=(
-            "BuildML managed serving (alpha). Localhost-oriented; no auth. "
-            "Put a reverse proxy in front for non-local exposure."
+            "BuildML managed serving (alpha). Localhost-oriented. "
+            "Optional API-key/Bearer middleware when configured; still not a "
+            "managed cloud. Put a reverse proxy (TLS) in front for non-local exposure."
         ),
     )
+    if auth_enabled:
+        app.add_middleware(APIKeyAuthMiddleware, api_keys=keys)
 
     @app.get("/health")
     def health() -> dict[str, Any]:
@@ -144,8 +155,12 @@ def create_serving_app(
             "title": st.title,
             "kind": st.kind,
             "path": str(st.path),
-            "auth": False,
+            "auth": auth_enabled,
+            "auth_mode": "api_key_bearer" if auth_enabled else None,
             "bind_recommendation": "127.0.0.1",
+            "tls_note": (
+                "Terminate TLS at a reverse proxy; this process does not manage certificates."
+            ),
         }
 
     @app.post("/predict")

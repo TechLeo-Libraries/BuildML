@@ -72,6 +72,7 @@ def serve_bundle(
     title: str = "BuildML Serve",
     blocking: bool = False,
     map_location: str = "cpu",
+    api_keys: str | list[str] | tuple[str, ...] | None = None,
 ) -> ServeHandle:
     """Serve a classical pipeline or TorchScript bundle over HTTP.
 
@@ -82,13 +83,16 @@ def serve_bundle(
     kind:
         ``pipeline`` (classical ``buildml.pipeline_bundle``) or ``torchscript``.
     host, port:
-        Bind address. **Defaults to localhost** — no auth product claim.
+        Bind address. **Defaults to localhost**.
+    api_keys:
+        Optional API key(s) enabling Bearer / ``X-API-Key`` middleware.
+        Still not a managed IAM / cloud auth product.
     blocking:
         If True, run uvicorn on the current thread.
 
     Notes
     -----
-    Put a reverse proxy (with TLS/auth) in front for any non-local exposure.
+    Prefer TLS + auth at a reverse proxy for any non-local exposure.
     This is a library-owned local server, not a Kubernetes multi-cluster product.
     """
     try:
@@ -98,7 +102,7 @@ def serve_bundle(
 
     _validate_bind_target(host, port)
     if host not in {"127.0.0.1", "localhost", "::1"} and host != "0.0.0.0":
-        # Allow other binds but do not pretend there is auth.
+        # Allow other binds; optional api_keys middleware is still not IAM-as-a-service.
         pass
     _ensure_port_available(host, port)
 
@@ -107,6 +111,7 @@ def serve_bundle(
         kind=kind,  # type: ignore[arg-type]
         title=title,
         map_location=map_location,
+        api_keys=api_keys,
     )
     config = uvicorn.Config(app, host=host, port=port, log_level="info")
     server = uvicorn.Server(config)

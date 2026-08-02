@@ -9,6 +9,10 @@ Honest alpha scope
 
 This is an **integration / finetune-lite** path. It does **not** train a
 Whisper-scale foundation model from scratch.
+
+Use :func:`domain_adapt_speech_disclosures` for domain-adapt naming, and
+:func:`refuse_foundation_model_pretrain` when a caller asks for FM-from-scratch
+or large-scale continued pretrain — those are not coherent pip-library features.
 """
 
 from __future__ import annotations
@@ -39,6 +43,36 @@ from buildml.dl.types import FeatureContract
 
 SpeechBackend = Literal["stub", "transformers"]
 SpeechMode = Literal["classify", "asr"]
+
+
+def refuse_foundation_model_pretrain(*, requested: str = "foundation_model_pretrain") -> None:
+    """Raise :class:`ValidationError` explaining FM-from-scratch is out of scope.
+
+    Whisper-scale / foundation-model pretraining needs massive corpora and
+    compute budgets — not something a Session method in a pip package can
+    honestly provide. Prefer :meth:`Session.fit_speech_torch` (finetune-lite)
+    or :meth:`Session.domain_adapt_speech_torch` for small-corpus domain adapt.
+    """
+    raise ValidationError(
+        f"Refusing {requested!r}: BuildML does not train Whisper-scale / "
+        "foundation speech models from scratch, and does not run large-scale "
+        "continued pretrain as a library feature (data + compute are outside "
+        "a pip package). Use fit_speech_torch / domain_adapt_speech_torch for "
+        "finetune-lite / domain adapt on small labeled corpora, or "
+        "transcribe_speech / load_pretrained_backbone for pretrained inference "
+        "and encoder hooks."
+    )
+
+
+def domain_adapt_speech_disclosures() -> tuple[str, ...]:
+    """Honest disclosures for domain-adapt / finetune-lite speech training."""
+    return (
+        "domain_adapt_speech_torch is finetune-lite / domain adapt on a small "
+        "Session corpus — not continued pretrain of a foundation model.",
+        "For Whisper-class ASR weights use transcribe_speech(backend='transformers') "
+        "or load_pretrained_backbone(modality='speech'); BuildML will not "
+        "pretrain those stacks from scratch.",
+    )
 
 
 @dataclass(slots=True)

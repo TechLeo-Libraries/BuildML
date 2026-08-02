@@ -8,6 +8,15 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Added
+
+- **Pass R pretrained / serve / K8s depth:** curated vision/audio/speech backbone
+  hooks (`load_pretrained_backbone`, extras `vision` / `pretrained`, mock CI
+  weights); optional API-key/Bearer serving auth; TorchServe pack + TensorRT
+  `trtexec` plan helpers; K8s torchrun Job YAML emitter + `deploy/k8s` example;
+  `domain_adapt_speech_torch` + `refuse_speech_foundation_pretrain` honesty.
+  Not a managed cloud, not live multi-cluster orchestration, not FM-from-scratch.
+
 ### Fixed
 
 - **Pass Q after Pass P:** Torch classification paths now LabelEncoder-style remap

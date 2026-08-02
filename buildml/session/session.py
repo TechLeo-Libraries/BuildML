@@ -147,6 +147,9 @@ class Session:
         self._dl_export_result: Any | None = None
         self._dl_ddp_result: Any | None = None
         self._dl_speech_result: Any | None = None
+        self._dl_backbone: Any | None = None
+        self._dl_packaging_result: Any | None = None
+        self._dl_k8s_result: Any | None = None
         self._serve_handle: Any | None = None
         self._last_pipeline_path: Path | None = None
         self._ai_autonomy_result: Any | None = None
@@ -1433,8 +1436,9 @@ class Session:
         port: int = 8080,
         title: str = "BuildML Serve",
         blocking: bool = False,
+        api_keys: str | list[str] | tuple[str, ...] | None = None,
     ) -> Any:
-        """Launch managed local serving (``buildml[serve]``; localhost; no auth)."""
+        """Launch managed local serving (``buildml[serve]``; optional API-key auth)."""
         return dl_ops.serve_bundle(
             self,
             path,
@@ -1443,7 +1447,121 @@ class Session:
             port=port,
             title=title,
             blocking=blocking,
+            api_keys=api_keys,
         )
+
+    def load_pretrained_backbone(
+        self,
+        modality: Literal["vision", "audio", "speech"],
+        architecture: str | None = None,
+        *,
+        weights: Literal["none", "mock", "pretrained"] = "mock",
+        freeze: bool = True,
+        seed: int = 0,
+        model_id: str | None = None,
+    ) -> Any:
+        """Load a curated vision/audio/speech backbone (mock weights default; not a full zoo)."""
+        return dl_ops.load_pretrained_backbone(
+            self,
+            modality,
+            architecture,
+            weights=weights,
+            freeze=freeze,
+            seed=seed,
+            model_id=model_id,
+        )
+
+    def pack_torchserve(
+        self,
+        output_dir: str | Path,
+        *,
+        torchscript_path: str | Path | None = None,
+        model_name: str = "buildml_model",
+    ) -> Any:
+        """Pack TorchScript into a TorchServe model directory (does not run TorchServe)."""
+        return dl_ops.pack_torchserve(
+            self,
+            output_dir,
+            torchscript_path=torchscript_path,
+            model_name=model_name,
+        )
+
+    def prepare_tensorrt_export(
+        self,
+        output_dir: str | Path,
+        *,
+        onnx_path: str | Path | None = None,
+        engine_name: str = "model.engine",
+        fp16: bool = True,
+    ) -> Any:
+        """Write a TensorRT trtexec plan for an ONNX file (does not build engines)."""
+        return dl_ops.prepare_tensorrt_export(
+            self,
+            output_dir,
+            onnx_path=onnx_path,
+            engine_name=engine_name,
+            fp16=fp16,
+        )
+
+    def emit_k8s_ddp_job(
+        self,
+        path: str | Path,
+        *,
+        job_name: str = "buildml-torchrun-ddp",
+        namespace: str = "default",
+        image: str = "pytorch/pytorch:2.2.0-cuda12.1-cudnn8-runtime",
+        nnodes: int = 2,
+        nproc_per_node: int = 2,
+        script_path: str = "/workspace/train.py",
+    ) -> Any:
+        """Emit a Kubernetes Job YAML for torchrun DDP (template; not live orchestration)."""
+        return dl_ops.emit_k8s_ddp_job(
+            self,
+            path,
+            job_name=job_name,
+            namespace=namespace,
+            image=image,
+            nnodes=nnodes,
+            nproc_per_node=nproc_per_node,
+            script_path=script_path,
+        )
+
+    def domain_adapt_speech_torch(
+        self,
+        *,
+        epochs: int = 5,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        freeze_encoder: bool = True,
+        audio_column: str | None = None,
+        batch_size: int = 8,
+        sample_rate: int = 16_000,
+        max_samples: int = 16_000,
+        source_sample_rate: int | None = None,
+        normalize_audio: bool = True,
+        encoder_dim: int = 64,
+        seed: int = 0,
+    ) -> Session:
+        """Domain-adapt speech classify (finetune-lite; not FM continued pretrain)."""
+        return dl_ops.domain_adapt_speech_torch(
+            self,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            device=device,
+            freeze_encoder=freeze_encoder,
+            audio_column=audio_column,
+            batch_size=batch_size,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            normalize_audio=normalize_audio,
+            encoder_dim=encoder_dim,
+            seed=seed,
+        )
+
+    def refuse_speech_foundation_pretrain(self) -> None:
+        """Refuse FM-from-scratch / large continued-pretrain with an explicit error."""
+        return dl_ops.refuse_speech_foundation_pretrain(self)
 
     @property
     def dl_speech_result(self) -> Any | None:

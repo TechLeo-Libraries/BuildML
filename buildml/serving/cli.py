@@ -44,6 +44,16 @@ def build_parser() -> argparse.ArgumentParser:
         default="BuildML Serve",
         help="Service title shown in /health.",
     )
+    parser.add_argument(
+        "--api-key",
+        action="append",
+        default=None,
+        dest="api_keys",
+        help=(
+            "Optional API key (repeatable). Enables Bearer / X-API-Key auth on "
+            "/predict. Still not a managed IAM product; prefer TLS at a reverse proxy."
+        ),
+    )
     return parser
 
 
@@ -52,9 +62,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
     from buildml.serving.launch import serve_bundle
 
+    auth_note = "api-key auth on" if args.api_keys else "auth off (localhost-oriented)"
     print(
         f"Starting BuildML serve kind={args.kind} bundle={args.bundle} "
-        f"at http://{args.host}:{args.port} (no auth; localhost-oriented)",
+        f"at http://{args.host}:{args.port} ({auth_note})",
         file=sys.stderr,
     )
     serve_bundle(
@@ -64,6 +75,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         port=args.port,
         title=args.title,
         blocking=True,
+        api_keys=args.api_keys,
     )
     return 0
 
