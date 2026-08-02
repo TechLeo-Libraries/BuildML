@@ -1,10 +1,10 @@
 ﻿# DL M0 design lock
 
-Approved lock for the deep-learning thin slice.  
+Approved lock for the deep-learning domain.  
 Parent plan: [deep-learning-phase-plan.md](./deep-learning-phase-plan.md).
 
-**Status:** Locked and shipped in 2.1.0a1.  
-**Approved:** 2026-08-01
+**Status:** Deepened in Phase C (post-2.1.0a1 / Unreleased).  
+**Approved:** 2026-08-01; Phase C depth 2026-08-02
 
 ---
 
@@ -12,14 +12,16 @@ Parent plan: [deep-learning-phase-plan.md](./deep-learning-phase-plan.md).
 
 | Method | Role |
 | --- | --- |
-| `Session.make_torch_loaders(...)` | Build train / validation / test `DataLoader`s from current roles + split |
-| `Session.fit_torch(module, ...)` | Train a caller-supplied `nn.Module` on the train loader (early stop / schedulers / `resume=True`) |
+| `Session.make_torch_loaders(...)` | Build train / validation / test `DataLoader`s; discloses classical plans; `apply_plans=` replay |
+| `Session.make_text_torch_loaders(...)` | Token-id loaders for text/sequence classification (train-only vocab) |
+| `Session.fit_torch(module=None, ...)` | Train module; built-in tabular MLP / text classifier when `module` omitted |
+| `Session.cross_validate_torch(...)` | Fold-local Torch CV (normalize per fold; not nested search) |
 | `Session.evaluate_torch(partition=...)` | Metrics on a named partition using the last Torch trainer |
 | `Session.torch_training_curve()` | Structured curve series + interpretation / limitations / disclosures |
 | `Session.save_torch_bundle(path)` | Persist trainer bundle (weights, opt, scheduler, config, history, contract) |
 | `Session.load_torch_bundle(path)` | Restore a trainer bundle into the Session |
 
-Result slot: `session.dl_train_result` (typed `TrainResult`). Classical `fit_result` is unchanged.
+Result slots: `session.dl_train_result` (`TrainResult`), `session.dl_cv_result` (`TorchCVResult`). Classical `fit_result` is unchanged.
 
 Prefix rule: `*_torch` keeps classical `fit` / `evaluate` unambiguous.
 
@@ -63,7 +65,10 @@ Layout:
 
 | Topic | Decision |
 | --- | --- |
-| Classical preprocess before loaders | No auto-apply; loaders read the current Session frame. Call classical prep explicitly first if needed. |
+| Classical preprocess before loaders | Session impute/encode/scale mutate the frame; attached plans are disclosed. `apply_plans=True` re-applies fitted plans (no refit). Fold-local plan refit requires an explicit CV hook. |
+| Built-in models | Tabular MLP + embedding text classifier (`buildml.dl.models`) for the happy path |
+| Text modality | `make_text_torch_loaders` + text classifier — justifies DL beyond numeric tables |
+| Torch CV | Fold-local only; nested Torch hyperparameter search is an explicit non-goal for this lock |
 | Serializer | `torch.save` payload + JSON `meta.json` sidecar |
 | Device | Prefer requested device; fall back to CPU with an explicit warning when CUDA/MPS unavailable |
-| Normalize | Optional train-fit mean/std in loader path; frozen on val/test |
+| Normalize | Optional train-fit mean/std in loader path; frozen on val/test; per-fold in CV |

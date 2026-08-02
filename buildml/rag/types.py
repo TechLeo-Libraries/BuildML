@@ -152,3 +152,35 @@ class EvalConfig:
             relevance_mode=payload.get("relevance_mode") or "document",
             retrieve=RetrieveConfig.from_dict(retrieve_payload),
         )
+
+
+DEFAULT_MAX_CONTEXT_CHARS = 8000
+DEFAULT_GENERATE_TEMPERATURE = 0.0
+
+
+@dataclass(slots=True)
+class GenerateConfig:
+    """Grounded generation knobs for :func:`buildml.rag.generate.generate_grounded`."""
+
+    k: int = DEFAULT_TOP_K
+    max_tokens: int | None = None
+    temperature: float = DEFAULT_GENERATE_TEMPERATURE
+    max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS
+    system_template: str | None = None
+    user_template: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> GenerateConfig:
+        return cls(
+            k=int(payload.get("k") or DEFAULT_TOP_K),
+            max_tokens=payload.get("max_tokens"),
+            temperature=float(payload.get("temperature", DEFAULT_GENERATE_TEMPERATURE)),
+            max_context_chars=int(
+                payload.get("max_context_chars") or DEFAULT_MAX_CONTEXT_CHARS
+            ),
+            system_template=payload.get("system_template"),
+            user_template=payload.get("user_template"),
+        )

@@ -53,6 +53,7 @@ def rag_ingest_corpus(
     session._rag_index_result = None
     session._rag_retrieve_result = None
     session._rag_eval_result = None
+    session._rag_generate_result = None
     session._record(
         "rag_ingest_corpus",
         {"source": corpus.source, "role": role, "text_column": text_column, "id_column": id_column},
@@ -90,6 +91,8 @@ def rag_embed_and_index(
 
     Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
     Default embedder is ``buildml.hashing_embed.v1`` (lexical/hashed, not semantic).
+    Pass ``embedder="auto"`` to prefer sentence-transformers when importable, or
+    ``embedder="sentence-transformers"`` for an explicit semantic path.
     ``device`` applies to sentence-transformer backends; hashing stays CPU-only.
     """
     from buildml.rag.extras import require_rag_stack
@@ -172,6 +175,86 @@ def rag_retrieve(
             "filters": result.filters,
         },
         result_summary=result.to_dict(),
+    )
+    return result
+
+
+def rag_generate(
+    session,
+    query: str,
+    *,
+    k: int = 5,
+    provider: Any | None = None,
+    mode: str | None = None,
+    fusion: str | None = None,
+    filters: dict[str, Any] | None = None,
+    rerank: bool | str | None = None,
+    retrieve_config: Any | None = None,
+    config: Any | None = None,
+    use_last_retrieve: bool = False,
+) -> Any:
+    """Retrieve (unless reusing the last retrieve) and generate a grounded answer.
+
+    Requires an active RAG index and a chat provider. When ``provider`` is
+    omitted, reuses ``Session.ai_configure``'s provider. For offline CI, pass
+    :class:`buildml.rag.generate.EchoGroundedProvider` or a
+    :class:`buildml.ai.provider.MockProvider`.
+
+    Returns
+    -------
+    GenerateResult
+        Answer text, citations (source ids / chunk / doc), and retrieve provenance.
+    """
+    from buildml.rag.extras import require_rag_stack
+    from buildml.rag.generate import generate_grounded
+    from buildml.rag.types import GenerateConfig
+
+    require_rag_stack(feature="RAG generate")
+    if session._rag_index is None:
+        raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
+    resolved_provider = provider
+    if resolved_provider is None:
+        resolved_provider = getattr(session, "_ai_provider", None)
+    if resolved_provider is None:
+        raise ValidationError(
+            "rag_generate requires a chat provider. Pass provider=... or call "
+            "ai_configure(...) first to reuse the Session AI provider."
+        )
+    retrieve_result = None
+    if use_last_retrieve:
+        retrieve_result = session._rag_retrieve_result
+        if retrieve_result is None:
+            raise ValidationError(
+                "use_last_retrieve=True requires a prior rag_retrieve(...) result."
+            )
+    cfg = config if config is not None else GenerateConfig(k=k)
+    result = generate_grounded(
+        session._rag_index,
+        query,
+        resolved_provider,
+        k=k,
+        retrieve_config=retrieve_config,
+        mode=mode,
+        filters=filters,
+        rerank=rerank,
+        fusion=fusion,
+        config=cfg,
+        retrieve_result=retrieve_result,
+    )
+    if result.retrieve_result is not None:
+        session._rag_retrieve_result = result.retrieve_result
+    session._rag_generate_result = result
+    session._record(
+        "rag_generate",
+        {
+            "query": query,
+            "k": k,
+            "n_citations": result.n_citations,
+            "provider_model": result.provider_model,
+            "use_last_retrieve": use_last_retrieve,
+        },
+        result_summary=result.to_dict(),
+        warnings=(),
     )
     return result
 

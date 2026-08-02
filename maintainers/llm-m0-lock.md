@@ -87,9 +87,10 @@ Default: `STATS_ONLY`. `FULL_SAMPLE` never auto-approved.
 
 ---
 
-## Tool registry (M1 allowlist)
+## Tool registry (Phase C allowlist — sync with `buildml/ai/tools.py`)
 
-M1 ships a conservative allowlist of read-ish + safe operations:
+Default registry (`build_default_registry`) covers classical + RAG + DL. Authoritative
+names: `buildml.ai.tools.registered_tool_names()`.
 
 | Tool | Session method | Category | Notes |
 |---|---|---|---|
@@ -99,8 +100,16 @@ M1 ships a conservative allowlist of read-ish + safe operations:
 | `eda_summary` | `eda()` summary | read-only | EDA findings digest |
 | `dry_run_plan` | `dry_run(plan)` | read-only | Plan without execute |
 | `set_roles` | `set_roles(...)` | write (confirm) | Assign column roles |
+| `split` / `impute` / `encode` / `scale` / `fit` | matching Session methods | write (confirm) | Classical pipeline |
+| `evaluate` / `walkthrough` / `head` / `ai_status` | matching | read-only | Inspection |
+| `drop_columns` | `drop_columns` | destructive | Always confirm |
+| `checkpoint_save` | `checkpoint_save` | write (confirm) | Persist Session |
+| `rag_retrieve` / `rag_generate` | matching | read-only | Grounded retrieve/generate |
+| `rag_ingest_corpus` / `rag_embed_and_index` | matching | write (confirm) | RAG corpus/index |
+| `make_torch_loaders` / `fit_torch` / `cross_validate_torch` | matching | write (confirm) | Torch path |
+| `evaluate_torch` | `evaluate_torch` | read-only | Torch metrics |
 
-Destructive tools (drop columns, delete data) require confirmation and are gated for M2.
+Destructive tools always require confirmation. Tool registry remains the trust boundary.
 
 ---
 
@@ -159,18 +168,17 @@ CI runs with `MockProvider`; tests assert no unauthorized tool calls, no leaked 
 
 ---
 
-## Explicit non-goals (M1)
+## Explicit non-goals (Phase C)
 
 | Non-goal | Rationale |
 |---|---|
-| Multi-step autonomous planner | M2; M1 is advisor + single confirmed tool |
-| Multiple provider backends | M1 ships OpenAI-compatible only; Anthropic/etc in M2 |
-| RAG-grounded answers | M2+ when RAG integration is wired |
-| Teaching Studio redesign | Catalog + results sufficient for M1 |
-| Local-only LLM provider | Protocol extensibility in M1 enables this later |
-| Token/cost budgets (enforced) | M2; M1 has optional user budget |
-| Autopilot mode | M3+; M1 always confirms writes |
+| Fully autonomous replanning agent | Confirmed multi-step plans exist; no autopilot rewrite loop |
+| Multiple provider backends | OpenAI-compatible + Mock; Anthropic/etc later |
+| Teaching Studio redesign | Catalog + results sufficient |
+| Local-only LLM provider | Protocol extensibility enables this later |
+| Autopilot mode auto-confirming writes | Writes still require confirmation |
 | Arbitrary code execution | Never (hardcoded non-goal) |
+| Perfect injection defense | Heuristic checks + allowlist; document limits honestly |
 
 ---
 
@@ -191,13 +199,10 @@ CI runs with `MockProvider`; tests assert no unauthorized tool calls, no leaked 
 
 ### Will not do
 
-- Multi-step batch execute (M2)
-- Autonomous replanning (M3+)
-- RAG-grounded chat (M2+)
-- Multiple provider backends (M2)
-- Enforced token/cost limits (M2)
-- Autopilot auto-confirm (M3+)
-- Full E2E workflow orchestration (M2–M3)
+- Autonomous replanning loops (Phase C still confirms writes)
+- Multiple non-OpenAI provider backends
+- Autopilot auto-confirm of destructive ops
+- Arbitrary code execution outside the tool allowlist
 
 ---
 

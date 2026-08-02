@@ -1,8 +1,8 @@
 # Torch quickstart
 
-Optional tabular Torch path on the same `Session` as classical ML: roles,
-splits, history, and explain. Install the Torch extra; core `import buildml`
-never requires it.
+Optional Torch path on the same `Session` as classical ML: tabular loaders,
+built-in MLP, text/sequence loaders, fold-local CV, history, and explain.
+Install the Torch extra; core `import buildml` never requires it.
 
 ```bash
 pip install "buildml[torch]"
@@ -108,19 +108,35 @@ print(before.operation, before.prerequisites)
 
 Layout: `<path>/meta.json` + `<path>/trainer.pt`.
 
+## Built-in models and text path
+
+```python
+# Tabular happy path — omit module to use the built-in MLP
+session.make_torch_loaders()
+session.fit_torch(epochs=5, device="auto")  # builds TabularMLP from the contract
+
+# Fold-local CV (not nested hyperparameter search)
+cv = session.cross_validate_torch(n_folds=3, epochs=2)
+
+# Text / sequence modality
+text_session.make_text_torch_loaders(text_column="text")
+text_session.fit_torch(epochs=3)  # builds embedding text classifier
+```
+
 ## Known limits (honest)
 
 - **CPU-first merge gate.** CI runs Torch on CPU (Python 3.11–3.12). CUDA/MPS
   are supported when available with explicit fallback warnings; GPU CI is not a
   PR blocker.
-- **Tabular numeric features first.** Image / sequence / multimodal loaders are
-  later. Caller supplies the `nn.Module`; BuildML does not ship a model zoo.
+- **Tabular + text in scope.** Image / multimodal loaders are later. Built-in
+  MLP and text classifier cover the happy path; custom `nn.Module` still works.
 - **Materialization.** Partition rows become tensors via the current Session
   frame (Pandas/NumPy bridge). No Polars/DuckDB zero-copy into DataLoaders.
-- **No auto classical preprocess.** Call impute/encode/scale (or other Session
-  prep) explicitly before `make_torch_loaders` if you need it.
-- **No fold-local Torch CV** in this alpha. Holdout + validation early stopping
-  is the tested discipline; do not tune early stop on test.
-- **Not RAG / LLM.** Those domains are sequenced after DL.
+- **Classical plans.** Session impute/encode/scale mutate the frame and are
+  disclosed on loaders; `apply_plans=True` re-applies fitted plans (no refit).
+  Fold-local classical plan refit is not automatic inside `cross_validate_torch`.
+- **CV is fold-local, not nested.** No inner Torch hyperparameter search loop.
+  Do not tune early stop on test.
+- **RAG / AI** are separate domains (`rag_*`, `ai_*`) that can call Torch tools.
 
 See [glossary](glossary.md).

@@ -56,6 +56,7 @@ def test_catalog_covers_rag_operations() -> None:
         "rag_chunk",
         "rag_embed_and_index",
         "rag_retrieve",
+        "rag_generate",
         "rag_evaluate",
         "save_rag_bundle",
         "load_rag_bundle",

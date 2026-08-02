@@ -964,12 +964,16 @@ _OPERATIONS = (
             _p("normalize", "bool", "Fit mean/std on train and apply frozen stats elsewhere.", True),
             _p("seed", "int", "Generator seed for train shuffling.", 0),
             _p("task", "classification | regression | auto", "Task interpretation for labels.", "auto"),
+            _p("apply_plans", "bool", "Re-apply fitted classical plans before building tensors.", False),
         ),
         inputs=("Dataset with roles, SplitPlan, and optional prior classical prep on the frame.",),
         outputs=("TorchLoaderBundle stored on the Session plus a LoaderReport summary.",),
         prerequisites=(DATASET, ROLES, SPLIT, TORCH),
         ordering=("After split (and optional classical prep); before fit_torch.",),
-        alternatives=("Build tensors yourself and inject only if you accept leaving the Session path.",),
+        alternatives=(
+            "make_text_torch_loaders for token/sequence classification.",
+            "Build tensors yourself and inject only if you accept leaving the Session path.",
+        ),
         rationale=("Use when moving from partition frames to batched Torch training.",),
         assumptions=("Features and targets are numeric; non-numeric columns were encoded or dropped earlier.",),
         failures=("Missing Torch extra, empty train, non-numeric columns, or NaNs in the design matrix.",),
@@ -984,25 +988,61 @@ _OPERATIONS = (
         state_changes=("Stores torch loaders on the Session and appends loader metadata to history.",),
         result_reading=(
             "Check n_train/n_validation/n_test, split_kind, groups_disjoint/time_order_ok, "
-            "normalize flag, and warnings for empty holdout partitions.",
+            "normalize flag, classical plan disclosures, and warnings for empty holdout partitions.",
         ),
-        next_steps=("Call fit_torch with a caller-supplied nn.Module.",),
+        next_steps=("Call fit_torch (built-in MLP when module omitted) or cross_validate_torch.",),
         concepts=("leakage-boundary", "batch-leakage", "evaluation-partitions", "data-splitting"),
+    ),
+    _operation(
+        "make_text_torch_loaders",
+        OperationKind.MODEL,
+        "Build token-id DataLoaders for text classification (sequence modality).",
+        "Fit a train-only vocabulary and pad token sequences for embedding classifiers.",
+        "Text / sequence Torch data boundary.",
+        (
+            "Resolve a text feature column and target.",
+            "Fit vocabulary on the train partition only.",
+            "Encode padded token ids per partition with shuffle on train only.",
+        ),
+        parameters=(
+            _p("text_column", "str | None", "Text feature column (inferred when unique)."),
+            _p("batch_size", "int", "Rows per batch.", 16),
+            _p("max_len", "int", "Maximum tokens per row.", 64),
+            _p("max_vocab", "int", "Vocabulary cap excluding pad/unk.", 5000),
+            _p("min_freq", "int", "Minimum token frequency on train.", 1),
+            _p("shuffle_train", "bool", "Shuffle the train loader only.", True),
+            _p("seed", "int", "Generator seed for train shuffling.", 0),
+        ),
+        inputs=("Dataset with a string feature column, numeric target ids, and a SplitPlan.",),
+        outputs=("TorchLoaderBundle with text_vocab / text_contract metadata.",),
+        prerequisites=(DATASET, ROLES, SPLIT, TORCH),
+        ordering=("After split / label encoding; before fit_torch with a text classifier.",),
+        alternatives=("make_torch_loaders for numeric tabular tensors.",),
+        rationale=("Use when the modeling path is text/sequence rather than pure numeric tables.",),
+        assumptions=("Target labels are integer class ids; vocabulary must not see validation/test text.",),
+        failures=("Missing Torch extra, no text column, empty train, or non-numeric target.",),
+        leakage=("Fitting vocabulary on all rows leaks holdout token identity into the model.",),
+        anti_patterns=("Treating hashing RAG embeddings as a substitute for this supervised text path.",),
+        state_changes=("Stores text Torch loaders on the Session.",),
+        result_reading=("Check vocab size, max_len, partition sizes, and train-only vocab disclosure.",),
+        next_steps=("fit_torch() without module to build the embedding text classifier.",),
+        concepts=("leakage-boundary", "batch-leakage", "evaluation-partitions"),
     ),
     _operation(
         "fit_torch",
         OperationKind.MODEL,
-        "Train a caller-supplied Torch nn.Module on the Session train DataLoader.",
+        "Train a Torch nn.Module (built-in MLP/text classifier when module omitted).",
         "Run a leakage-scoped supervised epoch loop and store a Torch TrainResult.",
         "Torch supervised training boundary.",
         (
             "Require or build Torch loaders.",
+            "When module is omitted, build tabular MLP or text classifier from the loader contract.",
             "Resolve device with explicit CPU fallback when CUDA/MPS are unavailable.",
             "Run epoch steps with optional validation loss, scheduler, grad clip, and early stopping.",
             "When resume=True, restore optimizer/scheduler state from dl_train_result and append history.",
         ),
         parameters=(
-            _p("module", "torch.nn.Module", "Caller-supplied network.", required=True),
+            _p("module", "torch.nn.Module | None", "Optional network; built-in zoo when omitted."),
             _p("loss_fn", "callable | None", "Optional (module, xb, yb) -> loss."),
             _p("optimizer_factory", "callable | None", "Optional params -> optimizer factory."),
             _p("epochs", "int", "Epochs when config omitted; additional epochs if resume=True.", 5),
@@ -1048,7 +1088,7 @@ _OPERATIONS = (
         ),
         next_steps=(
             "torch_training_curve for structured teaching data; evaluate_torch on validation or test; "
-            "save_torch_bundle for weights.",
+            "save_torch_bundle for weights; cross_validate_torch for fold-local estimates.",
         ),
         concepts=(
             "leakage-boundary",
@@ -1057,6 +1097,50 @@ _OPERATIONS = (
             "training-curves",
             "evaluation-partitions",
         ),
+    ),
+    _operation(
+        "cross_validate_torch",
+        OperationKind.DIAGNOSTIC,
+        "Fold-local Torch cross-validation on numeric tabular features.",
+        "Train a fresh module per fold with train-only normalize stats.",
+        "Torch fold-local CV boundary.",
+        (
+            "Split indices into folds (optionally stratified).",
+            "Fit normalize stats on each fold's train indices only.",
+            "Train a fresh module (default tabular MLP) and score the held-out fold.",
+            "Aggregate mean/std metrics with explicit nested-CV limitations.",
+        ),
+        parameters=(
+            _p("n_folds", "int", "Number of folds.", 3),
+            _p("epochs", "int", "Epochs per fold.", 3),
+            _p("batch_size", "int", "Batch size.", 32),
+            _p("learning_rate", "float", "Adam learning rate.", 1e-3),
+            _p("device", "cpu | cuda | mps | auto", "Preferred device.", "auto"),
+            _p("normalize", "bool", "Per-fold train-fit mean/std.", True),
+            _p("seed", "int", "RNG seed.", 0),
+            _p("stratify", "bool", "Stratify classification folds when possible.", True),
+            _p("task", "classification | regression | auto", "Task interpretation.", "auto"),
+        ),
+        inputs=("Dataset with numeric features and a target (split optional; CV makes its own folds).",),
+        outputs=("TorchCVResult with per-fold and mean metrics plus limitations.",),
+        prerequisites=(DATASET, ROLES, TORCH),
+        ordering=("After roles (and optional classical prep); beside fit_torch for a single split.",),
+        alternatives=("Classical Session.cross_validate for sklearn estimators; nested CV separately.",),
+        rationale=("Use when you need fold-local Torch estimates without claiming nested search.",),
+        assumptions=("Features/targets are numeric; module_factory builds a fresh module each fold.",),
+        failures=("Missing Torch extra, too few rows for n_folds, or non-numeric design matrix.",),
+        leakage=(
+            "Fitting normalize or vocab on all rows before folding leaks holdout signal.",
+            "Refitting Session-global classical plans outside fold-local apply_session_plans.",
+        ),
+        anti_patterns=(
+            "Calling this nested CV when no inner hyperparameter loop ran.",
+            "Reporting mean fold accuracy as production readiness without holdout.",
+        ),
+        state_changes=("Stores dl_cv_result; does not replace dl_train_result.",),
+        result_reading=("Read mean_metrics, limitations (not nested), and per-fold warnings.",),
+        next_steps=("fit_torch on a declared split for the final trainer; save_torch_bundle.",),
+        concepts=("leakage-boundary", "evaluation-partitions", "data-splitting"),
     ),
     _operation(
         "torch_training_curve",
@@ -1336,7 +1420,50 @@ _OPERATIONS = (
         result_reading=(
             "Inspect hit doc_ids, scores, k, mode, filters, rerank, and embedder_id disclosures."
         ),
-        next_steps=("rag_evaluate for aggregate metrics; save_rag_bundle when the index is stable.",),
+        next_steps=(
+            "rag_generate for grounded answers with citations; "
+            "rag_evaluate for aggregate metrics; save_rag_bundle when the index is stable.",
+        ),
+        concepts=("rag-retrieval-metrics", "rag-chunk-index-boundary", "rag-eval-contamination"),
+    ),
+    _operation(
+        "rag_generate",
+        OperationKind.MODEL,
+        "Retrieve context and generate a grounded answer with citations.",
+        "Assemble CONTEXT from ranked chunks, call a chat provider, and return citations.",
+        "Retrieval-augmented generation boundary.",
+        (
+            "Require an active RagIndex and a chat provider.",
+            "Retrieve top-k chunks (or reuse the last retrieve).",
+            "Assemble grounded prompt with [source:N] labels.",
+            "Call the provider and return GenerateResult with citations.",
+        ),
+        parameters=(
+            _p("query", "str", "Question to answer from retrieved context.", required=True),
+            _p("k", "int", "Retrieval depth for grounding.", 5),
+            _p("provider", "ChatProvider | None", "Optional provider; else Session AI provider."),
+            _p("use_last_retrieve", "bool", "Reuse rag_retrieve_result instead of retrieving again.", False),
+        ),
+        inputs=("Active RagIndex, non-empty query, and a chat provider (or ai_configure).",),
+        outputs=("GenerateResult with answer, citations, and retrieve provenance.",),
+        prerequisites=(RAG_INDEX, RAG),
+        ordering=("After rag_embed_and_index; optionally after rag_retrieve.",),
+        alternatives=("rag_retrieve alone when you only need ranked evidence passages.",),
+        rationale=("Use when the product path is retrieve-then-generate, not retrieve-only.",),
+        assumptions=("Provider answers are constrained by CONTEXT; users still verify citations.",),
+        failures=(
+            "No index, empty query, empty retrieval, missing provider, or provider errors.",
+        ),
+        leakage=("Generating from an index that includes eval answers is not a fair RAG eval setup.",),
+        anti_patterns=(
+            "Treating grounded generate as infallible; citations must be checked against source text.",
+            "Calling generate without a provider and assuming OpenAI is embedded in core.",
+        ),
+        state_changes=("Stores rag_generate_result and updates rag_retrieve_result when retrieving.",),
+        result_reading=(
+            "Read answer, n_citations, citation doc/chunk ids, provider_model, and disclosures."
+        ),
+        next_steps=("save_ai_transcript for the grounded exchange; save_rag_bundle for the index.",),
         concepts=("rag-retrieval-metrics", "rag-chunk-index-boundary", "rag-eval-contamination"),
     ),
     _operation(
@@ -1363,8 +1490,9 @@ _OPERATIONS = (
         alternatives=(
             "Inspect rag_retrieve hits manually for a single debugging query.",
             "Use buildml.rag.compare_retrieval_configs for side-by-side chunk/embed trials.",
+            "rag_generate for grounded answers (generation quality is separate from ranking metrics).",
         ),
-        rationale=("Use when you need quantitative retrieval quality, not a generate step.",),
+        rationale=("Use when you need quantitative retrieval ranking quality.",),
         assumptions=("Qrels ids match the claimed relevance_mode (doc_id vs chunk_id).",),
         failures=("No index, empty qrels, or missing RAG extra.",),
         leakage=("Evaluating against answers that were indexed contaminates the metric.",),
@@ -1376,7 +1504,10 @@ _OPERATIONS = (
         result_reading=(
             "Read recall_at_k, mrr, ndcg_at_k, hit_rate_at_k with k, relevance_mode, and retrieve_mode."
         ),
-        next_steps=("save_rag_bundle; iterate chunk/embed configs only with clear experiment notes.",),
+        next_steps=(
+            "rag_generate for grounded answers; save_rag_bundle; iterate chunk/embed configs "
+            "only with clear experiment notes.",
+        ),
         concepts=("rag-retrieval-metrics", "rag-eval-contamination", "evaluation-partitions"),
     ),
     _operation(

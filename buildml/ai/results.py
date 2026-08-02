@@ -88,6 +88,7 @@ class PlanStep:
     expected_changes: tuple[str, ...]
     evidence: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
+    parameters: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -98,6 +99,7 @@ class PlanStep:
             "expected_changes": list(self.expected_changes),
             "evidence": list(self.evidence),
             "warnings": list(self.warnings),
+            "parameters": dict(self.parameters),
         }
 
 

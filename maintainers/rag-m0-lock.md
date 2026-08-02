@@ -1,10 +1,10 @@
 ﻿# RAG M0 design lock
 
-Approved lock for the retrieval thin slice.  
+Approved lock for the RAG domain (retrieve + grounded generate).  
 Parent plan: [rag-phase-plan.md](./rag-phase-plan.md).
 
-**Status:** Locked and shipped in 2.2.0a1.  
-**Approved:** 2026-08-01
+**Status:** Deepened in Phase C (post-2.2.0a1 / Unreleased).  
+**Approved:** 2026-08-01; generate path added 2026-08-02
 
 ---
 
@@ -16,6 +16,7 @@ Parent plan: [rag-phase-plan.md](./rag-phase-plan.md).
 | `Session.rag_chunk(...)` | Split corpus documents with size + overlap; stable chunk ids |
 | `Session.rag_embed_and_index(...)` | Embed chunks and build the default vector index |
 | `Session.rag_retrieve(query, k=..., mode=..., filters=..., rerank=...)` | Dense / BM25 / hybrid retrieve; optional metadata filters and rerank |
+| `Session.rag_generate(query, ...)` | Retrieve + grounded generate with citations (pluggable chat provider) |
 | `Session.rag_evaluate(..., relevance_mode=...)` | Retrieval metrics on gold qrels (recall@k, MRR, nDCG@k, hit-rate@k) |
 | `Session.rag_upsert(...)` | Upsert documents/chunks without a full index rebuild |
 | `Session.rag_delete(...)` | Delete by `chunk_ids` and/or `doc_ids` |
@@ -29,6 +30,7 @@ Result slots (distinct from classical `fit_result` and Torch `dl_train_result`):
 | `session.rag_index_result` | `IndexResult` |
 | `session.rag_retrieve_result` | `RetrieveResult` |
 | `session.rag_eval_result` | `RagEvalResult` |
+| `session.rag_generate_result` | `GenerateResult` |
 
 Prefix rule: `rag_*` keeps classical `fit` / Torch `*_torch` unambiguous.
 
@@ -36,8 +38,8 @@ Canonical smoke:
 
 ```text
 rag_ingest_corpus → rag_chunk → rag_embed_and_index
-  → rag_retrieve → rag_evaluate → save_rag_bundle / load_rag_bundle
-  → explain("rag_retrieve")
+  → rag_retrieve → rag_generate → rag_evaluate
+  → save_rag_bundle / load_rag_bundle → explain("rag_generate")
 ```
 
 ---
@@ -70,8 +72,8 @@ Wrong-loader errors: loading a Session checkpoint or Torch bundle with `load_rag
 | Concern | Lock |
 | --- | --- |
 | Embed protocol | `callable[[list[str]], ndarray]` or an object with `.encode(texts) -> ndarray` |
-| Default embedder | `buildml.hashing_embed.v1` — sklearn `HashingVectorizer` (`n_features=384`, `alternate_sign=False`, L2-normalized). Deterministic, CPU-only, no model download. |
-| Semantic override | Optional `SentenceTransformerEmbedder` (model id e.g. `sentence-transformers/all-MiniLM-L6-v2`) when the `rag` extra’s sentence-transformers pin is present; or any caller-supplied embed callable |
+| Default embedder | `buildml.hashing_embed.v1` — sklearn `HashingVectorizer` (`n_features=384`, `alternate_sign=False`, L2-normalized). Deterministic, CPU-only, no model download. CI-safe default. |
+| Semantic path | First-class `SentenceTransformerEmbedder` via `embedder="sentence-transformers"` / model id / `embedder="auto"` (prefers ST when importable, else hashing). Requires `buildml[rag]`. |
 | Store protocol | Build from embeddings + chunk records; `query(vector, k) -> ranked hits`; save/load with the bundle |
 | Default store | In-process NumPy matrix + cosine similarity top-k (sklearn-free distance via L2-normalized matmul). Persist as `embeddings.npy` + `chunks.jsonl` |
 | Deferred stores | FAISS / Chroma — M2+ if evidence warrants a second backend |
@@ -96,16 +98,17 @@ Missing semantic stack → `MissingExtraError("rag", feature=...)` with
 
 ---
 
-## Explicit non-goals (M1; generate still deferred after M2)
+## Explicit non-goals (updated Phase C)
 
 | Non-goal | Notes |
 | --- | --- |
-| Generate / LLM operator | No `rag_generate`; no `buildml.ai` (deferred M3→L) |
+| Hosted / paid generate by default | Provider is BYO; CI uses Mock / EchoGroundedProvider |
 | Teaching Studio redesign / RAG cockpit | Catalog + structured results + walkthrough `rag_status` |
 | Hosted vector DB product | Out of library scope |
 | PDF / OCR / HTML cleanup product | Later adapters |
 | Embedding fine-tuning inside BuildML | Use DL or external tools |
 | Folding RAG into `all-classical` | Keep classical extras free of RAG |
+| Faithfulness / hallucination auto-eval suite | Later; citations are returned for human/provider verification |
 
 ---
 

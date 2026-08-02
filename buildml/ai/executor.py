@@ -382,6 +382,73 @@ def _dispatch_tool(
         result = session.ai_status()
         return result, ()
 
+    elif call.tool_name == "rag_retrieve":
+        query = call.arguments.get("query", "")
+        if not query:
+            raise ValidationError("rag_retrieve requires a non-empty query.")
+        result = session.rag_retrieve(
+            query,
+            k=int(call.arguments.get("k", 5)),
+            mode=call.arguments.get("mode"),
+        )
+        return result, ()
+
+    elif call.tool_name == "rag_generate":
+        query = call.arguments.get("query", "")
+        if not query:
+            raise ValidationError("rag_generate requires a non-empty query.")
+        result = session.rag_generate(
+            query,
+            k=int(call.arguments.get("k", 5)),
+        )
+        return result, ()
+
+    elif call.tool_name == "rag_ingest_corpus":
+        documents = call.arguments.get("documents")
+        text_column = call.arguments.get("text_column")
+        if documents is None and text_column is None:
+            raise ValidationError("rag_ingest_corpus requires documents= or text_column=.")
+        session.rag_ingest_corpus(documents, text_column=text_column)
+        state_changes.append("Ingested RAG corpus (prior index cleared).")
+        return {"rag_corpus_ingested": True}, tuple(state_changes)
+
+    elif call.tool_name == "rag_embed_and_index":
+        embedder = call.arguments.get("embedder")
+        session.rag_embed_and_index(embedder=embedder)
+        state_changes.append("Built RAG index.")
+        return {"rag_index_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "make_torch_loaders":
+        session.make_torch_loaders(
+            batch_size=int(call.arguments.get("batch_size", 32)),
+            normalize=bool(call.arguments.get("normalize", True)),
+            apply_plans=bool(call.arguments.get("apply_plans", False)),
+        )
+        state_changes.append("Built Torch DataLoaders.")
+        return {"torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_torch":
+        session.fit_torch(
+            epochs=int(call.arguments.get("epochs", 5)),
+            learning_rate=float(call.arguments.get("learning_rate", 1e-3)),
+            device=call.arguments.get("device", "auto"),
+        )
+        state_changes.append("Fitted Torch module (dl_train_result updated).")
+        return {"torch_fitted": True}, tuple(state_changes)
+
+    elif call.tool_name == "evaluate_torch":
+        partition = call.arguments.get("partition", "test")
+        result = session.evaluate_torch(partition=partition)
+        return result, ()
+
+    elif call.tool_name == "cross_validate_torch":
+        result = session.cross_validate_torch(
+            n_folds=int(call.arguments.get("n_folds", 3)),
+            epochs=int(call.arguments.get("epochs", 3)),
+        )
+        state_changes.append("Completed fold-local Torch CV.")
+        return result, tuple(state_changes)
+
     else:
         raise ValidationError(f"No dispatch handler for tool: {call.tool_name}")
 
@@ -396,8 +463,18 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
             changes.append(f"Column '{col}' will be assigned role '{role}'.")
 
     elif tool_name in (
-        "describe_dataset", "explain_operation", "workflow_status", "eda_summary",
-        "dry_run_plan", "evaluate", "walkthrough", "head", "ai_status"
+        "describe_dataset",
+        "explain_operation",
+        "workflow_status",
+        "eda_summary",
+        "dry_run_plan",
+        "evaluate",
+        "walkthrough",
+        "head",
+        "ai_status",
+        "rag_retrieve",
+        "rag_generate",
+        "evaluate_torch",
     ):
         changes.append("No state changes (read-only operation).")
 
@@ -427,6 +504,21 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
     elif tool_name == "checkpoint_save":
         path = arguments.get("path", "")
         changes.append(f"Will save checkpoint to {path}.")
+
+    elif tool_name == "rag_ingest_corpus":
+        changes.append("Will ingest a RAG corpus and clear any prior index.")
+
+    elif tool_name == "rag_embed_and_index":
+        changes.append("Will embed chunks and build the RAG vector index.")
+
+    elif tool_name == "make_torch_loaders":
+        changes.append("Will build Torch DataLoaders on the Session.")
+
+    elif tool_name == "fit_torch":
+        changes.append("Will train a Torch module and store dl_train_result.")
+
+    elif tool_name == "cross_validate_torch":
+        changes.append("Will run fold-local Torch CV and store dl_cv_result.")
 
     return tuple(changes) if changes else ("Unknown state changes.",)
 

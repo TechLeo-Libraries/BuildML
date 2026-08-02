@@ -67,7 +67,9 @@ def test_missing_torch_extra_message() -> None:
 def test_catalog_covers_torch_operations() -> None:
     for name in (
         "make_torch_loaders",
+        "make_text_torch_loaders",
         "fit_torch",
+        "cross_validate_torch",
         "evaluate_torch",
         "save_torch_bundle",
         "load_torch_bundle",

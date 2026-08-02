@@ -13,14 +13,22 @@ __all__ = [
     "FeatureContract",
     "LoaderConfig",
     "LoaderReport",
+    "TabularMLP",
+    "TextLoaderConfig",
+    "TextVocab",
+    "TorchCVResult",
     "TorchLoaderBundle",
     "TrainConfig",
     "TrainResult",
     "TrainingCurveReport",
+    "build_tabular_mlp",
+    "build_text_classifier",
     "build_training_curve",
+    "cross_validate_torch",
     "evaluate_module",
     "load_torch_bundle",
     "make_loaders",
+    "make_text_loaders",
     "require_torch",
     "save_torch_bundle",
     "torch_available",
@@ -74,4 +82,16 @@ def __getattr__(name: str) -> Any:
         from buildml.dl import checkpoint as checkpoint_mod
 
         return getattr(checkpoint_mod, name)
+    if name in {"TabularMLP", "build_tabular_mlp", "build_text_classifier"}:
+        from buildml.dl import models as models_mod
+
+        return getattr(models_mod, name)
+    if name in {"TextLoaderConfig", "TextVocab", "make_text_loaders"}:
+        from buildml.dl import text as text_mod
+
+        return getattr(text_mod, name)
+    if name in {"TorchCVResult", "cross_validate_torch"}:
+        from buildml.dl import cv as cv_mod
+
+        return getattr(cv_mod, name)
     raise AttributeError(f"module 'buildml.dl' has no attribute {name!r}")

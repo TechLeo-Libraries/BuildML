@@ -135,12 +135,14 @@ class Session:
         self._model_card: ModelCard | None = None
         self._torch_loaders: Any | None = None
         self._dl_train_result: Any | None = None
+        self._dl_cv_result: Any | None = None
         self._rag_corpus: Any | None = None
         self._rag_chunks: Any | None = None
         self._rag_index: Any | None = None
         self._rag_index_result: Any | None = None
         self._rag_retrieve_result: Any | None = None
         self._rag_eval_result: Any | None = None
+        self._rag_generate_result: Any | None = None
         self._ai_provider: Any | None = None
         self._ai_egress_config: Any | None = None
         self._ai_transcript: Any | None = None
@@ -895,13 +897,15 @@ class Session:
         normalize: bool = True,
         seed: int = 0,
         task: Literal["classification", "regression", "auto"] = "auto",
+        apply_plans: bool = False,
     ) -> TorchLoaderBundle:
         """Build Torch DataLoaders from current roles and split partitions.
 
         Requires ``pip install 'buildml[torch]'`` (or ``buildml[dl]``). Shuffle
         applies to the train loader only. When ``normalize`` is True, mean/std
-        are fit on train and frozen for validation/test. Classical preprocess
-        plans are not auto-applied; call them first if needed.
+        are fit on train and frozen for validation/test. Attached classical
+        plans are disclosed on the loader report; pass ``apply_plans=True`` to
+        re-apply fitted plans before building tensors.
 
         Returns
         -------
@@ -917,11 +921,37 @@ class Session:
             normalize=normalize,
             seed=seed,
             task=task,
+            apply_plans=apply_plans,
+        )
+
+    def make_text_torch_loaders(
+        self,
+        *,
+        text_column: str | None = None,
+        batch_size: int = 16,
+        max_len: int = 64,
+        max_vocab: int = 5000,
+        min_freq: int = 1,
+        shuffle_train: bool = True,
+        seed: int = 0,
+    ) -> TorchLoaderBundle:
+        """Build token-id DataLoaders for text classification (sequence modality).
+
+        Vocabulary is fit on train only. Requires ``buildml[torch]``."""
+        return dl_ops.make_text_torch_loaders(
+            self,
+            text_column=text_column,
+            batch_size=batch_size,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            shuffle_train=shuffle_train,
+            seed=seed,
         )
 
     def fit_torch(
         self,
-        module: Any,
+        module: Any | None = None,
         *,
         loss_fn: Any | None = None,
         optimizer_factory: Any | None = None,
@@ -935,18 +965,21 @@ class Session:
         scheduler: Literal["none", "step", "plateau", "cosine"] = "none",
         resume: bool = False,
         config: Any | None = None,
+        hidden: tuple[int, ...] = (64, 32),
+        dropout: float = 0.1,
     ) -> Session:
-        """Train a caller-supplied ``nn.Module`` on the train Torch loader.
+        """Train an ``nn.Module`` on the train Torch loader.
 
-        Requires ``pip install 'buildml[torch]'``. Delegates to
-        :func:`buildml.dl.train.train_supervised_module`. Does not replace
-        classical :meth:`fit` / :attr:`fit_result`.
+        Requires ``pip install 'buildml[torch]'``. When ``module`` is omitted,
+        builds a tabular MLP (or text classifier for text loaders) from the
+        loader contract. Does not replace classical :meth:`fit`.
 
         Parameters
         ----------
         module:
-            Unfitted (or warm) ``torch.nn.Module``. When ``resume=True``, weights
-            are restored from :attr:`dl_train_result` before continuing.
+            Optional ``torch.nn.Module``. When omitted, a built-in model is
+            constructed from the active loader contract. When ``resume=True``,
+            weights are restored from :attr:`dl_train_result`.
         loss_fn:
             Optional ``(module, xb, yb) -> loss``. Defaults to CrossEntropy
             (classification) or MSE (regression).
@@ -956,14 +989,13 @@ class Session:
             Train-loop knobs used when ``config`` is omitted. With ``resume=True``,
             ``epochs`` are **additional** epochs.
         early_stopping_patience / early_stopping_monitor / scheduler:
-            M2 knobs when ``config`` is omitted. Patience requires a validation
-            loader. Scheduler defaults to ``none`` (see :class:`~buildml.dl.types.TrainConfig`).
+            Patience requires a validation loader. Scheduler defaults to ``none``.
         resume:
-            When True, continue from :attr:`dl_train_result` (e.g. after
-            :meth:`load_torch_bundle`), restoring optimizer/scheduler state.
+            When True, continue from :attr:`dl_train_result`.
         config:
-            Optional :class:`~buildml.dl.types.TrainConfig` overriding the
-            scalar knobs above."""
+            Optional :class:`~buildml.dl.types.TrainConfig` overriding scalar knobs.
+        hidden / dropout:
+            Built-in MLP / text classifier knobs when ``module`` is omitted."""
         return dl_ops.fit_torch(
             self,
             module=module,
@@ -979,12 +1011,48 @@ class Session:
             scheduler=scheduler,
             resume=resume,
             config=config,
+            hidden=hidden,
+            dropout=dropout,
+        )
+
+    def cross_validate_torch(
+        self,
+        *,
+        n_folds: int = 3,
+        epochs: int = 3,
+        batch_size: int = 32,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        normalize: bool = True,
+        seed: int = 0,
+        stratify: bool = True,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        module_factory: Any | None = None,
+    ) -> Any:
+        """Fold-local Torch CV (normalize fit per fold; not nested search)."""
+        return dl_ops.cross_validate_torch(
+            self,
+            n_folds=n_folds,
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            device=device,
+            normalize=normalize,
+            seed=seed,
+            stratify=stratify,
+            task=task,
+            module_factory=module_factory,
         )
 
     @property
     def dl_train_result(self) -> TrainResult | None:
         """Last Torch :class:`~buildml.dl.results.TrainResult`, if any."""
         return self._dl_train_result
+
+    @property
+    def dl_cv_result(self) -> Any | None:
+        """Last :class:`~buildml.dl.cv.TorchCVResult`, if any."""
+        return self._dl_cv_result
 
     def torch_training_curve(self) -> TrainingCurveReport:
         """Return structured training-curve teaching data for the last Torch run.
@@ -1136,6 +1204,39 @@ class Session:
             retrieve_config=retrieve_config,
         )
 
+    def rag_generate(
+        self,
+        query: str,
+        *,
+        k: int = 5,
+        provider: Any | None = None,
+        mode: str | None = None,
+        fusion: str | None = None,
+        filters: dict[str, Any] | None = None,
+        rerank: bool | str | None = None,
+        retrieve_config: Any | None = None,
+        config: Any | None = None,
+        use_last_retrieve: bool = False,
+    ) -> Any:
+        """Retrieve context and generate a grounded answer with citations.
+
+        Requires an active RAG index and a chat provider (explicit ``provider``
+        or a prior :meth:`ai_configure`). Empty retrieval and provider failures
+        raise :class:`~buildml.core.errors.ValidationError`."""
+        return rag_ops.rag_generate(
+            self,
+            query=query,
+            k=k,
+            provider=provider,
+            mode=mode,
+            fusion=fusion,
+            filters=filters,
+            rerank=rerank,
+            retrieve_config=retrieve_config,
+            config=config,
+            use_last_retrieve=use_last_retrieve,
+        )
+
     def rag_upsert(
         self,
         documents: Sequence[Any] | None = None,
@@ -1171,6 +1272,11 @@ class Session:
     def rag_eval_result(self) -> RagEvalResult | None:
         """Last :class:`~buildml.rag.results.RagEvalResult`, if any."""
         return self._rag_eval_result
+
+    @property
+    def rag_generate_result(self) -> Any | None:
+        """Last :class:`~buildml.rag.results.GenerateResult`, if any."""
+        return self._rag_generate_result
 
     def save_rag_bundle(self, path: str | Path) -> Path:
         """Persist the active RAG index as ``buildml.rag_bundle.v1``.

@@ -107,6 +107,7 @@ def make_loaders(
     *,
     config: LoaderConfig | None = None,
     task: TaskSpec = "auto",
+    classical_plans: dict[str, Any] | None = None,
 ) -> TorchLoaderBundle:
     """Build train / validation / test DataLoaders from a split Dataset.
 
@@ -116,6 +117,11 @@ def make_loaders(
     Group and time :class:`~buildml.data.splits.SplitPlan` kinds are honored via
     partition index membership. Group splits are checked for cross-partition
     group leakage; time splits are checked for chronological boundary order.
+
+    When ``classical_plans`` is provided (plan name → object/summary), the
+    report discloses that loaders read the **current** frame. Session impute /
+    encode / scale already mutate that frame with train-fitted transforms;
+    this bridge records the relationship rather than silently refitting.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -132,6 +138,17 @@ def make_loaders(
     )
 
     warnings: list[str] = []
+    if classical_plans:
+        names = sorted(str(k) for k, v in classical_plans.items() if v is not None)
+        if names:
+            warnings.append(
+                "Classical preprocess plans attached ("
+                + ", ".join(names)
+                + "). Loaders materialize tensors from the current Session frame "
+                "(train-fitted Session transforms already applied when you called "
+                "impute/encode/scale). Torch normalize, when enabled, is an additional "
+                "train-fit mean/std on top of that frame."
+            )
     group_column = _group_column(dataset, split_plan)
     time_column = _time_column(dataset, split_plan)
     groups_disjoint: bool | None = None

@@ -10,12 +10,32 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- **Phase C domain depth (RAG / DL / AI):** product names now match shipped
+  capability rather than thin retrieve-only / tabular-only / advisor-only slices.
+- **RAG generate:** `Session.rag_generate` grounded generation with citations,
+  pluggable chat providers (Session AI provider, `MockProvider`, or
+  `EchoGroundedProvider` for offline CI), empty-retrieval / missing-index hard
+  failures, and `embedder="auto"` (semantic when `buildml[rag]` importable).
+- **DL depth:** built-in tabular MLP + text embedding classifier; optional
+  `fit_torch()` without a hand-rolled module; classical plan disclosure /
+  `apply_plans=` bridge on `make_torch_loaders`; fold-local
+  `cross_validate_torch`; `make_text_torch_loaders` sequence/text modality.
+- **AI operator depth:** default tool registry covers classical + RAG retrieve /
+  generate + Torch train/eval/CV; plan steps carry `parameters`; multi-step
+  `ai_run_plan` can orchestrate grounded RAG and Torch tools; MockProvider
+  supports queued multi-turn tool calls.
 - Cost-sensitive `tune_threshold(fp_cost=..., fn_cost=...)` with recommended
   threshold, expected cost, and structured operating points.
 - Stronger `error_slices`: multi-column segments, richer metrics, small-n
   handling, optional HTML export.
 - Richer `dry_run` / `summarize_history` audit UX (ranked risks, prerequisite
   graph summary, suggested next ops) surfaced on walkthrough HTML.
+
+### Changed
+
+- RAG / DL / AI maintainer locks and quickstarts updated so “no generate” is no
+  longer the product ceiling; hashing remains the CI-safe default embedder with
+  semantic path first-class behind `buildml[rag]`.
 
 ## [2.3.0a1] — AI operator alpha — 2026-08-02
 

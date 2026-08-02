@@ -9,12 +9,15 @@ cross-encoder backends.
 pip install "buildml[rag]"
 ```
 
-Classical `Session.fit` and Torch `*_torch` stay unchanged. Retrieval methods use
-the `rag_*` prefix and store results in `session.rag_index_result` /
-`session.rag_retrieve_result` / `session.rag_eval_result`.
+Classical `Session.fit` and Torch `*_torch` stay unchanged. RAG methods use the
+`rag_*` prefix and store results in `session.rag_index_result` /
+`session.rag_retrieve_result` / `session.rag_generate_result` /
+`session.rag_eval_result`.
 
-This alpha is **retrieve + evaluate + bundle**. There is no `rag_generate` and no
-LLM operator (`buildml.ai`).
+The path is **ingest → chunk → embed/index → retrieve → generate → evaluate →
+bundle**. Grounded generate needs a chat provider (`ai_configure`, or pass
+`provider=` such as `EchoGroundedProvider` for offline demos). The AI operator
+(`buildml.ai`) can also call `rag_retrieve` / `rag_generate` as allowlisted tools.
 
 ```python
 from buildml import Session
@@ -56,6 +59,15 @@ hybrid = session.rag_retrieve(
     mode="hybrid",  # dense + BM25, RRF fusion by default
 )
 print(dense.hits[0].doc_id, hybrid.hits[0].doc_id)
+
+from buildml.rag.generate import EchoGroundedProvider
+
+answer = session.rag_generate(
+    "What causes evaluation contamination?",
+    provider=EchoGroundedProvider(),  # offline; or ai_configure(...) for a real LLM
+    k=3,
+)
+print(answer.answer, [c.doc_id for c in answer.citations])
 
 metrics = session.rag_evaluate(
     {
@@ -111,12 +123,13 @@ Layout: `<path>/meta.json` + `<path>/chunks.jsonl` + `<path>/embeddings.npy`.
 ## Known limits (honest)
 
 - **Hashing default is lexical, not semantic.** `buildml.hashing_embed.v1` is
-  deterministic and CPU-only (no model download). It is not a substitute for
-  sentence-transformer quality claims.
+  deterministic and CPU-only (no model download). Use
+  `embedder="sentence-transformers"` or `embedder="auto"` for semantic embeddings
+  when `buildml[rag]` is installed.
 - **Local-first.** Default store is in-process NumPy cosine top-k. No hosted
   vector-DB product path in this alpha.
-- **No generate / LLM operator.** Retrieve, evaluate, upsert/delete, and bundle
-  save/load are in scope. Grounded generation and `buildml.ai` are later.
+- **Generate needs a provider.** `rag_generate` is grounded (citations + CONTEXT)
+  but does not embed a paid LLM; pass `provider=` or call `ai_configure`.
 - **No dedicated RAG dashboard UI.** Catalog, structured results, and
   walkthrough `rag_status` are the teaching surfaces.
 - **Eval hygiene is caller-owned.** Index corpus and gold query/qrel sets must

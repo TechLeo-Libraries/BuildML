@@ -82,7 +82,8 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
    market hashing as sentence-transformer quality.
 2. **Local-first NumPy store.** No FAISS/Chroma/hosted vector-DB product path in
    this alpha.
-3. **No generate / LLM operator.** No `rag_generate`; no `buildml.ai` tool-calling.
+3. **Generate is provider-pluggable.** `rag_generate` ships with citations; CI uses
+   Mock/Echo providers (no paid API). `buildml.ai` may call retrieve/generate tools.
 4. **No Teaching Studio RAG cockpit redesign.** Catalog + structured results +
    `rag_status` only.
 5. **CPU merge gate.** RAG CI is CPU on Python 3.11–3.12; GPU embed/rerank is

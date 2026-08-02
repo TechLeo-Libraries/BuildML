@@ -164,8 +164,194 @@ def _build_m1_tools() -> tuple[ToolSpec, ...]:
     )
 
 
+def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
+    """RAG + DL tools safe to expose behind the allowlist (Phase C)."""
+    return (
+        ToolSpec(
+            name="rag_retrieve",
+            description=(
+                "Retrieve ranked chunks from the active RAG index for a query. "
+                "Read-only; requires a prior rag_embed_and_index or load_rag_bundle."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Query text."},
+                    "k": {"type": "integer", "description": "Number of hits (default 5)."},
+                    "mode": {
+                        "type": "string",
+                        "description": "dense, bm25, or hybrid.",
+                        "enum": ["dense", "bm25", "hybrid"],
+                    },
+                },
+                "required": ["query"],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="rag_retrieve",
+            read_only=True,
+            catalog_operation="rag_retrieve",
+        ),
+        ToolSpec(
+            name="rag_generate",
+            description=(
+                "Retrieve context and generate a grounded answer with citations. "
+                "Uses the Session AI provider. Requires an active RAG index."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Question to answer."},
+                    "k": {"type": "integer", "description": "Retrieval depth (default 5)."},
+                },
+                "required": ["query"],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="rag_generate",
+            read_only=True,
+            catalog_operation="rag_generate",
+        ),
+        ToolSpec(
+            name="rag_ingest_corpus",
+            description=(
+                "Ingest text documents into the Session RAG corpus. "
+                "Write operation; clears any prior index."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "documents": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "In-memory document texts to ingest.",
+                    },
+                    "text_column": {
+                        "type": "string",
+                        "description": "Optional Session frame column to index.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="rag_ingest_corpus",
+            read_only=False,
+            catalog_operation="rag_ingest_corpus",
+        ),
+        ToolSpec(
+            name="rag_embed_and_index",
+            description=(
+                "Chunk (if needed), embed, and build the RAG vector index. "
+                "Write operation; refuses eval_only contamination."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "embedder": {
+                        "type": "string",
+                        "description": "hashing (default), auto, or sentence-transformers.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="rag_embed_and_index",
+            read_only=False,
+            catalog_operation="rag_embed_and_index",
+        ),
+        ToolSpec(
+            name="make_torch_loaders",
+            description=(
+                "Build Torch DataLoaders from current roles and split. "
+                "Requires buildml[torch]. Write operation on Session torch slots."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "batch_size": {"type": "integer", "description": "Batch size (default 32)."},
+                    "normalize": {
+                        "type": "boolean",
+                        "description": "Fit mean/std on train (default true).",
+                    },
+                    "apply_plans": {
+                        "type": "boolean",
+                        "description": "Re-apply fitted classical plans before loaders.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_torch_loaders",
+            read_only=False,
+            catalog_operation="make_torch_loaders",
+        ),
+        ToolSpec(
+            name="fit_torch",
+            description=(
+                "Train a Torch module (built-in MLP when module omitted) on the "
+                "train loader. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "epochs": {"type": "integer", "description": "Training epochs (default 5)."},
+                    "learning_rate": {"type": "number", "description": "Adam learning rate."},
+                    "device": {
+                        "type": "string",
+                        "description": "cpu, cuda, mps, or auto.",
+                        "enum": ["cpu", "cuda", "mps", "auto"],
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="fit_torch",
+            read_only=False,
+            catalog_operation="fit_torch",
+        ),
+        ToolSpec(
+            name="evaluate_torch",
+            description=(
+                "Evaluate the last Torch trainer on a named partition. Read-only metrics."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "partition": {
+                        "type": "string",
+                        "description": "train, validation, or test.",
+                        "enum": ["train", "validation", "test"],
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="evaluate_torch",
+            read_only=True,
+            catalog_operation="evaluate_torch",
+        ),
+        ToolSpec(
+            name="cross_validate_torch",
+            description=(
+                "Fold-local Torch CV on numeric tabular features. Not nested search. "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "n_folds": {"type": "integer", "description": "Number of folds (default 3)."},
+                    "epochs": {"type": "integer", "description": "Epochs per fold."},
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="cross_validate_torch",
+            read_only=False,
+            catalog_operation="cross_validate_torch",
+        ),
+    )
+
+
 def _build_m2_tools() -> tuple[ToolSpec, ...]:
-    """Build M2 expanded tool allowlist for E2E classical pipeline."""
+    """Build M2 expanded tool allowlist for E2E classical + RAG/DL pipeline."""
     return _build_m1_tools() + (
         ToolSpec(
             name="split",
@@ -434,12 +620,17 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             read_only=True,
             catalog_operation="ai_status",
         ),
-    )
+    ) + _build_rag_dl_tools()
 
 
 def build_default_registry() -> ToolRegistry:
-    """Build the default M2 tool registry."""
+    """Build the default tool registry (classical + RAG + DL allowlist)."""
     return ToolRegistry(tools=_build_m2_tools())
+
+
+def registered_tool_names() -> tuple[str, ...]:
+    """Return sorted tool names from the default registry (for tests / docs sync)."""
+    return tuple(sorted(t.name for t in _build_m2_tools()))
 
 
 class ToolRegistry:

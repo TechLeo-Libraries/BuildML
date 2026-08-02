@@ -176,9 +176,9 @@ unchanged.
 
 | Extra | Install | What it adds |
 |-------|---------|--------------|
-| Torch | `buildml[torch]` | `make_torch_loaders`, `fit_torch`, `evaluate_torch`, bundle save/load |
-| RAG | `buildml[rag]` | Corpus ingest, chunk, embed, retrieve, evaluate; default embedder is lexical hashing |
-| AI | `buildml[ai]` | Advisor, plan, and confirmed execute against real Session methods; BYO API key |
+| Torch | `buildml[torch]` | Tabular + text loaders, built-in MLP/text classifier, fold-local CV, bundle save/load |
+| RAG | `buildml[rag]` | Ingest → chunk → embed → retrieve → **generate** → evaluate; hashing default, semantic optional |
+| AI | `buildml[ai]` | Advisor, multi-step plan/execute, classical + RAG + Torch tools; BYO API key |
 | Dashboard | `buildml[dashboard]` | Interactive local EDA via `eda_app()` |
 
 Runnable quickstarts:
@@ -188,17 +188,17 @@ Runnable quickstarts:
 - [RAG](guides/quickstart-rag.md)
 - [AI operator](guides/quickstart-ai.md)
 
-Torch training in this alpha is a tabular numeric slice without fold-local CV.
-RAG defaults to hashing embeddings, not downloaded sentence models, and has no
-generation path. The AI operator proposes and executes only registered tools
-after explicit confirmation.
+Torch covers tabular MLP and a text/sequence path, with fold-local CV (not nested
+search). RAG defaults to lexical hashing embeddings; semantic sentence-transformers
+and grounded `rag_generate` are first-class. The AI operator proposes and executes
+only registered tools after explicit confirmation (including RAG generate and Torch).
 
 ## Alpha status
 
 This is pre-release software. Bundle schema version strings, report layouts,
 and method signatures may change. There is no out-of-core sklearn training,
-first-class SHAP or fairness reporting, autonomous LLM agents, or RAG answer
-generation yet. See [CHANGELOG.md](CHANGELOG.md) for release notes and
+first-class SHAP or fairness reporting, or fully autonomous LLM agents.
+See [CHANGELOG.md](CHANGELOG.md) for release notes and
 [guides/glossary.md](guides/glossary.md) for terminology.
 
 ## Documentation
