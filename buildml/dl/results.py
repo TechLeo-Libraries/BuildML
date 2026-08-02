@@ -144,6 +144,7 @@ class TorchLoaderBundle:
     text_vocab: Any | None = None
     text_contract: Any | None = None
     multimodal_contract: Any | None = None
+    speech_contract: Any | None = None
     modality: str | None = None
     input_layout: tuple[str, ...] | None = None
 

@@ -7,7 +7,7 @@ name = "buildml"
 version = "2.3.0a1"
 description = "BuildML — a flexible, depth-first toolkit for building ML workflows."
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [
   { name = "Leonard Onyiriuba", email = "leonard.c.onyiriuba@gmail.com" },
 ]
@@ -22,7 +22,7 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -46,6 +46,7 @@ optuna = ["optuna>=3.4"]
 torch = ["torch>=2.2", "pillow>=9.0", "soundfile>=0.12"]
 dl = ["buildml[torch]"]
 audio = ["buildml[torch]"]
+speech = ["buildml[torch]", "transformers>=4.36"]
 onnx = ["onnx>=1.15"]
 rag = ["sentence-transformers>=2.2"]
 ai = ["openai>=1.0"]
@@ -54,6 +55,12 @@ imbalanced = ["imbalanced-learn>=0.11"]
 viz = ["matplotlib>=3.7", "seaborn>=0.13"]
 reports = ["sweetviz>=2.3", "ydata-profiling>=4.6"]
 eda = ["buildml[viz,reports]"]
+serve = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "python-multipart>=0.0.9",
+  "httpx>=2.0",
+]
 dashboard = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
@@ -79,6 +86,9 @@ dev = [
   "myst-parser",
   "buildml[dashboard]",
 ]
+
+[project.scripts]
+buildml-serve = "buildml.serving.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/TechLeo-Dev/BuildML"

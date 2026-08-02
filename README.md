@@ -32,6 +32,8 @@ pip install "buildml[dashboard]"  # local interactive EDA dashboard
 pip install "buildml[engines]"    # Polars and DuckDB adapters
 pip install "buildml[optuna]"     # Optuna hyperparameter search
 pip install "buildml[torch]"      # Torch DL path (alias: buildml[dl])
+pip install "buildml[speech]"     # ASR + speech finetune-lite (adds transformers)
+pip install "buildml[serve]"      # managed local FastAPI model serving
 pip install "buildml[onnx]"       # optional ONNX checker for export_torch
 pip install "buildml[rag]"        # optional dense/rerank backends
 pip install "buildml[ai]"         # LLM operator (alias: buildml[llm])
@@ -180,7 +182,9 @@ unchanged.
 
 | Extra | Install | What it adds |
 |-------|---------|--------------|
-| Torch | `buildml[torch]` | Tabular + text + image + audio multimodal fusion, nested HPO, AMP, single-node DDP, TorchScript/ONNX export, fold-local CV, bundles (`buildml[audio]` aliases the same extra) |
+| Torch | `buildml[torch]` | Tabular + text + image + audio multimodal fusion, nested HPO, AMP, single-/multi-node DDP, TorchScript/ONNX export, fold-local CV, bundles (`buildml[audio]` aliases the same extra) |
+| Speech | `buildml[speech]` | ASR transcription (`transcribe_speech`) + speech classify finetune-lite (`make_speech_torch_loaders` / `fit_speech_torch`); transformers Whisper-class optional |
+| Serve | `buildml[serve]` | Managed local FastAPI serving (`buildml-serve` / `Session.serve_bundle`) for pipeline + TorchScript |
 | RAG | `buildml[rag]` | Ingest → chunk → embed → retrieve → **generate** → evaluate; hashing default, semantic optional |
 | AI | `buildml[ai]` | Advisor, multi-step plan/execute, optional allowlisted autonomy; classical + RAG + Torch tools; BYO API key |
 | Dashboard | `buildml[dashboard]` | Interactive local EDA via `eda_app()` |
@@ -194,11 +198,14 @@ Runnable quickstarts:
 
 Torch covers tabular MLP, text/sequence, and multimodal fusion across tabular /
 text / image / audio (path or array/waveform columns; train-only normalize
-stats). Audio fusion is a small 1D-CNN branch — not a speech foundation model.
-Also: fold-local CV, nested Torch HPO, optional CUDA AMP, single-node DDP, and
-TorchScript/ONNX export. RAG defaults to lexical hashing embeddings;
-semantic sentence-transformers and grounded `rag_generate` are first-class. The
-AI operator defaults to propose→confirm→execute; optional `ai_run_autonomous` is
+stats). Audio multimodal fusion remains a small 1D-CNN branch; a separate
+speech path (`buildml[speech]`) offers ASR transcription + finetune-lite
+classification (integration — not training Whisper-scale FMs from scratch).
+Also: fold-local CV, nested Torch HPO, optional CUDA AMP, single-node and
+torchrun multi-node DDP, TorchScript/ONNX export, and local managed serving
+via `buildml[serve]`. RAG defaults to lexical hashing embeddings; semantic
+sentence-transformers and grounded `rag_generate` are first-class. The AI
+operator defaults to propose→confirm→execute; optional `ai_run_autonomous` is
 allowlisted operator automation with hard caps — not unconstrained agency.
 
 ## Alpha status
@@ -229,4 +236,4 @@ root. There is no compatibility shim that re-exports 1.x APIs from
 
 Issues: [GitHub](https://github.com/TechLeo-Dev/BuildML/issues)
 
-MIT License.
+Apache License 2.0.

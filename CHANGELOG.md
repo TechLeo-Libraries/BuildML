@@ -8,8 +8,27 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Changed
+
+- **Pass O license:** project license switched from MIT to **Apache-2.0**
+  (`LICENSE`, `NOTICE`, `pyproject.toml`, package `__license__`, README / docs
+  mentions).
+
 ### Added
 
+- **Pass O speech FM path:** ASR transcription + classify finetune-lite behind
+  `buildml[speech]` / Torch. Session APIs `make_speech_torch_loaders`,
+  `fit_speech_torch`, `transcribe_speech` (stub CI-safe backend; optional
+  transformers Whisper-class). Honest alpha — integration/finetune, not
+  training a foundation model from scratch. Teaching sync + AI tools/executor.
+- **Pass O multi-node DDP:** `fit_torch_ddp(..., multi_node=True)` joins
+  torchrun env (`WORLD_SIZE` / `RANK` / `LOCAL_RANK` / `MASTER_ADDR` /
+  `MASTER_PORT`); clear misconfig errors; CPU multi-process still requires
+  `allow_cpu_ddp=True`. Not Kubernetes multi-cluster orchestration.
+- **Pass O managed serving:** `buildml[serve]` FastAPI server with `/health` +
+  `/predict` for classical pipeline bundles and TorchScript; CLI
+  `buildml-serve` / `python -m buildml.serving` and `Session.serve_bundle`.
+  Localhost default; no auth product claim.
 - **Pass L audio multimodal:** extend multimodal fusion to audio path/waveform
   columns fused with tabular and/or text and/or image. Train-only audio
   amplitude mean/std, built-in small 1D-CNN fusion branch (honest alpha — not a

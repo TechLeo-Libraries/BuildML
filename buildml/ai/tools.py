@@ -620,6 +620,103 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             read_only=False,
             catalog_operation="export_torch",
         ),
+        ToolSpec(
+            name="make_speech_torch_loaders",
+            description=(
+                "Build speech classification Torch DataLoaders from an audio column. "
+                "Finetune-lite path — not training a foundation model from scratch. "
+                "Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio path or waveform feature column.",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 8)."},
+                    "sample_rate": {
+                        "type": "integer",
+                        "description": "Target sample rate (default 16000).",
+                    },
+                    "max_samples": {
+                        "type": "integer",
+                        "description": "Fixed waveform length (default 16000).",
+                    },
+                    "normalize_audio": {
+                        "type": "boolean",
+                        "description": "Fit amplitude mean/std on train (default true).",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_speech_torch_loaders",
+            read_only=False,
+            catalog_operation="make_speech_torch_loaders",
+        ),
+        ToolSpec(
+            name="fit_speech_torch",
+            description=(
+                "Fine-tune a tiny speech encoder + classifier head (finetune-lite). "
+                "Not Whisper-scale FM training from scratch. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio column when loaders must be built.",
+                    },
+                    "epochs": {"type": "integer", "description": "Training epochs (default 5)."},
+                    "freeze_encoder": {
+                        "type": "boolean",
+                        "description": "Train head only when true.",
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="fit_speech_torch",
+            read_only=False,
+            catalog_operation="fit_speech_torch",
+        ),
+        ToolSpec(
+            name="transcribe_speech",
+            description=(
+                "ASR transcription for an audio column. backend=stub is CI-safe; "
+                "backend=transformers requires buildml[speech] and may download weights. "
+                "Integration path — not FM training from scratch."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "audio_column": {
+                        "type": "string",
+                        "description": "Audio path or waveform feature column (required).",
+                    },
+                    "backend": {
+                        "type": "string",
+                        "enum": ["stub", "transformers"],
+                        "description": "ASR backend (default stub).",
+                    },
+                    "model_id": {
+                        "type": "string",
+                        "description": "Optional Hugging Face model id for transformers.",
+                    },
+                    "partition": {
+                        "type": "string",
+                        "enum": ["train", "validation", "test", "all"],
+                        "description": "Rows to transcribe (default all).",
+                    },
+                },
+                "required": ["audio_column"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="transcribe_speech",
+            read_only=True,
+            catalog_operation="transcribe_speech",
+        ),
     )
 
 

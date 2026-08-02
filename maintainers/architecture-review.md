@@ -57,6 +57,7 @@
 ## What this file is not
 
 - Pass G/J/L ship nested Torch HPO and tabular/text/image/audio multimodal
-  fusion (audio is a small 1D-CNN branch, not a speech FM); multi-node DDP
-  remains later.
+  fusion (audio multimodal is a small 1D-CNN branch). Pass O adds speech
+  ASR/finetune-lite, torchrun multi-node DDP, and local managed serving —
+  still not FM-from-scratch or Kubernetes multi-cluster orchestration.
 - Not a re-litigation of 1.x `SupervisedLearning` APIs (removed/rewritten).

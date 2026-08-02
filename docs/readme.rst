@@ -42,4 +42,4 @@ Author
 * LinkedIn: `Leonard Onyiriuba
   <https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/>`_
 
-BuildML is distributed under the MIT License.
+BuildML is distributed under the Apache License, Version 2.0.

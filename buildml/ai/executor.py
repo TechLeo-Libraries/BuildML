@@ -584,6 +584,47 @@ def _dispatch_tool(
         state_changes.append(f"Exported Torch trainer to {path}.")
         return result, tuple(state_changes)
 
+    elif call.tool_name == "make_speech_torch_loaders":
+        speech_kwargs: dict[str, Any] = {
+            "batch_size": int(call.arguments.get("batch_size", 8)),
+            "normalize_audio": bool(call.arguments.get("normalize_audio", True)),
+        }
+        if call.arguments.get("audio_column") is not None:
+            speech_kwargs["audio_column"] = str(call.arguments["audio_column"])
+        if call.arguments.get("sample_rate") is not None:
+            speech_kwargs["sample_rate"] = int(call.arguments["sample_rate"])
+        if call.arguments.get("max_samples") is not None:
+            speech_kwargs["max_samples"] = int(call.arguments["max_samples"])
+        session.make_speech_torch_loaders(**speech_kwargs)
+        state_changes.append(
+            "Built speech classification Torch DataLoaders (finetune-lite)."
+        )
+        return {"speech_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "fit_speech_torch":
+        fit_speech_kwargs: dict[str, Any] = {
+            "epochs": int(call.arguments.get("epochs", 5)),
+            "freeze_encoder": bool(call.arguments.get("freeze_encoder", False)),
+        }
+        if call.arguments.get("audio_column") is not None:
+            fit_speech_kwargs["audio_column"] = str(call.arguments["audio_column"])
+        session.fit_speech_torch(**fit_speech_kwargs)
+        state_changes.append("Fine-tuned tiny speech classifier (finetune-lite).")
+        return {"speech_torch_fitted": True}, tuple(state_changes)
+
+    elif call.tool_name == "transcribe_speech":
+        audio_column = call.arguments.get("audio_column")
+        if not audio_column:
+            raise ValidationError("transcribe_speech requires audio_column.")
+        result = session.transcribe_speech(
+            audio_column=str(audio_column),
+            backend=call.arguments.get("backend", "stub"),
+            model_id=call.arguments.get("model_id"),
+            partition=call.arguments.get("partition", "all"),
+        )
+        state_changes.append("Transcribed speech audio column (ASR integration path).")
+        return result, tuple(state_changes)
+
     else:
         raise ValidationError(f"No dispatch handler for tool: {call.tool_name}")
 
@@ -685,6 +726,15 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
     elif tool_name == "export_torch":
         path = arguments.get("path", "")
         changes.append(f"Will export the last Torch trainer to {path}.")
+
+    elif tool_name == "make_speech_torch_loaders":
+        changes.append("Will build speech classification Torch DataLoaders (finetune-lite).")
+
+    elif tool_name == "fit_speech_torch":
+        changes.append("Will fine-tune a tiny speech classifier (not FM-from-scratch).")
+
+    elif tool_name == "transcribe_speech":
+        changes.append("Will transcribe an audio column via stub or transformers ASR.")
 
     return tuple(changes) if changes else ("Unknown state changes.",)
 

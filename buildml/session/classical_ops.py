@@ -733,6 +733,7 @@ def save_pipeline(
         title=title,
     )
     session._model_card = load_model_card(destination)
+    session._last_pipeline_path = Path(destination)
     session._record(
         "save_pipeline",
         {

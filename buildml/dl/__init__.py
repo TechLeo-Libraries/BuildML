@@ -11,6 +11,7 @@ __all__ = [
     "DDPTrainResult",
     "DLEvaluateResult",
     "DeviceSpec",
+    "DistributedEnv",
     "EarlyStopInfo",
     "ExportResult",
     "FeatureContract",
@@ -18,6 +19,9 @@ __all__ = [
     "LoaderReport",
     "MultimodalContract",
     "MultimodalLoaderConfig",
+    "SpeechContract",
+    "SpeechLoaderConfig",
+    "SpeechTranscribeResult",
     "TabularMLP",
     "TextLoaderConfig",
     "TextVocab",
@@ -31,8 +35,10 @@ __all__ = [
     "apply_audio_waveform_stats",
     "apply_image_channel_stats",
     "build_multimodal_fusion",
+    "build_speech_classifier",
     "build_tabular_mlp",
     "build_text_classifier",
+    "build_tiny_speech_encoder",
     "build_training_curve",
     "cross_validate_torch",
     "ddp_cuda_device_count",
@@ -49,20 +55,26 @@ __all__ = [
     "load_torchscript",
     "make_loaders",
     "make_multimodal_loaders",
+    "make_speech_loaders",
     "make_text_loaders",
     "nested_cv_torch",
+    "parse_torchrun_env",
     "require_pillow",
     "require_soundfile",
+    "require_speech_stack",
     "require_torch",
     "save_torch_bundle",
     "search_torch",
     "smoke_load_onnx",
+    "speech_stack_available",
     "stack_audio_column",
     "stack_image_column",
     "torch_available",
     "torch_training_status",
     "train_supervised_module",
     "train_supervised_module_ddp",
+    "transcribe_audio_values",
+    "transcribe_from_dataset",
 ]
 
 
@@ -176,10 +188,27 @@ def __getattr__(name: str) -> Any:
     if name in {
         "DDPConfig",
         "DDPTrainResult",
+        "DistributedEnv",
         "ddp_cuda_device_count",
+        "parse_torchrun_env",
         "train_supervised_module_ddp",
     }:
         from buildml.dl import ddp as ddp_mod
 
         return getattr(ddp_mod, name)
+    if name in {
+        "SpeechContract",
+        "SpeechLoaderConfig",
+        "SpeechTranscribeResult",
+        "build_speech_classifier",
+        "build_tiny_speech_encoder",
+        "make_speech_loaders",
+        "require_speech_stack",
+        "speech_stack_available",
+        "transcribe_audio_values",
+        "transcribe_from_dataset",
+    }:
+        from buildml.dl import speech as speech_mod
+
+        return getattr(speech_mod, name)
     raise AttributeError(f"module 'buildml.dl' has no attribute {name!r}")

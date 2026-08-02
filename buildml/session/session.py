@@ -146,6 +146,9 @@ class Session:
         self._dl_nested_cv_result: Any | None = None
         self._dl_export_result: Any | None = None
         self._dl_ddp_result: Any | None = None
+        self._dl_speech_result: Any | None = None
+        self._serve_handle: Any | None = None
+        self._last_pipeline_path: Path | None = None
         self._ai_autonomy_result: Any | None = None
         self._rag_corpus: Any | None = None
         self._rag_chunks: Any | None = None
@@ -1317,9 +1320,15 @@ class Session:
         mixed_precision: bool = False,
         world_size: int | None = None,
         allow_cpu_ddp: bool = False,
+        multi_node: bool = False,
         config: TrainConfig | None = None,
     ) -> Any:
-        """Single-node DDP training (requires multi-GPU unless allow_cpu_ddp)."""
+        """DDP training (single-node spawn or multi-node torchrun join).
+
+        Single-node requires multi-GPU unless ``allow_cpu_ddp``. Multi-node
+        joins ``WORLD_SIZE``/``RANK``/``LOCAL_RANK``/``MASTER_ADDR``/
+        ``MASTER_PORT`` from torchrun.
+        """
         return dl_ops.fit_torch_ddp(
             self,
             module_factory,
@@ -1328,8 +1337,118 @@ class Session:
             mixed_precision=mixed_precision,
             world_size=world_size,
             allow_cpu_ddp=allow_cpu_ddp,
+            multi_node=multi_node,
             config=config,
         )
+
+    def make_speech_torch_loaders(
+        self,
+        *,
+        audio_column: str | None = None,
+        batch_size: int = 8,
+        sample_rate: int = 16_000,
+        max_samples: int = 16_000,
+        source_sample_rate: int | None = None,
+        normalize_audio: bool = True,
+        encoder_dim: int = 64,
+        shuffle_train: bool = True,
+        seed: int = 0,
+    ) -> TorchLoaderBundle:
+        """Build speech classification loaders (finetune-lite; not FM-from-scratch)."""
+        return dl_ops.make_speech_torch_loaders(
+            self,
+            audio_column=audio_column,
+            batch_size=batch_size,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            normalize_audio=normalize_audio,
+            encoder_dim=encoder_dim,
+            shuffle_train=shuffle_train,
+            seed=seed,
+        )
+
+    def fit_speech_torch(
+        self,
+        *,
+        epochs: int = 5,
+        learning_rate: float = 1e-3,
+        device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+        freeze_encoder: bool = False,
+        audio_column: str | None = None,
+        batch_size: int = 8,
+        sample_rate: int = 16_000,
+        max_samples: int = 16_000,
+        source_sample_rate: int | None = None,
+        normalize_audio: bool = True,
+        encoder_dim: int = 64,
+        seed: int = 0,
+    ) -> Session:
+        """Fine-tune tiny speech encoder + classifier (integration/finetune-lite)."""
+        return dl_ops.fit_speech_torch(
+            self,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            device=device,
+            freeze_encoder=freeze_encoder,
+            audio_column=audio_column,
+            batch_size=batch_size,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            normalize_audio=normalize_audio,
+            encoder_dim=encoder_dim,
+            seed=seed,
+        )
+
+    def transcribe_speech(
+        self,
+        *,
+        audio_column: str,
+        backend: Literal["stub", "transformers"] = "stub",
+        model_id: str | None = None,
+        sample_rate: int = 16_000,
+        max_samples: int = 16_000,
+        source_sample_rate: int | None = None,
+        partition: Literal["train", "validation", "test", "all"] = "all",
+    ) -> Any:
+        """ASR transcription (stub CI-safe; transformers via ``buildml[speech]``)."""
+        return dl_ops.transcribe_speech(
+            self,
+            audio_column=audio_column,
+            backend=backend,
+            model_id=model_id,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            partition=partition,
+        )
+
+    def serve_bundle(
+        self,
+        path: str | Path | None = None,
+        *,
+        kind: Literal["pipeline", "torchscript"] = "pipeline",
+        host: str = "127.0.0.1",
+        port: int = 8080,
+        title: str = "BuildML Serve",
+        blocking: bool = False,
+    ) -> Any:
+        """Launch managed local serving (``buildml[serve]``; localhost; no auth)."""
+        return dl_ops.serve_bundle(
+            self,
+            path,
+            kind=kind,
+            host=host,
+            port=port,
+            title=title,
+            blocking=blocking,
+        )
+
+    @property
+    def dl_speech_result(self) -> Any | None:
+        """Last :meth:`transcribe_speech` result, if any."""
+        return self._dl_speech_result
 
     @property
     def dl_train_result(self) -> TrainResult | None:

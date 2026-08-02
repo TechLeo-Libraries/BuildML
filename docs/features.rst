@@ -63,15 +63,25 @@ Optional extras (same Session)
   mixes (``make_multimodal_torch_loaders`` /
   ``make_image_multimodal_torch_loaders`` /
   ``make_audio_multimodal_torch_loaders``; path or array/waveform cells;
-  train-only normalize stats; audio uses a small 1D-CNN branch, not a speech
-  foundation model), built-in MLP / text / fusion modules when ``fit_torch``
-  omits a module, fold-local ``cross_validate_torch``, nested
-  ``nested_cv_torch`` / ``search_torch``, optional CUDA AMP, single-node
-  ``fit_torch_ddp``, TorchScript/ONNX ``export_torch``, evaluation, and trainer
-  bundles (optional ``multimodal_preprocess`` meta; load does not rebuild
-  loaders). Optional ``buildml[onnx]`` adds the ``onnx`` checker package.
-  ``soundfile`` is included in ``buildml[torch]`` (also via ``buildml[audio]``)
-  for audio path cells.
+  train-only normalize stats; audio multimodal uses a small 1D-CNN branch),
+  built-in MLP / text / fusion modules when ``fit_torch`` omits a module,
+  fold-local ``cross_validate_torch``, nested ``nested_cv_torch`` /
+  ``search_torch``, optional CUDA AMP, single-node and torchrun multi-node
+  ``fit_torch_ddp`` (``multi_node=True``), TorchScript/ONNX ``export_torch``,
+  evaluation, and trainer bundles (optional ``multimodal_preprocess`` meta;
+  load does not rebuild loaders). Optional ``buildml[onnx]`` adds the
+  ``onnx`` checker package. ``soundfile`` is included in ``buildml[torch]``
+  (also via ``buildml[audio]``) for audio path cells.
+* **Speech** (``buildml[speech]``): ASR transcription
+  (``transcribe_speech``, stub CI-safe or transformers Whisper-class) and
+  speech classify finetune-lite (``make_speech_torch_loaders`` /
+  ``fit_speech_torch``). Integration path — not training a Whisper-scale
+  foundation model from scratch.
+* **Serve** (``buildml[serve]``): managed local FastAPI serving
+  (``buildml-serve`` / ``python -m buildml.serving`` /
+  ``Session.serve_bundle``) for classical pipeline bundles and TorchScript
+  artifacts. Localhost bind by default; no auth product claim — put a reverse
+  proxy in front for non-local exposure.
 * **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, grounded
   ``rag_generate`` with citations, evaluate, upsert/delete, and bundle
   save/load. Hashing embeddings are the CI-safe default; semantic embedders are
@@ -79,8 +89,8 @@ Optional extras (same Session)
 * **AI operator** (``buildml[ai]``): advisor, multi-step plan, confirmed execute
   (default), and explicit ``ai_run_autonomous`` operator automation under hard
   caps (allowlist, max steps, blocked sample egress, transcript audit). Tool
-  allowlist spans classical, RAG, and Torch (including nested search and
-  multimodal loaders).
+  allowlist spans classical, RAG, and Torch (including nested search,
+  multimodal loaders, and speech).
 
 Boundaries
 ----------
@@ -92,6 +102,7 @@ sklearn-facing operation out-of-core. Checkpoints do not contain fitted models,
 and model bundles do not contain the Session dataset or split history. The AI
 operator defaults to propose→confirm→execute; autonomy is opt-in automation
 inside an allowlist, not unconstrained agency, and does not replace domain
-review of roles, splits, or metrics. Multi-node cluster DDP remains out of
-scope for this alpha (image and audio multimodal fusion are shipped; audio uses
-a small 1D-CNN branch, not a speech foundation model).
+review of roles, splits, or metrics. Image/audio multimodal fusion and a
+separate speech ASR/finetune-lite path are shipped; torchrun multi-node DDP and
+local managed serving are alpha paths (not Kubernetes multi-cluster
+orchestration, not Whisper-scale FM training from scratch).

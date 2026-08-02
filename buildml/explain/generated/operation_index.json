@@ -1,5 +1,5 @@
 {
-  "n_operations": 101,
+  "n_operations": 105,
   "operations": {
     "ai_advisor": {
       "doc_summary": "Get advisory Q&A guidance about the current workflow (read-only).",
@@ -1271,6 +1271,99 @@
       ],
       "qualname": "Session.fit"
     },
+    "fit_speech_torch": {
+      "doc_summary": "Fine-tune tiny speech encoder + classifier (integration/finetune-lite).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_speech_torch",
+      "parameters": [
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "Literal['cpu', 'cuda', 'mps', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "freeze_encoder",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "audio_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16000",
+          "kind": "KEYWORD_ONLY",
+          "name": "sample_rate",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_samples",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "source_sample_rate",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize_audio",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "encoder_dim",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "seed",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_speech_torch"
+    },
     "fit_torch": {
       "doc_summary": "Train an ``nn.Module`` on the train Torch loader.",
       "is_classmethod": false,
@@ -1393,7 +1486,7 @@
       "qualname": "Session.fit_torch"
     },
     "fit_torch_ddp": {
-      "doc_summary": "Single-node DDP training (requires multi-GPU unless allow_cpu_ddp).",
+      "doc_summary": "DDP training (single-node spawn or multi-node torchrun join).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_torch_ddp",
@@ -1438,6 +1531,13 @@
           "default": "False",
           "kind": "KEYWORD_ONLY",
           "name": "allow_cpu_ddp",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "multi_node",
           "required": false
         },
         {
@@ -2315,6 +2415,78 @@
         }
       ],
       "qualname": "Session.make_multimodal_torch_loaders"
+    },
+    "make_speech_torch_loaders": {
+      "doc_summary": "Build speech classification loaders (finetune-lite; not FM-from-scratch).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "make_speech_torch_loaders",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "audio_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16000",
+          "kind": "KEYWORD_ONLY",
+          "name": "sample_rate",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_samples",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "source_sample_rate",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize_audio",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "encoder_dim",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "shuffle_train",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "seed",
+          "required": false
+        }
+      ],
+      "qualname": "Session.make_speech_torch_loaders"
     },
     "make_text_torch_loaders": {
       "doc_summary": "Build token-id DataLoaders for text classification (sequence modality).",
@@ -3913,6 +4085,57 @@
       ],
       "qualname": "Session.select_features"
     },
+    "serve_bundle": {
+      "doc_summary": "Launch managed local serving (``buildml[serve]``; localhost; no auth).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "serve_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path | None",
+          "default": "None",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": false
+        },
+        {
+          "annotation": "Literal['pipeline', 'torchscript']",
+          "default": "'pipeline'",
+          "kind": "KEYWORD_ONLY",
+          "name": "kind",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'127.0.0.1'",
+          "kind": "KEYWORD_ONLY",
+          "name": "host",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8080",
+          "kind": "KEYWORD_ONLY",
+          "name": "port",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'BuildML Serve'",
+          "kind": "KEYWORD_ONLY",
+          "name": "title",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "blocking",
+          "required": false
+        }
+      ],
+      "qualname": "Session.serve_bundle"
+    },
     "set_roles": {
       "doc_summary": "Assign column roles on the current dataset.",
       "is_classmethod": false,
@@ -4103,6 +4326,64 @@
       "name": "torch_training_curve",
       "parameters": [],
       "qualname": "Session.torch_training_curve"
+    },
+    "transcribe_speech": {
+      "doc_summary": "ASR transcription (stub CI-safe; transformers via ``buildml[speech]``).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "transcribe_speech",
+      "parameters": [
+        {
+          "annotation": "str",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "audio_column",
+          "required": true
+        },
+        {
+          "annotation": "Literal['stub', 'transformers']",
+          "default": "'stub'",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "model_id",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16000",
+          "kind": "KEYWORD_ONLY",
+          "name": "sample_rate",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_samples",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "source_sample_rate",
+          "required": false
+        },
+        {
+          "annotation": "Literal['train', 'validation', 'test', 'all']",
+          "default": "'all'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.transcribe_speech"
     },
     "tune_threshold": {
       "doc_summary": "Sweep binary decision thresholds with precision/recall/F1 and optional costs.",

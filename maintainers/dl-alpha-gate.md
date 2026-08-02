@@ -86,8 +86,9 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 1. **CPU slice is the merge gate.** No GPU CI on every PR; CUDA/MPS fall back with
    an explicit warning when unavailable.
 2. **Tabular + text/sequence + tabular/text/image/audio multimodal fusion in scope**
-   (Pass G/J/L). Audio uses a small 1D-CNN fusion branch — not a speech
-   foundation-model product.
+   (Pass G/J/L). Audio multimodal uses a small 1D-CNN fusion branch. A separate
+   **speech ASR + finetune-lite** path ships in Pass O (`buildml[speech]`) —
+   integration/finetune, not Whisper-scale FM training from scratch.
 3. **Built-in models are a happy path** (tabular MLP, text classifier, multimodal
    fusion when `fit_torch` omits `module`). No broad model zoo; custom `nn.Module`
    remains first-class.
@@ -96,11 +97,14 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 5. **Classical preprocess is not auto-applied** before loaders (disclosure /
    `apply_plans=` bridge only).
 6. **Fold-local Torch CV** (`cross_validate_torch`) and **nested Torch HPO**
-   (`nested_cv_torch` / `search_torch`) are shipped. Single-node DDP exists
-   (`fit_torch_ddp`); **multi-node cluster launch remains out of scope**.
-7. **AMP + TorchScript/ONNX export are alpha product paths** (`mixed_precision`,
-   `export_torch`). Not a managed serving stack; ONNX opset/dynamic-axes limits
-   apply. No AutoML architecture search beyond the documented MLP knob space.
+   (`nested_cv_torch` / `search_torch`) are shipped. Single-node DDP and
+   torchrun **multi-node** join (`fit_torch_ddp(..., multi_node=True)`) ship in
+   Pass O — not Kubernetes multi-cluster orchestration.
+7. **AMP + TorchScript/ONNX export** (`mixed_precision`, `export_torch`) and
+   **managed local serving** (`buildml[serve]` / `serve_bundle`) are alpha
+   product paths. Serving is localhost-oriented with no auth product claim.
+   ONNX opset/dynamic-axes limits apply. No AutoML architecture search beyond
+   the documented MLP knob space.
 8. **RAG / LLM operator** are separate domains (`2.2` / `2.3` lines).
 9. **Session checkpoints never embed Torch weights.** Use `buildml.torch_bundle.v1`.
 

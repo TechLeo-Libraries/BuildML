@@ -28,9 +28,13 @@ def _attached_classical_plans(session) -> dict[str, Any]:
 
 
 def _module_needs_non_tabular_loaders(module: Any) -> str | None:
-    """Return 'multimodal' / 'text' when auto tabular rebuild would be wrong."""
+    """Return 'multimodal' / 'text' / 'speech' when auto tabular rebuild would be wrong."""
     modality = getattr(module, "modality", None) or ""
     layout = getattr(module, "input_layout", None)
+    if str(modality) in {"speech_classify", "speech_encoder"} or (
+        hasattr(module, "encoder") and hasattr(module, "head") and hasattr(module, "embed_dim")
+    ):
+        return "speech"
     if (
         str(modality).endswith("_fusion")
         or layout is not None
@@ -69,6 +73,12 @@ def _refuse_silent_tabular_loader_rebuild(session, *, operation: str) -> None:
         raise ValidationError(
             f"{operation} needs active text loaders after text fit. "
             "Call make_text_torch_loaders(...) again. "
+            "Refusing silent tabular loader rebuild."
+        )
+    if kind == "speech":
+        raise ValidationError(
+            f"{operation} needs active speech loaders after speech fit. "
+            "Call make_speech_torch_loaders(...) again. "
             "Refusing silent tabular loader rebuild."
         )
 
@@ -260,10 +270,23 @@ def fit_torch(
 
             text_vocab = getattr(session._torch_loaders, "text_vocab", None)
             multimodal = getattr(session._torch_loaders, "multimodal_contract", None)
+            speech = getattr(session._torch_loaders, "speech_contract", None)
             contract = session._torch_loaders.contract
             modality = getattr(session._torch_loaders, "modality", None) or ""
-            is_multimodal = multimodal is not None or str(modality).endswith("_fusion")
-            if is_multimodal:
+            if speech is not None or modality == "speech_classify":
+                from buildml.dl.speech import build_speech_classifier
+
+                n_classes = max(2, len(contract.class_labels) or 2)
+                embed_dim = int(getattr(speech, "encoder_dim", 64) or 64) if speech else 64
+                sample_rate = (
+                    int(getattr(speech, "sample_rate", 16_000) or 16_000) if speech else 16_000
+                )
+                module = build_speech_classifier(
+                    n_classes=n_classes,
+                    embed_dim=embed_dim,
+                    sample_rate=sample_rate,
+                )
+            elif multimodal is not None or str(modality).endswith("_fusion"):
                 mm = multimodal
                 if mm is None:
                     raise ValidationError(
@@ -939,12 +962,16 @@ def fit_torch_ddp(
     mixed_precision: bool = False,
     world_size: int | None = None,
     allow_cpu_ddp: bool = False,
+    multi_node: bool = False,
     config: Any | None = None,
 ) -> Any:
-    """Single-node DDP training via a fresh ``module_factory`` per process.
+    """DDP training via a fresh ``module_factory`` per process.
 
-    Requires ``torch.cuda.device_count() >= 2`` unless ``allow_cpu_ddp=True``
-    (gloo smoke only). Multi-node cluster launch is out of scope.
+    * Single-node (default): spawn local ranks. Requires
+      ``torch.cuda.device_count() >= 2`` unless ``allow_cpu_ddp=True`` (gloo smoke).
+    * Multi-node: ``multi_node=True`` joins a ``torchrun`` rendezvous
+      (``WORLD_SIZE`` / ``RANK`` / ``LOCAL_RANK`` / ``MASTER_ADDR`` /
+      ``MASTER_PORT``). Not a Kubernetes multi-cluster orchestrator.
     """
     from buildml.dl.ddp import DDPConfig, train_supervised_module_ddp
     from buildml.dl.types import TrainConfig
@@ -965,7 +992,11 @@ def fit_torch_ddp(
         module_factory,
         session._torch_loaders,
         config=config,
-        ddp_config=DDPConfig(world_size=world_size, allow_cpu_ddp=allow_cpu_ddp),
+        ddp_config=DDPConfig(
+            world_size=world_size,
+            allow_cpu_ddp=allow_cpu_ddp,
+            multi_node=multi_node,
+        ),
     )
     if ddp_result.train_result is not None:
         session._dl_train_result = ddp_result.train_result
@@ -976,8 +1007,235 @@ def fit_torch_ddp(
             "world_size": ddp_result.world_size,
             "backend": ddp_result.backend,
             "allow_cpu_ddp": allow_cpu_ddp,
+            "multi_node": multi_node,
         },
         result_summary=ddp_result.to_dict(),
         warnings=tuple(ddp_result.warnings),
     )
     return ddp_result
+
+
+def make_speech_torch_loaders(
+    session,
+    *,
+    audio_column: str | None = None,
+    batch_size: int = 8,
+    sample_rate: int = 16_000,
+    max_samples: int = 16_000,
+    source_sample_rate: int | None = None,
+    normalize_audio: bool = True,
+    encoder_dim: int = 64,
+    shuffle_train: bool = True,
+    seed: int = 0,
+) -> Any:
+    """Build speech classification loaders (finetune-lite encoder path).
+
+    Requires ``buildml[torch]``. Amplitude stats fit on train only. This is an
+    integration/finetune path — not training a foundation model from scratch.
+    """
+    from buildml.dl.speech import SpeechLoaderConfig, make_speech_loaders
+
+    session.assert_can_fit("train")
+    bundle = make_speech_loaders(
+        session.dataset,
+        session._split_plan,
+        audio_column=audio_column,
+        config=SpeechLoaderConfig(
+            batch_size=batch_size,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            normalize_audio=normalize_audio,
+            encoder_dim=encoder_dim,
+        ),
+    )
+    session._torch_loaders = bundle
+    session._record(
+        "make_speech_torch_loaders",
+        {
+            "audio_column": audio_column
+            or getattr(getattr(bundle, "speech_contract", None), "audio_column", None),
+            "batch_size": batch_size,
+            "sample_rate": sample_rate,
+            "max_samples": max_samples,
+            "normalize_audio": normalize_audio,
+            "modality": getattr(bundle, "modality", None),
+        },
+        result_summary=bundle.report.to_dict(),
+        warnings=tuple(bundle.report.warnings),
+    )
+    return bundle
+
+
+def fit_speech_torch(
+    session,
+    *,
+    epochs: int = 5,
+    learning_rate: float = 0.001,
+    device: Literal["cpu", "cuda", "mps", "auto"] = "auto",
+    freeze_encoder: bool = False,
+    audio_column: str | None = None,
+    batch_size: int = 8,
+    sample_rate: int = 16_000,
+    max_samples: int = 16_000,
+    source_sample_rate: int | None = None,
+    normalize_audio: bool = True,
+    encoder_dim: int = 64,
+    seed: int = 0,
+) -> Any:
+    """Fine-tune a tiny speech encoder + classifier head (finetune-lite).
+
+    Builds speech loaders when missing. Honest alpha: not Whisper-scale FM
+    training from scratch. Requires ``buildml[torch]``.
+    """
+    from buildml.dl.speech import build_speech_classifier
+    from buildml.dl.train import train_supervised_module
+    from buildml.dl.types import TrainConfig
+
+    session.assert_can_fit("train")
+    loaders = session._torch_loaders
+    modality = getattr(loaders, "modality", None) if loaders is not None else None
+    if loaders is None or modality != "speech_classify":
+        make_speech_torch_loaders(
+            session,
+            audio_column=audio_column,
+            batch_size=batch_size,
+            sample_rate=sample_rate,
+            max_samples=max_samples,
+            source_sample_rate=source_sample_rate,
+            normalize_audio=normalize_audio,
+            encoder_dim=encoder_dim,
+            seed=seed,
+        )
+    assert session._torch_loaders is not None
+    contract = session._torch_loaders.contract
+    speech = getattr(session._torch_loaders, "speech_contract", None)
+    n_classes = max(2, len(contract.class_labels) or 2)
+    embed = int(getattr(speech, "encoder_dim", encoder_dim) or encoder_dim)
+    sr = int(getattr(speech, "sample_rate", sample_rate) or sample_rate)
+    module = build_speech_classifier(
+        n_classes=n_classes,
+        embed_dim=embed,
+        sample_rate=sr,
+        freeze_encoder=freeze_encoder,
+    )
+    config = TrainConfig(
+        epochs=epochs,
+        learning_rate=learning_rate,
+        device=device,
+        batch_size=getattr(session._torch_loaders.report, "batch_size", batch_size),
+        seed=seed,
+    )
+    result = train_supervised_module(module, session._torch_loaders, config=config)
+    session._dl_train_result = result
+    session._record(
+        "fit_speech_torch",
+        {
+            "epochs": epochs,
+            "learning_rate": learning_rate,
+            "device": device,
+            "freeze_encoder": freeze_encoder,
+            "n_classes": n_classes,
+            "embed_dim": embed,
+        },
+        result_summary=result.to_dict(),
+        warnings=tuple(result.warnings),
+    )
+    return session
+
+
+def transcribe_speech(
+    session,
+    *,
+    audio_column: str,
+    backend: Literal["stub", "transformers"] = "stub",
+    model_id: str | None = None,
+    sample_rate: int = 16_000,
+    max_samples: int = 16_000,
+    source_sample_rate: int | None = None,
+    partition: Literal["train", "validation", "test", "all"] = "all",
+) -> Any:
+    """ASR transcription for an audio feature column.
+
+    ``backend="stub"`` is CI-safe. ``backend="transformers"`` requires
+    ``buildml[speech]`` and may download Whisper-class weights. Integration
+    path only — not FM training from scratch.
+    """
+    from buildml.dl.speech import transcribe_from_dataset
+
+    if session.dataset is None:
+        raise ValidationError("transcribe_speech requires an ingested dataset")
+    result = transcribe_from_dataset(
+        session.dataset,
+        audio_column=audio_column,
+        backend=backend,
+        model_id=model_id,
+        sample_rate=sample_rate,
+        max_samples=max_samples,
+        source_sample_rate=source_sample_rate,
+        partition=partition,
+        split_plan=session._split_plan,
+    )
+    session._dl_speech_result = result
+    session._record(
+        "transcribe_speech",
+        {
+            "audio_column": audio_column,
+            "backend": backend,
+            "model_id": result.model_id,
+            "partition": partition,
+            "n_rows": result.n_rows,
+        },
+        result_summary=result.to_dict(),
+        warnings=tuple(result.warnings),
+    )
+    return result
+
+
+def serve_bundle(
+    session,
+    path: str | Path | None = None,
+    *,
+    kind: Literal["pipeline", "torchscript"] = "pipeline",
+    host: str = "127.0.0.1",
+    port: int = 8080,
+    title: str = "BuildML Serve",
+    blocking: bool = False,
+) -> Any:
+    """Launch BuildML managed serving for a pipeline or TorchScript artifact.
+
+    Requires ``buildml[serve]``. Defaults to localhost bind; no auth product
+    claim — put a reverse proxy in front for non-local exposure. When
+    ``path`` is omitted and ``kind="pipeline"``, uses the last saved pipeline
+    path recorded on the Session if available.
+    """
+    from buildml.serving.launch import serve_bundle as _serve
+
+    resolved = path
+    if resolved is None:
+        resolved = getattr(session, "_last_pipeline_path", None)
+    if resolved is None:
+        raise ValidationError(
+            "serve_bundle requires path= to a pipeline bundle or TorchScript file "
+            "(or a prior save_pipeline on this Session)."
+        )
+    handle = _serve(
+        resolved,
+        kind=kind,
+        host=host,
+        port=port,
+        title=title,
+        blocking=blocking,
+    )
+    session._serve_handle = handle
+    session._record(
+        "serve_bundle",
+        {"path": str(resolved), "kind": kind, "host": host, "port": port},
+        result_summary={"url": handle.url, "kind": kind},
+        warnings=(
+            "No authentication; localhost-oriented. Use a reverse proxy for exposure.",
+        ),
+    )
+    return handle

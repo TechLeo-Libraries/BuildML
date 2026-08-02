@@ -169,6 +169,24 @@ aud.make_audio_multimodal_torch_loaders(
     normalize_audio=True,
 )
 aud.fit_torch(epochs=5, device="cpu")
+
+# Speech ASR (stub is CI-safe) + classify finetune-lite
+# pip install "buildml[speech]" for transformers Whisper-class backend
+speech = (
+    Session.ingest(df_with_audio)
+    .set_roles({"audio": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+asr = speech.transcribe_speech(audio_column="audio", backend="stub")
+speech.fit_speech_torch(epochs=5, device="cpu", audio_column="audio")
+
+# Multi-node DDP (launch under torchrun; each process runs this)
+# torchrun --nnodes=2 --nproc_per_node=2 --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT train.py
+# session.fit_torch_ddp(module_factory, multi_node=True, epochs=5)
+
+# Managed local serving (pip install "buildml[serve]")
+# classical.save_pipeline("bundle/") ; classical.serve_bundle("bundle/", kind="pipeline")
+# or: buildml-serve --bundle bundle/ --kind pipeline --host 127.0.0.1 --port 8080
 ```
 
 ## Known limits (honest)
@@ -178,12 +196,13 @@ aud.fit_torch(epochs=5, device="cpu")
   PR blocker.
 - **Tabular + text + image + audio multimodal in scope.** Built-in MLP, text
   classifier, and fusion (small CNN image branch + small 1D-CNN audio branch)
-  cover the happy path; custom `nn.Module` still works. Audio is honest alpha
-  fusion — not a speech foundation-model product. Short clips are repeat-padded
-  to `audio_max_samples` so global pooling stays informative without a lengths
-  tensor in forward/export (set `audio_max_samples` near your clip length when
-  possible). Trainer bundles may store frozen multimodal preprocess meta;
-  `load_torch_bundle` restores it for inspection but does not rebuild loaders.
+  cover the happy path; custom `nn.Module` still works. Audio multimodal fusion
+  is honest alpha — not a speech FM. For ASR / speech classify finetune-lite see
+  `transcribe_speech` / `fit_speech_torch` (`buildml[speech]`). Short clips are
+  repeat-padded to `audio_max_samples` so global pooling stays informative
+  without a lengths tensor in forward/export. Trainer bundles may store frozen
+  multimodal preprocess meta; `load_torch_bundle` restores it for inspection but
+  does not rebuild loaders.
 - **Materialization.** Partition rows become tensors via the current Session
   frame (Pandas/NumPy bridge). No Polars/DuckDB zero-copy into DataLoaders.
 - **Classical plans.** Session impute/encode/scale mutate the frame and are
@@ -192,8 +211,10 @@ aud.fit_torch(epochs=5, device="cpu")
 - **CV + nested search.** Use `cross_validate_torch` for fold-local estimates and
   `nested_cv_torch` / `search_torch` for hyperparameter selection. Do not tune
   early stop on test.
-- **DDP / export.** `fit_torch_ddp` is single-node only; `export_torch` is an
-  alpha TorchScript/ONNX escape hatch, not a managed serving product.
+- **DDP / export / serve.** `fit_torch_ddp` supports single-node spawn and
+  torchrun multi-node (`multi_node=True`). `export_torch` is an alpha
+  TorchScript/ONNX escape hatch. Managed local serving is `buildml[serve]` /
+  `Session.serve_bundle` / `buildml-serve` (localhost; no auth).
 - **RAG / AI** are separate domains (`rag_*`, `ai_*`) that can call Torch tools.
 
 See [glossary](glossary.md).

@@ -11,7 +11,7 @@ import warnings
 __author__ = "Leonard Onyiriuba"
 __email__ = "leonard.c.onyiriuba@gmail.com"
 __copyright__ = "Copyright (c) 2023-2026 Leonard Onyiriuba"
-__license__ = "MIT"
+__license__ = "Apache-2.0"
 
 def select_features(x, y, strategy: str, estimator: str, number_of_features: int, warning: bool = False):
     if warning == False:
