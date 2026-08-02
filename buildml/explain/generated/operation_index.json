@@ -1,5 +1,5 @@
 {
-  "n_operations": 99,
+  "n_operations": 100,
   "operations": {
     "ai_advisor": {
       "doc_summary": "Get advisory Q&A guidance about the current workflow (read-only).",
@@ -1890,12 +1890,19 @@
       ],
       "qualname": "Session.load_torch_bundle"
     },
-    "make_multimodal_torch_loaders": {
-      "doc_summary": "Build fused tabular+text DataLoaders (train-only vocab + normalize).",
+    "make_image_multimodal_torch_loaders": {
+      "doc_summary": "Build image multimodal loaders (image \u2295 tabular and/or text).",
       "is_classmethod": false,
       "is_staticmethod": false,
-      "name": "make_multimodal_torch_loaders",
+      "name": "make_image_multimodal_torch_loaders",
       "parameters": [
+        {
+          "annotation": "str",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "image_column",
+          "required": true
+        },
         {
           "annotation": "str | None",
           "default": "None",
@@ -1943,6 +1950,134 @@
           "default": "True",
           "kind": "KEYWORD_ONLY",
           "name": "normalize",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize_images",
+          "required": false
+        },
+        {
+          "annotation": "tuple[int, int]",
+          "default": "(32, 32)",
+          "kind": "KEYWORD_ONLY",
+          "name": "image_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "image_channels",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "shuffle_train",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "seed",
+          "required": false
+        },
+        {
+          "annotation": "Literal['classification', 'regression', 'auto']",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "task",
+          "required": false
+        }
+      ],
+      "qualname": "Session.make_image_multimodal_torch_loaders"
+    },
+    "make_multimodal_torch_loaders": {
+      "doc_summary": "Build fused multimodal DataLoaders (tabular/text/image; train-only stats).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "make_multimodal_torch_loaders",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "numeric_columns",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "image_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "16",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_len",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_vocab",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_freq",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize_images",
+          "required": false
+        },
+        {
+          "annotation": "tuple[int, int]",
+          "default": "(32, 32)",
+          "kind": "KEYWORD_ONLY",
+          "name": "image_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "image_channels",
           "required": false
         },
         {

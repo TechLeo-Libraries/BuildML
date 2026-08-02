@@ -144,6 +144,17 @@ mm = (
 mm.make_multimodal_torch_loaders(text_column="text")
 mm.fit_torch(epochs=5, mixed_precision=False)  # AMP is CUDA-only
 mm.export_torch("model.ts.pt", format="torchscript")
+
+# Image multimodal (path or array column ⊕ tabular and/or text)
+img = (
+    Session.ingest(df_with_images)
+    .set_roles({"x1": "feature", "image": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+img.make_image_multimodal_torch_loaders(
+    image_column="image", image_size=(32, 32), normalize_images=True
+)
+img.fit_torch(epochs=5, device="cpu")
 ```
 
 ## Known limits (honest)
@@ -151,9 +162,9 @@ mm.export_torch("model.ts.pt", format="torchscript")
 - **CPU-first merge gate.** CI runs Torch on CPU (Python 3.11–3.12). CUDA/MPS
   are supported when available with explicit fallback warnings; GPU CI is not a
   PR blocker.
-- **Tabular + text + tabular⊕text fusion in scope.** Image / audio multimodal
-  loaders are later. Built-in MLP, text classifier, and fusion cover the happy
-  path; custom `nn.Module` still works.
+- **Tabular + text + image multimodal in scope.** Audio multimodal remains
+  deferred. Built-in MLP, text classifier, and fusion (including a small CNN
+  image branch) cover the happy path; custom `nn.Module` still works.
 - **Materialization.** Partition rows become tensors via the current Session
   frame (Pandas/NumPy bridge). No Polars/DuckDB zero-copy into DataLoaders.
 - **Classical plans.** Session impute/encode/scale mutate the frame and are

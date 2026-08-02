@@ -28,27 +28,32 @@ __all__ = [
     "TrainConfig",
     "TrainResult",
     "TrainingCurveReport",
+    "apply_image_channel_stats",
     "build_multimodal_fusion",
     "build_tabular_mlp",
     "build_text_classifier",
     "build_training_curve",
     "cross_validate_torch",
     "ddp_cuda_device_count",
+    "decode_image_cell",
     "evaluate_module",
     "export_module",
     "export_onnx",
     "export_torchscript",
     "export_train_result",
+    "fit_image_channel_stats",
     "load_torch_bundle",
     "load_torchscript",
     "make_loaders",
     "make_multimodal_loaders",
     "make_text_loaders",
     "nested_cv_torch",
+    "require_pillow",
     "require_torch",
     "save_torch_bundle",
     "search_torch",
     "smoke_load_onnx",
+    "stack_image_column",
     "torch_available",
     "torch_training_status",
     "train_supervised_module",
@@ -131,6 +136,16 @@ def __getattr__(name: str) -> Any:
         from buildml.dl import multimodal as mm_mod
 
         return getattr(mm_mod, name)
+    if name in {
+        "apply_image_channel_stats",
+        "decode_image_cell",
+        "fit_image_channel_stats",
+        "require_pillow",
+        "stack_image_column",
+    }:
+        from buildml.dl import image as image_mod
+
+        return getattr(image_mod, name)
     if name in {
         "ExportResult",
         "export_module",

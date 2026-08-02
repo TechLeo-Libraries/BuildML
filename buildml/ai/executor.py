@@ -465,14 +465,36 @@ def _dispatch_tool(
         kwargs: dict[str, Any] = {
             "batch_size": int(call.arguments.get("batch_size", 16)),
             "normalize": bool(call.arguments.get("normalize", True)),
+            "normalize_images": bool(call.arguments.get("normalize_images", True)),
         }
         if "text_column" in call.arguments and call.arguments["text_column"] is not None:
             kwargs["text_column"] = call.arguments["text_column"]
+        if "image_column" in call.arguments and call.arguments["image_column"] is not None:
+            kwargs["image_column"] = call.arguments["image_column"]
         session.make_multimodal_torch_loaders(**kwargs)
         state_changes.append(
-            "Built multimodal tabular+text Torch DataLoaders (train-only vocab/normalize)."
+            "Built multimodal Torch DataLoaders (train-only vocab/normalize/image stats)."
         )
         return {"multimodal_torch_loaders_built": True}, tuple(state_changes)
+
+    elif call.tool_name == "make_image_multimodal_torch_loaders":
+        image_column = call.arguments.get("image_column")
+        if not image_column:
+            raise ValidationError(
+                "make_image_multimodal_torch_loaders requires image_column."
+            )
+        img_kwargs: dict[str, Any] = {
+            "image_column": str(image_column),
+            "batch_size": int(call.arguments.get("batch_size", 16)),
+            "normalize_images": bool(call.arguments.get("normalize_images", True)),
+        }
+        if "text_column" in call.arguments and call.arguments["text_column"] is not None:
+            img_kwargs["text_column"] = call.arguments["text_column"]
+        session.make_image_multimodal_torch_loaders(**img_kwargs)
+        state_changes.append(
+            "Built image multimodal Torch DataLoaders (train-only image/channel stats)."
+        )
+        return {"image_multimodal_torch_loaders_built": True}, tuple(state_changes)
 
     elif call.tool_name == "search_torch":
         search_kwargs: dict[str, Any] = {
@@ -590,7 +612,12 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
 
     elif tool_name == "make_multimodal_torch_loaders":
         changes.append(
-            "Will build multimodal tabular+text Torch DataLoaders (train-only vocab/normalize)."
+            "Will build multimodal Torch DataLoaders (train-only vocab/normalize/image stats)."
+        )
+
+    elif tool_name == "make_image_multimodal_torch_loaders":
+        changes.append(
+            "Will build image multimodal Torch DataLoaders (image ⊕ tabular and/or text)."
         )
 
     elif tool_name == "search_torch":

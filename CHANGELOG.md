@@ -8,6 +8,17 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Added
+
+- **Pass J image multimodal:** extend multimodal fusion beyond tabular⊕text to
+  include image path/array columns fused with tabular and/or text. Train-only
+  image channel mean/std, built-in CNN fusion branch, Session facades
+  (`make_multimodal_torch_loaders(..., image_column=)` /
+  `make_image_multimodal_torch_loaders`), `fit_torch` / `export_torch` wiring
+  that refuses silent tabular rebuilds, AI tools/executor/autonomy allowlist,
+  and teaching-surface sync. Pillow is included in `buildml[torch]` for path
+  cells. **Audio multimodal remains deferred.**
+
 ### Fixed
 
 - **Pass H adversarial re-audit after Pass G:** AI registry listed

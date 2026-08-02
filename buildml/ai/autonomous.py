@@ -48,6 +48,7 @@ DEFAULT_AUTONOMY_ALLOWLIST = (
     "make_torch_loaders",
     "make_text_torch_loaders",
     "make_multimodal_torch_loaders",
+    "make_image_multimodal_torch_loaders",
     "fit_torch",
     "evaluate_torch",
     "cross_validate_torch",

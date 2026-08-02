@@ -214,22 +214,33 @@ def fit_torch(
             text_vocab = getattr(session._torch_loaders, "text_vocab", None)
             multimodal = getattr(session._torch_loaders, "multimodal_contract", None)
             contract = session._torch_loaders.contract
-            modality = getattr(session._torch_loaders, "modality", None)
-            if multimodal is not None or modality == "tabular_text_fusion":
+            modality = getattr(session._torch_loaders, "modality", None) or ""
+            is_multimodal = multimodal is not None or str(modality).endswith("_fusion")
+            if is_multimodal:
                 mm = multimodal
-                n_classes = max(2, len(contract.class_labels) or 2)
-                vocab_size = (
-                    int(getattr(text_vocab, "vocab_size", 0))
-                    or int((mm.vocab or {}).get("vocab_size") or 0)
-                    or len((mm.vocab or {}).get("id_to_token") or [])
-                )
-                if vocab_size < 2:
+                if mm is None:
                     raise ValidationError(
-                        "Multimodal loaders are missing vocabulary metadata for fit_torch"
+                        "Multimodal loaders are missing multimodal_contract for fit_torch"
                     )
+                n_classes = max(2, len(contract.class_labels) or 2)
+                has_text = bool(mm.text_column) or bool(mm.vocab)
+                has_image = bool(mm.image_column)
+                vocab_size = 0
+                if has_text:
+                    vocab_size = (
+                        int(getattr(text_vocab, "vocab_size", 0))
+                        or int((mm.vocab or {}).get("vocab_size") or 0)
+                        or len((mm.vocab or {}).get("id_to_token") or [])
+                    )
+                    if vocab_size < 2:
+                        raise ValidationError(
+                            "Multimodal loaders are missing vocabulary metadata for fit_torch"
+                        )
                 module = build_multimodal_fusion(
                     len(mm.numeric_columns),
                     vocab_size,
+                    image_channels=int(mm.image_channels) if has_image else 0,
+                    image_size=tuple(mm.image_size) if has_image else (32, 32),
                     task=contract.task,
                     n_classes=n_classes,
                     dropout=dropout,
@@ -428,18 +439,25 @@ def make_multimodal_torch_loaders(
     *,
     text_column: str | None = None,
     numeric_columns: list[str] | None = None,
+    image_column: str | None = None,
     batch_size: int = 16,
     max_len: int = 64,
     max_vocab: int = 5000,
     min_freq: int = 1,
     normalize: bool = True,
+    normalize_images: bool = True,
+    image_size: tuple[int, int] = (32, 32),
+    image_channels: int = 3,
     shuffle_train: bool = True,
     seed: int = 0,
     task: Literal["classification", "regression", "auto"] = "auto",
 ) -> Any:
-    """Build fused tabular+text DataLoaders (train-only vocab + normalize).
+    """Build fused multimodal DataLoaders (tabular/text/image mixes).
 
-    Requires ``buildml[torch]``. Batches are ``(x_numeric, token_ids, y)``.
+    Requires ``buildml[torch]``. Fit stats (vocab, numeric mean/std, image
+    channel mean/std) use the train partition only. Batches follow
+    ``(numeric?, tokens?, image?, y)`` for present modalities. Audio remains
+    deferred.
     """
     from buildml.dl.multimodal import MultimodalLoaderConfig, make_multimodal_loaders
 
@@ -449,6 +467,7 @@ def make_multimodal_torch_loaders(
         session._split_plan,
         text_column=text_column,
         numeric_columns=numeric_columns,
+        image_column=image_column,
         config=MultimodalLoaderConfig(
             batch_size=batch_size,
             shuffle_train=shuffle_train,
@@ -457,20 +476,98 @@ def make_multimodal_torch_loaders(
             max_vocab=max_vocab,
             min_freq=min_freq,
             normalize=normalize,
+            normalize_images=normalize_images,
+            image_size=image_size,
+            image_channels=image_channels,
         ),
         task=task,
     )
     session._torch_loaders = bundle
+    mm = getattr(bundle, "multimodal_contract", None)
     session._record(
         "make_multimodal_torch_loaders",
         {
-            "text_column": text_column
-            or getattr(getattr(bundle, "multimodal_contract", None), "text_column", None),
-            "numeric_columns": list(
-                getattr(getattr(bundle, "multimodal_contract", None), "numeric_columns", ()) or ()
-            ),
+            "text_column": text_column or getattr(mm, "text_column", None),
+            "image_column": image_column or getattr(mm, "image_column", None),
+            "numeric_columns": list(getattr(mm, "numeric_columns", ()) or ()),
             "batch_size": batch_size,
             "normalize": normalize,
+            "normalize_images": normalize_images,
+            "image_size": list(image_size),
+            "image_channels": image_channels,
+            "modality": getattr(bundle, "modality", None),
+            "seed": seed,
+            "task": task,
+        },
+        result_summary=bundle.report.to_dict(),
+        warnings=tuple(bundle.report.warnings),
+    )
+    return bundle
+
+
+def make_image_multimodal_torch_loaders(
+    session,
+    *,
+    image_column: str,
+    text_column: str | None = None,
+    numeric_columns: list[str] | None = None,
+    batch_size: int = 16,
+    max_len: int = 64,
+    max_vocab: int = 5000,
+    min_freq: int = 1,
+    normalize: bool = True,
+    normalize_images: bool = True,
+    image_size: tuple[int, int] = (32, 32),
+    image_channels: int = 3,
+    shuffle_train: bool = True,
+    seed: int = 0,
+    task: Literal["classification", "regression", "auto"] = "auto",
+) -> Any:
+    """Build image multimodal loaders (image ⊕ tabular and/or text).
+
+    Thin facade that requires ``image_column`` and delegates to the shared
+    multimodal loader builder. Path cells need Pillow (bundled in
+    ``buildml[torch]``); array/list cells work with Torch alone.
+    """
+    if not image_column:
+        raise ValidationError("make_image_multimodal_torch_loaders requires image_column")
+    from buildml.dl.multimodal import MultimodalLoaderConfig, make_multimodal_loaders
+
+    session.assert_can_fit("train")
+    bundle = make_multimodal_loaders(
+        session.dataset,
+        session._split_plan,
+        text_column=text_column,
+        numeric_columns=numeric_columns,
+        image_column=image_column,
+        config=MultimodalLoaderConfig(
+            batch_size=batch_size,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            normalize=normalize,
+            normalize_images=normalize_images,
+            image_size=image_size,
+            image_channels=image_channels,
+        ),
+        task=task,
+    )
+    session._torch_loaders = bundle
+    mm = getattr(bundle, "multimodal_contract", None)
+    session._record(
+        "make_image_multimodal_torch_loaders",
+        {
+            "image_column": image_column or getattr(mm, "image_column", None),
+            "text_column": text_column or getattr(mm, "text_column", None),
+            "numeric_columns": list(getattr(mm, "numeric_columns", ()) or ()),
+            "batch_size": batch_size,
+            "normalize": normalize,
+            "normalize_images": normalize_images,
+            "image_size": list(image_size),
+            "image_channels": image_channels,
+            "modality": getattr(bundle, "modality", None),
             "seed": seed,
             "task": task,
         },
@@ -627,18 +724,26 @@ def export_torch(
         raise ValidationError("No Torch trainer. Call fit_torch(...) first.")
     if session._torch_loaders is None and example_input is None:
         mod = session._dl_train_result.module
-        modality = getattr(mod, "modality", None)
-        if modality == "tabular_text_fusion" or hasattr(mod, "n_numeric"):
+        modality = getattr(mod, "modality", None) or ""
+        layout = getattr(mod, "input_layout", None)
+        is_multimodal = (
+            str(modality).endswith("_fusion")
+            or layout is not None
+            or (hasattr(mod, "n_numeric") and (hasattr(mod, "embedding") or hasattr(mod, "image_net")))
+        )
+        if is_multimodal:
             raise ValidationError(
                 "export_torch needs active multimodal loaders or an explicit "
-                "example_input=(x_numeric, token_ids) after multimodal fit. "
-                "Call make_multimodal_torch_loaders(...) again or pass example_input=."
+                "example_input matching the fusion input_layout after multimodal fit. "
+                "Call make_multimodal_torch_loaders(...) / "
+                "make_image_multimodal_torch_loaders(...) again or pass example_input=. "
+                "Refusing silent tabular loader rebuild."
             )
         if hasattr(mod, "vocab_size") and hasattr(mod, "embedding"):
             raise ValidationError(
                 "export_torch needs active text loaders or an explicit example_input "
                 "after text fit. Call make_text_torch_loaders(...) again or pass "
-                "example_input=."
+                "example_input=. Refusing silent tabular loader rebuild."
             )
         session.make_torch_loaders(
             normalize=session._dl_train_result.contract.normalize_mean is not None,

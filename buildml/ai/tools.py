@@ -373,17 +373,26 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="make_multimodal_torch_loaders",
             description=(
-                "Build fused tabular+text Torch DataLoaders (train-only vocab + normalize). "
-                "Requires buildml[torch]."
+                "Build fused multimodal Torch DataLoaders for tabular/text/image mixes "
+                "(train-only vocab, numeric normalize, image channel stats). "
+                "Requires buildml[torch]. Audio remains deferred."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "text_column": {"type": "string", "description": "Text feature column."},
+                    "image_column": {
+                        "type": "string",
+                        "description": "Image path or array feature column.",
+                    },
                     "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
                     "normalize": {
                         "type": "boolean",
                         "description": "Fit numeric mean/std on train (default true).",
+                    },
+                    "normalize_images": {
+                        "type": "boolean",
+                        "description": "Fit image channel mean/std on train (default true).",
                     },
                 },
                 "required": [],
@@ -392,6 +401,36 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             session_method="make_multimodal_torch_loaders",
             read_only=False,
             catalog_operation="make_multimodal_torch_loaders",
+        ),
+        ToolSpec(
+            name="make_image_multimodal_torch_loaders",
+            description=(
+                "Build image multimodal Torch DataLoaders (image ⊕ tabular and/or text). "
+                "Requires image_column. Train-only image channel stats. Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "image_column": {
+                        "type": "string",
+                        "description": "Image path or array feature column (required).",
+                    },
+                    "text_column": {
+                        "type": "string",
+                        "description": "Optional text feature column.",
+                    },
+                    "batch_size": {"type": "integer", "description": "Batch size (default 16)."},
+                    "normalize_images": {
+                        "type": "boolean",
+                        "description": "Fit image channel mean/std on train (default true).",
+                    },
+                },
+                "required": ["image_column"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="make_image_multimodal_torch_loaders",
+            read_only=False,
+            catalog_operation="make_image_multimodal_torch_loaders",
         ),
         ToolSpec(
             name="search_torch",

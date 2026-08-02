@@ -57,4 +57,4 @@ HEAD deepened several of these — do not paste this list onto current docs:
 - Polars/DuckDB zero-copy into DataLoaders (still out of scope)
 - RAG / LLM operator as shipped features of the **2.1.0a1** tag (later lines)
 - That Session checkpoints contain Torch weights
-- Image / audio multimodal (tabular⊕text fusion + nested Torch HPO ship in Pass G)
+- Audio multimodal (image multimodal + tabular⊕text fusion ship in Pass G/J)

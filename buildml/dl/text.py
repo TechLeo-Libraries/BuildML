@@ -267,15 +267,14 @@ def make_text_loaders(
         groups_disjoint=None,
         time_order_ok=None,
     )
-    bundle = TorchLoaderBundle(
+    return TorchLoaderBundle(
         loaders=loaders,
         contract=feature_contract,
         report=report,
+        text_contract=contract,
+        text_vocab=vocab,
+        modality="text_tokens",
     )
-    # Attach text metadata for Session / model factory consumers.
-    bundle.text_contract = contract  # type: ignore[attr-defined]
-    bundle.text_vocab = vocab  # type: ignore[attr-defined]
-    return bundle
 
 
 def loader_config_from_text(cfg: TextLoaderConfig) -> LoaderConfig:

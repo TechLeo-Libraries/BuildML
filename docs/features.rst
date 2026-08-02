@@ -59,12 +59,14 @@ Optional extras (same Session)
 ------------------------------
 
 * **Torch** (``buildml[torch]``): tabular loaders, text/sequence loaders
-  (``make_text_torch_loaders``), tabular+text multimodal fusion
-  (``make_multimodal_torch_loaders``), built-in MLP / text / fusion modules when
-  ``fit_torch`` omits a module, fold-local ``cross_validate_torch``, nested
-  ``nested_cv_torch`` / ``search_torch``, optional CUDA AMP, single-node
-  ``fit_torch_ddp``, TorchScript/ONNX ``export_torch``, evaluation, and trainer
-  bundles. Optional ``buildml[onnx]`` adds the ``onnx`` checker package.
+  (``make_text_torch_loaders``), multimodal fusion for tabular/text/image mixes
+  (``make_multimodal_torch_loaders`` / ``make_image_multimodal_torch_loaders``),
+  built-in MLP / text / fusion modules when ``fit_torch`` omits a module,
+  fold-local ``cross_validate_torch``, nested ``nested_cv_torch`` /
+  ``search_torch``, optional CUDA AMP, single-node ``fit_torch_ddp``,
+  TorchScript/ONNX ``export_torch``, evaluation, and trainer bundles. Optional
+  ``buildml[onnx]`` adds the ``onnx`` checker package. Audio multimodal remains
+  deferred.
 * **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, grounded
   ``rag_generate`` with citations, evaluate, upsert/delete, and bundle
   save/load. Hashing embeddings are the CI-safe default; semantic embedders are
@@ -85,5 +87,5 @@ sklearn-facing operation out-of-core. Checkpoints do not contain fitted models,
 and model bundles do not contain the Session dataset or split history. The AI
 operator defaults to propose→confirm→execute; autonomy is opt-in automation
 inside an allowlist, not unconstrained agency, and does not replace domain
-review of roles, splits, or metrics. Image/audio multimodal and multi-node
-cluster DDP remain out of scope for this alpha.
+review of roles, splits, or metrics. Audio multimodal and multi-node cluster
+DDP remain out of scope for this alpha (image multimodal is shipped).

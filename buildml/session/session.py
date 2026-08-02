@@ -1035,18 +1035,64 @@ class Session:
         *,
         text_column: str | None = None,
         numeric_columns: list[str] | None = None,
+        image_column: str | None = None,
         batch_size: int = 16,
         max_len: int = 64,
         max_vocab: int = 5000,
         min_freq: int = 1,
         normalize: bool = True,
+        normalize_images: bool = True,
+        image_size: tuple[int, int] = (32, 32),
+        image_channels: int = 3,
         shuffle_train: bool = True,
         seed: int = 0,
         task: Literal["classification", "regression", "auto"] = "auto",
     ) -> TorchLoaderBundle:
-        """Build fused tabular+text DataLoaders (train-only vocab + normalize)."""
+        """Build fused multimodal DataLoaders (tabular/text/image; train-only stats)."""
         return dl_ops.make_multimodal_torch_loaders(
             self,
+            text_column=text_column,
+            numeric_columns=numeric_columns,
+            image_column=image_column,
+            batch_size=batch_size,
+            max_len=max_len,
+            max_vocab=max_vocab,
+            min_freq=min_freq,
+            normalize=normalize,
+            normalize_images=normalize_images,
+            image_size=image_size,
+            image_channels=image_channels,
+            shuffle_train=shuffle_train,
+            seed=seed,
+            task=task,
+        )
+
+    def make_image_multimodal_torch_loaders(
+        self,
+        *,
+        image_column: str,
+        text_column: str | None = None,
+        numeric_columns: list[str] | None = None,
+        batch_size: int = 16,
+        max_len: int = 64,
+        max_vocab: int = 5000,
+        min_freq: int = 1,
+        normalize: bool = True,
+        normalize_images: bool = True,
+        image_size: tuple[int, int] = (32, 32),
+        image_channels: int = 3,
+        shuffle_train: bool = True,
+        seed: int = 0,
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> TorchLoaderBundle:
+        """Build image multimodal loaders (image ⊕ tabular and/or text).
+
+        Path cells need Pillow (bundled in ``buildml[torch]``); array cells work
+        with Torch alone. Audio multimodal remains deferred.
+        """
+        return dl_ops.make_image_multimodal_torch_loaders(
+            self,
+            image_column=image_column,
             text_column=text_column,
             numeric_columns=numeric_columns,
             batch_size=batch_size,
@@ -1054,6 +1100,9 @@ class Session:
             max_vocab=max_vocab,
             min_freq=min_freq,
             normalize=normalize,
+            normalize_images=normalize_images,
+            image_size=image_size,
+            image_channels=image_channels,
             shuffle_train=shuffle_train,
             seed=seed,
             task=task,

@@ -60,6 +60,7 @@ _REPEATABLE = {
     "search_torch",
     "nested_cv_torch",
     "make_multimodal_torch_loaders",
+    "make_image_multimodal_torch_loaders",
     "export_torch",
     "fit_torch_ddp",
     "torch_training_curve",

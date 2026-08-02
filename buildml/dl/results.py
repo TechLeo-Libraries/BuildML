@@ -139,13 +139,25 @@ class TorchLoaderBundle:
     loaders: dict[str, Any]
     contract: FeatureContract
     report: LoaderReport
+    # Optional modality metadata (text / multimodal / image). Kept on the
+    # slotted dataclass so Session factories can read train-only fit artifacts.
+    text_vocab: Any | None = None
+    text_contract: Any | None = None
+    multimodal_contract: Any | None = None
+    modality: str | None = None
+    input_layout: tuple[str, ...] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "partitions": sorted(self.loaders),
             "contract": self.contract.to_dict(),
             "report": self.report.to_dict(),
         }
+        if self.modality is not None:
+            payload["modality"] = self.modality
+        if self.input_layout is not None:
+            payload["input_layout"] = list(self.input_layout)
+        return payload
 
 
 @dataclass(slots=True)

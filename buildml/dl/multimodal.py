@@ -1,8 +1,16 @@
-"""Tabular + text multimodal fusion path for BuildML DL.
+"""Multimodal fusion path for BuildML DL (tabular ⊕ text ⊕ image).
 
-Builds leakage-safe loaders (train-only vocab + train-only numeric normalize)
-and a built-in late-fusion module that concatenates tabular and text embeddings
-before a task head.
+Builds leakage-safe loaders (train-only vocab, train-only numeric normalize,
+train-only image channel stats) and a built-in late-fusion module that
+concatenates available modality embeddings before a task head.
+
+Supported modality mixes:
+- tabular + text (Pass G)
+- tabular + image (Pass J)
+- text + image (Pass J)
+- tabular + text + image (Pass J)
+
+Audio multimodal remains deferred.
 """
 
 from __future__ import annotations
@@ -19,15 +27,22 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.dl.dataset import infer_task
 from buildml.dl.extras import require_torch
+from buildml.dl.image import (
+    apply_image_channel_stats,
+    fit_image_channel_stats,
+    stack_image_column,
+)
 from buildml.dl.results import LoaderReport, TorchLoaderBundle
 from buildml.dl.text import fit_vocab, texts_to_ids, tokenize
 from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
 from buildml.dl.types import FeatureContract
 
+ModalityName = Literal["numeric", "tokens", "image"]
+
 
 @dataclass(slots=True)
 class MultimodalLoaderConfig:
-    """Knobs for multimodal tabular+text DataLoader construction."""
+    """Knobs for multimodal DataLoader construction."""
 
     batch_size: int = 16
     num_workers: int = 0
@@ -35,32 +50,48 @@ class MultimodalLoaderConfig:
     shuffle_train: bool = True
     drop_last: bool = False
     normalize: bool = True
+    normalize_images: bool = True
     seed: int = 0
     max_len: int = 64
     max_vocab: int = 5000
     min_freq: int = 1
+    image_size: tuple[int, int] = (32, 32)
+    image_channels: int = 3
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        payload["image_size"] = list(self.image_size)
+        return payload
 
 
 @dataclass(slots=True)
 class MultimodalContract:
-    """Schema for tabular numeric features + text tokens fused in one model."""
+    """Schema for fused multimodal loaders / trainers."""
 
     numeric_columns: tuple[str, ...]
-    text_column: str
+    text_column: str | None
+    image_column: str | None
     target_column: str
     task: Literal["classification", "regression"]
     class_labels: tuple[Any, ...] = ()
     vocab: dict[str, Any] = field(default_factory=dict)
     normalize_mean: tuple[float, ...] | None = None
     normalize_std: tuple[float, ...] | None = None
+    image_mean: tuple[float, ...] | None = None
+    image_std: tuple[float, ...] | None = None
+    image_size: tuple[int, int] = (32, 32)
+    image_channels: int = 3
+    input_layout: tuple[str, ...] = ()
     modality: str = "tabular_text_fusion"
 
     def to_feature_contract(self) -> FeatureContract:
+        cols: list[str] = list(self.numeric_columns)
+        if self.text_column:
+            cols.append(self.text_column)
+        if self.image_column:
+            cols.append(self.image_column)
         return FeatureContract(
-            feature_columns=self.numeric_columns + (self.text_column,),
+            feature_columns=tuple(cols),
             target_column=self.target_column,
             task=self.task,
             class_labels=self.class_labels,
@@ -72,6 +103,7 @@ class MultimodalContract:
         return {
             "numeric_columns": list(self.numeric_columns),
             "text_column": self.text_column,
+            "image_column": self.image_column,
             "target_column": self.target_column,
             "task": self.task,
             "class_labels": list(self.class_labels),
@@ -80,8 +112,37 @@ class MultimodalContract:
             if self.normalize_mean is None
             else list(self.normalize_mean),
             "normalize_std": None if self.normalize_std is None else list(self.normalize_std),
+            "image_mean": None if self.image_mean is None else list(self.image_mean),
+            "image_std": None if self.image_std is None else list(self.image_std),
+            "image_size": list(self.image_size),
+            "image_channels": self.image_channels,
+            "input_layout": list(self.input_layout),
             "modality": self.modality,
         }
+
+
+def _modality_name(
+    *,
+    has_numeric: bool,
+    has_text: bool,
+    has_image: bool,
+) -> str:
+    parts: list[str] = []
+    if has_numeric:
+        parts.append("tabular")
+    if has_text:
+        parts.append("text")
+    if has_image:
+        parts.append("image")
+    if not parts:
+        raise ValidationError("Multimodal path requires at least one modality")
+    if len(parts) == 1:
+        raise ValidationError(
+            "Multimodal fusion needs at least two modalities "
+            "(tabular/text/image). For a single modality use make_torch_loaders "
+            "or make_text_torch_loaders."
+        )
+    return "_".join(parts) + "_fusion"
 
 
 def _resolve_multimodal_columns(
@@ -89,7 +150,8 @@ def _resolve_multimodal_columns(
     *,
     text_column: str | None,
     numeric_columns: list[str] | None,
-) -> tuple[list[str], str, str]:
+    image_column: str | None,
+) -> tuple[list[str], str | None, str | None, str]:
     target = dataset.require_target()
     frame = dataset._ensure_pandas()
     feature_cols = dataset.role_columns(ColumnRole.FEATURE)
@@ -104,85 +166,188 @@ def _resolve_multimodal_columns(
         }
         feature_cols = [c for c in dataset.columns if c not in skip and c != target]
 
+    if image_column is not None and image_column not in dataset.columns:
+        raise ValidationError(f"image_column {image_column!r} not in dataset columns")
+
     object_like = [
         c
         for c in feature_cols
-        if frame[c].dtype == object or str(frame[c].dtype).startswith("string")
+        if c != image_column
+        and (frame[c].dtype == object or str(frame[c].dtype).startswith("string"))
     ]
-    if text_column is None:
+    # Prefer string-like columns for text inference; path/array image columns
+    # are excluded when image_column is set.
+    if text_column is None and image_column is None:
         if len(object_like) != 1:
             raise ValidationError(
                 "Multimodal path needs exactly one text feature column when "
                 f"text_column is omitted; found {object_like or 'none'}. "
-                "Pass text_column= explicitly."
+                "Pass text_column= explicitly, or pass image_column= for "
+                "image multimodal."
             )
         text_column = object_like[0]
-    elif text_column not in dataset.columns:
+    elif text_column is None and image_column is not None:
+        # Optional text when image is present: infer only if exactly one
+        # remaining string-like feature that is not the image column.
+        stringish = [
+            c
+            for c in object_like
+            if c != image_column and _looks_like_text_column(frame[c])
+        ]
+        text_column = stringish[0] if len(stringish) == 1 else None
+    elif text_column is not None and text_column not in dataset.columns:
         raise ValidationError(f"text_column {text_column!r} not in dataset columns")
 
+    reserved = {c for c in (text_column, image_column) if c is not None}
     if numeric_columns is None:
         numeric_columns = [
             c
             for c in feature_cols
-            if c != text_column and pd.api.types.is_numeric_dtype(frame[c])
+            if c not in reserved and pd.api.types.is_numeric_dtype(frame[c])
         ]
-    if not numeric_columns:
-        raise ValidationError(
-            "Multimodal fusion requires at least one numeric feature column "
-            "in addition to the text column."
-        )
     missing = [c for c in numeric_columns if c not in dataset.columns]
     if missing:
         raise ValidationError(f"numeric_columns missing from dataset: {missing}")
-    return list(numeric_columns), text_column, target
+
+    has_numeric = bool(numeric_columns)
+    has_text = text_column is not None
+    has_image = image_column is not None
+    if not has_image:
+        # Legacy tabular+text path: both required.
+        if not has_text:
+            raise ValidationError(
+                "Multimodal fusion without image_column requires a text column."
+            )
+        if not has_numeric:
+            raise ValidationError(
+                "Multimodal fusion requires at least one numeric feature column "
+                "in addition to the text column (or pass image_column=)."
+            )
+    else:
+        if not (has_numeric or has_text):
+            raise ValidationError(
+                "Image multimodal requires tabular numeric features and/or a "
+                "text column to fuse with the image column."
+            )
+    return list(numeric_columns), text_column, image_column, target
+
+
+def _looks_like_text_column(series: pd.Series) -> bool:
+    """Heuristic: string cells that are not filesystem-looking image paths."""
+    sample = series.dropna().astype(str).head(8).tolist()
+    if not sample:
+        return False
+    image_ext = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp", ".tif", ".tiff")
+    path_hits = sum(1 for s in sample if s.lower().endswith(image_ext) or "/" in s or "\\" in s)
+    return path_hits < max(1, len(sample) // 2)
 
 
 def build_multimodal_fusion(
-    n_numeric: int,
-    vocab_size: int,
+    n_numeric: int = 0,
+    vocab_size: int = 0,
     *,
+    image_channels: int = 0,
+    image_size: tuple[int, int] = (32, 32),
     task: str = "classification",
     n_classes: int = 2,
     tabular_hidden: tuple[int, ...] = (32,),
     text_embed_dim: int = 32,
     text_hidden: int = 32,
+    image_hidden: int = 32,
     fusion_hidden: int = 64,
     dropout: float = 0.1,
     padding_idx: int = 0,
 ) -> Any:
-    """Late-fusion module: tabular MLP branch + masked-mean text branch → head."""
+    """Late-fusion module over any mix of tabular / text / image branches."""
     torch = require_torch(feature="MultimodalFusion")
-    if n_numeric < 1:
-        raise ValidationError("n_numeric must be >= 1")
-    if vocab_size < 2:
-        raise ValidationError("vocab_size must be >= 2")
+    has_numeric = int(n_numeric) > 0
+    has_text = int(vocab_size) >= 2
+    has_image = int(image_channels) > 0
+    if not has_image and not (has_numeric and has_text):
+        raise ValidationError(
+            "build_multimodal_fusion requires tabular+text, or image plus "
+            "tabular and/or text"
+        )
+    if has_image and not (has_numeric or has_text):
+        raise ValidationError("Image fusion requires a tabular and/or text branch")
     if task not in {"classification", "regression"}:
         raise ValidationError("task must be 'classification' or 'regression'")
     if task == "classification" and n_classes < 2:
         raise ValidationError("n_classes must be >= 2 for classification")
 
+    layout: list[str] = []
+    if has_numeric:
+        layout.append("numeric")
+    if has_text:
+        layout.append("tokens")
+    if has_image:
+        layout.append("image")
+    modality = _modality_name(
+        has_numeric=has_numeric, has_text=has_text, has_image=has_image
+    )
+    img_h, img_w = int(image_size[0]), int(image_size[1])
+
     class _MultimodalFusion(torch.nn.Module):
         def __init__(self) -> None:
             super().__init__()
-            layers: list[Any] = []
-            prev = int(n_numeric)
-            for width in tabular_hidden:
-                layers.append(torch.nn.Linear(prev, int(width)))
-                layers.append(torch.nn.ReLU())
-                if dropout > 0:
-                    layers.append(torch.nn.Dropout(p=float(dropout)))
-                prev = int(width)
-            self.tabular = torch.nn.Sequential(*layers) if layers else torch.nn.Identity()
-            self.tabular_out = prev if layers else int(n_numeric)
-            self.embedding = torch.nn.Embedding(
-                int(vocab_size), int(text_embed_dim), padding_idx=int(padding_idx)
-            )
-            self.text_proj = torch.nn.Sequential(
-                torch.nn.Linear(int(text_embed_dim), int(text_hidden)),
-                torch.nn.ReLU(),
-                torch.nn.Dropout(p=float(dropout)),
-            )
-            fused_in = self.tabular_out + int(text_hidden)
+            self.input_layout = tuple(layout)
+            self.modality = modality
+            self.task = task
+            self.n_numeric = int(n_numeric) if has_numeric else 0
+            self.vocab_size = int(vocab_size) if has_text else 0
+            self.image_channels = int(image_channels) if has_image else 0
+            self.image_size = (img_h, img_w)
+            self.n_classes = int(n_classes) if task == "classification" else 1
+            self.padding_idx = int(padding_idx)
+
+            fused_in = 0
+            if has_numeric:
+                layers: list[Any] = []
+                prev = int(n_numeric)
+                for width in tabular_hidden:
+                    layers.append(torch.nn.Linear(prev, int(width)))
+                    layers.append(torch.nn.ReLU())
+                    if dropout > 0:
+                        layers.append(torch.nn.Dropout(p=float(dropout)))
+                    prev = int(width)
+                self.tabular = torch.nn.Sequential(*layers) if layers else torch.nn.Identity()
+                self.tabular_out = prev if layers else int(n_numeric)
+                fused_in += self.tabular_out
+            else:
+                self.tabular = None
+                self.tabular_out = 0
+
+            if has_text:
+                self.embedding = torch.nn.Embedding(
+                    int(vocab_size), int(text_embed_dim), padding_idx=int(padding_idx)
+                )
+                self.text_proj = torch.nn.Sequential(
+                    torch.nn.Linear(int(text_embed_dim), int(text_hidden)),
+                    torch.nn.ReLU(),
+                    torch.nn.Dropout(p=float(dropout)),
+                )
+                fused_in += int(text_hidden)
+            else:
+                self.embedding = None
+                self.text_proj = None
+
+            if has_image:
+                mid = max(8, int(image_hidden))
+                self.image_net = torch.nn.Sequential(
+                    torch.nn.Conv2d(int(image_channels), mid, kernel_size=3, padding=1),
+                    torch.nn.ReLU(),
+                    torch.nn.Conv2d(mid, mid, kernel_size=3, padding=1),
+                    torch.nn.ReLU(),
+                    torch.nn.AdaptiveAvgPool2d(1),
+                    torch.nn.Flatten(),
+                    torch.nn.Linear(mid, int(image_hidden)),
+                    torch.nn.ReLU(),
+                    torch.nn.Dropout(p=float(dropout)),
+                )
+                fused_in += int(image_hidden)
+            else:
+                self.image_net = None
+
             out = int(n_classes) if task == "classification" else 1
             self.head = torch.nn.Sequential(
                 torch.nn.Linear(fused_in, int(fusion_hidden)),
@@ -190,33 +355,37 @@ def build_multimodal_fusion(
                 torch.nn.Dropout(p=float(dropout)),
                 torch.nn.Linear(int(fusion_hidden), out),
             )
-            self.padding_idx = int(padding_idx)
-            self.task = task
-            self.n_numeric = int(n_numeric)
-            self.vocab_size = int(vocab_size)
-            self.n_classes = int(n_classes) if task == "classification" else 1
-            self.modality = "tabular_text_fusion"
 
-        def forward(self, x_numeric: Any, token_ids: Any | None = None) -> Any:
+        def forward(self, *args: Any) -> Any:
             # Dual calling convention:
-            # - train/eval: module((x_numeric, token_ids))  [single tuple arg]
-            # - TorchScript/ONNX: module(x_numeric, token_ids)  [unpacked args]
-            if token_ids is None:
-                if isinstance(x_numeric, (tuple, list)) and len(x_numeric) == 2:
-                    x_numeric, token_ids = x_numeric
+            # - train/eval: module((t0, t1, ...))  [single packed tuple]
+            # - TorchScript/ONNX: module(t0, t1, ...)  [unpacked args]
+            if len(args) == 1 and isinstance(args[0], (tuple, list)):
+                args = tuple(args[0])
+            if len(args) != len(self.input_layout):
+                raise ValidationError(
+                    f"MultimodalFusion expects {len(self.input_layout)} input(s) "
+                    f"in order {self.input_layout}; got {len(args)} "
+                    f"(types={[type(a).__name__ for a in args]})"
+                )
+            pieces: list[Any] = []
+            for name, tensor in zip(self.input_layout, args, strict=True):
+                if name == "numeric":
+                    assert self.tabular is not None
+                    pieces.append(self.tabular(tensor))
+                elif name == "tokens":
+                    assert self.embedding is not None and self.text_proj is not None
+                    mask = (tensor != self.padding_idx).unsqueeze(-1).float()
+                    embedded = self.embedding(tensor) * mask
+                    denom = mask.sum(dim=1).clamp(min=1.0)
+                    pooled = embedded.sum(dim=1) / denom
+                    pieces.append(self.text_proj(pooled))
+                elif name == "image":
+                    assert self.image_net is not None
+                    pieces.append(self.image_net(tensor))
                 else:
-                    raise ValidationError(
-                        "MultimodalFusion expects (x_numeric, token_ids) as two "
-                        "arguments or a single 2-tuple; "
-                        f"got type={type(x_numeric).__name__}"
-                    )
-            tab = self.tabular(x_numeric)
-            mask = (token_ids != self.padding_idx).unsqueeze(-1).float()
-            embedded = self.embedding(token_ids) * mask
-            denom = mask.sum(dim=1).clamp(min=1.0)
-            pooled = embedded.sum(dim=1) / denom
-            text = self.text_proj(pooled)
-            return self.head(torch.cat([tab, text], dim=1))
+                    raise ValidationError(f"Unknown modality in layout: {name}")
+            return self.head(torch.cat(pieces, dim=1))
 
     return _MultimodalFusion()
 
@@ -227,13 +396,16 @@ def make_multimodal_loaders(
     *,
     text_column: str | None = None,
     numeric_columns: list[str] | None = None,
+    image_column: str | None = None,
     config: MultimodalLoaderConfig | None = None,
     task: Literal["classification", "regression", "auto"] = "auto",
 ) -> TorchLoaderBundle:
-    """Build fused tabular+text DataLoaders with train-only vocab and normalize.
+    """Build fused multimodal DataLoaders with train-only fit stats.
 
-    Each batch is ``(x_numeric, token_ids, y)``. Pair with
-    :func:`build_multimodal_fusion` (or :meth:`Session.fit_torch` auto-build).
+    Batch layout is ``(*modality_tensors, y)`` in order
+    ``numeric`` → ``tokens`` → ``image`` for whichever modalities are present.
+    Pair with :func:`build_multimodal_fusion` (or :meth:`Session.fit_torch`
+    auto-build).
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -241,9 +413,14 @@ def make_multimodal_loaders(
     cfg = config or MultimodalLoaderConfig()
     if cfg.batch_size < 1:
         raise ValidationError("batch_size must be >= 1")
+    if cfg.image_channels not in {1, 3}:
+        raise ValidationError("image_channels must be 1 or 3")
 
-    numeric_cols, text_col, target = _resolve_multimodal_columns(
-        dataset, text_column=text_column, numeric_columns=numeric_columns
+    numeric_cols, text_col, image_col, target = _resolve_multimodal_columns(
+        dataset,
+        text_column=text_column,
+        numeric_columns=numeric_columns,
+        image_column=image_column,
     )
     frame = dataset._ensure_pandas()
     train_idx = list(split_plan.indices_for("train"))
@@ -261,27 +438,59 @@ def make_multimodal_loaders(
         tuple(sorted(pd.unique(y_train))) if resolved_task == "classification" else ()
     )
 
-    train_texts = frame.iloc[train_idx][text_col].astype(str).tolist()
-    vocab = fit_vocab(
-        train_texts,
-        max_vocab=cfg.max_vocab,
-        min_freq=cfg.min_freq,
-        max_len=cfg.max_len,
+    has_numeric = bool(numeric_cols)
+    has_text = text_col is not None
+    has_image = image_col is not None
+    modality = _modality_name(
+        has_numeric=has_numeric, has_text=has_text, has_image=has_image
     )
+    layout: list[str] = []
+    if has_numeric:
+        layout.append("numeric")
+    if has_text:
+        layout.append("tokens")
+    if has_image:
+        layout.append("image")
 
-    x_train = frame_to_numeric_matrix(frame.iloc[train_idx], numeric_cols)
+    vocab = None
+    if has_text:
+        assert text_col is not None
+        train_texts = frame.iloc[train_idx][text_col].astype(str).tolist()
+        vocab = fit_vocab(
+            train_texts,
+            max_vocab=cfg.max_vocab,
+            min_freq=cfg.min_freq,
+            max_len=cfg.max_len,
+        )
+
     mean = std = None
-    if cfg.normalize:
+    if has_numeric and cfg.normalize:
+        x_train = frame_to_numeric_matrix(frame.iloc[train_idx], numeric_cols)
         mean, std = fit_standardize(x_train)
+
+    img_mean = img_std = None
+    if has_image and cfg.normalize_images:
+        assert image_col is not None
+        train_images = stack_image_column(
+            frame.iloc[train_idx][image_col].tolist(),
+            size=cfg.image_size,
+            channels=cfg.image_channels,
+        )
+        img_mean, img_std = fit_image_channel_stats(train_images)
 
     torch = require_torch(feature="Multimodal Torch DataLoaders")
     generator = torch.Generator()
     generator.manual_seed(int(cfg.seed))
     loaders: dict[str, Any] = {}
     warnings: list[str] = [
-        "Multimodal fusion: vocabulary and normalize stats fit on train only; "
-        "batches are (x_numeric, token_ids, y).",
+        f"Multimodal fusion ({modality}): fit stats use train only; "
+        f"batch layout is ({', '.join(layout)}, y).",
     ]
+    if has_image:
+        warnings.append(
+            "Image cells accept path strings (Pillow) or array/list tensors; "
+            "audio multimodal remains deferred."
+        )
     n_counts: dict[str, int] = {"train": 0, "validation": 0, "test": 0}
 
     for name in ("train", "validation", "test"):
@@ -292,20 +501,34 @@ def make_multimodal_loaders(
             warnings.append(f"Partition '{name}' is empty; no DataLoader created.")
             continue
         part = frame.iloc[idx]
-        x = frame_to_numeric_matrix(part, numeric_cols)
-        if cfg.normalize and mean is not None and std is not None:
-            x = apply_standardize(x, mean, std)
-        tokens = texts_to_ids(part[text_col].astype(str).tolist(), vocab)
+        tensors: list[Any] = []
+        if has_numeric:
+            x = frame_to_numeric_matrix(part, numeric_cols)
+            if cfg.normalize and mean is not None and std is not None:
+                x = apply_standardize(x, mean, std)
+            tensors.append(torch.as_tensor(x, dtype=torch.float32))
+        if has_text:
+            assert text_col is not None and vocab is not None
+            tokens = texts_to_ids(part[text_col].astype(str).tolist(), vocab)
+            tensors.append(torch.as_tensor(tokens, dtype=torch.long))
+        if has_image:
+            assert image_col is not None
+            images = stack_image_column(
+                part[image_col].tolist(),
+                size=cfg.image_size,
+                channels=cfg.image_channels,
+            )
+            if cfg.normalize_images and img_mean is not None and img_std is not None:
+                images = apply_image_channel_stats(images, img_mean, img_std)
+            tensors.append(torch.as_tensor(images, dtype=torch.float32))
         y = part[target].to_numpy(dtype=np.float64, copy=True)
         if np.isnan(y).any():
             raise ValidationError("Target contains NaN; clean labels before multimodal loaders")
-        x_t = torch.as_tensor(x, dtype=torch.float32)
-        tok_t = torch.as_tensor(tokens, dtype=torch.long)
         if resolved_task == "classification":
             y_t = torch.as_tensor(y, dtype=torch.long)
         else:
             y_t = torch.as_tensor(y, dtype=torch.float32).unsqueeze(-1)
-        dataset_t = torch.utils.data.TensorDataset(x_t, tok_t, y_t)
+        dataset_t = torch.utils.data.TensorDataset(*tensors, y_t)
         shuffle = bool(cfg.shuffle_train and name == "train")
         loaders[name] = torch.utils.data.DataLoader(
             dataset_t,
@@ -321,12 +544,19 @@ def make_multimodal_loaders(
     contract = MultimodalContract(
         numeric_columns=tuple(numeric_cols),
         text_column=text_col,
+        image_column=image_col,
         target_column=target,
         task=resolved_task,
         class_labels=class_labels,
-        vocab=vocab.to_dict(),
+        vocab={} if vocab is None else vocab.to_dict(),
         normalize_mean=None if mean is None else tuple(float(v) for v in mean),
         normalize_std=None if std is None else tuple(float(v) for v in std),
+        image_mean=None if img_mean is None else tuple(float(v) for v in img_mean),
+        image_std=None if img_std is None else tuple(float(v) for v in img_std),
+        image_size=tuple(int(x) for x in cfg.image_size),  # type: ignore[arg-type]
+        image_channels=int(cfg.image_channels),
+        input_layout=tuple(layout),
+        modality=modality,
     )
     feature_contract = contract.to_feature_contract()
     report = LoaderReport(
@@ -343,14 +573,17 @@ def make_multimodal_loaders(
         warnings=warnings,
         split_kind=split_plan.kind,
     )
-    bundle = TorchLoaderBundle(loaders=loaders, contract=feature_contract, report=report)
-    bundle.multimodal_contract = contract  # type: ignore[attr-defined]
-    bundle.text_vocab = vocab  # type: ignore[attr-defined]
-    bundle.modality = "tabular_text_fusion"  # type: ignore[attr-defined]
-    return bundle
+    return TorchLoaderBundle(
+        loaders=loaders,
+        contract=feature_contract,
+        report=report,
+        multimodal_contract=contract,
+        text_vocab=vocab,
+        modality=modality,
+        input_layout=tuple(layout),
+    )
 
 
-# Keep tokenize import used for discoverability / re-export symmetry with text.py
 __all__ = [
     "MultimodalContract",
     "MultimodalLoaderConfig",

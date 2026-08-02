@@ -85,8 +85,8 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 
 1. **CPU slice is the merge gate.** No GPU CI on every PR; CUDA/MPS fall back with
    an explicit warning when unavailable.
-2. **Tabular + text/sequence + tabular⊕text multimodal fusion in scope** (Pass G).
-   No image / audio multimodal product path.
+2. **Tabular + text/sequence + tabular/text/image multimodal fusion in scope**
+   (Pass G/J). Audio multimodal remains deferred.
 3. **Built-in models are a happy path** (tabular MLP, text classifier, multimodal
    fusion when `fit_torch` omits `module`). No broad model zoo; custom `nn.Module`
    remains first-class.

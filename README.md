@@ -180,7 +180,7 @@ unchanged.
 
 | Extra | Install | What it adds |
 |-------|---------|--------------|
-| Torch | `buildml[torch]` | Tabular + text + tabular⊕text fusion, nested HPO, AMP, single-node DDP, TorchScript/ONNX export, fold-local CV, bundles |
+| Torch | `buildml[torch]` | Tabular + text + image multimodal fusion (tabular/text/image mixes), nested HPO, AMP, single-node DDP, TorchScript/ONNX export, fold-local CV, bundles |
 | RAG | `buildml[rag]` | Ingest → chunk → embed → retrieve → **generate** → evaluate; hashing default, semantic optional |
 | AI | `buildml[ai]` | Advisor, multi-step plan/execute, optional allowlisted autonomy; classical + RAG + Torch tools; BYO API key |
 | Dashboard | `buildml[dashboard]` | Interactive local EDA via `eda_app()` |
@@ -192,12 +192,13 @@ Runnable quickstarts:
 - [RAG](guides/quickstart-rag.md)
 - [AI operator](guides/quickstart-ai.md)
 
-Torch covers tabular MLP, text/sequence, tabular⊕text multimodal fusion, fold-local
-CV, nested Torch HPO, optional CUDA AMP, single-node DDP, and TorchScript/ONNX
-export. RAG defaults to lexical hashing embeddings; semantic sentence-transformers
-and grounded `rag_generate` are first-class. The AI operator defaults to
-propose→confirm→execute; optional `ai_run_autonomous` is allowlisted operator
-automation with hard caps — not unconstrained agency.
+Torch covers tabular MLP, text/sequence, and multimodal fusion across tabular /
+text / image (path or array columns; train-only normalize stats). Audio remains
+deferred. Also: fold-local CV, nested Torch HPO, optional CUDA AMP, single-node
+DDP, and TorchScript/ONNX export. RAG defaults to lexical hashing embeddings;
+semantic sentence-transformers and grounded `rag_generate` are first-class. The
+AI operator defaults to propose→confirm→execute; optional `ai_run_autonomous` is
+allowlisted operator automation with hard caps — not unconstrained agency.
 
 ## Alpha status
 
