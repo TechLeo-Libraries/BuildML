@@ -213,6 +213,7 @@ jobs:
         run: |
           pytest \
             tests/unit/test_ai_slice.py \
+            tests/unit/test_executor_dispatch.py \
             -q
 
   extras:
