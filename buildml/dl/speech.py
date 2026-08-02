@@ -138,6 +138,131 @@ class SpeechContract:
             "disclosures": list(self.disclosures),
         }
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> SpeechContract:
+        """Rebuild a contract from :meth:`to_dict` (bundle / meta round-trip)."""
+        return cls(
+            audio_column=str(payload["audio_column"]),
+            target_column=str(payload["target_column"]),
+            task=payload.get("task") or "classification",
+            class_labels=tuple(payload.get("class_labels") or ()),
+            sample_rate=int(payload.get("sample_rate") or 16_000),
+            max_samples=int(payload.get("max_samples") or 16_000),
+            source_sample_rate=(
+                None
+                if payload.get("source_sample_rate") is None
+                else int(payload["source_sample_rate"])
+            ),
+            audio_mean=(
+                None if payload.get("audio_mean") is None else float(payload["audio_mean"])
+            ),
+            audio_std=(
+                None if payload.get("audio_std") is None else float(payload["audio_std"])
+            ),
+            encoder_dim=int(payload.get("encoder_dim") or 64),
+            modality=str(payload.get("modality") or "speech_classify"),
+            disclosures=tuple(payload.get("disclosures") or ()),
+        )
+
+
+@dataclass(slots=True)
+class AsrEvalResult:
+    """Word / character error rates for ASR hypotheses vs references."""
+
+    n_utterances: int
+    wer: float
+    cer: float
+    n_ref_words: int
+    n_ref_chars: int
+    per_utterance: tuple[dict[str, Any], ...] = ()
+    disclosures: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+    warnings: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "n_utterances": self.n_utterances,
+            "wer": self.wer,
+            "cer": self.cer,
+            "n_ref_words": self.n_ref_words,
+            "n_ref_chars": self.n_ref_chars,
+            "per_utterance": list(self.per_utterance),
+            "disclosures": list(self.disclosures),
+            "limitations": list(self.limitations),
+            "warnings": list(self.warnings),
+        }
+
+
+def _edit_distance(ref: list[str], hyp: list[str]) -> int:
+    n, m = len(ref), len(hyp)
+    if n == 0:
+        return m
+    if m == 0:
+        return n
+    prev = list(range(m + 1))
+    for i, r in enumerate(ref, start=1):
+        cur = [i]
+        for j, h in enumerate(hyp, start=1):
+            cost = 0 if r == h else 1
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost))
+        prev = cur
+    return prev[m]
+
+
+def evaluate_asr(
+    *,
+    hypotheses: list[str] | tuple[str, ...],
+    references: list[str] | tuple[str, ...],
+    lowercase: bool = True,
+) -> AsrEvalResult:
+    """Compute corpus WER / CER without downloading ASR models."""
+    if len(hypotheses) != len(references):
+        raise ValidationError(
+            f"hypotheses/references length mismatch: {len(hypotheses)} vs {len(references)}"
+        )
+    if not hypotheses:
+        raise ValidationError("evaluate_asr requires at least one utterance")
+    word_edits = 0
+    char_edits = 0
+    n_ref_words = 0
+    n_ref_chars = 0
+    per: list[dict[str, Any]] = []
+    for hyp_raw, ref_raw in zip(hypotheses, references, strict=True):
+        if lowercase:
+            hyp = " ".join(str(hyp_raw or "").strip().lower().split())
+        else:
+            hyp = " ".join(str(hyp_raw).split())
+        if lowercase:
+            ref = " ".join(str(ref_raw or "").strip().lower().split())
+        else:
+            ref = " ".join(str(ref_raw).split())
+        hyp_words, ref_words = hyp.split(), ref.split()
+        hyp_chars, ref_chars = list(hyp.replace(" ", "")), list(ref.replace(" ", ""))
+        w_ed = _edit_distance(ref_words, hyp_words)
+        c_ed = _edit_distance(ref_chars, hyp_chars)
+        word_edits += w_ed
+        char_edits += c_ed
+        n_ref_words += max(len(ref_words), 1)
+        n_ref_chars += max(len(ref_chars), 1)
+        per.append(
+            {
+                "hypothesis": hyp,
+                "reference": ref,
+                "wer": w_ed / max(len(ref_words), 1),
+                "cer": c_ed / max(len(ref_chars), 1),
+            }
+        )
+    return AsrEvalResult(
+        n_utterances=len(hypotheses),
+        wer=float(word_edits / n_ref_words),
+        cer=float(char_edits / n_ref_chars),
+        n_ref_words=n_ref_words,
+        n_ref_chars=n_ref_chars,
+        per_utterance=tuple(per),
+        disclosures=("WER/CER via Levenshtein edit distance.",),
+        limitations=("String metrics only — not a speech quality product.",),
+    )
+
 
 @dataclass(slots=True)
 class SpeechTranscribeResult:

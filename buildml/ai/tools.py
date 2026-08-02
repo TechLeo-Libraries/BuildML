@@ -881,6 +881,95 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             read_only=False,
             catalog_operation="domain_adapt_speech_torch",
         ),
+        ToolSpec(
+            name="attach_backbone_head",
+            description=(
+                "Attach a classification head to the Session pretrained backbone "
+                "(requires prior load_pretrained_backbone). Requires buildml[torch]."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "n_classes": {
+                        "type": "integer",
+                        "description": "Number of classification classes (>= 2).",
+                    },
+                    "freeze_backbone": {
+                        "type": "boolean",
+                        "description": "Optional freeze override; omit to keep loaded state.",
+                    },
+                },
+                "required": ["n_classes"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="attach_backbone_head",
+            read_only=False,
+            catalog_operation="attach_backbone_head",
+        ),
+        ToolSpec(
+            name="evaluate_asr",
+            description=(
+                "Score ASR hypotheses vs references with WER/CER. "
+                "When hypotheses omitted, reuses last transcribe_speech texts."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "hypotheses": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Hypothesis transcripts (optional if Session has ASR).",
+                    },
+                    "references": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Reference transcripts.",
+                    },
+                    "lowercase": {
+                        "type": "boolean",
+                        "description": "Lowercase before scoring (default true).",
+                    },
+                },
+                "required": ["references"],
+            },
+            confirm_policy=ConfirmPolicy.AUTO,
+            session_method="evaluate_asr",
+            read_only=True,
+            catalog_operation="evaluate_asr",
+        ),
+        ToolSpec(
+            name="emit_k8s_serve_deployment",
+            description=(
+                "Emit a Kubernetes Deployment+Service YAML template for managed BuildML serve. "
+                "Not live multi-cluster orchestration."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Output YAML path.",
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Deployment/Service name (default buildml-serve).",
+                    },
+                    "replicas": {
+                        "type": "integer",
+                        "description": "Replica count (default 1).",
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "Container/Service port (default 8080).",
+                    },
+                },
+                "required": ["path"],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="emit_k8s_serve_deployment",
+            read_only=False,
+            catalog_operation="emit_k8s_serve_deployment",
+        ),
         # serve_bundle intentionally omitted: network listener is CLI/Session-primary
         # (see EXPLICITLY_NON_AI_SESSION_METHODS in buildml.explain.sync).
     )

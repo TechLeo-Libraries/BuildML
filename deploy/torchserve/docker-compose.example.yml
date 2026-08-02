@@ -1,0 +1,17 @@
+# Local TorchServe compose example for BuildML packaging layouts.
+# Honesty: operator-run local recipe — not a managed cloud product.
+# Build a .mar first (see pack_torchserve ARCHIVE.txt), then:
+#   docker compose -f docker-compose.example.yml up
+services:
+  torchserve:
+    image: pytorch/torchserve:latest
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - ../model-store:/home/model-server/model-store
+    command: >
+      torchserve --start --foreground
+      --model-store /home/model-server/model-store
+      --models buildml_model.mar

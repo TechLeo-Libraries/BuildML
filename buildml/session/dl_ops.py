@@ -534,6 +534,8 @@ def make_multimodal_torch_loaders(
     shuffle_train: bool = True,
     seed: int = 0,
     task: Literal["classification", "regression", "auto"] = "auto",
+    preprocess: Any | None = None,
+    use_saved_preprocess: bool = False,
 ) -> Any:
     """Build fused multimodal DataLoaders (tabular/text/image/audio mixes).
 
@@ -542,10 +544,27 @@ def make_multimodal_torch_loaders(
     Batches follow ``(numeric?, tokens?, image?, audio?, y)`` for present
     modalities. Audio fusion is a small 1D-CNN branch — not a speech foundation
     model.
+
+    Pass ``preprocess=`` (contract / dict) to freeze restore stats, or
+    ``use_saved_preprocess=True`` to reuse ``dl_train_result.multimodal_preprocess``.
     """
     from buildml.dl.multimodal import MultimodalLoaderConfig, make_multimodal_loaders
 
     session.assert_can_fit("train")
+    resolved_preprocess = preprocess
+    if use_saved_preprocess:
+        if resolved_preprocess is not None:
+            raise ValidationError(
+                "Pass preprocess= or use_saved_preprocess=True, not both."
+            )
+        train = getattr(session, "_dl_train_result", None)
+        saved = None if train is None else getattr(train, "multimodal_preprocess", None)
+        if saved is None:
+            raise ValidationError(
+                "use_saved_preprocess=True requires a prior fit_torch / "
+                "load_torch_bundle with multimodal_preprocess meta."
+            )
+        resolved_preprocess = saved
     bundle = make_multimodal_loaders(
         session.dataset,
         session._split_plan,
@@ -570,6 +589,7 @@ def make_multimodal_torch_loaders(
             audio_source_sample_rate=audio_source_sample_rate,
         ),
         task=task,
+        preprocess=resolved_preprocess,
     )
     session._torch_loaders = bundle
     mm = getattr(bundle, "multimodal_contract", None)
@@ -591,6 +611,8 @@ def make_multimodal_torch_loaders(
             "modality": getattr(bundle, "modality", None),
             "seed": seed,
             "task": task,
+            "use_saved_preprocess": use_saved_preprocess,
+            "preprocess": resolved_preprocess is not None,
         },
         result_summary=bundle.report.to_dict(),
         warnings=tuple(bundle.report.warnings),
@@ -1205,15 +1227,19 @@ def serve_bundle(
     blocking: bool = False,
     api_keys: str | list[str] | tuple[str, ...] | None = None,
     allow_insecure_public_bind: bool = False,
+    ssl_certfile: str | Path | None = None,
+    ssl_keyfile: str | Path | None = None,
 ) -> Any:
     """Launch BuildML managed serving for a pipeline or TorchScript artifact.
 
     Requires ``buildml[serve]``. Defaults to localhost bind. Optional
     ``api_keys`` enables Bearer / ``X-API-Key`` middleware (still not a managed
     IAM / cloud auth product). Non-loopback binds without ``api_keys`` raise
-    unless ``allow_insecure_public_bind=True``. Prefer TLS at a reverse proxy
-    for non-local exposure. When ``path`` is omitted and ``kind="pipeline"``,
-    uses the last saved pipeline path recorded on the Session if available.
+    unless ``allow_insecure_public_bind=True``. Optional ``ssl_certfile`` /
+    ``ssl_keyfile`` enable local uvicorn HTTPS (library-owned; not managed
+    certs). Prefer TLS at a reverse proxy for non-local exposure. When ``path``
+    is omitted and ``kind="pipeline"``, uses the last saved pipeline path
+    recorded on the Session if available.
 
     Not registered as an AI tool — CLI / Session-primary by design.
     """
@@ -1236,9 +1262,12 @@ def serve_bundle(
         blocking=blocking,
         api_keys=api_keys,
         allow_insecure_public_bind=allow_insecure_public_bind,
+        ssl_certfile=ssl_certfile,
+        ssl_keyfile=ssl_keyfile,
     )
     session._serve_handle = handle
     auth_on = api_keys is not None
+    tls_on = ssl_certfile is not None or ssl_keyfile is not None
     session._record(
         "serve_bundle",
         {
@@ -1247,8 +1276,9 @@ def serve_bundle(
             "host": host,
             "port": port,
             "auth": auth_on,
+            "tls": tls_on,
         },
-        result_summary={"url": handle.url, "kind": kind, "auth": auth_on},
+        result_summary={"url": handle.url, "kind": kind, "auth": auth_on, "tls": tls_on},
         warnings=(
             (
                 "API-key/Bearer middleware enabled; still not managed IAM. "
@@ -1299,6 +1329,78 @@ def load_pretrained_backbone(
         warnings=tuple(backbone.warnings),
     )
     return backbone
+
+
+def attach_backbone_head(
+    session,
+    n_classes: int,
+    *,
+    freeze_backbone: bool | None = None,
+) -> Any:
+    """Attach a classification head to the Session pretrained backbone."""
+    from buildml.dl.zoo import attach_backbone_head as _attach
+
+    backbone = getattr(session, "_dl_backbone", None)
+    if backbone is None:
+        raise ValidationError(
+            "attach_backbone_head requires a prior load_pretrained_backbone(...)."
+        )
+    if int(n_classes) < 2:
+        raise ValidationError("n_classes must be >= 2")
+    head = _attach(
+        backbone,
+        n_classes=int(n_classes),
+        freeze_backbone=freeze_backbone,
+    )
+    session._dl_backbone_head = head
+    session._record(
+        "attach_backbone_head",
+        {
+            "n_classes": int(n_classes),
+            "freeze_backbone": freeze_backbone,
+            "modality": getattr(backbone, "modality", None),
+            "architecture": getattr(backbone, "architecture", None),
+        },
+        result_summary=head.to_dict() if hasattr(head, "to_dict") else {"n_classes": int(n_classes)},
+        warnings=tuple(getattr(head, "warnings", ()) or ()),
+    )
+    return head
+
+
+def evaluate_asr(
+    session,
+    *,
+    hypotheses: list[str] | None = None,
+    references: list[str],
+    lowercase: bool = True,
+) -> Any:
+    """Score ASR hypotheses vs references (WER/CER); reuse last transcription texts."""
+    from buildml.dl.speech import evaluate_asr as _eval
+
+    hyps = hypotheses
+    if hyps is None:
+        speech = getattr(session, "_dl_speech_result", None)
+        texts = None if speech is None else getattr(speech, "texts", None)
+        if not texts:
+            raise ValidationError(
+                "evaluate_asr requires hypotheses= or a prior "
+                "transcribe_speech result with texts."
+            )
+        hyps = list(texts)
+    result = _eval(hypotheses=hyps, references=list(references), lowercase=lowercase)
+    session._dl_asr_eval = result
+    session._record(
+        "evaluate_asr",
+        {
+            "n_hypotheses": len(hyps),
+            "n_references": len(references),
+            "lowercase": lowercase,
+            "from_speech_result": hypotheses is None,
+        },
+        result_summary=result.to_dict() if hasattr(result, "to_dict") else dict(result),
+        warnings=tuple(getattr(result, "warnings", ()) or ()),
+    )
+    return result
 
 
 def pack_torchserve(
@@ -1381,6 +1483,12 @@ def emit_k8s_ddp_job(
     nnodes: int = 2,
     nproc_per_node: int = 2,
     script_path: str = "/workspace/train.py",
+    cpu_request: str = "2",
+    memory_request: str = "4Gi",
+    gpu_limit: int = 1,
+    gpu_request: int | None = None,
+    service_account: str | None = None,
+    include_configmap: bool = True,
 ) -> Any:
     """Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only)."""
     from buildml.dl.k8s import write_torchrun_ddp_job
@@ -1393,6 +1501,12 @@ def emit_k8s_ddp_job(
         nnodes=nnodes,
         nproc_per_node=nproc_per_node,
         script_path=script_path,
+        cpu_request=cpu_request,
+        memory_request=memory_request,
+        gpu_limit=gpu_limit,
+        gpu_request=gpu_request,
+        service_account=service_account,
+        include_configmap=include_configmap,
     )
     session._dl_k8s_result = result
     session._record(
@@ -1403,6 +1517,61 @@ def emit_k8s_ddp_job(
             "namespace": namespace,
             "nnodes": nnodes,
             "nproc_per_node": nproc_per_node,
+            "cpu_request": cpu_request,
+            "memory_request": memory_request,
+            "gpu_limit": gpu_limit,
+            "gpu_request": gpu_request,
+            "service_account": service_account,
+            "include_configmap": include_configmap,
+        },
+        result_summary=result.to_dict(),
+        warnings=tuple(result.limitations),
+    )
+    return result
+
+
+def emit_k8s_serve_deployment(
+    session,
+    path: str | Path,
+    *,
+    name: str = "buildml-serve",
+    namespace: str = "default",
+    image: str = "python:3.12-slim",
+    replicas: int = 1,
+    port: int = 8080,
+    cpu_request: str = "1",
+    memory_request: str = "2Gi",
+    gpu_limit: int | None = None,
+    service_account: str | None = None,
+) -> Any:
+    """Emit a Kubernetes Deployment+Service YAML for managed serve (template only)."""
+    from buildml.dl.k8s import write_serve_deployment
+
+    result = write_serve_deployment(
+        path,
+        name=name,
+        namespace=namespace,
+        image=image,
+        replicas=replicas,
+        port=port,
+        cpu_request=cpu_request,
+        memory_request=memory_request,
+        gpu_limit=gpu_limit,
+        service_account=service_account,
+    )
+    session._dl_k8s_result = result
+    session._record(
+        "emit_k8s_serve_deployment",
+        {
+            "path": str(path),
+            "name": name,
+            "namespace": namespace,
+            "replicas": replicas,
+            "port": port,
+            "cpu_request": cpu_request,
+            "memory_request": memory_request,
+            "gpu_limit": gpu_limit,
+            "service_account": service_account,
         },
         result_summary=result.to_dict(),
         warnings=tuple(result.limitations),

@@ -1,5 +1,5 @@
 {
-  "n_operations": 111,
+  "n_operations": 114,
   "operations": {
     "ai_advisor": {
       "doc_summary": "Get advisory Q&A guidance about the current workflow (read-only).",
@@ -408,6 +408,29 @@
         }
       ],
       "qualname": "Session.assert_can_fit"
+    },
+    "attach_backbone_head": {
+      "doc_summary": "Attach a classification head to the last :meth:`load_pretrained_backbone` result.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "attach_backbone_head",
+      "parameters": [
+        {
+          "annotation": "int",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "n_classes",
+          "required": true
+        },
+        {
+          "annotation": "bool | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "freeze_backbone",
+          "required": false
+        }
+      ],
+      "qualname": "Session.attach_backbone_head"
     },
     "bin": {
       "doc_summary": "Discretize numeric columns with train-fitted bin edges.",
@@ -1041,9 +1064,130 @@
           "kind": "KEYWORD_ONLY",
           "name": "script_path",
           "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'2'",
+          "kind": "KEYWORD_ONLY",
+          "name": "cpu_request",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'4Gi'",
+          "kind": "KEYWORD_ONLY",
+          "name": "memory_request",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "gpu_limit",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "gpu_request",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "service_account",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_configmap",
+          "required": false
         }
       ],
       "qualname": "Session.emit_k8s_ddp_job"
+    },
+    "emit_k8s_serve_deployment": {
+      "doc_summary": "Emit a Kubernetes Deployment+Service YAML for managed serve (template only).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "emit_k8s_serve_deployment",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        },
+        {
+          "annotation": "str",
+          "default": "'buildml-serve'",
+          "kind": "KEYWORD_ONLY",
+          "name": "name",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'default'",
+          "kind": "KEYWORD_ONLY",
+          "name": "namespace",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'python:3.12-slim'",
+          "kind": "KEYWORD_ONLY",
+          "name": "image",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "replicas",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8080",
+          "kind": "KEYWORD_ONLY",
+          "name": "port",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'1'",
+          "kind": "KEYWORD_ONLY",
+          "name": "cpu_request",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'2Gi'",
+          "kind": "KEYWORD_ONLY",
+          "name": "memory_request",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "gpu_limit",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "service_account",
+          "required": false
+        }
+      ],
+      "qualname": "Session.emit_k8s_serve_deployment"
     },
     "encode": {
       "doc_summary": "Fit categorical encoding on train and transform the full dataset.",
@@ -1241,6 +1385,36 @@
         }
       ],
       "qualname": "Session.evaluate"
+    },
+    "evaluate_asr": {
+      "doc_summary": "Score ASR hypotheses vs references (WER/CER).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_asr",
+      "parameters": [
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "hypotheses",
+          "required": false
+        },
+        {
+          "annotation": "list[str]",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "references",
+          "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "lowercase",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_asr"
     },
     "evaluate_torch": {
       "doc_summary": "Evaluate the last Torch trainer on a named partition.",
@@ -2613,6 +2787,20 @@
           "default": "'auto'",
           "kind": "KEYWORD_ONLY",
           "name": "task",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "preprocess",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "use_saved_preprocess",
           "required": false
         }
       ],
@@ -4422,6 +4610,20 @@
           "default": "False",
           "kind": "KEYWORD_ONLY",
           "name": "allow_insecure_public_bind",
+          "required": false
+        },
+        {
+          "annotation": "str | Path | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "ssl_certfile",
+          "required": false
+        },
+        {
+          "annotation": "str | Path | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "ssl_keyfile",
           "required": false
         }
       ],

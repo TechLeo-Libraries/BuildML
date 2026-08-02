@@ -28,6 +28,7 @@ class ServeHandle:
     path: str
     _server: Any
     _thread: threading.Thread
+    tls: bool = False
 
     def stop(self) -> None:
         """Stop the background uvicorn server and clear serving state."""
@@ -108,8 +109,10 @@ def serve_bundle(
     map_location: str = "cpu",
     api_keys: str | list[str] | tuple[str, ...] | None = None,
     allow_insecure_public_bind: bool = False,
+    ssl_certfile: str | Path | None = None,
+    ssl_keyfile: str | Path | None = None,
 ) -> ServeHandle:
-    """Serve a classical pipeline or TorchScript bundle over HTTP.
+    """Serve a classical pipeline or TorchScript bundle over HTTP(S).
 
     Parameters
     ----------
@@ -126,6 +129,9 @@ def serve_bundle(
     allow_insecure_public_bind:
         Loud opt-in to bind ``0.0.0.0`` / other non-loopback hosts without
         ``api_keys``. Prefer API keys + reverse-proxy TLS instead.
+    ssl_certfile, ssl_keyfile:
+        Optional local PEM paths for uvicorn HTTPS. Both required together.
+        Library-owned local TLS only — not managed certificate infrastructure.
     blocking:
         If True, run uvicorn on the current thread.
 
@@ -140,6 +146,16 @@ def serve_bundle(
         api_keys=api_keys,
         allow_insecure_public_bind=allow_insecure_public_bind,
     )
+    cert = None if ssl_certfile is None else Path(ssl_certfile)
+    key = None if ssl_keyfile is None else Path(ssl_keyfile)
+    if (cert is None) ^ (key is None):
+        raise ValidationError(
+            "ssl_certfile and ssl_keyfile must be provided together for local HTTPS."
+        )
+    if cert is not None and not cert.is_file():
+        raise ValidationError(f"ssl_certfile not found: {cert}")
+    if key is not None and not key.is_file():
+        raise ValidationError(f"ssl_keyfile not found: {key}")
 
     try:
         import uvicorn
@@ -155,17 +171,27 @@ def serve_bundle(
         map_location=map_location,
         api_keys=api_keys,
     )
-    config = uvicorn.Config(app, host=host, port=port, log_level="info")
+    tls = cert is not None and key is not None
+    config = uvicorn.Config(
+        app,
+        host=host,
+        port=port,
+        log_level="info",
+        ssl_certfile=str(cert) if cert is not None else None,
+        ssl_keyfile=str(key) if key is not None else None,
+    )
     server = uvicorn.Server(config)
     thread = threading.Thread(target=server.run, name="buildml-serve", daemon=True)
+    scheme = "https" if tls else "http"
     handle = ServeHandle(
         host=host,
         port=port,
-        url=f"http://{host}:{port}",
+        url=f"{scheme}://{host}:{port}",
         kind=str(kind),
         path=str(path),
         _server=server,
         _thread=thread,
+        tls=tls,
     )
     if blocking:
         try:

@@ -161,6 +161,7 @@ jobs:
             tests/unit/test_pass_o_speech_ddp_serve.py \
             tests/unit/test_pass_q_label_encoding.py \
             tests/unit/test_pass_r_pretrained_serve_k8s.py \
+            tests/unit/test_pass_v_capability_depth.py \
             tests/integration/test_dl_torch_smoke.py \
             tests/integration/test_dl_alpha_smoke.py \
             -q
@@ -275,19 +276,23 @@ jobs:
             tests: >-
               tests/unit/test_pass_o_speech_ddp_serve.py
               tests/unit/test_pass_r_pretrained_serve_k8s.py
+              tests/unit/test_pass_v_capability_depth.py
           - python-version: "3.12"
             extra: serve
             tests: >-
               tests/unit/test_pass_o_speech_ddp_serve.py
               tests/unit/test_pass_r_pretrained_serve_k8s.py
+              tests/unit/test_pass_v_capability_depth.py
           - python-version: "3.11"
             extra: pretrained
             tests: >-
               tests/unit/test_pass_r_pretrained_serve_k8s.py
+              tests/unit/test_pass_v_capability_depth.py
           - python-version: "3.12"
             extra: pretrained
             tests: >-
               tests/unit/test_pass_r_pretrained_serve_k8s.py
+              tests/unit/test_pass_v_capability_depth.py
 
     steps:
       - uses: actions/checkout@v4

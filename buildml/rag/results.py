@@ -262,6 +262,38 @@ class Citation:
 
 
 @dataclass(slots=True)
+class FaithfulnessReport:
+    """Cheap grounding / faithfulness heuristics for a generated answer."""
+
+    citation_marker_coverage: float
+    cited_source_ids: tuple[int, ...]
+    missing_source_ids: tuple[int, ...]
+    answer_context_token_overlap: float
+    grounded: bool
+    disclosures: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+
+    @property
+    def score(self) -> float:
+        """Scalar in [0, 1] combining citation coverage and token overlap."""
+        return float(
+            0.5 * self.citation_marker_coverage + 0.5 * self.answer_context_token_overlap
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "score": self.score,
+            "citation_marker_coverage": self.citation_marker_coverage,
+            "cited_source_ids": list(self.cited_source_ids),
+            "missing_source_ids": list(self.missing_source_ids),
+            "answer_context_token_overlap": self.answer_context_token_overlap,
+            "grounded": self.grounded,
+            "disclosures": list(self.disclosures),
+            "limitations": list(self.limitations),
+        }
+
+
+@dataclass(slots=True)
 class GenerateResult:
     """Grounded generation answer with citations and retrieve provenance."""
 
@@ -274,6 +306,7 @@ class GenerateResult:
     prompt_context: str = ""
     disclosures: tuple[str, ...] = ()
     config: dict[str, Any] = field(default_factory=dict)
+    faithfulness: FaithfulnessReport | None = None
 
     @property
     def n_citations(self) -> int:
@@ -293,4 +326,5 @@ class GenerateResult:
             "prompt_context_chars": len(self.prompt_context),
             "disclosures": list(self.disclosures),
             "config": dict(self.config),
+            "faithfulness": None if self.faithfulness is None else self.faithfulness.to_dict(),
         }

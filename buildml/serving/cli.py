@@ -65,6 +65,16 @@ def build_parser() -> argparse.ArgumentParser:
             "without --api-key. Prefer --api-key + reverse-proxy TLS instead."
         ),
     )
+    parser.add_argument(
+        "--ssl-certfile",
+        default=None,
+        help="Optional PEM certificate for local HTTPS (requires --ssl-keyfile).",
+    )
+    parser.add_argument(
+        "--ssl-keyfile",
+        default=None,
+        help="Optional PEM private key for local HTTPS (pairs with --ssl-certfile).",
+    )
     return parser
 
 
@@ -74,9 +84,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     from buildml.serving.launch import serve_bundle
 
     auth_note = "api-key auth on" if args.api_keys else "auth off (localhost-oriented)"
+    tls = bool(args.ssl_certfile and args.ssl_keyfile)
+    scheme = "https" if tls else "http"
     print(
         f"Starting BuildML serve kind={args.kind} bundle={args.bundle} "
-        f"at http://{args.host}:{args.port} ({auth_note})",
+        f"at {scheme}://{args.host}:{args.port} ({auth_note})",
         file=sys.stderr,
     )
     serve_bundle(
@@ -88,6 +100,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         blocking=True,
         api_keys=args.api_keys,
         allow_insecure_public_bind=args.allow_insecure_public_bind,
+        ssl_certfile=args.ssl_certfile,
+        ssl_keyfile=args.ssl_keyfile,
     )
     return 0
 

@@ -1,0 +1,77 @@
+# Example Kubernetes Deployment + Service for BuildML managed serve.
+# Prefer Session.emit_k8s_serve_deployment / buildml.dl.k8s.write_serve_deployment
+# to render parameterized copies.
+#
+# Honesty:
+# - Template only — not live multi-cluster orchestration
+# - Not a Helm chart / control-plane product
+# - Not managed cloud IAM; wire TLS, volumes, and auth yourself
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buildml-serve
+  namespace: default
+  labels:
+    app.kubernetes.io/name: buildml-serve
+    app.kubernetes.io/part-of: buildml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: buildml-serve
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: buildml-serve
+    spec:
+      containers:
+        - name: serve
+          image: python:3.12-slim
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+          env:
+            - name: BUILDML_BUNDLE
+              value: /models/pipeline_bundle
+            - name: BUILDML_SERVE_KIND
+              value: pipeline
+          command:
+            - bash
+            - -lc
+            - |
+              set -euo pipefail
+              python -m buildml.serving \
+                --bundle "${BUILDML_BUNDLE}" \
+                --kind "${BUILDML_SERVE_KIND}" \
+                --host 0.0.0.0 \
+                --port 8080 \
+                --api-key "${BUILDML_API_KEY:-}" \
+                --allow-insecure-public-bind
+          volumeMounts:
+            - name: model-bundle
+              mountPath: /models
+              readOnly: true
+      volumes:
+        - name: model-bundle
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: buildml-serve
+  namespace: default
+  labels:
+    app.kubernetes.io/name: buildml-serve
+    app.kubernetes.io/part-of: buildml
+spec:
+  selector:
+    app.kubernetes.io/name: buildml-serve
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

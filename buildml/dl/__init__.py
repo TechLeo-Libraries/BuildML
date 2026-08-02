@@ -51,7 +51,12 @@ __all__ = [
     "export_train_result",
     "fit_audio_waveform_stats",
     "fit_image_channel_stats",
+    "AsrEvalResult",
+    "attach_backbone_head",
+    "BackboneHeadResult",
+    "evaluate_asr",
     "freeze_module",
+    "list_pretrained_backbones",
     "load_audio_backbone",
     "load_pretrained_backbone",
     "load_speech_backbone",
@@ -67,6 +72,7 @@ __all__ = [
     "parse_torchrun_env",
     "prepare_tensorrt_export_plan",
     "refuse_foundation_model_pretrain",
+    "render_serve_deployment",
     "render_torchrun_ddp_job",
     "require_pillow",
     "require_soundfile",
@@ -84,6 +90,7 @@ __all__ = [
     "train_supervised_module_ddp",
     "transcribe_audio_values",
     "transcribe_from_dataset",
+    "write_serve_deployment",
     "write_torchrun_ddp_job",
     "PackagingResult",
     "PretrainedBackbone",
@@ -210,11 +217,13 @@ def __getattr__(name: str) -> Any:
 
         return getattr(ddp_mod, name)
     if name in {
+        "AsrEvalResult",
         "SpeechContract",
         "SpeechLoaderConfig",
         "SpeechTranscribeResult",
         "build_speech_classifier",
         "build_tiny_speech_encoder",
+        "evaluate_asr",
         "make_speech_loaders",
         "refuse_foundation_model_pretrain",
         "require_speech_stack",
@@ -226,8 +235,11 @@ def __getattr__(name: str) -> Any:
 
         return getattr(speech_mod, name)
     if name in {
+        "BackboneHeadResult",
         "PretrainedBackbone",
+        "attach_backbone_head",
         "freeze_module",
+        "list_pretrained_backbones",
         "load_audio_backbone",
         "load_pretrained_backbone",
         "load_speech_backbone",
@@ -238,6 +250,7 @@ def __getattr__(name: str) -> Any:
         return getattr(zoo_mod, name)
     if name in {
         "PackagingResult",
+        "TORCHSERVE_COMPOSE_EXAMPLE",
         "pack_torchserve_model",
         "prepare_tensorrt_export_plan",
     }:
@@ -246,7 +259,9 @@ def __getattr__(name: str) -> Any:
         return getattr(packaging_mod, name)
     if name in {
         "K8sJobRenderResult",
+        "render_serve_deployment",
         "render_torchrun_ddp_job",
+        "write_serve_deployment",
         "write_torchrun_ddp_job",
     }:
         from buildml.dl import k8s as k8s_mod
