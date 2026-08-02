@@ -15,6 +15,15 @@ For vocabulary and judgment calls (leakage, partitions, metrics), read
 [concepts](../docs/concepts.rst) and the [glossary](glossary.md). For the
 decision framework at each stage, see [workflow-guide](../docs/workflow-guide.rst).
 
+**Go deeper:** [Classical end-to-end](classical-end-to-end.md) ·
+[Leakage & CV recipes](leakage-cv-recipes.md) ·
+[Preprocess depth](preprocess-depth.md) ·
+[Diagnostics & search](classical-diagnostics-search.md) ·
+[Engines](engines-polars-duckdb.md) ·
+[EDA / Teaching Studio](eda-teaching-studio.md) ·
+[Artifacts](artifacts-checkpoints-bundles.md). Full map:
+[guides README](README.md).
+
 ---
 
 ## 1. First loop: loan approval classification

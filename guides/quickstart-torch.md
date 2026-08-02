@@ -8,6 +8,12 @@ Optional Torch path on the same `Session` as classical ML: tabular loaders,
 built-in MLP, text/sequence loaders, fold-local CV, history, and explain.
 Install the Torch extra; core `import buildml` never requires it.
 
+**Go deeper:** [Torch deep](torch-deep.md) ·
+[Speech ASR + classify](speech-asr-finetune.md) ·
+[Pretrained backbones](pretrained-backbones.md) ·
+[Serve & deploy](serve-deploy.md) ·
+[Artifacts](artifacts-checkpoints-bundles.md).
+
 ```bash
 # After a GitHub / editable 2.x install:
 pip install "buildml[torch]"

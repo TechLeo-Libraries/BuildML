@@ -7,7 +7,9 @@ partition whose purpose you declare. Skipping a step or calling ``fit`` before
 ``split`` raises a clear error rather than leaking statistics across holdouts.
 
 This page shows several realistic patterns. For a chapter-style walkthrough,
-see :doc:`quickstart-classical`.
+see :doc:`quickstart-classical`. For the encyclopedic classical path (many use
+cases, failure modes, and persistence), see :doc:`classical-end-to-end`. The
+full guide map lives in :doc:`guide-index` / :doc:`guides`.
 
 Loan approval (classification)
 ------------------------------
@@ -322,21 +324,39 @@ Replay restored plans with ``session.apply_preprocess_plans()`` or score new
 rows with ``predict_from_pipeline``. Resample plans are lineage-only at score
 time.
 
+Leakage-safe CV and search
+--------------------------
+
+Prefer ``PreprocessRecipe`` inside ``cv_score`` / ``grid_search`` /
+``randomized_search`` / ``optuna_search`` / ``nested_cv_score`` on data that has
+**not** already been Session-globally prepared. Session-global prep then CV is
+hard-refused by default — see :doc:`leakage-cv-recipes`.
+
 Optional paths on the same Session
 ----------------------------------
 
 Torch, RAG, and AI operator features attach to the same Session without
 replacing classical APIs:
 
-* :doc:`quickstart-torch` — ``make_torch_loaders``, ``make_text_torch_loaders``,
-  ``fit_torch``, ``cross_validate_torch``, ``evaluate_torch``
-* :doc:`quickstart-rag` — ``rag_ingest_corpus``, ``rag_retrieve``,
-  ``rag_generate``, ``rag_evaluate``
-* :doc:`quickstart-ai` — ``ai_advisor``, ``ai_plan``, ``ai_execute`` /
-  ``ai_run_plan`` with confirmed writes across classical, RAG, and Torch tools
+* :doc:`quickstart-torch` / :doc:`torch-deep` — tabular, text, multimodal,
+  CV/search/nested, AMP/DDP, export
+* :doc:`speech-asr-finetune` / :doc:`pretrained-backbones` — ASR + classify
+  finetune-lite; curated backbone hooks
+* :doc:`serve-deploy` — local FastAPI serve, TorchServe/TRT/K8s recipes
+* :doc:`quickstart-rag` / :doc:`rag-deep` — retrieve, grounded generate, eval,
+  bundle
+* :doc:`quickstart-ai` / :doc:`ai-operator-safety` /
+  :doc:`ai-tools-operator-patterns` — advisor, confirmed execute, autonomy caps,
+  tool allowlist patterns
+* :doc:`artifacts-checkpoints-bundles` — checkpoint vs pipeline vs Torch/RAG/AI
+  artifacts
+* :doc:`eda-teaching-studio` / :doc:`engines-polars-duckdb` /
+  :doc:`classical-diagnostics-search` / :doc:`preprocess-depth` — explore, prep
+  engines, diagnostics, and preprocess depth
 
 Teaching copy for every public Session method is kept in sync by CI
 (``scripts/sync_teaching_surface.py``). Prefer ``session.explain(...)`` over
 hand-maintained method lists when exploring the surface.
 
-See :doc:`guides` for the full Markdown tutorials.
+See :doc:`guides` for the full Markdown tutorials and :doc:`guide-index` for
+the learning path.

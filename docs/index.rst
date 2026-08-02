@@ -21,18 +21,20 @@ exists today. Each step links to pages that go deeper than a single toy example.
 #. **Run one honest classical loop** — :doc:`usage` (loan-style classification)
 #. **Learn the vocabulary** — :doc:`concepts`, :doc:`glossary`
 #. **Follow the decision framework** — :doc:`workflow-guide`
-#. **Work through the classical tutorial** — :doc:`quickstart-classical`
-#. **Open the teaching machinery** — :doc:`usage` (explain / workflow /
-   walkthrough / dry_run / dashboard sections), :doc:`concepts` (teaching
-   surfaces)
-#. **Optional extras on the same Session** — :doc:`quickstart-torch`,
-   :doc:`quickstart-rag`, :doc:`quickstart-ai`
-#. **Capability inventory and boundaries** — :doc:`features`
+#. **Work through the classical tutorial** — :doc:`quickstart-classical`,
+   then :doc:`classical-end-to-end`
+#. **Leakage-safe selection** — :doc:`leakage-cv-recipes`,
+   :doc:`classical-diagnostics-search`
+#. **Open the teaching machinery** — :doc:`eda-teaching-studio`, :doc:`usage`
+   (explain / workflow / walkthrough / dry_run / dashboard sections)
+#. **Optional extras on the same Session** — :doc:`torch-deep`,
+   :doc:`rag-deep`, :doc:`ai-operator-safety` (quickstarts remain short on-ramps)
+#. **Capability inventory and guide map** — :doc:`features`, :doc:`guide-index`
 #. **1.x migration** — :doc:`legacy`
 
-The Markdown files under ``guides/`` are the canonical source for quickstarts
-and the glossary. Sphinx includes them via MyST so Read the Docs and GitHub
-stay aligned.
+The Markdown files under ``guides/`` are the canonical source for quickstarts,
+deep guides, and the glossary. Sphinx includes them via MyST so Read the Docs
+and GitHub stay aligned.
 
 .. toctree::
    :maxdepth: 2

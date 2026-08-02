@@ -8,6 +8,17 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Added
+
+- **Pass W guides depth:** Exhaustive user guide system under ``guides/`` with
+  Session-domain → guide map, learning path, and deep tutorials for classical
+  E2E, leakage/fold-local recipes/weights/hard-refuse CV, preprocess depth,
+  engines, EDA/Teaching Studio, diagnostics/search, artifacts, Torch
+  (tabular/text/multimodal/CV/AMP/DDP/export), speech, pretrained backbones,
+  RAG, AI safety + tool patterns, and serve/deploy recipes. Sphinx
+  ``docs/guides.rst`` / ``usage.rst`` / ``features.rst`` / ``index.rst`` point
+  at the expanded set; optional ``examples/`` scripts mirror key snippets.
+
 ### Fixed
 
 - **Pass U process residuals:** Read the Docs install path now uses

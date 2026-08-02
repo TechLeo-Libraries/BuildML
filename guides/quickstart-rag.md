@@ -9,6 +9,10 @@ explain catalog, and distinct artifact kinds. The default hashing embedder uses
 core numpy/sklearn. Install the RAG extra for optional sentence-transformer /
 cross-encoder backends.
 
+**Go deeper:** [RAG deep](rag-deep.md) ·
+[Artifacts](artifacts-checkpoints-bundles.md) ·
+[AI tools](ai-tools-operator-patterns.md) (RAG on the allowlist).
+
 ```bash
 # After a GitHub / editable 2.x install:
 pip install "buildml[rag]"
