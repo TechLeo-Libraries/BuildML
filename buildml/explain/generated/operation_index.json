@@ -4416,6 +4416,13 @@
           "kind": "KEYWORD_ONLY",
           "name": "api_keys",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_insecure_public_bind",
+          "required": false
         }
       ],
       "qualname": "Session.serve_bundle"

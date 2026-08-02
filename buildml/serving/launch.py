@@ -50,6 +50,40 @@ def _validate_bind_target(host: str, port: int) -> None:
         raise ValidationError("port must be an integer in 1..65535")
 
 
+def _is_loopback_host(host: str) -> bool:
+    normalized = str(host).strip().lower()
+    return normalized in {"127.0.0.1", "localhost", "::1"}
+
+
+def _has_api_keys(api_keys: str | list[str] | tuple[str, ...] | None) -> bool:
+    if api_keys is None:
+        return False
+    if isinstance(api_keys, str):
+        return bool(api_keys.strip())
+    return any(str(key).strip() for key in api_keys)
+
+
+def _ensure_bind_security(
+    host: str,
+    *,
+    api_keys: str | list[str] | tuple[str, ...] | None,
+    allow_insecure_public_bind: bool,
+) -> None:
+    """Refuse non-loopback binds without API keys unless explicitly overridden."""
+    if _is_loopback_host(host):
+        return
+    if _has_api_keys(api_keys):
+        return
+    if allow_insecure_public_bind:
+        return
+    raise ValidationError(
+        f"Refusing to bind managed serving to non-loopback host {host!r} without "
+        "api_keys. Pass api_keys= (or CLI --api-key) for public/non-localhost binds, "
+        "or set allow_insecure_public_bind=True / --allow-insecure-public-bind to "
+        "override deliberately. Localhost defaults remain open-with-honesty."
+    )
+
+
 def _ensure_port_available(host: str, port: int) -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -73,6 +107,7 @@ def serve_bundle(
     blocking: bool = False,
     map_location: str = "cpu",
     api_keys: str | list[str] | tuple[str, ...] | None = None,
+    allow_insecure_public_bind: bool = False,
 ) -> ServeHandle:
     """Serve a classical pipeline or TorchScript bundle over HTTP.
 
@@ -86,7 +121,11 @@ def serve_bundle(
         Bind address. **Defaults to localhost**.
     api_keys:
         Optional API key(s) enabling Bearer / ``X-API-Key`` middleware.
-        Still not a managed IAM / cloud auth product.
+        Still not a managed IAM / cloud auth product. **Required** for
+        non-loopback binds unless ``allow_insecure_public_bind=True``.
+    allow_insecure_public_bind:
+        Loud opt-in to bind ``0.0.0.0`` / other non-loopback hosts without
+        ``api_keys``. Prefer API keys + reverse-proxy TLS instead.
     blocking:
         If True, run uvicorn on the current thread.
 
@@ -101,9 +140,11 @@ def serve_bundle(
         raise MissingExtraError("serve", "Managed model serving") from exc
 
     _validate_bind_target(host, port)
-    if host not in {"127.0.0.1", "localhost", "::1"} and host != "0.0.0.0":
-        # Allow other binds; optional api_keys middleware is still not IAM-as-a-service.
-        pass
+    _ensure_bind_security(
+        host,
+        api_keys=api_keys,
+        allow_insecure_public_bind=allow_insecure_public_bind,
+    )
     _ensure_port_available(host, port)
 
     app = create_serving_app(

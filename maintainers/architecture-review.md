@@ -1,8 +1,8 @@
 ﻿# BuildML architecture review (current)
 
 **Status:** Supersedes the 1 Aug 2026 audit of legacy 1.0.9 / `SupervisedLearning`.  
-**Package line:** `2.3.0a1` (AI operator alpha on classical `2.0`, Torch `2.1`, RAG `2.2` bases).  
-**Updated:** Pass F adversarial re-audit (Aug 2026) after Phases A–D / Pass E.
+**Package line:** `2.4.0a1` (post-depth / process closure on AI `2.3`, RAG `2.2`, Torch `2.1`, classical `2.0` bases).  
+**Updated:** Pass T release/process closure (Aug 2026) after depth Passes L–R.
 
 > Historical 1.x god-object findings remain useful only as the reason the rewrite happened.
 > Do not treat the tables below as a description of HEAD.
@@ -15,7 +15,7 @@
 | Architecture | **Thin Session facade** → `buildml.session.*_ops` + domain packages |
 | Classical spine | Ingest → roles → split → preprocess / fold recipes → fit → evaluate → CV/search |
 | Optional domains | `buildml.dl` (Torch), `buildml.rag`, `buildml.ai` (operator) |
-| Packaging | `pyproject.toml` + extras (`engines`, `torch`, `rag`, `ai`, `dashboard`, …) |
+| Packaging | `pyproject.toml` + extras (`engines`, `torch`, `speech`, `vision`, `pretrained`, `serve`, `rag`, `ai`, `dashboard`, …); install 2.x from GitHub until PyPI carries it |
 | Tests / CI | pytest matrix + ruff + teaching-surface sync + scoped mypy; alpha gates under `maintainers/*-alpha-gate.md` |
 
 **Product in one sentence:** BuildML is a hybrid build session for tabular (and attached domain) ML workflows: method-simple Session API, leakage-safe fit scope, honest scale modes, and progressive depth via extras.
@@ -58,6 +58,8 @@
 
 - Pass G/J/L ship nested Torch HPO and tabular/text/image/audio multimodal
   fusion (audio multimodal is a small 1D-CNN branch). Pass O adds speech
-  ASR/finetune-lite, torchrun multi-node DDP, and local managed serving —
-  still not FM-from-scratch or Kubernetes multi-cluster orchestration.
+  ASR/finetune-lite, torchrun multi-node DDP, and local managed serving.
+  Pass R adds pretrained backbone hooks, TorchServe/TRT pack helpers, K8s
+  torchrun YAML emitters, and optional serve API-key auth — still not
+  FM-from-scratch, managed cloud, or live multi-cluster orchestration.
 - Not a re-litigation of 1.x `SupervisedLearning` APIs (removed/rewritten).

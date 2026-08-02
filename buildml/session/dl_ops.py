@@ -1204,14 +1204,18 @@ def serve_bundle(
     title: str = "BuildML Serve",
     blocking: bool = False,
     api_keys: str | list[str] | tuple[str, ...] | None = None,
+    allow_insecure_public_bind: bool = False,
 ) -> Any:
     """Launch BuildML managed serving for a pipeline or TorchScript artifact.
 
     Requires ``buildml[serve]``. Defaults to localhost bind. Optional
     ``api_keys`` enables Bearer / ``X-API-Key`` middleware (still not a managed
-    IAM / cloud auth product). Prefer TLS at a reverse proxy for non-local
-    exposure. When ``path`` is omitted and ``kind="pipeline"``, uses the last
-    saved pipeline path recorded on the Session if available.
+    IAM / cloud auth product). Non-loopback binds without ``api_keys`` raise
+    unless ``allow_insecure_public_bind=True``. Prefer TLS at a reverse proxy
+    for non-local exposure. When ``path`` is omitted and ``kind="pipeline"``,
+    uses the last saved pipeline path recorded on the Session if available.
+
+    Not registered as an AI tool — CLI / Session-primary by design.
     """
     from buildml.serving.launch import serve_bundle as _serve
 
@@ -1231,6 +1235,7 @@ def serve_bundle(
         title=title,
         blocking=blocking,
         api_keys=api_keys,
+        allow_insecure_public_bind=allow_insecure_public_bind,
     )
     session._serve_handle = handle
     auth_on = api_keys is not None

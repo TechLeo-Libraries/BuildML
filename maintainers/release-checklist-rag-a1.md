@@ -13,7 +13,7 @@ Related: [rag-alpha-gate.md](./rag-alpha-gate.md) ·
 
 1. [ ] Version strings agree: `pyproject.toml`, `buildml/_version.py` → `2.2.0a1`
 2. [ ] `CHANGELOG.md` has a `2.2.0a1` section with known limits for that tag
-   (retrieve-first alpha). Current HEAD (`2.3.0a1`) documents `rag_generate`
+   (retrieve-first alpha). Current HEAD (`2.4.0a1`) documents `rag_generate`
    and the AI operator separately — do not paste stale “no generate” claims
    into newer release notes.
 3. [ ] README RAG alpha status matches gate known limits

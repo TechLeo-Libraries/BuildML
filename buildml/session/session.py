@@ -1437,8 +1437,13 @@ class Session:
         title: str = "BuildML Serve",
         blocking: bool = False,
         api_keys: str | list[str] | tuple[str, ...] | None = None,
+        allow_insecure_public_bind: bool = False,
     ) -> Any:
-        """Launch managed local serving (``buildml[serve]``; optional API-key auth)."""
+        """Launch managed local serving (``buildml[serve]``; optional API-key auth).
+
+        Non-loopback binds require ``api_keys`` unless
+        ``allow_insecure_public_bind=True``. Not an AI tool (CLI/Session-primary).
+        """
         return dl_ops.serve_bundle(
             self,
             path,
@@ -1448,6 +1453,7 @@ class Session:
             title=title,
             blocking=blocking,
             api_keys=api_keys,
+            allow_insecure_public_bind=allow_insecure_public_bind,
         )
 
     def load_pretrained_backbone(

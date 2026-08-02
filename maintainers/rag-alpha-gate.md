@@ -5,6 +5,12 @@ Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md) and
 [dl-alpha-gate.md](./dl-alpha-gate.md). This is a release checklist, not a
 capability wishlist.
 
+> **Tag-lock / HEAD truth:** Criteria below are locked to the historical
+> **`v2.2.0a1` retrieve-first** cut. Current HEAD (`2.4.0a1`) **does** ship
+> `rag_generate` (and the later AI operator). Do not treat RL4 / RD5 / sign-off
+> “no generate” wording as a description of HEAD — those apply to the
+> `2.2.0a1` tag only.
+
 Related docs: [quickstart-rag.md](../guides/quickstart-rag.md) ·
 [rag-m0-lock.md](./rag-m0-lock.md) · [rag-phase-plan.md](./rag-phase-plan.md) ·
 [glossary.md](../guides/glossary.md) · [editorial-standards.md](./editorial-standards.md)
@@ -33,7 +39,7 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | RL1 | Index corpus and eval query/qrel sets stay separate; indexing `eval_only` docs raises `LeakageError` | `tests/unit/test_rag_slice.py` hygiene tests |
 | RL2 | Session checkpoint, Torch trainer bundle, and RAG bundle remain distinct artifacts | Bundle schema tests + RS1; `CHECKPOINT_BOUNDARY` |
 | RL3 | Wrong-loader paths raise clear errors naming the expected schema id | Bundle unit tests |
-| RL4 | Docs and catalog never imply generate/LLM operator shipped in this alpha | Quickstart, README, CHANGELOG, catalog copy |
+| RL4 | At the `2.2.0a1` tag, docs/catalog did not claim generate/LLM operator (historical; HEAD ships `rag_generate` + AI) | Tag-era quickstart/README/CHANGELOG |
 
 ### End-to-end smoke
 
@@ -51,7 +57,7 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | RD2 | Quickstart covers ingest → retrieve/eval → upsert/delete → bundle and known limits | `guides/quickstart-rag.md` |
 | RD3 | Glossary covers RAG terms used in the alpha path | `guides/glossary.md` |
 | RD4 | Editorial / user-copy lint clean | `scripts/lint_user_copy.py` in CI |
-| RD5 | README documents `buildml[rag]` and Session `rag_*` APIs without claiming generate/LLM | `README.md` |
+| RD5 | At the `2.2.0a1` tag, README documented `buildml[rag]` retrieve path without claiming generate/LLM (historical; HEAD documents generate) | Tag-era `README.md` |
 
 ### CI and packaging
 
@@ -60,7 +66,7 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | RC1 | `import buildml` succeeds without RAG extras | Core CI import smoke |
 | RC2 | Dedicated `rag` CI job on Python 3.11–3.12 with RAG unit + integration + alpha smoke | `.github/workflows/ci.yml` |
 | RC3 | Missing sentence-transformers raises `MissingExtraError("rag", ...)` with install hint when ST/rerank backends are requested | Missing-extra unit tests |
-| RC4 | Version is `2.2.0a1` in `pyproject.toml` and `buildml/_version.py` | Packaging files |
+| RC4 | Version was `2.2.0a1` in packaging files at the RAG alpha cut (HEAD is now `2.4.0a1`) | Historical packaging pin |
 
 ---
 
@@ -82,8 +88,9 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
    market hashing as sentence-transformer quality.
 2. **Local-first NumPy store.** No FAISS/Chroma/hosted vector-DB product path in
    this alpha.
-3. **Generate is provider-pluggable.** `rag_generate` ships with citations; CI uses
-   Mock/Echo providers (no paid API). `buildml.ai` may call retrieve/generate tools.
+3. **Generate (HEAD).** `rag_generate` ships on HEAD with citations; CI uses
+   Mock/Echo providers (no paid API). `buildml.ai` may call retrieve/generate
+   tools. The `2.2.0a1` tag itself was retrieve-first — see the tag-lock note.
 4. **No Teaching Studio RAG cockpit redesign.** Catalog + structured results +
    `rag_status` only.
 5. **CPU merge gate.** RAG CI is CPU on Python 3.11–3.12; GPU embed/rerank is
@@ -124,9 +131,9 @@ Copy into a release note when cutting a RAG alpha tag (see also
 - [ ] RD1–RD5 green
 - [ ] RC1–RC4 green
 - [ ] Known limits reviewed; README/quickstart/`CHANGELOG.md` do not contradict them
-- [ ] Version is `2.2.0a1` in `pyproject.toml` and `buildml/_version.py`
+- [ ] Version was `2.2.0a1` at the RAG alpha cut (current HEAD package is `2.4.0a1`)
 - [ ] Changelog / history notes name this gate document
-- [ ] Docs do not claim generate / LLM operator as shipped features
+- [ ] At tag time, docs did not claim generate / LLM operator (HEAD truth differs — see tag-lock)
 
 Tag only after remote CI is green on the release candidate push. Do not tag from
 this checklist alone.

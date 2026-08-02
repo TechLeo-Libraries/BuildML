@@ -8,7 +8,7 @@ the training partition only; validation and test rows receive frozen
 transformations. That train-only boundary is enforced in the API, not buried in
 docstrings you might miss.
 
-BuildML 2.3 alpha (`2.3.0a1`) is pre-release software. Public methods, report
+BuildML 2.4 alpha (`2.4.0a1`) is pre-release software. Public methods, report
 schemas, and serialized bundle formats may change before a stable 2.x release.
 The public 2.x entry point is `buildml.Session`. Classical tabular ML is the
 main path; deep learning, retrieval, and LLM-assisted operations are optional
@@ -18,11 +18,15 @@ extras on the same Session.
 
 Python 3.10–3.13.
 
+> **Install honesty:** PyPI `buildml` is still the legacy **1.x** line
+> (`1.0.9`, MIT). It does **not** install Session 2.x. Until a 2.x wheel is
+> published, install from GitHub:
+
 ```bash
-pip install buildml
+pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
 
-Common optional groups:
+Common optional groups (after the GitHub / editable install above):
 
 ```bash
 pip install "buildml[viz]"        # matplotlib, seaborn
@@ -33,6 +37,8 @@ pip install "buildml[engines]"    # Polars and DuckDB adapters
 pip install "buildml[optuna]"     # Optuna hyperparameter search
 pip install "buildml[torch]"      # Torch DL path (alias: buildml[dl])
 pip install "buildml[speech]"     # ASR + speech finetune-lite (adds transformers)
+pip install "buildml[vision]"     # torchvision pretrained vision hooks
+pip install "buildml[pretrained]" # vision + speech pretrained extras
 pip install "buildml[serve]"      # managed local FastAPI model serving
 pip install "buildml[onnx]"       # optional ONNX checker for export_torch
 pip install "buildml[rag]"        # optional dense/rerank backends
@@ -184,6 +190,8 @@ unchanged.
 |-------|---------|--------------|
 | Torch | `buildml[torch]` | Tabular + text + image + audio multimodal fusion, nested HPO, AMP, single-/multi-node DDP, TorchScript/ONNX export, fold-local CV, bundles (`buildml[audio]` aliases the same extra) |
 | Speech | `buildml[speech]` | ASR transcription (`transcribe_speech`) + speech classify finetune-lite (`make_speech_torch_loaders` / `fit_speech_torch`); transformers Whisper-class optional |
+| Vision | `buildml[vision]` | torchvision pretrained vision backbone hooks (`load_pretrained_backbone`) |
+| Pretrained | `buildml[pretrained]` | Combines `vision` + `speech` for curated backbone hooks |
 | Serve | `buildml[serve]` | Managed local FastAPI serving (`buildml-serve` / `Session.serve_bundle`) for pipeline + TorchScript |
 | RAG | `buildml[rag]` | Ingest → chunk → embed → retrieve → **generate** → evaluate; hashing default, semantic optional |
 | AI | `buildml[ai]` | Advisor, multi-step plan/execute, optional allowlisted autonomy; classical + RAG + Torch tools; BYO API key |
@@ -234,6 +242,6 @@ root. There is no compatibility shim that re-exports 1.x APIs from
 
 **Leonard Onyiriuba** — [LinkedIn](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/) · leonard.c.onyiriuba@gmail.com
 
-Issues: [GitHub](https://github.com/TechLeo-Dev/BuildML/issues)
+Issues: [GitHub](https://github.com/TechLeo-Libraries/BuildML/issues)
 
 Apache License 2.0.

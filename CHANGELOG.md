@@ -8,38 +8,30 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+## [2.4.0a1] — post-depth / process closure — 2026-08-02
+
+### Summary
+
+Closes release/process gaps after the depth loop (Passes L–R): bumps the package
+line to **`2.4.0a1`**, documents GitHub-first install until PyPI carries 2.x,
+fixes stale org URLs, wires Pass R CI + AI allowlist parity, hardens public
+serve binds, and refreshes maintainer / contributor process docs. **Not published
+to PyPI in this cut** — honesty banner only.
+
 ### Added
 
+- **Pass T release/process closure:** version identity `2.4.0a1`; README +
+  `docs/installation.rst` install honesty (GitHub 2.x vs PyPI legacy `1.0.9`);
+  `CONTRIBUTING.md` + release checklist pointer; Pass R AI tools/executor/
+  planner/autonomy wiring; serve non-loopback bind guard
+  (`api_keys` or `allow_insecure_public_bind`); CI torch/serve/pretrained matrix
+  runs `tests/unit/test_pass_r_pretrained_serve_k8s.py`.
 - **Pass R pretrained / serve / K8s depth:** curated vision/audio/speech backbone
   hooks (`load_pretrained_backbone`, extras `vision` / `pretrained`, mock CI
   weights); optional API-key/Bearer serving auth; TorchServe pack + TensorRT
   `trtexec` plan helpers; K8s torchrun Job YAML emitter + `deploy/k8s` example;
   `domain_adapt_speech_torch` + `refuse_speech_foundation_pretrain` honesty.
   Not a managed cloud, not live multi-cluster orchestration, not FM-from-scratch.
-
-### Fixed
-
-- **Pass Q after Pass P:** Torch classification paths now LabelEncoder-style remap
-  sparse/non-contiguous integer class ids to contiguous ``0..K-1`` (speech, text,
-  tabular, multimodal, CV/search). ``class_labels`` keeps original ids in index
-  order so ``n_classes = len(class_labels)`` matches CrossEntropy targets;
-  evaluate confusion matrices decode back to original ids. CI wires Pass Q tests.
-- **Pass P after Pass O:** CI torch job now runs Pass O speech/DDP/serve tests;
-  extras matrix covers `buildml[serve]`; multi-node DDP requires `LOCAL_RANK`
-  (no silent global-rank→device mapping) and writes parsed `MASTER_*` into the
-  process env; DDP rank bundles retain speech/multimodal modality metadata;
-  executor speech dispatch + serve CLI localhost/no-auth defaults covered by
-  tests; teaching overlay honesty for ASR stub (Torch not required) and
-  multi-node `LOCAL_RANK` failures.
-
-### Changed
-
-- **Pass O license:** project license switched from MIT to **Apache-2.0**
-  (`LICENSE`, `NOTICE`, `pyproject.toml`, package `__license__`, README / docs
-  mentions).
-
-### Added
-
 - **Pass O speech FM path:** ASR transcription + classify finetune-lite behind
   `buildml[speech]` / Torch. Session APIs `make_speech_torch_loaders`,
   `fit_speech_torch`, `transcribe_speech` (stub CI-safe backend; optional
@@ -64,8 +56,28 @@ with pre-release tags for alpha (`aN`) builds.
   via `buildml[audio]`) for path cells; waveform arrays work with Torch alone.
   CI torch job runs Pass L tests with `.[torch,onnx]`.
 
+### Changed
+
+- **Pass O license:** project license switched from MIT to **Apache-2.0**
+  (`LICENSE`, `NOTICE`, `pyproject.toml`, package `__license__`, README / docs
+  mentions).
+
 ### Fixed
 
+- **Pass T URLs:** replace stale `TechLeo-Dev/BuildML` refs with
+  `TechLeo-Libraries/BuildML`.
+- **Pass Q after Pass P:** Torch classification paths now LabelEncoder-style remap
+  sparse/non-contiguous integer class ids to contiguous ``0..K-1`` (speech, text,
+  tabular, multimodal, CV/search). ``class_labels`` keeps original ids in index
+  order so ``n_classes = len(class_labels)`` matches CrossEntropy targets;
+  evaluate confusion matrices decode back to original ids. CI wires Pass Q tests.
+- **Pass P after Pass O:** CI torch job now runs Pass O speech/DDP/serve tests;
+  extras matrix covers `buildml[serve]`; multi-node DDP requires `LOCAL_RANK`
+  (no silent global-rank→device mapping) and writes parsed `MASTER_*` into the
+  process env; DDP rank bundles retain speech/multimodal modality metadata;
+  executor speech dispatch + serve CLI localhost/no-auth defaults covered by
+  tests; teaching overlay honesty for ASR stub (Torch not required) and
+  multi-node `LOCAL_RANK` failures.
 - **Pass N leftovers after Pass M:** torch trainer bundles persist
   `multimodal_preprocess` (audio/image stats, source SR, layout) with load-path
   honesty (meta restored; DataLoaders not auto-rebuilt); ambiguous 2D waveform

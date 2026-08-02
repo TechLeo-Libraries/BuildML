@@ -77,7 +77,7 @@ buildml/
     dataset.py                # Dataset handle
     roles.py                  # role assignment
     splits.py                 # split plan + membership
-    modes.py                  # memory | lazy | out_of_core
+    modes.py                  # memory | lazy  (legacy out_of_core coerces → lazy; no OOC fit)
     engines/
       __init__.py
       base.py                 # Engine protocol

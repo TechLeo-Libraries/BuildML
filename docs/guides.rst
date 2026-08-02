@@ -15,4 +15,4 @@ Read the Docs alongside the rest of this site.
    quickstart-ai
    glossary
 
-On GitHub, browse the same files under `guides/ <https://github.com/TechLeo-Dev/BuildML/tree/main/guides>`_.
+On GitHub, browse the same files under `guides/ <https://github.com/TechLeo-Libraries/BuildML/tree/main/guides>`_.

@@ -1,7 +1,7 @@
 ﻿# BuildML reconstruction roadmap
 
 Decision-oriented planning map for the 2.x rewrite · grounded in the 1 Aug 2026
-architecture audit · **status updated for shipped HEAD `2.3.0a1`** (Aug 2026).
+architecture audit · **status updated for shipped HEAD `2.4.0a1`** (Aug 2026).
 
 > Related planning docs:  
 > - [architecture-review.md](./architecture-review.md) *(current Session reality)*  
@@ -18,15 +18,15 @@ architecture audit · **status updated for shipped HEAD `2.3.0a1`** (Aug 2026).
 | Vision | Hybrid build platform (learners + professionals) |
 | North star | Flexibility · depth · functionality |
 | Release shape | 2.x reconstruction (clean break from 1.x) |
-| Current package | **`2.3.0a1`** AI operator alpha |
+| Current package | **`2.4.0a1`** post-depth / process closure (AI `2.3` base) |
 | Depth bar | Full workflow coverage — not mediocre / basics-only |
 | Scale | Automated ingest + multi-engine; modes are `memory` / `lazy` (no fake out-of-core fit) |
 | Backends | Multi-option (auto-default + override); both Polars and DuckDB |
-| Packaging | Lean core + expanding extras |
+| Packaging | Lean core + expanding extras; **GitHub install for 2.x** until PyPI publishes it |
 | Python | 3.10–3.13 |
-| Expansion | Classical → DL → RAG → AI operator (**shipped through 2.3**) |
+| Expansion | Classical → DL → RAG → AI operator (**shipped through 2.3**; depth Passes L–R on HEAD) |
 | Docs bar | Extensive docstrings + guides for every public method |
-| LLM / AI operator | Shipped in `2.3.0a1` — see [llm-m0-lock.md](./llm-m0-lock.md) / [ai-alpha-gate.md](./ai-alpha-gate.md) |
+| LLM / AI operator | Shipped in `2.3.0a1` (generate + allowlisted autonomy on HEAD) — see [llm-m0-lock.md](./llm-m0-lock.md) / [ai-alpha-gate.md](./ai-alpha-gate.md) |
 | Phase 0 | **Closed** |
 
 **Plan before build:** Incremental patching cannot fix duplicated facade logic, leakage-by-default workflows, broken paths, and packaging/import failure.

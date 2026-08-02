@@ -6,9 +6,10 @@ around :class:`buildml.Session`. A Session holds the dataset, column roles,
 partition membership, train-fitted preprocessing plans, an optional estimator,
 and operation history.
 
-Version ``2.3.0a1`` is alpha software. Public methods and serialized formats may
-change before a stable 2.x release. The 1.x API remains available under
-``buildml/_legacy/`` for reference; new work should use Session.
+Version ``2.4.0a1`` is alpha software. Public methods and serialized formats may
+change before a stable 2.x release. Install 2.x from GitHub until a PyPI 2.x
+wheel exists (PyPI ``buildml`` is still legacy 1.x). The 1.x API remains available
+under ``buildml/_legacy/`` for reference; new work should use Session.
 
 Learning path
 =============
