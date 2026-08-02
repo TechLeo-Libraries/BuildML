@@ -1996,7 +1996,6 @@ class Session:
             deny_columns=tuple(deny_columns) if deny_columns else base_config.deny_columns,
         )
 
-        import pandas as pd
         df: pd.DataFrame | None = None
         if self._dataset is not None:
             df = self._dataset.frame
@@ -2317,7 +2316,8 @@ class Session:
         if not confirm and proposal.requires_confirmation:
             return proposal
 
-        result = execute_tool(self, proposal, confirm or not proposal.requires_confirmation, registry)
+        confirmed = confirm or not proposal.requires_confirmation
+        result = execute_tool(self, proposal, confirmed, registry)
 
         self._ai_result = result
         self._ai_executor_result = result

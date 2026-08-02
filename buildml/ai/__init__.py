@@ -13,7 +13,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from buildml.ai.advisor import AdvisorResult
     from buildml.ai.executor import ExecutorProposal, ExecutorResult
-    from buildml.ai.planner import BudgetExceeded, BudgetTracker, PlanExecutionResult, PlanStepExecution
+    from buildml.ai.planner import (
+        BudgetExceeded,
+        BudgetTracker,
+        PlanExecutionResult,
+        PlanStepExecution,
+    )
     from buildml.ai.privacy import EgressConfig, EgressLevel, EgressManifest
     from buildml.ai.provider import MockProvider, OpenAIProvider, ProviderConfig, ProviderProtocol
     from buildml.ai.results import PlanResult, TranscriptEntry

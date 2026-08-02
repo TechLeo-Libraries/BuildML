@@ -11,7 +11,6 @@ from buildml.ai.tools import ToolRegistry
 from buildml.ai.types import ConfirmPolicy, ToolCall
 from buildml.core.errors import ValidationError
 
-
 # Allowed estimator name -> (module, class) mapping for LLM tool dispatch.
 # Restricts what the LLM can instantiate to a safe, known set.
 _ESTIMATOR_REGISTRY: dict[str, tuple[str, str]] = {
@@ -59,13 +58,14 @@ def _resolve_estimator(estimator_arg: Any, hyperparameters: dict[str, Any]) -> A
         raise ValidationError("fit requires an estimator argument.")
 
     # If already an instance (has fit method), return as-is
-    if hasattr(estimator_arg, "fit") and callable(getattr(estimator_arg, "fit")):
+    if hasattr(estimator_arg, "fit") and callable(estimator_arg.fit):
         return estimator_arg
 
     # Resolve from string name
     if not isinstance(estimator_arg, str):
         raise ValidationError(
-            f"estimator must be a string name or sklearn instance, got {type(estimator_arg).__name__}"
+            "estimator must be a string name or sklearn instance, "
+            f"got {type(estimator_arg).__name__}"
         )
 
     # Normalize the name for lookup

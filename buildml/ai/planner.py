@@ -6,11 +6,15 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from buildml.ai.executor import ExecutorProposal, ExecutorResult, execute_tool, propose_tool_execution
+from buildml.ai.executor import (
+    ExecutorProposal,
+    ExecutorResult,
+    execute_tool,
+    propose_tool_execution,
+)
 from buildml.ai.privacy import EgressManifest
 from buildml.ai.results import PlanResult, PlanStep
 from buildml.ai.tools import ToolRegistry
-from buildml.ai.types import ConfirmPolicy, ToolCall
 from buildml.core.errors import ValidationError
 
 

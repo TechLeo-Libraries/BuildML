@@ -212,7 +212,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "properties": {
                     "strategy": {
                         "type": "string",
-                        "description": "Imputation strategy: mean, median, most_frequent, constant (default: median).",
+                        "description": "Imputation: mean, median, most_frequent, or constant.",
                         "enum": ["mean", "median", "most_frequent", "constant"],
                     },
                     "columns": {
@@ -302,7 +302,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     },
                     "task": {
                         "type": "string",
-                        "description": "Task type: classification, regression, auto (default: auto).",
+                        "description": "Task type: classification, regression, or auto.",
                         "enum": ["classification", "regression", "auto"],
                     },
                     "hyperparameters": {

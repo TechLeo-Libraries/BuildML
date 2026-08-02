@@ -11,14 +11,11 @@ import pytest
 
 from buildml import Session
 from buildml.ai.executor import (
-    ExecutorProposal,
-    ExecutorResult,
     _resolve_estimator,
     execute_tool,
     propose_tool_execution,
 )
 from buildml.ai.tools import build_default_registry
-from buildml.ai.types import ToolCall
 from buildml.core.errors import ValidationError
 
 
@@ -37,7 +34,9 @@ def tiny_df() -> pd.DataFrame:
 def session_with_roles(tiny_df: pd.DataFrame) -> Session:
     """Session with roles set, ready for split."""
     session = Session.ingest(tiny_df)
-    session.set_roles({"age": "feature", "income": "feature", "category": "feature", "target": "target"})
+    session.set_roles(
+        {"age": "feature", "income": "feature", "category": "feature", "target": "target"}
+    )
     return session
 
 
