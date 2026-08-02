@@ -51,14 +51,23 @@ __all__ = [
     "export_train_result",
     "fit_audio_waveform_stats",
     "fit_image_channel_stats",
+    "freeze_module",
+    "load_audio_backbone",
+    "load_pretrained_backbone",
+    "load_speech_backbone",
     "load_torch_bundle",
     "load_torchscript",
+    "load_vision_backbone",
     "make_loaders",
     "make_multimodal_loaders",
     "make_speech_loaders",
     "make_text_loaders",
     "nested_cv_torch",
+    "pack_torchserve_model",
     "parse_torchrun_env",
+    "prepare_tensorrt_export_plan",
+    "refuse_foundation_model_pretrain",
+    "render_torchrun_ddp_job",
     "require_pillow",
     "require_soundfile",
     "require_speech_stack",
@@ -75,6 +84,10 @@ __all__ = [
     "train_supervised_module_ddp",
     "transcribe_audio_values",
     "transcribe_from_dataset",
+    "write_torchrun_ddp_job",
+    "PackagingResult",
+    "PretrainedBackbone",
+    "K8sJobRenderResult",
 ]
 
 
@@ -203,6 +216,7 @@ def __getattr__(name: str) -> Any:
         "build_speech_classifier",
         "build_tiny_speech_encoder",
         "make_speech_loaders",
+        "refuse_foundation_model_pretrain",
         "require_speech_stack",
         "speech_stack_available",
         "transcribe_audio_values",
@@ -211,4 +225,31 @@ def __getattr__(name: str) -> Any:
         from buildml.dl import speech as speech_mod
 
         return getattr(speech_mod, name)
+    if name in {
+        "PretrainedBackbone",
+        "freeze_module",
+        "load_audio_backbone",
+        "load_pretrained_backbone",
+        "load_speech_backbone",
+        "load_vision_backbone",
+    }:
+        from buildml.dl import zoo as zoo_mod
+
+        return getattr(zoo_mod, name)
+    if name in {
+        "PackagingResult",
+        "pack_torchserve_model",
+        "prepare_tensorrt_export_plan",
+    }:
+        from buildml.dl import packaging as packaging_mod
+
+        return getattr(packaging_mod, name)
+    if name in {
+        "K8sJobRenderResult",
+        "render_torchrun_ddp_job",
+        "write_torchrun_ddp_job",
+    }:
+        from buildml.dl import k8s as k8s_mod
+
+        return getattr(k8s_mod, name)
     raise AttributeError(f"module 'buildml.dl' has no attribute {name!r}")

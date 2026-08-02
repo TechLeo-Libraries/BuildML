@@ -1,0 +1,69 @@
+# Example Kubernetes Job + headless Service for torchrun multi-node DDP.
+# Generated as a static reference; prefer Session.emit_k8s_ddp_job / buildml.dl.k8s
+# to render parameterized copies.
+#
+# Honesty:
+# - Not live multi-cluster orchestration
+# - Not a Helm chart product
+# - Operator must provide GPU nodes, networking, shared data, and RBAC
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: buildml-torchrun-ddp
+  namespace: default
+  labels:
+    app.kubernetes.io/name: buildml-torchrun-ddp
+    app.kubernetes.io/part-of: buildml
+spec:
+  completionMode: Indexed
+  completions: 2
+  parallelism: 2
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: buildml-torchrun-ddp
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: trainer
+          image: pytorch/pytorch:2.2.0-cuda12.1-cudnn8-runtime
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              nvidia.com/gpu: 1
+          env:
+            - name: MASTER_ADDR
+              value: buildml-torchrun-ddp-0.buildml-torchrun-ddp
+            - name: MASTER_PORT
+              value: "29500"
+          command:
+            - bash
+            - -lc
+            - |
+              set -euo pipefail
+              NODE_RANK="${JOB_COMPLETION_INDEX:-0}"
+              torchrun \
+                --nnodes=2 \
+                --nproc_per_node=2 \
+                --node_rank="$NODE_RANK" \
+                --master_addr="$MASTER_ADDR" \
+                --master_port="$MASTER_PORT" \
+                /workspace/train.py
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: buildml-torchrun-ddp
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: buildml-torchrun-ddp
+    job-name: buildml-torchrun-ddp
+  ports:
+    - name: rdzv
+      port: 29500
+      targetPort: 29500

@@ -75,13 +75,23 @@ Optional extras (same Session)
 * **Speech** (``buildml[speech]``): ASR transcription
   (``transcribe_speech``, stub CI-safe or transformers Whisper-class) and
   speech classify finetune-lite (``make_speech_torch_loaders`` /
-  ``fit_speech_torch``). Integration path — not training a Whisper-scale
-  foundation model from scratch.
+  ``fit_speech_torch`` / ``domain_adapt_speech_torch``). Integration path —
+  not training a Whisper-scale foundation model from scratch
+  (``refuse_speech_foundation_pretrain`` states that explicitly).
+* **Pretrained backbones** (``buildml[vision]`` / ``buildml[speech]`` /
+  ``buildml[pretrained]``): curated ResNet/ViT, Wav2Vec2, and Whisper-encoder
+  hooks via ``load_pretrained_backbone`` with ``weights=none|mock|pretrained``
+  (mock is CI-safe). Not a full HF/TorchVision zoo product.
 * **Serve** (``buildml[serve]``): managed local FastAPI serving
   (``buildml-serve`` / ``python -m buildml.serving`` /
   ``Session.serve_bundle``) for classical pipeline bundles and TorchScript
-  artifacts. Localhost bind by default; no auth product claim — put a reverse
-  proxy in front for non-local exposure.
+  artifacts. Localhost bind by default; optional API-key/Bearer middleware —
+  still not a managed cloud IAM product. Prefer TLS at a reverse proxy for
+  non-local exposure. TorchServe directory packaging
+  (``pack_torchserve``) and TensorRT ``trtexec`` plans
+  (``prepare_tensorrt_export``) are recipe helpers only.
+* **K8s DDP templates** (``emit_k8s_ddp_job`` / ``deploy/k8s``): example
+  Indexed Job + torchrun YAML emitters — not live multi-cluster orchestration.
 * **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, grounded
   ``rag_generate`` with citations, evaluate, upsert/delete, and bundle
   save/load. Hashing embeddings are the CI-safe default; semantic embedders are
@@ -103,6 +113,7 @@ and model bundles do not contain the Session dataset or split history. The AI
 operator defaults to propose→confirm→execute; autonomy is opt-in automation
 inside an allowlist, not unconstrained agency, and does not replace domain
 review of roles, splits, or metrics. Image/audio multimodal fusion and a
-separate speech ASR/finetune-lite path are shipped; torchrun multi-node DDP and
-local managed serving are alpha paths (not Kubernetes multi-cluster
-orchestration, not Whisper-scale FM training from scratch).
+separate speech ASR/finetune-lite path are shipped; torchrun multi-node DDP,
+K8s Job templates, local managed serving (optional API keys), TorchServe
+packaging, and TensorRT plans are alpha library helpers (not multi-cluster
+orchestration, not a managed cloud, not Whisper-scale FM training from scratch).
