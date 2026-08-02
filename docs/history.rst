@@ -2,10 +2,8 @@ BuildML 2.x changelog
 ---------------------
 
 Active release notes for BuildML 2.x live in the repository root
-``CHANGELOG.md``. Classical alpha is ``2.0.0a1``
-(``docs/classical-alpha-gate.md``); DL alpha is ``2.1.0a1``
-(``docs/dl-alpha-gate.md``); RAG alpha is ``2.2.0a1``
-(``docs/rag-alpha-gate.md``).
+``CHANGELOG.md``. The current line is ``2.3.0a1`` (AI operator alpha on
+classical ``2.0.0a1``, Torch ``2.1.0a1``, and RAG ``2.2.0a1`` bases).
 
 BuildML 1.x archived changelog
 ------------------------------

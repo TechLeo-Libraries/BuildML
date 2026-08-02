@@ -6,7 +6,7 @@ release checklist, not a capability wishlist.
 
 Related docs: [quickstart-dl-alpha.md](./quickstart-dl-alpha.md) ·
 [dl-m0-lock.md](./dl-m0-lock.md) · [deep-learning-phase-plan.md](./deep-learning-phase-plan.md) ·
-[glossary.md](./glossary.md) · [editorial-standards.md](./editorial-standards.md)
+[glossary.md](../glossary.md) · [editorial-standards.md](../editorial-standards.md)
 
 ---
 

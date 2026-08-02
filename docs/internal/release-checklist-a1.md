@@ -13,7 +13,7 @@ Related: [classical-alpha-gate.md](./classical-alpha-gate.md) ·
 1. [ ] Version strings agree: `pyproject.toml`, `buildml/_version.py` → `2.0.0a1`
 2. [ ] `CHANGELOG.md` has a `2.0.0a1` section with known limits
 3. [ ] README alpha status matches gate known limits (no overclaims)
-4. [ ] `docs/classical-alpha-gate.md` sign-off criteria reviewed against current APIs
+4. [ ] `classical-alpha-gate.md` sign-off criteria reviewed against current APIs
 5. [ ] Local verification green:
    - `ruff check buildml tests scripts docs/conf.py`
    - `python scripts/lint_user_copy.py`

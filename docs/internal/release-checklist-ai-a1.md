@@ -15,7 +15,7 @@ Related: [ai-alpha-gate.md](./ai-alpha-gate.md) ·
 2. [ ] `CHANGELOG.md` has a `2.3.0a1` section with known limits (**no autonomous
    agent / auto-execute / production safety claims**)
 3. [ ] README AI alpha status matches gate known limits
-4. [ ] `docs/ai-alpha-gate.md` sign-off criteria reviewed against current APIs
+4. [ ] `ai-alpha-gate.md` sign-off criteria reviewed against current APIs
 5. [ ] Local verification green:
    - `ruff check buildml tests scripts docs/conf.py`
    - `python scripts/lint_user_copy.py`

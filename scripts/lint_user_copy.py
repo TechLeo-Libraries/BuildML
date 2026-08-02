@@ -11,21 +11,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# These files are records of prior releases or approved design work, not current
-# user guidance. The editorial standard is excluded because it quotes bad copy.
+# These paths are maintainer records or quote prohibited copy examples.
+# docs/internal/ holds phase plans, gates, and design locks (not user guidance).
+ARCHIVAL_DOC_PREFIXES = ("docs/internal/",)
 ARCHIVAL_DOCS = {
-    "docs/architecture-review.md",
-    "docs/classical-ml-capability-map.md",
-    "docs/deep-learning-phase-plan.md",
-    "docs/dl-m0-lock.md",
-    "docs/history.rst",
-    "docs/ingest-engine-checkpoint-design.md",
-    "docs/phase-1-build-plan.md",
-    "docs/rag-m0-lock.md",
-    "docs/rag-phase-plan.md",
-    "docs/reconstruction-roadmap.md",
+    "docs/editorial-standards.md",
 }
-QUOTED_EXAMPLE_DOCS = {"docs/editorial-standards.md"}
+QUOTED_EXAMPLE_DOCS: set[str] = set()
 
 COPY_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
@@ -93,6 +85,8 @@ def iter_targets() -> Iterable[Path]:
     for path in [*docs, *python]:
         relative = _relative(path)
         if relative in ARCHIVAL_DOCS or relative in QUOTED_EXAMPLE_DOCS:
+            continue
+        if any(relative.startswith(prefix) for prefix in ARCHIVAL_DOC_PREFIXES):
             continue
         if relative.startswith("buildml/_legacy/"):
             continue

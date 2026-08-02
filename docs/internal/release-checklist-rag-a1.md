@@ -15,7 +15,7 @@ Related: [rag-alpha-gate.md](./rag-alpha-gate.md) ·
 2. [ ] `CHANGELOG.md` has a `2.2.0a1` section with known limits (**no generate /
    LLM-operator claims**)
 3. [ ] README RAG alpha status matches gate known limits
-4. [ ] `docs/rag-alpha-gate.md` sign-off criteria reviewed against current APIs
+4. [ ] `rag-alpha-gate.md` sign-off criteria reviewed against current APIs
 5. [ ] Local verification green:
    - `ruff check buildml tests scripts docs/conf.py`
    - `python scripts/lint_user_copy.py`

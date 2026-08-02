@@ -4,7 +4,7 @@ Next-phase plan after classical alpha `2.0.0a1`, DL alpha `2.1.0a1`, and RAG alp
 Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [deep-learning-phase-plan.md](./deep-learning-phase-plan.md) ·
 [rag-phase-plan.md](./rag-phase-plan.md) ·
-[quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
+[quality-bar.md](./quality-bar.md) · [editorial-standards.md](../editorial-standards.md)
 
 **Status:** M0 LOCKED · M1 COMPLETE · M2 COMPLETE · M3 COMPLETE.  
 **M0 lock artifact:** [llm-m0-lock.md](./llm-m0-lock.md).  
@@ -650,4 +650,4 @@ locked decision log.
 - RAG precedent for domain attachment: [rag-phase-plan.md](./rag-phase-plan.md),
   [rag-m0-lock.md](./rag-m0-lock.md)
 - Quality bar: [quality-bar.md](./quality-bar.md)
-- Editorial standards (no AI-slop): [editorial-standards.md](./editorial-standards.md)
+- Editorial standards (no AI-slop): [editorial-standards.md](../editorial-standards.md)

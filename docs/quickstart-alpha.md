@@ -221,5 +221,4 @@ python -m venv .venv
 pip install -e ".[dev,all-classical]"
 ```
 
-See [workflow-guide.rst](./workflow-guide.rst),
-[concepts.rst](./concepts.rst), and [development-environment.md](./development-environment.md).
+See [workflow-guide.rst](./workflow-guide.rst) and [concepts.rst](./concepts.rst).

@@ -124,5 +124,4 @@ Layout: `<path>/meta.json` + `<path>/chunks.jsonl` + `<path>/embeddings.npy`.
 - **CI merge gate.** RAG job runs on Python 3.11–3.12 CPU. GPU embed/rerank is
   optional when hardware and pins allow; not a PR blocker.
 
-See [rag-alpha-gate.md](./rag-alpha-gate.md), [rag-m0-lock.md](./rag-m0-lock.md),
-and [glossary.md](./glossary.md).
+See [glossary.md](./glossary.md).

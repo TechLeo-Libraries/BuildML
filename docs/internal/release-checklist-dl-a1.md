@@ -14,7 +14,7 @@ Related: [dl-alpha-gate.md](./dl-alpha-gate.md) ·
 1. [ ] Version strings agree: `pyproject.toml`, `buildml/_version.py` → `2.1.0a1`
 2. [ ] `CHANGELOG.md` has a `2.1.0a1` section with known limits (no RAG/LLM claims)
 3. [ ] README DL alpha status matches gate known limits
-4. [ ] `docs/dl-alpha-gate.md` sign-off criteria reviewed against current APIs
+4. [ ] `dl-alpha-gate.md` sign-off criteria reviewed against current APIs
 5. [ ] Local verification green:
    - `ruff check buildml tests scripts docs/conf.py`
    - `python scripts/lint_user_copy.py`

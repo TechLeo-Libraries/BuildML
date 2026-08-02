@@ -5,7 +5,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [deep-learning-phase-plan.md](./deep-learning-phase-plan.md) ·
 [dl-m0-lock.md](./dl-m0-lock.md) ·
 [classical-ml-capability-map.md](./classical-ml-capability-map.md) ·
-[quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
+[quality-bar.md](./quality-bar.md) · [editorial-standards.md](../editorial-standards.md)
 
 **Status:** M0 locked · M1 complete · M2 complete · M3 complete (RAG alpha `2.2.0a1`).  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  

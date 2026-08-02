@@ -6,7 +6,7 @@ CI/tests/docs today or listed as known limits.
 
 Related docs: [quickstart-alpha.md](./quickstart-alpha.md) ·
 [glossary.md](./glossary.md) · [workflow-guide.rst](./workflow-guide.rst) ·
-[editorial-standards.md](./editorial-standards.md)
+[editorial-standards.md](../editorial-standards.md)
 
 ---
 
