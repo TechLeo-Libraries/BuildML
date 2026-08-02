@@ -7,6 +7,8 @@ Industry-default SSL uses **Torch** when installed (`simclr_tabular` default).
 Legacy sklearn `masked_tabular` remains as deprecated fallback.
 
 **Go deeper:** [Self-supervised deep](selfsupervised-deep.md) ·
+
+**Proof:** [ssl-representation-probe](../proofs/ssl-representation-probe/) (+ Tier C PCA probe). Cross-domain: [atlas-label-studio](../proofs/atlas-label-studio/).
 [Pretrained backbones](pretrained-backbones.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md).
 

@@ -27,7 +27,7 @@ def hnswlib_available() -> bool:
         return False
     try:
         import hnswlib  # noqa: F401
-    except ImportError:
+    except Exception:
         return False
     return True
 
@@ -37,7 +37,7 @@ def faiss_available() -> bool:
         return False
     try:
         import faiss  # noqa: F401
-    except ImportError:
+    except Exception:
         return False
     return True
 

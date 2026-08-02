@@ -12,7 +12,7 @@ import pandas as pd
 
 from buildml import Session
 from buildml.data.dataset import Dataset
-from buildml.dl.extras import torch_available, torch_spec_available
+from buildml.dl.extras import torch_available
 from buildml.ingest.detect import schema_from_dataframe
 from buildml.semisupervised.catalog import semisupervised_capability_matrix
 from buildml.semisupervised.extras import xgboost_available
@@ -91,21 +91,28 @@ def main(argv: list[str] | None = None) -> int:
     runs.append(_run_method("sklearn", "self_training"))
     if xgboost_available():
         runs.append(_run_method("industry", "pseudo_label_xgb"))
-    if torch_spec_available():
+    if torch_available():
         try:
             runs.append(_run_method("torch", "fixmatch_tabular", epochs=args.epochs))
             runs.append(_run_method("torch", "mixmatch_tabular", epochs=args.epochs))
         except Exception as exc:  # noqa: BLE001 — broken torch wheels on some hosts
-            if "torch" not in str(exc).lower():
-                raise
+            runs.append(
+                {
+                    "backend": "torch",
+                    "method": "fixmatch|mixmatch",
+                    "skipped": True,
+                    "error": str(exc),
+                }
+            )
 
+    scored = [r for r in runs if "test_accuracy" in r and not r.get("skipped")]
     sklearn_best = max(
-        (r for r in runs if r["backend"] == "sklearn"),
+        (r for r in scored if r["backend"] == "sklearn"),
         key=lambda r: float(r["test_accuracy"] or 0.0),
         default=None,
     )
-    industry_runs = [r for r in runs if r["backend"] in {"industry", "torch"}]
-    best = max(runs, key=lambda r: float(r["test_accuracy"] or 0.0))
+    industry_runs = [r for r in scored if r["backend"] in {"industry", "torch"}]
+    best = max(scored, key=lambda r: float(r["test_accuracy"] or 0.0))
     payload = {
         "benchmark": "semisupervised_partial_labels",
         "capability_matrix": semisupervised_capability_matrix(),

@@ -10,6 +10,7 @@ __all__ = [
     "VisionSSLEncoder",
     "list_ssl_methods",
     "resolve_default_tabular_method",
+    "ssl_capability_matrix",
     "train_tabular_ssl",
 ]
 
@@ -28,7 +29,11 @@ def __getattr__(name: str) -> Any:
         from buildml.selfsupervised.torch.vision import VisionSSLEncoder
 
         return VisionSSLEncoder
-    if name in {"list_ssl_methods", "resolve_default_tabular_method"}:
+    if name in {
+        "list_ssl_methods",
+        "resolve_default_tabular_method",
+        "ssl_capability_matrix",
+    }:
         from buildml.selfsupervised.torch import catalog as catalog_mod
 
         return getattr(catalog_mod, name)

@@ -16,6 +16,8 @@ For vocabulary and judgment calls (leakage, partitions, metrics), read
 decision framework at each stage, see [workflow-guide](../docs/workflow-guide.rst).
 
 **Go deeper:** [Classical end-to-end](classical-end-to-end.md) ·
+
+**Proof:** [loan-approval-classical](../proofs/loan-approval-classical/) (+ Tier C sklearn twin).
 [Leakage & CV recipes](leakage-cv-recipes.md) ·
 [Preprocess depth](preprocess-depth.md) ·
 [Diagnostics & search](classical-diagnostics-search.md) ·
@@ -61,6 +63,8 @@ session.split(
 eda = session.eda(include_plots=False)
 
 # Learned plans fit on train and apply frozen values to every partition.
+# Default impute/encode/scale touch feature-role columns only — ignore/id/target
+# (and group/time/weight) stay unmutated unless you pass columns=[...] explicitly.
 session.impute(strategy="median")
 session.handle_outliers(method="iqr", action="cap")
 session.scale(method="standard")

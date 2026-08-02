@@ -34,6 +34,7 @@ __all__ = [
     "save_ssl_bundle",
     "selfsupervised_status",
     "selfsupervised_status_for_session",
+    "ssl_capability_matrix",
     "transform_ssl",
 ]
 
@@ -93,4 +94,8 @@ def __getattr__(name: str) -> Any:
         from buildml.selfsupervised.torch.catalog import list_ssl_methods
 
         return list_ssl_methods
+    if name == "ssl_capability_matrix":
+        from buildml.selfsupervised.torch.catalog import ssl_capability_matrix
+
+        return ssl_capability_matrix
     raise AttributeError(f"module 'buildml.selfsupervised' has no attribute {name!r}")

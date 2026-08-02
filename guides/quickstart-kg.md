@@ -14,6 +14,8 @@ Train-only vocabularies and embeddings, filtered link-prediction metrics
 **Not** a Neo4j / graph-database product. **Not** Graph ML node
 classification (`set_graph` / `fit_graph`). **Not** RAG retrieve/generate.
 
+**Proof:** [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/) (+ Tier C co-occurrence PMI twin).
+
 Runnable mirror: [`examples/kg_transe_loop.py`](../examples/kg_transe_loop.py).
 Deep guide: [kg-deep.md](kg-deep.md).
 

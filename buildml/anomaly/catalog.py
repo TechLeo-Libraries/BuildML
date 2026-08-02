@@ -11,7 +11,7 @@ from buildml.anomaly.extras import (
     pyod_available,
     xgboost_available,
 )
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 
 AnomalyBackendName = Literal["sklearn", "pyod", "torch"]
 
@@ -41,7 +41,7 @@ def anomaly_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "torch": {
-                "available": torch_spec_available(),
+                "available": torch_available(),
                 "extra": "torch",
                 "methods": ["autoencoder"],
                 "modes": ["unsupervised", "novelty"],
@@ -96,8 +96,8 @@ def anomaly_capability_matrix() -> dict[str, Any]:
         ],
         "torch_spec_present": torch_spec_available(),
         "torch_import_honesty": (
-            "torch backend 'available' reflects package install (find_spec). "
-            "Broken wheels may still fail at require_torch — same policy as buildml.dl."
+            "torch backend 'available' uses a real import probe (torch_available). "
+            "torch_spec_present is the cheap find_spec signal only."
         ),
         "industry_extra_present": anomaly_industry_available(),
     }
@@ -106,7 +106,7 @@ def anomaly_capability_matrix() -> dict[str, Any]:
 def _default_backend_when_installed() -> str:
     if pyod_available():
         return "pyod"
-    if torch_spec_available():
+    if torch_available():
         return "torch"
     return "sklearn"
 

@@ -91,10 +91,38 @@ def main(argv: list[str] | None = None) -> int:
     runs: list[dict[str, object]] = []
     runs.append(_run_symbolic("sklearn", source="decision_tree"))
     runs.append(_run_symbolic("sklearn", source="decision_list"))
+
+    # Real import probes — skip industry when skope/imodels are installed-but-broken.
     if skope_rules_available():
-        runs.append(_run_symbolic("industry", method="skope_rules"))
+        try:
+            runs.append(_run_symbolic("industry", method="skope_rules"))
+        except Exception as exc:  # noqa: BLE001 — optional industry path
+            runs.append(
+                {
+                    "backend": "industry",
+                    "method": "skope_rules",
+                    "skipped": True,
+                    "error": str(exc),
+                }
+            )
+    else:
+        print(
+            "skope-rules unavailable/unusable — skipping industry skope_rules "
+            "(sklearn symbolic paths still run).",
+            flush=True,
+        )
     if imodels_available():
-        runs.append(_run_symbolic("industry", method="rulefit"))
+        try:
+            runs.append(_run_symbolic("industry", method="rulefit"))
+        except Exception as exc:  # noqa: BLE001
+            runs.append(
+                {
+                    "backend": "industry",
+                    "method": "rulefit",
+                    "skipped": True,
+                    "error": str(exc),
+                }
+            )
 
     payload = {
         "benchmark": "symbolic_rule_fidelity",

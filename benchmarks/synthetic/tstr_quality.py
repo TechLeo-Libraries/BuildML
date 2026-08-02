@@ -93,7 +93,17 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     runs: list[dict[str, object]] = []
-    runs.append(_run_method(backend="native", method="gaussian_copula"))
+    try:
+        runs.append(_run_method(backend="native", method="gaussian_copula"))
+    except (OSError, ImportError, RuntimeError) as exc:
+        # sdmetrics/torch DLL failures must not hard-fail the native baseline.
+        runs.append(
+            {
+                "backend": "native",
+                "method": "gaussian_copula",
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+        )
 
     if sdv_available():
         for method in ("ctgan", "tvae", "copulagan"):
@@ -106,30 +116,35 @@ def main(argv: list[str] | None = None) -> int:
                         batch_size=args.batch_size,
                     )
                 )
-            except Exception as exc:  # noqa: BLE001 — optional SDV training failures
+            except Exception as exc:  # noqa: BLE001 — optional SDV / torch failures
                 runs.append(
                     {
                         "backend": "sdv",
                         "method": method,
-                        "error": str(exc),
+                        "error": f"{type(exc).__name__}: {exc}",
                     }
                 )
     else:
         print(
-            "SDV not installed — skipping ctgan/tvae/copulagan "
-            "(install buildml[synthetic-industry]).",
+            "SDV unavailable/unusable — skipping ctgan/tvae/copulagan "
+            "(install buildml[synthetic-industry] on a host with working torch).",
             file=sys.stderr,
         )
 
-    baseline = next(r for r in runs if r.get("method") == "gaussian_copula")
+    baseline = next((r for r in runs if r.get("method") == "gaussian_copula"), {})
     baseline_score = baseline.get("tstr_score")
     for row in runs:
         score = row.get("tstr_score")
         if score is not None and baseline_score is not None:
             row["tstr_delta_vs_copula"] = float(score) - float(baseline_score)
 
+    try:
+        matrix = synthetic_capability_matrix()
+    except Exception as exc:  # noqa: BLE001
+        matrix = {"error": f"{type(exc).__name__}: {exc}"}
+
     payload = {
-        "capability_matrix": synthetic_capability_matrix(),
+        "capability_matrix": matrix,
         "runs": runs,
         "baseline_method": "gaussian_copula",
     }

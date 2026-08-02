@@ -301,5 +301,25 @@ Markdown under ``guides/``, also rendered here):
 * RAG / AI: :doc:`rag-deep`, :doc:`ai-operator-safety`,
   :doc:`ai-tools-operator-patterns`
 
+Proof suite (Tier A/B/C)
+------------------------
+
+End-to-end evidence that Session domains work with honest splits and holdout
+metrics lives in the repository ``proofs/`` directory (not thin smoke):
+
+* **Tier A — 25/25:** one deep project per major domain (classical through IL/RL)
+* **Tier B — 6/6:** Aegis, Harbor, Atlas, Pulse, Ledger, Nexus cross-domain products
+* **Tier C — 25/25:** same-split industry twins writing ``comparison.json``
+  (qualitative competitive bar 5-B — workflow parity over tiny metric gaps)
+
+Re-run from a source checkout::
+
+   python -m proofs._lib.run_all --tier all
+
+Domain → proof mappings are in ``guides/README.md`` (rendered here as
+:doc:`guide-index`) and ``proofs/README.md``. TDA prefers an editable
+``pip install -e ".[tda]"``. ``buildml[production]`` remains best-effort on
+Python 3.13 (environment markers skip broken upstream wheels).
+
 Install honesty stays unchanged: PyPI ``buildml`` is legacy 1.x until a 2.x
 wheel ships — use a GitHub or editable install for Session APIs above.

@@ -9,6 +9,8 @@ Honesty: **not** an AGI symbolic reasoner, Prolog engine, or full Z3 SMT product
 Core stays light (numpy / pandas / sklearn). Optional industry depth via
 `buildml[symbolic-industry]`; torch neuro-symbolic via `buildml[torch]`.
 
+**Proof:** [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/) (+ Tier C DecisionTree twin). Cross-domain: [pulse-support-copilot](../proofs/pulse-support-copilot/).
+
 **Go deeper:** [Symbolic deep](symbolic-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md)
 

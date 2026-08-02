@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.semisupervised.extras import (
     gradient_boosting_extras_available,
     hf_text_available,
@@ -38,7 +38,7 @@ def semisupervised_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "torch": {
-                "available": torch_spec_available(),
+                "available": torch_available(),
                 "extra": "torch",
                 "methods": ["fixmatch_tabular", "mixmatch_tabular"],
                 "modality": "tabular",
@@ -108,7 +108,7 @@ def semisupervised_capability_matrix() -> dict[str, Any]:
 
 
 def _default_backend_when_installed() -> str:
-    if torch_spec_available():
+    if torch_available():
         return "torch"
     if semisupervised_industry_available():
         return "industry"
@@ -118,7 +118,7 @@ def _default_backend_when_installed() -> str:
 def _default_method_when_installed() -> str:
     if xgboost_available():
         return "pseudo_label_xgb"
-    if torch_spec_available():
+    if torch_available():
         return "fixmatch_tabular"
     return "label_propagation"
 

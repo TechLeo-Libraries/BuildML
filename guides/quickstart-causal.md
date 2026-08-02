@@ -15,6 +15,8 @@ Honesty: native sklearn nuisances ship with core BuildML. Install
 paths. **Not** causal discovery, **not** IV / front-door (instruments refused).
 
 **Go deeper:** [Causal deep](causal-deep.md) ·
+
+**Proof:** [causal-treatment-effect](../proofs/causal-treatment-effect/) (+ Tier C sklearn AIPW twin).
 [EDA / Teaching Studio](eda-teaching-studio.md) (still non-causal) ·
 [Artifacts](artifacts-checkpoints-bundles.md)
 

@@ -13,6 +13,8 @@ train rows. Validation/test are never the query pool. Core never invents an
 oracle (examples/tests may simulate one).
 
 **Go deeper:** [Active learning deep](active-learning-deep.md) ·
+
+**Proof:** [active-labeling-budget](../proofs/active-labeling-budget/) (+ Tier C margin twin). Cross-domain: [atlas-label-studio](../proofs/atlas-label-studio/).
 [Artifacts](artifacts-checkpoints-bundles.md) ·
 [Semi-supervised](quickstart-semisupervised.md).
 

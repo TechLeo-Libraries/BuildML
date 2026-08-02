@@ -54,5 +54,11 @@ def require_langchain_community(*, feature: str = "LangChain RAG adapter") -> An
 
 
 def rag_advanced_available() -> bool:
-    """True when ``buildml[rag-advanced]`` LangChain pins are importable."""
-    return importlib.util.find_spec("langchain_community") is not None
+    """True when ``buildml[rag-advanced]`` LangChain pins import cleanly."""
+    if importlib.util.find_spec("langchain_community") is None:
+        return False
+    try:
+        import langchain_community  # noqa: F401
+    except Exception:
+        return False
+    return True

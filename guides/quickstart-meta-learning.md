@@ -11,6 +11,8 @@ then `adapt_to_task` / `evaluate_metalearning` on holdout episodes, and save a
 distinct bundle. Honesty: **not** foundation-model meta-learning or
 MAML-at-scale.
 
+**Proof:** [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/) (+ Tier C NearestCentroid k-shot twin).
+
 **Go deeper:** [Meta-learning deep](meta-learning-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md).
 

@@ -10,6 +10,51 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- **Proof suite (Tier A/B/C complete):** 25 single-domain Tier A projects, 6 Tier B
+  cross-domain products, and 25 Tier C same-split industry twins under
+  [`proofs/`](proofs/README.md). Harness: `python -m proofs._lib.run_all --tier all`.
+  Guides and Sphinx index deep-link to proofs; `buildml[production]` remains
+  best-effort on Python 3.13 (environment markers skip broken upstream wheels).
+- **README rewrite:** Session 2.x install honesty, extras table, production
+  caveats, domain overview, and proof suite (25/25 A, 6/6 B, 25/25 C) with
+  `python -m proofs._lib.run_all`.
+
+### Fixed
+
+- **Preprocess role skip:** default `scale` / `encode` / `impute` / outliers /
+  binning / text (and related resolvers) transform `feature`-role columns only;
+  `ignore` / `id` / `target` / `group` / `time` / `weight` are skipped unless
+  `columns=[...]` is passed explicitly — knapsack costs and IDs stay unmutated.
+- **FLAML adapter predict path:** Session evaluate/bundle replay wraps the full
+  FLAML `AutoML` object (not peeled `.model` / `.estimator`) so string
+  categoricals survive modern XGBoost.
+- **Production installability (Windows / Py3.13):** `buildml[production]` and nested
+  extras use PEP 508 markers so missing wheels no longer hard-fail resolver:
+  LightFM split to `recommenders-lightfm` (`python_version < "3.13"` and
+  non-Windows); `learn2learn`, `giotto-tda`, `neuralforecast`, and `skope-rules`
+  constrained off Py3.13. README honesty: production is best-effort.
+- **PyOD 3.x API:** HBOS/COPOD/ECOD no longer pass unsupported `random_state`;
+  DeepSVDD imports `pyod.models.deep_svdd` and requires `n_features`.
+- **Availability probes:** skope-rules, LightFM, SDMetrics/SDV (and related) use
+  real import try/except; capability matrices / default routers use
+  `torch_available()` instead of `torch_spec_available()` for graph, online,
+  anomaly, semi-supervised, meta-learning, ranking, multitask, active learning,
+  CBR, symbolic neuro paths. `metalearning_industry_available()` requires a
+  working torch import and discloses native first-order MAML when learn2learn
+  is absent.
+- **Benchmark hard-fails → skips:** symbolic skips unusable skope; synthetic
+  catches torch/sdmetrics `OSError`; CBR runs sklearn/industry before any torch
+  probe so AV/DLL faults cannot block the core floor. Active-learning / online /
+  multitask / semi-supervised smokes gate torch paths with `torch_available()`
+  (not `torch_spec_available()`). CBR sklearn/industry resolve and adapters no
+  longer eagerly import torch (lazy `torch_metric` + resolve short-circuits).
+
+### Added
+
+- **Capability matrices:** thin honest `ssl_capability_matrix`,
+  `rag_capability_matrix`, `unsupervised_capability_matrix`,
+  `forecast_capability_matrix`, `timeseries_capability_matrix` (+ Session
+  static accessors).
 - **R6 refinement sweep (Phase 2 industry depth — complete, R6.1–R6.11):** Each
   domain ships `*_capability_matrix()`, `backend=` auto-routing (sklearn/native
   fallback when extras absent; industry/torch/ssl/rl adapters default when

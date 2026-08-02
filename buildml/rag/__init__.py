@@ -41,6 +41,7 @@ __all__ = [
     "load_rag_bundle",
     "load_text_corpus",
     "rag_available",
+    "rag_capability_matrix",
     "rag_status",
     "require_rag_stack",
     "require_sentence_transformers",
@@ -56,6 +57,10 @@ def __getattr__(name: str) -> Any:
         from buildml.rag import extras
 
         return getattr(extras, name)
+    if name == "rag_capability_matrix":
+        from buildml.rag.catalog import rag_capability_matrix
+
+        return rag_capability_matrix
     if name in {
         "ChunkConfig",
         "EmbedConfig",

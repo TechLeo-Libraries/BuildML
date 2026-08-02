@@ -22,6 +22,8 @@ Honesty: not a Neo4j/KG product, not a full PyG algorithm zoo, not link-predicti
 depth in this surface.
 
 **Go deeper:** [Graph deep](graph-deep.md) ·
+
+**Proof:** [graph-fraud-rings](../proofs/graph-fraud-rings/) (+ Tier C networkx+LR). Cross-domain: [aegis-fraud-platform](../proofs/aegis-fraud-platform/).
 [Artifacts](artifacts-checkpoints-bundles.md)
 
 ```python

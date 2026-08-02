@@ -10,6 +10,8 @@ Behavioral cloning from demonstration tables, contextual bandits on logged
 `(context, action, reward)` rows, and an optional small Gymnasium REINFORCE
 loop. **Not** a MuJoCo / robotics / multi-agent platform.
 
+**Proof:** [imitation-cartpole-control](../proofs/imitation-cartpole-control/) (+ Tier C sklearn BC twin; Gymnasium optional via `buildml[rl]`).
+
 Runnable mirror: [`examples/imitation_rl_loop.py`](../examples/imitation_rl_loop.py).
 Deep guide: [imitation-rl-deep.md](imitation-rl-deep.md).
 

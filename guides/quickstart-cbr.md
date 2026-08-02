@@ -10,6 +10,8 @@ product, **not** a full cognitive CBR research suite. Core stays light
 (numpy / pandas / sklearn exact kNN); industry backends activate when extras
 are installed.
 
+**Proof:** [case-memory-claims](../proofs/case-memory-claims/) (+ Tier C KNeighbors twin). Cross-domain: [pulse-support-copilot](../proofs/pulse-support-copilot/).
+
 **Go deeper:** [CBR deep](cbr-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md)
 

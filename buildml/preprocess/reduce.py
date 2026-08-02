@@ -13,7 +13,6 @@ from sklearn.neighbors import NearestNeighbors
 
 from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.core.types import ColumnRole
-from buildml.core.validation import validate_column_names
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.explain.schemas import (
@@ -26,6 +25,7 @@ from buildml.explain.schemas import (
     Recommendation,
 )
 from buildml.ingest.detect import schema_from_dataframe
+from buildml.preprocess.columns import resolve_transform_columns
 from buildml.preprocess.result import PreprocessResult
 
 ReduceMethod = Literal["pca", "umap", "tsne"]
@@ -298,35 +298,26 @@ def _resolve_numeric_columns(
     train: pd.DataFrame,
     columns: list[str] | None,
 ) -> list[str]:
-    protected = {
-        ColumnRole.TARGET,
-        ColumnRole.ID,
-        ColumnRole.GROUP,
-        ColumnRole.TIME,
-        ColumnRole.WEIGHT,
-    }
-    if columns is not None:
-        names = validate_column_names(columns, dataset.columns)
-        names = [name for name in names if dataset.roles.get(name) not in protected]
-    else:
-        feature_roles = dataset.role_columns(ColumnRole.FEATURE)
-        candidates = feature_roles or [
-            str(c) for c in train.columns if dataset.roles.get(str(c)) not in protected
-        ]
-        names = [
-            str(c)
-            for c in candidates
-            if c in train.columns and pd.api.types.is_numeric_dtype(train[c])
-        ]
-    if not names:
-        raise ValidationError("No numeric columns available for dimensionality reduction")
-    non_numeric = [c for c in names if not pd.api.types.is_numeric_dtype(train[c])]
-    if non_numeric:
+    from buildml.preprocess.columns import DEFAULT_SKIP_ROLES
+
+    names = resolve_transform_columns(
+        dataset,
+        train,
+        columns,
+        kind="numeric",
+        empty_message=(
+            "No numeric feature columns available for dimensionality reduction. "
+            "Encode/scale first, or pass feature column names via columns=..."
+        ),
+    )
+    # Dimensionality reduction never consumes protected roles, even when named.
+    filtered = [n for n in names if dataset.roles.get(n) not in DEFAULT_SKIP_ROLES]
+    if not filtered:
         raise ValidationError(
-            "Dimensionality reduction requires numeric columns; "
-            f"encode/scale first. Non-numeric: {non_numeric[:12]}"
+            "No numeric columns available for dimensionality reduction "
+            "(protected roles target/id/ignore/group/time/weight are excluded)"
         )
-    return names
+    return filtered
 
 
 def _build_result(plan: ReducePlan) -> PreprocessResult:

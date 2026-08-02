@@ -39,6 +39,7 @@ __all__ = [
     "list_reduce_methods",
     "load_unsupervised_bundle",
     "save_unsupervised_bundle",
+    "unsupervised_capability_matrix",
     "unsupervised_status",
     "unsupervised_status_for_session",
 ]
@@ -66,7 +67,11 @@ def __getattr__(name: str) -> Any:
         from buildml.unsupervised.evaluate import evaluate_clustering
 
         return evaluate_clustering
-    if name in {"list_cluster_methods", "list_reduce_methods"}:
+    if name in {
+        "list_cluster_methods",
+        "list_reduce_methods",
+        "unsupervised_capability_matrix",
+    }:
         from buildml.unsupervised import catalog as catalog_mod
 
         return getattr(catalog_mod, name)

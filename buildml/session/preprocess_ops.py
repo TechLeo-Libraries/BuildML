@@ -40,7 +40,9 @@ def impute(
     Parameters
     ----------
     columns:
-        Columns to impute. Defaults to numeric non-target columns.
+        Columns to impute. Defaults to numeric ``feature``-role columns
+        (skips ``ignore`` / ``id`` / ``target`` / ``group`` / ``time`` /
+        ``weight``). Pass ``columns=[...]`` to force-include any column.
     strategy:
         Imputation strategy.
     fill_value:
@@ -79,6 +81,10 @@ def encode(
 
     Parameters
     ----------
+    columns:
+        Columns to encode. Defaults to categorical ``feature``-role columns
+        (skips ``ignore`` / ``id`` / ``target`` / ``group`` / ``time`` /
+        ``weight``). Pass ``columns=[...]`` to force-include any column.
     method:
         ``onehot`` / ``ordinal`` for standard encodings; ``infrequent`` to
         pool rare train levels before one-hot; ``target`` for smoothed mean
@@ -249,6 +255,16 @@ def scale(
     session, *, columns: list[str] | None = None, method: Literal['standard', 'minmax'] = "standard"
 ) -> Session:
     """Fit scaling on train and transform the full dataset.
+
+    Parameters
+    ----------
+    columns:
+        Columns to scale. Defaults to numeric ``feature``-role columns
+        (skips ``ignore`` / ``id`` / ``target`` / ``group`` / ``time`` /
+        ``weight`` — so costs and identifiers stay unmutated). Pass
+        ``columns=[...]`` to force-include any column.
+    method:
+        ``standard`` or ``minmax``.
 
     Notes
     -----

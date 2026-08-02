@@ -10,6 +10,8 @@ deep nets. Classical `Session.calibration()` remains for classical
 `fit(...)` classifiers and is complementary.
 
 **Go deeper:** [Probabilistic deep](probabilistic-deep.md) ·
+
+**Proof:** [prob-interval-risk](../proofs/prob-interval-risk/) (+ Tier C BayesianRidge+quantile). Cross-domain: [harbor-demand-desk](../proofs/harbor-demand-desk/).
 [Artifacts](artifacts-checkpoints-bundles.md)
 
 ```python

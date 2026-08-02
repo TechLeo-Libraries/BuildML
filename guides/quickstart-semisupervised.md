@@ -10,6 +10,8 @@ explain catalog, capability matrix, and a distinct semi-supervised bundle.
 Unlabeled targets are **NaN missingness** by default (mapped to sklearn `-1` internally).
 
 **Go deeper:** [Semi-supervised deep](semisupervised-deep.md) ·
+
+**Proof:** [semi-label-efficiency](../proofs/semi-label-efficiency/) (+ Tier C LabelPropagation). Cross-domain: [atlas-label-studio](../proofs/atlas-label-studio/).
 [Artifacts](artifacts-checkpoints-bundles.md) ·
 [Self-supervised](quickstart-selfsupervised.md).
 

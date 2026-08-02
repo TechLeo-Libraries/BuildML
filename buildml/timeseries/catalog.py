@@ -68,3 +68,41 @@ def timeseries_status_payload() -> dict[str, Any]:
             "Analysis APIs refuse shuffled splits; prefer time_split with scope='train'.",
         ],
     }
+
+
+def timeseries_capability_matrix() -> dict[str, Any]:
+    """Honest capability matrix for time-series analysis backends."""
+    return {
+        "backends": {
+            "core": {
+                "available": True,
+                "extra": None,
+                "decompose": ["moving_average"],
+                "changepoint": sorted(CHANGEPOINT_METHODS_CORE),
+                "notes": "Numpy moving-average + CUSUM — always available.",
+            },
+            "statsmodels": {
+                "available": statsmodels_available(),
+                "extra": "timeseries",
+                "decompose": ["stl", "classical"],
+                "notes": "STL/classical decompose + ACF/ADF/KPSS (buildml[timeseries]).",
+            },
+            "ruptures": {
+                "available": ruptures_available(),
+                "extra": "timeseries",
+                "changepoint": sorted(CHANGEPOINT_METHODS_EXTRA),
+                "notes": "PELT / BinSeg changepoints when ruptures is installed.",
+            },
+        },
+        "default_decompose": DEFAULT_DECOMPOSE,
+        "default_changepoint": DEFAULT_CHANGEPOINT,
+        "decompose_methods": list(list_decompose_methods()),
+        "changepoint_methods": list(list_changepoint_methods()),
+        "install_hints": {
+            "timeseries": "pip install 'buildml[timeseries]'  # statsmodels + ruptures",
+        },
+        "non_goals": [
+            "Full forecasting product (see buildml.forecasting)",
+            "Streaming anomaly product",
+        ],
+    }

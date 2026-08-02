@@ -206,14 +206,9 @@ def transform_feature_selector(
 
 
 def _protected_columns(dataset: Dataset) -> list[str]:
-    protected_roles = {
-        ColumnRole.TARGET,
-        ColumnRole.ID,
-        ColumnRole.GROUP,
-        ColumnRole.TIME,
-        ColumnRole.WEIGHT,
-    }
-    return [name for name, role in dataset.roles.items() if role in protected_roles]
+    from buildml.preprocess.columns import protected_role_columns
+
+    return protected_role_columns(dataset)
 
 
 def _resolve_feature_columns(

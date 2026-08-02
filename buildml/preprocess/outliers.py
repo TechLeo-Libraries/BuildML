@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 
 from buildml.core.errors import ValidationError
-from buildml.core.validation import validate_column_names
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.explain.schemas import (
@@ -22,6 +21,7 @@ from buildml.explain.schemas import (
     Recommendation,
 )
 from buildml.ingest.detect import schema_from_dataframe
+from buildml.preprocess.columns import resolve_transform_columns
 from buildml.preprocess.result import PreprocessResult
 
 OutlierMethod = Literal["iqr", "zscore"]
@@ -79,7 +79,16 @@ def fit_outlier_plan(
         raise ValidationError("zscore_threshold must be positive")
 
     train = frame_for_partition(dataset, split_plan, "train")
-    cols = _resolve_numeric_columns(dataset, train, columns)
+    cols = resolve_transform_columns(
+        dataset,
+        train,
+        columns,
+        kind="numeric",
+        empty_message=(
+            "No numeric feature columns available for outlier handling. "
+            "Pass columns=... explicitly to include ignore/id roles."
+        ),
+    )
     lower: dict[str, float] = {}
     upper: dict[str, float] = {}
     for column in cols:
@@ -213,30 +222,6 @@ def _flag_mask(
         values = pd.to_numeric(frame[column], errors="coerce")
         mask = mask | (values < lower[column]) | (values > upper[column])
     return mask
-
-
-def _resolve_numeric_columns(
-    dataset: Dataset,
-    train: pd.DataFrame,
-    columns: list[str] | None,
-) -> list[str]:
-    if columns is not None:
-        names = validate_column_names(columns, dataset.columns)
-        for name in names:
-            if not pd.api.types.is_numeric_dtype(train[name]):
-                raise ValidationError(
-                    f"Outlier handling requires numeric columns; '{name}' is not numeric"
-                )
-        return names
-    target_cols = set(dataset.role_columns("target"))
-    numeric = [
-        str(c)
-        for c in train.columns
-        if c not in target_cols and pd.api.types.is_numeric_dtype(train[c])
-    ]
-    if not numeric:
-        raise ValidationError("No numeric columns available for outlier handling")
-    return numeric
 
 
 def _build_result(plan: OutlierPlan, *, mutated: bool) -> PreprocessResult:

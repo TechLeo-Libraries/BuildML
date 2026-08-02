@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.unsupervised.extras import hdbscan_available, umap_available
 
 AssignStrategy = Literal["native", "nearest_centroid", "nearest_core", "gmm_predict"]
@@ -99,12 +99,55 @@ def list_cluster_methods(*, include_torch: bool = True) -> tuple[dict[str, Any],
             rows.append(
                 {
                     "method": name,
-                    "backend": "torch" if torch_spec_available() else "unavailable",
+                    "backend": "torch" if torch_available() else "unavailable",
                     "extra": "torch",
                     "assign_strategy": "native",
                 }
             )
     return tuple(rows)
+
+
+def unsupervised_capability_matrix() -> dict[str, Any]:
+    """Honest capability matrix for clustering / reduction backends."""
+    return {
+        "backends": {
+            "sklearn": {
+                "available": True,
+                "extra": None,
+                "methods": sorted(CORE_SKLEARN_METHODS),
+                "notes": "Core sklearn clustering — always available.",
+            },
+            "hdbscan": {
+                "available": hdbscan_available(),
+                "extra": "unsupervised",
+                "methods": [HDBSCAN_METHOD],
+                "notes": "HDBSCAN density clustering when buildml[unsupervised] installed.",
+            },
+            "torch": {
+                "available": torch_available(),
+                "extra": "torch",
+                "methods": sorted(TORCH_METHODS),
+                "notes": "DEC/IDEC deep clustering when torch imports cleanly.",
+            },
+        },
+        "reduction": {
+            "methods": list(list_reduce_methods()),
+            "default_viz": DEFAULT_REDUCE_VIZ,
+            "umap_present": umap_available(),
+        },
+        "default_density_method": DEFAULT_DENSITY_METHOD,
+        "default_tabular_deep_method": DEFAULT_TABULAR_DEEP_METHOD,
+        "cluster_methods": list(list_cluster_methods()),
+        "torch_spec_present": torch_spec_available(),
+        "install_hints": {
+            "unsupervised": "pip install 'buildml[unsupervised]'  # hdbscan + umap-learn",
+            "torch": "pip install 'buildml[torch]'  # DEC/IDEC",
+        },
+        "non_goals": [
+            "Full deep clustering research zoo",
+            "GPU-scale embedding clustering products",
+        ],
+    }
 
 
 def list_reduce_methods() -> tuple[dict[str, Any], ...]:

@@ -9,7 +9,6 @@ import pandas as pd
 
 from buildml.cbr.adapters.industry_ann import add_vectors_to_ann_index
 from buildml.cbr.adapters.text_embed import embed_text_cases
-from buildml.cbr.adapters.torch_metric import encode_with_torch
 from buildml.cbr.cases import Case, CaseBase, encode_categoricals
 from buildml.cbr.features import (
     matrix_from_frame,
@@ -243,6 +242,8 @@ def _extend_search_artifacts(
             numeric_matrix=new_numeric if new_numeric.shape[1] else None,
         )
     elif backend == "torch" and mem.torch_encoder_ is not None:
+        from buildml.cbr.adapters.torch_metric import encode_with_torch
+
         new_search = encode_with_torch(
             mem.torch_encoder_,
             new_numeric,

@@ -13,6 +13,8 @@ catalog, and a distinct unsupervised bundle. Dimensionality reduction stays on
 train-fitted components.
 
 **Go deeper:** [Unsupervised deep](unsupervised-deep.md) ·
+
+**Proof:** [cluster-customer-segments](../proofs/cluster-customer-segments/) (+ Tier C KMeans+PCA twin).
 [Artifacts](artifacts-checkpoints-bundles.md) ·
 [Preprocess depth](preprocess-depth.md) (PCA).
 

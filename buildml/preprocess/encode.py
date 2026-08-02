@@ -23,7 +23,6 @@ from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
-from buildml.core.validation import validate_column_names
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.explain.schemas import (
@@ -36,6 +35,7 @@ from buildml.explain.schemas import (
     Recommendation,
 )
 from buildml.ingest.detect import schema_from_dataframe
+from buildml.preprocess.columns import resolve_transform_columns
 from buildml.preprocess.result import PreprocessResult
 
 EncodeMethod = Literal["onehot", "ordinal", "infrequent", "target"]
@@ -91,12 +91,26 @@ def fit_encoder(
     random_state: int = 0,
     smoothing: float = 10.0,
 ) -> EncodePlan:
-    """Fit an encoder on the train partition only."""
+    """Fit an encoder on the train partition only.
+
+    By default only categorical ``feature``-role columns are encoded
+    (``ignore``, ``id``, ``target``, ``group``, ``time``, and ``weight`` are
+    skipped). Pass ``columns=[...]`` explicitly to force-include any column.
+    """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
     train = frame_for_partition(dataset, split_plan, "train")
-    cols = _resolve_categorical_columns(dataset, train, columns)
+    cols = resolve_transform_columns(
+        dataset,
+        train,
+        columns,
+        kind="categorical",
+        empty_message=(
+            "No categorical feature columns available for encoding. "
+            "Pass columns=... explicitly to include ignore/id roles."
+        ),
+    )
 
     if method in {"onehot", "ordinal"}:
         if method == "onehot":
@@ -341,30 +355,6 @@ def _numeric_target(series: pd.Series) -> np.ndarray:
     if (codes < 0).any():
         raise ValidationError("Target encoding cannot proceed with null target labels")
     return codes.astype(float)
-
-
-def _resolve_categorical_columns(
-    dataset: Dataset,
-    train: pd.DataFrame,
-    columns: list[str] | None,
-) -> list[str]:
-    if columns is not None:
-        return validate_column_names(columns, dataset.columns)
-
-    target_cols = set(dataset.role_columns("target"))
-    cats = [
-        str(c)
-        for c in train.columns
-        if c not in target_cols
-        and (
-            pd.api.types.is_object_dtype(train[c])
-            or isinstance(train[c].dtype, pd.CategoricalDtype)
-            or pd.api.types.is_string_dtype(train[c])
-        )
-    ]
-    if not cats:
-        raise ValidationError("No categorical columns available for encoding")
-    return cats
 
 
 def _build_result(plan: EncodePlan) -> PreprocessResult:

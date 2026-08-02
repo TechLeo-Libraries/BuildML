@@ -50,6 +50,7 @@ __all__ = [
     "ForecastPlan",
     "evaluate_forecast",
     "fit_forecaster",
+    "forecast_capability_matrix",
     "forecasting_status",
     "forecasting_status_for_session",
     "generate_forecast",
@@ -97,4 +98,8 @@ def __getattr__(name: str) -> Any:
         from buildml.forecasting import explain_hooks as hooks
 
         return getattr(hooks, name)
+    if name == "forecast_capability_matrix":
+        from buildml.forecasting.catalog import forecast_capability_matrix
+
+        return forecast_capability_matrix
     raise AttributeError(f"module 'buildml.forecasting' has no attribute {name!r}")

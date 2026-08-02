@@ -12,6 +12,8 @@ bundle. Backends: **sklearn** (core), **industry** (`buildml[multitask-industry]
 **torch** (`buildml[torch]` for shared-trunk multi-head). Classical
 `Session.fit` remains single-target.
 
+**Proof:** [multi-target-underwriting](../proofs/multi-target-underwriting/) (+ Tier C MultiOutputClassifier twin).
+
 **Go deeper:** [Multi-task deep](multi-task-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md).
 

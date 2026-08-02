@@ -10,6 +10,8 @@ explain catalog, capability matrix, and a distinct anomaly bundle. Thresholds
 and alert rates are always disclosed.
 
 **Go deeper:** [Anomaly deep](anomaly-deep.md) ·
+
+**Proof:** [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/) (+ Tier C IsolationForest twin). Cross-domain: [aegis-fraud-platform](../proofs/aegis-fraud-platform/).
 [Artifacts](artifacts-checkpoints-bundles.md) ·
 [Unsupervised](quickstart-unsupervised.md) (separate clustering API).
 

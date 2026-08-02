@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.symbolic.extras import (
     imodels_available,
     skope_rules_available,
@@ -146,7 +146,7 @@ def _default_industry_method() -> str:
 
 
 def _default_neuro_backend() -> str:
-    if torch_spec_available():
+    if torch_available():
         return "torch"
     return "sklearn"
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.online.extras import online_industry_available, river_available
 
 OnlineBackendName = Literal["sklearn", "industry", "torch"]
@@ -65,7 +65,7 @@ def online_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "torch": {
-                "available": torch_spec_available(),
+                "available": torch_available(),
                 "extra": "torch",
                 "estimators": list(TORCH_ESTIMATORS),
                 "modality": "tabular",
@@ -118,7 +118,7 @@ def online_capability_matrix() -> dict[str, Any]:
 def _default_backend_when_installed() -> str:
     if online_industry_available():
         return "industry"
-    if torch_spec_available():
+    if torch_available():
         return "torch"
     return "sklearn"
 
@@ -126,7 +126,7 @@ def _default_backend_when_installed() -> str:
 def _default_estimator_when_installed() -> str:
     if online_industry_available():
         return "river_logistic"
-    if torch_spec_available():
+    if torch_available():
         return "replay_mlp"
     return "sgd_classifier"
 

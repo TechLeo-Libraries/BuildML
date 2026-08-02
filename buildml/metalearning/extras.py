@@ -24,13 +24,18 @@ def learn2learn_available() -> bool:
 
 
 def metalearning_industry_available() -> bool:
-    """Industry MAML/Reptile tabular adapters (requires buildml[torch])."""
-    return torch_spec_available()
+    """Industry tabular MAML/Reptile adapters when torch imports cleanly.
+
+    Prefer ``learn2learn`` when installed; otherwise the industry adapter uses an
+    honest native first-order SGD meta-loop (disclosed in the capability matrix).
+    Do **not** claim industry availability from ``find_spec('torch')`` alone.
+    """
+    return torch_available()
 
 
 def metalearning_torch_available() -> bool:
-    """Deep prototypical encoder path (buildml[torch])."""
-    return torch_spec_available()
+    """Deep prototypical encoder path (buildml[torch]) — real import probe."""
+    return torch_available()
 
 
 def require_learn2learn(*, feature: str = "MAML/Reptile meta-learning") -> Any:

@@ -9,6 +9,8 @@ holdout. Persist via `buildml.federated_bundle.v1`.
 Both are honest in-process simulations — not production FL networking; **not**
 cryptographic secure aggregation.
 
+**Proof:** [federated-hospital-sim](../proofs/federated-hospital-sim/) (+ Tier C pooled SGD twin). Cross-domain: [nexus-federated-clinical](../proofs/nexus-federated-clinical/).
+
 **Go deeper:** [Federated learning deep](federated-deep.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md)
 

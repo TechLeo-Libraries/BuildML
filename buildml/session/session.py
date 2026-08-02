@@ -882,7 +882,9 @@ class Session:
         Parameters
         ----------
         columns:
-            Columns to impute. Defaults to numeric non-target columns.
+            Columns to impute. Defaults to numeric ``feature``-role columns
+            (skips ``ignore`` / ``id`` / ``target`` / ``group`` / ``time`` /
+            ``weight``). Pass ``columns=[...]`` to force-include any column.
         strategy:
             Imputation strategy.
         fill_value:
@@ -915,6 +917,10 @@ class Session:
 
         Parameters
         ----------
+        columns:
+            Columns to encode. Defaults to categorical ``feature``-role columns
+            (skips ``ignore`` / ``id`` / ``target`` / ``group`` / ``time`` /
+            ``weight``). Pass ``columns=[...]`` to force-include any column.
         method:
             ``onehot`` / ``ordinal`` for standard encodings; ``infrequent`` to
             pool rare train levels before one-hot; ``target`` for smoothed mean
@@ -1058,6 +1064,16 @@ class Session:
         method: Literal["standard", "minmax"] = "standard",
     ) -> Session:
         """Fit scaling on train and transform the full dataset.
+
+        Parameters
+        ----------
+        columns:
+            Columns to scale. Defaults to numeric ``feature``-role columns
+            (skips ``ignore`` / ``id`` / ``target`` / ``group`` / ``time`` /
+            ``weight`` — so costs and identifiers stay unmutated). Pass
+            ``columns=[...]`` to force-include any column.
+        method:
+            ``standard`` or ``minmax``.
 
         Notes
         -----
@@ -4066,6 +4082,41 @@ class Session:
     def tda_capability_matrix() -> dict[str, Any]:
         """Honest capability matrix for native vs giotto TDA backends."""
         return tda_ops.tda_capability_matrix_op()
+
+    @staticmethod
+    def ssl_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for self-supervised backends."""
+        from buildml.selfsupervised.torch.catalog import ssl_capability_matrix
+
+        return ssl_capability_matrix()
+
+    @staticmethod
+    def unsupervised_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for clustering / reduction backends."""
+        from buildml.unsupervised.catalog import unsupervised_capability_matrix
+
+        return unsupervised_capability_matrix()
+
+    @staticmethod
+    def rag_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for RAG embed / retrieve stacks."""
+        from buildml.rag.catalog import rag_capability_matrix
+
+        return rag_capability_matrix()
+
+    @staticmethod
+    def forecast_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for forecasting backends."""
+        from buildml.forecasting.catalog import forecast_capability_matrix
+
+        return forecast_capability_matrix()
+
+    @staticmethod
+    def timeseries_capability_matrix() -> dict[str, Any]:
+        """Honest capability matrix for time-series analysis backends."""
+        from buildml.timeseries.catalog import timeseries_capability_matrix
+
+        return timeseries_capability_matrix()
 
     def transform_tda(
         self,

@@ -15,7 +15,6 @@ from sklearn.feature_extraction.text import (
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
-from buildml.core.validation import validate_column_names
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.explain.schemas import (
@@ -28,6 +27,7 @@ from buildml.explain.schemas import (
     Recommendation,
 )
 from buildml.ingest.detect import schema_from_dataframe
+from buildml.preprocess.columns import resolve_transform_columns
 from buildml.preprocess.result import PreprocessResult
 
 TextMethod = Literal["count", "tfidf", "hashing"]
@@ -199,33 +199,16 @@ def _resolve_text_columns(
     train: pd.DataFrame,
     columns: list[str] | None,
 ) -> list[str]:
-    if columns is not None:
-        names = validate_column_names(columns, dataset.columns)
-    else:
-        protected = {
-            ColumnRole.TARGET,
-            ColumnRole.ID,
-            ColumnRole.GROUP,
-            ColumnRole.TIME,
-            ColumnRole.WEIGHT,
-        }
-        feature_roles = dataset.role_columns(ColumnRole.FEATURE)
-        candidates = feature_roles or [
-            str(c) for c in train.columns if dataset.roles.get(str(c)) not in protected
-        ]
-        names = [
-            str(c)
-            for c in candidates
-            if c in train.columns
-            and (
-                pd.api.types.is_string_dtype(train[c])
-                or pd.api.types.is_object_dtype(train[c])
-            )
-        ]
-    if not names:
-        raise ValidationError(
-            "No text/object columns available for text_features. Pass columns=... explicitly."
-        )
+    names = resolve_transform_columns(
+        dataset,
+        train,
+        columns,
+        kind="text",
+        empty_message=(
+            "No text/object feature columns available for text_features. "
+            "Pass columns=... explicitly."
+        ),
+    )
     for column in names:
         if pd.api.types.is_numeric_dtype(train[column]):
             raise ValidationError(

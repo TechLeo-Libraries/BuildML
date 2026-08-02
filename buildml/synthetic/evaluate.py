@@ -91,15 +91,27 @@ def evaluate_synthetic(
         metrics, per_column = _fidelity_metrics(real_sub, syn_sub, plan)
         resolved_eval = _resolve_eval_backend(eval_backend)
         if resolved_eval == "sdmetrics":
-            sdv_meta = _plan_sdv_metadata(plan)
-            sd_metrics, sd_warn = sdmetrics_quality_scores(
-                real_sub, syn_sub, metadata=sdv_meta
-            )
-            metrics.update(sd_metrics)
-            warnings.extend(sd_warn)
-            disclosures.append(
-                "SDMetrics QualityReport scores appended (buildml[synthetic-industry])."
-            )
+            try:
+                sdv_meta = _plan_sdv_metadata(plan)
+                sd_metrics, sd_warn = sdmetrics_quality_scores(
+                    real_sub, syn_sub, metadata=sdv_meta
+                )
+                metrics.update(sd_metrics)
+                warnings.extend(sd_warn)
+                disclosures.append(
+                    "SDMetrics QualityReport scores appended "
+                    "(buildml[synthetic-industry])."
+                )
+            except (ImportError, OSError, RuntimeError) as exc:
+                # Broken torch/sdmetrics wheels (common on Windows) — keep builtin
+                # fidelity metrics and disclose the skip instead of hard-failing.
+                warnings.append(
+                    f"eval_backend='sdmetrics' skipped ({type(exc).__name__}: {exc}); "
+                    "reporting builtin fidelity metrics only."
+                )
+                disclosures.append(
+                    "SDMetrics path unavailable at runtime; builtin KS/TV/corr metrics used."
+                )
         disclosures.append(
             "Fidelity metrics: KS distance (cont/int), total variation (cat), "
             "mean absolute correlation difference (cont)."

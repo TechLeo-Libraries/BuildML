@@ -42,7 +42,7 @@ def recommender_capability_matrix() -> dict[str, Any]:
             },
             "lightfm": {
                 "available": lightfm_available(),
-                "extra": "recommenders-industry",
+                "extra": "recommenders-lightfm",
                 "methods": list(_LIGHTFM_METHODS),
                 "feedback": ["explicit", "implicit"],
                 "features": "Hybrid WARP/BPR with optional user/item side features",
@@ -63,7 +63,11 @@ def recommender_capability_matrix() -> dict[str, Any]:
         "install_hints": {
             "recommenders-industry": (
                 "pip install 'buildml[recommenders-industry]'  "
-                "# implicit (ALS/BPR) + LightFM hybrid recommenders"
+                "# implicit (ALS/BPR)"
+            ),
+            "recommenders-lightfm": (
+                "pip install 'buildml[recommenders-lightfm]'  "
+                "# LightFM hybrid (skipped on Win/Py3.13 — no reliable wheels)"
             ),
         },
         "non_goals": [

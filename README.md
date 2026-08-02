@@ -1,63 +1,82 @@
 # BuildML
 
-BuildML is a Python library for tabular machine-learning workflows built around
-a stateful `Session`. The Session holds the dataset, column roles,
+BuildML is a Python library for machine-learning workflows built around a
+stateful `Session`. The Session holds the dataset, column roles,
 train/validation/test membership, fitted preprocessing plans, an optional
 estimator, and a record of every operation you run. Preprocessing learns from
 the training partition only; validation and test rows receive frozen
-transformations. That train-only boundary is enforced in the API, not buried in
-docstrings you might miss.
+transformations. That train-only boundary is enforced in the API.
 
-BuildML 2.4 alpha (`2.4.0a1`) is pre-release software. Public methods, report
+**BuildML 2.4 alpha** (`2.4.0a1`) is pre-release software. Public methods, report
 schemas, and serialized bundle formats may change before a stable 2.x release.
-The public 2.x entry point is `buildml.Session`. Classical tabular ML is the
-main path; deep learning, retrieval, and LLM-assisted operations are optional
-extras on the same Session.
+The public 2.x entry point is `buildml.Session`.
+
+| Path | What it is |
+| --- | --- |
+| Classical tabular | Main path — ingest → roles → split → preprocess → fit → evaluate |
+| Torch DL | Optional multimodal / speech / vision extras on the same Session |
+| RAG | Optional retrieve → generate → evaluate |
+| AI operator | Optional LLM-assisted plan/execute with allowlists |
+| R1–R6 industry depth | Optional backends + capability matrices per domain |
+
+---
 
 ## Install
 
-Python 3.10–3.13.
+**Python 3.10–3.13.**
 
 > **Install honesty:** PyPI `buildml` is still the legacy **1.x** line
 > (`1.0.9`, MIT). It does **not** install Session 2.x. Until a 2.x wheel is
-> published, install from GitHub:
+> published, install from GitHub or an editable checkout:
 
 ```bash
+# GitHub (Session 2.x)
 pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-```
 
-Common optional groups (after the GitHub / editable install above):
-
-```bash
-pip install "buildml[viz]"        # matplotlib, seaborn
-pip install "buildml[reports]"    # Sweetviz, ydata-profiling
-pip install "buildml[eda]"        # viz + reports
-pip install "buildml[dashboard]"  # local interactive EDA dashboard
-pip install "buildml[engines]"    # Polars and DuckDB adapters
-pip install "buildml[optuna]"     # Optuna hyperparameter search
-pip install "buildml[torch]"      # Torch DL path (alias: buildml[dl])
-pip install "buildml[speech]"     # ASR + speech finetune-lite (adds transformers)
-pip install "buildml[vision]"     # torchvision pretrained vision hooks
-pip install "buildml[pretrained]" # vision + speech pretrained extras
-pip install "buildml[serve]"      # managed local FastAPI model serving
-pip install "buildml[onnx]"       # optional ONNX checker for export_torch
-pip install "buildml[rag]"        # optional dense/rerank backends
-pip install "buildml[ai]"         # LLM operator (alias: buildml[llm])
-pip install "buildml[all-classical]"
-pip install "buildml[production]"  # industry-depth ML domains (see below)
-```
-
-From a source checkout:
-
-```bash
+# Editable source checkout (recommended for development / proofs)
 pip install -e ".[dev]"
 ```
 
-## A classical workflow
+### Optional extras (scannable)
 
-Suppose you are modeling loan approval from applicant age, income, and a binary
-outcome. Missing ages and differently scaled numeric columns are common here;
-you also want a held-out test set that never influenced imputation or scaling.
+| Extra | Install | Adds |
+| --- | --- | --- |
+| Viz / EDA | `buildml[viz]`, `[reports]`, `[eda]`, `[dashboard]` | matplotlib/seaborn; Sweetviz/profiling; local EDA app |
+| Engines | `buildml[engines]` | Polars + DuckDB adapters |
+| Search / AutoML | `buildml[optuna]`, `[automl]`, `[automl-industry]` | Optuna; native AutoML; FLAML / AutoGluon / GBDT families |
+| Imbalance | `buildml[imbalanced]` | imbalanced-learn resample |
+| Torch / DL | `buildml[torch]` / `[dl]` / `[audio]` | Tabular + multimodal Torch path |
+| Speech / Vision | `buildml[speech]`, `[vision]`, `[pretrained]` | ASR + finetune-lite; torchvision backbones |
+| Serve / ONNX | `buildml[serve]`, `[onnx]` | Local FastAPI serve; ONNX checker |
+| RAG | `buildml[rag]`, `[rag-advanced]` | Dense/rerank backends; LangChain hooks |
+| Graph / RL / TDA | `buildml[graph]`, `[graph-pyg]`, `[rl]`, `[rl-industry]`, `[tda]` | NetworkX / PyG; Gymnasium / SB3; ripser/persim |
+| AI | `buildml[ai]` / `[llm]` | LLM operator (BYO API key) |
+| Classical bundle | `buildml[all-classical]` | engines + imbalanced + eda + excel + dashboard + optuna + automl |
+| Industry meta | `buildml[production]` | R1–R6 industry extras — **best-effort** (see below) |
+
+```bash
+pip install "buildml[production]"   # after GitHub / editable install above
+```
+
+### `buildml[production]` honesty
+
+R1–R6 industry refinement is **complete** (capability matrices, backend routing,
+benchmark smokes, guides). `buildml[production]` is a **best-effort** meta-extra:
+it pulls domain depth plus `*-industry` adapters — **not** a guarantee that every
+nested industry wheel installs on every platform.
+
+On **Python 3.13** (especially Windows) some nested pins are skipped via
+environment markers when upstream wheels are missing or broken (LightFM,
+learn2learn/qpth, giotto-tda, neuralforecast, skope-rules, …). Core sklearn paths
+and markers that resolve still install. Check each domain’s capability matrix
+(e.g. `Session.automl_capability_matrix()`) and the [proof suite](proofs/README.md)
+for what actually runs in your environment.
+
+It does **not** include dashboard, serve, or AI operator extras.
+
+---
+
+## A classical workflow
 
 ```python
 import pandas as pd
@@ -79,7 +98,10 @@ session.set_roles(
 )
 session.split(test_size=0.25, stratify=True, random_state=42)
 
-# Each step below fits on train and applies frozen values everywhere else.
+# Fit on train; apply frozen transforms everywhere else.
+# Default impute/encode/scale touch feature-role columns only —
+# ignore / id / target / group / time / weight stay unmutated
+# (pass columns=[...] to force-include).
 session.impute(strategy="median")
 session.handle_outliers(method="iqr", action="cap")
 session.scale(method="standard")
@@ -89,16 +111,14 @@ result = session.evaluate(partition="test")
 print(result.metrics)
 ```
 
-Random splitting assumes rows are exchangeable. When they are not—patients
-nested under clinics, or sales rows ordered in time—use `group_split`,
-`time_split`, or `inject_split` with memberships you designed outside BuildML.
+When rows are not exchangeable, use `group_split`, `time_split`, or
+`inject_split` with memberships you designed outside BuildML.
 
-Cross-validation and hyperparameter search draw folds from the training
+Cross-validation and hyperparameter search draw folds from the **training**
 partition only. The Session test holdout is not used for ranking.
 
 ```python
 from sklearn.tree import DecisionTreeClassifier
-
 from buildml.preprocess import PreprocessRecipe
 
 cv = session.cv_score(
@@ -114,35 +134,17 @@ search = session.grid_search(
     cv=5,
 )
 print(search.best_params, search.best_score)
-
-# In-tree NumPy GA HPO (population/selection/crossover/mutation/elitism) —
-# not neuroevolution / NAS / swarm zoo. Same train-only CV contract.
-evo = session.evolutionary_search(
-    DecisionTreeClassifier(random_state=0),
-    param_space={"max_depth": {"type": "int", "low": 2, "high": 8}},
-    population_size=8,
-    n_generations=4,
-    cv=3,
-    random_state=0,
-)
-print(evo.best_params, evo.best_score)
-session.evaluate(partition="test")  # confirm once after selection
 ```
 
-Pass a `PreprocessRecipe` when encoding, binning, feature selection, or
-outlier fences should be refit inside each fold — on **unpoisoned** data
-(no prior Session-global impute/encode/scale/…). Custom transforms and
-resampling stay Session-global. If Session-global preprocess already ran,
-CV/search **refuse even when a fold-local recipe is passed** (recipes do not
-rebuild from raw rows). Opt in only with
-`allow_session_global_preprocess=True` (scores remain leakage-biased), or
-re-ingest / checkpoint-load unpoisoned data first.
+Pass a `PreprocessRecipe` when encoding, binning, feature selection, or outlier
+fences should be refit inside each fold — on **unpoisoned** data (no prior
+Session-global impute/encode/scale). Opt in only with
+`allow_session_global_preprocess=True` when you intentionally accept leakage-biased
+scores, or re-ingest / checkpoint-load unpoisoned data first.
+
+---
 
 ## Artifacts and inspection
-
-Checkpoints store data workflow state (dataset, roles, partitions, history).
-Model and pipeline bundles store fitted estimators and preprocess plans—they do
-not embed each other.
 
 ```python
 session.checkpoint_save("artifacts/checkpoint")
@@ -151,24 +153,20 @@ restored = Session.checkpoint_load("artifacts/checkpoint")
 session.save_pipeline("artifacts/pipeline", evaluate_partition="test")
 loaded = Session.ingest(frame).load_pipeline("artifacts/pipeline")
 loaded.apply_preprocess_plans()
-```
 
-Before changing state, you can read the operation catalog against live Session
-state:
-
-```python
 before = session.explain("scale", moment="before")
 steps = session.workflow()
 walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 ```
 
-`workflow()` marks operations as done, available, blocked, or skipped from API
-prerequisites. It does not judge whether your split or model fits the domain.
+Checkpoints store data workflow state. Model and pipeline bundles store fitted
+estimators and preprocess plans — they do not embed each other.
+`workflow()` marks operations as done / available / blocked / skipped from API
+prerequisites; it does not judge domain fit.
+
+---
 
 ## EDA and reports
-
-Exploratory analysis can export offline HTML or open a local dashboard when the
-`dashboard` extra is installed:
 
 ```python
 session.eda(export_html="artifacts/eda.html")
@@ -176,7 +174,6 @@ session.eda(export_html="artifacts/eda.html")
 # pip install "buildml[dashboard]"
 handle = session.eda_app(port=8765)
 # handle.url -> http://127.0.0.1:8765/
-# handle.stop() when finished
 
 session.evaluate(
     partition="test",
@@ -186,109 +183,83 @@ session.evaluate(
 ```
 
 Reports surface screening evidence. They do not establish causality, fairness,
-or deployment readiness on their own.
-
-Target encoding, PCA, feature selection, calibration, threshold tuning,
-learning curves, and permutation importance are covered in the
+or deployment readiness on their own. Deeper classical topics (target encoding,
+PCA, calibration, learning curves, permutation importance) live in the
 [classical quickstart](guides/quickstart-classical.md) and
 [workflow guide](docs/workflow-guide.rst).
 
-## Industry depth / optional extras
+---
 
-Core `import buildml` stays light (numpy, pandas, scikit-learn). Domain depth
-and industry backends are **optional extras** — install only what you need.
+## Domains at a glance
 
-**One-shot depth install** — R6 refinement is **complete**; `buildml[production]`
-pulls every Phase 2 thin-layer domain plus all `*-industry` adapters:
+Core `import buildml` stays light (numpy, pandas, scikit-learn). Domain methods
+attach to the same Session; classical `fit` / `evaluate` stay unchanged. Each
+refined domain exposes an honest **capability matrix** reporting which backends
+are installed.
+
+| Area | Guide | Notes |
+| --- | --- | --- |
+| Classical | [quickstart-classical](guides/quickstart-classical.md) | Roles, splits, preprocess, fit, CV/search |
+| Unsupervised / ensembles | [unsupervised](guides/quickstart-unsupervised.md), [ensemble](guides/quickstart-ensemble.md) | Core clustering + voting/stacking |
+| AutoML | [automl](guides/quickstart-automl.md) | Native + Optuna; FLAML/AutoGluon via industry |
+| Forecast / TS | [forecasting](guides/quickstart-forecasting.md) | `time_split` lags/baselines |
+| Anomaly | [anomaly](guides/quickstart-anomaly.md) | IsolationForest / LOF / OCSVM + supervised |
+| Semi / SSL / AL / Online | matching quickstarts | sklearn floor; industry/torch deepen |
+| Multi-task / Meta / Federated | matching quickstarts | MultiOutput / few-shot / FedAvg sim |
+| Probabilistic / Causal | matching quickstarts | Conformal; assumption-declared ATE |
+| Graph / Symbolic / CBR | matching quickstarts | NetworkX/Torch/PyG; rules; case memory |
+| Recommenders / LTR / KG | matching quickstarts | CF + content; GBDT rankers; TransE-style |
+| Optimize / Synthetic / IL+RL | matching quickstarts | Thresholds/knapsack; SDV optional; BC + bandits |
+| TDA | [tda](guides/quickstart-tda.md) | ripser/persim (`buildml[tda]`) |
+| Torch | [torch](guides/quickstart-torch.md) | Tabular / text / image / audio fusion |
+| RAG | [rag](guides/quickstart-rag.md) | Hashing default; sentence-transformers optional |
+| AI operator | [ai](guides/quickstart-ai.md) | Propose→confirm→execute; allowlisted autonomy |
+
+Torch covers tabular MLP, text/sequence, and multimodal fusion; speech
+(`buildml[speech]`) is ASR + finetune-lite — not Whisper-scale FM training from
+scratch. RAG defaults to lexical hashing; semantic embeddings and grounded
+`rag_generate` are first-class when extras resolve. The AI operator defaults to
+propose→confirm→execute — not unconstrained agency.
+
+Full guide index: [`guides/README.md`](guides/README.md).
+
+---
+
+## Proof suite
+
+End-to-end evidence that Session domains work with honest splits and holdout
+metrics lives under [`proofs/`](proofs/README.md) — **not** smoke tests.
+
+| Tier | Status | Meaning |
+| --- | --- | --- |
+| A | **25/25** | One deep project per major domain |
+| B | **6/6** | Named products composing multiple Session surfaces |
+| C | **25/25** | Same-split industry twin + `comparison.json` (qualitative bar 5-B) |
 
 ```bash
-pip install "buildml[production]"
+# Full harness from repo root
+python -m proofs._lib.run_all --tier all
+
+# Single project
+python proofs/loan-approval-classical/script.py
 ```
 
-`buildml[production]` aggregates `torch`, `ssl`, `rag`, `rag-advanced`, `tda`,
-`unsupervised`, `timeseries` (+ prophet / neuralforecast), `graph`, `graph-pyg`,
-`optuna`, `automl`, `rl`, and every `*-industry` extra (`automl-industry`,
-`anomaly-industry`, `semisupervised-industry`, `activelearning-industry`,
-`online-industry`, `multitask-industry`, `metalearning-industry`,
-`recommenders-industry`, `causal-industry`, `federated-industry`, `kg-industry`,
-`probabilistic-industry`, `symbolic-industry`, `cbr-industry`, `ranking-industry`,
-`optimize-industry`, `synthetic-industry`, `rl-industry`, `tda-industry`).
-It does **not** include dashboard, serve, or AI operator extras.
+Install domain extras as needed before running (editable install preferred):
 
-Each refined domain exposes an honest **capability matrix** (e.g.
-`Session.automl_capability_matrix()`, `Session.anomaly_capability_matrix()`,
-`buildml.multitask.multitask_capability_matrix()`) that
-reports which backends are installed and which methods are available — use it
-before picking a backend in production code.
+```bash
+pip install -e ".[tda,rl,rag,recommenders-industry,automl-industry]"
+# richer backends when wheels resolve:
+#   implicit → movie-recs ALS
+#   sentence-transformers → support-kb-rag dense embeddings
+#   flaml / autogluon.tabular → churn-automl / ledger industry AutoML
+```
 
-Benchmark smoke scripts under [`benchmarks/`](benchmarks/) (25 domain runners,
-including all R6 domains) exercise core paths with graceful skips when industry
-libs are absent; CI runs them on Linux with a core-only install via
-`scripts/run_benchmark_smokes.py`.
+TDA prefers `pip install -e ".[tda]"`. Gymnasium / SB3 deepen the IL+RL path via
+`buildml[rl]` / `buildml[rl-industry]` when wheels resolve. See
+[`proofs/README.md`](proofs/README.md) for the inventory, Tier C interpretation,
+and re-run instructions.
 
-## Optional extras
-
-Core `import buildml` does not require Torch, RAG backends, or an LLM provider.
-Each extra adds methods on the same Session; classical `fit` / `evaluate` stay
-unchanged.
-
-| Extra | Install | What it adds |
-|-------|---------|--------------|
-| Torch | `buildml[torch]` | Tabular + text + image + audio multimodal fusion, nested HPO, AMP, single-/multi-node DDP, TorchScript/ONNX export, fold-local CV, bundles (`buildml[audio]` aliases the same extra) |
-| Speech | `buildml[speech]` | ASR transcription (`transcribe_speech`) + speech classify finetune-lite (`make_speech_torch_loaders` / `fit_speech_torch`); transformers Whisper-class optional |
-| Vision | `buildml[vision]` | torchvision pretrained vision backbone hooks (`load_pretrained_backbone`) |
-| Pretrained | `buildml[pretrained]` | Combines `vision` + `speech` for curated backbone hooks |
-| Serve | `buildml[serve]` | Managed local FastAPI serving (`buildml-serve` / `Session.serve_bundle`) for pipeline + TorchScript |
-| RAG | `buildml[rag]` | Ingest → chunk → embed → retrieve → **generate** → evaluate; hashing default, semantic optional |
-| Graph | `buildml[graph]` | NetworkX classical node features (`fit_graph(method='classical')`); pure-Torch GCN uses `buildml[torch]`; PyG GCN/SAGE/GAT uses `buildml[graph-pyg]` |
-| RL | `buildml[rl]` | Optional Gymnasium REINFORCE-lite for `fit_rl(mode='gym_reinforce')`; BC + contextual bandits stay core |
-| RL industry | `buildml[rl-industry]` | SB3 PPO/DQN/A2C + imitation BC MLP / GAIL-lite; defaults when installed (`backend='industry'`) |
-| TDA | `buildml[tda]` | Persistent homology (ripser) + persistence images (persim); landscapes/silhouettes in-tree |
-| AI | `buildml[ai]` | Advisor, multi-step plan/execute, optional allowlisted autonomy; classical + RAG + Torch tools; BYO API key |
-| Dashboard | `buildml[dashboard]` | Interactive local EDA via `eda_app()` |
-
-Runnable quickstarts:
-
-- [Classical](guides/quickstart-classical.md)
-- [Unsupervised](guides/quickstart-unsupervised.md) (core clustering + PCA integration; no extra)
-- [Ensembles](guides/quickstart-ensemble.md) (voting / stacking / blending; no extra)
-- [AutoML](guides/quickstart-automl.md) (family + recipe search beyond HPO; Optuna optional)
-- [Forecasting](guides/quickstart-forecasting.md) (time_split lag/baseline forecasts; no extra)
-- [Anomaly / fraud](guides/quickstart-anomaly.md) (IsolationForest/LOF/OCSVM + supervised; no extra)
-- [Semi-supervised](guides/quickstart-semisupervised.md) (sklearn fallback + industry/torch/HF backends via extras)
-- [Self-supervised](guides/quickstart-selfsupervised.md) (masked tabular pretext → embeddings → head; no extra)
-- [Active learning](guides/quickstart-active-learning.md) (train-pool query → human labels → refit; sklearn core; industry/torch via extras)
-- [Online / continual](guides/quickstart-online-learning.md) (train-chunk `partial_fit` → eval; no extra)
-- [Multi-task](guides/quickstart-multi-task.md) (sklearn MultiOutput / Chain core; `multitask-industry` + `torch` for GBDT multi-target / shared-trunk multi-head)
-- [Meta-learning](guides/quickstart-meta-learning.md) (episodic few-shot; sklearn / torch / industry backends)
-- [Federated](guides/quickstart-federated.md) (local FedAvg / FedProx simulation; no extra)
-- [Bayesian / probabilistic](guides/quickstart-probabilistic.md) (BayesianRidge / GP / NB + train-only conformal; no extra)
-- [Causal ML](guides/quickstart-causal.md) (assumption-declared backdoor ATE; no extra)
-- [Graph ML](guides/quickstart-graph.md) (node classify: NetworkX classical + pure-Torch GCN + PyG GCN/SAGE/GAT; `buildml[graph]` / `buildml[torch]` / `buildml[graph-pyg]`)
-- [Symbolic / neuro-symbolic](guides/quickstart-symbolic.md) (sklearn tree/list + optional skope-rules/imodels + torch CBN/NAM; `symbolic-industry` / `torch`)
-- [Case-based reasoning](guides/quickstart-cbr.md) (train case memory → retrieve/reuse; ≠ RAG; `cbr-industry` optional)
-- [Imitation + RL](guides/quickstart-imitation-rl.md) (BC + contextual bandit core; REINFORCE via `buildml[rl]`; SB3 via `buildml[rl-industry]`)
-- [TDA](guides/quickstart-tda.md) (local Vietoris–Rips + vectorization → sklearn; `buildml[tda]`)
-- [Recommenders](guides/quickstart-recommenders.md) (user/item CF + content; ranking metrics; core)
-- [Search / LTR](guides/quickstart-ranking.md) (query–item feature rows + relevance; sklearn fallback + industry GBDT rankers)
-- [Knowledge graphs](guides/quickstart-kg.md) (triples → TransE/DistMult + symbolic query; ≠ Graph ML / Neo4j / RAG; core)
-- [Optimisation / decisions](guides/quickstart-optimize.md) (thresholds / cost matrices / top-K / knapsack / LP; ≠ general OR; core)
-- [Synthetic data](guides/quickstart-synthetic.md) (native bootstrap/copula/SMOTE + optional SDV; fidelity/TSTR/SDMetrics; ≠ DP / `resample`; `synthetic-industry` extra)
-- [Torch](guides/quickstart-torch.md)
-- [RAG](guides/quickstart-rag.md)
-- [AI operator](guides/quickstart-ai.md)
-
-Torch covers tabular MLP, text/sequence, and multimodal fusion across tabular /
-text / image / audio (path or array/waveform columns; train-only normalize
-stats). Audio multimodal fusion remains a small 1D-CNN branch; a separate
-speech path (`buildml[speech]`) offers ASR transcription + finetune-lite
-classification (integration — not training Whisper-scale FMs from scratch).
-Also: fold-local CV, nested Torch HPO, optional CUDA AMP, single-node and
-torchrun multi-node DDP, TorchScript/ONNX export, and local managed serving
-via `buildml[serve]`. RAG defaults to lexical hashing embeddings; semantic
-sentence-transformers and grounded `rag_generate` are first-class. The AI
-operator defaults to propose→confirm→execute; optional `ai_run_autonomous` is
-allowlisted operator automation with hard caps — not unconstrained agency.
+---
 
 ## Alpha status
 
@@ -298,12 +269,18 @@ first-class SHAP or fairness reporting, or unconstrained LLM agency.
 See [CHANGELOG.md](CHANGELOG.md) for release notes and
 [guides/glossary.md](guides/glossary.md) for terminology.
 
+---
+
 ## Documentation
 
-- [Guides](guides/README.md) — quickstarts and glossary (Markdown)
+- [Proof suite](proofs/README.md) — Tier A/B/C inventory, harness, Tier C interpretation
+- [Guides](guides/README.md) — quickstarts (each major domain links its proof) and glossary
 - [Concepts](docs/concepts.rst) — roles, partitions, train-fitted plans
 - [Workflow guide](docs/workflow-guide.rst) — ordering, leakage, diagnostics
-- [Sphinx docs](docs/index.rst) — installation, API reference, legacy boundary
+- [Sphinx docs](docs/index.rst) — installation, features, API reference, legacy boundary
+- [Changelog](CHANGELOG.md) — release notes
+
+---
 
 ## BuildML 1.x legacy boundary
 
@@ -311,6 +288,8 @@ BuildML 1.x (`SupervisedLearning` and the old module layout) lives under
 `buildml/_legacy/` for reference only. It is not imported from the 2.x package
 root. There is no compatibility shim that re-exports 1.x APIs from
 `import buildml`.
+
+---
 
 ## Author and license
 

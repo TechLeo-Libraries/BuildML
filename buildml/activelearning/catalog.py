@@ -8,7 +8,7 @@ from buildml.activelearning.extras import (
     activelearning_industry_available,
     scikit_activeml_available,
 )
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 
 ActiveLearningBackendName = Literal["sklearn", "industry", "torch"]
 
@@ -56,7 +56,7 @@ def activelearning_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "torch": {
-                "available": torch_spec_available(),
+                "available": torch_available(),
                 "extra": "torch",
                 "strategies": list(TORCH_STRATEGIES),
                 "modality": "tabular",
@@ -115,15 +115,19 @@ def activelearning_capability_matrix() -> dict[str, Any]:
 
 
 def _default_backend_when_installed() -> str:
-    if torch_spec_available():
+    if torch_available():
         return "torch"
-    return "industry"
+    if activelearning_industry_available():
+        return "industry"
+    return "sklearn"
 
 
 def _default_strategy_when_installed() -> str:
-    if torch_spec_available():
+    if torch_available():
         return "bald"
-    return "core_set"
+    if activelearning_industry_available():
+        return "core_set"
+    return "least_confidence"
 
 
 def list_activelearning_strategies(

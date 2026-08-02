@@ -2,7 +2,13 @@
 
 from buildml.preprocess.apply import ApplyPlansResult, apply_preprocess_plans
 from buildml.preprocess.binning import BinningPlan, fit_binning, transform_binning
-from buildml.preprocess.columns import drop_columns, select_columns
+from buildml.preprocess.columns import (
+    DEFAULT_SKIP_ROLES,
+    drop_columns,
+    protected_role_columns,
+    resolve_transform_columns,
+    select_columns,
+)
 from buildml.preprocess.custom import (
     CustomTransformPlan,
     CustomTransformSpec,
@@ -46,6 +52,7 @@ __all__ = [
     "BinningPlan",
     "CustomTransformPlan",
     "CustomTransformSpec",
+    "DEFAULT_SKIP_ROLES",
     "DateFeaturePlan",
     "EncodePlan",
     "FOLD_LOCAL_ORDER",
@@ -78,8 +85,10 @@ __all__ = [
     "get_transform",
     "list_resample_strategies",
     "list_transforms",
+    "protected_role_columns",
     "register_transform",
     "resample_train",
+    "resolve_transform_columns",
     "select_columns",
     "transform_binning",
     "transform_custom",

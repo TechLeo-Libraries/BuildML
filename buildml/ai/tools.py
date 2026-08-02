@@ -1029,7 +1029,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "columns": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Columns to impute (default: numeric non-target columns).",
+                        "description": (
+                            "Columns to impute (default: numeric feature-role columns; "
+                            "skips ignore/id/target/group/time/weight)."
+                        ),
                     },
                     "fill_value": {
                         "description": "Constant fill value when strategy='constant'.",
@@ -1058,7 +1061,10 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "columns": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Columns to encode (default: categorical features).",
+                        "description": (
+                            "Columns to encode (default: categorical feature-role columns; "
+                            "skips ignore/id; pass explicitly to force-include)."
+                        ),
                     },
                 },
                 "required": [],
@@ -1084,7 +1090,11 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "columns": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Columns to scale (default: numeric features).",
+                        "description": (
+                            "Columns to scale (default: numeric feature-role columns; "
+                            "skips ignore/id so costs/ids stay unmutated; "
+                            "pass explicitly to force-include)."
+                        ),
                     },
                 },
                 "required": [],

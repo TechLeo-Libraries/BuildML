@@ -51,3 +51,21 @@ __pycache__/
 # Local draft / release scratch (never commit)
 requirements-*-tmp.txt
 .release-notes*
+_tmp_*.txt
+
+# AutoGluon / local experiment dumps
+AutogluonModels/
+artifacts/
+
+# Proof suite: keep scripts + READMEs; ignore generated outputs
+proofs/**/results/
+proofs/**/artifacts/
+proofs/**/*.html
+proofs/_lib/last_run_report.json
+!proofs/**/README.md
+!proofs/**/script.py
+!proofs/**/baseline_industry.py
+!proofs/_lib/
+
+# Benchmark smoke outputs (runners stay tracked)
+benchmarks/**/results/

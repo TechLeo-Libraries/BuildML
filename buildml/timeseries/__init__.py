@@ -27,6 +27,7 @@ __all__ = [
     "config_from_kwargs",
     "list_changepoint_methods",
     "list_decompose_methods",
+    "timeseries_capability_matrix",
     "timeseries_status",
     "timeseries_status_for_session",
     "ts_decompose",
@@ -53,7 +54,11 @@ def __getattr__(name: str) -> Any:
         from buildml.timeseries import analyze as analyze_mod
 
         return getattr(analyze_mod, name)
-    if name in {"list_decompose_methods", "list_changepoint_methods"}:
+    if name in {
+        "list_decompose_methods",
+        "list_changepoint_methods",
+        "timeseries_capability_matrix",
+    }:
         from buildml.timeseries import catalog as catalog_mod
 
         return getattr(catalog_mod, name)

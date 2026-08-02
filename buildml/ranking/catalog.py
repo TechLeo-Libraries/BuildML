@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.ranking.extras import (
     catboost_available,
     lightgbm_available,
@@ -52,7 +52,7 @@ def ranking_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "torch": {
-                "available": torch_spec_available(),
+                "available": torch_available(),
                 "extra": "torch",
                 "methods": ["listwise_lite"],
                 "modality": "tabular",
@@ -112,7 +112,7 @@ def ranking_capability_matrix() -> dict[str, Any]:
 def _default_backend_when_installed() -> str:
     if ranking_industry_available():
         return "industry"
-    if torch_spec_available():
+    if torch_available():
         return "torch"
     return "sklearn"
 
@@ -124,7 +124,7 @@ def _default_method_when_installed() -> str:
         return "rank_ndcg_xgb"
     if catboost_available():
         return "yetirank_catboost"
-    if torch_spec_available():
+    if torch_available():
         return "listwise_lite"
     return "pointwise"
 

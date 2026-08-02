@@ -9,7 +9,6 @@ import numpy as np
 from buildml.cbr.adapters.industry_ann import query_ann_index
 from buildml.cbr.adapters.sklearn_retrieval import batch_neighbor_orders
 from buildml.cbr.adapters.text_embed import embed_text_queries
-from buildml.cbr.adapters.torch_metric import encode_with_torch
 from buildml.cbr.cases import pairwise_distances, top_k_indices
 from buildml.cbr.results import CbrPlan
 from buildml.core.errors import ValidationError
@@ -48,6 +47,8 @@ def retrieve_neighbor_batches(
             numeric_matrix=q_num if q_num.shape[1] else None,
         )
     elif backend == "torch":
+        from buildml.cbr.adapters.torch_metric import encode_with_torch
+
         if memory.torch_encoder_ is None:
             raise ValidationError("Torch encoder missing from case memory.")
         q_search = encode_with_torch(

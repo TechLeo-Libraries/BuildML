@@ -117,3 +117,59 @@ def forecast_status_payload() -> dict[str, Any]:
             "Random/stratified splits are refused; use time_split.",
         ],
     }
+
+
+def forecast_capability_matrix() -> dict[str, Any]:
+    """Honest capability matrix for forecasting backends and methods."""
+    return {
+        "backends": {
+            "baseline": {
+                "available": True,
+                "extra": None,
+                "methods": sorted(
+                    m for m in CORE_BASELINE_METHODS if m not in {"lag_ridge", "lag_hgb"}
+                ),
+                "notes": "Naive / seasonal / drift / mean baselines — always available.",
+            },
+            "sklearn": {
+                "available": True,
+                "extra": None,
+                "methods": ["lag_ridge", "lag_hgb"],
+                "notes": "Lag-feature tabular regressors — always available fallback.",
+            },
+            "statsmodels": {
+                "available": statsmodels_available(),
+                "extra": "timeseries",
+                "methods": sorted(STATSMODELS_METHODS),
+                "notes": "ETS/ARIMA/SARIMAX when buildml[timeseries] is installed.",
+            },
+            "prophet": {
+                "available": prophet_available(),
+                "extra": "timeseries-prophet",
+                "methods": [PROPHET_METHOD],
+                "notes": "Prophet backend (buildml[timeseries-prophet]).",
+            },
+            "neuralforecast": {
+                "available": neuralforecast_available(),
+                "extra": "timeseries-ml",
+                "methods": [NEURAL_METHOD],
+                "notes": (
+                    "N-BEATS via NeuralForecast (buildml[timeseries-ml]); "
+                    "Python/platform markers may skip the pin on Py3.13."
+                ),
+            },
+        },
+        "default_method_when_installed": DEFAULT_INDUSTRY_METHOD,
+        "fallback_method": DEFAULT_TABULAR_METHOD,
+        "methods": list(list_forecast_methods()),
+        "install_hints": {
+            "timeseries": "pip install 'buildml[timeseries]'",
+            "timeseries-prophet": "pip install 'buildml[timeseries-prophet]'",
+            "timeseries-ml": "pip install 'buildml[timeseries-ml]'",
+        },
+        "non_goals": [
+            "Full Nixtla research zoo",
+            "Streaming / online forecasting product",
+        ],
+        "industry_forecast_present": industry_forecast_available(),
+    }

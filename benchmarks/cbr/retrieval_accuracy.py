@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -12,9 +14,6 @@ import numpy as np
 import pandas as pd
 
 from buildml import Session
-from buildml.cbr.catalog import cbr_capability_matrix
-from buildml.cbr.extras import cbr_industry_available, hnswlib_available
-from buildml.dl.extras import torch_available
 
 
 def _synthetic_frame(n: int = 400, seed: int = 0) -> pd.DataFrame:
@@ -70,6 +69,14 @@ def _run_backend(
     }
 
 
+def _industry_spec_present() -> bool:
+    """Cheap install check — avoid importing hnswlib/torch in the smoke process."""
+    return (
+        importlib.util.find_spec("hnswlib") is not None
+        or importlib.util.find_spec("faiss") is not None
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="CBR k vs accuracy/latency benchmark")
     parser.add_argument(
@@ -79,29 +86,90 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    matrix = cbr_capability_matrix()
-    backends: list[str] = ["sklearn"]
-    if cbr_industry_available():
-        backends.append("industry")
-    if torch_available():
-        backends.append("torch")
-
     k_values = [1, 3, 5, 11, 21]
+    # Sklearn-only first. Never import buildml.cbr.extras / hnswlib / torch before
+    # the floor is recorded — native extension DLL init can process-kill on Windows.
+    runs: list[dict[str, object]] = [_run_backend("sklearn", k_values=k_values)]
+
+    core = {
+        "capability_matrix_summary": {
+            "default_backend": "sklearn",
+            "hnswlib_spec_present": importlib.util.find_spec("hnswlib") is not None,
+            "torch_probe": "deferred",
+        },
+        "runs": list(runs),
+    }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(core, indent=2), encoding="utf-8")
+
+    enable_industry = os.environ.get("BUILDML_BENCH_CBR_INDUSTRY", "") == "1" or (
+        sys.platform != "win32" and _industry_spec_present()
+    )
+    if enable_industry and _industry_spec_present():
+        try:
+            runs.append(_run_backend("industry", k_values=k_values))
+        except Exception as exc:  # noqa: BLE001
+            runs.append({"backend": "industry", "skipped": True, "error": str(exc)})
+    elif _industry_spec_present():
+        runs.append(
+            {
+                "backend": "industry",
+                "skipped": True,
+                "reason": (
+                    "Windows smoke skips in-process hnswlib import by default; "
+                    "set BUILDML_BENCH_CBR_INDUSTRY=1 to enable."
+                ),
+            }
+        )
+
+    if sys.platform != "win32" or os.environ.get("BUILDML_BENCH_TORCH", "") == "1":
+        try:
+            from buildml.dl.extras import torch_available
+
+            if torch_available():
+                runs.append(_run_backend("torch", k_values=k_values))
+            else:
+                runs.append(
+                    {
+                        "backend": "torch",
+                        "skipped": True,
+                        "reason": "torch_available() is False",
+                    }
+                )
+        except Exception as exc:  # noqa: BLE001
+            runs.append({"backend": "torch", "skipped": True, "error": str(exc)})
+    else:
+        runs.append(
+            {
+                "backend": "torch",
+                "skipped": True,
+                "reason": (
+                    "Windows torch path skipped by default; "
+                    "set BUILDML_BENCH_TORCH=1 to enable."
+                ),
+            }
+        )
+
     results = {
         "capability_matrix_summary": {
-            "default_backend": matrix["default_backend_when_installed"],
-            "hnswlib_present": hnswlib_available(),
-            "torch_present": torch_available(),
+            "default_backend": "sklearn",
+            "hnswlib_spec_present": importlib.util.find_spec("hnswlib") is not None,
+            "industry_enabled": enable_industry,
+            "torch_probe": (
+                "enabled"
+                if (sys.platform != "win32" or os.environ.get("BUILDML_BENCH_TORCH") == "1")
+                else "skipped_on_windows"
+            ),
         },
-        "runs": [_run_backend(b, k_values=k_values) for b in backends],
+        "runs": runs,
     }
-
-    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print(json.dumps(results, indent=2))
 
-    # Floor: sklearn k=5 should beat random on separable synthetic data.
     sklearn_run = next(r for r in results["runs"] if r["backend"] == "sklearn")
+    if "error" in sklearn_run:
+        print(f"FAIL: sklearn backend error: {sklearn_run['error']}", file=sys.stderr)
+        return 1
     acc_k5 = next(p["accuracy"] for p in sklearn_run["points"] if p["k"] == 5)
     if float(acc_k5) < 0.75:
         print(f"FAIL: sklearn k=5 accuracy {acc_k5} below floor 0.75", file=sys.stderr)

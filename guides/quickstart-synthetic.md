@@ -13,6 +13,8 @@ SMOTE, plus optional SDV industry backends when installed.
 **Distinct from** `Session.resample` (class-balance preprocess).
 **Not** differential privacy.
 
+**Proof:** [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/) (+ Tier C column-bootstrap twin).
+
 Runnable mirror: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py).
 Deep guide: [synthetic-deep.md](synthetic-deep.md).
 

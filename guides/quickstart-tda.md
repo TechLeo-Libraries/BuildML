@@ -1,5 +1,7 @@
 # Quickstart — Topological Data Analysis (TDA)
 
+**Proof:** [credit-tda-shape](../proofs/credit-tda-shape/) (+ Tier C logistic twin on raw features).
+
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > TDA path: `pip install "buildml[tda]"` (ripser + persim)

@@ -58,10 +58,10 @@ def metalearning_capability_matrix() -> dict[str, Any]:
                 "methods": list(INDUSTRY_METHODS),
                 "modality": "tabular",
                 "notes": (
-                    "First-order tabular MAML/Reptile via learn2learn when "
-                    "buildml[metalearning-industry] and buildml[torch] are "
-                    "installed. Honest small-scale task adaptation — not "
-                    "second-order MAML-at-scale or EconML-style causal meta."
+                    "First-order tabular MAML/Reptile when buildml[torch] imports "
+                    "cleanly. Uses learn2learn when installed "
+                    "(buildml[metalearning-industry]); otherwise an honest native "
+                    "first-order SGD meta-loop. Not second-order MAML-at-scale."
                 ),
             },
         },

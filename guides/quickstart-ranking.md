@@ -1,5 +1,7 @@
 # Quickstart — Search / learning-to-rank (LTR)
 
+**Proof:** [search-relevance-ltr](../proofs/search-relevance-ltr/) (+ Tier C Ridge pointwise twin).
+
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Core sklearn path — no extra required. For GBDT rankers:

@@ -364,6 +364,7 @@ def _build_unsupervised_estimator(
             contamination=contamination,
             random_state=random_state,
             n_neighbors=n_neighbors,
+            n_features=int(x_fit.shape[1]),
         )
         est.fit(x_fit)
         return est

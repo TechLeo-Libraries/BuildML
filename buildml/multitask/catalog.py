@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.multitask.extras import (
     catboost_available,
     lightgbm_available,
@@ -49,7 +49,7 @@ def multitask_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "torch": {
-                "available": torch_spec_available(),
+                "available": torch_available(),
                 "extra": "torch",
                 "methods": ["shared_trunk_multihead"],
                 "modality": "tabular",
@@ -102,7 +102,7 @@ def multitask_capability_matrix() -> dict[str, Any]:
 def _default_backend_when_installed() -> str:
     if multitask_industry_available():
         return "industry"
-    if torch_spec_available():
+    if torch_available():
         return "torch"
     return "sklearn"
 
@@ -112,7 +112,7 @@ def _default_method_when_installed() -> str:
         return "multi_output_xgb"
     if lightgbm_available():
         return "multi_output_lgbm"
-    if torch_spec_available():
+    if torch_available():
         return "shared_trunk_multihead"
     return "multi_output"
 

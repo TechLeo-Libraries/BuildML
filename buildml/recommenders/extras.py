@@ -9,11 +9,24 @@ from buildml.core.errors import MissingExtraError
 
 
 def implicit_available() -> bool:
-    return importlib.util.find_spec("implicit") is not None
+    if importlib.util.find_spec("implicit") is None:
+        return False
+    try:
+        import implicit  # noqa: F401
+    except Exception:
+        return False
+    return True
 
 
 def lightfm_available() -> bool:
-    return importlib.util.find_spec("lightfm") is not None
+    """True when LightFM imports cleanly (not merely find_spec)."""
+    if importlib.util.find_spec("lightfm") is None:
+        return False
+    try:
+        import lightfm  # noqa: F401
+    except Exception:
+        return False
+    return True
 
 
 def recommenders_industry_available() -> bool:
@@ -33,5 +46,5 @@ def require_lightfm(*, feature: str = "LightFM hybrid recommender") -> Any:
     try:
         import lightfm
     except ImportError as exc:
-        raise MissingExtraError("recommenders-industry", feature) from exc
+        raise MissingExtraError("recommenders-lightfm", feature) from exc
     return lightfm

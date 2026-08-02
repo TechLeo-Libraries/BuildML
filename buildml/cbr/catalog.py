@@ -10,7 +10,7 @@ from buildml.cbr.extras import (
     hnswlib_available,
     text_embedding_available,
 )
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 
 CbrBackendName = Literal["sklearn", "industry", "embedding", "torch"]
 
@@ -68,10 +68,10 @@ def cbr_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "torch": {
-                "available": torch_spec_available(),
+                "available": torch_available(),
                 "extra": "torch",
                 "spec_present": torch_spec_available(),
-                "import_probe": "Call require_torch at fit time; broken wheels may fail despite find_spec.",
+                "import_probe": "available uses torch_available(); require_torch at fit time.",
                 "metrics": list(TORCH_METRICS),
                 "modality": "tabular",
                 "retrieval": (
@@ -144,8 +144,8 @@ def cbr_capability_matrix() -> dict[str, Any]:
         "text_embedding_present": text_embedding_available(),
         "torch_spec_present": torch_spec_available(),
         "torch_import_honesty": (
-            "torch backend matrix 'available' uses find_spec; broken wheels may still "
-            "fail at require_torch — same policy as buildml.dl."
+            "torch backend matrix 'available' uses a real import probe "
+            "(torch_available); torch_spec_present is find_spec only."
         ),
         "industry_extra_present": cbr_industry_available(),
     }
@@ -195,9 +195,46 @@ def resolve_backend_metric(
         elif metric_key in {"manhattan", "mixed"}:
             resolved_backend = "sklearn"
         else:
+            # Prefer industry/sklearn defaults — never probe torch here.
             resolved_backend = _default_backend_when_installed()  # type: ignore[assignment]
     else:
         resolved_backend = backend
+
+    # Short-circuit non-torch backends so resolve never probes torch (Windows AV).
+    if resolved_backend == "sklearn":
+        if metric_key not in SKLEARN_METRICS:
+            raise ValidationError(
+                f"metric='{metric}' is not valid for backend='sklearn'. "
+                f"Choose from {list(SKLEARN_METRICS)}."
+            )
+        return resolved_backend, metric_key
+    if resolved_backend == "industry":
+        from buildml.cbr.extras import cbr_industry_available
+
+        if metric_key not in INDUSTRY_METRICS:
+            raise ValidationError(
+                f"metric='{metric}' is not valid for backend='industry'. "
+                f"Choose from {list(INDUSTRY_METRICS)}."
+            )
+        if not cbr_industry_available():
+            raise MissingExtraError("cbr-industry", "backend='industry'")
+        return resolved_backend, metric_key
+    if resolved_backend == "embedding":
+        from buildml.cbr.extras import text_embedding_available
+
+        if not text_columns:
+            raise ValidationError(
+                "backend='embedding' requires text_columns=... "
+                "(one or more text feature columns)."
+            )
+        if metric_key not in EMBEDDING_METRICS:
+            raise ValidationError(
+                f"metric='{metric}' is not valid for backend='embedding'. "
+                f"Choose from {list(EMBEDDING_METRICS)}."
+            )
+        if not text_embedding_available():
+            raise MissingExtraError("rag or ssl", "backend='embedding'")
+        return resolved_backend, metric_key
 
     matrix = cbr_capability_matrix()["backends"]
     entry = matrix.get(resolved_backend)
@@ -205,20 +242,11 @@ def resolve_backend_metric(
         raise ValidationError(f"Unknown CBR backend {resolved_backend!r}.")
     allowed = list(entry.get("metrics") or [])
     if metric_key not in allowed:
-        if resolved_backend == "sklearn":
-            raise ValidationError(
-                f"metric='{metric}' is not valid for backend='sklearn'. "
-                f"Choose from {list(SKLEARN_METRICS)}."
-            )
         raise ValidationError(
             f"metric='{metric}' is not valid for backend='{resolved_backend}'. "
             f"Choose from {allowed} or use backend='sklearn'."
         )
-    if resolved_backend == "embedding" and not text_columns:
-        raise ValidationError(
-            "backend='embedding' requires text_columns=... (one or more text feature columns)."
-        )
     if not entry.get("available"):
-        extra = entry.get("extra") or "cbr-industry"
+        extra = entry.get("extra") or "torch"
         raise MissingExtraError(str(extra), f"backend='{resolved_backend}'")
     return resolved_backend, metric_key

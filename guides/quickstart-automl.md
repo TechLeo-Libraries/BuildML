@@ -12,6 +12,8 @@ Joint model-family + fold-local preprocess-strategy search on the Session —
 beyond tuning one fixed estimator with `grid_search` / `optuna_search`.
 
 **Go deeper:** [AutoML deep](automl-deep.md) ·
+
+**Proof:** [churn-automl-search](../proofs/churn-automl-search/) (+ Tier C RandomizedSearchCV twin).
 [Leakage](leakage-cv-recipes.md) ·
 [Diagnostics & search](classical-diagnostics-search.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md).

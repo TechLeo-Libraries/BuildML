@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.graph.extras import networkx_available, pyg_available, pyg_runtime_available
 
 GraphBackendName = Literal["classical", "gcn", "pyg"]
@@ -26,7 +26,7 @@ def graph_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "gcn": {
-                "available": torch_spec_available(),
+                "available": torch_available(),
                 "extra": "torch",
                 "methods": ["gcn"],
                 "modes": ["inductive", "transductive"],
@@ -37,7 +37,7 @@ def graph_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "pyg": {
-                "available": pyg_available(),
+                "available": pyg_runtime_available(),
                 "extra": "graph-pyg",
                 "methods": ["gcn", "graphsage", "gat"],
                 "modes": ["inductive", "transductive"],
@@ -79,9 +79,8 @@ def graph_capability_matrix() -> dict[str, Any]:
         "pyg_extra_present": pyg_available(),
         "pyg_runtime_present": pyg_runtime_available(),
         "pyg_import_honesty": (
-            "pyg backend 'available' reflects torch-geometric install (find_spec). "
-            "Training also requires a working torch — broken wheels may fail at "
-            "require_pyg / require_torch."
+            "pyg backend 'available' requires torch-geometric install AND a working "
+            "torch import (pyg_runtime_available). pyg_extra_present is find_spec only."
         ),
         "train_only_honesty": (
             "All backends fit with train-node labels only. Inductive fit uses "
@@ -92,9 +91,9 @@ def graph_capability_matrix() -> dict[str, Any]:
 
 
 def _default_backend_when_installed() -> str:
-    if pyg_available():
+    if pyg_runtime_available():
         return "pyg"
-    if torch_spec_available():
+    if torch_available():
         return "gcn"
     if networkx_available():
         return "classical"

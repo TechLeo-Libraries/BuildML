@@ -72,14 +72,23 @@ rl-industry = [
   "torch>=2.2",
 ]
 tda = ["ripser>=0.6", "persim>=0.3"]
-tda-industry = ["buildml[tda]", "giotto-tda>=0.6"]
+# giotto-tda lacks reliable Py3.13 wheels on several platforms.
+tda-industry = [
+  "buildml[tda]",
+  "giotto-tda>=0.6; python_version < '3.13'",
+]
 ai = ["openai>=1.0"]
 llm = ["buildml[ai]"]
 imbalanced = ["imbalanced-learn>=0.11"]
 unsupervised = ["hdbscan>=0.8", "umap-learn>=0.5"]
 timeseries = ["statsmodels>=0.14", "scipy>=1.11", "ruptures>=1.1"]
 timeseries-prophet = ["buildml[timeseries]", "prophet>=1.1"]
-timeseries-ml = ["buildml[timeseries]", "neuralforecast>=1.7", "torch>=2.2"]
+# neuralforecast / dependency stack is best-effort on Py3.13 (marker skips hard fail).
+timeseries-ml = [
+  "buildml[timeseries]",
+  "neuralforecast>=1.7; python_version < '3.13'",
+  "torch>=2.2",
+]
 anomaly-industry = [
   "pyod>=1.1",
   "lightgbm>=4.0",
@@ -97,8 +106,9 @@ ranking-industry = [
   "xgboost>=2.0",
   "catboost>=1.2",
 ]
+# learn2learn pulls qpth/numpy pins that break on Py3.13; native FO MAML remains.
 metalearning-industry = [
-  "learn2learn>=0.2",
+  "learn2learn>=0.2; python_version < '3.13'",
 ]
 multitask-industry = [
   "lightgbm>=4.0",
@@ -108,9 +118,12 @@ multitask-industry = [
 online-industry = [
   "river>=0.21",
 ]
+# LightFM split out so implicit still installs when LightFM has no wheel.
 recommenders-industry = [
   "implicit>=0.7",
-  "lightfm>=1.17",
+]
+recommenders-lightfm = [
+  "lightfm>=1.17; python_version < '3.13' and sys_platform != 'win32'",
 ]
 causal-industry = [
     "dowhy>=0.11",
@@ -126,8 +139,9 @@ probabilistic-industry = [
     "mapie>=0.8",
     "ngboost>=0.5",
 ]
+# skope-rules is broken on Py3.13 (collections.Iterable); imodels/z3 still install.
 symbolic-industry = [
-    "skope-rules>=1.0",
+    "skope-rules>=1.0; python_version < '3.13'",
     "imodels>=2.0",
     "z3-solver>=4.12",
 ]
@@ -146,7 +160,8 @@ synthetic-industry = [
 ]
 # One-shot install for industry-depth ML domains (R1–R6 refinement).
 # Core `import buildml` stays light — Session + numpy/pandas/sklearn only.
-# Does not pull dashboard, serve, ai, or dev tooling.
+# Best-effort meta-extra: Python/platform markers skip packages without wheels
+# (esp. Windows + Py3.13). Does not pull dashboard, serve, ai, or dev tooling.
 production = [
   "buildml[torch]",
   "buildml[ssl]",
@@ -171,6 +186,7 @@ production = [
   "buildml[metalearning-industry]",
   "buildml[online-industry]",
   "buildml[recommenders-industry]",
+  "buildml[recommenders-lightfm]",
   "buildml[causal-industry]",
   "buildml[federated-industry]",
   "buildml[kg-industry]",

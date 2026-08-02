@@ -295,7 +295,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Train-fitted preprocessing.",
         ("Select columns.", "Learn replacement statistics on train.", "Apply the frozen plan to every row."),
         parameters=(
-            _p("columns", "list[str] | None", "Columns to impute; numeric non-target columns by default."),
+            _p(
+                "columns",
+                "list[str] | None",
+                "Columns to impute; numeric feature-role columns by default "
+                "(skips ignore/id/target/group/time/weight).",
+            ),
             _p("strategy", "mean | median | most_frequent | constant", "Replacement rule.", "median"),
             _p("fill_value", "object | None", "Value used by the constant strategy."),
         ),
@@ -325,7 +330,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Apply one-hot, ordinal, infrequent-pooled one-hot, or out-of-fold target encoding.",
         ),
         parameters=(
-            _p("columns", "list[str] | None", "Categorical columns; inferred when omitted."),
+            _p(
+                "columns",
+                "list[str] | None",
+                "Categorical feature-role columns by default "
+                "(skips ignore/id/target/group/time/weight); pass explicitly to force-include.",
+            ),
             _p(
                 "method",
                 "onehot | ordinal | infrequent | target",
@@ -478,7 +488,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Train-fitted numeric preprocessing.",
         ("Learn train means/ranges.", "Apply standard or min-max transformation consistently."),
         parameters=(
-            _p("columns", "list[str] | None", "Numeric columns; inferred when omitted."),
+            _p(
+                "columns",
+                "list[str] | None",
+                "Numeric feature-role columns by default "
+                "(skips ignore/id/target/group/time/weight — costs/ids stay unmutated); "
+                "pass explicitly to force-include.",
+            ),
             _p("method", "standard | minmax", "Scaling formula.", "standard"),
         ),
         inputs=("Dataset, SplitPlan, and training numeric values.",),

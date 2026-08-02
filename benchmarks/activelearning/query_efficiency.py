@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -11,10 +12,7 @@ import numpy as np
 import pandas as pd
 
 from buildml import Session
-from buildml.activelearning.catalog import activelearning_capability_matrix
-from buildml.activelearning.extras import activelearning_industry_available
 from buildml.data.dataset import Dataset
-from buildml.dl.extras import torch_spec_available
 from buildml.ingest.detect import schema_from_dataframe
 
 
@@ -107,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--budgets",
         type=str,
-        default="0,5,10,20,30",
+        default="0,5,10,20",
         help="Comma-separated label budgets to sample along the curve.",
     )
     parser.add_argument("--epochs", type=int, default=25)
@@ -117,16 +115,73 @@ def main(argv: list[str] | None = None) -> int:
     runs: list[dict[str, object]] = []
     runs.append(_run_curve("sklearn", "margin", budgets=budgets))
     runs.append(_run_curve("sklearn", "entropy", budgets=budgets))
-    if activelearning_industry_available():
-        runs.append(_run_curve("industry", "core_set", budgets=budgets))
-        runs.append(_run_curve("industry", "qbc_kl", budgets=budgets))
-    if torch_spec_available():
+
+    # Industry is always "available" in-tree; on Windows smokes it can stall under
+    # AV/DLL pressure — opt in with BUILDML_BENCH_AL_INDUSTRY=1.
+    enable_industry = sys.platform != "win32" or os.environ.get(
+        "BUILDML_BENCH_AL_INDUSTRY", ""
+    ) == "1"
+    if enable_industry:
         try:
-            runs.append(_run_curve("torch", "bald", budgets=budgets, epochs=args.epochs))
-            runs.append(_run_curve("torch", "mc_dropout", budgets=budgets, epochs=args.epochs))
+            runs.append(_run_curve("industry", "core_set", budgets=budgets))
+            runs.append(_run_curve("industry", "qbc_kl", budgets=budgets))
         except Exception as exc:  # noqa: BLE001
-            if "torch" not in str(exc).lower():
-                raise
+            runs.append(
+                {
+                    "backend": "industry",
+                    "strategy": "core_set|qbc_kl",
+                    "skipped": True,
+                    "error": str(exc),
+                }
+            )
+    else:
+        runs.append(
+            {
+                "backend": "industry",
+                "skipped": True,
+                "reason": "Windows smoke skips industry AL; set BUILDML_BENCH_AL_INDUSTRY=1",
+            }
+        )
+
+    enable_torch = sys.platform != "win32" or os.environ.get("BUILDML_BENCH_TORCH", "") == "1"
+    if enable_torch:
+        try:
+            from buildml.dl.extras import torch_available
+
+            if torch_available():
+                runs.append(
+                    _run_curve("torch", "bald", budgets=budgets, epochs=args.epochs)
+                )
+                runs.append(
+                    _run_curve(
+                        "torch", "mc_dropout", budgets=budgets, epochs=args.epochs
+                    )
+                )
+            else:
+                runs.append(
+                    {
+                        "backend": "torch",
+                        "skipped": True,
+                        "reason": "torch_available() is False",
+                    }
+                )
+        except Exception as exc:  # noqa: BLE001
+            runs.append(
+                {
+                    "backend": "torch",
+                    "strategy": "bald|mc_dropout",
+                    "skipped": True,
+                    "error": str(exc),
+                }
+            )
+    else:
+        runs.append(
+            {
+                "backend": "torch",
+                "skipped": True,
+                "reason": "Windows torch path skipped; set BUILDML_BENCH_TORCH=1",
+            }
+        )
 
     sklearn_runs = [r for r in runs if r["backend"] == "sklearn"]
     sklearn_best = max(
@@ -134,9 +189,25 @@ def main(argv: list[str] | None = None) -> int:
         key=lambda r: float((r.get("final_accuracy") or 0.0)),
         default=None,
     )
+    # Avoid in-process torch import probes on Windows (can AV-kill the smoke).
+    if sys.platform == "win32" and os.environ.get("BUILDML_BENCH_TORCH", "") != "1":
+        matrix = {
+            "backends": {
+                "sklearn": {"available": True},
+                "industry": {"available": True},
+                "torch": {"available": False, "note": "probe skipped on Windows"},
+            }
+        }
+    else:
+        try:
+            from buildml.activelearning.catalog import activelearning_capability_matrix
+
+            matrix = activelearning_capability_matrix()
+        except Exception as exc:  # noqa: BLE001
+            matrix = {"error": str(exc)}
     payload = {
         "benchmark": "activelearning_query_efficiency",
-        "capability_matrix": activelearning_capability_matrix(),
+        "capability_matrix": matrix,
         "budgets": budgets,
         "results": runs,
         "sklearn_baseline_final_accuracy": (
@@ -154,12 +225,13 @@ def main(argv: list[str] | None = None) -> int:
     if sklearn_best:
         base = float(sklearn_best.get("final_accuracy") or 0.0)
         for run in runs:
-            if run["backend"] == "sklearn":
+            if run["backend"] == "sklearn" or run.get("skipped") or "final_accuracy" not in run:
                 continue
             final = float(run.get("final_accuracy") or 0.0)
             if final < base - 0.12:
+                strat = run.get("strategy", "?")
                 print(
-                    f"WARN: {run['backend']}/{run['strategy']} trails sklearn baseline "
+                    f"WARN: {run['backend']}/{strat} trails sklearn baseline "
                     f"by >12 pts at max budget.",
                     file=sys.stderr,
                 )

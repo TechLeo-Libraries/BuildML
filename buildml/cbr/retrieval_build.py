@@ -9,11 +9,6 @@ import pandas as pd
 
 from buildml.cbr.adapters.industry_ann import build_ann_index
 from buildml.cbr.adapters.text_embed import embed_text_cases
-from buildml.cbr.adapters.torch_metric import (
-    build_torch_encoder,
-    encode_with_torch,
-    fit_torch_encoder,
-)
 from buildml.cbr.extras import cbr_industry_available
 from buildml.core.errors import ValidationError
 
@@ -60,6 +55,13 @@ def build_search_artifacts(
             f"Text case embedding via {embedder_id}; hybrid numeric concat when present."
         )
     elif backend_key == "torch":
+        # Lazy import — keep sklearn/industry paths free of torch DLL init.
+        from buildml.cbr.adapters.torch_metric import (
+            build_torch_encoder,
+            encode_with_torch,
+            fit_torch_encoder,
+        )
+
         if search.shape[1] == 0:
             raise ValidationError("torch backend requires numeric feature columns.")
         encoder = build_torch_encoder(

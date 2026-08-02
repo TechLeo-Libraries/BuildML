@@ -14,6 +14,8 @@ train-only fit, horizon generate, holdout MAE/RMSE/MAPE, rolling-origin eval,
 and forecast bundle v2.
 
 **Go deeper:** [Forecasting deep](forecasting-deep.md) ·
+
+**Proof:** [store-sales-forecast](../proofs/store-sales-forecast/) (+ Tier C SARIMAX/seasonal_naive). Cross-domain: [harbor-demand-desk](../proofs/harbor-demand-desk/).
 [Time-series analysis](quickstart-timeseries-analysis.md) ·
 [Leakage](leakage-cv-recipes.md).
 

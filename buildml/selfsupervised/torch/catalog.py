@@ -102,3 +102,51 @@ def list_ssl_methods(*, include_legacy: bool = True) -> tuple[dict[str, Any], ..
             }
         )
     return tuple(rows)
+
+
+def ssl_capability_matrix() -> dict[str, Any]:
+    """Honest capability matrix for self-supervised backends and methods."""
+    torch_ok = torch_available()
+    st_ok = importlib.util.find_spec("sentence_transformers") is not None
+    tv_ok = importlib.util.find_spec("torchvision") is not None
+    return {
+        "backends": {
+            "sklearn": {
+                "available": True,
+                "extra": None,
+                "methods": sorted(LEGACY_SKLEARN_METHODS),
+                "notes": (
+                    "Legacy masked_tabular sklearn fallback — deprecated when torch works."
+                ),
+            },
+            "torch": {
+                "available": torch_ok,
+                "extra": "torch",
+                "methods": sorted(TABULAR_TORCH_METHODS),
+                "notes": "Tabular contrastive/generative SSL (SimCLR/BYOL/VICReg/MAE/VAE).",
+            },
+            "hf_text": {
+                "available": torch_ok and st_ok,
+                "extra": "ssl",
+                "methods": sorted(TEXT_TORCH_METHODS),
+                "notes": "HF sentence-transformer text SSL (buildml[ssl]).",
+            },
+            "vision": {
+                "available": torch_ok and tv_ok,
+                "extra": "vision",
+                "methods": sorted(VISION_TORCH_METHODS),
+                "notes": "Vision SSL hooks (buildml[vision]).",
+            },
+        },
+        "default_tabular_method": resolve_default_tabular_method(),
+        "methods": list(list_ssl_methods()),
+        "install_hints": {
+            "torch": "pip install 'buildml[torch]'",
+            "ssl": "pip install 'buildml[ssl]'",
+            "vision": "pip install 'buildml[vision]'",
+        },
+        "non_goals": [
+            "Foundation-model pretraining from scratch at web scale",
+            "Full MoCo/DINO research zoo",
+        ],
+    }

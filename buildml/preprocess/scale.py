@@ -10,10 +10,10 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from buildml.core.errors import ValidationError
-from buildml.core.validation import validate_column_names
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.ingest.detect import schema_from_dataframe
+from buildml.preprocess.columns import resolve_transform_columns
 
 ScaleMethod = Literal["standard", "minmax"]
 
@@ -49,12 +49,26 @@ def fit_scaler(
     columns: list[str] | None = None,
     method: ScaleMethod = "standard",
 ) -> ScalePlan:
-    """Fit a scaler on the train partition only."""
+    """Fit a scaler on the train partition only.
+
+    By default only numeric ``feature``-role columns are scaled (``ignore``,
+    ``id``, ``target``, ``group``, ``time``, and ``weight`` are skipped).
+    Pass ``columns=[...]`` explicitly to force-include any column.
+    """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
     train = frame_for_partition(dataset, split_plan, "train")
-    cols = _resolve_numeric_columns(dataset, train, columns)
+    cols = resolve_transform_columns(
+        dataset,
+        train,
+        columns,
+        kind="numeric",
+        empty_message=(
+            "No numeric feature columns available for scaling. "
+            "Pass columns=... explicitly to include ignore/id roles."
+        ),
+    )
     scaler: Any
     if method == "standard":
         scaler = StandardScaler()
@@ -105,20 +119,3 @@ def transform_scaler(
     )
 
 
-def _resolve_numeric_columns(
-    dataset: Dataset,
-    train: pd.DataFrame,
-    columns: list[str] | None,
-) -> list[str]:
-    if columns is not None:
-        return validate_column_names(columns, dataset.columns)
-
-    target_cols = set(dataset.role_columns("target"))
-    numeric = [
-        str(c)
-        for c in train.columns
-        if c not in target_cols and pd.api.types.is_numeric_dtype(train[c])
-    ]
-    if not numeric:
-        raise ValidationError("No numeric columns available for scaling")
-    return numeric

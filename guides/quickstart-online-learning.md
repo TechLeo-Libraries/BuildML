@@ -12,6 +12,8 @@ bundle. Honesty: this is batch/stream-chunk Session updating — **not** a
 distributed streaming platform or lifelong-learning research suite.
 
 **Go deeper:** [Online learning deep](online-learning-deep.md) ·
+
+**Proof:** [stream-fraud-online](../proofs/stream-fraud-online/) (+ Tier C SGD partial_fit). Cross-domain: [aegis-fraud-platform](../proofs/aegis-fraud-platform/).
 [Artifacts](artifacts-checkpoints-bundles.md).
 
 ```bash

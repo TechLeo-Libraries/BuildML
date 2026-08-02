@@ -18,7 +18,7 @@ from buildml.data.splits import frame_for_partition
 from buildml.ingest.detect import schema_from_dataframe
 from buildml.online.catalog import online_capability_matrix
 from buildml.online.extras import online_industry_available
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available
 
 
 def _synthetic_frame(n: int = 360, seed: int = 0) -> pd.DataFrame:
@@ -114,7 +114,7 @@ def main() -> int:
             runs.append(_chunk_curve("industry", "river_logistic", chunk_size=40))
         except (MissingExtraError, ValidationError, OSError):
             pass
-    if torch_spec_available():
+    if torch_available():
         try:
             runs.append(
                 _chunk_curve(

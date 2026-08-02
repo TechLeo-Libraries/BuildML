@@ -15,7 +15,7 @@ import pandas as pd
 from buildml import Session
 from buildml.multitask.catalog import multitask_capability_matrix
 from buildml.multitask.extras import xgboost_available
-from buildml.dl.extras import torch_spec_available
+from buildml.dl.extras import torch_available
 
 
 def _torch_spec_present() -> bool:
@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
                 task="regression",
             )
         )
-    if torch_spec_available():
+    if torch_available():
         try:
             runs.append(
                 _run(
@@ -145,11 +145,18 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
         except Exception as exc:  # noqa: BLE001
-            if "torch" not in str(exc).lower():
-                raise
+            runs.append(
+                {
+                    "backend": "torch",
+                    "method": "shared_trunk_multihead",
+                    "skipped": True,
+                    "error": str(exc),
+                }
+            )
 
-    cls_runs = [r for r in runs if r["task"] == "classification"]
-    reg_runs = [r for r in runs if r["task"] == "regression"]
+    scored = [r for r in runs if "score" in r and not r.get("skipped")]
+    cls_runs = [r for r in scored if r["task"] == "classification"]
+    reg_runs = [r for r in scored if r["task"] == "regression"]
     sklearn_cls = next((r for r in cls_runs if r["backend"] == "sklearn"), None)
     sklearn_reg = next((r for r in reg_runs if r["backend"] == "sklearn"), None)
     payload = {
@@ -176,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
         base_score = float(baseline["score"] or 0.0)
         industry = [
             r
-            for r in runs
+            for r in scored
             if r["task"] == task_kind and r["backend"] in {"industry", "torch"}
         ]
         if not industry:

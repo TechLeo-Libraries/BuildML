@@ -9,6 +9,8 @@ Descriptive time-series analysis on the same `Session`: `time` role +
 changepoints, and spectral features — distinct from `fit_forecast`.
 
 **Go deeper:** [Time-series analysis deep](timeseries-analysis-deep.md) ·
+
+**Proof:** [store-sales-forecast](../proofs/store-sales-forecast/) (train-scoped analysis) · [harbor-demand-desk](../proofs/harbor-demand-desk/).
 [Forecasting quickstart](quickstart-forecasting.md).
 
 ---

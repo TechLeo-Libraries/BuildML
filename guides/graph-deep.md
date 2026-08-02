@@ -61,5 +61,6 @@ label encoder). Session checkpoints do **not** embed the graph learner.
 - Not Neo4j / KG (separate `buildml.kg` path).
 - PyG surface ships GCN / GraphSAGE / GAT only — not GIN, PNA, etc.
 - Size guard (≤5000 nodes) for dense adjacency (gcn) and Session materialization.
-- Default `scale()` may mutate numeric `node_id` columns — call `set_graph`
-  first (ids are snapshotted) or `scale(columns=[...features...])` explicitly.
+- Default `scale()` / `encode()` skip `id` / `ignore` / `target` / `group` /
+  `time` / `weight` roles. Pass `columns=[...]` only when you intentionally
+  want to transform a non-feature column.

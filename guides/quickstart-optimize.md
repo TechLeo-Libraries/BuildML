@@ -1,5 +1,7 @@
 # Quickstart — Optimisation / decision helpers
 
+**Proof:** [cost-sensitive-collections](../proofs/cost-sensitive-collections/) · Tier B allocation in [harbor-demand-desk](../proofs/harbor-demand-desk/), [aegis-fraud-platform](../proofs/aegis-fraud-platform/), and [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/).
+
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Core path — sklearn + transitive `scipy.optimize` for LP allocation.

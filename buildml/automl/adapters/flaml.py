@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 import pandas as pd
 
@@ -87,7 +87,11 @@ def run_flaml_adapter(
 
     automl.fit(**fit_kwargs)
 
-    best_estimator = automl.model.estimator
+    if getattr(automl, "model", None) is None:
+        raise ValidationError("FLAML AutoML finished without a fitted model")
+    # Wrap the full AutoML object — ``automl.model`` / ``.estimator`` peel away
+    # FLAML's categorical handling and break string columns on Session evaluate.
+    best_estimator = _FlamlSklearnWrapper(automl, feature_cols=feature_cols)
     best_config = dict(getattr(automl, "best_config", {}) or {})
     best_loss = float(getattr(automl, "best_loss", float("nan")))
     if higher_is_better and best_loss == best_loss:  # not nan
@@ -103,15 +107,18 @@ def run_flaml_adapter(
 
     trials = _flaml_trials(automl, metric=metric, higher_is_better=higher_is_better)
 
-    if selection == "validation":
-        fit_result = _wrap_fit(
-            dataset,
-            split_plan,
-            best_estimator,
+    fit_result: FitResult | None = None
+    if selection == "validation" or refit:
+        fit_result = FitResult(
+            estimator=best_estimator,
             task=resolved_task,
-            feature_cols=feature_cols,
-            target=target,
+            feature_columns=tuple(feature_cols),
+            target_column=str(target),
+            n_train_rows=int(len(x_train)),
+            weight_column=weight_column(dataset),
         )
+    if selection == "validation":
+        assert fit_result is not None
         ev = evaluate_estimator(dataset, split_plan, fit_result, partition="validation")
         display_score = float(ev.metrics.get(metric, display_score))
         std_score = 0.0
@@ -121,18 +128,6 @@ def run_flaml_adapter(
         std_score = 0.0
         mean_metrics = {metric: display_score}
         std_metrics = {metric: 0.0}
-        fit_result = (
-            _wrap_fit(
-                dataset,
-                split_plan,
-                best_estimator,
-                task=resolved_task,
-                feature_cols=feature_cols,
-                target=target,
-            )
-            if refit
-            else None
-        )
 
     config = AutoMLConfig(
         method="randomized",
@@ -221,17 +216,38 @@ def run_flaml_adapter(
         ),
         config=config.to_dict(),
     )
-    if fit_result is None and refit:
-        fit_result = _wrap_fit(
-            dataset,
-            split_plan,
-            best_estimator,
-            task=resolved_task,
-            feature_cols=feature_cols,
-            target=target,
-        )
-        plan.estimator_ = fit_result.estimator
     return plan, result, fit_result
+
+
+class _FlamlSklearnWrapper:
+    """sklearn-compatible wrapper that keeps FLAML's full predict path.
+
+    ``AutoML.predict`` applies FLAML's internal feature transforms; calling
+    ``automl.model.predict`` (or ``.estimator``) does not and fails on string
+    columns under modern XGBoost.
+    """
+
+    def __init__(self, automl: Any, *, feature_cols: list[str]) -> None:
+        self._automl = automl
+        self._feature_cols = list(feature_cols)
+        classes = getattr(automl, "classes_", None)
+        if classes is None and getattr(automl, "model", None) is not None:
+            classes = getattr(automl.model, "classes_", None)
+        self.classes_ = classes
+
+    def fit(self, X: pd.DataFrame, y: Any = None, **kwargs: Any) -> _FlamlSklearnWrapper:
+        del X, y, kwargs
+        return self
+
+    def predict(self, X: pd.DataFrame) -> Any:
+        frame = X[self._feature_cols] if all(c in X.columns for c in self._feature_cols) else X
+        return self._automl.predict(frame)
+
+    def predict_proba(self, X: pd.DataFrame) -> Any:
+        frame = X[self._feature_cols] if all(c in X.columns for c in self._feature_cols) else X
+        if hasattr(self._automl, "predict_proba"):
+            return self._automl.predict_proba(frame)
+        raise AttributeError("FLAML model does not expose predict_proba")
 
 
 def _flaml_metric(metric: str) -> str:
@@ -281,38 +297,3 @@ def _flaml_trials(
     return rows
 
 
-def _wrap_fit(
-    dataset: Dataset,
-    split_plan: SplitPlan,
-    estimator: Any,
-    *,
-    task: Literal["classification", "regression"],
-    feature_cols: list[str],
-    target: str,
-) -> FitResult:
-    x_train, y_train, _, _, sample_weight = _feature_target_frames(
-        dataset, split_plan, "train"
-    )
-    from sklearn.base import clone
-
-    model = clone(estimator)
-    fit_kwargs: dict[str, Any] = {}
-    if sample_weight is not None and hasattr(model, "fit"):
-        sw_param = getattr(model, "fit", None)
-        if sw_param is not None:
-            try:
-                import inspect
-
-                if "sample_weight" in inspect.signature(model.fit).parameters:
-                    fit_kwargs["sample_weight"] = sample_weight.values
-            except (TypeError, ValueError):
-                pass
-    model.fit(x_train, y_train, **fit_kwargs)
-    return FitResult(
-        estimator=model,
-        task=task,
-        feature_columns=tuple(feature_cols),
-        target_column=str(target),
-        n_train_rows=int(len(x_train)),
-        weight_column=weight_column(dataset),
-    )

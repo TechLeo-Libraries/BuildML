@@ -16,6 +16,10 @@ pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 
 Apache-2.0 · [TechLeo-Libraries/BuildML](https://github.com/TechLeo-Libraries/BuildML)
 
+**Deep proofs (not smoke):** see the [proof suite](../proofs/README.md) for
+industry-standard Tier A/B/C projects with holdout metrics, leakage controls,
+and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
+
 ---
 
 ## Suggested learning path
@@ -211,3 +215,36 @@ Guides cover **public Session surfaces** and common operator patterns. They do
   the generated operation catalog kept in sync by CI)
 
 When an API is alpha, guides say so and show the honest limit next to the example.
+
+---
+
+## Proof suite deep-links
+
+Industry-standard Tier A/B/C projects live under
+[`proofs/`](../proofs/README.md) (**25/25** Tier A, **6/6** Tier B, **25/25**
+Tier C — not smoke). Re-run: `python -m proofs._lib.run_all --tier all`.
+
+| Domain | Proof project |
+| --- | --- |
+| Classical | [loan-approval-classical](../proofs/loan-approval-classical/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/) |
+| AutoML | [churn-automl-search](../proofs/churn-automl-search/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/) |
+| Anomaly | [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/) · Tier B [aegis-fraud-platform](../proofs/aegis-fraud-platform/) |
+| Forecast / TS | [store-sales-forecast](../proofs/store-sales-forecast/) · Tier B [harbor-demand-desk](../proofs/harbor-demand-desk/) |
+| RAG | [support-kb-rag](../proofs/support-kb-rag/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/) |
+| Clustering | [cluster-customer-segments](../proofs/cluster-customer-segments/) |
+| Recommenders | [movie-recs-collaborative](../proofs/movie-recs-collaborative/) |
+| LTR | [search-relevance-ltr](../proofs/search-relevance-ltr/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/) |
+| Knowledge graphs | [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/) |
+| TDA | [credit-tda-shape](../proofs/credit-tda-shape/) |
+| Semi / AL / SSL | [semi-label-efficiency](../proofs/semi-label-efficiency/), [active-labeling-budget](../proofs/active-labeling-budget/), [ssl-representation-probe](../proofs/ssl-representation-probe/) · Tier B [atlas-label-studio](../proofs/atlas-label-studio/) |
+| Online / Graph / Decisions | [stream-fraud-online](../proofs/stream-fraud-online/), [graph-fraud-rings](../proofs/graph-fraud-rings/), [cost-sensitive-collections](../proofs/cost-sensitive-collections/) · Tier B [aegis-fraud-platform](../proofs/aegis-fraud-platform/), [harbor-demand-desk](../proofs/harbor-demand-desk/), [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/) |
+| Probabilistic | [prob-interval-risk](../proofs/prob-interval-risk/) · Tier B [harbor-demand-desk](../proofs/harbor-demand-desk/), [nexus-federated-clinical](../proofs/nexus-federated-clinical/) |
+| Causal | [causal-treatment-effect](../proofs/causal-treatment-effect/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/) |
+| Multi-task | [multi-target-underwriting](../proofs/multi-target-underwriting/) |
+| Meta-learning | [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/) |
+| Federated | [federated-hospital-sim](../proofs/federated-hospital-sim/) · Tier B [nexus-federated-clinical](../proofs/nexus-federated-clinical/) |
+| Symbolic / CBR | [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/), [case-memory-claims](../proofs/case-memory-claims/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/) |
+| Synthetic | [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/) |
+| Imitation + RL | [imitation-cartpole-control](../proofs/imitation-cartpole-control/) |
+
+Full inventory and Tier C comparison status: [proofs/README.md](../proofs/README.md).

@@ -30,6 +30,9 @@ exists today. Each step links to pages that go deeper than a single toy example.
 #. **Optional extras on the same Session** — :doc:`torch-deep`,
    :doc:`rag-deep`, :doc:`ai-operator-safety` (quickstarts remain short on-ramps)
 #. **Capability inventory and guide map** — :doc:`features`, :doc:`guide-index`
+#. **Proof suite (Tier A/B/C)** — deep end-to-end projects under
+   `proofs/` on GitHub (`python -m proofs._lib.run_all --tier all`);
+   see :doc:`features` and the Markdown guide index for domain → proof maps
 #. **1.x migration** — :doc:`legacy`
 
 The Markdown files under ``guides/`` are the canonical source for quickstarts,
