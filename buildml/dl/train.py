@@ -387,6 +387,8 @@ def train_supervised_module(
         reason=stop_reason,
     )
 
+    mm_contract = getattr(loader_bundle, "multimodal_contract", None)
+    mm_preprocess = None if mm_contract is None else dict(mm_contract.to_dict())
     result = TrainResult(
         module=module,
         task=task,
@@ -402,6 +404,7 @@ def train_supervised_module(
         scheduler_name=str(cfg.scheduler or "none"),
         scheduler_state=None if scheduler is None else scheduler.state_dict(),
         resumed_from_epochs=start_epoch,
+        multimodal_preprocess=mm_preprocess,
     )
     result.training_curve = build_training_curve(result)
     return result

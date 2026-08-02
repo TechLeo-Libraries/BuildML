@@ -68,7 +68,8 @@ Optional extras (same Session)
   omits a module, fold-local ``cross_validate_torch``, nested
   ``nested_cv_torch`` / ``search_torch``, optional CUDA AMP, single-node
   ``fit_torch_ddp``, TorchScript/ONNX ``export_torch``, evaluation, and trainer
-  bundles. Optional ``buildml[onnx]`` adds the ``onnx`` checker package.
+  bundles (optional ``multimodal_preprocess`` meta; load does not rebuild
+  loaders). Optional ``buildml[onnx]`` adds the ``onnx`` checker package.
   ``soundfile`` is included in ``buildml[torch]`` (also via ``buildml[audio]``)
   for audio path cells.
 * **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, grounded

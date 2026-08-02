@@ -23,6 +23,12 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Fixed
 
+- **Pass N leftovers after Pass M:** torch trainer bundles persist
+  `multimodal_preprocess` (audio/image stats, source SR, layout) with load-path
+  honesty (meta restored; DataLoaders not auto-rebuilt); ambiguous 2D waveform
+  arrays raise instead of silent flatten; repeat-pad kept as alpha pooling
+  choice (documented + short-clip pool-signal test) rather than widening the
+  forward/export contract with length-masked pooling.
 - **Pass M adversarial re-audit after Pass L:** short audio clips are
   repeat-padded (not zero-filled) so default `audio_max_samples` does not wipe
   the 1D-CNN pool; train-only amp stats use pre-pad lengths; media path/array

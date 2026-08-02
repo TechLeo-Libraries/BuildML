@@ -467,6 +467,10 @@ def load_torch_bundle(
 ) -> Session:
     """Load a Torch trainer bundle into this Session.
 
+    Restores weights plus optional ``multimodal_preprocess`` meta (frozen
+    image/audio stats and layout). Does **not** rebuild DataLoaders — remake
+    multimodal/text loaders before fit/evaluate/export.
+
     Parameters
     ----------
     path:

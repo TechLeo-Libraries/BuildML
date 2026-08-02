@@ -8,6 +8,12 @@ Tensors are mono ``(1, T)`` float32. Short clips are **repeat-padded** to
 ``max_samples`` (not zero-filled) so global pooling remains informative.
 Amplitude mean/std are fit on train only (optionally length-aware).
 
+Repeat-pad (not length-masked pooling) is the alpha choice: the fusion
+``AdaptiveAvgPool1d`` keeps a single fixed-length audio tensor for
+train/export/ONNX, and tiling preserves amplitude so short clips are not
+wiped by a large default window. Length-masked pooling would need lengths in
+``forward`` and a wider batch/export contract.
+
 This is an honest alpha fusion branch — not a speech foundation-model stack.
 """
 
@@ -62,17 +68,20 @@ def _mono_wave_from_array(
     if arr.ndim == 1:
         wave = arr.astype(np.float32, copy=False)
     elif arr.ndim == 2:
-        # Prefer channel-first when first dim is small channel count.
-        if arr.shape[0] <= 8 and arr.shape[0] < arr.shape[1]:
+        # Only accept unambiguous channel layouts: one dim is C<=8 and strictly
+        # smaller than the time dim. Equal/square/both-large shapes are refused
+        # rather than silently flattened into a wrong waveform.
+        n0, n1 = int(arr.shape[0]), int(arr.shape[1])
+        if n0 <= 8 and n0 < n1:
             wave = arr.mean(axis=0).astype(np.float32, copy=False)
-        elif arr.shape[1] <= 8 and arr.shape[1] < arr.shape[0]:
+        elif n1 <= 8 and n1 < n0:
             wave = arr.mean(axis=1).astype(np.float32, copy=False)
         else:
-            # Ambiguous: treat as (T, C) with C inferred as last dim if small.
-            if arr.shape[-1] <= 8:
-                wave = arr.mean(axis=-1).astype(np.float32, copy=False)
-            else:
-                wave = arr.reshape(-1).astype(np.float32, copy=False)
+            raise ValidationError(
+                f"Ambiguous 2D audio array shape {arr.shape}: expected 1D (T,), "
+                "channel-first (C,T), or channel-last (T,C) with C<=8 and C<T. "
+                "Pass a mono waveform or reshape explicitly."
+            )
     else:
         raise ValidationError(
             f"Audio array must be 1D waveform or 2D (C,T)/(T,C); got shape {arr.shape}"

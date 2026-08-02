@@ -437,6 +437,87 @@ def test_audio_loader_bundle_slots_hold_modality_metadata() -> None:
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_ambiguous_2d_audio_layout_refused() -> None:
+    _require_torch_or_skip()
+    from buildml.dl.audio import decode_audio_cell
+
+    with pytest.raises(ValidationError, match="Ambiguous 2D audio array"):
+        decode_audio_cell(np.ones((16, 16), dtype=np.float32), max_samples=64)
+    with pytest.raises(ValidationError, match="Ambiguous 2D audio array"):
+        decode_audio_cell(np.ones((4, 4), dtype=np.float32), max_samples=64)
+    # Clear channel layouts still accepted.
+    ch_first = decode_audio_cell(np.ones((2, 32), dtype=np.float32), max_samples=32)
+    assert ch_first.shape == (1, 32)
+    ch_last = decode_audio_cell(np.ones((32, 2), dtype=np.float32), max_samples=32)
+    assert ch_last.shape == (1, 32)
+
+
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+def test_torch_bundle_persists_audio_preprocess_meta(tmp_path: Path) -> None:
+    _require_torch_or_skip()
+    import json
+
+    from buildml.dl.multimodal import build_multimodal_fusion
+
+    session = (
+        Session.ingest(_audio_tabular_frame(40))
+        .set_roles(
+            {"x1": "feature", "x2": "feature", "audio": "feature", "y": "target"}
+        )
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    )
+    session.make_audio_multimodal_torch_loaders(
+        audio_column="audio",
+        audio_sample_rate=_AUDIO_SR,
+        audio_max_samples=_AUDIO_LEN,
+        audio_source_sample_rate=_AUDIO_SR,
+        batch_size=8,
+        seed=0,
+    )
+    session.fit_torch(epochs=1, device="cpu")
+    assert session.dl_train_result is not None
+    meta_fit = session.dl_train_result.multimodal_preprocess
+    assert meta_fit is not None
+    assert meta_fit["audio_column"] == "audio"
+    assert meta_fit["audio_sample_rate"] == _AUDIO_SR
+    assert meta_fit["audio_max_samples"] == _AUDIO_LEN
+    assert meta_fit["audio_source_sample_rate"] == _AUDIO_SR
+    assert meta_fit["audio_mean"] is not None
+    assert meta_fit["input_layout"] == ["numeric", "audio"]
+
+    path = session.save_torch_bundle(tmp_path / "aud_bundle")
+    disk_meta = json.loads((path / "meta.json").read_text(encoding="utf-8"))
+    assert disk_meta["multimodal_preprocess"]["audio_mean"] == meta_fit["audio_mean"]
+
+    shell = build_multimodal_fusion(
+        n_numeric=2,
+        vocab_size=0,
+        audio_channels=1,
+        audio_samples=_AUDIO_LEN,
+        task="classification",
+        n_classes=2,
+    )
+    other = (
+        Session.ingest(_audio_tabular_frame(40, seed=1))
+        .set_roles(
+            {"x1": "feature", "x2": "feature", "audio": "feature", "y": "target"}
+        )
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    )
+    other.load_torch_bundle(path, shell, map_location="cpu")
+    assert other.dl_train_result is not None
+    loaded = other.dl_train_result.multimodal_preprocess
+    assert loaded is not None
+    assert loaded["audio_mean"] == meta_fit["audio_mean"]
+    assert loaded["audio_source_sample_rate"] == _AUDIO_SR
+    assert any("DataLoaders were not rebuilt" in w for w in other.dl_train_result.warnings)
+    # Load-path honesty: evaluate refuses silent tabular rebuild.
+    other._torch_loaders = None
+    with pytest.raises(ValidationError, match="Refusing silent tabular loader rebuild"):
+        other.evaluate_torch(partition="validation")
+
+
+@pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
 def test_ai_executor_dispatches_make_audio_multimodal_torch_loaders() -> None:
     """Registry tool must reach Session, not die as missing dispatch."""
     _require_torch_or_skip()

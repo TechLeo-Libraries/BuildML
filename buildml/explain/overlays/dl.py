@@ -654,12 +654,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     _operation(
         "save_torch_bundle",
         OperationKind.PERSIST,
-        "Persist Torch weights, optimizer state, config, history, and feature contract.",
+        "Persist Torch weights, optimizer state, config, history, feature contract, "
+        "and optional multimodal_preprocess meta.",
         "Carry a trainer artifact without embedding Session data or splits.",
         "Torch trainer bundle persistence.",
         (
             "Write meta.json with format buildml.torch_bundle.v1.",
-            "torch.save module/optimizer/config/history into trainer.pt.",
+            "torch.save module/optimizer/config/history/multimodal_preprocess into trainer.pt.",
         ),
         parameters=(_p("path", "str | Path", "Destination trainer bundle directory.", required=True),),
         inputs=("Active dl_train_result and destination path.",),
@@ -692,7 +693,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         (
             "Validate meta.json format buildml.torch_bundle.v1.",
             "Load trainer.pt into the supplied nn.Module.",
-            "Rebuild TrainResult on the Session.",
+            "Rebuild TrainResult on the Session (including multimodal_preprocess when present).",
+            "Do not rebuild DataLoaders; remake multimodal/text loaders explicitly.",
         ),
         parameters=(
             _p("path", "str | Path", "Existing trainer bundle directory.", required=True),
@@ -711,11 +713,19 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         assumptions=("Artifact is trusted and feature width matches the current Session contract.",),
         failures=("Wrong format (checkpoint/pipeline), corrupt files, or state_dict mismatch.",),
         leakage=("A trainer can retain information from its original training data.",),
-        anti_patterns=("Passing a Session checkpoint path to load_torch_bundle.",),
+        anti_patterns=(
+            "Passing a Session checkpoint path to load_torch_bundle.",
+            "Expecting load_torch_bundle to rebuild multimodal DataLoaders or "
+            "auto-apply frozen image/audio preprocess stats.",
+        ),
         state_changes=("Replaces dl_train_result; classical fit_result is unchanged.",),
-        result_reading=("Confirm task, feature columns, and epoch history before scoring.",),
+        result_reading=(
+            "Confirm task, feature columns, epoch history, and multimodal_preprocess "
+            "(when present) before scoring.",
+        ),
         next_steps=(
-            "make_torch_loaders if needed; evaluate_torch on a holdout partition; "
+            "Remake multimodal/text loaders when the module is non-tabular; "
+            "evaluate_torch on a holdout partition; "
             "or fit_torch(..., resume=True) to continue training from the restored state.",
         ),
         concepts=("reproducibility", "feature-schema", "leakage-boundary", "training-curves"),

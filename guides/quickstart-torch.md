@@ -104,7 +104,7 @@ print(before.operation, before.prerequisites)
 | Artifact | Schema | Contains | Does not contain |
 | --- | --- | --- | --- |
 | Session checkpoint | existing checkpoint formats | data, roles, splits, history | Torch weights / optimizer |
-| Torch trainer bundle | `buildml.torch_bundle.v1` | weights, optimizer (+ scheduler), config, history, feature contract | dataset rows, split indices |
+| Torch trainer bundle | `buildml.torch_bundle.v1` | weights, optimizer (+ scheduler), config, history, feature contract, optional multimodal_preprocess (image/audio stats, rates, layout) | dataset rows, split indices; load does not rebuild DataLoaders |
 
 Layout: `<path>/meta.json` + `<path>/trainer.pt`.
 
@@ -180,7 +180,10 @@ aud.fit_torch(epochs=5, device="cpu")
   classifier, and fusion (small CNN image branch + small 1D-CNN audio branch)
   cover the happy path; custom `nn.Module` still works. Audio is honest alpha
   fusion — not a speech foundation-model product. Short clips are repeat-padded
-  to `audio_max_samples` (set it near your clip length when possible).
+  to `audio_max_samples` so global pooling stays informative without a lengths
+  tensor in forward/export (set `audio_max_samples` near your clip length when
+  possible). Trainer bundles may store frozen multimodal preprocess meta;
+  `load_torch_bundle` restores it for inspection but does not rebuild loaders.
 - **Materialization.** Partition rows become tensors via the current Session
   frame (Pandas/NumPy bridge). No Polars/DuckDB zero-copy into DataLoaders.
 - **Classical plans.** Session impute/encode/scale mutate the frame and are

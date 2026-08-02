@@ -267,9 +267,10 @@ choices are fixed. Repeatedly consulting test results makes them selection data.
 
 **Torch trainer bundle**  
 Directory schema `buildml.torch_bundle.v1` (`meta.json` + `trainer.pt`) holding module weights,
-optimizer (and optional scheduler) state, `TrainConfig`, epoch history, early-stop bookkeeping, and
-the feature/label contract. It is not a Session checkpoint and does not embed dataset rows or split
-indices.
+optimizer (and optional scheduler) state, `TrainConfig`, epoch history, early-stop bookkeeping,
+the feature/label contract, and optional `multimodal_preprocess` meta (frozen image/audio stats,
+sample rates, layout). Load restores that meta for inspection but does not rebuild DataLoaders.
+It is not a Session checkpoint and does not embed dataset rows or split indices.
 
 **TrainConfig**  
 Typed epoch-loop knobs for `fit_torch` (epochs, learning rate, device, grad clip, scheduler,

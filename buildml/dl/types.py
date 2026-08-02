@@ -101,15 +101,27 @@ class FeatureContract:
     normalize_std: tuple[float, ...] | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        def _jsonable(value: Any) -> Any:
+            # numpy scalars (common from pandas unique) are not JSON-serializable.
+            item = getattr(value, "item", None)
+            if callable(item):
+                try:
+                    return item()
+                except Exception:  # pragma: no cover - non-scalar edge
+                    return value
+            return value
+
         return {
             "feature_columns": list(self.feature_columns),
             "target_column": self.target_column,
             "task": self.task,
-            "class_labels": list(self.class_labels),
+            "class_labels": [_jsonable(v) for v in self.class_labels],
             "normalize_mean": None
             if self.normalize_mean is None
-            else list(self.normalize_mean),
-            "normalize_std": None if self.normalize_std is None else list(self.normalize_std),
+            else [float(v) for v in self.normalize_mean],
+            "normalize_std": None
+            if self.normalize_std is None
+            else [float(v) for v in self.normalize_std],
         }
 
     @classmethod

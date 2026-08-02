@@ -1396,6 +1396,9 @@ class Session:
     ) -> Session:
         """Load a Torch trainer bundle into this Session.
 
+        Restores weights plus optional multimodal preprocess meta. Does not
+        rebuild DataLoaders — remake multimodal/text loaders before scoring.
+
         Parameters
         ----------
         path:

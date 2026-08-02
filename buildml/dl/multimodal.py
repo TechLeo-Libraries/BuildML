@@ -98,6 +98,7 @@ class MultimodalContract:
     audio_std: tuple[float, ...] | None = None
     audio_sample_rate: int = 16_000
     audio_max_samples: int = 16_000
+    audio_source_sample_rate: int | None = None
     input_layout: tuple[str, ...] = ()
     modality: str = "tabular_text_fusion"
 
@@ -119,6 +120,13 @@ class MultimodalContract:
         )
 
     def to_dict(self) -> dict[str, Any]:
+        def _jsonable(value: Any) -> Any:
+            if isinstance(value, (np.integer, np.floating)):
+                return value.item()
+            if isinstance(value, np.ndarray):
+                return value.tolist()
+            return value
+
         return {
             "numeric_columns": list(self.numeric_columns),
             "text_column": self.text_column,
@@ -126,23 +134,70 @@ class MultimodalContract:
             "audio_column": self.audio_column,
             "target_column": self.target_column,
             "task": self.task,
-            "class_labels": list(self.class_labels),
+            "class_labels": [_jsonable(v) for v in self.class_labels],
             "vocab": dict(self.vocab),
             "normalize_mean": None
             if self.normalize_mean is None
-            else list(self.normalize_mean),
-            "normalize_std": None if self.normalize_std is None else list(self.normalize_std),
-            "image_mean": None if self.image_mean is None else list(self.image_mean),
-            "image_std": None if self.image_std is None else list(self.image_std),
+            else [float(v) for v in self.normalize_mean],
+            "normalize_std": None
+            if self.normalize_std is None
+            else [float(v) for v in self.normalize_std],
+            "image_mean": None
+            if self.image_mean is None
+            else [float(v) for v in self.image_mean],
+            "image_std": None if self.image_std is None else [float(v) for v in self.image_std],
             "image_size": list(self.image_size),
             "image_channels": self.image_channels,
-            "audio_mean": None if self.audio_mean is None else list(self.audio_mean),
-            "audio_std": None if self.audio_std is None else list(self.audio_std),
+            "audio_mean": None
+            if self.audio_mean is None
+            else [float(v) for v in self.audio_mean],
+            "audio_std": None if self.audio_std is None else [float(v) for v in self.audio_std],
             "audio_sample_rate": self.audio_sample_rate,
             "audio_max_samples": self.audio_max_samples,
+            "audio_source_sample_rate": self.audio_source_sample_rate,
             "input_layout": list(self.input_layout),
             "modality": self.modality,
         }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> MultimodalContract:
+        """Rebuild a contract from :meth:`to_dict` (bundle / meta round-trip)."""
+
+        def _float_tuple(key: str) -> tuple[float, ...] | None:
+            raw = payload.get(key)
+            if raw is None:
+                return None
+            return tuple(float(v) for v in raw)
+
+        image_size = payload.get("image_size") or (32, 32)
+        layout = payload.get("input_layout") or ()
+        return cls(
+            numeric_columns=tuple(payload.get("numeric_columns") or ()),
+            text_column=payload.get("text_column"),
+            image_column=payload.get("image_column"),
+            audio_column=payload.get("audio_column"),
+            target_column=str(payload["target_column"]),
+            task=payload["task"],
+            class_labels=tuple(payload.get("class_labels") or ()),
+            vocab=dict(payload.get("vocab") or {}),
+            normalize_mean=_float_tuple("normalize_mean"),
+            normalize_std=_float_tuple("normalize_std"),
+            image_mean=_float_tuple("image_mean"),
+            image_std=_float_tuple("image_std"),
+            image_size=(int(image_size[0]), int(image_size[1])),
+            image_channels=int(payload.get("image_channels") or 3),
+            audio_mean=_float_tuple("audio_mean"),
+            audio_std=_float_tuple("audio_std"),
+            audio_sample_rate=int(payload.get("audio_sample_rate") or 16_000),
+            audio_max_samples=int(payload.get("audio_max_samples") or 16_000),
+            audio_source_sample_rate=(
+                None
+                if payload.get("audio_source_sample_rate") is None
+                else int(payload["audio_source_sample_rate"])
+            ),
+            input_layout=tuple(str(x) for x in layout),
+            modality=str(payload.get("modality") or "tabular_text_fusion"),
+        )
 
 
 def _modality_name(
@@ -630,8 +685,10 @@ def make_multimodal_loaders(
     if has_audio:
         warnings.append(
             "Audio cells accept path strings (soundfile) or waveform arrays; "
-            "short clips are repeat-padded to audio_max_samples; "
-            "fusion uses a small 1D-CNN branch (not a speech foundation model)."
+            "short clips are repeat-padded to audio_max_samples "
+            "(keeps AdaptiveAvgPool1d informative without a lengths tensor in "
+            "forward/export); fusion uses a small 1D-CNN branch "
+            "(not a speech foundation model)."
         )
     n_counts: dict[str, int] = {"train": 0, "validation": 0, "test": 0}
 
@@ -713,6 +770,11 @@ def make_multimodal_loaders(
         audio_std=None if aud_std is None else tuple(float(v) for v in aud_std),
         audio_sample_rate=int(cfg.audio_sample_rate),
         audio_max_samples=int(cfg.audio_max_samples),
+        audio_source_sample_rate=(
+            None
+            if cfg.audio_source_sample_rate is None
+            else int(cfg.audio_source_sample_rate)
+        ),
         input_layout=tuple(layout),
         modality=modality,
     )
