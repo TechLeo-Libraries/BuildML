@@ -5,7 +5,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [classical-ml-capability-map.md](./classical-ml-capability-map.md) ·
 [classical-alpha-gate.md](./classical-alpha-gate.md) ·
 [ingest-engine-checkpoint-design.md](./ingest-engine-checkpoint-design.md) ·
-[quality-bar.md](./quality-bar.md) · [editorial-standards.md](../editorial-standards.md)
+[quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
 **Status:** M0 locked · M1 complete · M2 complete · M3 complete (docs / DL alpha gate).  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  

@@ -19,24 +19,24 @@ next without overstating what the data establishes.
 - A `self-contained report` has no network dependency. It is not necessarily a complete account of
   external work.
 
-The canonical definitions are in [glossary.md](./glossary.md). Catalog concept keys live in
+The canonical definitions are in [glossary.md](../glossary.md). Catalog concept keys live in
 `buildml.explain.CONCEPT_NOTES`; documentation should name the matching key when it expands one.
 
 ## Voice and structure
 
-- Name the object and action: “Median imputation replaced missing `age` values” is preferable to
-  “The data was handled.”
+- Name the object and action: "Median imputation replaced missing `age` values" is preferable to
+  "The data was handled."
 - Lead with the observed result, then interpretation, then action. Keep those three parts distinct.
-- Use direct, restrained language. Do not use “unlock,” “revolutionary,” “seamless,” “robust,” or
-  “intelligent” without a measured definition.
-- Address the reader only for a concrete action: “Review the six unmatched categories.”
+- Use direct, restrained language. Do not use "unlock," "revolutionary," "seamless," "robust," or
+  "intelligent" without a measured definition.
+- Address the reader only for a concrete action: "Review the six unmatched categories."
 - Use present tense for stable definitions, past tense for completed operations, and conditional
   language for uncertain consequences.
 - Define an abbreviation on first use in each standalone report. Metric labels may retain standard
   abbreviations after the definition.
 - Remove boilerplate openings, praise, and consulting labels. State the object, computation,
-  population, and limitation instead of calling material “research-grade,” “professional,” “rich,”
-  “deep,” or “comprehensive.”
+  population, and limitation instead of calling material "research-grade," "professional," "rich,"
+  "deep," or "comprehensive."
 
 ## Definitions, evidence, and findings
 
@@ -59,8 +59,8 @@ Use severity for likely workflow impact, not visual emphasis:
 - `high`: address before model selection or performance claims;
 - `critical`: the current result is invalid or unsafe to use.
 
-Never convert a heuristic cutoff into a fact. Write “VIF above 5 is a collinearity review flag” rather
-than “VIF above 5 proves multicollinearity.” Include sample count for statistical tests and curves.
+Never convert a heuristic cutoff into a fact. Write "VIF above 5 is a collinearity review flag" rather
+than "VIF above 5 proves multicollinearity." Include sample count for statistical tests and curves.
 Name the missing capability when an analysis is skipped.
 
 ## Recommendations and automatic choices
@@ -78,9 +78,9 @@ must not imply that it has run.
 
 Avoid universal prescriptions. For example:
 
-- Good: “Median imputation is a reasonable baseline for the skewed numeric columns listed here.
-  Compare it with native missing-value handling.”
-- Bad: “Always impute missing numeric values with the median.”
+- Good: "Median imputation is a reasonable baseline for the skewed numeric columns listed here.
+  Compare it with native missing-value handling."
+- Bad: "Always impute missing numeric values with the median."
 
 ## Leakage and partition language
 
@@ -89,7 +89,7 @@ parameters, or thresholds were learned without validation/test rows.
 
 - `validation` supports model, feature, and threshold choices.
 - `test` estimates performance after those choices are fixed.
-- Do not call test performance “unseen” if test results influenced an earlier decision.
+- Do not call test performance "unseen" if test results influenced an earlier decision.
 - State when ordinary random splitting assumes independent, exchangeable rows. Grouped and temporal
   data usually need externally supplied partitions.
 - When displaying full-dataset EDA after a split, distinguish descriptive full-data observations
@@ -102,7 +102,7 @@ parameters, or thresholds were learned without validation/test rows.
   recall, PR curves, calibration, or thresholds.
 - For regression, report the target unit for MAE/RMSE and explain when a transformed target changes
   that unit.
-- Do not describe a model as “accurate” from accuracy alone. Compare with a relevant baseline and
+- Do not describe a model as "accurate" from accuracy alone. Compare with a relevant baseline and
   inspect error costs.
 - Avoid causal language for correlations, permutation importance, model coefficients, and SHAP-like
   attributions.
@@ -119,14 +119,14 @@ A state-change explanation must identify:
 - any fitted values and the partition used to learn them;
 - invalidated downstream artifacts, especially feature schemas and fitted models.
 
-“No state change” is valid and should be explicit for inspection and export methods. Do not imply
+"No state change" is valid and should be explicit for inspection and export methods. Do not imply
 that mutating a returned DataFrame changes the Session when the method returns a copy.
 
 ## Tables, figures, and HTML
 
 - Each table needs a visible or programmatic caption and explicit column headings.
 - Escape all data-derived text. Raw HTML is accepted only from trusted BuildML component renderers.
-- Figure alternative text should name the chart and its analytical purpose, not repeat “image of.”
+- Figure alternative text should name the chart and its analytical purpose, not repeat "image of."
 - Do not encode meaning by color alone. Use labels, symbols, or text with sufficient contrast.
 - Navigation must use landmarks and in-page headings. Include a skip link and visible keyboard focus.
 - Reports must work from a local file with networking disabled. Embed CSS, JavaScript, and required
@@ -140,7 +140,7 @@ mechanism, parameters, inputs, outputs, prerequisites, usual ordering, alternati
 rationale, assumptions, failure modes, leakage risks, anti-patterns, state changes, result reading,
 next considerations, and concept links.
 
-Catalog text should answer operation-specific questions. “This operation processes data efficiently”
+Catalog text should answer operation-specific questions. "This operation processes data efficiently"
 is not acceptable. When a method has no call-time parameter or no state change, say so through its
 inputs/state-change text rather than inventing a parameter.
 
@@ -153,4 +153,3 @@ substantive entry in the same change.
 plans, historical release notes, and `buildml/_legacy/` are excluded because they describe removed
 interfaces. This standards file is also excluded from phrase checks because it quotes prohibited
 examples. Exclusions are not permission to link archival examples as current guidance.
-

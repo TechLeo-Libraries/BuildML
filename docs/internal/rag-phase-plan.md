@@ -5,7 +5,7 @@ Grounded in: [reconstruction-roadmap.md](./reconstruction-roadmap.md) ·
 [deep-learning-phase-plan.md](./deep-learning-phase-plan.md) ·
 [dl-m0-lock.md](./dl-m0-lock.md) ·
 [classical-ml-capability-map.md](./classical-ml-capability-map.md) ·
-[quality-bar.md](./quality-bar.md) · [editorial-standards.md](../editorial-standards.md)
+[quality-bar.md](./quality-bar.md) · [editorial-standards.md](./editorial-standards.md)
 
 **Status:** M0 locked · M1 complete · M2 complete · M3 complete (RAG alpha `2.2.0a1`).  
 **Sequencing (locked):** Classical ML → Deep Learning → RAG / modern methods → LLM operator last.  
@@ -349,7 +349,7 @@ every core matrix cell.
 **Deliverables**
 
 - This plan approved (or amended with decision log entries).
-- Short lock file `docs/rag-m0-lock.md`: public method names, store backend choice,
+- Short lock file `./rag-m0-lock.md`: public method names, store backend choice,
   bundle schema id, extra pins, Python matrix for RAG CI, version line.
 - Spike notes: embed+index latency on a small fixture; CPU-only retrieve path;
   bundle directory layout.
@@ -361,7 +361,7 @@ every core matrix cell.
 - [x] Bundle vs Session checkpoint vs Torch bundle boundary written and accepted
 - [x] Extra pins + CI Python subset chosen
 - [x] Version line locked (`2.2.0a1` at M3)
-- [x] Lock file written (`docs/rag-m0-lock.md`); M1 implementation follows
+- [x] Lock file written (`./rag-m0-lock.md`); M1 implementation follows
 
 ### M1 — Thin vertical slice
 

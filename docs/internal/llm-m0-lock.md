@@ -225,4 +225,4 @@ None. All locked values match the approved plan.
 - DL precedent: [dl-m0-lock.md](./dl-m0-lock.md)
 - RAG precedent: [rag-m0-lock.md](./rag-m0-lock.md)
 - Quality bar: [quality-bar.md](./quality-bar.md)
-- Editorial standards: [editorial-standards.md](../editorial-standards.md)
+- Editorial standards: [editorial-standards.md](./editorial-standards.md)

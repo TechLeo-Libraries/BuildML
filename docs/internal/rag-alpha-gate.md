@@ -7,7 +7,7 @@ capability wishlist.
 
 Related docs: [quickstart-rag-alpha.md](./quickstart-rag-alpha.md) ·
 [rag-m0-lock.md](./rag-m0-lock.md) · [rag-phase-plan.md](./rag-phase-plan.md) ·
-[glossary.md](../glossary.md) · [editorial-standards.md](../editorial-standards.md)
+[glossary.md](../glossary.md) · [editorial-standards.md](./editorial-standards.md)
 
 ---
 

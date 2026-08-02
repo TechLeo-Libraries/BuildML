@@ -8,7 +8,7 @@ capability wishlist.
 
 Related docs: [quickstart-ai-alpha.md](./quickstart-ai-alpha.md) ·
 [llm-m0-lock.md](./llm-m0-lock.md) · [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) ·
-[glossary.md](../glossary.md) · [editorial-standards.md](../editorial-standards.md)
+[glossary.md](../glossary.md) · [editorial-standards.md](./editorial-standards.md)
 
 ---
 

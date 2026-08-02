@@ -14,9 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # These paths are maintainer records or quote prohibited copy examples.
 # docs/internal/ holds phase plans, gates, and design locks (not user guidance).
 ARCHIVAL_DOC_PREFIXES = ("docs/internal/",)
-ARCHIVAL_DOCS = {
-    "docs/editorial-standards.md",
-}
+ARCHIVAL_DOCS: set[str] = set()
 QUOTED_EXAMPLE_DOCS: set[str] = set()
 
 COPY_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
