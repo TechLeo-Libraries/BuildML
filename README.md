@@ -1,4 +1,4 @@
-# BuildML 2.2 alpha
+# BuildML 2.3 alpha
 
 BuildML is a Python library for stateful machine-learning workflows. A `Session`
 owns the dataset, semantic column roles, partition membership, fitted
@@ -6,8 +6,9 @@ preprocessing plans, optional estimators or Torch trainers, optional RAG index
 state, and operation history. The API also explains available operations and
 exports local HTML reports that do not depend on a network connection.
 
-Version `2.2.0a1` is the retrieval (RAG) alpha on top of classical `2.0.0a1` and
-DL `2.1.0a1`. APIs and serialized formats may change before a stable 2.x release.
+Version `2.3.0a1` is the AI operator alpha on top of classical `2.0.0a1`, DL
+`2.1.0a1`, and RAG `2.2.0a1`. APIs and serialized formats may change before a
+stable 2.x release.
 
 ## Install
 
@@ -28,6 +29,7 @@ pip install "buildml[engines]"      # Polars and DuckDB adapters
 pip install "buildml[optuna]"       # Optuna hyperparameter search
 pip install "buildml[torch]"        # tabular Torch thin slice (alias: buildml[dl])
 pip install "buildml[rag]"          # optional ST/rerank backends; hashing path uses core
+pip install "buildml[ai]"           # LLM operator (alias: buildml[llm])
 pip install "buildml[imbalanced]"   # imbalanced-learn samplers
 pip install "buildml[excel]"        # Excel input support
 pip install "buildml[all-classical]"
@@ -299,13 +301,15 @@ For DuckDB, prefer `with Session.ingest(..., engine="duckdb") as session:` (or
 `with session.dataset:`) so owned connections close on exit. Simple portable
 filters: `from buildml.data import portable_filter_expr`.
 
-## Alpha status (2.2.0a1)
+## Alpha status (2.3.0a1)
 
-Version `2.2.0a1` is the RAG alpha. Classical readiness remains defined by the
-[classical alpha gate](docs/classical-alpha-gate.md) (`2.0.0a1` line). DL
-readiness is defined by the [DL alpha gate](docs/dl-alpha-gate.md)
+Version `2.3.0a1` is the AI operator alpha. Classical readiness remains defined
+by the [classical alpha gate](docs/classical-alpha-gate.md) (`2.0.0a1` line).
+DL readiness is defined by the [DL alpha gate](docs/dl-alpha-gate.md)
 (`2.1.0a1` line). RAG readiness is defined by the
-[RAG alpha gate](docs/rag-alpha-gate.md). Changelog: [CHANGELOG.md](CHANGELOG.md).
+[RAG alpha gate](docs/rag-alpha-gate.md) (`2.2.0a1` line). AI readiness is
+defined by the [AI alpha gate](docs/ai-alpha-gate.md).
+Changelog: [CHANGELOG.md](CHANGELOG.md).
 
 ### Classical (still gated)
 
@@ -361,8 +365,45 @@ RAG results. Classical `fit` / Torch `*_torch` are unchanged. Bundles use schema
 `buildml.rag_bundle.v1` (not a Session checkpoint or Torch bundle). Default
 embedder is lexical hashing (CPU, no model download), not a semantic sentence
 model. Hybrid defaults to RRF; cross-encoder rerank is opt-in behind
-`buildml[rag]`. This alpha is retrieve + evaluate + bundle — no `rag_generate`
-and no LLM operator.
+`buildml[rag]`. This alpha is retrieve + evaluate + bundle — no `rag_generate`.
+
+### AI operator (optional LLM guidance)
+
+Install `buildml[ai]` (alias `buildml[llm]`). Core `import buildml` never
+requires AI extras. Design lock: [docs/llm-m0-lock.md](docs/llm-m0-lock.md).
+Quickstart: [docs/quickstart-ai-alpha.md](docs/quickstart-ai-alpha.md). Gate:
+[docs/ai-alpha-gate.md](docs/ai-alpha-gate.md).
+
+```python
+# BYO API key via env or config
+# export BUILDML_OPENAI_API_KEY="sk-your-key"
+session.ai_configure(provider="openai")
+
+# Preview what leaves your machine (default: STATS_ONLY, no raw rows)
+manifest = session.ai_egress_preview()
+
+# Dry run: see full prompt payload without API call
+payload = session.ai_dry_run("Describe the data")
+
+# Advisor: read-only Q&A (no state change)
+result = session.ai_advisor("What preprocessing should I consider?")
+
+# Plan: structured next steps
+plan = session.ai_plan("Build a classification model")
+
+# Execute: propose → confirm → execute
+proposal = session.ai_execute("set_roles", {"mapping": {...}})  # proposal
+result = session.ai_execute("set_roles", {"mapping": {...}}, confirm=True)  # executes
+
+# Transcripts (secrets redacted, separate from checkpoints)
+session.save_ai_transcript("artifacts/transcript.json")
+```
+
+`session.ai_result` / `ai_transcript` hold typed AI results. Classical `fit` /
+Torch `*_torch` / RAG `rag_*` are unchanged. Transcripts use schema
+`buildml.ai_transcript.v1` (not a Session checkpoint or bundle). This alpha is
+advisor + plan + confirmed execute — no autonomous agent or auto-execution.
+Advice must be verified.
 
 ### Known limits (do not claim as done)
 
@@ -375,9 +416,11 @@ and no LLM operator.
   materialized tensors (no Polars/DuckDB zero-copy); no auto classical prep
   before loaders; no fold-local Torch CV / DDP / AMP product path.
 - RAG alpha: hybrid/BM25/rerank/upsert/filters/eval depth shipped; hashing
-  default is lexical not semantic; local NumPy store; no generate / LLM
-  operator; no Studio RAG cockpit redesign.
-- LLM operator, fairness, and SHAP-style explainability remain later.
+  default is lexical not semantic; local NumPy store; no generate; no Studio
+  RAG cockpit redesign.
+- AI alpha: advisor/plan/execute shipped with BYO API key and STATS_ONLY
+  default; no autonomous agent or auto-execution; advice must be verified.
+- Fairness and SHAP-style explainability remain later.
 
 ### Local smoke
 
@@ -413,12 +456,17 @@ pytest \
   tests/integration/test_rag_smoke.py \
   tests/integration/test_rag_alpha_smoke.py \
   -q
+
+pip install -e ".[ai]"
+pip install pytest
+pytest tests/unit/test_ai_slice.py -q
 ```
 
-Tag classical, DL, or RAG alphas only after remote CI is green on the release
-candidate push. See [docs/release-checklist-a1.md](docs/release-checklist-a1.md),
-[docs/release-checklist-dl-a1.md](docs/release-checklist-dl-a1.md), and
-[docs/release-checklist-rag-a1.md](docs/release-checklist-rag-a1.md).
+Tag classical, DL, RAG, or AI alphas only after remote CI is green on the
+release candidate push. See [docs/release-checklist-a1.md](docs/release-checklist-a1.md),
+[docs/release-checklist-dl-a1.md](docs/release-checklist-dl-a1.md),
+[docs/release-checklist-rag-a1.md](docs/release-checklist-rag-a1.md), and
+[docs/release-checklist-ai-a1.md](docs/release-checklist-ai-a1.md).
 
 ## Current scope and limitations
 

@@ -17,6 +17,60 @@ with pre-release tags for alpha (`aN`) builds.
 - Richer `dry_run` / `summarize_history` audit UX (ranked risks, prerequisite
   graph summary, suggested next ops) surfaced on walkthrough HTML.
 
+## [2.3.0a1] — AI operator alpha — 2026-08-02
+
+First AI operator alpha on the BuildML 2.x `Session` API. Exit criteria and
+known limits are defined in [`docs/ai-alpha-gate.md`](docs/ai-alpha-gate.md).
+Classical alpha remains at `2.0.0a1`; DL alpha at `2.1.0a1`; RAG alpha at
+`2.2.0a1`. This line adds optional LLM-assisted workflow guidance — **not**
+autonomous agents or auto-execution.
+
+### Added
+
+- Optional `buildml.ai` domain behind `buildml[ai]` (alias `buildml[llm]`):
+  LLM-assisted workflow guidance via typed tool registry, privacy-aware egress,
+  and propose-confirm-execute patterns.
+- Session delegates: `ai_configure`, `ai_egress_preview`, `ai_dry_run`,
+  `ai_advisor`, `ai_plan`, `ai_execute`, `ai_status`, `save_ai_transcript`,
+  `load_ai_transcript`; result slots `ai_result` / `ai_transcript`.
+- Provider protocol (OpenAI-compatible) with BYO API key; `MockProvider` for
+  CI and offline testing.
+- Tool registry with typed allowlist: read-only tools (describe, explain,
+  workflow_status), write tools (set_roles, impute, split, fit), destructive
+  tools (drop_columns) with confirmation policies.
+- Egress privacy controls: `STATS_ONLY` default, column allow/deny lists,
+  `ai_egress_preview` manifest, `ai_dry_run` payload inspection.
+- Multi-step planner with batch approve and budget tracking (token/cost limits).
+- Transcript schema `buildml.ai_transcript.v1` (distinct from checkpoint/bundle);
+  API keys and raw data never persisted by default.
+- Injection hardening: detection of malicious prompts, column names, and RAG
+  chunks; tool registry is the trust boundary.
+- Explain catalog/concept coverage for AI ops; AI quickstart, alpha gate, and
+  release checklist.
+- CI `ai` job (Python 3.11–3.12) with unit tests using `MockProvider` only.
+
+### Known limits (AI alpha)
+
+- **Bring-your-own API key.** BuildML never ships, proxies, or embeds keys.
+- **Default egress is STATS_ONLY.** Raw rows require explicit opt-in and
+  confirmation. Provider sees whatever egress payload the user approved.
+- **Propose → confirm → execute.** No autonomous agent or auto-execution.
+- **Tool registry is the trust boundary.** Cannot execute arbitrary code or
+  tools not in the allowlist.
+- **Transcript ≠ checkpoint ≠ bundle.** Three distinct artifacts.
+- **Not a replacement for Teaching Studio.** Supplements, not replaces.
+- **Not fine-tuning LLMs.** Use DL domain or external tools.
+- **Advice must be verified.** Evidence-bound recommendations are not infallible.
+- **No local-only provider path.** OpenAI-compatible protocol only; local LLM
+  support is later.
+- **CI runs with MockProvider only.** No real API keys in tests.
+- **Public AI APIs and transcript formats may change before a stable release.**
+
+### Verification
+
+- Gate checklist: `docs/ai-alpha-gate.md` sign-off section.
+- Tag only after remote CI is green (see `docs/release-checklist-ai-a1.md`).
+
 ## [2.2.0a1] — RAG alpha — 2026-08-01
 
 First retrieval (RAG) alpha on the BuildML 2.x `Session` API. Exit criteria and
