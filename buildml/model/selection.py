@@ -39,6 +39,9 @@ from buildml.model.supervised import (
     _feature_target_frames,
     _infer_task,
     fit_estimator,
+    fit_kwargs_for_sample_weight,
+    validate_sample_weights,
+    weight_column,
 )
 from buildml.preprocess.fold import (
     SAFE_RECIPE_KNOBS,
@@ -326,6 +329,28 @@ class NestedCVResult:
             print(f"  - {tip}")
 
 
+def _refuse_session_global_cv_leakage(
+    *,
+    session_preprocess_applied: bool,
+    preprocess: PreprocessRecipe | None,
+    allow_session_global_preprocess: bool,
+) -> None:
+    """Hard-refuse CV/search when Session-global prep would soft-leak into folds."""
+    if not session_preprocess_applied:
+        return
+    if preprocess is not None and not preprocess.is_empty():
+        return
+    if allow_session_global_preprocess:
+        return
+    raise LeakageError(
+        "Refusing CV/search because Session-global preprocess plans were already "
+        "fitted on the full train partition (fold-eval rows influenced those frozen "
+        "statistics). Pass preprocess=PreprocessRecipe(...) for fold-local refits, "
+        "or set allow_session_global_preprocess=True to override explicitly "
+        "(scores remain leakage-biased)."
+    )
+
+
 def cv_score(
     dataset: Dataset,
     split_plan: SplitPlan | None,
@@ -338,6 +363,7 @@ def cv_score(
     groups: pd.Series | None = None,
     preprocess: PreprocessRecipe | None = None,
     session_preprocess_applied: bool = False,
+    allow_session_global_preprocess: bool = False,
     params: dict[str, Any] | None = None,
     recipe_knobs: dict[str, Any] | None = None,
 ) -> CVScoreResult:
@@ -347,11 +373,22 @@ def cv_score(
     membership or scoring. Optional ``preprocess`` recipes are fitted on each
     fold's training rows only. ``recipe_knobs`` override safe fold-local
     controls (for example ``select_k``, ``n_bins``) on that recipe copy.
+
+    When Session-global fit-capable plans already exist and no fold-local
+    ``preprocess`` is provided, this refuses with :class:`~buildml.core.errors.LeakageError`
+    unless ``allow_session_global_preprocess=True``.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
+    _refuse_session_global_cv_leakage(
+        session_preprocess_applied=session_preprocess_applied,
+        preprocess=preprocess,
+        allow_session_global_preprocess=allow_session_global_preprocess,
+    )
 
-    x_train, y_train, _feature_cols, _target = _feature_target_frames(dataset, split_plan, "train")
+    x_train, y_train, _feature_cols, _target, sample_weight = _feature_target_frames(
+        dataset, split_plan, "train"
+    )
     resolved_task = _infer_task(y_train, task, estimator)
     metric = scoring_metric or ("r2" if resolved_task == "regression" else "f1_weighted")
 
@@ -378,6 +415,8 @@ def cv_score(
     model = clone(estimator)
     if est_params:
         model.set_params(**est_params)
+    # Validate weight support once up front (clone keeps the same fit signature).
+    fit_kwargs_for_sample_weight(model, sample_weight)
 
     group_values, strategy_name, splitter, row_order = _resolve_splitter(
         dataset=dataset,
@@ -391,9 +430,12 @@ def cv_score(
 
     x_reset = x_train.reset_index(drop=True)
     y_reset = y_train.reset_index(drop=True)
+    w_reset = None if sample_weight is None else sample_weight.reset_index(drop=True)
     if row_order is not None:
         x_reset = x_reset.iloc[row_order].reset_index(drop=True)
         y_reset = y_reset.iloc[row_order].reset_index(drop=True)
+        if w_reset is not None:
+            w_reset = w_reset.iloc[row_order].reset_index(drop=True)
         if group_values is not None:
             group_values = pd.Series(group_values).iloc[row_order]
 
@@ -414,6 +456,8 @@ def cv_score(
         y_fold_train = y_reset.iloc[list(train_pos)]
         x_fold_eval = x_reset.iloc[list(eval_pos)]
         y_fold_eval = y_reset.iloc[list(eval_pos)]
+        w_fold_train = None if w_reset is None else w_reset.iloc[list(train_pos)]
+        w_fold_eval = None if w_reset is None else w_reset.iloc[list(eval_pos)]
 
         if active_recipe is not None and not active_recipe.is_empty():
             prep = build_fold_preprocessor(x_fold_train, active_recipe, y_fold_train)
@@ -424,9 +468,15 @@ def cv_score(
             x_score = x_fold_eval
 
         fold_model = clone(model)
-        fold_model.fit(x_fit, y_fold_train)
+        fold_model.fit(
+            x_fit,
+            y_fold_train,
+            **fit_kwargs_for_sample_weight(fold_model, w_fold_train),
+        )
         y_pred = fold_model.predict(x_score)
-        fold_metrics = _score_predictions(resolved_task, y_fold_eval, y_pred)
+        fold_metrics = _score_predictions(
+            resolved_task, y_fold_eval, y_pred, sample_weight=w_fold_eval
+        )
         folds.append(
             FoldScore(
                 fold=fold_id,
@@ -442,6 +492,11 @@ def cv_score(
 
     mean_metrics, std_metrics = _aggregate_metrics(metric_rows)
     recorded_params = {**est_params, **{f"recipe__{k}": v for k, v in knob_params.items()}}
+    session_global_override = bool(
+        session_preprocess_applied
+        and allow_session_global_preprocess
+        and (active_recipe is None or active_recipe.is_empty())
+    )
     return CVScoreResult(
         task=resolved_task,
         scoring_metric=metric,
@@ -454,7 +509,7 @@ def cv_score(
         held_out_partitions=tuple(held_out),
         fold_preprocess=None if active_recipe is None else active_recipe.to_dict(),
         limitations=_cv_limitations(
-            session_preprocess_applied=session_preprocess_applied,
+            session_preprocess_applied=session_global_override,
             preprocess=active_recipe,
             strategy_name=strategy_name,
             n_folds=len(folds),
@@ -471,7 +526,7 @@ def cv_score(
             mean_metrics=mean_metrics,
             std_metrics=std_metrics,
             held_out=held_out,
-            session_preprocess_applied=session_preprocess_applied,
+            session_preprocess_applied=session_global_override,
             preprocess=active_recipe,
         ),
         params=recorded_params,
@@ -492,6 +547,7 @@ def grid_search(
     groups: pd.Series | None = None,
     preprocess: PreprocessRecipe | None = None,
     session_preprocess_applied: bool = False,
+    allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
     """Exhaustive grid search with nested fold scoring on the train partition.
@@ -515,6 +571,7 @@ def grid_search(
         groups=groups,
         preprocess=preprocess,
         session_preprocess_applied=session_preprocess_applied,
+        allow_session_global_preprocess=allow_session_global_preprocess,
         refit=refit,
     )
 
@@ -535,6 +592,7 @@ def randomized_search(
     groups: pd.Series | None = None,
     preprocess: PreprocessRecipe | None = None,
     session_preprocess_applied: bool = False,
+    allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
     """Randomized hyperparameter search with nested fold scoring on train.
@@ -563,6 +621,7 @@ def randomized_search(
         groups=groups,
         preprocess=preprocess,
         session_preprocess_applied=session_preprocess_applied,
+        allow_session_global_preprocess=allow_session_global_preprocess,
         refit=refit,
     )
 
@@ -583,6 +642,7 @@ def optuna_search(
     groups: pd.Series | None = None,
     preprocess: PreprocessRecipe | None = None,
     session_preprocess_applied: bool = False,
+    allow_session_global_preprocess: bool = False,
     refit: bool = True,
     study: Any | None = None,
 ) -> SearchResult:
@@ -625,7 +685,9 @@ def optuna_search(
 
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
-    _x_train, y_train, _feature_cols, _target = _feature_target_frames(dataset, split_plan, "train")
+    _x_train, y_train, _feature_cols, _target, _sample_weight = _feature_target_frames(
+        dataset, split_plan, "train"
+    )
     resolved_task = _infer_task(y_train, task, estimator)
     metric_name = ranking_metric or ("r2" if resolved_task == "regression" else "f1_weighted")
     higher_is_better = metric_name not in _LOWER_IS_BETTER
@@ -681,6 +743,7 @@ def optuna_search(
             groups=groups,
             preprocess=preprocess,
             session_preprocess_applied=session_preprocess_applied,
+            allow_session_global_preprocess=allow_session_global_preprocess,
             params=est_params,
             recipe_knobs=recipe_knobs,
         )
@@ -729,6 +792,7 @@ def optuna_search(
         split_plan=split_plan,
         preprocess=preprocess,
         session_preprocess_applied=session_preprocess_applied,
+        allow_session_global_preprocess=allow_session_global_preprocess,
         refit=refit,
         study=study,
     )
@@ -757,6 +821,7 @@ def nested_cv_score(
     groups: pd.Series | None = None,
     preprocess: PreprocessRecipe | None = None,
     session_preprocess_applied: bool = False,
+    allow_session_global_preprocess: bool = False,
     warm_start_studies: bool = False,
 ) -> NestedCVResult:
     """Honest outer estimate after inner-loop hyperparameter / recipe-knob search.
@@ -786,6 +851,9 @@ def nested_cv_score(
     preprocess:
         Fold-local :class:`PreprocessRecipe` used in both loops. Required when
         searching recipe knobs.
+    allow_session_global_preprocess:
+        Explicit opt-in when Session-global preprocess already ran and no
+        fold-local recipe is provided (default False; refuses otherwise).
     warm_start_studies:
         Default False. When True with Optuna inner search, reuse one Optuna
         study across outer folds so later folds inherit prior trial history
@@ -860,10 +928,18 @@ def nested_cv_score(
     if recipe_distributions is not None and not recipe_distributions:
         raise ValidationError("recipe_distributions must not be empty when provided")
     _require_recipe_for_knobs(preprocess, has_recipe)
+    _refuse_session_global_cv_leakage(
+        session_preprocess_applied=session_preprocess_applied,
+        preprocess=preprocess,
+        allow_session_global_preprocess=allow_session_global_preprocess,
+    )
 
-    x_train, y_train, _feature_cols, _target = _feature_target_frames(dataset, split_plan, "train")
+    x_train, y_train, _feature_cols, _target, _sample_weight = _feature_target_frames(
+        dataset, split_plan, "train"
+    )
     resolved_task = _infer_task(y_train, task, estimator)
     metric = scoring_metric or ("r2" if resolved_task == "regression" else "f1_weighted")
+    weight_col = weight_column(dataset)
 
     held_out: list[str] = ["test"]
     if split_plan.validation_indices:
@@ -959,6 +1035,7 @@ def nested_cv_score(
                 groups=inner_groups,
                 preprocess=preprocess,
                 session_preprocess_applied=session_preprocess_applied,
+                allow_session_global_preprocess=allow_session_global_preprocess,
                 refit=False,
             )
         elif search_method == "optuna":
@@ -977,6 +1054,7 @@ def nested_cv_score(
                 groups=inner_groups,
                 preprocess=preprocess,
                 session_preprocess_applied=session_preprocess_applied,
+                allow_session_global_preprocess=allow_session_global_preprocess,
                 refit=False,
                 study=shared_study if warm_start_studies else None,
             )
@@ -998,6 +1076,7 @@ def nested_cv_score(
                 groups=inner_groups,
                 preprocess=preprocess,
                 session_preprocess_applied=session_preprocess_applied,
+                allow_session_global_preprocess=allow_session_global_preprocess,
                 refit=False,
             )
         if fold_search.best_cv is not None:
@@ -1014,6 +1093,15 @@ def nested_cv_score(
         y_outer_train = base.iloc[list(outer_train_idx)][_target]
         x_outer_eval = base.iloc[list(outer_eval_idx)][list(_feature_cols)]
         y_outer_eval = base.iloc[list(outer_eval_idx)][_target]
+        w_outer_train = None
+        w_outer_eval = None
+        if weight_col is not None:
+            w_outer_train = validate_sample_weights(
+                base.iloc[list(outer_train_idx)][weight_col], column=weight_col
+            )
+            w_outer_eval = validate_sample_weights(
+                base.iloc[list(outer_eval_idx)][weight_col], column=weight_col
+            )
         if active_recipe is not None and not active_recipe.is_empty():
             prep = build_fold_preprocessor(x_outer_train, active_recipe, y_outer_train)
             x_fit = transform_fold_features(prep, x_outer_train)
@@ -1021,9 +1109,15 @@ def nested_cv_score(
         else:
             x_fit = x_outer_train
             x_score = x_outer_eval
-        model.fit(x_fit, y_outer_train)
+        model.fit(
+            x_fit,
+            y_outer_train,
+            **fit_kwargs_for_sample_weight(model, w_outer_train),
+        )
         y_pred = model.predict(x_score)
-        fold_metrics = _score_predictions(resolved_task, y_outer_eval, y_pred)
+        fold_metrics = _score_predictions(
+            resolved_task, y_outer_eval, y_pred, sample_weight=w_outer_eval
+        )
         outer_folds.append(
             OuterFoldResult(
                 fold=fold_id,
@@ -1048,8 +1142,13 @@ def nested_cv_score(
     summary = _inner_selection_summary(
         selected_params, outer_folds, metric, selected_recipe_knobs=selected_recipe_knobs
     )
+    session_global_override = bool(
+        session_preprocess_applied
+        and allow_session_global_preprocess
+        and (preprocess is None or preprocess.is_empty())
+    )
     limitations = _nested_limitations(
-        session_preprocess_applied=session_preprocess_applied,
+        session_preprocess_applied=session_global_override,
         preprocess=preprocess,
         outer_strategy=outer_strategy,
         inner_strategy=inner_strategy_name,
@@ -1093,10 +1192,10 @@ def nested_cv_score(
             f"once on {held_out[0]}."
         ),
     ]
-    if session_preprocess_applied and (preprocess is None or preprocess.is_empty()):
+    if session_global_override:
         recommendations.append(
-            "Session-global preprocess was applied before nested CV; prefer "
-            "preprocess=PreprocessRecipe(...) for selection-time honesty."
+            "allow_session_global_preprocess=True was set; Session-global preprocess "
+            "poisoned folds. Prefer preprocess=PreprocessRecipe(...) next time."
         )
     elif preprocess is not None and not preprocess.is_empty():
         recommendations.append(
@@ -1226,6 +1325,7 @@ def _run_search(
     groups: pd.Series | None,
     preprocess: PreprocessRecipe | None,
     session_preprocess_applied: bool,
+    allow_session_global_preprocess: bool,
     refit: bool,
 ) -> SearchResult:
     trials: list[SearchTrial] = []
@@ -1244,6 +1344,7 @@ def _run_search(
             groups=groups,
             preprocess=preprocess,
             session_preprocess_applied=session_preprocess_applied,
+            allow_session_global_preprocess=allow_session_global_preprocess,
             params=est_params,
             recipe_knobs=recipe_knobs,
         )
@@ -1276,6 +1377,7 @@ def _run_search(
         split_plan=split_plan,
         preprocess=preprocess,
         session_preprocess_applied=session_preprocess_applied,
+        allow_session_global_preprocess=allow_session_global_preprocess,
         refit=refit,
     )
 
@@ -1292,9 +1394,15 @@ def _finalize_search_result(
     preprocess: PreprocessRecipe | None,
     session_preprocess_applied: bool,
     refit: bool,
+    allow_session_global_preprocess: bool = False,
     study: Any | None = None,
 ) -> SearchResult:
     best = trials[0]
+    session_global_override = bool(
+        session_preprocess_applied
+        and allow_session_global_preprocess
+        and (preprocess is None or preprocess.is_empty())
+    )
 
     refit_result = None
     if refit:
@@ -1303,7 +1411,7 @@ def _finalize_search_result(
             model.set_params(**best.params)
         active_recipe = _recipe_with_knobs(preprocess, best.recipe_knobs)
         if active_recipe is not None and not active_recipe.is_empty():
-            x_train, y_train, feature_cols, target = _feature_target_frames(
+            x_train, y_train, feature_cols, target, sample_weight = _feature_target_frames(
                 dataset,
                 split_plan,
                 "train",  # type: ignore[arg-type]
@@ -1311,7 +1419,11 @@ def _finalize_search_result(
             prep = build_fold_preprocessor(x_train, active_recipe, y_train)
             x_fit = transform_fold_features(prep, x_train)
             fitted = clone(model)
-            fitted.fit(x_fit, y_train)
+            fitted.fit(
+                x_fit,
+                y_train,
+                **fit_kwargs_for_sample_weight(fitted, sample_weight),
+            )
             bundled = SkPipeline([("preprocess", prep), ("model", fitted)])
             refit_result = FitResult(
                 estimator=bundled,
@@ -1319,6 +1431,7 @@ def _finalize_search_result(
                 feature_columns=tuple(feature_cols),
                 target_column=target,
                 n_train_rows=int(len(x_train)),
+                weight_column=weight_column(dataset),
             )
         else:
             refit_result = fit_estimator(dataset, split_plan, model, task=resolved_task)
@@ -1348,10 +1461,10 @@ def _finalize_search_result(
         f"Selected params by mean {metric_name} across CV folds on the train population.",
         f"Confirm the winner once on {held[0]} after search.",
     ]
-    if session_preprocess_applied and preprocess is None:
+    if session_global_override:
         recommendations.append(
-            "Session preprocess was train-global; for stricter honesty re-run search "
-            "with a fold-local PreprocessRecipe before Session.impute/scale."
+            "allow_session_global_preprocess=True was set; Session preprocess was "
+            "train-global. Prefer a fold-local PreprocessRecipe before Session.impute/scale."
         )
     if best.std_score > abs(best.mean_score) * 0.15 and abs(best.mean_score) > 1e-9:
         recommendations.append(
@@ -1674,20 +1787,27 @@ def _score_predictions(
     task: Literal["classification", "regression"],
     y_true: pd.Series,
     y_pred: Any,
+    *,
+    sample_weight: pd.Series | None = None,
 ) -> dict[str, float]:
+    sw = None if sample_weight is None else sample_weight.to_numpy(dtype=float)
     if task == "regression":
-        mse = float(mean_squared_error(y_true, y_pred))
+        mse = float(mean_squared_error(y_true, y_pred, sample_weight=sw))
         return {
-            "mae": float(mean_absolute_error(y_true, y_pred)),
+            "mae": float(mean_absolute_error(y_true, y_pred, sample_weight=sw)),
             "mse": mse,
             "rmse": float(np.sqrt(mse)),
-            "r2": float(r2_score(y_true, y_pred)),
+            "r2": float(r2_score(y_true, y_pred, sample_weight=sw)),
         }
     return {
-        "accuracy": float(accuracy_score(y_true, y_pred)),
-        "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
-        "f1_weighted": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
-        "f1_macro": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
+        "accuracy": float(accuracy_score(y_true, y_pred, sample_weight=sw)),
+        "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred, sample_weight=sw)),
+        "f1_weighted": float(
+            f1_score(y_true, y_pred, average="weighted", zero_division=0, sample_weight=sw)
+        ),
+        "f1_macro": float(
+            f1_score(y_true, y_pred, average="macro", zero_division=0, sample_weight=sw)
+        ),
     }
 
 
@@ -1717,10 +1837,10 @@ def _cv_limitations(
     ]
     if session_preprocess_applied and (preprocess is None or preprocess.is_empty()):
         tips.append(
-            "Session-global preprocess plans (impute/encode/scale/outliers/binning/"
-            "feature_select/dates/text/reduce/resample) were fitted on the full "
-            "train partition before CV, so fold-eval rows influenced those frozen "
-            "statistics."
+            "allow_session_global_preprocess=True: Session-global preprocess plans "
+            "(impute/encode/scale/outliers/binning/feature_select/dates/text/reduce/"
+            "resample) were fitted on the full train partition before CV, so "
+            "fold-eval rows influenced those frozen statistics."
         )
         tips.append(
             "Session-global target encoding uses out-of-fold values on train, but still "
@@ -1821,9 +1941,9 @@ def _cv_recommendations(
         tips.append("Consider more folds, grouped/time-aware splits, or a simpler estimator.")
     if session_preprocess_applied and (preprocess is None or preprocess.is_empty()):
         tips.append(
-            "For selection claims that include preprocessing, pass "
-            "preprocess=PreprocessRecipe(...) and avoid Session-global impute/encode/"
-            "scale/select/outliers/text/reduce before CV."
+            "This run used allow_session_global_preprocess=True. For honest selection, "
+            "pass preprocess=PreprocessRecipe(...) and avoid Session-global "
+            "impute/encode/scale/select/outliers/text/reduce before CV."
         )
     elif preprocess is not None:
         tips.append(

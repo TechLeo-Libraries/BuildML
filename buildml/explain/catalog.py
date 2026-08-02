@@ -1638,15 +1638,15 @@ _OPERATIONS = (
         assumptions=("Fold strategy matches dependence structure; enough rows/groups exist for cv folds.",),
         failures=("No split, invalid strategy roles, too few groups, or estimator/preprocess errors.",),
         leakage=(
-            "Session-global impute/encode/scale/select/outliers/binning/dates before CV freeze "
-            "fold-eval influence.",
+            "Session-global impute/encode/scale/select/outliers/binning/dates before CV "
+            "poison folds; refused unless PreprocessRecipe or allow_session_global_preprocess=True.",
             "Never include Session test indices in CV folds.",
             "Fold-local target encoding fits means on fold-train labels only.",
         ),
         anti_patterns=("Treating CV mean as a final test claim after unrestricted tuning.",),
         state_changes=("Stores last_cv; does not change the active fit_result.",),
         result_reading=(
-            "Read mean±std, fold table, limitations (Session-global vs fold-local), "
+            "Read mean±std, fold table, limitations (fold-local recipe vs explicit override), "
             "and held_out_partitions together.",
         ),
         next_steps=(

@@ -8,7 +8,14 @@ from buildml.core.errors import (
     ValidationError,
 )
 from buildml.core.results import IngestReport
-from buildml.core.types import ColumnRole, DataMode, EngineName, SchemaField, TableSchema
+from buildml.core.types import (
+    ColumnRole,
+    DataMode,
+    EngineName,
+    SchemaField,
+    TableSchema,
+    coerce_data_mode,
+)
 
 __all__ = [
     "BuildMLError",
@@ -22,4 +29,5 @@ __all__ = [
     "SchemaField",
     "TableSchema",
     "ValidationError",
+    "coerce_data_mode",
 ]

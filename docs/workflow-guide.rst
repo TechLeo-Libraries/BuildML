@@ -83,10 +83,14 @@ uses ``to_pandas()``, manually select ``session.partition("train")`` for any
 fit-capable work; the full exported frame contains every partition.
 
 For selection-time honesty inside ``cv_score``, ``grid_search``,
-``optuna_search``, or ``nested_cv_score``, prefer a fold-local
+``optuna_search``, or ``nested_cv_score``, use a fold-local
 ``PreprocessRecipe`` (dates, text, impute, encode, binning, scale, reduce/PCA,
 select, outliers) instead of Session-global plans fitted on the full train
-partition. Resample and ``apply_custom_transform`` remain Session-global only.
+partition. When Session-global fit-capable plans already exist and no
+fold-local recipe is provided, CV/search **refuse** with
+``LeakageError`` unless ``allow_session_global_preprocess=True`` (explicit,
+loud override; scores remain leakage-biased). Resample and
+``apply_custom_transform`` remain Session-global only.
 ``Session.text_features`` / ``Session.reduce_dimensions`` are also Session-global
 unless the same steps are expressed in the recipe.
 

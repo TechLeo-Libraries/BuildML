@@ -39,7 +39,7 @@ Dataset
   - schema (names, dtypes, nullability)
   - roles (feature, target, group, time, id, weight, ignore)
   - engine (pandas | polars | duckdb | ...)
-  - mode (memory | lazy | out_of_core)
+  - mode (memory | lazy; legacy `out_of_core` coerces to lazy)
   - split_plan / split_membership
   - stats (row_estimate, nbytes_estimate, sample_fingerprint)
   - history (operations applied)
@@ -51,7 +51,9 @@ Dataset
 | --- | --- | --- |
 | `memory` | Small/medium fits RAM | Materialized table(s); fastest iteration |
 | `lazy` | Larger than comfortable RAM | Deferred plans; collect/sample on demand |
-| `out_of_core` | Partitioned multi-GB / TB-oriented | Partition scans; batched ops; sample-first EDA |
+
+Legacy string `out_of_core` coerces to `lazy`. There is no separate out-of-core
+sklearn fit mode — design matrices still materialize at the estimator boundary.
 
 Engine selection can be explicit or suggested from estimates at ingest.
 
@@ -77,7 +79,7 @@ Ingest should do the mechanical work for the user:
 - Detect source type and format
 - Infer schema / dtypes / nullability
 - Estimate size and likely memory pressure
-- Recommend `memory` vs `lazy` vs `out_of_core`
+- Recommend `memory` vs `lazy`
 - Recommend an engine when large-data extras are available
 - Surface a short ingest report the user can accept or override
 

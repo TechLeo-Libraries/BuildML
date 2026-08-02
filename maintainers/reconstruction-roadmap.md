@@ -1,32 +1,32 @@
 ﻿# BuildML reconstruction roadmap
 
-Decision-oriented planning map for a full system rewrite · grounded in the 1 Aug 2026 architecture audit · updated with owner planning decisions (Aug 2026).
+Decision-oriented planning map for the 2.x rewrite · grounded in the 1 Aug 2026
+architecture audit · **status updated for shipped HEAD `2.3.0a1`** (Aug 2026).
 
 > Related planning docs:  
-> - [architecture-review.md](./architecture-review.md)  
+> - [architecture-review.md](./architecture-review.md) *(current Session reality)*  
 > - [classical-ml-capability-map.md](./classical-ml-capability-map.md)  
 > - [ingest-engine-checkpoint-design.md](./ingest-engine-checkpoint-design.md)  
 > - [phase-1-build-plan.md](./phase-1-build-plan.md)  
 > - [deep-learning-phase-plan.md](./deep-learning-phase-plan.md)  
 > - [rag-phase-plan.md](./rag-phase-plan.md)  
-> - [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) *(draft — pending M0 approval)*  
-> - [development-environment.md](./development-environment.md)  
-> Canvas twin:  
-> `C:/Users/leona/.cursor/projects/c-Users-leona-Desktop-Github-Projects-BuildML/canvases/buildml-reconstruction-roadmap.canvas.tsx`
+> - [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) *(shipped in 2.3.0a1)*  
+> - [development-environment.md](./development-environment.md)
 
 | Signal | Locked direction |
 | --- | --- |
 | Vision | Hybrid build platform (learners + professionals) |
 | North star | Flexibility · depth · functionality |
-| Release shape | 2.0 reconstruction (clean break) |
+| Release shape | 2.x reconstruction (clean break from 1.x) |
+| Current package | **`2.3.0a1`** AI operator alpha |
 | Depth bar | Full workflow coverage — not mediocre / basics-only |
-| Scale | Automated ingest + multi-engine from day one |
+| Scale | Automated ingest + multi-engine; modes are `memory` / `lazy` (no fake out-of-core fit) |
 | Backends | Multi-option (auto-default + override); both Polars and DuckDB |
 | Packaging | Lean core + expanding extras |
 | Python | 3.10–3.13 |
-| Expansion | Classical ML → Deep Learning → RAG → LLM operator (last) |
+| Expansion | Classical → DL → RAG → AI operator (**shipped through 2.3**) |
 | Docs bar | Extensive docstrings + guides for every public method |
-| LLM operator | Draft plan pending M0 approval ([llm-operator-phase-plan.md](./llm-operator-phase-plan.md)); not blocking core |
+| LLM / AI operator | Shipped in `2.3.0a1` — see [llm-m0-lock.md](./llm-m0-lock.md) / [ai-alpha-gate.md](./ai-alpha-gate.md) |
 | Phase 0 | **Closed** |
 
 **Plan before build:** Incremental patching cannot fix duplicated facade logic, leakage-by-default workflows, broken paths, and packaging/import failure.
@@ -41,14 +41,14 @@ Decision-oriented planning map for a full system rewrite · grounded in the 1 Au
 2. **Method-simple session API.** Users call methods on a session/dataset object (`drop_columns`, `eda`, `split`, `fit`, …) instead of assembling ad-hoc library glue.
 3. **Delegate, don’t duplicate.** The session orchestrates; real implementations live in domain packages. No 6,600-line god object.
 4. **Leakage safety is non-negotiable.** Fit on train (or declared partitions) only; transforms apply to other partitions; invalid orders fail clearly.
-5. **Scale-ready ingest from day one.** Dataset is a handle over engines (Arrow/Parquet interchange; Polars **and** DuckDB for large ops; Pandas as a materialization bridge). Modes: memory / lazy / out-of-core.
+5. **Scale-ready ingest from day one.** Dataset is a handle over engines (Arrow/Parquet interchange; Polars **and** DuckDB for large ops; Pandas as a materialization bridge). Modes: `memory` / `lazy` (sklearn fit still materializes a design matrix).
 6. **Multi-option flexibility.** When two approaches are both useful and efficient, support **both** behind one API — auto-select a sensible default, let users override. Do not artificially lock the product to a single backend/choice.
 7. **Automate the mechanical bits.** Ingest should detect format, schema, scale/load characteristics, and recommend engine/mode; users decide only where judgment matters.
 8. **Mid-loop exit and reentry.** Export checkpoints; work outside BuildML; reattach with validation. Professionals need escape hatches without silent corruption.
 9. **Platform, not a single technique.** Start with complete classical ML; architect domains for deep learning, RAG, and future methods.
 10. **Core + extras expand capability.** Lean installable core; extras unlock depth without forcing every dependency on every user. Missing an extra yields a clear install hint — never a silent dead end.
 11. **Documentation is release-critical.** Every public method ships with purpose, args, returns, examples, leakage notes, scale notes, and related methods.
-12. **AI operator is optional and last in sequence.** Natural-language control maps to real methods via tool-calling; core library must work without an LLM. See [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) for full design (draft pending M0 approval).
+12. **AI operator is optional and last in sequence.** Natural-language control maps to real methods via tool-calling; core library must work without an LLM. Shipped as `2.3.0a1` — see [llm-operator-phase-plan.md](./llm-operator-phase-plan.md).
 13. **Depth is mandatory — no thin wrappers.** Every capability (EDA, preprocess, model, eval, dates, persistence, future domains) must be extensive: cover the full professional surface, adaptive behavior, creative high-impact UX where visual, and honest scale handling. “Core-only” means install weight, not shallow functionality.
 
 ---
@@ -134,14 +134,13 @@ BuildML Session
 | **v2 depth** | Complete classical ML turns (probs, calibration, thresholds, CV/search, persistence, rich eval) | Professionals not limited | `2.0.0a1` |
 | **v3 (DL)** | Deep learning domain | Session-attached trainers/eval/export | `2.1.0a1` |
 | **v3 (RAG)** | RAG / retrieval domain | Document → chunk → embed → index → retrieve → generate (+ eval) | `2.2.0a1` |
-| **v3 (LLM operator)** | LLM operator domain | Tool-calling over real BuildML methods; E2E ML pipeline orchestration | Draft plan — [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) |
+| **v3 (LLM / AI operator)** | AI operator domain | Tool-calling over real BuildML methods; E2E ML pipeline orchestration | **`2.3.0a1` shipped** |
 | **Ongoing** | New methodologies as domains | Expand without rewriting the spine | — |
 
-**Locked sequencing:** Classical ML → Deep Learning → RAG → **LLM operator last**.
+**Locked sequencing:** Classical ML → Deep Learning → RAG → **AI operator last** (complete through `2.3.0a1`).
 
-**LLM operator plan:** See [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) for the
-full phase plan (M0–M3 milestones, API sketch, security/privacy requirements, open questions).
-Status: draft pending M0 approval; proposed version `2.3.0a1` at M3 gate.
+**AI operator plan:** Historical design record in [llm-operator-phase-plan.md](./llm-operator-phase-plan.md);
+M0 lock in [llm-m0-lock.md](./llm-m0-lock.md); gate in [ai-alpha-gate.md](./ai-alpha-gate.md).
 
 **Expansion rule:** New tools attach as domain packages + extras. Do not grow a second mega-facade.
 
@@ -196,9 +195,9 @@ Status: draft pending M0 approval; proposed version `2.3.0a1` at M3 gate.
 | 1 · Foundation | Packaging, import graph, core types, ingest handle, CI | `import buildml` on core install; CI skeleton green |
 | 2 · Classical parity (correct) | Reimplement v1 capabilities with correct semantics | Parity checklist + P0/P1 regressions green |
 | 3 · Classical depth | Probabilities, calibration, thresholds, rich eval, search, persistence | Capability map “v2 depth” items green |
-| 4 · Scale hardening | Lazy/out-of-core paths, materialization gates | Engine modes tested; docs honest about limits |
-| 5 · Platform expansion | DL domain (`2.1.0a1`), then RAG (`2.2.0a1`) | Per-domain validation + docs bar |
-| 6 · LLM operator | Optional LLM method orchestration (proposed `2.3.0a1`) | Tool-calling, security, privacy — see [llm-operator-phase-plan.md](./llm-operator-phase-plan.md) |
+| 4 · Scale hardening | Lazy paths + materialization gates (honest: no OOC sklearn fit) | Engine modes tested; docs honest about limits |
+| 5 · Platform expansion | DL (`2.1.0a1`), then RAG (`2.2.0a1`) | **Shipped** |
+| 6 · AI operator | Optional LLM method orchestration (`2.3.0a1`) | **Shipped** — see [ai-alpha-gate.md](./ai-alpha-gate.md) |
 
 ---
 

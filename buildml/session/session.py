@@ -12,7 +12,7 @@ from buildml.checkpoint.bundle import load_checkpoint, save_checkpoint
 from buildml.checkpoint.validate import ReattachResult
 from buildml.core.errors import ValidationError
 from buildml.core.results import IngestReport
-from buildml.core.types import ColumnRole, DataMode, EngineName
+from buildml.core.types import ColumnRole, DataMode, EngineName, coerce_data_mode
 from buildml.data.dataset import Dataset
 from buildml.data.engines.prep import MaterializePrepResult, prepare_design_frame
 from buildml.data.splits import (
@@ -2635,6 +2635,7 @@ class Session:
         scoring_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
     ) -> CVScoreResult:
         """Cross-validate an estimator on the train partition only.
 
@@ -2655,12 +2656,15 @@ class Session:
             Optional group labels aligned to train rows.
         preprocess:
             Optional fold-local :class:`PreprocessRecipe` refit each fold.
+        allow_session_global_preprocess:
+            Explicit opt-in when Session-global preprocess already ran and no
+            fold-local recipe is provided. Default ``False`` refuses that path.
 
         Notes
         -----
-        **Leakage:** If Session impute/encode/scale/text/reduce already ran,
-        that train-global preprocess is recorded as a limitation unless
-        ``preprocess`` refits fold-locally. Prefer fold-local recipes
+        **Leakage:** If Session impute/encode/scale/text/reduce already ran and
+        no fold-local ``preprocess`` is provided, CV refuses unless
+        ``allow_session_global_preprocess=True``. Prefer fold-local recipes
         (including ``text`` and ``reduce``) for selection claims that include
         preprocessing. Custom transforms and resample stay Session-global.
         """
@@ -2676,6 +2680,7 @@ class Session:
             groups=groups,
             preprocess=preprocess,
             session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
         )
         self._last_cv = result
         self._record(
@@ -2721,6 +2726,7 @@ class Session:
         scoring_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
         warm_start_studies: bool = False,
     ) -> NestedCVResult:
         """Outer-loop estimate after inner hyperparameter / recipe-knob search.
@@ -2783,6 +2789,7 @@ class Session:
             groups=groups,
             preprocess=preprocess,
             session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
             warm_start_studies=warm_start_studies,
         )
         self._last_nested_cv = result
@@ -2833,6 +2840,7 @@ class Session:
         ranking_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
         refit: bool = True,
     ) -> SearchResult:
         """Grid-search estimator params and/or fold-local recipe knobs.
@@ -2855,6 +2863,7 @@ class Session:
             groups=groups,
             preprocess=preprocess,
             session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
             refit=refit,
         )
         self._last_search = result
@@ -2907,6 +2916,7 @@ class Session:
         ranking_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
         refit: bool = True,
     ) -> SearchResult:
         """Randomized search over estimator params and/or recipe knobs.
@@ -2930,6 +2940,7 @@ class Session:
             groups=groups,
             preprocess=preprocess,
             session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
             refit=refit,
         )
         self._last_search = result
@@ -2984,6 +2995,7 @@ class Session:
         ranking_metric: str | None = None,
         groups: pd.Series | None = None,
         preprocess: PreprocessRecipe | None = None,
+        allow_session_global_preprocess: bool = False,
         refit: bool = True,
     ) -> SearchResult:
         """Optuna TPE search with leakage-safe train-fold CV.
@@ -3009,6 +3021,7 @@ class Session:
             groups=groups,
             preprocess=preprocess,
             session_preprocess_applied=self._session_preprocess_applied(),
+            allow_session_global_preprocess=allow_session_global_preprocess,
             refit=refit,
         )
         self._last_search = result
@@ -4046,8 +4059,12 @@ class Session:
         return frame
 
     def with_mode(self, mode: DataMode | str) -> Session:
-        """Record a mode override on the dataset metadata (Phase-1 marker)."""
-        self.dataset.mode = DataMode(mode)
+        """Record a mode override on the dataset metadata.
+
+        Accepted values are ``memory`` and ``lazy``. Legacy ``out_of_core`` is
+        coerced to ``lazy`` (there is no separate out-of-core fit mode).
+        """
+        self.dataset.mode = coerce_data_mode(mode)
         self._record("with_mode", {"mode": self.dataset.mode.value})
         return self
 

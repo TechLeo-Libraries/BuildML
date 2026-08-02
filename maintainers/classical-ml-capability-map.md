@@ -94,7 +94,7 @@ Status key:
 | Decision function / ranking scores | D | |
 | Calibration | D | |
 | Threshold tuning (binary/multiclass strategies) | D | |
-| Class weight / sample weight | D | |
+| Class weight / sample weight | F | `ColumnRole.WEIGHT` → sklearn `sample_weight` on fit/evaluate/CV/search; unsupported estimators raise |
 | Reproducible seeds | F | |
 
 ## 7. Evaluation and diagnostics

@@ -4,6 +4,12 @@ Concrete exit criteria for declaring BuildML **2.1.0a1** deep-learning alpha.
 Sibling to [classical-alpha-gate.md](./classical-alpha-gate.md). This is a
 release checklist, not a capability wishlist.
 
+> **Historical gate for the `2.1.0a1` line.** The package version at HEAD is
+> **`2.3.0a1`** (AI operator alpha). Do not treat TC4 / sign-off version pins
+> below as the current package version — they record what the DL alpha cut
+> required. Current packaging: `pyproject.toml` / `buildml/_version.py` →
+> `2.3.0a1`.
+
 Related docs: [quickstart-torch.md](../guides/quickstart-torch.md) ·
 [dl-m0-lock.md](./dl-m0-lock.md) · [deep-learning-phase-plan.md](./deep-learning-phase-plan.md) ·
 [glossary.md](../guides/glossary.md) · [editorial-standards.md](./editorial-standards.md)
@@ -60,7 +66,7 @@ Assess readiness after CI: **Pass** when all must IDs are green; otherwise
 | TC1 | `import buildml` succeeds without Torch | Core CI import smoke |
 | TC2 | Dedicated `torch` CI job on Python 3.11–3.12 with DL unit + integration tests | `.github/workflows/ci.yml` |
 | TC3 | Missing Torch raises `MissingExtraError("torch", ...)` with install hint | Missing-extra unit tests |
-| TC4 | Version is `2.1.0a1` in `pyproject.toml` and `buildml/_version.py` | Packaging files |
+| TC4 | Version was `2.1.0a1` in `pyproject.toml` and `buildml/_version.py` at the DL alpha cut (HEAD is now `2.3.0a1`) | Historical packaging pin |
 
 ---
 
@@ -118,7 +124,7 @@ Copy into a release note when cutting a DL alpha tag (see also
 - [ ] TD1–TD5 green
 - [ ] TC1–TC4 green
 - [ ] Known limits reviewed; README/quickstart/`CHANGELOG.md` do not contradict them
-- [ ] Version is `2.1.0a1` in `pyproject.toml` and `buildml/_version.py`
+- [ ] Version was `2.1.0a1` at DL alpha cut (current HEAD package is `2.3.0a1`)
 - [ ] Changelog / history notes name this gate document
 - [ ] Docs do not claim RAG/LLM as shipped features
 

@@ -9,7 +9,7 @@ import pandas as pd
 
 from buildml.core.errors import IngestError, MissingExtraError
 from buildml.core.results import IngestReport
-from buildml.core.types import DataMode, EngineName, TableSchema
+from buildml.core.types import DataMode, EngineName, TableSchema, coerce_data_mode
 from buildml.data.dataset import Dataset
 from buildml.ingest import detect, loaders
 from buildml.ingest.native_load import load_native_path
@@ -84,16 +84,16 @@ def ingest(
             row_estimate=None,
         )
         looks_large = recommended_probe_mode != DataMode.MEMORY
-        force_memory = mode is not None and DataMode(mode) == DataMode.MEMORY
+        force_memory = mode is not None and coerce_data_mode(mode) == DataMode.MEMORY
         explicit_engine = EngineName(engine) if engine is not None else None
-        explicit_mode = DataMode(mode) if mode is not None else None
-        # Large sources need an explicit engine and/or lazy/out_of_core mode —
+        explicit_mode = coerce_data_mode(mode) if mode is not None else None
+        # Large sources need an explicit engine and/or lazy mode —
         # do not auto-load just because optional engines happen to be installed.
         engine_requests_native = explicit_engine in {
             EngineName.POLARS,
             EngineName.DUCKDB,
         }
-        mode_requests_native = explicit_mode in {DataMode.LAZY, DataMode.OUT_OF_CORE}
+        mode_requests_native = explicit_mode == DataMode.LAZY
         native_engine_available = (
             explicit_engine in installed
             if engine_requests_native
@@ -151,7 +151,7 @@ def ingest(
             installed=installed,
         )
         warnings.extend(engine_warnings)
-        chosen_mode = DataMode(mode) if mode is not None else recommended_mode
+        chosen_mode = coerce_data_mode(mode) if mode is not None else recommended_mode
         chosen_engine = (
             EngineName(engine) if engine is not None else recommended_engine
         )
@@ -168,7 +168,7 @@ def ingest(
                 raise MissingExtraError("polars", "Polars engine ingest")
             if chosen_engine == EngineName.DUCKDB and EngineName.DUCKDB not in installed:
                 raise MissingExtraError("duckdb", "DuckDB engine ingest")
-            lazy_scan = chosen_mode in {DataMode.LAZY, DataMode.OUT_OF_CORE}
+            lazy_scan = chosen_mode == DataMode.LAZY
             native, schema, native_details = load_native_path(
                 path,
                 engine=chosen_engine,
@@ -214,7 +214,7 @@ def ingest(
                 warnings.append(tip)
         if mode is None:
             if use_native:
-                # Preserve lazy/out_of_core labels when native-first load ran.
+                # Preserve lazy labels when native-first load ran.
                 chosen_mode = (
                     recommended_probe_mode
                     if recommended_probe_mode != DataMode.MEMORY
@@ -256,7 +256,7 @@ def ingest(
     )
     warnings.extend(engine_warnings)
 
-    chosen_mode = DataMode(mode) if mode is not None else recommended_mode
+    chosen_mode = coerce_data_mode(mode) if mode is not None else recommended_mode
     chosen_engine = EngineName(engine) if engine is not None else recommended_engine
 
     if chosen_mode != DataMode.MEMORY and chosen_engine == EngineName.PANDAS:

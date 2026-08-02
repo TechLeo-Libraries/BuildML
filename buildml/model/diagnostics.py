@@ -125,7 +125,7 @@ def calibration_report(
     if split_plan is None:
         raise ValidationError("Split required")
 
-    x, y, _, _ = _feature_target_frames(dataset, split_plan, partition)
+    x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
     x = x[list(fit_result.feature_columns)]
     proba = fit_result.estimator.predict_proba(x)
     tips: list[str] = []
@@ -286,7 +286,7 @@ def threshold_report(
             if name in {"fp_cost", "fn_cost"} and float(value) < 0:
                 raise ValidationError(f"{name} must be >= 0")
 
-    x, y, _, _ = _feature_target_frames(dataset, split_plan, partition)
+    x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
     x = x[list(fit_result.feature_columns)]
     if len(fit_result.estimator.classes_) != 2:
         raise ValidationError(
@@ -494,7 +494,7 @@ def learning_curve_report(
     """Compute learning curves on the training partition."""
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
-    x, y, _, _ = _feature_target_frames(dataset, split_plan, "train")
+    x, y, _, _, _ = _feature_target_frames(dataset, split_plan, "train")
     scoring = "f1_weighted" if task != "regression" else "r2"
     if task == "auto":
         scoring = (
@@ -605,7 +605,7 @@ def permutation_importance_report(
     """Permutation feature importance on a holdout partition."""
     if split_plan is None:
         raise ValidationError("Split required")
-    x, y, _, _ = _feature_target_frames(dataset, split_plan, partition)
+    x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
     x = x[list(fit_result.feature_columns)]
     scoring = "f1_weighted" if fit_result.task == "classification" else "r2"
     result = permutation_importance(

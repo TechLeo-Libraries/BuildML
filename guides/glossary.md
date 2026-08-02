@@ -164,9 +164,10 @@ older flat plan dicts.
 **Preprocess recipe**  
 An unfitted fold-local preprocess specification (`PreprocessRecipe`) refit on each CV fold's
 training rows. Supported fold-local steps include dates, text features, outliers, impute, encode,
-binning, scale, PCA (`reduce`), and feature selection. Resample, registered custom transforms, and
-any Session plan fitted on the full train partition before CV (when not expressed in the recipe)
-remain Session-global concerns.
+binning, scale, PCA (`reduce`), and feature selection. Resample and registered custom transforms
+remain Session-global only. If Session fit-capable plans were already fitted on the full train
+partition and CV/search runs without a fold-local recipe, BuildML refuses unless
+`allow_session_global_preprocess=True`.
 
 **Dataset project / aggregate**  
 `Dataset.project` keeps a column subset; `Dataset.aggregate` computes grouped or global summaries

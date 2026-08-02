@@ -72,7 +72,7 @@ def test_large_path_dry_run_returns_report(tmp_path: Path) -> None:
         mock_byte_estimate=MEMORY_SOFT_LIMIT + 1,
     )
     assert session.ingest_report is not None
-    assert session.ingest_report.recommended_mode in {DataMode.LAZY, DataMode.OUT_OF_CORE}
+    assert session.ingest_report.recommended_mode == DataMode.LAZY
     with pytest.raises(ValidationError, match="no dataset"):
         _ = session.dataset
 

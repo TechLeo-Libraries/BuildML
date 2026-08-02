@@ -1047,7 +1047,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Dataset operations are evaluated under engine e ∈ {pandas, polars, duckdb, ...} and mode "
-                "m ∈ {memory, lazy, out_of_core}. Estimator fit consumes a materialized design matrix; "
+                "m ∈ {memory, lazy}. Estimator fit consumes a materialized design matrix; "
                 "engine choice affects how that matrix is produced and at what memory cost."
             ),
             why_it_matters=(
@@ -1068,7 +1068,7 @@ CONCEPT_NOTES: dict[str, ConceptNote] = {
                 "with_engine / with_mode adjust the handle without changing role or split semantics.",
             ),
             interpretation_rules=(
-                "Prefer lazy/out_of_core when row/byte estimates exceed comfortable RAM—not as a fashion choice.",
+                "Prefer lazy mode when row/byte estimates exceed comfortable RAM—not as a fashion choice.",
                 "Treat soft materialization warnings as scale signals; hard limits abort intentional oversized copies.",
                 "Measure end-to-end wall time including materialization, not only SQL fragments.",
                 "If metrics change after engine switches, suspect conversion/dtype issues before celebrating gains.",

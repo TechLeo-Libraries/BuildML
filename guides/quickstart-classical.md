@@ -303,7 +303,9 @@ print(
 ```
 
 Prefer `PreprocessRecipe` inside CV for fold-local honesty. Resample and
-`apply_custom_transform` remain Session-global. `compare_models` ranks on one
+`apply_custom_transform` remain Session-global. If Session-global preprocess
+already ran, CV/search refuse unless you pass a fold-local recipe or set
+`allow_session_global_preprocess=True`. `compare_models` ranks on one
 partition — override the default to `validation` during iterative selection.
 
 ---

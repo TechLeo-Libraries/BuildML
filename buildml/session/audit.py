@@ -351,8 +351,9 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
                     2,
                     "high",
                     (
-                        "Session-global preprocess plans exist alongside CV/search history; "
-                        "fold-local PreprocessRecipe is safer when the recipe itself is tuned."
+                        "Session-global preprocess plans exist alongside CV/search history. "
+                        "Default path refuses unless fold-local PreprocessRecipe is used or "
+                        "allow_session_global_preprocess=True was set."
                     ),
                     "history.cv_preprocess_scope",
                     "cv_score",

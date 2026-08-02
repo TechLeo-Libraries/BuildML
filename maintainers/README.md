@@ -1,6 +1,6 @@
 ﻿# Maintainer notes
 
-I keep this folder in the repository on purpose. These are engineering records —
+These are engineering records —
 phase plans, API locks, release gates, design rationale — not the primary path
 for learning BuildML. If you are trying to use the library, start with the
 [README](../README.md), [Sphinx docs](../docs/index.rst), and
@@ -37,11 +37,11 @@ stamps, and process theater.
 | `editorial-standards.md` | Copy and terminology rules for reports and user-facing docs |
 | `quality-bar.md` | Engineering quality expectations for releases |
 | `development-environment.md` | Dev setup for contributors |
-| `architecture-review.md` | Architecture review notes |
+| `architecture-review.md` | Current 2.3 Session architecture (supersedes 1.x audit) |
 | `classical-ml-capability-map.md` | Classical feature inventory |
 | `ingest-engine-checkpoint-design.md` | Ingest, engine, and checkpoint design |
 | `phase-1-build-plan.md` | Classical 2.x reconstruction plan |
-| `reconstruction-roadmap.md` | Longer-term rebuild sequencing |
+| `reconstruction-roadmap.md` | Rebuild sequencing; domains through AI `2.3.0a1` shipped |
 | `deep-learning-phase-plan.md` | Torch rollout plan |
 | `dl-m0-lock.md` | Locked Torch public API |
 | `dl-alpha-gate.md` | Torch alpha sign-off criteria |
