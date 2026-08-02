@@ -12,6 +12,88 @@ from buildml.ai.types import ConfirmPolicy, ToolCall
 from buildml.core.errors import ValidationError
 
 
+# Allowed estimator name -> (module, class) mapping for LLM tool dispatch.
+# Restricts what the LLM can instantiate to a safe, known set.
+_ESTIMATOR_REGISTRY: dict[str, tuple[str, str]] = {
+    # Classification
+    "logisticregression": ("sklearn.linear_model", "LogisticRegression"),
+    "randomforestclassifier": ("sklearn.ensemble", "RandomForestClassifier"),
+    "gradientboostingclassifier": ("sklearn.ensemble", "GradientBoostingClassifier"),
+    "svc": ("sklearn.svm", "SVC"),
+    "kneighborsclassifier": ("sklearn.neighbors", "KNeighborsClassifier"),
+    "decisiontreeclassifier": ("sklearn.tree", "DecisionTreeClassifier"),
+    # Regression
+    "linearregression": ("sklearn.linear_model", "LinearRegression"),
+    "ridge": ("sklearn.linear_model", "Ridge"),
+    "lasso": ("sklearn.linear_model", "Lasso"),
+    "randomforestregressor": ("sklearn.ensemble", "RandomForestRegressor"),
+    "gradientboostingregressor": ("sklearn.ensemble", "GradientBoostingRegressor"),
+    "svr": ("sklearn.svm", "SVR"),
+    "kneighborsregressor": ("sklearn.neighbors", "KNeighborsRegressor"),
+    "decisiontreeregressor": ("sklearn.tree", "DecisionTreeRegressor"),
+}
+
+
+def _resolve_estimator(estimator_arg: Any, hyperparameters: dict[str, Any]) -> Any:
+    """Resolve an estimator from string name or pass through an instance.
+
+    Parameters
+    ----------
+    estimator_arg
+        Either a string name (e.g. "RandomForestClassifier") or an already-
+        instantiated sklearn estimator.
+    hyperparameters
+        Hyperparameters to pass when instantiating from string.
+
+    Returns
+    -------
+    Any
+        An sklearn-compatible estimator instance.
+
+    Raises
+    ------
+    ValidationError
+        If the estimator name is not in the allowed registry.
+    """
+    if estimator_arg is None:
+        raise ValidationError("fit requires an estimator argument.")
+
+    # If already an instance (has fit method), return as-is
+    if hasattr(estimator_arg, "fit") and callable(getattr(estimator_arg, "fit")):
+        return estimator_arg
+
+    # Resolve from string name
+    if not isinstance(estimator_arg, str):
+        raise ValidationError(
+            f"estimator must be a string name or sklearn instance, got {type(estimator_arg).__name__}"
+        )
+
+    # Normalize the name for lookup
+    normalized = estimator_arg.lower().replace("_", "").replace("-", "")
+
+    if normalized not in _ESTIMATOR_REGISTRY:
+        allowed = sorted(set(v[1] for v in _ESTIMATOR_REGISTRY.values()))
+        raise ValidationError(
+            f"Unknown estimator '{estimator_arg}'. "
+            f"Allowed estimators: {', '.join(allowed)}"
+        )
+
+    module_name, class_name = _ESTIMATOR_REGISTRY[normalized]
+
+    try:
+        import importlib
+
+        module = importlib.import_module(module_name)
+        estimator_class = getattr(module, class_name)
+        return estimator_class(**hyperparameters)
+    except ImportError as e:
+        raise ValidationError(f"Failed to import {class_name}: {e}") from e
+    except TypeError as e:
+        raise ValidationError(
+            f"Invalid hyperparameters for {class_name}: {e}"
+        ) from e
+
+
 @dataclass(slots=True)
 class ExecutorProposal:
     """A proposed tool execution awaiting confirmation."""
@@ -217,9 +299,9 @@ def _dispatch_tool(
 
     elif call.tool_name == "split":
         test_size = call.arguments.get("test_size", 0.2)
-        validation_size = call.arguments.get("validation_size", 0.0)
-        stratify = call.arguments.get("stratify", True)
-        random_state = call.arguments.get("random_state")
+        validation_size = call.arguments.get("validation_size")
+        stratify = call.arguments.get("stratify", False)
+        random_state = call.arguments.get("random_state", 42)
         session.split(
             test_size=test_size,
             validation_size=validation_size,
@@ -227,18 +309,20 @@ def _dispatch_tool(
             random_state=random_state,
         )
         state_changes.append(f"Created train/test split (test_size={test_size})")
-        if validation_size > 0:
+        if validation_size is not None and validation_size > 0:
             state_changes.append(f"Created validation split (validation_size={validation_size})")
         return {"split_created": True}, tuple(state_changes)
 
     elif call.tool_name == "impute":
-        numeric_strategy = call.arguments.get("numeric_strategy", "mean")
-        categorical_strategy = call.arguments.get("categorical_strategy", "most_frequent")
+        strategy = call.arguments.get("strategy", "median")
+        columns = call.arguments.get("columns")
+        fill_value = call.arguments.get("fill_value")
         session.impute(
-            numeric_strategy=numeric_strategy,
-            categorical_strategy=categorical_strategy,
+            columns=columns,
+            strategy=strategy,
+            fill_value=fill_value,
         )
-        state_changes.append(f"Imputed missing values (numeric={numeric_strategy}, categorical={categorical_strategy})")
+        state_changes.append(f"Imputed missing values (strategy={strategy})")
         return {"imputed": True}, tuple(state_changes)
 
     elif call.tool_name == "encode":
@@ -256,11 +340,13 @@ def _dispatch_tool(
         return {"scaled": True}, tuple(state_changes)
 
     elif call.tool_name == "fit":
-        estimator = call.arguments.get("estimator")
+        estimator_arg = call.arguments.get("estimator")
+        task = call.arguments.get("task", "auto")
         hyperparameters = call.arguments.get("hyperparameters", {})
-        session.fit(estimator=estimator, **hyperparameters)
-        state_changes.append(f"Fitted model (estimator={estimator})")
-        return {"fitted": True, "estimator": estimator}, tuple(state_changes)
+        estimator = _resolve_estimator(estimator_arg, hyperparameters)
+        session.fit(estimator=estimator, task=task)
+        state_changes.append(f"Fitted model (estimator={type(estimator).__name__})")
+        return {"fitted": True, "estimator": type(estimator).__name__}, tuple(state_changes)
 
     elif call.tool_name == "evaluate":
         partition = call.arguments.get("partition", "test")

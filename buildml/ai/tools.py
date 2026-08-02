@@ -187,7 +187,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     },
                     "stratify": {
                         "type": "boolean",
-                        "description": "Stratify by target column (default True for classification).",
+                        "description": "Stratify by target column (default False).",
                     },
                     "random_state": {
                         "type": "integer",
@@ -204,19 +204,24 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="impute",
             description=(
-                "Impute missing values in numeric and categorical columns. "
+                "Impute missing values in columns. "
                 "Fits on train, applies to all partitions."
             ),
             parameters={
                 "type": "object",
                 "properties": {
-                    "numeric_strategy": {
+                    "strategy": {
                         "type": "string",
-                        "description": "Strategy for numeric columns: mean, median, constant.",
+                        "description": "Imputation strategy: mean, median, most_frequent, constant (default: median).",
+                        "enum": ["mean", "median", "most_frequent", "constant"],
                     },
-                    "categorical_strategy": {
-                        "type": "string",
-                        "description": "Strategy for categorical: most_frequent, constant.",
+                    "columns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Columns to impute (default: numeric non-target columns).",
+                    },
+                    "fill_value": {
+                        "description": "Constant fill value when strategy='constant'.",
                     },
                 },
                 "required": [],
@@ -289,14 +294,23 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "properties": {
                     "estimator": {
                         "type": "string",
-                        "description": "Estimator name or sklearn class path.",
+                        "description": (
+                            "Estimator name: LogisticRegression, RandomForestClassifier, "
+                            "GradientBoostingClassifier, SVC, KNeighborsClassifier, "
+                            "LinearRegression, Ridge, Lasso, RandomForestRegressor, etc."
+                        ),
+                    },
+                    "task": {
+                        "type": "string",
+                        "description": "Task type: classification, regression, auto (default: auto).",
+                        "enum": ["classification", "regression", "auto"],
                     },
                     "hyperparameters": {
                         "type": "object",
-                        "description": "Estimator hyperparameters.",
+                        "description": "Estimator hyperparameters (e.g. n_estimators, max_depth).",
                     },
                 },
-                "required": [],
+                "required": ["estimator"],
             },
             confirm_policy=ConfirmPolicy.CONFIRM,
             session_method="fit",
