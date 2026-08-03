@@ -34,7 +34,7 @@ class CausalSessionMixin:
     ) -> CausalAssumptions:
         """Declare identification assumptions required before causal estimation.
 
-        Session facade over :func:`buildml.session.causal_ops.declare_causal_assumptions_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.causal_ops.declare_causal_assumptions_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -73,7 +73,7 @@ class CausalSessionMixin:
     ) -> CausalFitResult:
         """Fit causal models on this Session train and estimate ATE.
 
-        Session facade over :func:`buildml.session.causal_ops.fit_causal_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.causal_ops.fit_causal_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -106,7 +106,7 @@ class CausalSessionMixin:
     ) -> CausalEstimateResult:
         """Estimate ATE on a partition using the fitted CausalPlan.
 
-        Session facade over :func:`buildml.session.causal_ops.estimate_causal_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.causal_ops.estimate_causal_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -133,7 +133,7 @@ class CausalSessionMixin:
     ) -> CausalEvalResult:
         """Evaluate nuisance predictive quality and ATE on a holdout partition.
 
-        Session facade over :func:`buildml.session.causal_ops.evaluate_causal_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.causal_ops.evaluate_causal_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -159,7 +159,7 @@ class CausalSessionMixin:
     ) -> CausalRefuteResult:
         """Simple placebo / random-confounder sensitivity disclosure.
 
-        Session facade over :func:`buildml.session.causal_ops.refute_causal_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.causal_ops.refute_causal_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -244,7 +244,7 @@ class CausalSessionMixin:
     def save_causal_bundle(self, path: str | Path) -> Path:
         """Persist the active CausalPlan as ``buildml.causal_bundle.v1``.
 
-        Session facade over :func:`buildml.session.causal_ops.save_causal_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.causal_ops.save_causal_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -261,7 +261,7 @@ class CausalSessionMixin:
     def load_causal_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a causal bundle into this Session.
 
-        Session facade over :func:`buildml.session.causal_ops.load_causal_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.causal_ops.load_causal_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

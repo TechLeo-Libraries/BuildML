@@ -1,8 +1,8 @@
 """Turn text into vectors, which is where "similar" gets its meaning.
 
 Dense retrieval works by putting text in a vector space and returning whatever
-sits nearest the query. Everything about whether that works — whether "cancel my
-plan" finds the passage headed "terminating a subscription" — is a property of
+sits nearest the query. Everything about whether that works: whether "cancel my
+plan" finds the passage headed "terminating a subscription": is a property of
 the model that built the space.
 
 Three backends, and the difference between them is not a matter of degree.
@@ -18,7 +18,7 @@ with it says so.
 
 Whatever embeds the index must also embed the query. Vectors from two different
 models can be compared arithmetically and mean nothing, which produces ranked,
-confident, unrelated results — so the embedder identity is recorded and checked
+confident, unrelated results: so the embedder identity is recorded and checked
 rather than assumed.
 
 See Also
@@ -46,7 +46,7 @@ class Embedder(Protocol):
     """What the RAG path needs from anything that produces vectors.
 
     Three things: a stable identity, a fixed width, and a method that turns
-    texts into a matrix. Structural conformance is enough — any object with
+    texts into a matrix. Structural conformance is enough: any object with
     these members works, without inheriting anything.
 
     Attributes
@@ -133,7 +133,7 @@ class HashingEmbedder:
     def __init__(self, *, n_features: int = DEFAULT_EMBED_DIM) -> None:
         """Build the hashing vectoriser.
 
-        No model is loaded and nothing is fitted — hashing is a fixed function,
+        No model is loaded and nothing is fitted: hashing is a fixed function,
         which is what makes it deterministic across processes and machines.
 
         Parameters
@@ -250,7 +250,7 @@ class CallableEmbedder:
 
         Both the row count and the width are verified, because a mismatch in
         either produces an index whose vectors do not correspond to its chunks
-        — and nothing downstream would notice.
+       : and nothing downstream would notice.
 
         Parameters
         ----------
@@ -298,7 +298,7 @@ class SentenceTransformerEmbedder:
     between a RAG system that handles how people really ask questions and one
     that only matches keywords.
 
-    Runs on your machine — no data leaves it, and no per-query cost. Requires
+    Runs on your machine: no data leaves it, and no per-query cost. Requires
     the ``buildml[rag]`` extra, and downloads model weights on first use.
 
     Notes
@@ -307,7 +307,7 @@ class SentenceTransformerEmbedder:
     Pre-download in environments without network access at run time.
 
     **Models have an input length limit**, typically a few hundred tokens.
-    Longer passages are truncated, and the truncated part contributes nothing —
+    Longer passages are truncated, and the truncated part contributes nothing :
     keep chunks within the model's window.
 
     **A GPU is a large speedup for indexing** and rarely necessary for querying
@@ -346,7 +346,7 @@ class SentenceTransformerEmbedder:
 
         Notes
         -----
-        **Loading is expensive** — weights are read into memory and possibly
+        **Loading is expensive**: weights are read into memory and possibly
         downloaded first. Construct once and reuse.
 
         **The recorded identity includes the model name**, so an index built
@@ -445,7 +445,7 @@ def resolve_embedder(
     **``'auto'`` resolves by what is installed, not by what is best.** With the
     extra present you get a semantic model; without it you get hashing, which is
     not semantic at all. The choice is recorded in the returned config and
-    disclosed on the index — check it rather than assuming.
+    disclosed on the index: check it rather than assuming.
 
     **``dim`` is ignored for sentence-transformers.** The model's real
     dimension always wins, so a mismatched request is not honoured and not an

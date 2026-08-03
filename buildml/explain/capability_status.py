@@ -8,8 +8,20 @@ those payloads to domain status blocks so operators can discover what will run
 
 from __future__ import annotations
 
+import copy
 import importlib
 from typing import Any
+
+# Process-wide cache: capability matrices are static introspection for a given
+# installed environment. Walkthrough used to re-import every domain (and on
+# Windows re-spawn torch-heavy subprocess probes) on each call.
+_MATRIX_CACHE: dict[str, dict[str, Any]] = {}
+
+
+def clear_capability_matrix_cache() -> None:
+    """Drop cached capability matrices (tests / after optional-extra installs)."""
+    _MATRIX_CACHE.clear()
+
 
 # Session static introspection ops (includes optimize alias of decision).
 CAPABILITY_MATRIX_OPERATIONS: frozenset[str] = frozenset(
@@ -20,6 +32,7 @@ CAPABILITY_MATRIX_OPERATIONS: frozenset[str] = frozenset(
         "causal_capability_matrix",
         "cbr_capability_matrix",
         "decision_capability_matrix",
+        "fairness_capability_matrix",
         "federated_capability_matrix",
         "forecast_capability_matrix",
         "graph_capability_matrix",
@@ -76,6 +89,7 @@ DOMAIN_STATUS_CAPABILITY_OPS: tuple[tuple[str, str], ...] = (
     ("decision_status", "decision_capability_matrix"),
     ("synthetic_status", "synthetic_capability_matrix"),
     ("rag_status", "rag_capability_matrix"),
+    ("fairness_status", "fairness_capability_matrix"),
 )
 
 _MATRIX_SOURCES: dict[str, tuple[str, str]] = {
@@ -144,6 +158,10 @@ _MATRIX_SOURCES: dict[str, tuple[str, str]] = {
         "buildml.ensemble.catalog",
         "ensemble_capability_matrix",
     ),
+    "fairness_capability_matrix": (
+        "buildml.fairness.catalog",
+        "fairness_capability_matrix",
+    ),
 }
 
 # Domain fit op → capability matrix to call first (audit / workflow routing).
@@ -186,6 +204,7 @@ FIT_TO_CAPABILITY_MATRIX: dict[str, str] = {
     "fit_synthesizer": "synthetic_capability_matrix",
     "rag_ingest_corpus": "rag_capability_matrix",
     "rag_embed_and_index": "rag_capability_matrix",
+    "evaluate_fairness": "fairness_capability_matrix",
 }
 
 
@@ -193,7 +212,7 @@ def load_capability_matrix(operation: str) -> dict[str, Any]:
     """Load one domain capability matrix by Session operation name.
 
     Dispatches to the domain catalog function registered in ``_MATRIX_SOURCES``.
-    Used by walkthrough status enrichment and audit routing — not a Session call
+    Used by walkthrough status enrichment and audit routing: not a Session call
     itself.
 
     Parameters
@@ -207,6 +226,10 @@ def load_capability_matrix(operation: str) -> dict[str, Any]:
         The matrix payload from the domain catalog. Missing optional deps are
         reported as unavailable rather than raised.
     """
+    cached = _MATRIX_CACHE.get(operation)
+    if cached is not None:
+        return copy.deepcopy(cached)
+
     source = _MATRIX_SOURCES.get(operation)
     if source is None:
         return {"operation": operation, "error": "unknown_capability_matrix_operation"}
@@ -214,14 +237,19 @@ def load_capability_matrix(operation: str) -> dict[str, Any]:
     module = importlib.import_module(module_name)
     payload = getattr(module, attr)()
     if isinstance(payload, dict):
-        return payload
-    to_dict = getattr(payload, "to_dict", None)
-    if callable(to_dict):
-        as_dict = to_dict()
-        if isinstance(as_dict, dict):
-            return as_dict
-        return {"operation": operation, "payload": as_dict}
-    return {"operation": operation, "payload": payload}
+        result = payload
+    else:
+        to_dict = getattr(payload, "to_dict", None)
+        if callable(to_dict):
+            as_dict = to_dict()
+            if isinstance(as_dict, dict):
+                result = as_dict
+            else:
+                result = {"operation": operation, "payload": as_dict}
+        else:
+            result = {"operation": operation, "payload": payload}
+    _MATRIX_CACHE[operation] = result
+    return copy.deepcopy(result)
 
 
 def capability_matrix_api_action(operation: str) -> str:
@@ -271,7 +299,11 @@ def attach_capability_matrix(status: dict[str, Any], operation: str) -> dict[str
     return enriched
 
 
-def capability_introspection_status(session: Any | None = None) -> dict[str, Any]:
+def capability_introspection_status(
+    session: Any | None = None,
+    *,
+    capability_probe: str = "eager",
+) -> dict[str, Any]:
     """Aggregate capability-matrix routing for walkthrough orientation tables.
 
     Builds one row per domain status field with the matching matrix operation,
@@ -283,6 +315,9 @@ def capability_introspection_status(session: Any | None = None) -> dict[str, Any
     session:
         Optional Session (reserved for future history-aware routing). Currently
         unused; matrices are static introspection.
+    capability_probe:
+        ``eager`` loads every matrix (cached process-wide). ``lazy`` / ``skip``
+        list operations without importing optional industry stacks.
 
     Returns
     -------
@@ -290,12 +325,25 @@ def capability_introspection_status(session: Any | None = None) -> dict[str, Any
         Per-domain routing table, disclosures, and the full operation list.
     """
     _ = session
+    probe = str(capability_probe or "eager").lower().strip()
     rows: list[dict[str, Any]] = []
     seen_ops: set[str] = set()
     for status_field, operation in DOMAIN_STATUS_CAPABILITY_OPS:
         if operation in seen_ops and status_field != "imitation_status":
             continue
         seen_ops.add(operation)
+        if probe in {"lazy", "skip"}:
+            rows.append(
+                {
+                    "domain_status_field": status_field,
+                    "operation": operation,
+                    "api_action": capability_matrix_api_action(operation),
+                    "default_backend": None,
+                    "n_backends": None,
+                    "probed": False,
+                }
+            )
+            continue
         matrix = load_capability_matrix(operation)
         default = (
             matrix.get("default_backend")
@@ -311,19 +359,22 @@ def capability_introspection_status(session: Any | None = None) -> dict[str, Any
                 "api_action": capability_matrix_api_action(operation),
                 "default_backend": default,
                 "n_backends": n_backends,
+                "probed": True,
             }
         )
     return {
         "n_domains": len(rows),
         "domains": rows,
         "operations": sorted(CAPABILITY_MATRIX_OPERATIONS),
+        "capability_probe": probe,
         "disclosures": [
             "Capability matrices are read-only: they report installed backends, "
             "not quality or appropriateness for your dataset.",
             "Call Session.<domain>_capability_matrix() before choosing a backend "
             "or fit method; the matching AI tool dispatches the same static method.",
-            "Walkthrough domain status blocks embed the live matrix under "
-            "capability_matrix when the domain exposes one.",
+            "Walkthrough defaults to capability_probe='lazy' so inactive domains "
+            "do not import torch-heavy optional stacks; use 'eager' to probe all.",
+            "Matrices are cached process-wide after the first load.",
         ],
     }
 

@@ -74,7 +74,7 @@ def main() -> None:
         )
         .split(test_size=0.2, validation_size=0.15, random_state=0)
     )
-    other.load_recommender_bundle(out)
+    other.load_recommender_bundle(out, trusted=True)
     print("reloaded eval", other.evaluate_recommender(partition="test", k=5).metrics)
 
 

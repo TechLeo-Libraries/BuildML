@@ -19,8 +19,8 @@ artefact. Mixed is a Gower-style combination for data with both numeric and
 categorical columns, since neither of the others has any sensible notion of the
 distance between "red" and "blue".
 
-Every transform used in distance — the standardisation, the numeric ranges, the
-categorical vocabularies — is fitted on training cases and reused unchanged.
+Every transform used in distance: the standardisation, the numeric ranges, the
+categorical vocabularies: is fitted on training cases and reused unchanged.
 Refitting on holdout rows would let the evaluation set influence what "similar"
 means, and the resulting score would flatter the model.
 
@@ -42,7 +42,7 @@ from buildml.core.errors import ValidationError
 
 @dataclass(slots=True)
 class Case:
-    """One remembered episode — what the situation was and how it turned out.
+    """One remembered episode: what the situation was and how it turned out.
 
     The atom of case memory. Unlike a training row consumed and discarded during
     fitting, a case persists and can be shown to a user as the reason for a
@@ -64,7 +64,7 @@ class Case:
         Categorical values, in the case base's column order.
     source:
         ``'train'`` for a case from the original fit, ``'retained'`` for one
-        added later. Worth checking — a case base that has grown mostly through
+        added later. Worth checking: a case base that has grown mostly through
         retention no longer reflects the data it was evaluated on.
     disclosures:
         Facts about how this case was constructed or admitted.
@@ -202,7 +202,7 @@ class CaseBase:
     vocabularies, and whatever index the chosen backend built.
 
     Every one of those transforms is fitted once, on training cases, and reused
-    unchanged. That is the discipline that keeps a holdout score meaningful —
+    unchanged. That is the discipline that keeps a holdout score meaningful :
     refitting the scaler when new rows arrive would let those rows influence
     what "similar" means, and the evaluation would be measuring itself.
 
@@ -281,8 +281,8 @@ class CaseBase:
         """Return a summary of the memory, with only the first few cases.
 
         Deliberately partial. The full memory can be very large and the
-        matrices do not serialise usefully, so this carries the shape — counts,
-        metric, columns — plus a five-case preview for a sanity check.
+        matrices do not serialise usefully, so this carries the shape: counts,
+        metric, columns: plus a five-case preview for a sanity check.
 
         Returns
         -------
@@ -504,7 +504,7 @@ def top_k_indices(distances: np.ndarray, k: int) -> np.ndarray:
     Notes
     -----
     **Clamping ``k`` is deliberate.** A small case base should still answer,
-    with fewer neighbours, rather than failing — but note that ``k`` neighbours
+    with fewer neighbours, rather than failing: but note that ``k`` neighbours
     out of ``k`` total cases is the whole memory, and the prediction is then a
     global average rather than a local one.
 
@@ -572,7 +572,7 @@ def distance_weights(
     **The falloff is sharper than it looks.** Inverse distance is quite
     aggressive: a neighbour twice as far counts half as much, so with one very
     close case the rest barely participate. That is usually what you want and
-    occasionally is not — ``'majority'`` gives every neighbour an equal say.
+    occasionally is not: ``'majority'`` gives every neighbour an equal say.
 
     Examples
     --------
@@ -619,7 +619,7 @@ def encode_categoricals(
     to keep it.
 
     **``-1`` means unseen, and it is not a category.** Under the mixed metric it
-    differs from every real code — including, deliberately, from another unseen
+    differs from every real code: including, deliberately, from another unseen
     value, since two labels being absent from training is no evidence they are
     alike.
 

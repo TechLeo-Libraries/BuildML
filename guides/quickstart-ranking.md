@@ -1,10 +1,10 @@
-# Quickstart — Search / learning-to-rank (LTR)
+# Quickstart: Search / learning-to-rank (LTR)
 
 **Proof:** [search-relevance-ltr](../proofs/search-relevance-ltr/) (+ Tier C Ridge pointwise twin).
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core sklearn path — no extra required. For GBDT rankers:
+> Core sklearn path: no extra required. For GBDT rankers:
 > `pip install "buildml[ranking-industry]"`.
 > See [installation](../docs/installation.rst).
 
@@ -109,7 +109,7 @@ Prefer `group_split` with `query_id` as `role='group'` so holdout queries
 | [Recommenders](quickstart-recommenders.md) | User–item interactions (CF / content) |
 | [RAG](quickstart-rag.md) | Document chunks via embeddings / hybrid retrieve |
 
-Same metric names (nDCG, MRR) can appear in all three — **do not compare**
+Same metric names (nDCG, MRR) can appear in all three: **do not compare**
 `evaluate_ranker`, `evaluate_recommender`, and `rag_evaluate` numbers directly.
 
 ---

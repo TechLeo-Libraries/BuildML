@@ -2,7 +2,7 @@
 
 BuildML persists fitted plans with joblib (and occasionally ``torch.load`` /
 ``torch.jit.load``). Those formats can execute arbitrary code on load. This
-module does **not** make untrusted pickles safe — it makes unsafe loads an
+module does **not** make untrusted pickles safe: it makes unsafe loads an
 explicit opt-in and adds controllable integrity / path checks around them.
 
 Callers must pass ``trusted=True`` only for artifacts they created or fully
@@ -26,7 +26,7 @@ from urllib.parse import urlparse
 
 from buildml.core.errors import ValidationError
 
-# Schemes that look like remote / virtual URIs — refuse before any deserialize.
+# Schemes that look like remote / virtual URIs: refuse before any deserialize.
 _REFUSED_URI_SCHEMES = frozenset(
     {
         "http",
@@ -54,7 +54,7 @@ def require_trusted_deserialize(
     """Refuse deserialization unless the caller opts in with ``trusted=True``.
 
     Pickle/joblib/torch payloads can execute arbitrary code. This helper does
-    not sanitize those formats — it only blocks accidental loads until the
+    not sanitize those formats: it only blocks accidental loads until the
     caller asserts trust.
 
     Parameters
@@ -89,7 +89,7 @@ def assert_local_load_path(path: str | Path, *, artifact: str = "artifact") -> P
 
     BuildML loaders only accept ordinary filesystem paths. Strings that look
     like remote URIs (``https://...``, ``s3://...``) or ``file://`` URLs are
-    rejected. This is a path-shape gate, not a sandbox — a local path under
+    rejected. This is a path-shape gate, not a sandbox: a local path under
     attacker control is still unsafe once ``trusted=True``.
 
     Parameters
@@ -115,7 +115,7 @@ def assert_local_load_path(path: str | Path, *, artifact: str = "artifact") -> P
 
     parsed = urlparse(raw)
     scheme = (parsed.scheme or "").lower()
-    # Windows drive letters (C:) look like schemes to urlparse — allow single-letter.
+    # Windows drive letters (C:) look like schemes to urlparse: allow single-letter.
     if scheme and len(scheme) > 1:
         if scheme == "file":
             raise ValidationError(
@@ -200,7 +200,7 @@ def verify_sha256(path: str | Path, expected: str | None, *, artifact: str = "pa
             f"Integrity check failed for {artifact} at '{Path(path)}': "
             f"sha256 mismatch (expected {needle[:12]}..., got {actual[:12]}...). "
             "The file may have been tampered with after save. "
-            "Integrity is not safety from a malicious author — refuse the load."
+            "Integrity is not safety from a malicious author: refuse the load."
         )
 
 

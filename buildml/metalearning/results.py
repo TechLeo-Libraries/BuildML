@@ -12,7 +12,7 @@ class MetaLearningPlan:
 
     Persist via ``buildml.metalearning_bundle.v1``. Distinct from Session
     checkpoints and from multi-task / classical FitResult. This is tabular
-    few-shot / episodic meta-learning — not foundation-model MAML-at-scale.
+    few-shot / episodic meta-learning: not foundation-model MAML-at-scale.
     """
 
     backend: str

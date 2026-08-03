@@ -1,6 +1,6 @@
 # Terrace Retail Mesh
 
-**Tier B** cross-domain product proof — multitask SKU heads + chronological
+**Tier B** cross-domain product proof: multitask SKU heads + chronological
 demand forecast + collaborative recommenders for synthetic retail.
 
 ## Product narrative
@@ -13,7 +13,7 @@ Terrace joins merchandising, demand, and personalization surfaces:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -41,5 +41,5 @@ Terrace joins merchandising, demand, and personalization surfaces:
 
 ## Limitations
 
-Three synthetic retail surfaces stitched into one product narrative — not a
+Three synthetic retail surfaces stitched into one product narrative: not a
 production merchandising stack.

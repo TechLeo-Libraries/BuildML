@@ -26,7 +26,7 @@ def evaluate_graph(
 ) -> GraphEvalResult:
     """Score holdout nodes and compute classification metrics.
 
-    Uses the fitted plan only — never refits on the evaluation partition.
+    Uses the fitted plan only: never refits on the evaluation partition.
     Falls back from validation to test when validation indices are absent.
 
     Parameters

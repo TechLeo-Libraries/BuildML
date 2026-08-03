@@ -1,6 +1,6 @@
 # Meridian Recs Commerce
 
-**Tier B** cross-domain product proof — collaborative recommenders +
+**Tier B** cross-domain product proof: collaborative recommenders +
 learning-to-rank browse relevance + classical purchase propensity + optional
 promo decision thresholds.
 
@@ -17,7 +17,7 @@ propensity drives promo spend. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

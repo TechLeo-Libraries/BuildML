@@ -8,7 +8,7 @@ wildly unequal in relevance, and standardisation cannot tell the difference.
 Metric learning replaces the assumption with training. A small network is
 trained to predict the target, and the layer *before* its output head is used as
 the search space. Because that layer had to be informative enough to predict
-from, points close together in it are close in a way that matters — the network
+from, points close together in it are close in a way that matters: the network
 has effectively learned which features to weight.
 
 The costs are real. Training requires torch and takes time. The learned space is
@@ -51,7 +51,7 @@ class TorchMetricEncoder:
         Width of the hidden layer.
     embed_dim:
         Dimension of the search space. Smaller spaces make distance more
-        meaningful — high dimensions push everything toward equidistance — and
+        meaningful: high dimensions push everything toward equidistance: and
         risk discarding structure.
     epochs:
         Training passes over the data.
@@ -148,7 +148,7 @@ def build_torch_encoder(
 
     The trunk maps features to the embedding that will be searched; the head
     maps that embedding to a prediction. Only the head's loss trains anything,
-    and only the trunk's output is ever used for retrieval — the head exists
+    and only the trunk's output is ever used for retrieval: the head exists
     purely to give the trunk something to learn from, and is discarded at query
     time.
 
@@ -230,7 +230,7 @@ def fit_torch_encoder(
 ) -> Any:
     """Train the network so its embedding layer becomes a useful search space.
 
-    Full-batch gradient descent against the task loss — mean squared error for
+    Full-batch gradient descent against the task loss: mean squared error for
     regression, cross-entropy for classification. The predictions produced along
     the way are never used. What matters is the representation the trunk is
     forced to learn in order to make them.

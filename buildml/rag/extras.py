@@ -2,8 +2,8 @@
 
 BuildML's RAG stack is designed so the core path works with nothing beyond numpy
 and scikit-learn: hashing embeddings, a NumPy cosine store, BM25. The heavier
-capabilities — semantic embeddings, cross-encoder reranking, LangChain
-interoperability — pull in torch and a model download, and are therefore opt-in.
+capabilities: semantic embeddings, cross-encoder reranking, LangChain
+interoperability: pull in torch and a model download, and are therefore opt-in.
 
 Two shapes appear here, and the distinction matters. ``require_*`` functions
 raise :class:`~buildml.core.errors.MissingExtraError` with the exact install
@@ -32,7 +32,7 @@ def require_rag_stack(*, feature: str = "RAG") -> None:
     """Confirm the baseline RAG stack is usable, which it always is.
 
     A deliberate no-op, kept as the gate every Session RAG entrypoint calls. The
-    baseline path — hashing embedder, NumPy cosine store, BM25 — needs only core
+    baseline path: hashing embedder, NumPy cosine store, BM25: needs only core
     dependencies, so there is nothing to check. Keeping the call site means the
     gate is already in place should that ever change.
 
@@ -81,7 +81,7 @@ def require_sentence_transformers(
     Notes
     -----
     **``OSError`` is caught alongside ``ImportError``**, because a broken torch
-    installation — a missing CUDA library, an unloadable shared object —
+    installation: a missing CUDA library, an unloadable shared object :
     typically surfaces as an OS-level error rather than an import failure. Both
     mean the same thing to the user: the extra is not usable here.
 

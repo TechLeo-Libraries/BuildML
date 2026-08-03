@@ -55,7 +55,7 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    other.load_cbr_bundle(out)
+    other.load_cbr_bundle(out, trusted=True)
     print("reloaded", other.evaluate_cbr(partition="test").metrics)
 
 

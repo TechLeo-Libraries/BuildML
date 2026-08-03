@@ -1,7 +1,7 @@
 """Condense NLP results into the small records that history and reports show.
 
 A session keeps a history of what was done, and a walkthrough describes where
-you are. Neither can hold a full result — a prediction result contains a label
+you are. Neither can hold a full result: a prediction result contains a label
 for every document, and an interpretation contains every token attribution.
 
 Each function here reduces one result to the handful of fields that belong in a
@@ -11,7 +11,7 @@ glance. Everything else stays on the result object.
 Two rules run through all of them. They never raise: a missing or malformed
 result becomes an empty dict, because a history entry failing is worse than a
 history entry being thin. And they report only what happened, never a
-recommendation — the teaching prose lives in :mod:`buildml.explain`, and mixing
+recommendation: the teaching prose lives in :mod:`buildml.explain`, and mixing
 the two would put opinions in the audit trail.
 """
 
@@ -94,7 +94,7 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
     """Condense a holdout evaluation into a history entry.
 
     Keeps the metrics and the partition they came from, plus the
-    out-of-vocabulary rate — the context that decides whether the metrics can
+    out-of-vocabulary rate: the context that decides whether the metrics can
     be trusted. The per-class table and confusion matrix stay on the result.
 
     Parameters
@@ -155,7 +155,7 @@ def predict_result_summary(predict_result: Any) -> dict[str, Any]:
 def interpret_result_summary(interpret_result: Any) -> dict[str, Any]:
     """Condense an interpretation run into a history entry.
 
-    Records the scope and, importantly, the attribution method — linear
+    Records the scope and, importantly, the attribution method: linear
     coefficients and naive Bayes log-likelihoods are on different scales, so a
     history without the method invites comparing numbers that are not
     comparable.
@@ -188,7 +188,7 @@ def topic_result_summary(topic_result: Any) -> dict[str, Any]:
     """Condense a topic fit into a history entry.
 
     Keeps the topic labels rather than only the count, because a list of labels
-    is what makes one topic fit recognisable against another in a timeline —
+    is what makes one topic fit recognisable against another in a timeline :
     "six topics" tells you nothing you did not already know.
 
     Parameters
@@ -253,7 +253,7 @@ def keyphrase_result_summary(keyphrase_result: Any) -> dict[str, Any]:
     """Condense a keyphrase extraction into a history entry.
 
     Keeps the leading corpus phrases, capped at ten. They are the readable
-    output — a history entry saying only "extracted 15 keyphrases" would record
+    output: a history entry saying only "extracted 15 keyphrases" would record
     that something happened without recording what.
 
     Parameters
@@ -352,7 +352,7 @@ def summary_result_summary(summary_result: Any) -> dict[str, Any]:
     """Condense a summarisation run into a history entry.
 
     Keeps ``mean_compression``, which is the one number that says whether the
-    run achieved anything — near 1.0 means the documents were already short
+    run achieved anything: near 1.0 means the documents were already short
     enough that nothing was summarised.
 
     Parameters
@@ -417,7 +417,7 @@ def profile_result_summary(profile_result: Any) -> dict[str, Any]:
 
     Deliberately keeps all three contamination measures. If a holdout score is
     later questioned, the history should already contain the evidence about
-    whether the split was clean — reconstructing it afterwards means reprofiling
+    whether the split was clean: reconstructing it afterwards means reprofiling
     a corpus that may have changed.
 
     Parameters
@@ -460,7 +460,7 @@ def nlp_status(
     """Describe where the NLP side of a session currently stands.
 
     Answers "what text modelling has happened here and what should I know about
-    it" — for a walkthrough, a status display, or an audit record. It reports
+    it": for a walkthrough, a status display, or an audit record. It reports
     what is attached, what the history shows, and the caveats that apply, all
     as statements of fact rather than advice.
 
@@ -491,7 +491,7 @@ def nlp_status(
     -----
     **A session can show NLP activity with no plan attached**, and that is
     normal rather than an error. Keyphrases, sentiment, entities, summaries,
-    language detection, and profiling hold no fitted state by design — they are
+    language detection, and profiling hold no fitted state by design: they are
     analyses, not models. The disclosures say so, so an absent plan is not
     mistaken for lost work.
 

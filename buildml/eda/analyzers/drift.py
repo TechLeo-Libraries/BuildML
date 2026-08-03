@@ -42,7 +42,7 @@ def analyze_drift(
 
     Two tests, one per kind of column. Numeric columns get a two-sample
     Kolmogorov-Smirnov test, which compares the whole shape of the distribution
-    rather than just the mean — a column with the same average and twice the
+    rather than just the mean: a column with the same average and twice the
     variance is caught. Categorical columns get Jensen-Shannon divergence
     between the category frequencies, a bounded symmetric measure where 0 means
     identical and 1 means no overlap.
@@ -70,12 +70,12 @@ def analyze_drift(
     -------
     dict
         ``available`` is ``False`` with a ``reason`` when there is no split.
-        Otherwise: ``numeric_drift`` and ``categorical_drift`` — up to 40 each,
-        sorted worst first. ``flagged_columns`` and ``flagged_count`` — those
+        Otherwise: ``numeric_drift`` and ``categorical_drift``: up to 40 each,
+        sorted worst first. ``flagged_columns`` and ``flagged_count``: those
         that crossed both thresholds. ``train_rows``, ``test_rows``,
-        ``feature_columns_analyzed`` for provenance. ``settings`` — the tests
+        ``feature_columns_analyzed`` for provenance. ``settings``: the tests
         and thresholds in words, so a report is readable without this docstring.
-        ``summary`` — a sentence.
+        ``summary``: a sentence.
 
     Notes
     -----
@@ -91,7 +91,7 @@ def analyze_drift(
     **Detecting drift does not tell you what to do.** A time-based split showing
     drift may be correctly simulating deployment, in which case the honest
     response is to accept a lower score, not to reshuffle until the drift
-    disappears — that would just hide the problem you will meet in production.
+    disappears: that would just hide the problem you will meet in production.
 
     Examples
     --------

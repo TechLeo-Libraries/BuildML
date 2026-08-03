@@ -39,7 +39,7 @@ def finetune_ssl_head(
 ) -> tuple[SSLHeadPlan, SSLHeadFitResult]:
     """Fit a supervised head on SSL embeddings using labeled train rows only.
 
-    Unlabeled train targets (NaN by default) are skipped — not used as invented
+    Unlabeled train targets (NaN by default) are skipped: not used as invented
     labels. Holdout partitions are not used during head fit.
 
     Parameters

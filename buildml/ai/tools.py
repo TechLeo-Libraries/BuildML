@@ -2,7 +2,7 @@
 
 A language model connected to a Session could, in principle, do anything the
 Session can. This module is why it cannot. Every action is declared in advance
-as a :class:`ToolSpec` — a name, a description the model reads, a JSON Schema
+as a :class:`ToolSpec`: a name, a description the model reads, a JSON Schema
 its arguments must satisfy, and a :class:`~buildml.ai.types.ConfirmPolicy`
 saying whether it may run unattended. A :class:`ToolRegistry` holds the set, and
 a call naming anything outside it is rejected rather than interpreted.
@@ -15,7 +15,7 @@ column name, a cell value, or a document retrieved from an index can contain
 text shaped like a command, and a model reading it back has no inherent way to
 tell the difference. :func:`sanitize_tool_result` and :func:`mark_untrusted_data`
 wrap such content in explicit markers and defuse the common injection phrases.
-Neither is a guarantee — no known technique is — but unmarked data flowing
+Neither is a guarantee: no known technique is: but unmarked data flowing
 straight into a prompt is the failure mode worth eliminating first.
 
 See Also
@@ -119,7 +119,7 @@ class ToolSpec:
     def to_openai_tool(self) -> dict[str, Any]:
         """Return the tool in the shape a chat provider expects.
 
-        Emits only the name, description, and parameter schema — the model has
+        Emits only the name, description, and parameter schema: the model has
         no need to know a tool's confirmation policy, and telling it would
         invite negotiation over something that is not negotiable.
 
@@ -625,7 +625,7 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             description=(
                 "Build audio multimodal Torch DataLoaders (audio ⊕ tabular and/or text "
                 "and/or image). Requires audio_column. Train-only audio amplitude stats. "
-                "Small 1D-CNN fusion branch — not a speech foundation model. "
+                "Small 1D-CNN fusion branch: not a speech foundation model. "
                 "Requires buildml[torch] (soundfile for path cells)."
             ),
             parameters={
@@ -768,7 +768,7 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             name="make_speech_torch_loaders",
             description=(
                 "Build speech classification Torch DataLoaders from an audio column. "
-                "Finetune-lite path — not training a foundation model from scratch. "
+                "Finetune-lite path: not training a foundation model from scratch. "
                 "Requires buildml[torch]."
             ),
             parameters={
@@ -830,7 +830,7 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             description=(
                 "ASR transcription for an audio column. backend=stub is CI-safe; "
                 "backend=transformers requires buildml[speech] and may download weights. "
-                "Integration path — not FM training from scratch."
+                "Integration path: not FM training from scratch."
             ),
             parameters={
                 "type": "object",
@@ -1830,7 +1830,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             description=(
                 "Genetic-algorithm hyperparameter search on train-fold CV only. "
                 "In-tree NumPy GA (population, selection, crossover/mutation, elitism) "
-                "— not random search renamed, not NAS, not a swarm zoo. Same leakage "
+                ": not random search renamed, not NAS, not a swarm zoo. Same leakage "
                 "refusal as grid_search for Session-global preprocess."
             ),
             parameters={
@@ -3922,7 +3922,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_cbr",
             description=(
                 "Build a tabular case memory from Session train "
-                "(sklearn/industry/embedding/torch backends). Case→solution CBR — "
+                "(sklearn/industry/embedding/torch backends). Case→solution CBR: "
                 "not RAG. Write operation."
             ),
             parameters={
@@ -4167,7 +4167,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             description=(
                 "Fit a single-label document classifier on Session train "
                 "(bag-of-n-grams, frozen sentence embeddings, or a frozen pooled "
-                "encoder). Document classification — not sequence labelling, not "
+                "encoder). Document classification: not sequence labelling, not "
                 "generation, not RAG. Write operation."
             ),
             parameters={
@@ -4590,8 +4590,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="fit_rl",
             description=(
                 "Fit contextual bandit (core), Gymnasium REINFORCE-lite or tabular "
-                "TD control — Q-learning / SARSA / Expected SARSA / Double "
-                "Q-learning (buildml[rl]) — or SB3 PPO/DQN/A2C "
+                "TD control: Q-learning / SARSA / Expected SARSA / Double "
+                "Q-learning (buildml[rl]): or SB3 PPO/DQN/A2C "
                 "(buildml[rl-industry]). Offline bandit metrics disclosed. "
                 "Not MuJoCo/robotics. Write operation."
             ),
@@ -5675,8 +5675,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
 def build_default_registry() -> ToolRegistry:
     """Build the registry BuildML ships with.
 
-    Covers the classical workflow — ingestion, roles, splitting, preprocessing,
-    fitting, evaluation, diagnostics, persistence — plus the retrieval and deep
+    Covers the classical workflow: ingestion, roles, splitting, preprocessing,
+    fitting, evaluation, diagnostics, persistence: plus the retrieval and deep
     learning paths. Each tool arrives with its confirmation policy already
     decided, so the default configuration is a considered one rather than an
     open door.
@@ -5729,7 +5729,7 @@ class ToolRegistry:
     """The set of tools an agent may use, and the gate that enforces it.
 
     Membership is by exact name. A call for anything not registered is rejected
-    with the available names listed, rather than guessed at or approximated —
+    with the available names listed, rather than guessed at or approximated :
     a model that hallucinates a plausible tool name should get an error, not
     the nearest match.
 
@@ -5772,7 +5772,7 @@ class ToolRegistry:
         ----------
         tools:
             The tools to allow. ``None`` selects the conservative built-in set
-            rather than allowing everything — the safe default for an empty
+            rather than allowing everything: the safe default for an empty
             argument.
 
         Notes
@@ -5823,7 +5823,7 @@ class ToolRegistry:
         return name in self._tools
 
     def register(self, spec: ToolSpec) -> None:
-        """Refuse runtime registration — the registry is closed by construction.
+        """Refuse runtime registration: the registry is closed by construction.
 
         Models sometimes invent ``register_tool`` / ``add_tool`` style actions.
         BuildML never mutates an existing registry from model text: construct a
@@ -5838,7 +5838,7 @@ class ToolRegistry:
         Raises
         ------
         ValidationError
-            Always — the allowlist is fixed at construction time.
+            Always: the allowlist is fixed at construction time.
         """
         raise ValidationError(
             "ToolRegistry is closed: tools cannot be registered at runtime from "
@@ -5850,7 +5850,7 @@ class ToolRegistry:
         """Resolve a proposed call to its spec, or refuse it.
 
         The gate every call passes through before anything runs. A name outside
-        the registry is rejected outright — there is no nearest-match, no
+        the registry is rejected outright: there is no nearest-match, no
         prefix search, and no interpretation.
 
         Parameters
@@ -5929,7 +5929,7 @@ class ToolRegistry:
         """Return every tool in the shape a chat provider expects.
 
         What gets attached to a request so the model knows what it can ask for.
-        Carries names, descriptions, and argument schemas — never the
+        Carries names, descriptions, and argument schemas: never the
         confirmation policies.
 
         Returns
@@ -6016,7 +6016,7 @@ def sanitize_tool_result(result: Any) -> str:
     Notes
     -----
     **This raises the cost of an attack; it does not prevent one.** The phrase
-    list is finite and paraphrase is free. Treat it as one layer — the ones
+    list is finite and paraphrase is free. Treat it as one layer: the ones
     that matter more are a closed tool registry and confirmation on anything
     that writes.
 
@@ -6056,7 +6056,7 @@ def mark_untrusted_data(data: str, source: str = "user") -> str:
     data:
         The untrusted text.
     source:
-        Where it came from — ``'user'``, ``'dataset'``, ``'retrieval'``.
+        Where it came from: ``'user'``, ``'dataset'``, ``'retrieval'``.
         Uppercased in the marker.
 
     Returns
@@ -6068,7 +6068,7 @@ def mark_untrusted_data(data: str, source: str = "user") -> str:
     -----
     **Marking is a hint, not a boundary.** Models generally respect it; nothing
     forces them to. Unlike :func:`sanitize_tool_result`, this does not rewrite
-    anything, so an injection phrase inside the block survives intact — the
+    anything, so an injection phrase inside the block survives intact: the
     marker is the only defence.
 
     **Name the real source.** A generic label tells the model nothing about how

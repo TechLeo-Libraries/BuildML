@@ -92,7 +92,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Session.fit for fully labeled supervised learning.",
             "Session.fit_ssl_pretext + transform_ssl + fit_semisupervised for SSL embeddings.",
             "Session.finetune_ssl_head when only labeled train rows matter.",
-            "Anomaly novelty mode is normal-only detection — not this API.",
+            "Anomaly novelty mode is normal-only detection: not this API.",
         ),
         rationale=(
             "Use when labels are scarce on train but unlabeled feature rows are abundant.",

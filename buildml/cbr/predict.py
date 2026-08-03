@@ -64,7 +64,7 @@ def predict_cbr(
 
     Retrieves neighbours for every row, combines their solutions under the
     plan's reuse mode, and returns the predictions with a trace for each one.
-    Memory is not modified — retention is a separate, deliberate step.
+    Memory is not modified: retention is a separate, deliberate step.
 
     Parameters
     ----------
@@ -223,7 +223,7 @@ def reuse_solutions(
     Returns
     -------
     tuple
-        ``(prediction, notes)`` — the answer and a plain-language account of how
+        ``(prediction, notes)``: the answer and a plain-language account of how
         it was produced.
 
     Raises
@@ -236,7 +236,7 @@ def reuse_solutions(
     -----
     **Only ``'local_ridge'`` can predict outside the neighbours' range.** The
     other regression modes return a weighted combination, so a value higher than
-    every neighbour is unreachable — which is safe, and blind to a trend running
+    every neighbour is unreachable: which is safe, and blind to a trend running
     through the neighbourhood.
 
     **``'local_ridge'`` falls back to the mean when it cannot fit**, which
@@ -366,7 +366,7 @@ def _match_original(winner_str: str, neighbors: list[Any]) -> Any:
 
     Votes are tallied on string forms so that labels of mixed types compare
     sensibly, but the caller should get back the value as it appears in their
-    data — an integer class stays an integer, a categorical stays itself.
+    data: an integer class stays an integer, a categorical stays itself.
 
     Parameters
     ----------

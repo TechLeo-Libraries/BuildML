@@ -9,7 +9,7 @@
 Explore **before** you mutate. `session.eda()` returns structured findings and
 read-only recommendations. Teaching surfaces (`explain`, `learn`, `workflow`,
 `walkthrough`, `dry_run`) expose the operation catalog and the concept notes
-behind it — they do not certify that your split or model suits the domain.
+behind it: they do not certify that your split or model suits the domain.
 
 If the vocabulary itself is new, start with `session.learn()`: everything below
 reads at a `beginner`, `intermediate`, or `advanced` level, and beginner assumes
@@ -32,11 +32,11 @@ Session operation to a versioned catalog (kept in sync by CI). That lets you:
 5. Export an offline audit HTML for review.
 
 The live dashboard (`eda_app`) is an optional FastAPI Teaching Studio with
-Plotly boards — not a replacement for domain judgment.
+Plotly boards: not a replacement for domain judgment.
 
 ---
 
-## Use case — findings before preparation
+## Use case: findings before preparation
 
 ```python
 import pandas as pd
@@ -68,7 +68,7 @@ Recommendations **name** Session operations; they do not execute them.
 
 ---
 
-## Use case — offline HTML (studio vs research)
+## Use case: offline HTML (studio vs research)
 
 ```python
 # Default studio snapshot (dashboard SPA assets embedded when available)
@@ -87,7 +87,7 @@ HTML artifacts embed required styles/assets so they open offline.
 
 ---
 
-## Use case — live Teaching Studio dashboard
+## Use case: live Teaching Studio dashboard
 
 ```python
 # pip install "buildml[dashboard]"  # after GitHub 2.x
@@ -120,7 +120,7 @@ print(summary.unresolved_risks)
 walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 ```
 
-- `available` means API prerequisites pass — **not** “you should run this.”
+- `available` means API prerequisites pass: **not** “you should run this.”
 - `explain(..., moment="after")` joins catalog text to the latest recorded call.
 - `dry_run` does not append history.
 
@@ -147,7 +147,7 @@ The level changes how much is rendered, never what is true: assumptions,
 leakage risks, and failure modes are present at every level. `advanced` drops
 the analogy and the in-line glossary and widens the parameter and pitfall lists.
 
-### `learn` — the concept behind the call
+### `learn`: the concept behind the call
 
 `explain` answers "what will this do *here, now*". `learn` answers "what is this,
 and what should I understand first". It accepts a concept key, an operation name,

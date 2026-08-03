@@ -7,9 +7,9 @@ means any sentence in a generated answer can be traced back to the characters in
 the file it came from.
 
 Every result also carries ``disclosures`` and, where relevant, ``warnings``.
-That is deliberate: RAG has more ways to be quietly wrong than most pipelines —
+That is deliberate: RAG has more ways to be quietly wrong than most pipelines :
 an index built with a placeholder embedder, a hybrid query that silently fell
-back to dense, passages retrieved and then dropped for space — and none of them
+back to dense, passages retrieved and then dropped for space: and none of them
 raise. They are recorded instead, so the reason a system underperforms is
 readable rather than deduced.
 
@@ -29,7 +29,7 @@ from typing import Any
 class Document:
     """A single document before it is cut into retrievable pieces.
 
-    The unit of ingest. Documents are never retrieved directly — chunks are —
+    The unit of ingest. Documents are never retrieved directly: chunks are :
     but the document ID travels with every chunk, so a retrieved passage always
     identifies the document it came from.
 
@@ -131,7 +131,7 @@ class Chunk:
 
     Chunks are what the system works with. A document is only ever a source of
     chunks, and the character offsets recorded here are what make a citation
-    verifiable — they point at an exact span of the original file, not at the
+    verifiable: they point at an exact span of the original file, not at the
     document in general.
 
     Attributes
@@ -233,7 +233,7 @@ class CorpusHandle:
     """A loaded corpus, held in memory.
 
     What the ingest functions produce and what indexing consumes. Documents keep
-    the order they were loaded in, and may mix index and eval-only roles — the
+    the order they were loaded in, and may mix index and eval-only roles: the
     indexing path filters rather than trusting the caller to have separated
     them.
 
@@ -379,9 +379,9 @@ class Hit:
     """A chunk that retrieval returned, with its position and score.
 
     Hits come back ordered, and **the order is the trustworthy part**. The score
-    means different things in different modes — a BM25 score is unbounded, a
+    means different things in different modes: a BM25 score is unbounded, a
     cosine similarity sits in ``[-1, 1]``, and a reciprocal-rank-fusion score is
-    a small number with no interpretation outside the fusion — so comparing
+    a small number with no interpretation outside the fusion: so comparing
     scores across modes, or across queries, does not mean anything.
 
     Attributes
@@ -448,7 +448,7 @@ class IndexResult:
     """A built index, described by what it contains and how it was made.
 
     Every field here constrains what queries against this index will do.
-    ``embedder_id`` and ``dim`` in particular must match at query time —
+    ``embedder_id`` and ``dim`` in particular must match at query time :
     embeddings from different models are arithmetically comparable and
     semantically unrelated, so a mismatch returns confident nonsense rather
     than an error.
@@ -470,7 +470,7 @@ class IndexResult:
     embed_config:
         The embedding settings used.
     warnings:
-        Problems found while building — empty documents, degenerate chunks.
+        Problems found while building: empty documents, degenerate chunks.
     disclosures:
         Facts about the index that affect how results should be read, most
         importantly whether a placeholder embedder was used.
@@ -529,7 +529,7 @@ class RetrieveResult:
 
     ``mode`` is the field to check first, because it may not be what was asked
     for. A hybrid request falls back to dense when BM25 dependencies are
-    missing, and that substitution is recorded here rather than raised — so a
+    missing, and that substitution is recorded here rather than raised: so a
     system that quietly stopped doing keyword matching is visible in the result
     instead of only in the quality.
 
@@ -710,13 +710,13 @@ class RagEvalResult:
 
 @dataclass(slots=True)
 class RagGenerateEvalResult:
-    """Rough, cheap signals about generated answers — not quality judgements.
+    """Rough, cheap signals about generated answers: not quality judgements.
 
     **These are heuristics, and the distinction matters.** Faithfulness here is
     token overlap between the answer and the context, which an answer can score
     highly on by copying text it has misunderstood, and score poorly on by
-    correctly paraphrasing. They are useful as a regression signal — a sudden
-    drop means something changed — and not as a measure of whether answers are
+    correctly paraphrasing. They are useful as a regression signal: a sudden
+    drop means something changed: and not as a measure of whether answers are
     good.
 
     Attributes
@@ -794,8 +794,8 @@ class ConfigCompareResult:
     """Several retrieval configurations, measured the same way.
 
     The honest way to choose settings. Chunk size, retrieval mode, and reranking
-    all interact — larger chunks change what BM25 matches, reranking recovers
-    from a weak first stage — so reasoning about them separately is unreliable
+    all interact: larger chunks change what BM25 matches, reranking recovers
+    from a weak first stage: so reasoning about them separately is unreliable
     and measuring them together is not.
 
     Attributes
@@ -880,7 +880,7 @@ class Citation:
     **A citation records what was available, not what was used.** Every
     retrieved passage placed in the prompt becomes a citation whether or not the
     model drew on it. Whether the answer actually cites them is a separate
-    question — see :class:`FaithfulnessReport`.
+    question: see :class:`FaithfulnessReport`.
 
     **``source_id`` is prompt position, not chunk identity.** The same chunk
     gets a different number in a different query.
@@ -926,7 +926,7 @@ class FaithfulnessReport:
     """Whether one answer looks like it came from its sources.
 
     Two cheap checks. **Citation coverage** counts how many of the supplied
-    sources the answer actually refers to — structural, and reliable as far as
+    sources the answer actually refers to: structural, and reliable as far as
     it goes. **Token overlap** measures shared vocabulary between the answer and
     the context, which is a much weaker signal.
 
@@ -941,7 +941,7 @@ class FaithfulnessReport:
     cited_source_ids:
         Which sources were referenced.
     missing_source_ids:
-        Which were supplied and ignored. Often fine — not every retrieved
+        Which were supplied and ignored. Often fine: not every retrieved
         passage is relevant.
     answer_context_token_overlap:
         Vocabulary shared with the context, in ``[0, 1]``.
@@ -1004,7 +1004,7 @@ class FaithfulnessReport:
     def to_dict(self) -> dict[str, Any]:
         """Return the grounding signals as a JSON-safe mapping.
 
-        Includes the combined score and both components, plus the limitations —
+        Includes the combined score and both components, plus the limitations :
         which belong with the numbers rather than beside them.
 
         Returns
@@ -1052,7 +1052,7 @@ class GenerateResult:
     prompt_context:
         The assembled context, exactly as sent.
     disclosures:
-        Anything affecting how the answer should be read — most importantly,
+        Anything affecting how the answer should be read: most importantly,
         whether passages were dropped for space.
     config:
         The generation settings.
@@ -1070,7 +1070,7 @@ class GenerateResult:
 
     **``prompt_context`` is the ground truth for debugging.** When an answer is
     wrong, it settles whether the passage was missing from the prompt or
-    present and ignored — which are different problems with different fixes.
+    present and ignored: which are different problems with different fixes.
 
     See Also
     --------
@@ -1111,7 +1111,7 @@ class GenerateResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the answer and its provenance as a JSON-safe mapping.
 
-        The full audit trail, minus the assembled prompt itself — that is
+        The full audit trail, minus the assembled prompt itself: that is
         reported as a character count, since including it would duplicate every
         citation's text.
 

@@ -28,8 +28,8 @@ CHECKPOINT_BOUNDARY = (
     "classical preprocess plans; it does not embed the causal learner. "
     "Reload tabular workflow via checkpoint_load; reload the learner via "
     "load_causal_bundle. Honesty: backdoor ATE under caller-declared "
-    "assumptions — native sklearn nuisances plus optional DoWhy/EconML when "
-    "buildml[causal-industry] is installed — not causal discovery. "
+    "assumptions: native sklearn nuisances plus optional DoWhy/EconML when "
+    "buildml[causal-industry] is installed: not causal discovery. "
     "EDA remains associational and never substitutes for CausalAssumptions."
 )
 

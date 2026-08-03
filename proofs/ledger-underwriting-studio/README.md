@@ -1,6 +1,6 @@
 ﻿# Ledger Underwriting Studio
 
-**Tier B** cross-domain product proof — classical + AutoML + causal (declared
+**Tier B** cross-domain product proof: classical + AutoML + causal (declared
 assumptions) + cost-sensitive decisions + calibration for a synthetic credit book.
 
 ## Product narrative
@@ -8,10 +8,10 @@ assumptions) + cost-sensitive decisions + calibration for a synthetic credit boo
 Ledger scores loan applications, searches estimators under a time budget,
 estimates the effect of an outreach treatment under **declared** causal
 assumptions, then selects a cost-sensitive approve threshold on validation
-only — with calibration diagnostics before the holdout confirm.
+only: with calibration diagnostics before the holdout confirm.
 
 1. Classical logistic scorer on stratified split
-2. AutoML search (FLAML / AutoGluon when present; else native) — test never in search
+2. AutoML search (FLAML / AutoGluon when present; else native): test never in search
 3. AIPW causal fit after `declare_causal_assumptions` (unconfoundedness + positivity)
 4. Threshold / knapsack policies selected on **validation only**
    (default `impute`/`encode`/`scale` skip `ignore`/`id` roles so
@@ -20,7 +20,7 @@ only — with calibration diagnostics before the holdout confirm.
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -32,7 +32,7 @@ only — with calibration diagnostics before the holdout confirm.
 
 - Stratified split before classical / AutoML / causal / decisions
 - Causal assumptions declared before `fit_causal` (required API gate)
-- Decision threshold **not** tuned on test — validation selection, test confirm
+- Decision threshold **not** tuned on test: validation selection, test confirm
 - AutoML selection never uses the test partition
 - Calibration reported on validation then confirmed on test
 
@@ -50,5 +50,5 @@ only — with calibration diagnostics before the holdout confirm.
 
 ## Limitations
 
-Synthetic underwriting — not FCRA / bureau data. Causal ATE assumes declared
+Synthetic underwriting: not FCRA / bureau data. Causal ATE assumes declared
 unconfoundedness (not proven). Product proof, not a production LOS certification.

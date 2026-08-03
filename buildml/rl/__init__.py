@@ -1,11 +1,11 @@
 """Imitation learning + reinforcement learning (Session-shaped, honest scope).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
 
 Phase 2:
-  … through IL+RL — **this module (PASS)**.
+  … through IL+RL: **this module (PASS)**.
   Next: Topological Data Analysis (TDA) → then application systems
   (recommenders first).
 
@@ -14,13 +14,13 @@ Honesty (this package):
   - Contextual bandits from logged (context, action, reward) tables on **train only**;
     holdout metrics are **offline** (DM / IPS) and disclosed as such.
   - Optional Gymnasium env loops behind ``buildml[rl]``: REINFORCE-lite linear
-    softmax (policy gradient) and tabular TD control — Q-learning / SARSA /
-    Expected SARSA / Double Q-learning — with explicit state discretization.
+    softmax (policy gradient) and tabular TD control: Q-learning / SARSA /
+    Expected SARSA / Double Q-learning: with explicit state discretization.
   - **Not** a MuJoCo / robotics / AV / multi-agent world-sim platform.
-  - Core stays numpy/pandas/sklearn — ``gymnasium`` is optional and never required
+  - Core stays numpy/pandas/sklearn: ``gymnasium`` is optional and never required
     for ``import buildml`` or BC / bandit paths.
 
-Lazy imports — keep the core import graph light.
+Lazy imports: keep the core import graph light.
 """
 
 from __future__ import annotations

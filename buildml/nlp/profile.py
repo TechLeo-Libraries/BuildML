@@ -58,7 +58,7 @@ def near_duplicate_pairs(
 
     Exact-duplicate detection misses the cases that matter most. A support
     ticket resubmitted with one word changed, an email quoting the message
-    above it, a template with the customer name swapped — none of these match
+    above it, a template with the customer name swapped: none of these match
     on equality, and all of them mean the model has effectively already seen
     the holdout document.
 
@@ -95,7 +95,7 @@ def near_duplicate_pairs(
     only, so the count is documents-with-a-match rather than total pairs.
 
     An empty input list, or a corpus that yields no character features at all,
-    returns zero matches rather than raising — an unprofilable corpus is not an
+    returns zero matches rather than raising: an unprofilable corpus is not an
     error, and the caller reports the absence.
 
     The search is brute-force. On very large corpora it is the expensive part
@@ -172,7 +172,7 @@ def profile_text_corpus(
     near-duplicate text. This is the leak that tabular checks cannot see: no
     column is shared, no statistic crosses the boundary, but the same document
     sits on both sides of the split and the holdout score is meaningless.
-    Nothing is removed — the finding is reported and the decision is yours,
+    Nothing is removed: the finding is reported and the decision is yours,
     because whether a duplicate is a data-collection artefact or a genuine
     repeated event depends on what you are modelling.
 
@@ -181,7 +181,7 @@ def profile_text_corpus(
     dataset:
         The dataset holding the text column.
     split_plan:
-        The split to screen. Optional — without one you still get the corpus
+        The split to screen. Optional: without one you still get the corpus
         profile, but no contamination check, since there are no partitions to
         compare.
     text_column:
@@ -217,8 +217,8 @@ def profile_text_corpus(
 
     Notes
     -----
-    **Run this before fitting, not after.** Every problem it surfaces —
-    contamination, blank documents, an unexpected second language — changes
+    **Run this before fitting, not after.** Every problem it surfaces :
+    contamination, blank documents, an unexpected second language: changes
     what you should do next, and finding out afterwards means refitting.
 
     **Near-duplicate detection is the expensive step.** It vectorises the
@@ -330,7 +330,7 @@ def profile_text_corpus(
                 "that amount."
             )
             warnings.append(
-                "Exact train/holdout document overlap detected — deduplicate the "
+                "Exact train/holdout document overlap detected: deduplicate the "
                 "corpus before splitting, or split by document group."
             )
         if near_duplicates > exact_overlap:

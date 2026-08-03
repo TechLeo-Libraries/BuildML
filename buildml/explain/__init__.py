@@ -1,11 +1,11 @@
 """Typed explanations and the public Session operation catalog.
 
 The package has two halves that meet at :class:`OperationSpec`. The *reference*
-half — :mod:`~buildml.explain.catalog`, :mod:`~buildml.explain.resolver`,
-:mod:`~buildml.explain.history` — answers what an operation does and whether it
-can run here. The *teaching* half — :mod:`~buildml.explain.concepts`,
+half: :mod:`~buildml.explain.catalog`, :mod:`~buildml.explain.resolver`,
+:mod:`~buildml.explain.history`: answers what an operation does and whether it
+can run here. The *teaching* half: :mod:`~buildml.explain.concepts`,
 :mod:`~buildml.explain.glossary`, :mod:`~buildml.explain.pedagogy`,
-:mod:`~buildml.explain.academy` — answers what the idea behind it is, in plain
+:mod:`~buildml.explain.academy`: answers what the idea behind it is, in plain
 language, at whichever reading level the caller asks for.
 """
 

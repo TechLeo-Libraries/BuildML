@@ -99,7 +99,7 @@ def fit_imitation_op(
     Notes
     -----
     **Leakage:** Requires a split. Policy uses train only. Honesty: BC from
-    tables — not inverse RL / DAgger / robotics.
+    tables: not inverse RL / DAgger / robotics.
     """
     session.assert_can_fit("train")
     plan, result = fit_imitation(

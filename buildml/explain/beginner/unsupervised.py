@@ -21,7 +21,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Split your rows first, exactly as you would for supervised learning.",
             "Scale the numeric columns, because clustering is built on distances and unscaled units decide the answer for you.",
-            "Fit the clusterer on training rows — this learns the centres, the shapes, or the core points.",
+            "Fit the clusterer on training rows: this learns the centres, the shapes, or the core points.",
             "Assign validation or test rows using the frozen plan: nearest centre, native predict, or nearest core point.",
             "Score cluster quality on the held-out assignment, and always print which partition the score came from.",
         ),
@@ -31,7 +31,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use this ceremony for a one-off descriptive exploration where you never intend to place new rows.",
-            "Do not treat the approximate holdout assignment for hierarchical clustering or DBSCAN as identical to a native predict — BuildML discloses the difference for a reason.",
+            "Do not treat the approximate holdout assignment for hierarchical clustering or DBSCAN as identical to a native predict: BuildML discloses the difference for a reason.",
         ),
         myths=(
             (
@@ -69,11 +69,11 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "to organize your clothes is a completely different question, and no tidiness score can answer it."
         ),
         steps=(
-            "Fit clusters and compute the internal scores — silhouette, Calinski-Harabasz, Davies-Bouldin.",
+            "Fit clusters and compute the internal scores: silhouette, Calinski-Harabasz, Davies-Bouldin.",
             "Read them as a way of comparing candidate settings, such as different numbers of clusters.",
             "Look at cluster sizes; a 'great' score built from one giant cluster and three tiny ones is a warning.",
             "Inspect the actual rows in each cluster and try to describe them in plain business language.",
-            "If you have a reference labelling, add ARI or NMI — but treat that as agreement, not as proof of correctness.",
+            "If you have a reference labelling, add ARI or NMI: but treat that as agreement, not as proof of correctness.",
         ),
         use=(
             "To compare two clusterings of the same data under the same features and scaling.",
@@ -122,7 +122,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Try k-means/GMM when groups are roughly spherical and you can pick k.",
             "Try DBSCAN/HDBSCAN when shapes are irregular or you expect outliers/noise.",
             "Read cluster_sizes and noise_rate on density methods.",
-            "Assign on validation — never pick k only from train silhouette alone.",
+            "Assign on validation: never pick k only from train silhouette alone.",
         ),
         use=(
             "Segmentation with clear blob-shaped groups (k-means/GMM).",
@@ -130,12 +130,12 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not run k-means on elongated manifolds without reduction first.",
-            "Do not treat DBSCAN noise labels as errors — they are often the point.",
+            "Do not treat DBSCAN noise labels as errors: they are often the point.",
         ),
         myths=(
             (
                 "Higher k always means better clusters.",
-                "It means smaller, tighter groups — not necessarily useful ones.",
+                "It means smaller, tighter groups: not necessarily useful ones.",
             ),
             (
                 "HDBSCAN always beats k-means.",
@@ -167,11 +167,11 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "once, from a fixed angle, and every later comparison uses that same angle."
         ),
         steps=(
-            "Split, then scale — PCA follows variance and unscaled columns hijack it.",
+            "Split, then scale: PCA follows variance and unscaled columns hijack it.",
             "Call `reduce_dimensions` to fit the components on training rows; the component columns join the frame.",
             "Call `fit_clusters(prefer_reduce_components=True)` so clustering runs on those components.",
             "BuildML records `used_reduce_components` on the plan so the choice is visible later.",
-            "Assign and evaluate as usual — both PCA and the clusterer stay frozen.",
+            "Assign and evaluate as usual: both PCA and the clusterer stay frozen.",
         ),
         use=(
             "When you have many correlated numeric columns and distances in the raw space are dominated by redundancy.",
@@ -179,7 +179,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not reduce when you only have a handful of well-understood features; you lose interpretability for nothing.",
-            "Do not fit a second, private PCA inside your own script while using Session splits — that is how the two paths silently disagree.",
+            "Do not fit a second, private PCA inside your own script while using Session splits: that is how the two paths silently disagree.",
         ),
         myths=(
             (
@@ -198,7 +198,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.evaluate_clusters(partition='validation')",
         ),
         check=(
-            "Are your clusters running on component columns or raw features — and does the plan say so?",
+            "Are your clusters running on component columns or raw features: and does the plan say so?",
             "What do the loadings of your first two components actually represent?",
         ),
         tools=("reduce_dimensions", "fit_clusters", "scale", "evaluate_clusters"),
@@ -208,7 +208,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "unsupervised-bundle-boundary",
         plain=(
-            "Your fitted clustering is saved as its own artifact — an unsupervised bundle — separate from a "
+            "Your fitted clustering is saved as its own artifact: an unsupervised bundle: separate from a "
             "Session checkpoint. The checkpoint holds your data workflow; the bundle holds the cluster map. "
             "Loading one does not give you the other."
         ),
@@ -218,7 +218,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit clusters so a plan exists on the Session.",
-            "Call `save_unsupervised_bundle(path)` — it writes the estimator, the feature columns, the assign strategy, and the disclosures.",
+            "Call `save_unsupervised_bundle(path)`: it writes the estimator, the feature columns, the assign strategy, and the disclosures.",
             "Later, create a Session and call `load_unsupervised_bundle(path)`.",
             "Confirm the feature columns the plan expects still exist on your frame.",
             "Call `assign_clusters` to place new rows on the restored map.",
@@ -228,7 +228,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you want the assign strategy and its disclosures to travel with the centroids, rather than being re-derived from memory.",
         ),
         avoid=(
-            "Do not expect `checkpoint_load` to restore your clustering — checkpoints deliberately do not embed cluster plans.",
+            "Do not expect `checkpoint_load` to restore your clustering: checkpoints deliberately do not embed cluster plans.",
             "Do not hand-copy centroid coordinates into another system; you lose the feature contract and the assign disclosures.",
         ),
         myths=(

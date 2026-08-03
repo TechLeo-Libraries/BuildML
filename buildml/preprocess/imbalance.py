@@ -156,7 +156,7 @@ def list_resample_strategies() -> list[dict[str, Any]]:
 
     Notes
     -----
-    The list is static — it describes what the library supports, not what your
+    The list is static: it describes what the library supports, not what your
     environment has installed. Every strategy here needs
     ``pip install 'buildml[imbalanced]'`` before it can actually run.
 
@@ -193,7 +193,7 @@ class ResamplePlan:
     n_train_before:
         Training rows before resampling.
     n_train_after:
-        Training rows after. Compare the two — oversampling to balance a
+        Training rows after. Compare the two: oversampling to balance a
         1-in-1000 class means roughly a 500-fold increase in rows, which is
         both a memory concern and a sign that the balance you asked for may be
         too aggressive.
@@ -260,7 +260,7 @@ def resample_train(
 ) -> tuple[Dataset, SplitPlan, ResamplePlan]:
     """Rebalance the training classes, leaving validation and test untouched.
 
-    When one class is rare — fraud, equipment failure, disease — a model can
+    When one class is rare: fraud, equipment failure, disease: a model can
     reach 99% accuracy by never predicting it, and gradient descent will
     happily settle there because the rare class contributes so little to the
     loss. Resampling changes the training distribution so the rare class
@@ -278,7 +278,7 @@ def resample_train(
     Parameters
     ----------
     dataset:
-        The dataset, which must have a target role assigned — there is no class
+        The dataset, which must have a target role assigned: there is no class
         balance without knowing which column holds the class.
     split_plan:
         The split defining the training rows. Required: resampling before
@@ -290,7 +290,7 @@ def resample_train(
         ``'smote'`` is the common default: it synthesises new minority rows by
         interpolating between existing ones, which avoids the exact-duplicate
         overfitting that naive oversampling causes. Undersampling strategies
-        discard majority rows instead — faster and lighter, but you are
+        discard majority rows instead: faster and lighter, but you are
         throwing away real data.
     random_state:
         Seed for the sampler, so the synthesised rows reproduce.
@@ -298,7 +298,7 @@ def resample_train(
         How far to rebalance, forwarded to imbalanced-learn. ``'auto'``
         equalises the classes. A float sets the desired minority-to-majority
         ratio, and partial rebalancing to something like ``0.3`` is often
-        better than full equality — it gives the rare class weight without
+        better than full equality: it gives the rare class weight without
         flooding the training set with synthetic rows. A dict specifies target
         counts per class.
 
@@ -324,7 +324,7 @@ def resample_train(
     -----
     **Consider the alternatives first.** Most estimators accept
     ``class_weight='balanced'``, which achieves much the same effect by
-    reweighting the loss rather than fabricating rows — cheaper, and it does
+    reweighting the loss rather than fabricating rows: cheaper, and it does
     not invent data. Adjusting the decision threshold with
     :meth:`~buildml.session.Session.tune_threshold` is often better still,
     since it addresses the real problem, which is usually that the default
@@ -383,7 +383,7 @@ def resample_train(
     )
     test = frame_for_partition(dataset, split_plan, "test")
 
-    # Holdout fingerprints — must remain byte-identical after concat rebuild.
+    # Holdout fingerprints: must remain byte-identical after concat rebuild.
     valid_fingerprint = None if valid is None else valid.reset_index(drop=True).copy()
     test_fingerprint = test.reset_index(drop=True).copy()
 
@@ -496,10 +496,10 @@ def resample_train(
     notes.append(strategy.when_to_use)
     if strategy.family == "over" or strategy.family == "synthetic":
         notes.append(
-            "Train grew via oversampling/synthesis — evaluate on untouched validation/test only."
+            "Train grew via oversampling/synthesis: evaluate on untouched validation/test only."
         )
     else:
-        notes.append("Train shrank via undersampling — monitor majority-class recall on holdout.")
+        notes.append("Train shrank via undersampling: monitor majority-class recall on holdout.")
 
     # Balance ratio tip
     before_ratio = _imbalance_ratio(before_counts)

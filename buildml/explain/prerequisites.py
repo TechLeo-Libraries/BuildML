@@ -4,11 +4,11 @@
 One prerequisite key answers three questions, and every consumer needs a
 different one:
 
-* :func:`probe` — is it satisfied right now, and what should the expert message
+* :func:`probe`: is it satisfied right now, and what should the expert message
   say? Used by the workflow resolver.
-* ``PROVIDERS`` — which operations establish it? Used to build prerequisite
+* ``PROVIDERS``: which operations establish it? Used to build prerequisite
   chains and remedies.
-* ``plain_prerequisite`` — how do you say it to someone who has never used
+* ``plain_prerequisite``: how do you say it to someone who has never used
   BuildML? Used by the beginner primer.
 
 Keeping all three in one table is what stops them drifting apart, which is how
@@ -620,7 +620,7 @@ def providers_for(key: str) -> tuple[str, ...]:
     -------
     tuple of str
         Operation names, most direct first. Empty when the condition is not
-        established by a BuildML call — an optional extra, for instance, which
+        established by a BuildML call: an optional extra, for instance, which
         is satisfied by installing a package.
     """
     return PROVIDERS.get(key, ())

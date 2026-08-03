@@ -23,6 +23,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs margin-sampling with sklearn LogisticRegression on the train pool only (`results/comparison.json`).
+Filled: `baseline_industry.py` runs margin-sampling with sklearn LogisticRegression on the train pool only (`results/comparison.json`).
 ## Limitations
 Simulated oracle labels are for the proof only.

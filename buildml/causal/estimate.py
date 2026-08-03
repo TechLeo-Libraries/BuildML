@@ -137,7 +137,7 @@ def estimate_causal(
     the estimator on holdout rows is a sample-splitting / evaluation choice,
     not a substitute for declaring assumptions. Bootstrap (when requested)
     resamples the **evaluation partition rows** while keeping fitted train
-    nuisances fixed — a cheaper influence-function-style uncertainty band,
+    nuisances fixed: a cheaper influence-function-style uncertainty band,
     distinct from the full retrain bootstrap used in ``fit_causal``.
 
     Parameters
@@ -208,7 +208,7 @@ def estimate_causal(
         extras = {}
         warnings.append(
             "DoWhy backend reports train-identified ATE; partition re-estimation "
-            "is not performed — use native/econml for holdout ATE scoring."
+            "is not performed: use native/econml for holdout ATE scoring."
         )
     else:
         ate, extras = estimate_ate_from_models(
@@ -250,11 +250,11 @@ def estimate_causal(
         )
     if extras.get("propensity_min") is not None and extras["propensity_min"] <= plan.clip_propensity[0] + 1e-12:
         warnings.append(
-            "Some propensity scores hit the clip floor — check positivity / overlap."
+            "Some propensity scores hit the clip floor: check positivity / overlap."
         )
     if extras.get("propensity_max") is not None and extras["propensity_max"] >= plan.clip_propensity[1] - 1e-12:
         warnings.append(
-            "Some propensity scores hit the clip ceiling — check positivity / overlap."
+            "Some propensity scores hit the clip ceiling: check positivity / overlap."
         )
 
     return CausalEstimateResult(

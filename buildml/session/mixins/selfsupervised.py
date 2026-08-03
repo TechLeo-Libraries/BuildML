@@ -47,7 +47,7 @@ class SelfsupervisedSessionMixin:
     ) -> SelfSupervisedFitResult:
         """Fit a self-supervised pretext encoder on the train partition only.
 
-        Session facade over :func:`buildml.session.selfsupervised_ops.fit_ssl_pretext_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.selfsupervised_ops.fit_ssl_pretext_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -93,7 +93,7 @@ class SelfsupervisedSessionMixin:
     ) -> SelfSupervisedTransformResult:
         """Export SSL representations with the train-fitted pretext encoder.
 
-        Session facade over :func:`buildml.session.selfsupervised_ops.transform_ssl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.selfsupervised_ops.transform_ssl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -120,7 +120,7 @@ class SelfsupervisedSessionMixin:
     ) -> SSLHeadFitResult:
         """Fit a supervised head on frozen SSL embeddings using labeled train rows.
 
-        Session facade over :func:`buildml.session.selfsupervised_ops.finetune_ssl_head_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.selfsupervised_ops.finetune_ssl_head_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -147,7 +147,7 @@ class SelfsupervisedSessionMixin:
     ) -> SelfSupervisedEvalResult:
         """Evaluate frozen SSL pretext encoder and head on a labeled partition.
 
-        Session facade over :func:`buildml.session.selfsupervised_ops.evaluate_ssl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.selfsupervised_ops.evaluate_ssl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -237,7 +237,7 @@ class SelfsupervisedSessionMixin:
     def save_ssl_bundle(self, path: str | Path) -> Path:
         """Persist the active SSL plan as ``buildml.ssl_bundle.v2``.
 
-        Session facade over :func:`buildml.session.selfsupervised_ops.save_ssl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.selfsupervised_ops.save_ssl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -254,7 +254,7 @@ class SelfsupervisedSessionMixin:
     def load_ssl_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a self-supervised bundle into this Session.
 
-        Session facade over :func:`buildml.session.selfsupervised_ops.load_ssl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.selfsupervised_ops.load_ssl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -274,7 +274,7 @@ class SelfsupervisedSessionMixin:
         Report which self-supervised learning backends are available on this machine.
 
         Call before contrastive or masked-model fit methods to confirm torch and
-        industry SSL extras. Read-only — no Session state is changed.
+        industry SSL extras. Read-only: no Session state is changed.
 
         Returns
         -------

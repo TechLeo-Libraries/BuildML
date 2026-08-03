@@ -12,7 +12,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
         _note(
             key="unsupervised-train-fit-holdout-assign",
             title="Unsupervised train-fit / holdout-assign",
-            summary="Fit cluster geometry on train only; assign holdout rows with a frozen plan — never refit on evaluation partitions.",
+            summary="Fit cluster geometry on train only; assign holdout rows with a frozen plan: never refit on evaluation partitions.",
             definition=(
                 "Train-fit / holdout-assign is the leakage-safe unsupervised contract: "
                 "estimate cluster structure on the training partition, freeze the plan "
@@ -61,7 +61,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
         _note(
             key="cluster-validity-not-truth",
             title="Cluster validity is not ground truth",
-            summary="Silhouette and related scores measure geometric cohesion/separation — not a verified taxonomy or business truth.",
+            summary="Silhouette and related scores measure geometric cohesion/separation: not a verified taxonomy or business truth.",
             definition=(
                 "Internal cluster validity indices quantify how compact and separated clusters "
                 "are under a distance/geometry assumption. They do not certify that clusters "
@@ -162,7 +162,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "K-means draws H circles and asks everyone to join the nearest center. "
-                "DBSCAN walks neighborhoods — sparse points stay unclustered instead of being "
+                "DBSCAN walks neighborhoods: sparse points stay unclustered instead of being "
                 "forced into a group."
             ),
             formal_idea=(
@@ -172,7 +172,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Wrong family yields nonsense segments and unstable assign on holdout.",
-                "Catalog lists both — pick by geometry, not by default."
+                "Catalog lists both: pick by geometry, not by default."
             ),
             how_buildml_uses=(
                 "fit_clusters(method='kmeans'|'gmm'|'dbscan'|'hdbscan'|...).",
@@ -202,7 +202,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
         _note(
             key="unsupervised-bundle-boundary",
             title="Unsupervised bundle boundary",
-            summary="Cluster plans persist as buildml.unsupervised_bundle.v2 — complementary to Session checkpoints and Torch/RAG bundles.",
+            summary="Cluster plans persist as buildml.unsupervised_bundle.v2: complementary to Session checkpoints and Torch/RAG bundles.",
             definition=(
                 "The unsupervised bundle boundary is the contract that a train-fitted ClusterPlan "
                 "(estimator, feature columns, assign strategy, disclosures) is stored under "

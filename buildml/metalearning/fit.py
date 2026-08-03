@@ -75,14 +75,14 @@ def fit_metalearning(
     sklearn (default):
         ``prototypical`` nearest-centroid and ``warm_start`` pooled sklearn adapt.
     torch (``buildml[torch]``):
-        ``prototypical_torch`` — MLP encoder + episodic prototype loss.
+        ``prototypical_torch``: MLP encoder + episodic prototype loss.
     industry (``buildml[metalearning-industry,torch]``):
-        ``maml`` / ``reptile`` — first-order tabular task adaptation via learn2learn
+        ``maml`` / ``reptile``: first-order tabular task adaptation via learn2learn
         when installed.
 
     Honesty
     -------
-    Practical tabular few-shot / episodic protocols — not foundation-model
+    Practical tabular few-shot / episodic protocols: not foundation-model
     meta-learning, not MAML-at-scale, not EconML-style causal meta.
     Validation/test partitions are never used for meta-training.
 
@@ -342,7 +342,7 @@ def fit_metalearning(
             "Task identity comes from a task/group column; that column is "
             "excluded from features.",
             "Honesty: practical tabular few-shot / episodic Session protocol "
-            "— not foundation-model meta-learning or MAML-at-scale.",
+            ": not foundation-model meta-learning or MAML-at-scale.",
             f"backend={resolved_backend}, method={method_key}, "
             f"n_meta_train_tasks={len(meta_train_ids)}, "
             f"n_way={resolved_n_way}, k_shot={k_shot}, n_episodes={n_episodes}, "

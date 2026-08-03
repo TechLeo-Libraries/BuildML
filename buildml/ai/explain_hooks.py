@@ -1,7 +1,7 @@
 """Condense AI operator results for history and teaching surfaces.
 
 Session history, walkthroughs, and the Teaching Studio need short, JSON-safe
-summaries — not whole result objects. An advisory answer can run to paragraphs
+summaries: not whole result objects. An advisory answer can run to paragraphs
 and a plan to a dozen steps; neither belongs verbatim in a history entry.
 
 The summarisers here take counts and previews instead: how much evidence was
@@ -9,7 +9,7 @@ cited, how many steps a plan had, whether a tool actually executed. Enough to
 see the shape of what happened, small enough to store on every operation.
 
 :func:`ai_status` reports the state of the AI domain for walkthroughs, and is
-deliberately conservative in what it claims — that a provider is configured, not
+deliberately conservative in what it claims: that a provider is configured, not
 that advice is reliable; that confirmation is required, not that the system is
 safe.
 
@@ -78,7 +78,7 @@ def advisor_result_summary(result: Any) -> dict[str, Any]:
 def executor_result_summary(result: Any) -> dict[str, Any]:
     """Summarise a tool execution for a history entry.
 
-    Records what was attempted and how it ended, without the returned object —
+    Records what was attempted and how it ended, without the returned object :
     which may be a fitted model or a frame and has no place in history.
 
     Parameters
@@ -121,8 +121,8 @@ def executor_result_summary(result: Any) -> dict[str, Any]:
 def plan_result_summary(result: Any) -> dict[str, Any]:
     """Summarise a generated plan for a history entry.
 
-    Keeps the goal and the first few operation names — enough to recognise the
-    plan later — and reduces the reasoning to counts.
+    Keeps the goal and the first few operation names: enough to recognise the
+    plan later: and reduces the reasoning to counts.
 
     Parameters
     ----------
@@ -179,7 +179,7 @@ def ai_status(
     Builds the walkthrough view: whether a provider is configured, what egress
     level applies, how much transcript exists, and what the last advisory and
     execution did. The disclosures are written to be accurate rather than
-    reassuring — that confirmation is required, and that the advice needs
+    reassuring: that confirmation is required, and that the advice needs
     verifying.
 
     Parameters

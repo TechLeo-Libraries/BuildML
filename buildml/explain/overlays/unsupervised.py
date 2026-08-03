@@ -59,7 +59,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         alternatives=(
             "Use Session.reduce_dimensions alone when you only need PCA components.",
-            "EDA multivariate/IsolationForest screens remain descriptive — not this fit API.",
+            "EDA multivariate/IsolationForest screens remain descriptive: not this fit API.",
         ),
         rationale=(
             "Use when the goal is structure discovery or segmentation with leakage-safe holdout assign.",

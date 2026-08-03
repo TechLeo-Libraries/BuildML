@@ -7,8 +7,8 @@ independent directions than their count suggests. Reduction finds those
 directions and rewrites each row in terms of them.
 
 The payoff is fewer columns for the model to overfit against, no
-multicollinearity to destabilise a linear model's coefficients, and — at two or
-three components — a plot you can actually look at. The price is
+multicollinearity to destabilise a linear model's coefficients, and: at two or
+three components: a plot you can actually look at. The price is
 interpretability: a component is a weighted blend of your original columns, so
 "component 1 increased" is not a sentence anyone outside the analysis can act
 on.
@@ -30,7 +30,7 @@ new point. Holdout rows here are placed at their nearest training neighbour's
 position, which is an approximation, not a transform. Use t-SNE to look at your
 data, not to feed a model.
 
-For all three, scale first — reduction operates on variance, and an unscaled
+For all three, scale first: reduction operates on variance, and an unscaled
 column with large units will dominate the first component purely through its
 units.
 """
@@ -99,7 +99,7 @@ class ReducePlan:
         The naming stem for the output columns.
     disclosures:
         Method-specific caveats recorded at fit time and surfaced in the
-        result — most importantly the warning that t-SNE holdout positions are
+        result: most importantly the warning that t-SNE holdout positions are
         approximated by nearest neighbour rather than computed.
     train_embedding_:
         For t-SNE only, the training-row coordinates. This is what holdout
@@ -122,7 +122,7 @@ class ReducePlan:
         """Return the plan's settings and variance accounting as JSON-safe values.
 
         The fitted reducer and the stored t-SNE embedding are omitted, since
-        neither serialises to JSON — save a pipeline to round-trip those.
+        neither serialises to JSON: save a pipeline to round-trip those.
 
         Returns
         -------
@@ -166,7 +166,7 @@ def fit_reducer(
 ) -> ReducePlan:
     """Learn a compression of the numeric columns from the training rows.
 
-    Nothing is transformed here — pass the plan to :func:`transform_reducer` to
+    Nothing is transformed here: pass the plan to :func:`transform_reducer` to
     apply it.
 
     Parameters
@@ -179,7 +179,7 @@ def fit_reducer(
         subsequent score is compromised.
     columns:
         Which numeric columns to compress. Defaults to the numeric ``feature``
-        columns. Naming a subset is common — you might reduce a block of
+        columns. Naming a subset is common: you might reduce a block of
         correlated sensor readings while leaving your interpretable business
         features intact.
     method:
@@ -190,7 +190,7 @@ def fit_reducer(
         How many dimensions to keep. An integer is a literal count. A float
         between 0 and 1 asks PCA to keep however many components are needed to
         retain that share of variance, which is usually the better way to
-        express the intent — ``0.95`` says "lose no more than 5% of the
+        express the intent: ``0.95`` says "lose no more than 5% of the
         variation" and lets the data decide the count. ``None`` picks a
         sensible default: full rank for PCA, two dimensions for UMAP and
         t-SNE.
@@ -332,7 +332,7 @@ def fit_reducer(
             disclosures=tuple(disclosures),
         )
 
-    # t-SNE — transductive on train; holdout via nearest-neighbor embedding transfer
+    # t-SNE: transductive on train; holdout via nearest-neighbor embedding transfer
     n_out = _resolve_n_components_int(n_components, max_components, default=2)
     perplexity = min(float(tsne_perplexity), max(5.0, (n_samples - 1) / 3.0))
     tsne = TSNE(
@@ -350,7 +350,7 @@ def fit_reducer(
         [
             "t-SNE is transductive: embedding is computed on train only.",
             "Holdout/full-frame transform uses nearest train neighbor embedding "
-            "(disclosed approximation — not a native t-SNE out-of-sample map).",
+            "(disclosed approximation: not a native t-SNE out-of-sample map).",
         ]
     )
     return ReducePlan(

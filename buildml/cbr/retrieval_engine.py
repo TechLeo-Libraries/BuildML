@@ -9,7 +9,7 @@ backend searches an approximate index rather than scanning.
 Two invariants hold across all of them. A query is always transformed the same
 way the cases were, since neighbours in mismatched spaces are meaningless. And
 where an approximate index is unavailable, the same search matrix is scanned
-exactly — the result is identical, just slower, so an unavailable index never
+exactly: the result is identical, just slower, so an unavailable index never
 changes the answer.
 
 See Also
@@ -43,7 +43,7 @@ def retrieve_neighbor_batches(
     """Find each query's nearest cases, using the plan's backend.
 
     Transforms the queries into the space the case base was indexed in, then
-    searches — through the approximate index when one exists, by exact scan
+    searches: through the approximate index when one exists, by exact scan
     otherwise.
 
     Parameters
@@ -64,7 +64,7 @@ def retrieve_neighbor_batches(
     Returns
     -------
     tuple
-        ``(orders, distances)`` — per query, the neighbour indices nearest first
+        ``(orders, distances)``: per query, the neighbour indices nearest first
         and their distances.
 
     Raises

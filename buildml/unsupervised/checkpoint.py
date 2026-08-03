@@ -39,7 +39,7 @@ def save_unsupervised_bundle(
 ) -> Path:
     """Write an unsupervised bundle directory (``buildml.unsupervised_bundle.v2``).
 
-Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints: reload workflow via checkpoint_load separately.
 
 Parameters
 ----------
@@ -88,7 +88,7 @@ ValidationError
 def load_unsupervised_bundle(path: str | Path, *, trusted: bool = False) -> ClusterPlan:
     """Load a unsupervised bundle into a :class:`ClusterPlan`.
 
-    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints: reload workflow via checkpoint_load separately.
 
     Parameters
     ----------

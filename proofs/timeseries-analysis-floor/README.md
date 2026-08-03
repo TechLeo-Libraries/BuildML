@@ -2,7 +2,7 @@
 
 This proof documents the **analysis-only** floor for `buildml.timeseries`
 (decompose, diagnostics, changepoints). It is intentionally thin: the domain
-does not ship a fitted-plan checkpoint bundle — forecasting persistence lives
+does not ship a fitted-plan checkpoint bundle: forecasting persistence lives
 under `buildml.forecasting`.
 
 ## Floor checklist

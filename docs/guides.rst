@@ -24,6 +24,7 @@ guides carry use cases, many examples, failure modes, and cross-links.
    quickstart-ensemble
    quickstart-automl
    quickstart-forecasting
+   quickstart-timeseries-analysis
    quickstart-anomaly
    quickstart-semisupervised
    quickstart-selfsupervised
@@ -64,6 +65,7 @@ guides carry use cases, many examples, failure modes, and cross-links.
    ensemble-deep
    automl-deep
    forecasting-deep
+   timeseries-analysis-deep
    anomaly-deep
    semisupervised-deep
    selfsupervised-deep

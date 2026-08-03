@@ -1,7 +1,7 @@
 """Describe each column on its own, before any relationships are considered.
 
 Univariate analysis is the first pass: one column at a time, no pairs, no
-target. It answers the questions you would ask about a single variable — where
+target. It answers the questions you would ask about a single variable: where
 is it centred, how spread out, how skewed, how many zeros, how many distinct
 values.
 
@@ -50,16 +50,16 @@ def analyze_univariate(frame: pd.DataFrame) -> dict[str, Any]:
     Returns
     -------
     dict
-        ``per_column`` — one entry per column, tagged ``kind`` as ``'numeric'``
-        or ``'categorical'``. ``numeric_describe`` — the pandas summary with
-        5th and 95th percentiles. ``categorical_uniques`` — distinct counts.
+        ``per_column``: one entry per column, tagged ``kind`` as ``'numeric'``
+        or ``'categorical'``. ``numeric_describe``: the pandas summary with
+        5th and 95th percentiles. ``categorical_uniques``: distinct counts.
 
     Notes
     -----
     **The normality screen is a screen, not a verdict.** Shapiro-Wilk is used
     under 500 values and D'Agostino-Pearson above, both on a sample capped at
     5,000 for speed. With a large sample, any real data will be flagged
-    non-normal — the test detects deviations far too small to matter. Read
+    non-normal: the test detects deviations far too small to matter. Read
     ``appears_non_normal`` alongside the skew and the histogram, not on its own.
     Each entry carries ``normality_assumptions`` spelling this out.
 
@@ -70,7 +70,7 @@ def analyze_univariate(frame: pd.DataFrame) -> dict[str, Any]:
     **``zeros`` and ``negatives`` count the full column**, including rows
     excluded from the other statistics. They are separated because a zero and a
     missing value often mean the same thing in practice and are stored
-    differently — a "zeros" count near the row count usually means a column
+    differently: a "zeros" count near the row count usually means a column
     where absence was encoded as 0.
 
     **The coefficient of variation is ``None`` when the mean is zero**, since

@@ -6,7 +6,7 @@ one language, a stopword list that only cleans part of it, and a model whose
 accuracy varies by language in a way nothing in the metrics reveals.
 
 The built-in detector works in two stages. If the text is in a non-Latin script
-— Cyrillic, Greek, Arabic, CJK — the Unicode block share settles it almost
+: Cyrillic, Greek, Arabic, CJK: the Unicode block share settles it almost
 immediately, because scripts do not overlap. Latin-script languages need more
 care, so they are scored on function words: the little grammatical words that
 appear constantly and differ between languages. Each marker is weighted by how
@@ -57,7 +57,7 @@ def script_shares(text: str) -> dict[str, float]:
     """Measure which writing systems a string uses.
 
     The first stage of detection, and by far the strongest signal available.
-    Scripts do not overlap the way vocabularies do — a document in Cyrillic
+    Scripts do not overlap the way vocabularies do: a document in Cyrillic
     characters is not going to turn out to be English, whereas a document
     containing "the" might still be Dutch.
 
@@ -79,7 +79,7 @@ def script_shares(text: str) -> dict[str, float]:
     dict. That is the signal to fall through to function-word scoring rather
     than an indication of failure.
 
-    A mixed result — say 60% Cyrillic and 40% Latin — usually means quoted
+    A mixed result: say 60% Cyrillic and 40% Latin: usually means quoted
     text, transliteration, or embedded product names, and is worth noticing
     before modelling.
     """
@@ -106,7 +106,7 @@ def detect_document_language(
 
     Tries the script check first, since a non-Latin script is close to
     conclusive. Failing that, scores function words across the built-in
-    languages, weighting each marker by how many languages share it — which is
+    languages, weighting each marker by how many languages share it: which is
     what stops the heavy overlap between Romance languages from swamping the
     signal.
 
@@ -124,14 +124,14 @@ def detect_document_language(
     tuple
         ``(code, confidence)``. The code is a language code or ``'und'``.
         Confidence is the winning script's share, or the winner's share of the
-        total marker score — in both cases a relative measure of how clearly
+        total marker score: in both cases a relative measure of how clearly
         this language beat the others, not a probability.
 
     Notes
     -----
     **Coverage is limited to the built-in languages** for Latin script. A
     document in a language with no marker list scores near zero everywhere and
-    comes back ``'und'`` — correctly reporting "I don't know" rather than
+    comes back ``'und'``: correctly reporting "I don't know" rather than
     guessing the nearest available answer.
 
     **``'und'`` with a non-zero confidence** means markers were found but none

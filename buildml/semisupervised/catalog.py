@@ -73,7 +73,7 @@ dict[str, Any]
                 "fit_semisupervised with partial labels on embedding columns",
             ],
             "finetune_ssl_head": (
-                "Labeled train rows only — use fit_semisupervised when unlabeled "
+                "Labeled train rows only: use fit_semisupervised when unlabeled "
                 "train rows should participate via propagation/pseudo-labels."
             ),
         },

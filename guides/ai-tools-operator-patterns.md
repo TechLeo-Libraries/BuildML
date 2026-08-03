@@ -86,7 +86,7 @@ print(registered_tool_names())
 | `load_pretrained_backbone` / `attach_backbone_head` | Curated backbones |
 | `pack_torchserve` / `prepare_tensorrt_export` / `emit_k8s_ddp_job` / `emit_k8s_serve_deployment` | Operator recipes / YAML templates |
 
-**Note:** `serve_bundle` is Session/CLI-primary (not an AI tool) — localhost
+**Note:** `serve_bundle` is Session/CLI-primary (not an AI tool): localhost
 serving stays out of the LLM allowlist by design. See
 [serve-deploy](serve-deploy.md).
 
@@ -95,7 +95,7 @@ When unsure, print `registered_tool_names()`.
 
 ---
 
-## Pattern 1 — Classical propose → confirm chain
+## Pattern 1: Classical propose → confirm chain
 
 ```python
 from buildml import Session
@@ -123,11 +123,11 @@ print(session.ai_execute("evaluate", {"partition": "test"}, confirm=False))
 ```
 
 If a tool’s parameter schema rejects an estimator shorthand, fall back to
-direct Session APIs for that step — never invent kwargs.
+direct Session APIs for that step: never invent kwargs.
 
 ---
 
-## Pattern 2 — RAG retrieve then grounded generate
+## Pattern 2: RAG retrieve then grounded generate
 
 ```python
 session = Session()
@@ -151,7 +151,7 @@ Keep `eval_only` documents out of index tools
 
 ---
 
-## Pattern 3 — Torch loaders → fit → evaluate
+## Pattern 3: Torch loaders → fit → evaluate
 
 ```python
 # After roles + split on a numeric frame:
@@ -161,12 +161,12 @@ session.ai_execute("fit_torch", {"epochs": 3, "device": "cpu"}, confirm=True)
 session.ai_execute("evaluate_torch", {"partition": "validation"}, confirm=False)
 ```
 
-Nested search tools exist (`search_torch`, `nested_cv_torch`) — still do not
+Nested search tools exist (`search_torch`, `nested_cv_torch`): still do not
 tune on Session test.
 
 ---
 
-## Pattern 4 — Autonomy with a tight allowlist
+## Pattern 4: Autonomy with a tight allowlist
 
 ```python
 session.ai_run_autonomous(
@@ -183,7 +183,7 @@ increase residual risk even with caps.
 
 ---
 
-## Pattern 5 — Teaching-first before writes
+## Pattern 5: Teaching-first before writes
 
 ```python
 session.ai_execute("learn_concept", {"topic": "missing-data"}, confirm=False)
@@ -206,8 +206,8 @@ operator can teach freely before proposing a write.
 
 | Issue | Guidance |
 | --- | --- |
-| Hallucinated tool name | Rejected — print registry |
-| Hallucinated params | Schema validation error — fix or use Session API |
+| Hallucinated tool name | Rejected: print registry |
+| Hallucinated params | Schema validation error: fix or use Session API |
 | Auto-confirm destructive | Not allowed |
 | Autonomy + FULL_SAMPLE egress | Blocked by safety caps |
 | Serving via AI tool | Use CLI/`serve_bundle` instead |

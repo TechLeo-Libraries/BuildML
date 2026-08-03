@@ -65,6 +65,7 @@ class WorkflowWalkthroughReport:
     kg_status: dict[str, Any] = field(default_factory=dict)
     decision_status: dict[str, Any] = field(default_factory=dict)
     synthetic_status: dict[str, Any] = field(default_factory=dict)
+    fairness_status: dict[str, Any] = field(default_factory=dict)
     capability_introspection_status: dict[str, Any] = field(default_factory=dict)
     audit_summary: dict[str, Any] = field(default_factory=dict)
     html_path: str | None = None
@@ -120,6 +121,7 @@ class WorkflowWalkthroughReport:
             "kg_status": dict(self.kg_status),
             "decision_status": dict(self.decision_status),
             "synthetic_status": dict(self.synthetic_status),
+            "fairness_status": dict(self.fairness_status),
             "capability_introspection_status": dict(self.capability_introspection_status),
             "audit_summary": dict(self.audit_summary),
             "html_path": self.html_path,
@@ -147,7 +149,45 @@ class WorkflowWalkthroughReport:
         return destination
 
 
-def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
+def _idle_domain_status(domain: str) -> dict[str, Any]:
+    """Status stub for domains with no Session artifacts (lazy walkthrough)."""
+    return {
+        "status": "idle",
+        "probed": False,
+        "domain": domain,
+        "disclosures": (
+            "Capability matrix not probed: call "
+            f"Session.{domain}_capability_matrix() or "
+            "walkthrough(capability_probe='eager') to force a full probe.",
+        ),
+    }
+
+
+def _session_attr_active(session: Any, *attr_names: str) -> bool:
+    for name in attr_names:
+        if getattr(session, name, None) is not None:
+            return True
+    return False
+
+
+def _resolve_domain_status(
+    session: Any,
+    *,
+    domain: str,
+    capability_probe: str,
+    active: bool,
+    loader: Any,
+) -> dict[str, Any]:
+    if capability_probe == "eager" or active:
+        return loader(session)
+    return _idle_domain_status(domain)
+
+
+def build_walkthrough(
+    session: Any,
+    *,
+    capability_probe: str = "lazy",
+) -> WorkflowWalkthroughReport:
     """Resolve statuses and join them to the session's versioned history.
 
     Combines live workflow resolution, normalized history, domain status panels,
@@ -158,6 +198,12 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
     session:
         Live Session whose workflow, history, and domain artifacts are inspected
         read-only.
+    capability_probe:
+        ``lazy`` (default) only loads industry/capability probes for domains that
+        already have Session artifacts, so walkthrough stays fast on Windows
+        installs with broken torch-heavy wheels. ``eager`` probes every domain
+        (cached process-wide after the first load). ``skip`` never attaches
+        capability matrices.
 
     Returns
     -------
@@ -165,6 +211,10 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
         Serializable walkthrough with timeline, risks, and next actions.
     """
     from buildml.session.audit import summarize_history
+
+    probe = str(capability_probe or "lazy").lower().strip()
+    if probe not in {"lazy", "eager", "skip"}:
+        probe = "lazy"
 
     workflow = tuple(session.workflow())
     history = list(session.history)
@@ -187,6 +237,18 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
         for step in workflow
         if step.status.value == "available"
     ]
+
+    def _status(domain: str, active: bool, loader: Any) -> dict[str, Any]:
+        if probe == "skip":
+            return _idle_domain_status(domain)
+        return _resolve_domain_status(
+            session,
+            domain=domain,
+            capability_probe=probe,
+            active=active,
+            loader=loader,
+        )
+
     return WorkflowWalkthroughReport(
         workflow=workflow,
         timeline=timeline,
@@ -206,37 +268,158 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
             last_cv=getattr(session, "last_cv", None),
             last_nested_cv=getattr(session, "last_nested_cv", None),
         ),
-        torch_training_status=torch_training_status_for_walkthrough(session),
-        rag_status=rag_status_for_walkthrough(session),
-        unsupervised_status=unsupervised_status_for_walkthrough(session),
-        ensemble_status=ensemble_status_for_walkthrough(session),
-        automl_status=automl_status_for_walkthrough(session),
-        forecasting_status=forecasting_status_for_walkthrough(session),
-        timeseries_status=timeseries_status_for_walkthrough(session),
-        anomaly_status=anomaly_status_for_walkthrough(session),
-        semisupervised_status=semisupervised_status_for_walkthrough(session),
-        selfsupervised_status=selfsupervised_status_for_walkthrough(session),
-        activelearning_status=activelearning_status_for_walkthrough(session),
-        online_status=online_status_for_walkthrough(session),
-        multitask_status=multitask_status_for_walkthrough(session),
-        metalearning_status=metalearning_status_for_walkthrough(session),
-        federated_status=federated_status_for_walkthrough(session),
-        probabilistic_status=probabilistic_status_for_walkthrough(session),
-        causal_status=causal_status_for_walkthrough(session),
-        graph_status=graph_status_for_walkthrough(session),
-        symbolic_status=symbolic_status_for_walkthrough(session),
-        cbr_status=cbr_status_for_walkthrough(session),
-        nlp_status=nlp_status_for_walkthrough(session),
-        imitation_status=imitation_status_for_walkthrough(session),
-        rl_status=rl_status_for_walkthrough(session),
-        tda_status=tda_status_for_walkthrough(session),
-        recommender_status=recommender_status_for_walkthrough(session),
-        ranking_status=ranking_status_for_walkthrough(session),
-        kg_status=kg_status_for_walkthrough(session),
-        decision_status=decision_status_for_walkthrough(session),
-        synthetic_status=synthetic_status_for_walkthrough(session),
+        torch_training_status=_status(
+            "dl",
+            _session_attr_active(session, "dl_train_result", "_dl_train_result"),
+            torch_training_status_for_walkthrough,
+        ),
+        rag_status=_status(
+            "rag",
+            _session_attr_active(session, "_rag_index", "_rag_corpus", "rag_eval_result"),
+            rag_status_for_walkthrough,
+        ),
+        unsupervised_status=_status(
+            "unsupervised",
+            _session_attr_active(session, "_cluster_plan", "cluster_plan"),
+            unsupervised_status_for_walkthrough,
+        ),
+        ensemble_status=_status(
+            "ensemble",
+            _session_attr_active(session, "_ensemble_plan", "ensemble_plan"),
+            ensemble_status_for_walkthrough,
+        ),
+        automl_status=_status(
+            "automl",
+            _session_attr_active(session, "_automl_plan", "automl_plan"),
+            automl_status_for_walkthrough,
+        ),
+        forecasting_status=_status(
+            "forecast",
+            _session_attr_active(session, "_forecast_plan", "forecast_plan"),
+            forecasting_status_for_walkthrough,
+        ),
+        timeseries_status=_status(
+            "timeseries",
+            _session_attr_active(session, "_timeseries_report", "timeseries_report"),
+            timeseries_status_for_walkthrough,
+        ),
+        anomaly_status=_status(
+            "anomaly",
+            _session_attr_active(session, "_anomaly_plan", "anomaly_plan"),
+            anomaly_status_for_walkthrough,
+        ),
+        semisupervised_status=_status(
+            "semisupervised",
+            _session_attr_active(session, "_semisupervised_plan"),
+            semisupervised_status_for_walkthrough,
+        ),
+        selfsupervised_status=_status(
+            "ssl",
+            _session_attr_active(session, "_ssl_plan", "_selfsupervised_plan"),
+            selfsupervised_status_for_walkthrough,
+        ),
+        activelearning_status=_status(
+            "activelearning",
+            _session_attr_active(session, "_activelearning_plan"),
+            activelearning_status_for_walkthrough,
+        ),
+        online_status=_status(
+            "online",
+            _session_attr_active(session, "_online_plan"),
+            online_status_for_walkthrough,
+        ),
+        multitask_status=_status(
+            "multitask",
+            _session_attr_active(session, "_multitask_plan"),
+            multitask_status_for_walkthrough,
+        ),
+        metalearning_status=_status(
+            "metalearning",
+            _session_attr_active(session, "_metalearning_plan"),
+            metalearning_status_for_walkthrough,
+        ),
+        federated_status=_status(
+            "federated",
+            _session_attr_active(session, "_federated_plan"),
+            federated_status_for_walkthrough,
+        ),
+        probabilistic_status=_status(
+            "probabilistic",
+            _session_attr_active(session, "_probabilistic_plan"),
+            probabilistic_status_for_walkthrough,
+        ),
+        causal_status=_status(
+            "causal",
+            _session_attr_active(session, "_causal_plan", "causal_assumptions"),
+            causal_status_for_walkthrough,
+        ),
+        graph_status=_status(
+            "graph",
+            _session_attr_active(session, "_graph_plan", "_graph"),
+            graph_status_for_walkthrough,
+        ),
+        symbolic_status=_status(
+            "symbolic",
+            _session_attr_active(session, "_symbolic_plan", "symbolic_plan"),
+            symbolic_status_for_walkthrough,
+        ),
+        cbr_status=_status(
+            "cbr",
+            _session_attr_active(session, "_cbr_plan"),
+            cbr_status_for_walkthrough,
+        ),
+        nlp_status=_status(
+            "nlp",
+            _session_attr_active(session, "_nlp_text_plan", "_nlp_topic_plan"),
+            nlp_status_for_walkthrough,
+        ),
+        imitation_status=_status(
+            "rl",
+            _session_attr_active(session, "_imitation_plan"),
+            imitation_status_for_walkthrough,
+        ),
+        rl_status=_status(
+            "rl",
+            _session_attr_active(session, "_rl_plan"),
+            rl_status_for_walkthrough,
+        ),
+        tda_status=_status(
+            "tda",
+            _session_attr_active(session, "_tda_plan"),
+            tda_status_for_walkthrough,
+        ),
+        recommender_status=_status(
+            "recommender",
+            _session_attr_active(session, "_recommender_plan"),
+            recommender_status_for_walkthrough,
+        ),
+        ranking_status=_status(
+            "ranking",
+            _session_attr_active(session, "_ranker_plan", "_ranking_plan"),
+            ranking_status_for_walkthrough,
+        ),
+        kg_status=_status(
+            "kg",
+            _session_attr_active(session, "_kg_plan"),
+            kg_status_for_walkthrough,
+        ),
+        decision_status=_status(
+            "decision",
+            _session_attr_active(session, "_decision_plan"),
+            decision_status_for_walkthrough,
+        ),
+        synthetic_status=_status(
+            "synthetic",
+            _session_attr_active(session, "_synthetic_plan"),
+            synthetic_status_for_walkthrough,
+        ),
+        fairness_status=_status(
+            "fairness",
+            _session_attr_active(session, "_fairness_report", "last_fairness"),
+            fairness_status_for_walkthrough,
+        ),
         capability_introspection_status=capability_introspection_status_for_walkthrough(
-            session
+            session, capability_probe=probe
         ),
         audit_summary={
             "n_operations": audit.n_operations,
@@ -246,6 +429,7 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
             "suggested_next_ops": list(audit.suggested_next_ops),
             "has_split": audit.has_split,
             "has_fit": audit.has_fit,
+            "capability_probe": probe,
         },
     )
 
@@ -891,7 +1075,18 @@ def synthetic_status_for_walkthrough(session: Any) -> dict[str, Any]:
     return synthetic_status_for_session(session)
 
 
-def capability_introspection_status_for_walkthrough(session: Any) -> dict[str, Any]:
+def fairness_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual fairness report disclosure for walkthrough."""
+    from buildml.fairness.explain_hooks import fairness_status_for_session
+
+    return fairness_status_for_session(session)
+
+
+def capability_introspection_status_for_walkthrough(
+    session: Any,
+    *,
+    capability_probe: str = "lazy",
+) -> dict[str, Any]:
     """Aggregate capability-matrix routing for walkthrough orientation.
 
     Delegates to the buildml.explain.capability_status.capability_introspection_status helper so walkthrough HTML can
@@ -901,6 +1096,8 @@ def capability_introspection_status_for_walkthrough(session: Any) -> dict[str, A
     ----------
     session:
         Live Session inspected for domain plans, results, and history cues.
+    capability_probe:
+        ``lazy`` / ``skip`` defer full matrix loads; ``eager`` probes all.
 
     Returns
     -------
@@ -910,7 +1107,7 @@ def capability_introspection_status_for_walkthrough(session: Any) -> dict[str, A
     """
     from buildml.explain.capability_status import capability_introspection_status
 
-    return capability_introspection_status(session)
+    return capability_introspection_status(session, capability_probe=capability_probe)
 
 
 def warm_start_studies_status(
@@ -997,7 +1194,7 @@ def warm_start_studies_status(
         "warm_start_studies=True was recorded for nested_cv_score.",
         "Policy: one Optuna study was shared across outer folds so later folds "
         "could reuse prior inner-CV trial history as priors.",
-        "What was shared: Optuna trial history / study state only — not outer-eval "
+        "What was shared: Optuna trial history / study state only: not outer-eval "
         "rows, Session test rows, or Session validation rows.",
         "Risk: shared priors couple outer folds; the outer mean±std is still the "
         "post-selection estimate, but fold independence of the inner search is reduced.",

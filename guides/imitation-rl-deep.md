@@ -1,4 +1,4 @@
-# Imitation + RL — deep guide
+# Imitation + RL: deep guide
 
 > **Install:** core BC/bandit need no extra. Gymnasium REINFORCE + tabular
 > Q-learning/SARSA: `pip install "buildml[rl]"`.
@@ -22,7 +22,7 @@ Backends default when installed (`backend=None`):
 
 | Surface | sklearn (core) | native (`buildml[rl]`) | industry (`buildml[rl-industry]`) |
 | --- | --- | --- | --- |
-| Imitation | BC estimators | — | `bc_mlp`, `gail_lite` |
+| Imitation | BC estimators |: | `bc_mlp`, `gail_lite` |
 | RL | contextual bandit | `gym_reinforce`, `tabular_q` | `gym_sb3` (PPO/DQN/A2C) |
 
 `list_rl_algorithms(backend="native", mode="tabular_q")` returns the tabular
@@ -83,7 +83,7 @@ These are **not** online A/B lifts.
 
 ---
 
-## Tabular TD control — Q-learning family (`buildml[rl]`)
+## Tabular TD control: Q-learning family (`buildml[rl]`)
 
 `backend="native"`, `mode="tabular_q"`. The foundational value-based methods:
 an explicit `Q[s, a]` table updated by bootstrapping, with no neural network.
@@ -122,7 +122,7 @@ records `n_states`, per-dimension `low`/`high`, and `bound_sources`. Tables
 above 500k states are refused with a pointer to function approximation.
 
 **Honesty.** `tabular_q` is an *online* env loop. Off-policy TD control is not
-the same thing as batch offline RL — CQL / IQL / Decision Transformer remain out
+the same thing as batch offline RL: CQL / IQL / Decision Transformer remain out
 of scope. `state_coverage` (fit) and `unseen_state_rate` (eval) disclose how
 much of the table was actually learned.
 
@@ -134,7 +134,7 @@ much of the table was actually learned.
 - Algorithms: `ppo`, `dqn`, `a2c`
 - DQN is `tabular_q` scaled up: the Q-table becomes a network, plus a replay
   buffer and a target network
-- Honest small-env sim (CartPole-class) — **not** MuJoCo, robotics, AV, multi-agent
+- Honest small-env sim (CartPole-class): **not** MuJoCo, robotics, AV, multi-agent
 - Ray RLlib intentionally omitted (prefer clean SB3 adapter)
 - **Offline RL** (CQL/IQL/batch RL) is out of scope and disclosed in the capability matrix
 

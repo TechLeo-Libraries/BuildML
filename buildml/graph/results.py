@@ -14,7 +14,7 @@ class GraphPlan:
 
     Persist via ``buildml.graph_bundle.v1``. Distinct from Session checkpoints.
     Honesty: node classification with classical NetworkX metrics + sklearn
-    and/or a small pure-Torch GCN and/or PyG conv layers — not Neo4j/KG.
+    and/or a small pure-Torch GCN and/or PyG conv layers: not Neo4j/KG.
     """
 
     method: str

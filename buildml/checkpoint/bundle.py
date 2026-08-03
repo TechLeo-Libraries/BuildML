@@ -3,21 +3,21 @@
 A checkpoint is a directory holding everything needed to resume: the data, the
 column roles, the split membership, the operation history, and any preprocessing
 plans fitted so far. It exists because analysis is rarely finished in one
-sitting, and because the split is the one thing that must not be regenerated —
+sitting, and because the split is the one thing that must not be regenerated :
 a fresh split reshuffles which rows are held out, and every score computed
 before and after becomes incomparable.
 
 What a checkpoint deliberately does *not* contain is a fitted estimator. That is
 the job of a pipeline bundle, and the distinction matters: a checkpoint is for
 resuming work, a pipeline bundle is for serving predictions. Save both when you
-need both — neither embeds the other.
+need both: neither embeds the other.
 
 The layout is a plain directory of Parquet and JSON, readable without BuildML.
 Engine-native query plans cannot be serialised, so a Polars or DuckDB table is
 snapshotted to Parquet and reattached on load.
 
 **Security:** optional ``plans.joblib`` is a pickle/joblib payload. Load
-checkpoints only from directories you created or fully trust — untrusted
+checkpoints only from directories you created or fully trust: untrusted
 ``plans.joblib`` can execute code on load. Prefer data-only restore or
 re-fitting preprocess plans when the provenance of a bundle is unclear.
 
@@ -105,7 +105,7 @@ class LoadedCheckpoint:
     history:
         The operation log, normalised to the current schema version.
     reattach:
-        The verdict — clean resume, degraded, fresh ingest, or blocked — with the
+        The verdict: clean resume, degraded, fresh ingest, or blocked: with the
         messages explaining it.
     meta, manifest:
         The saved metadata and integrity record, or ``None`` under
@@ -206,7 +206,7 @@ def save_checkpoint(
     Notes
     -----
     **No estimator is saved here.** Loading a checkpoint gives back data, roles,
-    splits, history, and plans — not a model. Use a pipeline bundle for that,
+    splits, history, and plans: not a model. Use a pipeline bundle for that,
     and save both when a run needs to be both resumable and deployable.
 
     **The split is what makes a resume honest.** Everything else could be
@@ -216,7 +216,7 @@ def save_checkpoint(
     ``frame.parquet`` stays the interchange source of truth and keeps older
     loaders working. When a Polars or DuckDB handle is attached, a sidecar
     snapshot is written so restore can reattach without rebuilding eagerly from
-    the exported Pandas frame. A LazyFrame's *plan* is not persisted — only the
+    the exported Pandas frame. A LazyFrame's *plan* is not persisted: only the
     Parquet bytes and a ``lazy_intent`` flag, so a restored lazy frame is a new
     scan over the snapshot rather than the original pipeline.
 
@@ -327,7 +327,7 @@ def load_checkpoint(
     """Restore a checkpoint, and say how much of it could safely be trusted.
 
     Reading the files back is the easy part. The question this answers is
-    whether the saved roles and split still apply — if the data on disk has
+    whether the saved roles and split still apply: if the data on disk has
     changed since the save, reusing the old partition membership would assign
     rows to partitions they were never in, and every score from before and after
     the resume would describe different experiments.
@@ -360,9 +360,9 @@ def load_checkpoint(
     Raises
     ------
     ValidationError
-        If no data file is found at the path, if reattach is blocked —
+        If no data file is found at the path, if reattach is blocked :
         meaning the current data is incompatible enough that resuming would be
-        misleading — or if ``plans.joblib`` is present and ``trusted`` is false.
+        misleading: or if ``plans.joblib`` is present and ``trusted`` is false.
 
     Notes
     -----
@@ -464,7 +464,7 @@ def load_checkpoint(
     if not data_only and plans_path.exists():
         from buildml.pipeline.bundle import unpack_plans_payload
 
-        # plans.joblib is pickle/joblib — only load trusted checkpoint trees.
+        # plans.joblib is pickle/joblib: only load trusted checkpoint trees.
         logger.warning(
             "Loading plans.joblib from %s via joblib (pickle). "
             "Only continue if you trust this checkpoint directory; "

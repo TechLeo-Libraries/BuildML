@@ -70,8 +70,8 @@ if len(OPERATION_CATALOG) != len(_RAW_OPERATIONS):
 def get_operation(name: str) -> OperationSpec:
     """Fetch the editorial contract for one public session operation.
 
-    The specification is what every explanation surface reads from — the
-    resolver, the beginner primer, the AI tool registry, and the docs build — so
+    The specification is what every explanation surface reads from: the
+    resolver, the beginner primer, the AI tool registry, and the docs build: so
     an unknown name is raised rather than defaulted. A silent miss would produce
     an explanation that describes nothing.
 
@@ -104,7 +104,7 @@ def list_operations() -> tuple[OperationSpec, ...]:
     """List every catalog entry in a stable order.
 
     Ordering is alphabetical rather than insertion-based so that generated
-    artifacts — the operation index, the docs tables, the drift reports — do not
+    artifacts: the operation index, the docs tables, the drift reports: do not
     churn when an overlay module is edited.
 
     Returns

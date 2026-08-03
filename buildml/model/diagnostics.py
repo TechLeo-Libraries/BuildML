@@ -6,7 +6,7 @@ data would help, which features are carrying the result, or which slice of your
 users it quietly fails. Each of those is a different question, and each has its
 own diagnostic here.
 
-:func:`calibration_report` asks whether predicted probabilities are honest —
+:func:`calibration_report` asks whether predicted probabilities are honest :
 whether among the cases the model calls 70% likely, roughly 70% actually happen.
 A model can rank perfectly and still be badly calibrated, which matters the
 moment a probability feeds a decision rather than a sort order.
@@ -26,7 +26,7 @@ using, by measuring how much performance drops when each is shuffled.
 
 :func:`segment_error_report` asks who the model fails. Aggregate metrics average
 over everyone, and an overall accuracy of 0.90 is compatible with 0.95 for most
-users and 0.55 for a subgroup — the kind of failure that only appears when you
+users and 0.55 for a subgroup: the kind of failure that only appears when you
 look for it.
 
 Every report returns findings and recommendations linked to the numbers behind
@@ -89,7 +89,7 @@ class DiagnosticReport:
         ``'learning_curve'``, ``'permutation_importance'``, or
         ``'segment_error'``.
     payload:
-        The computed values — curve points, per-threshold metrics, importance
+        The computed values: curve points, per-threshold metrics, importance
         scores, per-segment errors. The primary content.
     recommendations:
         Advice as plain strings, for display.
@@ -103,7 +103,7 @@ class DiagnosticReport:
         Structured advice, each naming the findings behind it and an operation
         to run.
     limitations:
-        What this report cannot support — always including the partition it
+        What this report cannot support: always including the partition it
         describes.
     methods:
         How the numbers were computed.
@@ -301,7 +301,7 @@ def calibration_report(
     different ``n_bins`` values, so hold it fixed when tracking calibration over
     time. Above roughly 0.1 is worth investigating.
 
-    **Assess on held-out data.** Calibration on training rows is meaningless —
+    **Assess on held-out data.** Calibration on training rows is meaningless :
     the model has seen the answers.
 
     **The multiclass path is per-class Brier only.** A single reliability
@@ -320,7 +320,7 @@ def calibration_report(
         raise ValidationError("Calibration report requires a classification model")
     if not hasattr(fit_result.estimator, "predict_proba"):
         raise ValidationError(
-            "Estimator does not support predict_proba — "
+            "Estimator does not support predict_proba: "
             "use a probabilistic classifier or CalibratedClassifierCV"
         )
     if split_plan is None:
@@ -366,12 +366,12 @@ def calibration_report(
         )
         if brier > 0.25:
             tips.append(
-                f"Brier score {brier:.3f} is high — probabilities are poorly "
+                f"Brier score {brier:.3f} is high: probabilities are poorly "
                 "calibrated/discriminative; consider better features or calibration."
             )
         elif ece > 0.1:
             tips.append(
-                f"ECE≈{ece:.3f} indicates material miscalibration — "
+                f"ECE≈{ece:.3f} indicates material miscalibration: "
                 "wrap with CalibratedClassifierCV on train folds."
             )
         else:
@@ -381,7 +381,7 @@ def calibration_report(
             )
         if abs(float(np.mean(prob_pos)) - float(y_true.mean())) > 0.08:
             tips.append(
-                "Mean predicted probability diverges from prevalence — "
+                "Mean predicted probability diverges from prevalence: "
                 "check class priors / sample weights."
             )
     else:
@@ -412,7 +412,7 @@ def calibration_report(
         )
         if worst:
             tips.append(
-                f"Highest per-class Brier: '{worst['class']}'={worst['brier_score']:.3f} — "
+                f"Highest per-class Brier: '{worst['class']}'={worst['brier_score']:.3f}: "
                 "consider class-specific calibration or rebalancing."
             )
         tips.append(
@@ -467,7 +467,7 @@ def threshold_report(
     When ``fp_cost`` and ``fn_cost`` are supplied the guesswork disappears: the
     threshold that minimises expected cost is computed directly. This is the
     right way to use the function whenever the costs can be estimated at all,
-    even roughly — a rough ratio beats an arbitrary 0.5.
+    even roughly: a rough ratio beats an arbitrary 0.5.
 
     Parameters
     ----------
@@ -497,7 +497,7 @@ def threshold_report(
     -------
     DiagnosticReport
         Per-threshold metrics, ROC and precision-recall samples, named operating
-        points (best F1, high recall, high precision), and — in cost mode — the
+        points (best F1, high recall, high precision), and: in cost mode: the
         minimum-expected-cost threshold with its total and mean cost.
 
     Raises
@@ -511,7 +511,7 @@ def threshold_report(
     -----
     **Only the ratio of the costs matters, not their units.** Setting them to 1
     and 10 gives the same threshold as 100 and 1000. That makes the input far
-    easier to supply than it first appears — you need the relative severity, not
+    easier to supply than it first appears: you need the relative severity, not
     a currency figure.
 
     **Peak F1 is the most tempting operating point and often the wrong one.** It
@@ -788,7 +788,7 @@ def learning_curve_report(
     model is too simple to capture the pattern, and more rows of the same data
     will change nothing. Try a more expressive model or better features.
 
-    A large persistent gap — training score high, validation score well below —
+    A large persistent gap: training score high, validation score well below :
     is **overfitting**: the model is memorising. Here more data genuinely helps,
     and so does regularisation or a simpler model.
 
@@ -890,17 +890,17 @@ def learning_curve_report(
     tips = []
     if gap > 0.1:
         tips.append(
-            "Large train/validation gap — likely overfitting; "
+            "Large train/validation gap: likely overfitting; "
             "add regularization or more data."
         )
     elif slope > 0.03:
         tips.append(
-            "Validation score still rising with more data — "
+            "Validation score still rising with more data: "
             "collecting additional labeled rows looks valuable."
         )
     else:
         tips.append(
-            "Learning-curve gap is moderate and gains are flattening — "
+            "Learning-curve gap is moderate and gains are flattening: "
             "prefer feature depth / model family changes over more of the same data."
         )
 
@@ -926,7 +926,7 @@ def learning_curve_report(
                 target_column=str(y.name) if y.name is not None else "target",
                 n_train_rows=int(len(x)),
             )
-            # Ensure estimator can be cloned/fit — learning curve uses the provided estimator.
+            # Ensure estimator can be cloned/fit: learning curve uses the provided estimator.
             fig, _tips = _plot_learning_curve(
                 dataset, split_plan, fit_shim, plt=plt, cv=n_splits
             )
@@ -975,7 +975,7 @@ def permutation_importance_report(
     fit_result:
         The fitted model to probe.
     partition:
-        Which partition to measure on. Use held-out data — importance measured
+        Which partition to measure on. Use held-out data: importance measured
         on training rows describes what the model memorised.
     n_repeats:
         Shuffles per feature. More gives a tighter estimate at proportional
@@ -1002,7 +1002,7 @@ def permutation_importance_report(
     -----
     **Correlated features share the blame and both look unimportant.** Shuffling
     one leaves the other carrying the same information, so the drop is small for
-    each — even when the pair is jointly essential. Two features you expected to
+    each: even when the pair is jointly essential. Two features you expected to
     matter both scoring near zero is a signal to check their correlation, not to
     drop them.
 
@@ -1016,7 +1016,7 @@ def permutation_importance_report(
     **Near-zero importance is a candidate for removal, not a verdict.** Check
     correlation first, then confirm by refitting without the feature.
 
-    **Negative importance means shuffling helped**, which is noise — the feature
+    **Negative importance means shuffling helped**, which is noise: the feature
     contributes nothing and the estimate moved the wrong way by chance.
 
     See Also
@@ -1069,7 +1069,7 @@ def permutation_importance_report(
         near_zero = [r["feature"] for r in rows if abs(r["importance_mean"]) < 1e-4]
         if near_zero:
             tips.append(
-                f"{len(near_zero)} feature(s) near-zero importance — "
+                f"{len(near_zero)} feature(s) near-zero importance: "
                 "candidates for pruning after correlation review: "
                 f"{near_zero[:8]}"
             )
@@ -1077,12 +1077,12 @@ def permutation_importance_report(
             abs(rows[1]["importance_mean"]), 1e-12
         ):
             tips.append(
-                "Importance is highly concentrated — audit target leakage / proxy IDs."
+                "Importance is highly concentrated: audit target leakage / proxy IDs."
             )
     else:
         tips.append("No features scored.")
     tips.append(
-        "Treat correlated features carefully — importance can split across proxies."
+        "Treat correlated features carefully: importance can split across proxies."
     )
 
     report = DiagnosticReport(
@@ -1135,7 +1135,7 @@ def segment_error_report(
 
     An aggregate metric averages over everyone, and averages hide exactly the
     failures that matter most. An overall accuracy of 0.90 is entirely
-    compatible with 0.95 for the bulk of your users and 0.55 for a subgroup —
+    compatible with 0.95 for the bulk of your users and 0.55 for a subgroup :
     and the aggregate will never show it, because the subgroup is small enough
     to be swamped.
 
@@ -1145,7 +1145,7 @@ def segment_error_report(
     model's good average rests on being excellent at the easy cases.
 
     Segments smaller than ``min_segment_n`` are kept separately rather than
-    ranked, because a 40% error rate over five rows is not a finding — it is two
+    ranked, because a 40% error rate over five rows is not a finding: it is two
     mistakes.
 
     Parameters
@@ -1187,7 +1187,7 @@ def segment_error_report(
     -----
     **Slice by columns the model did not see, too.** Segmenting on a protected
     attribute that was deliberately excluded from the features is the whole
-    point of a fairness check — a model can reproduce a disparity perfectly well
+    point of a fairness check: a model can reproduce a disparity perfectly well
     through proxies.
 
     **Small segments produce large apparent differences.** Check the row count

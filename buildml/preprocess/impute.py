@@ -1,6 +1,6 @@
 """Fill in missing values with a constant learned from the training rows.
 
-Most estimators cannot accept a missing value at all — scikit-learn will raise
+Most estimators cannot accept a missing value at all: scikit-learn will raise
 rather than guess. So before modelling you have to decide what a gap means and
 what to put there.
 
@@ -9,14 +9,14 @@ median, its mean, its most frequent value, or a constant you choose. It is
 crude by design. It does not model the relationship between columns, so it will
 happily fill a missing income with the population median even when the row's
 other fields make that implausible. What it buys you is predictability and
-speed, and it is often enough — particularly when only a small fraction of
+speed, and it is often enough: particularly when only a small fraction of
 values are missing.
 
 Two things are worth knowing before reaching for it. First, the fill value is
 learned from training rows only; a median computed over the whole dataset leaks
 the test distribution into training. Second, imputation destroys the
 information that a value *was* missing, which is sometimes the most predictive
-signal in the data — a blank income field on a loan application may say more
+signal in the data: a blank income field on a loan application may say more
 than any number would. If you suspect that, add an indicator column before
 filling.
 
@@ -59,7 +59,7 @@ class SimpleImputePlan:
     columns:
         Columns this plan fills, in fit order.
     strategy:
-        Which statistic was computed — ``'mean'``, ``'median'``,
+        Which statistic was computed: ``'mean'``, ``'median'``,
         ``'most_frequent'``, or ``'constant'``.
     fill_value:
         The literal used when ``strategy`` is ``'constant'``; ``None``
@@ -108,7 +108,7 @@ def fit_simple_imputer(
     """Learn a fill value per column from the training rows.
 
     Computes the chosen statistic over training rows and returns it as a plan.
-    Nothing is filled here — pass the plan to
+    Nothing is filled here: pass the plan to
     :func:`transform_simple_imputer` to apply it.
 
     Parameters
@@ -122,19 +122,19 @@ def fit_simple_imputer(
     columns:
         Columns to fill. By default this covers numeric ``feature`` columns and
         skips ``ignore``, ``id``, ``target``, ``group``, ``time``, and
-        ``weight`` — imputing a target would fabricate labels. Pass an explicit
+        ``weight``: imputing a target would fabricate labels. Pass an explicit
         list to override, which is how you fill a categorical column with
         ``'most_frequent'`` or a constant.
     strategy:
         How the fill value is chosen.
 
         ``'median'`` (the default) takes the middle value, which ignores
-        extremes — a handful of implausible salaries will not drag it.
+        extremes: a handful of implausible salaries will not drag it.
         ``'mean'`` takes the average, which preserves the column total but
         moves with outliers. ``'most_frequent'`` takes the mode and is the only
         one of the three that works on text or categories.
         ``'constant'`` uses ``fill_value`` verbatim, which is the honest option
-        when missing genuinely means something specific — zero purchases,
+        when missing genuinely means something specific: zero purchases,
         "unknown", a sentinel your downstream code recognises.
     fill_value:
         The literal to insert when ``strategy`` is ``'constant'``. Ignored
@@ -235,7 +235,7 @@ def transform_simple_imputer(dataset: Dataset, plan: SimpleImputePlan) -> Datase
     so build plans through :func:`fit_simple_imputer` rather than by hand.
 
     Columns absent from the plan are passed through untouched, missing values
-    and all — which will fail later at fit time if an estimator cannot accept
+    and all: which will fail later at fit time if an estimator cannot accept
     them. That is deliberate: silently filling a column nobody asked about is
     worse than a clear error.
 

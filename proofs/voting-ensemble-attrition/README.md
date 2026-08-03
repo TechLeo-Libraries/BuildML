@@ -6,7 +6,7 @@ Predict employee attrition with a soft-voting ensemble (logistic + random forest
 
 ## Data source
 
-In-repo synthetic attrition table (`load_attrition_tabular_synthetic`) — license-clear, deterministic. **Not** a real employee extract.
+In-repo synthetic attrition table (`load_attrition_tabular_synthetic`): license-clear, deterministic. **Not** a real employee extract.
 
 ## Leakage controls
 
@@ -30,7 +30,7 @@ Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `VotingClassifier(soft)` twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `VotingClassifier(soft)` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

@@ -13,7 +13,7 @@ def build_teaching_studios(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
     The studio's second half. Each board shows an analysis; each teaching panel
     explains what that analysis is, how to read it, what commonly goes wrong,
-    and — crucially — walks through the reader's own result rather than a
+    and: crucially: walks through the reader's own result rather than a
     textbook one.
 
     That last part is what distinguishes this from a glossary. "Variance
@@ -33,7 +33,7 @@ def build_teaching_studios(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
     Returns
     -------
     dict
-        Keyed by domain — ``cockpit``, ``quality``, ``features``,
+        Keyed by domain: ``cockpit``, ``quality``, ``features``,
         ``relationships``, ``multivariate``, ``target``, ``outliers``,
         ``visuals``. Each value holds the definition, method, pitfalls, and
         worked example for that board.
@@ -44,7 +44,7 @@ def build_teaching_studios(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
     builder here, or its teaching panel will be missing.
 
     **This reads the report and nothing else.** No data access, so it works
-    against a saved report just as well as a live one — which is what lets the
+    against a saved report just as well as a live one: which is what lets the
     offline export carry its teaching content with it.
 
     See Also
@@ -205,7 +205,7 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
         ),
         "why": (
             "EDA produces many tables at once. Without a severity-ranked overview, it is "
-            "easy to chase visual novelty—strong correlations, skewed plots, busy heatmaps—"
+            "easy to chase visual novelty:strong correlations, skewed plots, busy heatmaps:"
             "while missing blockers such as identifier leakage, extreme missingness, or "
             "train/test drift.\n\n"
             "The cockpit keeps partition, sampling, and engine/lazy-native limits visible. "
@@ -216,7 +216,7 @@ def _studio_cockpit(report: dict[str, Any]) -> dict[str, Any]:
             "BuildML runs analyzers on the analysis frame, then aggregates their outputs "
             "into evidence-linked findings and recommendations. Each finding cites keys "
             "into report sections (for example quality.completeness or eda.scope).\n\n"
-            "Severity reflects likely workflow impact on later modeling steps—not chart "
+            "Severity reflects likely workflow impact on later modeling steps:not chart "
             "emphasis or marketing priority. Recommendations are suggestions tied to those "
             "keys; they do not auto-apply transforms."
         ),
@@ -549,7 +549,7 @@ def _studio_features(report: dict[str, Any]) -> dict[str, Any]:
             "kurtosis, cardinality and entropy for categoricals, and optional normality "
             "screens.\n\n"
             "The goal is to characterize shape well enough to choose imputation, "
-            "scaling, encoding, and outlier policy—not to certify that a column is "
+            "scaling, encoding, and outlier policy:not to certify that a column is "
             "Gaussian or that a transform is mandatory."
         ),
         "why": (
@@ -564,11 +564,11 @@ def _studio_features(report: dict[str, Any]) -> dict[str, Any]:
             "sampled under row budgets. BuildML records per-column stats (mean, median, "
             "std, skew, IQR, nunique, entropy_bits, and related fields).\n\n"
             "Normality screens are hypothesis tests with sample-size limits. A rejected "
-            "null is a review flag that the Gaussian model is a poor fit for the sample—"
+            "null is a review flag that the Gaussian model is a poor fit for the sample:"
             "not proof that a particular transform is required for every estimator."
         ),
         "interpretation": [
-            "Skew and heavy tails motivate robust imputers, nonlinear models, or careful winsorization—not automatic deletion.",
+            "Skew and heavy tails motivate robust imputers, nonlinear models, or careful winsorization:not automatic deletion.",
             "High categorical cardinality widens one-hot encodings and can dominate memory and regularization.",
             "Normality p-values shrink with large n; inspect effect size, skew, and plots alongside the flag.",
             "Entropy on encoded labels measures label diversity, not semantic diversity of the underlying concept.",
@@ -629,7 +629,7 @@ def _studio_features(report: dict[str, Any]) -> dict[str, Any]:
         ],
         "mastery_notes": [
             "Skew thresholds are conventional review cues; decision cost depends on estimator sensitivity and outlier policy.",
-            "For mixtures (e.g. zero-inflated amounts), univariate moments mislead—segment or use two-part models.",
+            "For mixtures (e.g. zero-inflated amounts), univariate moments mislead:segment or use two-part models.",
             "Cardinality interacts with regularization: high-dim one-hots need stronger penalties or alternative encodings.",
             "Re-profile after cleaning; imputation and clipping change skew, IQR, and normality screens.",
         ],
@@ -740,7 +740,7 @@ def _studio_relationships(report: dict[str, Any]) -> dict[str, Any]:
             "Scan top absolute Pearson pairs for redundant numeric blocks.",
             "Check Cramér's V leaders for categorical recodes or hierarchy leakage.",
             "Compare Pearson vs Spearman for key pairs when nonlinearity is plausible.",
-            "Do not drop a feature solely because univariate MI is low—note interaction hypotheses.",
+            "Do not drop a feature solely because univariate MI is low:note interaction hypotheses.",
         ],
         "mastery_notes": [
             "Associations do not establish causality; interventional or temporal design is required for causal claims.",
@@ -789,7 +789,7 @@ def _studio_multivariate(report: dict[str, Any]) -> dict[str, Any]:
         "Dropping one of a correlated pair is a modeling choice with information loss; document the trade.",
         "PCA components are linear mixes; interpret loadings before using them as features.",
         "Tree ensembles often tolerate collinearity better than unregularized linear models; match the remedy to the model class.",
-        "A large first PCA component means shared scale/variance—not necessarily a single latent concept.",
+        "A large first PCA component means shared scale/variance:not necessarily a single latent concept.",
     ]
     pitfalls = [
         "VIF requires adequate numeric complete cases.",
@@ -889,7 +889,7 @@ def _studio_multivariate(report: dict[str, Any]) -> dict[str, Any]:
         "mastery_notes": [
             "VIF diagnoses linear dependence among predictors; it is silent about nonlinear redundancy.",
             "Condition indices and variance-decomposition proportions refine VIF when many columns share structure.",
-            "Partial dependence and permutation importance remain fragile under strong collinearity—report blocks, not isolated ranks.",
+            "Partial dependence and permutation importance remain fragile under strong collinearity:report blocks, not isolated ranks.",
             "PCA for compression and PCA for visualization have different success criteria; do not conflate them.",
         ],
         "next_action": {
@@ -1049,7 +1049,7 @@ def _studio_outliers(report: dict[str, Any]) -> dict[str, Any]:
             "Extreme points can dominate means, correlations, and linear fits. They may "
             "be data-entry errors, rare-but-valid events, sensor spikes, or ordinary "
             "heavy tails.\n\n"
-            "Policy choices—keep, cap, transform, or drop—change the estimand. Making "
+            "Policy choices:keep, cap, transform, or drop:change the estimand. Making "
             "that choice explicit protects later metrics from silent, irreversible edits."
         ),
         "how": (
@@ -1133,14 +1133,14 @@ def _studio_outliers(report: dict[str, Any]) -> dict[str, Any]:
         ),
         "practice_checklist": [
             "Inspect top IQR-rate columns in raw units and decide error vs valid tail.",
-            "Choose a policy: keep, winsorize, transform, or drop—and apply it only with train-fit discipline.",
+            "Choose a policy: keep, winsorize, transform, or drop:and apply it only with train-fit discipline.",
             "If IsolationForest ran, sample flagged rows and check joint plausibility.",
             "Re-run univariate summaries after any capping or deletion.",
             "Avoid test-driven outlier deletion; freeze rules on train/validation only.",
         ],
         "mastery_notes": [
             "IQR fences assume a roughly unimodal bulk; mixtures need segment-wise screens.",
-            "z-score flags are circular when mean/std are estimated on the contaminated sample—consider robust centers.",
+            "z-score flags are circular when mean/std are estimated on the contaminated sample:consider robust centers.",
             "IsolationForest contamination and random_state choices change rates; treat the rate as a screen, not a prevalence estimate.",
             "Outlier policy is part of the estimand: report it beside metrics or the comparison is invalid.",
         ],
@@ -1161,7 +1161,7 @@ def _studio_visuals(report: dict[str, Any]) -> dict[str, Any]:
         "title": "Visual evidence",
         "definition": (
             "Visual boards render adaptive Plotly charts chosen from data shape, roles, "
-            "cardinality, and missingness—not a fixed chart checklist. Each figure is "
+            "cardinality, and missingness:not a fixed chart checklist. Each figure is "
             "tied to analyzer tables already computed for the session.\n\n"
             "Charts are evidence surfaces for claims you make in text: they should make "
             "distribution shape, imbalance, association, and sampling limits inspectable."
@@ -1170,7 +1170,7 @@ def _studio_visuals(report: dict[str, Any]) -> dict[str, Any]:
             "Tables hide distribution shape and joint structure. A skew statistic without "
             "a histogram, or a correlation without a scatter, is easy to over-trust.\n\n"
             "Adaptive selection spends attention where the data can support a chart. Empty "
-            "boards usually mean missing roles, unsupported dtypes, or insufficient rows—"
+            "boards usually mean missing roles, unsupported dtypes, or insufficient rows:"
             "not a silent pass."
         ),
         "how": (
@@ -1235,7 +1235,7 @@ def _studio_visuals(report: dict[str, Any]) -> dict[str, Any]:
         ],
         "mastery_notes": [
             "Adaptive charts are a query plan over evidence, not a complete atlas of the data.",
-            "Perception biases (scale truncation, alpha stacking) can manufacture drama—check axes and counts.",
+            "Perception biases (scale truncation, alpha stacking) can manufacture drama:check axes and counts.",
             "Reproducible visual claims cite analyzer tables and plan kinds, not only screenshots.",
             "When plots and tables disagree, trust neither blindly: recompute the underlying slice.",
         ],

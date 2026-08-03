@@ -3,11 +3,11 @@
 Advisor mode is the read-only half of the AI domain. The model can inspect,
 explain, and recommend; it is given only tools that read, so there is no path
 from a bad suggestion to a modified Session. That is structural rather than
-procedural — nothing depends on the model choosing well.
+procedural: nothing depends on the model choosing well.
 
 Two entry points. :func:`run_advisor` answers a question, calling read-only
 tools as it needs them. :func:`run_plan` produces a structured
-:class:`~buildml.ai.results.PlanResult` — a sequence of recommended operations
+:class:`~buildml.ai.results.PlanResult`: a sequence of recommended operations
 with their reasoning, ready for :mod:`buildml.ai.planner` to execute under
 confirmation. :func:`run_advisor_with_rag` adds retrieval when the Session has
 an index attached.
@@ -124,7 +124,7 @@ class AdvisorResult:
     answer:
         The model's reply, as prose.
     evidence:
-        Specifics it cited — columns, counts, metrics. **The field that
+        Specifics it cited: columns, counts, metrics. **The field that
         separates a grounded answer from a generic one.** Empty means it cited
         nothing.
     recommendations:
@@ -206,8 +206,8 @@ def build_state_digest(session: Any) -> StateDigest:
 
     Notes
     -----
-    **Reading is best-effort.** A Session in an unusual state — a dataset that
-    cannot report its length, a metadata call that raises — yields a partial
+    **Reading is best-effort.** A Session in an unusual state: a dataset that
+    cannot report its length, a metadata call that raises: yields a partial
     digest rather than an exception. A digest missing information produces
     vaguer advice; a raised exception produces none.
 
@@ -235,7 +235,7 @@ def build_state_digest(session: Any) -> StateDigest:
             roles = dict(getattr(dataset, "roles", {}) or {})
             row_count = len(dataset)
         except Exception:
-            # Best-effort digest only — advisor must still answer without dataset metadata.
+            # Best-effort digest only: advisor must still answer without dataset metadata.
             logger.debug(
                 "advisor: could not read dataset columns/roles for context",
                 exc_info=True,
@@ -297,7 +297,7 @@ def build_advisor_context(
     Notes
     -----
     **The manifest covers the data payload, not the prompt.** The state digest
-    — including every column name — goes in regardless of level, because
+   : including every column name: goes in regardless of level, because
     without it the model has nothing to reason about. The manifest accounts for
     the values.
 
@@ -409,7 +409,7 @@ def run_advisor(
     Notes
     -----
     **Hitting ``max_iterations`` returns a result, not an exception.** The
-    answer says the limit was reached and ``limitations`` records it — a
+    answer says the limit was reached and ``limitations`` records it: a
     partial account of what happened beats losing the tool calls already made.
 
     **Nothing here can modify the Session.** A write tool is never offered, and
@@ -762,7 +762,7 @@ def run_advisor_with_rag(
     max_iterations:
         Turn ceiling.
     top_k:
-        How many chunks to retrieve. More context is not always better — it
+        How many chunks to retrieve. More context is not always better: it
         costs tokens and dilutes the relevant passage.
 
     Returns

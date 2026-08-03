@@ -1,11 +1,11 @@
 """Symbolic + neuro-symbolic tabular ML (rules + sklearn hybrid).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
 
 Phase 2:
-  1–9. Semi-supervised → … → causal / graph / evolutionary HPO — prior items.
+  1–9. Semi-supervised → … → causal / graph / evolutionary HPO: prior items.
   **This module (complete):** Symbolic AI + Neuro-symbolic AI.
   Next delivered: Case-based reasoning (`buildml.cbr`), then imitation+RL,
   then TDA, then app systems.
@@ -23,9 +23,9 @@ Honesty (this package):
     rule overlay / rules-as-features / constraint-repair in one Session API.
   - Optional Z3 lite constraint verification when symbolic-industry + z3 installed.
   - **Not** an AGI symbolic reasoner, Prolog engine, or full Z3 SMT product.
-  - Core stays light: numpy/pandas/sklearn only — industry/torch are extras.
+  - Core stays light: numpy/pandas/sklearn only: industry/torch are extras.
 
-Lazy imports — core never grows heavy logic-programming stacks.
+Lazy imports: core never grows heavy logic-programming stacks.
 """
 
 from __future__ import annotations

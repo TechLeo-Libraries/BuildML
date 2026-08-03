@@ -46,7 +46,7 @@ def evaluate_tda(
     partition:
         ``validation``, ``test``, or ``all``.
     backend:
-        Optional backend check — must match ``plan.backend`` when set.
+        Optional backend check: must match ``plan.backend`` when set.
     compare_diagram_distances:
         When True, report mean Wasserstein or bottleneck distance between sampled
         train and holdout local diagrams (diagnostic stability signal).

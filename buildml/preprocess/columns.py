@@ -2,7 +2,7 @@
 
 Every preprocessing step faces the same question: given a dataset and possibly
 an explicit list from the user, which columns do I actually operate on? Getting
-that wrong is quietly destructive — scaling a customer ID produces a
+that wrong is quietly destructive: scaling a customer ID produces a
 meaningless float, imputing a target fabricates labels, and encoding a column
 you meant to ignore inflates the frame with useless width.
 
@@ -14,8 +14,8 @@ a column explicitly is treated as informed consent: the role filter is skipped,
 though the dtype check still applies so you cannot scale a text column by
 accident.
 
-Also here are the two structural operations — dropping columns and keeping only
-some — which preserve row order and therefore leave any existing split valid.
+Also here are the two structural operations: dropping columns and keeping only
+some: which preserve row order and therefore leave any existing split valid.
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def drop_columns(dataset: Dataset, columns: list[str] | tuple[str, ...]) -> Data
     dataset:
         The source dataset, which is not modified.
     columns:
-        Names to remove. Every name must exist — a typo raises rather than
+        Names to remove. Every name must exist: a typo raises rather than
         silently dropping nothing, since a silent no-op here means training on
         a column you believed was gone.
 
@@ -84,7 +84,7 @@ def drop_columns(dataset: Dataset, columns: list[str] | tuple[str, ...]) -> Data
 
     See Also
     --------
-    select_columns : The inverse — name what to keep instead.
+    select_columns : The inverse: name what to keep instead.
     """
     cols = validate_column_names(columns, dataset.columns)
     remaining = [c for c in dataset.columns if c not in set(cols)]
@@ -116,7 +116,7 @@ def select_columns(dataset: Dataset, columns: list[str] | tuple[str, ...]) -> Da
         The source dataset, which is not modified.
     columns:
         Names to keep, and also the output order. Remember to include the
-        target, the identifier, and anything a later split needs — they are not
+        target, the identifier, and anything a later split needs: they are not
         retained automatically.
 
     Returns
@@ -166,7 +166,7 @@ def protected_role_columns(
         The dataset whose roles are inspected.
     skip_roles:
         Which roles count as protected. Defaults to
-        :data:`DEFAULT_SKIP_ROLES` — ``target``, ``id``, ``group``, ``time``,
+        :data:`DEFAULT_SKIP_ROLES`: ``target``, ``id``, ``group``, ``time``,
         ``weight``, and ``ignore``. Pass a narrower set to ask a more specific
         question, such as "which columns are protected only because they are
         identifiers".
@@ -206,7 +206,7 @@ def resolve_transform_columns(
     dtype, so asking for numeric columns will not hand back a text column.
 
     When ``columns`` is given, the role filter is skipped entirely. Naming a
-    column is treated as a deliberate override — that is how you scale
+    column is treated as a deliberate override: that is how you scale
     something marked ``ignore`` when you genuinely mean to. The dtype check
     still runs unless you turn it off, because a named column of the wrong type
     is far more likely to be a mistake than an intention.
@@ -234,7 +234,7 @@ def resolve_transform_columns(
         pandas currently reads as object because it is entirely missing.
     empty_message:
         A step-specific message to raise when nothing resolves. Worth supplying
-        — "no numeric columns available for scaling" tells the reader far more
+       : "no numeric columns available for scaling" tells the reader far more
         than a generic failure.
 
     Returns
@@ -253,7 +253,7 @@ def resolve_transform_columns(
     Notes
     -----
     The fallback when no ``feature`` roles are set is intentionally
-    permissive — it lets a dataset work without any role assignment at all —
+    permissive: it lets a dataset work without any role assignment at all :
     but assigning roles is what makes preprocessing predictable. If a step
     keeps touching columns you did not expect, that is the signal to set roles.
     """

@@ -74,7 +74,7 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=("a*(x) = argmin_a  p(x)^T C_{·,a}."),
             why_it_matters=(
-                "User supplies C — BuildML does not invent business costs from test labels.",
+                "User supplies C: BuildML does not invent business costs from test labels.",
             ),
             how_buildml_uses=(
                 "Session.fit_decision_policy(method='cost_matrix', cost_matrix=...).",
@@ -121,7 +121,7 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
                 "fit_decision_policy(method='topk'|'knapsack'|'lp_allocate', ...).",
             ),
             interpretation_rules=(
-                "LP is continuous — not integer MIP.",
+                "LP is continuous: not integer MIP.",
                 "Greedy knapsack is approximate; DP discloses when used.",
             ),
             assumptions=("Non-negative costs; scores/values finite.",),
@@ -154,7 +154,7 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Ship the operating policy separately from the raw Session "
-                "history — like a recommender bundle vs a checkpoint."
+                "history: like a recommender bundle vs a checkpoint."
             ),
             formal_idea=("DecisionPlan ⊄ SessionCheckpoint."),
             why_it_matters=(

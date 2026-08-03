@@ -1,7 +1,7 @@
 """Use BuildML retrieval with a LangChain LLM you have already set up.
 
-For teams with an existing LangChain investment — configured models, callbacks,
-tracing — who want BuildML's retrieval and citation handling without rewriting
+For teams with an existing LangChain investment: configured models, callbacks,
+tracing: who want BuildML's retrieval and citation handling without rewriting
 that half. The adapter takes BuildML hits, hands them to a LangChain QA chain,
 and wraps the reply in a
 :class:`~buildml.rag.results.GenerateResult` so the rest of BuildML sees a
@@ -10,7 +10,7 @@ familiar shape.
 The seam is real and worth knowing about. LangChain's chains build their own
 prompts, so BuildML's grounding instructions and ``[source:N]`` convention do not
 apply. Citations are still attached, because they come from the retrieval side,
-but nothing enforces that the answer references them — which is why faithfulness
+but nothing enforces that the answer references them: which is why faithfulness
 scoring is left unset rather than reported as a passing score it did not earn.
 
 Prefer :func:`~buildml.rag.generate.generate_grounded` for new work. Its prompt
@@ -209,7 +209,7 @@ class LangChainGroundedAdapter:
         -----
         **The shim passes BuildML's assembled context through as a single
         document.** The grounding prompt is built by BuildML and handed to
-        LangChain whole, rather than LangChain building its own — so the
+        LangChain whole, rather than LangChain building its own: so the
         ``[source:N]`` instructions do survive this path, unlike
         :meth:`generate_from_hits`.
 

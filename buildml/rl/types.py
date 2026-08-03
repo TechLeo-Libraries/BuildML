@@ -7,7 +7,7 @@ draw the line between them.
 the action a person or an existing system took in each, and you fit a model that
 predicts the action. It is ordinary supervised learning wearing different words:
 the "label" is an action. It never asks whether the demonstrated action was
-good — it only learns to reproduce it.
+good: it only learns to reproduce it.
 
 **Reinforcement learning** learns from outcomes. Instead of being told the right
 action, the learner tries actions and sees rewards. That is a genuinely harder
@@ -144,7 +144,7 @@ class RlConfig:
     """The settings a reinforcement learning fit ran with, kept for the record.
 
     Covers all four modes in one dataclass, so most fields are irrelevant to any
-    given fit — a contextual bandit ignores every episode setting, and a
+    given fit: a contextual bandit ignores every episode setting, and a
     Gymnasium run ignores the logged-data columns. The grouping below says which
     fields matter when.
 
@@ -181,7 +181,7 @@ class RlConfig:
         and the per-episode step cap that stops a non-terminating episode from
         hanging the run.
     learning_rate, gamma:
-        Environment modes. Step size, and the discount factor — ``gamma`` near
+        Environment modes. Step size, and the discount factor: ``gamma`` near
         1.0 values distant reward almost as much as immediate reward, lower
         values make the policy short-sighted.
     hidden_seed:
@@ -196,7 +196,7 @@ class RlConfig:
         is feasible at all.
     epsilon_min, epsilon_decay:
         Tabular only. Exploration starts at ``epsilon`` and decays by
-        ``epsilon_decay`` each episode, never below ``epsilon_min`` — early
+        ``epsilon_decay`` each episode, never below ``epsilon_min``: early
         randomness to discover, later greediness to exploit.
 
     See Also

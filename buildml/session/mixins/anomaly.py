@@ -47,7 +47,7 @@ class AnomalySessionMixin:
     ) -> AnomalyFitResult:
         """Fit an anomaly detector on the train partition only.
 
-        Session facade over :func:`buildml.session.anomaly_ops.fit_anomaly`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.anomaly_ops.fit_anomaly`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -100,7 +100,7 @@ class AnomalySessionMixin:
     ) -> AnomalyThresholdTuneResult:
         """Tune the anomaly decision threshold on validation labels without refitting.
 
-        Session facade over :func:`buildml.session.anomaly_ops.tune_anomaly_threshold_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.anomaly_ops.tune_anomaly_threshold_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -127,7 +127,7 @@ class AnomalySessionMixin:
     def anomaly_capability_matrix() -> dict[str, Any]:
         """Return the anomaly backend/method capability matrix for this install.
 
-        Session facade over :func:`buildml.session.anomaly_ops.anomaly_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.anomaly_ops.anomaly_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -150,7 +150,7 @@ class AnomalySessionMixin:
     ) -> AnomalyScoreResult:
         """Score and flag rows with the train-fitted anomaly plan without refitting.
 
-        Session facade over :func:`buildml.session.anomaly_ops.score_anomalies_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.anomaly_ops.score_anomalies_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -180,7 +180,7 @@ class AnomalySessionMixin:
     ) -> AnomalyEvalResult:
         """Evaluate train-fitted anomaly scores on a labeled holdout partition.
 
-        Session facade over :func:`buildml.session.anomaly_ops.evaluate_anomaly_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.anomaly_ops.evaluate_anomaly_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -255,7 +255,7 @@ class AnomalySessionMixin:
     def save_anomaly_bundle(self, path: str | Path) -> Path:
         """Persist the active anomaly plan as ``buildml.anomaly_bundle.v1``.
 
-        Session facade over :func:`buildml.session.anomaly_ops.save_anomaly_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.anomaly_ops.save_anomaly_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -272,7 +272,7 @@ class AnomalySessionMixin:
     def load_anomaly_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an anomaly bundle into this Session.
 
-        Session facade over :func:`buildml.session.anomaly_ops.load_anomaly_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.anomaly_ops.load_anomaly_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

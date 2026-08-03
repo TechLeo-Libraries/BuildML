@@ -15,7 +15,7 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Learning a language by filling in blanked-out words in books. Nobody grades you, but you end up "
-            "understanding the language — and then a short course teaches you the specific job you need it for."
+            "understanding the language: and then a short course teaches you the specific job you need it for."
         ),
         steps=(
             "Pretrain: hide random parts of the training features and train an encoder to reconstruct them. Labels are ignored completely.",
@@ -29,13 +29,13 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you want one reusable representation feeding several downstream tasks.",
         ),
         avoid=(
-            "Do not bother on small, tidy tabular data with plenty of labels — a gradient-boosting model will beat this and take a fraction of the effort.",
+            "Do not bother on small, tidy tabular data with plenty of labels: a gradient-boosting model will beat this and take a fraction of the effort.",
             "Do not pretrain on validation or test rows; the encoder is learned information and leaks like any other fitted object.",
         ),
         myths=(
             (
                 "Self-supervised means no supervision anywhere.",
-                "The pretext task needs no human labels. The downstream head still needs real labels — you just need far fewer of them.",
+                "The pretext task needs no human labels. The downstream head still needs real labels: you just need far fewer of them.",
             ),
             (
                 "A good reconstruction loss means a good representation.",
@@ -64,10 +64,10 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Practising a crossword where random letters are removed. To fill them in you have to learn how "
-            "the words relate — and that understanding is the thing you actually keep."
+            "the words relate: and that understanding is the thing you actually keep."
         ),
         steps=(
-            "Choose a mask rate — what fraction of values to hide per row. Around 0.15 to 0.3 is typical.",
+            "Choose a mask rate: what fraction of values to hide per row. Around 0.15 to 0.3 is typical.",
             "The network sees the masked row and tries to reproduce the original.",
             "Its bottleneck layer is forced to hold a compact summary of the row.",
             "After training, discard the reconstruction output and keep the bottleneck as your embedding.",
@@ -119,7 +119,7 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Identify your data type. Tabular rows point to the SSL path; images, audio, or speech point to backbones.",
-            "For tabular, use `fit_ssl_pretext` — the encoder is trained on your data alone.",
+            "For tabular, use `fit_ssl_pretext`: the encoder is trained on your data alone.",
             "For images or audio, use `load_pretrained_backbone` and then `attach_backbone_head`.",
             "Decide whether to freeze the backbone or fine-tune it; freezing needs far less data.",
             "Evaluate either path on labelled holdout rows the same way.",
@@ -130,7 +130,7 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not expect an image backbone to help with a tabular table; the pretraining domain has to be related.",
-            "Do not fine-tune a large backbone on a few hundred labelled rows without freezing most of it — you will overfit spectacularly.",
+            "Do not fine-tune a large backbone on a few hundred labelled rows without freezing most of it: you will overfit spectacularly.",
         ),
         myths=(
             (
@@ -160,7 +160,7 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "ssl-bundle-boundary",
         plain=(
-            "The pretrained encoder — and optionally the head you attached — saves as a self-supervised "
+            "The pretrained encoder: and optionally the head you attached: saves as a self-supervised "
             "bundle. It is not a Session checkpoint and not a Torch trainer bundle; those store different "
             "things with different contracts."
         ),

@@ -63,7 +63,7 @@ def evaluate_decisions(
     disclosures = [
         f"Evaluating frozen policy method={plan.method!r} on partition={partition}.",
         f"Policy was fitted on partition={plan.partition_fitted}.",
-        "Decision helpers for ML scores/costs/allocations — not a general OR platform.",
+        "Decision helpers for ML scores/costs/allocations: not a general OR platform.",
     ]
     warnings = list(plan.warnings)
     if partition == plan.partition_fitted:

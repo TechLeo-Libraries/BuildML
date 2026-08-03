@@ -22,7 +22,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "For each row, find its `knn` nearest neighbours among the training rows only.",
             "Grow a ball around every point in that little cloud, slowly increasing the radius.",
-            "Record when clusters merge and when loops appear and close — each event is a birth/death pair.",
+            "Record when clusters merge and when loops appear and close: each event is a birth/death pair.",
             "The collection of pairs is a persistence diagram: features that persist over a wide radius range are real structure, brief ones are noise.",
             "Vectorize the diagram into fixed-length numbers so a normal classifier or regressor can use it.",
         ),
@@ -32,7 +32,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not reach for it before trying ordinary features; it is expensive and often adds little on plain tabular data.",
-            "Do not use it with a tiny `knn` — a five-point cloud has no interesting shape to find.",
+            "Do not use it with a tiny `knn`: a five-point cloud has no interesting shape to find.",
         ),
         myths=(
             (
@@ -61,7 +61,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         "tda-vectorization",
         plain=(
             "A persistence diagram is a scatter of points, and models need fixed-length rows of numbers. "
-            "Vectorization converts the diagram into that fixed vector — as a blurred image, a set of "
+            "Vectorization converts the diagram into that fixed vector: as a blurred image, a set of "
             "layered peaks, or a weighted average curve."
         ),
         analogy=(
@@ -81,7 +81,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not recompute the grid ranges on test diagrams; the frozen training ranges are what keep evaluation honest.",
-            "Do not crank the resolution up — you get hundreds of nearly empty columns and a slower, worse model.",
+            "Do not crank the resolution up: you get hundreds of nearly empty columns and a slower, worse model.",
         ),
         myths=(
             (
@@ -109,7 +109,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "tda-supervised-head",
         plain=(
-            "Once shapes are numbers, you attach an ordinary model on top — logistic regression, random "
+            "Once shapes are numbers, you attach an ordinary model on top: logistic regression, random "
             "forest, gradient boosting. That model is the 'head'. You can also skip it and just take the "
             "features out for use elsewhere."
         ),
@@ -118,7 +118,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             "measurements and making the call. Either can be swapped independently."
         ),
         steps=(
-            "Choose a head appropriate to your task — a classifier for labels, a regressor for numbers.",
+            "Choose a head appropriate to your task: a classifier for labels, a regressor for numbers.",
             "It is fitted on the training rows' topological features and training labels only.",
             "`predict_tda` runs new rows through the frozen extraction pipeline and the head.",
             "`evaluate_tda` scores the whole thing on a held-out partition.",
@@ -129,7 +129,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             "With `head='none'` when topological features are one input among many in a larger pipeline.",
         ),
         avoid=(
-            "Do not call `evaluate_tda` with `head='none'` — there is no model to score, and BuildML raises rather than guessing.",
+            "Do not call `evaluate_tda` with `head='none'`: there is no model to score, and BuildML raises rather than guessing.",
             "Do not judge the approach on the training score; topological features can memorize local neighbourhoods.",
         ),
         myths=(
@@ -158,8 +158,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "tda-bundle-boundary",
         plain=(
-            "The fitted topology pipeline — the neighbour index, the diagram settings, the frozen "
-            "vectorizer ranges, and the head — saves as its own bundle. A Session checkpoint does not "
+            "The fitted topology pipeline: the neighbour index, the diagram settings, the frozen "
+            "vectorizer ranges, and the head: saves as its own bundle. A Session checkpoint does not "
             "contain it."
         ),
         analogy=(
@@ -169,7 +169,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Fit a topological pipeline.",
             "Call `save_tda_bundle(path)`.",
-            "Reload with `load_tda_bundle(path)` — the training neighbour index comes back with it.",
+            "Reload with `load_tda_bundle(path)`: the training neighbour index comes back with it.",
             "Transform or predict on new rows.",
             "Use checkpoints separately for data and workflow state.",
         ),
@@ -179,7 +179,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not expect `checkpoint_load` to bring the topology pipeline back.",
-            "Do not mix these with graph, RAG, or reinforcement-learning bundles — the formats are distinct and loading enforces it.",
+            "Do not mix these with graph, RAG, or reinforcement-learning bundles: the formats are distinct and loading enforces it.",
         ),
         myths=(
             (
@@ -216,7 +216,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             "rather than letting you jam the wrong one in."
         ),
         steps=(
-            "`import buildml` never requires these libraries — the base install stays light.",
+            "`import buildml` never requires these libraries: the base install stays light.",
             "Install `buildml[tda]` for ripser and persim, the native persistence path.",
             "Install `buildml[tda-industry]` for giotto-tda and its extra vectorizers.",
             "Call `tda_capability_matrix()` to see what is actually available in your environment.",
@@ -228,7 +228,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not assume a topology feature exists because the method name appears in the documentation; check the capability matrix.",
-            "Do not import ripser or giotto at your own module import time either — it defeats the point of the optional boundary.",
+            "Do not import ripser or giotto at your own module import time either: it defeats the point of the optional boundary.",
         ),
         myths=(
             (
@@ -268,7 +268,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Vietoris–Rips persistence is computed by giotto rather than ripser.",
             "Betti curves, persistence images, and landscapes come from giotto's vectorizers.",
             "The vectorizer ranges are still frozen on training data.",
-            "Set `mapper=True` for a diagnostic Mapper summary — a shape overview, not a feature source.",
+            "Set `mapper=True` for a diagnostic Mapper summary: a shape overview, not a feature source.",
         ),
         use=(
             "When you specifically want Betti curves, which the native path does not provide.",
@@ -276,7 +276,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not treat the Mapper output as model input; it is disclosure for your eyes only.",
-            "Do not expect interactive Mapper visualization from the Session API — that lives in giotto's own tooling.",
+            "Do not expect interactive Mapper visualization from the Session API: that lives in giotto's own tooling.",
         ),
         myths=(
             (

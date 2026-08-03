@@ -179,7 +179,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "query_kg",
         OperationKind.DIAGNOSTIC,
         "Symbolic neighbors / path / typed query over the train KG.",
-        "BFS / adjacency — not an LLM, not Neo4j/Cypher, not RAG.",
+        "BFS / adjacency: not an LLM, not Neo4j/Cypher, not RAG.",
         "KG structure query.",
         (
             "Require KgPlan with train adjacency.",
@@ -212,7 +212,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Exact structure queries complement embedding scores.",),
         assumptions=("Entities exist in train vocab for non-empty results.",),
         failures=("No KgPlan; missing mode-required args.",),
-        leakage=("Train adjacency only — holdout edges invisible.",),
+        leakage=("Train adjacency only: holdout edges invisible.",),
         anti_patterns=(
             "Calling this Cypher/Neo4j or RAG retrieve.",
             "Expecting holdout edges in the query graph.",

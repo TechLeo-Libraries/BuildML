@@ -51,7 +51,7 @@ def activelearning_capability_matrix() -> dict[str, Any]:
                 "modality": "tabular",
                 "notes": (
                     "Core sklearn classifiers + bagging committee; "
-                    "uncertainty and vote-entropy query strategies — always available."
+                    "uncertainty and vote-entropy query strategies: always available."
                 ),
             },
             "industry": {
@@ -78,7 +78,7 @@ def activelearning_capability_matrix() -> dict[str, Any]:
         },
         "human_label_boundary": {
             "label_rows": (
-                "Session-primary human-in-the-loop operation — NOT AI-allowlisted."
+                "Session-primary human-in-the-loop operation: NOT AI-allowlisted."
             ),
             "suggest_query": "Returns indices only; never invents labels.",
         },

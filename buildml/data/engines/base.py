@@ -1,6 +1,6 @@
 """The small set of operations every tabular engine must provide.
 
-Pandas, Polars, and DuckDB disagree about almost everything — how a table is
+Pandas, Polars, and DuckDB disagree about almost everything: how a table is
 represented, whether work is eager or lazy, what a filter looks like. This
 protocol names the handful of operations BuildML actually needs from a table
 before modelling starts, so the rest of the library can call them without
@@ -37,7 +37,7 @@ class Engine(Protocol):
     """What BuildML requires of a tabular backend.
 
     Implemented by the pandas, Polars, and DuckDB adapters in this package.
-    Because it is a :class:`~typing.Protocol`, conformance is structural — an
+    Because it is a :class:`~typing.Protocol`, conformance is structural: an
     adapter satisfies it by having the right methods, without inheriting
     anything.
 

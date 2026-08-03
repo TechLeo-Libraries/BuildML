@@ -6,14 +6,14 @@ that touches an environment does. These functions are how the rest of the
 package finds out which world it is in.
 
 Two shapes, used for two purposes. **``*_available``** returns a boolean and
-never raises — for deciding what to offer, as :mod:`buildml.rl.catalog` does.
+never raises: for deciding what to offer, as :mod:`buildml.rl.catalog` does.
 **``require_*``** imports and returns the module, or raises
-:class:`~buildml.core.errors.MissingExtraError` naming the extra to install —
+:class:`~buildml.core.errors.MissingExtraError` naming the extra to install :
 for the moment a feature genuinely needs the package.
 
 The availability checks are also deliberately layered. ``find_spec`` asks
 whether a package is installed without executing it, which is fast and safe.
-A full import additionally proves it *works* — a half-installed package with a
+A full import additionally proves it *works*: a half-installed package with a
 broken shared library is installed but unusable. Gymnasium gets the full probe
 because a broken install there would surface deep inside a training loop;
 Stable-Baselines3 and imitation get the cheap one, because importing them drags
@@ -54,7 +54,7 @@ def require_gymnasium(*, feature: str = "Gymnasium RL loop") -> Any:
     MissingExtraError
         If Gymnasium is absent or unusable, pointing at ``buildml[rl]``.
         ``OSError`` is caught alongside ``ImportError`` because a broken native
-        dependency fails that way, and the remedy — reinstall the extra — is the
+        dependency fails that way, and the remedy: reinstall the extra: is the
         same.
 
     See Also
@@ -73,7 +73,7 @@ def require_gymnasium(*, feature: str = "Gymnasium RL loop") -> Any:
 def gymnasium_available() -> bool:
     """Say whether Gymnasium is installed and actually works.
 
-    Gets the full probe — spec lookup *and* import — unlike the other checks
+    Gets the full probe: spec lookup *and* import: unlike the other checks
     here. A Gymnasium that is present but broken would otherwise fail deep
     inside a training loop, long after the point where the diagnosis is easy.
 
@@ -105,7 +105,7 @@ def stable_baselines3_spec_present() -> bool:
     -------
     bool
         ``True`` when the package is importable in principle. It does not prove
-        the import would succeed — a broken install still reports ``True``.
+        the import would succeed: a broken install still reports ``True``.
 
     See Also
     --------
@@ -118,7 +118,7 @@ def stable_baselines3_available() -> bool:
     """Say whether Stable-Baselines3 is available for the ``'gym_sb3'`` mode.
 
     The public form of :func:`stable_baselines3_spec_present`, and identical to
-    it — the spec check is deliberate, to keep PyTorch out of a capability
+    it: the spec check is deliberate, to keep PyTorch out of a capability
     query.
 
     Returns

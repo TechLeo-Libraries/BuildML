@@ -21,7 +21,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Split first, so there is a partition the detector has never influenced.",
             "Scale numeric columns if your detector is distance-based; most are.",
             "Fit the detector on training rows to learn the shape of normal.",
-            "Score validation or test rows with the frozen plan — you get a continuous strangeness score per row.",
+            "Score validation or test rows with the frozen plan: you get a continuous strangeness score per row.",
             "Apply a threshold to turn scores into flags, and report the resulting alert rate.",
         ),
         use=(
@@ -29,7 +29,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "For data-quality monitoring, fraud screening, and equipment health, where 'unusual' is the best available proxy for 'bad'.",
         ),
         avoid=(
-            "Do not use it when you actually have decent labels — a supervised classifier will almost always beat an unsupervised detector.",
+            "Do not use it when you actually have decent labels: a supervised classifier will almost always beat an unsupervised detector.",
             "Do not refit the detector on the rows you are about to score; the anomalies would help define normality.",
         ),
         myths=(
@@ -60,7 +60,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         "anomaly-threshold-alert-rate",
         plain=(
             "A detector produces scores, not decisions. You choose the cut-off, and that choice sets your "
-            "alert rate — the fraction of rows you flag. Alert rate is the number that determines how much "
+            "alert rate: the fraction of rows you flag. Alert rate is the number that determines how much "
             "human review work you have just created, so it belongs beside every claim you make."
         ),
         analogy=(
@@ -71,7 +71,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Score a held-out partition to get the distribution of strangeness scores.",
             "Decide your capacity: how many alerts per day can be reviewed properly?",
             "Set the threshold at the score quantile that produces that volume.",
-            "If you have any labels, check precision at that alert rate — of the flagged rows, how many were genuinely bad?",
+            "If you have any labels, check precision at that alert rate: of the flagged rows, how many were genuinely bad?",
             "Report the threshold, the alert rate, and the partition together, every time.",
         ),
         use=(
@@ -125,12 +125,12 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "State which mode you used, because it changes what a flag means.",
         ),
         use=(
-            "Novelty when you have verified-good historical periods — a known-clean month, a certified batch.",
+            "Novelty when you have verified-good historical periods: a known-clean month, a certified batch.",
             "Unsupervised when contamination is unavoidable or unknown, which is the common case.",
         ),
         avoid=(
             "Do not claim novelty mode when your 'clean' set was never actually verified; the guarantee it implies would be false.",
-            "Do not use unsupervised mode when contamination is heavy — if 30% of rows are anomalous, they define normality.",
+            "Do not use unsupervised mode when contamination is heavy: if 30% of rows are anomalous, they define normality.",
         ),
         myths=(
             (
@@ -160,7 +160,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "anomaly-imbalance-metrics",
         plain=(
-            "When you do have labels for anomalies, they are almost always extremely rare — under 1%. That "
+            "When you do have labels for anomalies, they are almost always extremely rare: under 1%. That "
             "wrecks the usual metrics. Accuracy is meaningless and even ROC-AUC can look respectable while "
             "your alerts are almost all false. Precision, recall, and PR-AUC are the honest choices."
         ),
@@ -172,7 +172,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Compute PR-AUC as your primary label-aware score.",
             "Report precision@k and recall@k at the alert rate you will actually operate at.",
             "Compare against the trivial baseline: random flagging at the same rate.",
-            "Note how many positive rows exist in the partition — with 12 positives, every metric is fragile.",
+            "Note how many positive rows exist in the partition: with 12 positives, every metric is fragile.",
             "Only then look at ROC-AUC, and read it as a ranking summary rather than a quality claim.",
         ),
         use=(
@@ -220,7 +220,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "During exploration, read the EDA outlier screen to get a feel for which rows are unusual.",
-            "Do not build a process on that screen — it is descriptive and partition-agnostic.",
+            "Do not build a process on that screen: it is descriptive and partition-agnostic.",
             "When you need an operational detector, call `fit_anomaly` after splitting.",
             "That produces a plan you can score with, threshold, evaluate, and save.",
             "Keep the two mentally separate in your write-up so readers know which one produced a number.",
@@ -231,7 +231,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not quote EDA outlier counts as detector performance; the screen never held out a partition.",
-            "Do not skip EDA either — it often tells you the anomalies are a data-collection bug rather than a phenomenon.",
+            "Do not skip EDA either: it often tells you the anomalies are a data-collection bug rather than a phenomenon.",
         ),
         myths=(
             (
@@ -273,7 +273,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Call `save_anomaly_bundle(path)`.",
             "Reload with `load_anomaly_bundle(path)` in a fresh Session or a scheduled job.",
             "Confirm the feature columns still exist, then score.",
-            "Keep your threshold with the bundle — a detector without its operating point is only half a system.",
+            "Keep your threshold with the bundle: a detector without its operating point is only half a system.",
         ),
         use=(
             "When the detector runs on a schedule outside your notebook.",
@@ -314,7 +314,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "anomaly scores once the plan orients them so higher means more anomalous."
         ),
         analogy=(
-            "Odd items get separated from the crowd in fewer random cuts than normal ones — "
+            "Odd items get separated from the crowd in fewer random cuts than normal ones: "
             "like finding the one red sock in a laundry pile with fewer grabs."
         ),
         steps=(
@@ -333,7 +333,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         myths=(
             ("Isolation Forest needs labels.", "It is unsupervised; labels are for evaluation only."),
-            ("Default contamination is your operating point.", "It is a prior guess — set threshold for capacity."),
+            ("Default contamination is your operating point.", "It is a prior guess: set threshold for capacity."),
         ),
         example=(
             "session.fit_anomaly(method='isolation_forest', contamination=0.05, random_state=0)",
@@ -351,12 +351,12 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         "anomaly-lof",
         plain=(
             "Local Outlier Factor compares how dense a point is relative to its k-nearest "
-            "neighbours. Rows that look sparse among dense neighbours score as anomalies — "
+            "neighbours. Rows that look sparse among dense neighbours score as anomalies: "
             "a local-density view rather than a global distance fence."
         ),
         analogy=(
             "Someone standing alone in a packed room while everyone around them is in tight "
-            "groups — locally sparse even if the room overall is crowded."
+            "groups: locally sparse even if the room overall is crowded."
         ),
         steps=(
             "Scale numeric features so neighbour distances are meaningful.",
@@ -410,7 +410,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Novelty mode when you can certify a clean train subset.",
         ),
         avoid=(
-            "Large n without subsampling — training cost grows quickly.",
+            "Large n without subsampling: training cost grows quickly.",
             "Unscaled mixed-scale columns with an RBF kernel.",
         ),
         myths=(
@@ -438,7 +438,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Check how extreme each column looks on its own or via a copula, then combine those "
-            "tail signals — like multiple thermometers agreeing something is off."
+            "tail signals: like multiple thermometers agreeing something is off."
         ),
         steps=(
             "Read anomaly_capability_matrix()['backends']['pyod']['available'].",
@@ -479,7 +479,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "If the model cannot rebuild a row well, that row probably did not belong to the "
-            "shapes it memorized from training — like a photocopier struggling on a forged note."
+            "shapes it memorized from training: like a photocopier struggling on a forged note."
         ),
         steps=(
             "Scale features and confirm buildml[torch] is available.",

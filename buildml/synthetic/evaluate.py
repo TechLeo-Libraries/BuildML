@@ -114,7 +114,7 @@ ValidationError
     if partition == "train":
         warnings.append(
             "Evaluating against train measures reconstruction/fidelity to the "
-            "fit partition — prefer partition='test' for holdout utility."
+            "fit partition: prefer partition='test' for holdout utility."
         )
 
     if mode == "fidelity":
@@ -133,7 +133,7 @@ ValidationError
                     "(buildml[synthetic-industry])."
                 )
             except (ImportError, OSError, RuntimeError) as exc:
-                # Broken torch/sdmetrics wheels (common on Windows) — keep builtin
+                # Broken torch/sdmetrics wheels (common on Windows): keep builtin
                 # fidelity metrics and disclose the skip instead of hard-failing.
                 warnings.append(
                     f"eval_backend='sdmetrics' skipped ({type(exc).__name__}: {exc}); "

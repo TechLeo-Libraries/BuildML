@@ -93,7 +93,7 @@ def main() -> None:
         .set_roles({"head": "id", "relation": "id", "tail": "id"})
         .split(test_size=0.2, validation_size=0.1, random_state=0)
     )
-    other.load_kg_bundle(out)
+    other.load_kg_bundle(out, trusted=True)
     ev2 = other.evaluate_kg(partition="test", k=5)
     print("reloaded_eval", ev2.metrics)
 

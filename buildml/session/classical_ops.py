@@ -61,7 +61,7 @@ def fit(
     session so :meth:`predict`, :meth:`evaluate`, and :meth:`save_pipeline`
     can find it.
 
-    You supply the estimator yourself — any object with scikit-learn's
+    You supply the estimator yourself: any object with scikit-learn's
     ``fit`` and ``predict`` methods works, including XGBoost, LightGBM, and
     CatBoost models. BuildML does not maintain a private registry of model
     names, so anything installed in your environment is available and you
@@ -77,7 +77,7 @@ def fit(
         Active Session instance this operation mutates or reads.
     estimator:
         An unfitted estimator instance, already configured with whatever
-        hyperparameters you want — ``RandomForestClassifier(max_depth=6)``,
+        hyperparameters you want: ``RandomForestClassifier(max_depth=6)``,
         not the class itself. BuildML fits a reference to this object, so
         it is the one that ends up in the pipeline.
     task:
@@ -157,7 +157,7 @@ def predict(
 ) -> pd.Series | pd.DataFrame:
     """Run the fitted model over one partition and return its predictions.
 
-    Use this when you want the predictions themselves — to inspect them,
+    Use this when you want the predictions themselves: to inspect them,
     join them back to identifiers, or compute something BuildML does not
     provide. If what you want is a score, :meth:`evaluate` computes metrics
     and diagnostics in one call instead.
@@ -252,14 +252,14 @@ def evaluate(
 
     A single accuracy figure hides more than it reveals. 95% accuracy is
     excellent when the classes are balanced and worthless when 95% of rows
-    belong to one class — the same number, opposite conclusions. So this
+    belong to one class: the same number, opposite conclusions. So this
     returns a card rather than a score: several complementary metrics, the
     diagnostics behind them, and written recommendations about what to look
     at next.
 
     For classification you get accuracy and balanced accuracy, weighted
-    precision and recall, macro and weighted F1, and — where the estimator
-    exposes probabilities — ROC-AUC, average precision, and log loss, plus
+    precision and recall, macro and weighted F1, and: where the estimator
+    exposes probabilities: ROC-AUC, average precision, and log loss, plus
     the confusion matrix showing which classes are being mistaken for
     which. Precision and recall matter most when errors are asymmetric:
     precision is how often a positive prediction is right, recall is how
@@ -271,7 +271,7 @@ def evaluate(
     residual diagnostics. MAE is the average miss in the target's own
     units. RMSE punishes large misses disproportionately, so a gap between
     the two means a few predictions are badly wrong. R² is the share of
-    variance explained, and it can be negative — that simply means the
+    variance explained, and it can be negative: that simply means the
     model does worse than always predicting the mean.
 
     Parameters
@@ -287,7 +287,7 @@ def evaluate(
         Directory to write diagnostic figures into. Implies plotting, and
         requires ``pip install 'buildml[viz]'``.
     export_html:
-        Path for a self-contained HTML report of the same figures — handy
+        Path for a self-contained HTML report of the same figures: handy
         to attach to a review or send to someone without a Python
         environment. Also implies plotting.
     include_plots:
@@ -419,7 +419,7 @@ def eval_plots(
         reveals overfitting.
     include_learning_curve:
         Add the learning curve. It refits the model on increasing
-        subsamples, so it is the slowest panel — turn it off for a quick
+        subsamples, so it is the slowest panel: turn it off for a quick
         look. Read it as: converged curves mean more data will not help,
         a persistent gap means it will.
     include_importance:
@@ -438,7 +438,7 @@ def eval_plots(
         Directory to write the individual figures into. ``None`` keeps them
         in memory only.
     export_html:
-        Path for a single self-contained HTML page holding every panel —
+        Path for a single self-contained HTML page holding every panel :
         the artefact to attach to a review.
     show:
         Display the figures interactively, for notebook use.
@@ -521,7 +521,7 @@ def compare_models(
 ) -> ModelComparison:
     """Try several models on the same data and rank what you get.
 
-    "Which algorithm should I use?" has no answer in the abstract — it
+    "Which algorithm should I use?" has no answer in the abstract: it
     depends on your data, and the reliable way to find out is to try a few.
     This fits each estimator on the training rows, evaluates them all on
     the same partition, and returns them ranked, so the comparison is
@@ -545,7 +545,7 @@ def compare_models(
         ``'classification'``, ``'regression'``, or ``'auto'`` to infer it
         from the target. Every estimator is treated as the same task.
     partition:
-        Which rows to score on. Use ``'validation'`` while choosing —
+        Which rows to score on. Use ``'validation'`` while choosing :
         ranking candidates on ``'test'`` and then reporting the winner's
         test score overstates it, because the winner was selected using
         that very number.
@@ -573,7 +573,7 @@ def compare_models(
     -----
     Each model is scored on a single fixed partition, so small differences
     between them are within noise. When two candidates finish close
-    together, confirm with :meth:`cv_score` before declaring a winner —
+    together, confirm with :meth:`cv_score` before declaring a winner :
     a one-point gap on a few hundred rows frequently reverses on a
     different split.
 
@@ -637,7 +637,7 @@ def cv_score(
     A single train/test split gives you one number, and that number depends
     on which rows happened to land in test. On a few thousand rows the
     swing between two random splits is easily a couple of percentage
-    points — enough to pick the wrong model.
+    points: enough to pick the wrong model.
 
     Cross-validation removes that luck. The training rows are divided into
     ``cv`` folds; the model is fitted ``cv`` times, each time holding out a
@@ -668,7 +668,7 @@ def cv_score(
         reads the column roles and picks for you. ``'stratified'``
         preserves class balance in every fold, which matters for imbalanced
         classification. ``'group'`` keeps an entity's rows in the same fold
-        — the cross-validation equivalent of :meth:`group_split`.
+       : the cross-validation equivalent of :meth:`group_split`.
         ``'stratified_group'`` does both. ``'time'`` only ever trains on
         folds earlier than the one being scored. Choosing wrongly here
         recreates the leakage the split was designed to prevent.
@@ -686,7 +686,7 @@ def cv_score(
     allow_session_global_preprocess:
         Permit cross-validation to proceed even though session-wide
         preprocessing already ran. Off by default, and the refusal is the
-        point — see the note below.
+        point: see the note below.
 
     Returns
     -------
@@ -811,7 +811,7 @@ def nested_cv_score(
     it reports the cross-validated score of the winning configuration, and
     you quote that number as your expected performance. But the winner was
     chosen *because* it scored well on those folds, so its score is
-    optimistically biased — you picked the luckiest configuration and then
+    optimistically biased: you picked the luckiest configuration and then
     reported its luck as skill. On a large search space the inflation can be
     several points.
 
@@ -824,7 +824,7 @@ def nested_cv_score(
     this" is worth.
 
     Note what is being estimated: the procedure, not a single model. Each
-    outer fold may crown a different winner, and that is fine — the spread
+    outer fold may crown a different winner, and that is fine: the spread
     across folds tells you how stable your tuning is. To get a model to
     deploy, run :meth:`grid_search` (or a sibling) once on the full training
     set afterwards, and quote the nested score as its expected performance.
@@ -843,8 +843,8 @@ def nested_cv_score(
     param_distributions:
         Sampled estimator search space for a randomized inner search.
     recipe_grid:
-        Search space over preprocessing knobs — ``select_k``, ``n_bins``,
-        and friends — refit inside each fold. Requires ``preprocess``.
+        Search space over preprocessing knobs: ``select_k``, ``n_bins``,
+        and friends: refit inside each fold. Requires ``preprocess``.
     recipe_distributions:
         Sampled counterpart to ``recipe_grid``.
     param_space:
@@ -900,7 +900,7 @@ def nested_cv_score(
     warm_start_studies:
         Share one Optuna study across outer folds so later folds benefit
         from earlier trials. Faster, but the folds are no longer fully
-        independent searches — the outer estimate stays valid because the
+        independent searches: the outer estimate stays valid because the
         outer-eval rows are still never scored during search.
 
     Returns
@@ -929,7 +929,7 @@ def nested_cv_score(
     either loop. Both loops draw only from training rows.
 
     **Reading the spread:** if ``std_metrics`` is large relative to
-    ``mean_metrics``, the procedure is unstable — usually too small a
+    ``mean_metrics``, the procedure is unstable: usually too small a
     dataset for the size of the search space.
 
     Examples
@@ -1029,8 +1029,8 @@ def grid_search(
 ) -> SearchResult:
     """Try every combination of the settings you list, and keep the best.
 
-    Hyperparameters are the knobs you set before training — tree depth,
-    regularisation strength, learning rate — and the right values depend on
+    Hyperparameters are the knobs you set before training: tree depth,
+    regularisation strength, learning rate: and the right values depend on
     your data. Grid search takes the values you consider plausible, builds
     every combination of them, cross-validates each one on the training
     rows, and ranks the results.
@@ -1066,7 +1066,7 @@ def grid_search(
         Fold count, or a scikit-learn splitter, used to score each
         configuration.
     cv_strategy:
-        How folds are formed — see :meth:`cv_score`, which describes the
+        How folds are formed: see :meth:`cv_score`, which describes the
         same options and the same hazards.
     ranking_metric:
         Which metric decides the winner. ``None`` uses the task default.
@@ -1209,7 +1209,7 @@ def randomized_search(
     The reason is that parameters differ enormously in how much they
     matter. A grid of four values across three parameters spends 64 fits,
     but only ever tries four distinct values of the parameter that
-    actually drives performance — the other two dimensions multiply the
+    actually drives performance: the other two dimensions multiply the
     cost without adding resolution where it counts. Random sampling tries
     64 *different* values of every parameter, so the important one gets
     explored properly.
@@ -1232,7 +1232,7 @@ def randomized_search(
     recipe_distributions:
         Preprocessing knobs sampled the same way. Requires ``preprocess``.
     n_iter:
-        How many configurations to sample — your entire budget, in fits per
+        How many configurations to sample: your entire budget, in fits per
         fold. Start small to gauge the cost of one fit, then raise it.
     random_state:
         Seed for the sampling, so a search can be reproduced exactly.
@@ -1241,7 +1241,7 @@ def randomized_search(
     cv:
         Fold count or splitter used to score each sampled configuration.
     cv_strategy:
-        How folds are formed — see :meth:`cv_score`.
+        How folds are formed: see :meth:`cv_score`.
     ranking_metric:
         Which metric decides the winner. ``None`` uses the task default.
     groups:
@@ -1388,8 +1388,8 @@ def optuna_search(
         An unfitted estimator instance supplying the defaults being tuned.
     param_space:
         The space to search, given either as a callable taking an Optuna
-        ``trial`` and returning a parameter dict — full control, including
-        parameters that only exist depending on others — or as a
+        ``trial`` and returning a parameter dict: full control, including
+        parameters that only exist depending on others: or as a
         declarative mapping using ``float``, ``int``, and ``categorical``
         entries.
     recipe_space:
@@ -1406,7 +1406,7 @@ def optuna_search(
     cv:
         Fold count or splitter used to score each trial.
     cv_strategy:
-        How folds are formed — see :meth:`cv_score`.
+        How folds are formed: see :meth:`cv_score`.
     ranking_metric:
         The metric Optuna optimises. ``None`` uses the task default.
     groups:
@@ -1443,7 +1443,7 @@ def optuna_search(
     the search.
 
     The returned ``study`` supports Optuna's own analysis tools, including
-    parameter-importance ranking — often more useful than the winning
+    parameter-importance ranking: often more useful than the winning
     configuration itself, since it tells you which knobs are worth tuning
     at all next time.
 
@@ -1555,7 +1555,7 @@ def evolutionary_search(
 
     The advantage over random sampling is recombination. If one
     configuration happens to have a good tree depth and another a good
-    learning rate, crossover can produce a child with both — something
+    learning rate, crossover can produce a child with both: something
     independent sampling can only stumble on. That makes evolutionary
     search well suited to spaces where parameters interact.
 
@@ -1566,7 +1566,7 @@ def evolutionary_search(
     the same quality.
 
     The total number of fits is roughly ``population_size *
-    n_generations``, each multiplied by ``cv`` folds — worth computing
+    n_generations``, each multiplied by ``cv`` folds: worth computing
     before you start.
 
     Parameters
@@ -1617,7 +1617,7 @@ def evolutionary_search(
     cv:
         Fold count or splitter used to score each configuration.
     cv_strategy:
-        How folds are formed — see :meth:`cv_score`.
+        How folds are formed: see :meth:`cv_score`.
     ranking_metric:
         The metric acting as the fitness function. ``None`` uses the task
         default.
@@ -1653,7 +1653,7 @@ def evolutionary_search(
     Folds are cut from the training partition only; test never influences
     the search.
 
-    This is a plain genetic algorithm — population, tournament selection,
+    This is a plain genetic algorithm: population, tournament selection,
     crossover, mutation, elitism. It is not neural architecture search and
     not a particle swarm, and it is not random search under another name:
     the recombination step is what makes it different.
@@ -1741,7 +1741,7 @@ def save_model(session, path: str | Path) -> Path:
     """Save the fitted estimator and the feature contract it expects.
 
     This writes the model itself plus the list of feature columns and their
-    order — enough to load the model back and call it, provided your data
+    order: enough to load the model back and call it, provided your data
     is already in the right shape.
 
     It is almost never what you want. A model trained on scaled, encoded,
@@ -1782,7 +1782,7 @@ def save_model(session, path: str | Path) -> Path:
 def load_model(session, path: str | Path, *, trusted: bool = False) -> "Session":
     """Load an estimator bundle written by :meth:`save_model`.
 
-    Restores :attr:`fit_result` — the estimator and its feature contract —
+    Restores :attr:`fit_result`: the estimator and its feature contract :
     into this session. The dataset and split are left alone, so you can
     attach a fitted model to data you loaded separately.
 
@@ -1828,7 +1828,7 @@ def save_pipeline(
 
     This is the artefact you deploy. A model on its own is not enough,
     because raw incoming data does not look like the matrix the model was
-    trained on — the categories need the same encoding, the numbers the
+    trained on: the categories need the same encoding, the numbers the
     same scaling, the gaps the same fill values. Saving the fitted plans
     alongside the estimator means score-time transformation reproduces
     training exactly, months later and on a different machine.
@@ -1839,7 +1839,7 @@ def save_pipeline(
     ``meta.json``, and a model card in both JSON and Markdown.
 
     This is not a session checkpoint. It carries what is needed for
-    inference — no data, no split membership, no operation history. To
+    inference: no data, no split membership, no operation history. To
     resume interrupted work rather than deploy a result, use
     :meth:`checkpoint_save`.
 
@@ -1854,7 +1854,7 @@ def save_pipeline(
         performed. ``'test'`` by default. Pass ``None`` to skip, which is
         what you want when the session has no split attached.
     title:
-        A human-readable name for the model card. Worth setting — this is
+        A human-readable name for the model card. Worth setting: this is
         what the person reading the card in six months sees first.
 
     Returns
@@ -1989,7 +1989,7 @@ def load_pipeline(session, path: str | Path, *, trusted: bool = False) -> "Sessi
     properties (:attr:`scale_plan`, :attr:`encode_plan`, and so on), and
     the model card on :attr:`model_card`.
 
-    Your data and split are untouched. That is deliberate — it lets you
+    Your data and split are untouched. That is deliberate: it lets you
     attach a trained model to a fresh batch of rows and score them, which
     is the usual reason to load a pipeline at all. Once loaded, run
     :meth:`apply_preprocess_plans` to transform the attached data, then
@@ -2019,7 +2019,7 @@ def load_pipeline(session, path: str | Path, *, trusted: bool = False) -> "Sessi
     Notes
     -----
     **Security:** pipeline bundles deserialise fitted estimators and plans
-    via joblib/pickle. Only load bundles you created or fully trust —
+    via joblib/pickle. Only load bundles you created or fully trust :
     untrusted pickles can execute code on load.
 
     For one-shot scoring, :meth:`predict_from_pipeline` does the load,
@@ -2092,7 +2092,7 @@ def predict_from_pipeline(
     its preprocessing plans, transforms the rows exactly as training did,
     and returns the predictions.
 
-    Nothing on the session changes — not the dataset, not
+    Nothing on the session changes: not the dataset, not
     :attr:`fit_result`, not the plans. That makes it safe to call inside a
     batch job or a service handler, repeatedly, against different bundles,
     without one call contaminating the next.
@@ -2116,7 +2116,7 @@ def predict_from_pipeline(
         its own threshold rather than accepting the default cut-off.
     apply_plans:
         Replay the bundle's preprocessing before predicting. Leave on
-        unless your incoming rows are already fully transformed — turning
+        unless your incoming rows are already fully transformed: turning
         it off on raw data feeds the model inputs it cannot interpret and
         produces confident nonsense rather than an error.
     trusted:
@@ -2221,7 +2221,7 @@ def prepare_design_matrix(
     sample_rows:
         Cap the result at this many rows, drawn at random. ``None`` keeps
         all of them. Sampling makes an oversized partition trainable, at
-        the cost of learning from less of it — the sample is recorded in
+        the cost of learning from less of it: the sample is recorded in
         the disclosures so the compromise stays visible.
     random_state:
         Seed for the sampling, so the same subset is drawn each run.
@@ -2291,7 +2291,7 @@ def calibration(
     """Check whether predicted probabilities mean what they claim.
 
     A classifier that outputs ``0.8`` is asserting that eight out of ten
-    such cases are positive. Often that is simply false — the model ranks
+    such cases are positive. Often that is simply false: the model ranks
     cases correctly while its probabilities are systematically too
     confident or too timid. Ranking quality (ROC-AUC) cannot detect this,
     because rescaling every probability leaves the ranking untouched.
@@ -2314,7 +2314,7 @@ def calibration(
         Active Session instance this operation mutates or reads.
     partition:
         Which rows to assess. Calibration must be measured on data the
-        model did not learn from — on training rows almost any model looks
+        model did not learn from: on training rows almost any model looks
         well calibrated.
     export_figures:
         Directory to write the reliability diagram into. Requires
@@ -2391,7 +2391,7 @@ def tune_threshold(
 
     A classifier outputs a probability, but acting on it requires a line:
     above this, treat as positive. The default line is 0.5, and 0.5 is
-    almost never the right answer — it silently assumes that a false alarm
+    almost never the right answer: it silently assumes that a false alarm
     and a miss cost the same amount.
 
     They rarely do. Missing a fraudulent transaction costs the value of the
@@ -2403,7 +2403,7 @@ def tune_threshold(
     This sweeps every candidate threshold and reports how precision,
     recall, and F1 move as the line shifts. Supply ``fp_cost`` and
     ``fn_cost`` and it goes further, computing expected cost at each
-    threshold and identifying the one that minimises it — turning a
+    threshold and identifying the one that minimises it: turning a
     modelling choice into an arithmetic one.
 
     Parameters
@@ -2416,11 +2416,11 @@ def tune_threshold(
         partition's score means the score was tuned on the data it claims
         to be independent of.
     fp_cost:
-        What one false positive costs — flagging something that was fine.
+        What one false positive costs: flagging something that was fine.
         Any consistent unit works; only the ratio to ``fn_cost`` affects
         the chosen threshold.
     fn_cost:
-        What one false negative costs — missing something real. Must be
+        What one false negative costs: missing something real. Must be
         given together with ``fp_cost``.
     tp_benefit:
         What correctly catching a positive is worth, subtracted from
@@ -2438,7 +2438,7 @@ def tune_threshold(
     -------
     ~buildml.model.diagnostics.DiagnosticReport
         The sweep: metrics at every candidate threshold, the recommended
-        cut-off, and — when costs were supplied — the expected cost curve
+        cut-off, and: when costs were supplied: the expected cost curve
         and its minimum.
 
     Raises
@@ -2531,7 +2531,7 @@ def learning_curve(
     Read them by their gap and their slope. A wide gap that is still
     closing as the curves extend rightward means more data will help. Two
     curves that have converged and flattened, both mediocre, mean the model
-    has learned everything it can from these features — more rows will not
+    has learned everything it can from these features: more rows will not
     move it. Converged and both excellent means you are done.
 
     Parameters
@@ -2623,8 +2623,8 @@ def feature_importance(
     is how much the model was relying on that feature. Repeat for each
     feature.
 
-    This works for any model — the internals are never inspected, only the
-    predictions — so a neural network, a boosted ensemble, and a linear
+    This works for any model: the internals are never inspected, only the
+    predictions: so a neural network, a boosted ensemble, and a linear
     model can be compared on the same footing. It also avoids the known
     distortions of tree-based built-in importances, which systematically
     favour high-cardinality and continuous features regardless of whether
@@ -2671,7 +2671,7 @@ def feature_importance(
     Correlated features mislead this method, and it is worth knowing how.
     If two columns carry the same information, shuffling either one leaves
     the model able to recover the signal from the other, so both look
-    unimportant — even though together they are essential. When you see a
+    unimportant: even though together they are essential. When you see a
     feature you expect to matter scoring near zero, check what it is
     correlated with before concluding it is useless.
 
@@ -2717,6 +2717,74 @@ def feature_importance(
     return report
 
 
+def explain_shap(
+    session,
+    *,
+    partition: Literal["train", "validation", "test"] = "test",
+    max_samples: int = 100,
+    random_state: int | None = 0,
+) -> Any:
+    """Attribute fitted-model predictions with optional SHAP values.
+
+    Requires ``pip install 'buildml[shap]'``. Samples at most ``max_samples``
+    rows from the named partition. Returns mean |SHAP| per feature with
+    disclosures that attributions are not causal effects.
+
+    Parameters
+    ----------
+    session:
+        Fitted Session.
+    partition:
+        Rows to attribute (default ``test``).
+    max_samples:
+        Cap on rows for cost control.
+    random_state:
+        Sample seed when the partition is larger than ``max_samples``.
+
+    Returns
+    -------
+    ShapExplainResult
+        Mean absolute SHAP importances and honesty disclosures.
+    """
+    from buildml.model.shap_explain import explain_with_shap
+
+    if session._fit_result is None:
+        raise ValidationError("No fitted estimator. Call fit(...) first.")
+    if session._split_plan is None:
+        raise ValidationError("explain_shap requires a split plan.")
+    fit = session._fit_result
+    cols = list(fit.feature_columns)
+    prep = prepare_design_frame(session.dataset, cols + [fit.target_column])
+    part = str(partition).lower()
+    split = session._split_plan
+    if part == "test":
+        idx = split.test_indices
+    elif part == "validation":
+        idx = split.validation_indices
+    elif part == "train":
+        idx = split.train_indices
+    else:
+        raise ValidationError(f"Unknown partition {partition!r}.")
+    frame = prep.frame.iloc[list(idx)][cols]
+    result = explain_with_shap(
+        fit.estimator,
+        frame,
+        max_samples=max_samples,
+        random_state=random_state,
+    )
+    session._record(
+        "explain_shap",
+        {
+            "partition": partition,
+            "max_samples": max_samples,
+            "backend": result.backend,
+            "n_rows": result.n_rows,
+        },
+        result_summary=result.to_dict(),
+    )
+    return result
+
+
 def error_slices(
     session,
     *,
@@ -2730,7 +2798,7 @@ def error_slices(
 
     An overall score is an average, and averages conceal. A model at 92%
     accuracy might be at 97% for the large customer segment and 61% for the
-    small one — a difference invisible in the headline number and highly
+    small one: a difference invisible in the headline number and highly
     visible to the people in that second group.
 
     This splits the scored rows by the columns you name and reports metrics
@@ -2744,7 +2812,7 @@ def error_slices(
         Active Session instance this operation mutates or reads.
     by:
         One column name, or several. Passing several slices by their
-        combination, which finds interaction failures — a model can be fine
+        combination, which finds interaction failures: a model can be fine
         on each of two dimensions separately and poor on a particular
         intersection.
     partition:
@@ -2756,7 +2824,7 @@ def error_slices(
         kept.
     min_segment_n:
         Minimum rows for a segment to be reported as a finding. Below this,
-        a metric is mostly noise — three rows and two errors is not a 67%
+        a metric is mostly noise: three rows and two errors is not a 67%
         error rate, it is three rows. Smaller segments are listed
         separately rather than discarded.
     export_html:

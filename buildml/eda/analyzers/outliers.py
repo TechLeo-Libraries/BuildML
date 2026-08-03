@@ -7,7 +7,7 @@ the median is an outlier in a spending model and the entire target in a fraud
 model.
 
 So this reports and does not act. Three methods, because each sees something the
-others miss. The IQR rule is distribution-free and robust — it uses quartiles, so
+others miss. The IQR rule is distribution-free and robust: it uses quartiles, so
 extreme values cannot drag the boundaries out to include themselves. Z-scores
 assume roughly normal data and are pulled around by the very points they are
 meant to find, which is why they are reported alongside rather than alone.
@@ -37,7 +37,7 @@ def analyze_outliers(
     """Count unusual values per column, and unusual rows across columns.
 
     Per column, two counts. The IQR rule flags values more than 1.5 interquartile
-    ranges beyond the quartiles — the same rule that draws the whiskers on a box
+    ranges beyond the quartiles: the same rule that draws the whiskers on a box
     plot, and robust because quartiles are not moved by extreme values.
     Z-scores flag values more than three standard deviations from the mean,
     which is less robust for exactly the opposite reason: a single extreme value
@@ -62,15 +62,15 @@ def analyze_outliers(
     Returns
     -------
     dict
-        ``per_column`` — for each numeric column, the IQR count, rate, and
+        ``per_column``: for each numeric column, the IQR count, rate, and
         bounds, plus the count and rate beyond three standard deviations.
-        ``multivariate`` — the Isolation Forest result, or empty when there was
+        ``multivariate``: the Isolation Forest result, or empty when there was
         not enough data. ``feature_columns_analyzed`` for provenance.
 
     Notes
     -----
-    **Nothing here says a point is wrong.** For a skewed distribution — income,
-    duration, transaction size — the IQR rule flags a large fraction of the
+    **Nothing here says a point is wrong.** For a skewed distribution: income,
+    duration, transaction size: the IQR rule flags a large fraction of the
     upper tail as a matter of arithmetic, not because anything is amiss. Read
     the flags together with the skew from the univariate analysis.
 

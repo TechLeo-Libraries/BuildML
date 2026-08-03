@@ -12,7 +12,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
         _note(
             key="symbolic-rules",
             title="Tabular if-then rule knowledge bases",
-            summary="Symbolic AI here means explicit predicates over columns compiled into an ordered rule list with explanation traces — not an AGI reasoner.",
+            summary="Symbolic AI here means explicit predicates over columns compiled into an ordered rule list with explanation traces: not an AGI reasoner.",
             definition=(
                 "A RuleKnowledgeBase is an ordered list of if-then rules. Each "
                 "rule has AND-ed antecedents (column predicates) and a "
@@ -22,7 +22,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Readable rules like 'if age > 60 and risk == high then deny' "
-                "that you can audit — not a black-box neural net and not a "
+                "that you can audit: not a black-box neural net and not a "
                 "full Prolog theorem prover."
             ),
             formal_idea=(
@@ -71,7 +71,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "covering with shallow stumps (RIPPER-/CN2-lite)."
             ),
             intuition=(
-                "Either you write the rules, or the train set writes them — "
+                "Either you write the rules, or the train set writes them: "
                 "and BuildML tells you which."
             ),
             formal_idea=(
@@ -133,7 +133,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
         _note(
             key="neuro-symbolic-hybrid",
             title="Sklearn + symbolic constraints in one Session API",
-            summary="Neuro-symbolic modes combine a probabilistic/sklearn model with rule overlay, rules-as-features, or constraint repair — not disconnected ad-hoc calls.",
+            summary="Neuro-symbolic modes combine a probabilistic/sklearn model with rule overlay, rules-as-features, or constraint repair: not disconnected ad-hoc calls.",
             definition=(
                 "fit_neuro_symbolic trains a base estimator and attaches a "
                 "RuleKnowledgeBase. Modes: constraint_overlay (predict then "
@@ -142,14 +142,14 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Let the model guess, then let domain rules veto or reshape "
-                "the answer — or let rules become extra features the model sees."
+                "the answer: or let rules become extra features the model sees."
             ),
             formal_idea=(
                 "ŷ = overlay(f_θ(x), R) or f_θ([x ‖ fire(R,x)]) or repair(f_θ(x), R)."
             ),
             why_it_matters=(
                 "A real hybrid needs shared Session state, leakage discipline, "
-                "and provenance — not 'fit() then manually if-then'.",
+                "and provenance: not 'fit() then manually if-then'.",
             ),
             how_buildml_uses=(
                 "Session.fit_neuro_symbolic → predict_neuro_symbolic / evaluate_neuro_symbolic.",

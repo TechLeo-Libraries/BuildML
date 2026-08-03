@@ -12,7 +12,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
         _note(
             key="online-partial-fit",
             title="Online / continual partial_fit updates",
-            summary="Incremental sklearn partial_fit on train chunks — not a distributed streaming platform.",
+            summary="Incremental sklearn partial_fit on train chunks: not a distributed streaming platform.",
             definition=(
                 "Online / continual learning in BuildML warm-starts an estimator "
                 "that supports partial_fit, then updates it on subsequent train "
@@ -20,7 +20,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
                 "evaluation-only."
             ),
             intuition=(
-                "Teach the model a page at a time from the practice binder — "
+                "Teach the model a page at a time from the practice binder: "
                 "never rewrite the whole notebook silently, and never peek at "
                 "the exam for 'updates'."
             ),
@@ -54,7 +54,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
         _note(
             key="online-class-discovery",
             title="Classifier classes= on first partial_fit",
-            summary="Classifiers need the full label vocabulary on init — explicit classes= or train-target discovery (labels only).",
+            summary="Classifiers need the full label vocabulary on init: explicit classes= or train-target discovery (labels only).",
             definition=(
                 "Sklearn classifiers require classes= on the first partial_fit. "
                 "BuildML accepts an explicit vocabulary or discovers it from the "
@@ -63,7 +63,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Tell the grader which answer choices exist before grading the "
-                "first page — you do not need to read future essays to know the "
+                "first page: you do not need to read future essays to know the "
                 "letter options."
             ),
             formal_idea=(
@@ -96,7 +96,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
                 "Richer train/test drift screens remain on Session.eda()."
             ),
             intuition=(
-                "A sticky note that the new page looks unusually bright — not a "
+                "A sticky note that the new page looks unusually bright: not a "
                 "full laboratory assay of distribution shift."
             ),
             formal_idea=(
@@ -122,7 +122,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
         _note(
             key="online-river-streaming",
             title="River streaming backend (buildml[online-industry])",
-            summary="Incremental River estimators with ADWIN/Page-Hinkley drift on prediction error — not a Kafka product.",
+            summary="Incremental River estimators with ADWIN/Page-Hinkley drift on prediction error: not a Kafka product.",
             definition=(
                 "The industry online backend wraps River classifiers/regressors with "
                 "partial_fit-style updates on train chunks and optional ADWIN or "
@@ -137,7 +137,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Sklearn partial_fit alone misses streaming-specific drift tooling.",
-                "Catalog defaults to River when installed — read backend on the plan.",
+                "Catalog defaults to River when installed: read backend on the plan.",
             ),
             how_buildml_uses=(
                 "fit_online(backend='industry', estimator='river_logistic'|...).",
@@ -157,7 +157,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
         _note(
             key="online-torch-continual",
             title="Torch replay / EWC continual learning (buildml[torch])",
-            summary="Tabular MLP with replay buffer or EWC penalty — classification-only incremental path.",
+            summary="Tabular MLP with replay buffer or EWC penalty: classification-only incremental path.",
             definition=(
                 "Torch online backends train a small tabular MLP with either experience "
                 "replay (replay_mlp) or elastic weight consolidation (ewc_mlp) across "
@@ -179,7 +179,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=("Read n_updates, n_seen_rows, and backend on OnlinePlan.",),
             assumptions=("Torch installed; classification task.",),
-            failure_modes=("Calling replay_mlp for regression — refused at resolve time.",),
+            failure_modes=("Calling replay_mlp for regression: refused at resolve time.",),
             anti_patterns=("Treating replay MLP as full lifelong learning at scale.",),
             worked_example_pattern=(
                 "fit_online(backend='torch', estimator='ewc_mlp') → partial_fit_online().",
@@ -193,7 +193,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "An online bundle persists the incremental estimator, class "
                 "vocabulary, train cursor, seen indices, and update ledger. "
-                "Session checkpoints persist data/roles/splits/history — not "
+                "Session checkpoints persist data/roles/splits/history: not "
                 "OnlinePlan weights."
             ),
             intuition=(

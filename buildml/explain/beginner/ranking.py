@@ -20,7 +20,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Shape your data as one row per query-item pair.",
             "Add a query identifier column so the model knows which rows compete with each other.",
-            "Add the relevance judgement — binary clicked/not, or graded 0 to 4.",
+            "Add the relevance judgement: binary clicked/not, or graded 0 to 4.",
             "Fit a ranker; it learns a scoring function used to sort within each query.",
             "Evaluate with ranking metrics averaged over held-out queries, never over individual rows.",
         ),
@@ -29,7 +29,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Whenever a human or a downstream process consumes a top-N list rather than a single answer.",
         ),
         avoid=(
-            "Do not use it when there is no grouping — with a single global ordering and no queries, ordinary regression on the score is simpler.",
+            "Do not use it when there is no grouping: with a single global ordering and no queries, ordinary regression on the score is simpler.",
             "Do not use it when only the top-1 answer is ever consumed and you have clean labels; classification is more direct.",
         ),
         myths=(
@@ -71,13 +71,13 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Treat the relevance judgement as an ordinary regression target.",
-            "Fit a regressor — ridge for a linear baseline, gradient boosting for something stronger.",
+            "Fit a regressor: ridge for a linear baseline, gradient boosting for something stronger.",
             "Predict a score for every candidate item.",
             "Sort within each query by predicted score.",
             "Evaluate with ranking metrics, which is where you find out whether the ordering is any good.",
         ),
         use=(
-            "As your first ranking baseline — it is fast, simple, and reuses tools you already know.",
+            "As your first ranking baseline: it is fast, simple, and reuses tools you already know.",
             "When relevance judgements are graded and reasonably reliable.",
         ),
         avoid=(
@@ -117,13 +117,13 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "training signal becomes 'A beats B', which is exactly the thing you care about."
         ),
         analogy=(
-            "Ranking chess players. You never need an absolute skill number — you just need to know who "
+            "Ranking chess players. You never need an absolute skill number: you just need to know who "
             "beat whom, and a consistent ordering falls out."
         ),
         steps=(
             "Within each query, form pairs where the relevance judgements differ.",
             "Compute the feature difference between the two items in each pair.",
-            "Train a classifier to predict which one wins from that difference — RankSVM-style.",
+            "Train a classifier to predict which one wins from that difference: RankSVM-style.",
             "At prediction time, score each item individually with the learned weights and sort.",
             "Evaluate with ranking metrics on held-out queries.",
         ),
@@ -133,7 +133,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it on queries with very many candidates without sampling pairs; the number of pairs grows with the square of the candidate count.",
-            "Do not use it when your judgements are already well-calibrated grades that transfer across queries — pointwise exploits that and pairwise discards it.",
+            "Do not use it when your judgements are already well-calibrated grades that transfer across queries: pointwise exploits that and pairwise discards it.",
         ),
         myths=(
             (
@@ -163,7 +163,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "ltr-industry-rankers",
         plain=(
-            "The gradient-boosting libraries all ship dedicated ranking objectives — LightGBM's LambdaRank, "
+            "The gradient-boosting libraries all ship dedicated ranking objectives: LightGBM's LambdaRank, "
             "XGBoost's rank:ndcg, CatBoost's YetiRank. These optimize the ranking metric directly rather "
             "than approaching it through regression or classification, and they are usually the strongest "
             "option available."
@@ -175,7 +175,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Install `pip install buildml[ranking-industry]`.",
             "Pass `backend='industry'` and choose the library.",
-            "Provide query groups — these libraries need to know which rows belong to the same query.",
+            "Provide query groups: these libraries need to know which rows belong to the same query.",
             "The objective optimizes an nDCG-style target directly during boosting.",
             "Evaluate with the same held-out ranking metrics for a fair comparison.",
         ),
@@ -185,7 +185,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not start here; establish a pointwise baseline first so you know what the complexity buys.",
-            "Do not use it with very few queries — these objectives need many groups to estimate the gradient well.",
+            "Do not use it with very few queries: these objectives need many groups to estimate the gradient well.",
         ),
         myths=(
             (
@@ -227,13 +227,13 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Choose K to match how many results your interface actually shows.",
             "For each held-out query, score the model's ordering against the true relevance grades.",
-            "Average across queries — every query counts equally, regardless of how many candidates it had.",
+            "Average across queries: every query counts equally, regardless of how many candidates it had.",
             "Use nDCG when relevance is graded; MRR when only the first hit matters, as in question answering.",
             "Report K and the metric together; neither means anything alone.",
         ),
         use=(
             "For every ranking comparison. These are the metrics the objectives are trying to move.",
-            "When diagnosing which part of the list is weak — a good MRR with poor nDCG means the top is fine and the rest is not.",
+            "When diagnosing which part of the list is weak: a good MRR with poor nDCG means the top is fine and the rest is not.",
         ),
         avoid=(
             "Do not average over rows instead of queries; a query with 500 candidates would dominate one with 5.",
@@ -267,7 +267,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "The fitted ranker saves as its own bundle holding the scoring model, the feature contract, and "
             "the query configuration. It is distinct from Session checkpoints, from RAG bundles, and from "
-            "recommender bundles — all of which also produce ordered lists."
+            "recommender bundles: all of which also produce ordered lists."
         ),
         analogy=(
             "Three departments all produce shortlists. Their filing systems are separate because their "

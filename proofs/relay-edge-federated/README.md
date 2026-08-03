@@ -1,6 +1,6 @@
 # Relay Edge Federated
 
-**Tier B** cross-domain product proof — multi-site FedAvg + probabilistic
+**Tier B** cross-domain product proof: multi-site FedAvg + probabilistic
 intervals + centralized classical baseline for synthetic edge device risk.
 
 ## Product narrative
@@ -14,7 +14,7 @@ Site shifts make the problem non-IID. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -42,5 +42,5 @@ Site shifts make the problem non-IID. The platform:
 
 ## Limitations
 
-Local FedAvg simulation — not a deployed cross-silo network. Synthetic edge
+Local FedAvg simulation: not a deployed cross-silo network. Synthetic edge
 sensors only.

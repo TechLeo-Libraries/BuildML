@@ -83,7 +83,7 @@ def recommender_capability_matrix() -> dict[str, Any]:
             ),
             "recommenders-lightfm": (
                 "pip install 'buildml[recommenders-lightfm]'  "
-                "# LightFM hybrid (skipped on Win/Py3.13 — no reliable wheels)"
+                "# LightFM hybrid (skipped on Win/Py3.13: no reliable wheels)"
             ),
         },
         "non_goals": [

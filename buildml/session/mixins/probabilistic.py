@@ -37,7 +37,7 @@ class ProbabilisticSessionMixin:
     ) -> ProbabilisticFitResult:
         """Fit a Bayesian or probabilistic estimator on this Session train only.
 
-        Session facade over :func:`buildml.session.probabilistic_ops.fit_probabilistic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.probabilistic_ops.fit_probabilistic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -74,7 +74,7 @@ class ProbabilisticSessionMixin:
     ) -> ProbabilisticEvalResult:
         """Evaluate the probabilistic plan on a holdout partition.
 
-        Session facade over :func:`buildml.session.probabilistic_ops.evaluate_probabilistic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.probabilistic_ops.evaluate_probabilistic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -101,7 +101,7 @@ class ProbabilisticSessionMixin:
     ) -> ProbabilisticPredictResult:
         """Predict with the probabilistic estimator without updating the plan.
 
-        Session facade over :func:`buildml.session.probabilistic_ops.predict_probabilistic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.probabilistic_ops.predict_probabilistic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -129,7 +129,7 @@ class ProbabilisticSessionMixin:
     ) -> ProbabilisticIntervalResult:
         """Predict predictive intervals or conformal prediction sets on a partition.
 
-        Session facade over :func:`buildml.session.probabilistic_ops.predict_interval_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.probabilistic_ops.predict_interval_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -201,7 +201,7 @@ class ProbabilisticSessionMixin:
     def save_probabilistic_bundle(self, path: str | Path) -> Path:
         """Persist the active ProbabilisticPlan as ``buildml.probabilistic_bundle.v1``.
 
-        Session facade over :func:`buildml.session.probabilistic_ops.save_probabilistic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.probabilistic_ops.save_probabilistic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -218,7 +218,7 @@ class ProbabilisticSessionMixin:
     def load_probabilistic_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a probabilistic bundle into this Session.
 
-        Session facade over :func:`buildml.session.probabilistic_ops.load_probabilistic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.probabilistic_ops.load_probabilistic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

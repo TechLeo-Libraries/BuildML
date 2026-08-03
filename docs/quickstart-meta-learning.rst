@@ -5,7 +5,7 @@ Meta-learning quickstart
 
    PyPI ``buildml`` is still legacy 1.x and does **not** install Session 2.x.
    Install 2.x from GitHub (or an editable checkout). Meta-learning uses core
-   sklearn façades — no optional extra. See :doc:`installation`.
+   sklearn façades: no optional extra. See :doc:`installation`.
 
 Practical tabular few-shot / episodic meta-learning: assign a
 ``role="group"`` task column (or pass ``task_column=``),

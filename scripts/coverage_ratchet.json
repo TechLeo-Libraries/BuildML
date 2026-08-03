@@ -1,0 +1,83 @@
+{
+  "policy": "Coverage fail_under is a one-way ratchet. Raise when classical/core coverage improves; never lower to silence regressions. Floors must be set from a full-suite measure (scripts/run_full_coverage.py or CI pytest --cov=buildml), never from a tiny subset.",
+  "source": "pyproject.toml [tool.coverage.report] fail_under",
+  "current": 60,
+  "schedule": [
+    {
+      "target": 27,
+      "release": "2.4.0a3",
+      "status": "superseded",
+      "notes": "Interim floor after partial-suite ~26%; replaced once full-suite measured ~70.7%"
+    },
+    {
+      "target": 40,
+      "release": "2.4.0b1",
+      "status": "superseded",
+      "notes": "Skipped; full-suite already cleared 60 with headroom"
+    },
+    {
+      "target": 60,
+      "release": "2.4.0a3",
+      "status": "active",
+      "notes": "Full-suite Windows isolated combine measured 70.71% (39539/55914); ~10pp headroom. Linux CI monolith is the gate."
+    },
+    {
+      "target": 70,
+      "release": "2.5.0",
+      "status": "planned",
+      "notes": "Industry-comparable floor; require >=1.0pp headroom on Linux CI full suite after reducing Windows native crashes"
+    }
+  ],
+  "how_to_raise": [
+    "Run: python scripts/run_full_coverage.py --update-ratchet (isolated on Windows; monolith on Linux)",
+    "Or CI-shaped: pytest tests --cov=buildml --cov-report=term-missing",
+    "Confirm TOTAL exceeds the next target with >=1.0pp headroom on the gate platform (Linux CI)",
+    "Bump fail_under in pyproject.toml and this file's current field",
+    "Update CONTRIBUTING.md ratchet note, docs/stability.md, and CHANGELOG"
+  ],
+  "measured": {
+    "percent_covered": 70.71,
+    "covered_lines": 39539,
+    "num_statements": 55914,
+    "platform": "win32",
+    "python": "3.13.7",
+    "mode": "isolated",
+    "command": "pytest per-module isolated (189 modules) + coverage combine",
+    "crashed_count": 31,
+    "crashed_modules": [
+      "tests/integration/test_dl_alpha_smoke.py",
+      "tests/integration/test_dl_torch_smoke.py",
+      "tests/unit/test_activelearning_industry_depth.py",
+      "tests/unit/test_ai_phase_c.py",
+      "tests/unit/test_automl_r5_industry.py",
+      "tests/unit/test_cbr_industry_depth.py",
+      "tests/unit/test_cbr_slice.py",
+      "tests/unit/test_dl_m2_depth.py",
+      "tests/unit/test_dl_phase_c.py",
+      "tests/unit/test_dl_torch_slice.py",
+      "tests/unit/test_kg_industry_depth.py",
+      "tests/unit/test_metalearning_r65_industry.py",
+      "tests/unit/test_multitask_industry_depth.py",
+      "tests/unit/test_nlp_industry_depth.py",
+      "tests/unit/test_online_industry_depth.py",
+      "tests/unit/test_optimize_cvxpy_adapter.py",
+      "tests/unit/test_pass_g_dl_depth.py",
+      "tests/unit/test_pass_j_image_multimodal.py",
+      "tests/unit/test_pass_l_audio_multimodal.py",
+      "tests/unit/test_pass_o_speech_ddp_serve.py",
+      "tests/unit/test_pass_q_label_encoding.py",
+      "tests/unit/test_pass_r_pretrained_serve_k8s.py",
+      "tests/unit/test_pass_v_capability_depth.py",
+      "tests/unit/test_rag_m2_depth.py",
+      "tests/unit/test_rag_r4_depth.py",
+      "tests/unit/test_ranking_industry_depth.py",
+      "tests/unit/test_rl_industry.py",
+      "tests/unit/test_selfsupervised_slice.py",
+      "tests/unit/test_selfsupervised_torch.py",
+      "tests/unit/test_semisupervised_industry_depth.py",
+      "tests/unit/test_symbolic_industry.py"
+    ]
+  },
+  "last_full_suite_percent": 70.71,
+  "suggested_fail_under": 69
+}

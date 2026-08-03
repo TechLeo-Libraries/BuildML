@@ -2,16 +2,16 @@
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core sklearn path — no optional extra. Industry + torch backends below.
+> Core sklearn path: no optional extra. Industry + torch backends below.
 
 ## What this is
 
 Session-facing incremental learning with honest backend selection:
 
-1. `fit_online` — warm-start on an initial **train** chunk
-2. `partial_fit_online` — update on subsequent train chunks (or role-aligned frames)
-3. `evaluate_online` / `predict_online` — holdout inference (never for updates)
-4. `save_online_bundle` / `load_online_bundle` — `buildml.online_bundle.v1`
+1. `fit_online`: warm-start on an initial **train** chunk
+2. `partial_fit_online`: update on subsequent train chunks (or role-aligned frames)
+3. `evaluate_online` / `predict_online`: holdout inference (never for updates)
+4. `save_online_bundle` / `load_online_bundle`: `buildml.online_bundle.v1`
 
 Inspect backends with `buildml.online.online_capability_matrix()`.
 
@@ -41,7 +41,7 @@ pip install "buildml[online-industry,torch]"
 - Updates use **train** rows (or user frames with matching feature/target columns).
 - Validation/test indices are refused.
 - Evaluation never feeds `partial_fit`.
-- Classifiers: `classes=` on first fit — explicit or discovered from the **full train target column** (labels only).
+- Classifiers: `classes=` on first fit: explicit or discovered from the **full train target column** (labels only).
 
 ## Chunk / stream ingestion
 
@@ -53,8 +53,8 @@ pip install "buildml[online-industry,torch]"
 
 ## Drift-aware evaluate
 
-- `drift_detector='mean_shift'` — compare chunk/holdout feature means vs init (all backends).
-- `drift_detector='adwin'` / `'page_hinkley'` — River error-stream detectors on updates and `evaluate_online(drift_check=True)` (industry backend only).
+- `drift_detector='mean_shift'`: compare chunk/holdout feature means vs init (all backends).
+- `drift_detector='adwin'` / `'page_hinkley'`: River error-stream detectors on updates and `evaluate_online(drift_check=True)` (industry backend only).
 - Results expose `drift_detected` and `drift_notes` on `OnlineEvalResult` and update results.
 
 ## Benchmark

@@ -1,6 +1,6 @@
 # Nova Torch Bench
 
-**Tier B** cross-domain product proof — torch tabular MLP + classical
+**Tier B** cross-domain product proof: torch tabular MLP + classical
 supervised baseline + probabilistic intervals / calibration.
 
 ## Product narrative
@@ -15,7 +15,7 @@ mortgage split. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 Core classical + probabilistic stages keep the product completed when torch skips.
 
 ## How to run

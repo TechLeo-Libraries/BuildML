@@ -14,7 +14,7 @@ alone would not tell you.
 The ``deterministic`` flag is the one real decision here. Deterministic acting
 always takes the highest-scoring action and is what you want when serving:
 reproducible, and it exploits what has been learned. Stochastic acting samples,
-which keeps exploring — necessary if the log you collect will be used to train
+which keeps exploring: necessary if the log you collect will be used to train
 the next policy, because a deterministic policy generates data about one action
 per context and nothing about the alternatives.
 
@@ -78,7 +78,7 @@ def act_rl(
         indices themselves.
     deterministic:
         ``True`` (default) always takes the best-scoring action. ``False``
-        samples, which keeps exploring — use it when the resulting log will
+        samples, which keeps exploring: use it when the resulting log will
         train the next policy.
     random_state:
         Seed for stochastic acting. Ignored when ``deterministic`` is ``True``.
@@ -100,7 +100,7 @@ def act_rl(
     Notes
     -----
     **Scores mean different things per mode, and are not comparable across
-    them.** LinUCB reports upper confidence bounds — an optimistic estimate,
+    them.** LinUCB reports upper confidence bounds: an optimistic estimate,
     deliberately inflated for arms it has seen little of. Epsilon-greedy and
     softmax report predicted rewards. Policy-gradient modes report action
     probabilities summing to 1.0. Tabular control reports Q-values, which are
@@ -340,6 +340,6 @@ def _act_sb3(
         scores=tuple(scores),
         disclosures=(
             "Actions chosen by a Stable-Baselines3 industry policy.",
-            "Honesty: small-env teaching loop — not MuJoCo/robotics.",
+            "Honesty: small-env teaching loop: not MuJoCo/robotics.",
         ),
     )

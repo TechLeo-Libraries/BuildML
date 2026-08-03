@@ -7,8 +7,8 @@ whether you would have picked them yourself. A feature set that retrieves
 unconvincing neighbours will produce unconvincing predictions, and this is much
 the cheaper place to discover it.
 
-Queries never change the case base. The transforms applied to a query — the
-standardisation, the categorical vocabularies — are the ones fitted on train and
+Queries never change the case base. The transforms applied to a query: the
+standardisation, the categorical vocabularies: are the ones fitted on train and
 are applied, never refitted. A holdout row is encoded in the training data's
 terms, which is precisely what makes its neighbours meaningful.
 
@@ -161,7 +161,7 @@ def encode_query_features(
     """Encode query rows into the same space the case base lives in.
 
     Applies the train-fitted standardisation and categorical vocabularies to a
-    query frame. Applies, never refits — that distinction is the whole point.
+    query frame. Applies, never refits: that distinction is the whole point.
     A query standardised by its own mean and variance would sit in a different
     coordinate system from memory, and the resulting distances would be
     arithmetic on incomparable numbers.
@@ -254,7 +254,7 @@ def neighbor_pack_for_row(
     Returns
     -------
     tuple
-        ``(cases, distances, order)`` — the resolved cases plus the inputs
+        ``(cases, distances, order)``: the resolved cases plus the inputs
         passed through, so callers can keep the indices for feature lookups.
     """
     neighbors = [plan.case_base.cases[j] for j in order]
@@ -344,7 +344,7 @@ def _partition_frame(
     Returns
     -------
     tuple
-        ``(frame, indices)`` — the selected rows and their original index
+        ``(frame, indices)``: the selected rows and their original index
         labels.
 
     Raises

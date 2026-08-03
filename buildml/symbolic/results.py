@@ -14,7 +14,7 @@ class SymbolicPlan:
 
     Persist via ``buildml.symbolic_bundle.v1``. Honesty: structured if-then
     rules over tabular columns (declared or train-induced decision tree /
-    decision list) — **not** an AGI symbolic reasoner, Prolog engine, or Z3
+    decision list): **not** an AGI symbolic reasoner, Prolog engine, or Z3
     SMT solver.
     """
 
@@ -69,7 +69,7 @@ class NeuroSymbolicPlan:
 
     Persist via ``buildml.symbolic_bundle.v1`` (same format family; tagged
     ``kind=neuro_symbolic``). Honesty: sklearn base model + rule constraints /
-    features — **not** a deep neuro-symbolic research platform or logic
+    features: **not** a deep neuro-symbolic research platform or logic
     programming stack.
     """
 

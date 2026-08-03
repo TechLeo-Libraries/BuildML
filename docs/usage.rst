@@ -142,7 +142,7 @@ entity or time ordering, use ``group_split`` or ``time_split`` instead:
 
    from buildml import Session
 
-   # Multiple visits per customer — random row split would leak customers
+   # Multiple visits per customer: random row split would leak customers
    visits = pd.DataFrame(
        {
            "customer_id": [1, 1, 1, 2, 2, 3, 3, 3, 4, 4],
@@ -170,7 +170,7 @@ external system already defined memberships, pass positional indices to
 Why Session enforces order
 --------------------------
 
-Fit-capable steps — imputation, encoding, scaling, resampling, and ``fit`` —
+Fit-capable steps: imputation, encoding, scaling, resampling, and ``fit`` :
 require a split and learn from training rows. That guard prevents the most
 common partition leakage: computing holdout statistics during preparation.
 
@@ -181,11 +181,11 @@ the project.
 
 Typical failure modes:
 
-* ``ValidationError: No split exists`` — call ``split``, ``group_split``,
+* ``ValidationError: No split exists``: call ``split``, ``group_split``,
   ``time_split``, or ``inject_split`` before ``impute`` or ``fit``.
-* ``LeakageError`` — attempting to fit on validation or test, or resampling
+* ``LeakageError``: attempting to fit on validation or test, or resampling
   outside train.
-* Missing extra — ``optuna_search``, ``resample``, ``eda_app``, and engine
+* Missing extra: ``optuna_search``, ``resample``, ``eda_app``, and engine
   adapters name the install group when an optional dependency is absent.
 
 ``session.explain("impute", moment="before")`` lists prerequisites, leakage
@@ -326,7 +326,7 @@ are optional engines for ingest, filtering, projection, and aggregation:
 ``with session:`` calls ``close_native`` on exit so owned DuckDB connections
 are released. ``portable_filter_expr`` builds simple quoted comparisons for
 Polars and DuckDB; complex SQL remains engine-specific. Lazy Polars frames
-collect on ``to_pandas()`` / sklearn materialization — that is not out-of-core
+collect on ``to_pandas()`` / sklearn materialization: that is not out-of-core
 training.
 
 Checkpoint and pipeline round-trip
@@ -360,7 +360,7 @@ Prefer ``PreprocessRecipe`` inside ``cv_score`` / ``grid_search`` /
 ``randomized_search`` / ``optuna_search`` / ``evolutionary_search`` /
 ``nested_cv_score`` on data that has
 **not** already been Session-globally prepared. Session-global prep then CV is
-hard-refused by default — see :doc:`leakage-cv-recipes`.
+hard-refused by default: see :doc:`leakage-cv-recipes`.
 
 Optional paths on the same Session
 ----------------------------------
@@ -368,20 +368,20 @@ Optional paths on the same Session
 Torch, RAG, and AI operator features attach to the same Session without
 replacing classical APIs:
 
-* :doc:`quickstart-torch` / :doc:`torch-deep` — tabular, text, multimodal,
+* :doc:`quickstart-torch` / :doc:`torch-deep`: tabular, text, multimodal,
   CV/search/nested, AMP/DDP, export
-* :doc:`speech-asr-finetune` / :doc:`pretrained-backbones` — ASR + classify
+* :doc:`speech-asr-finetune` / :doc:`pretrained-backbones`: ASR + classify
   finetune-lite; curated backbone hooks
-* :doc:`serve-deploy` — local FastAPI serve, TorchServe/TRT/K8s recipes
-* :doc:`quickstart-rag` / :doc:`rag-deep` — retrieve, grounded generate, eval,
+* :doc:`serve-deploy`: local FastAPI serve, TorchServe/TRT/K8s recipes
+* :doc:`quickstart-rag` / :doc:`rag-deep`: retrieve, grounded generate, eval,
   bundle
 * :doc:`quickstart-ai` / :doc:`ai-operator-safety` /
-  :doc:`ai-tools-operator-patterns` — advisor, confirmed execute, autonomy caps,
+  :doc:`ai-tools-operator-patterns`: advisor, confirmed execute, autonomy caps,
   tool allowlist patterns
-* :doc:`artifacts-checkpoints-bundles` — checkpoint vs pipeline vs Torch/RAG/AI
+* :doc:`artifacts-checkpoints-bundles`: checkpoint vs pipeline vs Torch/RAG/AI
   artifacts
 * :doc:`eda-teaching-studio` / :doc:`engines-polars-duckdb` /
-  :doc:`classical-diagnostics-search` / :doc:`preprocess-depth` — explore, prep
+  :doc:`classical-diagnostics-search` / :doc:`preprocess-depth`: explore, prep
   engines, diagnostics, and preprocess depth
 
 Teaching copy for every public Session method is kept in sync by CI

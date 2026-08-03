@@ -5,7 +5,7 @@ The rendering half of the plan-then-render split. The planner in
 
 Two things shape the implementation. Matplotlib is forced onto the ``Agg``
 backend, because a report generated on a server or in CI must not try to open a
-window — that hangs, or crashes, depending on the environment. And every plot is
+window: that hangs, or crashes, depending on the environment. And every plot is
 wrapped: a figure that fails records its error and the rest still render. A
 report missing one chart is useful; an exception on chart nineteen of
 twenty-four wastes everything before it.
@@ -59,7 +59,7 @@ def render_adaptive_plots(
     Parameters
     ----------
     frame:
-        The analysis frame — the same one the plan was built against, usually
+        The analysis frame: the same one the plan was built against, usually
         sampled. Plotting a different frame will not match the plan's
         assumptions about cardinality and dtype.
     plan:
@@ -165,7 +165,7 @@ def render_adaptive_plots(
 def render_analysis_plots(sections: dict[str, Any]) -> dict[str, Any]:
     """Draw the charts that need the analysis, not the data.
 
-    Some charts visualise results rather than rows — a PCA scree plot, a
+    Some charts visualise results rather than rows: a PCA scree plot, a
     correlation heatmap, a drift summary. They are built from the analyzer
     sections, which means they can be produced without the frame at all.
 
@@ -479,7 +479,7 @@ def _plot_outlier_board(frame: pd.DataFrame, plt: Any, sns: Any, title: str | No
 def save_figures(figures: dict[str, Any], directory: str | Path) -> Path:
     """Write figures to a directory as PNGs, skipping whatever cannot be saved.
 
-    Each figure becomes ``{key}.png`` at 140 DPI with tight bounding boxes —
+    Each figure becomes ``{key}.png`` at 140 DPI with tight bounding boxes :
     sharp enough to read on a high-resolution screen and in print, without the
     file sizes that come from going higher.
 

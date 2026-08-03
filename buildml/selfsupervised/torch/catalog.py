@@ -1,4 +1,4 @@
-"""SSL method catalog — modality routing and install hints."""
+"""SSL method catalog: modality routing and install hints."""
 
 from __future__ import annotations
 
@@ -171,7 +171,7 @@ def ssl_capability_matrix() -> dict[str, Any]:
                 "extra": None,
                 "methods": sorted(LEGACY_SKLEARN_METHODS),
                 "notes": (
-                    "Legacy masked_tabular sklearn fallback — deprecated when torch works."
+                    "Legacy masked_tabular sklearn fallback: deprecated when torch works."
                 ),
             },
             "torch": {

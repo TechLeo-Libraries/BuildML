@@ -1,15 +1,15 @@
 """AutoML: model-family + fold-local recipe search beyond single-estimator HPO.
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**):
-  1. Unsupervised learning — clustering Session path (done; see
+  1. Unsupervised learning: clustering Session path (done; see
      ``buildml.unsupervised``).
-  2. Ensemble learning — native stacking/voting/blending (done; see
+  2. Ensemble learning: native stacking/voting/blending (done; see
      ``buildml.ensemble``).
-  3. AutoML — pipeline/model search beyond HPO. **This module.**
-  4. Time-series forecasting — done (see ``buildml.forecasting``).
-  5. Anomaly / fraud detection — done (see ``buildml.anomaly``).
+  3. AutoML: pipeline/model search beyond HPO. **This module.**
+  4. Time-series forecasting: done (see ``buildml.forecasting``).
+  5. Anomaly / fraud detection: done (see ``buildml.anomaly``).
 
 Later phases and explicit non-goals: see ``buildml.unsupervised`` module doc.
 
@@ -18,7 +18,7 @@ AutoML needs no optional extra. Optuna-backed AutoML uses ``buildml[automl]``.
 Industry adapters (FLAML / AutoGluon) and GBDT families use
 ``buildml[automl-industry]``.
 
-Lazy imports — core never grows heavy AutoML stacks beyond sklearn (+ optional
+Lazy imports: core never grows heavy AutoML stacks beyond sklearn (+ optional
 Optuna / industry adapters when explicitly requested).
 """
 

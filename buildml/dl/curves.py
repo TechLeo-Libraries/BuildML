@@ -8,7 +8,7 @@ performance. This module extracts the series and attaches that reading, so the
 numbers arrive with their interpretation rather than requiring you to supply it.
 
 Three lists come back alongside the data. ``interpretation`` says what the shape
-suggests. ``limitations`` says what the curves cannot tell you — chiefly that
+suggests. ``limitations`` says what the curves cannot tell you: chiefly that
 they describe one run under one configuration, not deployment risk.
 ``disclosures`` records the conditions: which device, which scheduler, whether
 early stopping was active, whether the run resumed from a checkpoint.
@@ -62,7 +62,7 @@ def build_training_curve(result: TrainResult) -> TrainingCurveReport:
 
     **Interpretation is heuristic.** It flags a rising training loss and a
     validation loss sitting well above training, both of which are usually worth
-    investigating — but they are prompts to look, not diagnoses.
+    investigating: but they are prompts to look, not diagnoses.
 
     See Also
     --------
@@ -71,7 +71,7 @@ def build_training_curve(result: TrainResult) -> TrainingCurveReport:
     history = list(result.history)
     epochs = [int(row.get("epoch", 0)) for row in history]
     train_loss = [float(row["train_loss"]) for row in history if "train_loss" in row]
-    # Align lengths when log_every skipped some rows — use history order as-is.
+    # Align lengths when log_every skipped some rows: use history order as-is.
     if len(train_loss) != len(history):
         train_loss = [float(row.get("train_loss", float("nan"))) for row in history]
     val_loss: list[float | None] = [
@@ -112,7 +112,7 @@ def build_training_curve(result: TrainResult) -> TrainingCurveReport:
         "Epoch aggregates are preferred for claims; batch losses are noisier and not stored here.",
         (
             "Curves describe this run under the recorded device, split, and "
-            "TrainConfig — not deployment risk."
+            "TrainConfig: not deployment risk."
         ),
         (
             "Validation improvement does not prove test performance; "
@@ -189,7 +189,7 @@ def torch_training_status(
     Notes
     -----
     **``present`` without ``enabled`` is the interesting case.** It means
-    training happened but the result is no longer attached — usually after
+    training happened but the result is no longer attached: usually after
     reloading a Session from a checkpoint that did not carry the live object.
     The returned disclosure says exactly that, which is more useful than
     reporting no training at all.
@@ -257,7 +257,7 @@ def _interpret(
             tips.append("Train loss decreased from the first recorded epoch to the last.")
         elif train_loss[-1] > train_loss[0]:
             tips.append(
-                "Train loss rose versus the first recorded epoch — check LR, clipping, or labels."
+                "Train loss rose versus the first recorded epoch: check LR, clipping, or labels."
             )
     finite_val = [v for v in val_loss if v is not None]
     if len(finite_val) >= 2 and train_loss:
@@ -265,7 +265,7 @@ def _interpret(
         last_val = finite_val[-1]
         if last_val > last_train * 1.25 and last_train > 0:
             tips.append(
-                "Late validation loss sits well above train loss — possible overfitting; "
+                "Late validation loss sits well above train loss: possible overfitting; "
                 "prefer early-stop on validation or simplify the module."
             )
     if early and early.enabled:

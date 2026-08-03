@@ -481,7 +481,7 @@ def cross_validate_torch(
     """Fold-local Torch CV on the attached numeric tabular dataset.
 
     Normalize stats are fit per fold. Classical Session plans are disclosed as
-    a limitation unless you supply a custom factory path — this helper does not
+    a limitation unless you supply a custom factory path: this helper does not
     silently refit Session-global plans inside each fold.
     Delegates to :func:`buildml.dl.cv.cross_validate_torch`.
 
@@ -687,7 +687,7 @@ def load_torch_bundle(
     """Load a Torch trainer bundle into this Session.
 
     Restores weights plus optional ``multimodal_preprocess`` meta (frozen
-    image/audio stats and layout). Does **not** rebuild DataLoaders — remake
+    image/audio stats and layout). Does **not** rebuild DataLoaders: remake
     multimodal/text loaders before fit/evaluate/export.
     Delegates to :func:`buildml.dl.checkpoint.load_torch_bundle`.
 
@@ -751,7 +751,7 @@ def make_multimodal_torch_loaders(
     Requires ``buildml[torch]``. Fit stats (vocab, numeric mean/std, image
     channel mean/std, audio amplitude mean/std) use the train partition only.
     Batches follow ``(numeric?, tokens?, image?, audio?, y)`` for present
-    modalities. Audio fusion is a small 1D-CNN branch — not a speech foundation
+    modalities. Audio fusion is a small 1D-CNN branch: not a speech foundation
     model.
 
     Pass ``preprocess=`` (contract / dict) to freeze restore stats, or
@@ -1052,7 +1052,7 @@ def make_audio_multimodal_torch_loaders(
     Thin facade that requires ``audio_column`` and delegates to the shared
     multimodal loader builder. Path cells need soundfile (bundled in
     ``buildml[torch]`` / ``buildml[audio]``); waveform array cells work with
-    Torch alone. Uses a small 1D-CNN fusion branch — not a speech foundation
+    Torch alone. Uses a small 1D-CNN fusion branch: not a speech foundation
     model.
 
     Parameters
@@ -1395,7 +1395,7 @@ def export_torch(
     """Export the last Torch trainer to TorchScript or ONNX.
 
     Uses train-loader example inputs when ``example_input`` is omitted.
-    Alpha-quality escape hatch — see export result limitations.
+    Alpha-quality escape hatch: see export result limitations.
     Delegates to :func:`buildml.dl.export.export_train_result`.
 
     Parameters
@@ -1486,7 +1486,7 @@ def fit_torch_ddp(
       ``torch.cuda.device_count() >= 2`` unless ``allow_cpu_ddp=True`` (gloo smoke).
     * Multi-node: ``multi_node=True`` joins a ``torchrun`` rendezvous
       (``WORLD_SIZE`` / ``RANK`` / ``LOCAL_RANK`` / ``MASTER_ADDR`` /
-      ``MASTER_PORT``; ``LOCAL_RANK`` is required — global rank is not used as a
+      ``MASTER_PORT``; ``LOCAL_RANK`` is required: global rank is not used as a
       local CUDA index). Not a Kubernetes multi-cluster orchestrator.
     Delegates to :func:`buildml.dl.ddp.train_supervised_module_ddp`.
 
@@ -1574,7 +1574,7 @@ def make_speech_torch_loaders(
     """Build speech classification loaders (finetune-lite encoder path).
 
     Requires ``buildml[torch]``. Amplitude stats fit on train only. This is an
-    integration/finetune path — not training a foundation model from scratch.
+    integration/finetune path: not training a foundation model from scratch.
     Delegates to :func:`buildml.dl.speech.make_speech_loaders`.
 
     Parameters
@@ -1768,7 +1768,7 @@ def transcribe_speech(
 
     ``backend="stub"`` is CI-safe. ``backend="transformers"`` requires
     ``buildml[speech]`` and may download Whisper-class weights. Integration
-    path only — not FM training from scratch.
+    path only: not FM training from scratch.
     Delegates to :func:`buildml.dl.speech.transcribe_from_dataset`.
 
     Parameters
@@ -1857,7 +1857,7 @@ def serve_bundle(
     is omitted and ``kind="pipeline"``, uses the last saved pipeline path
     recorded on the Session if available.
 
-    Not registered as an AI tool — CLI / Session-primary by design.
+    Not registered as an AI tool: CLI / Session-primary by design.
     Delegates to :func:`buildml.serving.launch.serve_bundle`.
 
     Parameters
@@ -2278,7 +2278,7 @@ def emit_k8s_ddp_job(
     """Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only).
 
     Delegates to :func:`buildml.dl.k8s.write_torchrun_ddp_job`. This writes a
-    starter manifest — not a managed cluster orchestrator.
+    starter manifest: not a managed cluster orchestrator.
 
     Parameters
     ----------
@@ -2372,7 +2372,7 @@ def emit_k8s_serve_deployment(
     """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
 
     Delegates to :func:`buildml.dl.k8s.write_serve_deployment`. This writes a
-    starter manifest — not a managed cluster orchestrator.
+    starter manifest: not a managed cluster orchestrator.
 
     Parameters
     ----------

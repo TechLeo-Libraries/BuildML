@@ -32,10 +32,10 @@ Algorithms
 Session API
 -----------
 
-* ``fit_metalearning`` — meta-train on train tasks
-* ``adapt_to_task`` — fast adapt to one task support set
-* ``evaluate_metalearning`` — episodic holdout metrics
-* ``save_metalearning_bundle`` / ``load_metalearning_bundle`` —
+* ``fit_metalearning``: meta-train on train tasks
+* ``adapt_to_task``: fast adapt to one task support set
+* ``evaluate_metalearning``: episodic holdout metrics
+* ``save_metalearning_bundle`` / ``load_metalearning_bundle`` :
   ``buildml.metalearning_bundle.v1``
 
 Properties: ``metalearning_plan``, ``metalearning_fit_result``,
@@ -71,7 +71,7 @@ Residuals (honest)
 * Classification-focused surface (shared global label space).
 * No Torch meta-learning / learned embeddings.
 * No MAML/Reptile second-order loops.
-* Random row splits may place the same task id in train and holdout — disclosed.
+* Random row splits may place the same task id in train and holdout: disclosed.
 
 Next Phase 2 item after meta-learning (now shipped): **federated learning**
 (:doc:`federated-deep`).

@@ -8,7 +8,7 @@ your workflow.
 
 :class:`LeakageError` is the one that distinguishes this library. It is raised
 not because an operation would fail, but because it would succeed and produce a
-score that flatters the model — fitting an imputer on the full frame, or
+score that flatters the model: fitting an imputer on the full frame, or
 retaining a holdout row into a case base. Those operations run fine in plain
 scikit-learn and quietly ruin the evaluation.
 
@@ -33,7 +33,7 @@ class ValidationError(BuildMLError):
     """Raised when the request itself cannot be honoured as written.
 
     Covers a misspelled role, a column that does not exist, a parameter outside
-    its valid range, and operations attempted out of order — predicting before
+    its valid range, and operations attempted out of order: predicting before
     fitting, or splitting before roles are assigned. The fix is always in the
     calling code, and the message says what it is.
     """
@@ -69,8 +69,8 @@ class MissingExtraError(BuildMLError):
     -----
     **Always raise this with ``from exc``** at an ``ImportError`` boundary, so
     the underlying failure stays in the traceback. An extra can be installed and
-    still fail to import for reasons of its own — a missing native library, a
-    version conflict — and the original error is what distinguishes the two.
+    still fail to import for reasons of its own: a missing native library, a
+    version conflict: and the original error is what distinguishes the two.
 
     Examples
     --------
@@ -97,7 +97,7 @@ class MissingExtraError(BuildMLError):
             install command shown to the user.
         feature:
             A human-readable description of what needs it, used as the subject
-            of the message — so phrase it as a noun, like ``'Evaluation plot
+            of the message: so phrase it as a noun, like ``'Evaluation plot
             boards'`` rather than ``'plotting'``.
         """
         self.extra = extra
@@ -120,6 +120,6 @@ class LeakageError(BuildMLError):
     Notes
     -----
     **Do not work around this by widening the fit scope.** If it fires, the
-    workflow needs reordering — fit the transform on train, then apply it to the
-    other partitions — not a way past the check.
+    workflow needs reordering: fit the transform on train, then apply it to the
+    other partitions: not a way past the check.
     """

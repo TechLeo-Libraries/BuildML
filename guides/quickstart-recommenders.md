@@ -1,10 +1,10 @@
-# Quickstart — Recommendation systems
+# Quickstart: Recommendation systems
 
 **Proof:** [movie-recs-collaborative](../proofs/movie-recs-collaborative/) (+ Tier C item-cosine twin).
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core path (numpy/sklearn CF + content) — no extra required.
+> Core path (numpy/sklearn CF + content): no extra required.
 > Industry ALS/BPR + LightFM: `pip install 'buildml[recommenders-industry]'`.
 > See [installation](../docs/installation.rst).
 
@@ -95,7 +95,7 @@ session.save_recommender_bundle("artifacts/recommender_demo_bundle")
 | User id | `user_column=` (required) | `id` or `ignore` |
 | Item id | `item_column=` (required) | `id` or `ignore` |
 | Rating | `rating_column=` or Session `target` | `target` |
-| Implicit | `feedback='implicit'` (presence = positive) | — |
+| Implicit | `feedback='implicit'` (presence = positive) |: |
 
 ---
 
@@ -107,7 +107,7 @@ session.save_recommender_bundle("artifacts/recommender_demo_bundle")
 | Candidates | Train item catalog (known-item protocol) |
 | Cold users | `cold_start='popularity'` or `'skip'` (disclosed) |
 | Eval | Holdout ranking metrics; no refit |
-| Scope | Session CF/content — not Netflix-scale; ≠ RAG; ≠ EDA Findings |
+| Scope | Session CF/content: not Netflix-scale; ≠ RAG; ≠ EDA Findings |
 
 ---
 
@@ -115,4 +115,4 @@ session.save_recommender_bundle("artifacts/recommender_demo_bundle")
 
 - Deep guide: [recommenders-deep.md](recommenders-deep.md)
 - Distinct tabular ranking path: [Search / LTR](quickstart-ranking.md)
-  (`fit_ranker` — query–item feature rows; not CF)
+  (`fit_ranker`: query–item feature rows; not CF)

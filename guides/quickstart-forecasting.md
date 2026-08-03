@@ -56,7 +56,7 @@ bundle = session.save_forecast_bundle(".buildml-artifacts/forecast_bundle")
 print(bundle)
 ```
 
-`fit_forecast` **refuses** `session.split(...)` (random/stratified) — use
+`fit_forecast` **refuses** `session.split(...)` (random/stratified): use
 `time_split`.
 
 ---
@@ -66,8 +66,8 @@ print(bundle)
 | Method | Backend | Extra |
 |--------|---------|-------|
 | `auto` | ETS or lag_ridge | timeseries for ETS |
-| `naive`, `seasonal_naive`, `drift`, `mean` | baseline | — |
-| `lag_ridge`, `lag_hgb` | sklearn | — |
+| `naive`, `seasonal_naive`, `drift`, `mean` | baseline |: |
+| `lag_ridge`, `lag_hgb` | sklearn |: |
 | `ets`, `arima`, `auto_arima`, `sarimax` | statsmodels | timeseries |
 | `prophet` | Prophet | timeseries-prophet |
 | `nbeats` | neuralforecast | timeseries-ml |
@@ -91,6 +91,6 @@ print(naive.evaluate_forecast(partition="test").metrics)
 ## Honesty bounds
 
 - Not a digital twin or full econometrics lab (no cointegration product surface).
-- Prophet/N-BEATS use synthetic daily `ds` alignment — disclose for irregular clocks.
+- Prophet/N-BEATS use synthetic daily `ds` alignment: disclose for irregular clocks.
 - Univariate by default; exog requires future exog at generate time.
 - Bundle format: `buildml.forecast_bundle.v2` (v1 still loadable).

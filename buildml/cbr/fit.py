@@ -2,7 +2,7 @@
 
 Fitting here means something different from fitting a model. Nothing is
 estimated from the data and compressed into parameters; the rows are kept, and
-what gets *fitted* is only the machinery for measuring distance between them —
+what gets *fitted* is only the machinery for measuring distance between them :
 the standardisation, the per-feature ranges, the categorical vocabularies, and
 whatever search index the backend needs.
 
@@ -118,7 +118,7 @@ def fit_cbr(
         The sentence-transformer for text columns.
     standardize:
         Centre and scale numeric features on train rows. Leave on unless scales
-        are already comparable — an unscaled large-range column otherwise
+        are already comparable: an unscaled large-range column otherwise
         decides every distance by itself.
     distance_eps:
         Floor when inverting distances into weights.
@@ -127,7 +127,7 @@ def fit_cbr(
     prefer_reduce_components:
         Search reduced components when ``reduce_plan`` supplies them. Distance
         degrades in high dimensions, so reducing first often improves
-        neighbours — at the cost that "similar" now means similar under that
+        neighbours: at the cost that "similar" now means similar under that
         projection.
     reduce_plan:
         A fitted dimensionality-reduction plan.
@@ -146,7 +146,7 @@ def fit_cbr(
     Returns
     -------
     tuple
-        ``(plan, result)`` — the fitted reasoner and its fit report.
+        ``(plan, result)``: the fitted reasoner and its fit report.
 
     Raises
     ------
@@ -165,7 +165,7 @@ def fit_cbr(
     measuring memory rather than generalisation.
 
     **The fit is cheap and the queries are not.** Nothing is estimated, so
-    fitting is close to the cost of copying the data — but every later
+    fitting is close to the cost of copying the data: but every later
     prediction searches the whole memory, so the expense moves to inference.
 
     **Check ``result.backend`` against what you asked for.** An unavailable
@@ -354,13 +354,13 @@ def fit_cbr(
             "mismatch rate over categoricals, weighted by feature counts."
         ),
     }[metric_key]
-    disclosures.append(f"Distance metric: {metric_key} — {metric_doc}")
+    disclosures.append(f"Distance metric: {metric_key}: {metric_doc}")
     disclosures.append(
         "Case base built from Session train only. Holdout is for "
-        "retrieve_cases / predict_cbr / evaluate_cbr — never for memory at fit."
+        "retrieve_cases / predict_cbr / evaluate_cbr: never for memory at fit."
     )
     disclosures.append(
-        "Honesty: tabular CBR (case→solution) — not RAG document retrieval, "
+        "Honesty: tabular CBR (case→solution): not RAG document retrieval, "
         "not a vector DB product, not a full cognitive CBR research suite."
     )
     disclosures.append(
@@ -484,7 +484,7 @@ def fit_cbr(
     train_score: float | None = None
     try:
         # Leave-one-out lite on a subsample is expensive; score full train
-        # with k neighbors (includes self as nearest — disclose that).
+        # with k neighbors (includes self as nearest: disclose that).
         pred = predict_cbr(
             dataset, plan, split_plan, partition="train", return_traces=False
         )
@@ -494,7 +494,7 @@ def fit_cbr(
             )
             disclosures_note = (
                 "train_score is in-sample (query's own case is typically the "
-                "nearest neighbor) — not a holdout metric."
+                "nearest neighbor): not a holdout metric."
             )
             plan = _plan_with_disclosure(plan, disclosures_note)
         else:
@@ -503,7 +503,7 @@ def fit_cbr(
                 np.asarray(pred.predictions, dtype=float),
             ).get("r2")
             disclosures_note = (
-                "train_score (R2) is in-sample — not a holdout metric."
+                "train_score (R2) is in-sample: not a holdout metric."
             )
             plan = _plan_with_disclosure(plan, disclosures_note)
     except Exception as exc:  # noqa: BLE001

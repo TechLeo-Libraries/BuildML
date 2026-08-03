@@ -11,14 +11,14 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Online learning updates a model with new data instead of retraining it from scratch. You feed "
             "it a chunk of rows, it adjusts, and it is immediately ready to predict again. In BuildML this "
-            "is incremental scikit-learn fitting over training chunks — not a distributed streaming platform."
+            "is incremental scikit-learn fitting over training chunks: not a distributed streaming platform."
         ),
         analogy=(
             "Adding notes to a notebook you already keep, rather than rewriting the whole notebook every "
             "time you learn something new."
         ),
         steps=(
-            "Split as usual — the chunks come from the training partition.",
+            "Split as usual: the chunks come from the training partition.",
             "Fit an initial model on the first chunk to establish the plan.",
             "Feed subsequent chunks with `partial_fit_online`; each call nudges the model.",
             "Predict at any point with `predict_online`; the model is always usable.",
@@ -30,7 +30,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it when you can comfortably retrain from scratch; batch retraining is simpler and usually more accurate.",
-            "Do not use it with estimators that lack `partial_fit` — most tree ensembles cannot update incrementally at all.",
+            "Do not use it with estimators that lack `partial_fit`: most tree ensembles cannot update incrementally at all.",
         ),
         myths=(
             (
@@ -65,14 +65,14 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "training targets."
         ),
         analogy=(
-            "Printing ballot papers. Every candidate has to be on the sheet before voting starts — you "
+            "Printing ballot papers. Every candidate has to be on the sheet before voting starts: you "
             "cannot write one in halfway through the count."
         ),
         steps=(
             "Work out the full set of labels your problem can produce, including rare ones.",
             "Pass them explicitly as `classes=[...]` on the first fit when you know them.",
             "If you do not pass them, BuildML discovers them from the training partition's labels.",
-            "Confirm the discovered list contains every class you expect — a class absent from your first chunk is a real risk.",
+            "Confirm the discovered list contains every class you expect: a class absent from your first chunk is a real risk.",
             "If a genuinely new class appears later, you need a fresh model, not another update.",
         ),
         use=(
@@ -80,7 +80,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Explicitly whenever a rare class might be missing from the early chunks.",
         ),
         avoid=(
-            "Do not rely on discovery when your first chunk is small or time-ordered — the rare class may simply not be there yet.",
+            "Do not rely on discovery when your first chunk is small or time-ordered: the rare class may simply not be there yet.",
             "Do not discover classes from unlabelled rows; only labelled targets count.",
         ),
         myths=(
@@ -112,7 +112,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         "online-drift-disclose",
         plain=(
             "As chunks stream past, the data can change. BuildML records a lightweight comparison between "
-            "each chunk and the very first one — mostly shifts in column means — so you get a warning "
+            "each chunk and the very first one: mostly shifts in column means: so you get a warning "
             "signal. It is a smoke detector, not a full drift monitoring product."
         ),
         analogy=(
@@ -132,7 +132,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not treat it as a drift product; it does not do distributional tests, effect sizes, or label-aware performance tracking.",
-            "Do not act on a single chunk's note — chunk-to-chunk variation is large, especially with small chunks.",
+            "Do not act on a single chunk's note: chunk-to-chunk variation is large, especially with small chunks.",
         ),
         myths=(
             (
@@ -171,7 +171,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Install the online-industry extra and call fit_online(backend='industry').",
             "Pick a River estimator matching classification vs regression.",
             "Feed chunks with partial_fit_online on train rows only.",
-            "Read drift_notes on updates — mean_shift is sklearn-only; ADWIN needs River.",
+            "Read drift_notes on updates: mean_shift is sklearn-only; ADWIN needs River.",
             "Evaluate on validation/test without feeding those rows as updates.",
         ),
         use=(
@@ -179,7 +179,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you need drift disclosure beyond sklearn partial_fit.",
         ),
         avoid=(
-            "Do not claim a production Kafka pipeline — this is in-process chunk simulation.",
+            "Do not claim a production Kafka pipeline: this is in-process chunk simulation.",
             "Do not update on holdout partitions.",
         ),
         myths=(
@@ -223,7 +223,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Teaching continual-learning tradeoffs without claiming a production platform.",
         ),
         avoid=(
-            "Do not use for regression — resolve refuses replay_mlp/ewc_mlp on regression tasks.",
+            "Do not use for regression: resolve refuses replay_mlp/ewc_mlp on regression tasks.",
             "Do not treat this as full lifelong learning at production scale.",
         ),
         myths=(
@@ -267,7 +267,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you need an audit trail of how many updates the deployed model has absorbed.",
         ),
         avoid=(
-            "Do not resume from a stale bundle against a stream that has moved on — check the cursor first.",
+            "Do not resume from a stale bundle against a stream that has moved on: check the cursor first.",
             "Do not expect a Session checkpoint to hold the online plan; it does not.",
         ),
         myths=(

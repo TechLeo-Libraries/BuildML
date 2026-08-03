@@ -81,7 +81,7 @@ def online_capability_matrix() -> dict[str, Any]:
                 "modality": "tabular",
                 "drift_detectors": ["mean_shift"],
                 "notes": (
-                    "Lite replay-buffer or EWC tabular MLP continual learner — "
+                    "Lite replay-buffer or EWC tabular MLP continual learner: "
                     "honest small-scale, not a lifelong-learning research suite "
                     "(buildml[torch])."
                 ),

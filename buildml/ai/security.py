@@ -10,7 +10,7 @@ reports what it finds, :func:`validate_column_names` applies it to a schema, and
 
 **Code execution.** :func:`validate_no_code_execution` refuses tool calls that
 name or contain an evaluation primitive. BuildML registers no such tool, so this
-is depth rather than the primary control — the closed registry in
+is depth rather than the primary control: the closed registry in
 :mod:`buildml.ai.tools` is that.
 
 **Runaway loops.** An agent can propose calls indefinitely, each one costing
@@ -39,7 +39,7 @@ from dataclasses import dataclass
 from buildml.ai.types import ToolCall
 from buildml.core.errors import ValidationError
 
-# (reason_code, pattern) — reason codes are stable for structured refusal paths.
+# (reason_code, pattern): reason codes are stable for structured refusal paths.
 _INJECTION_PATTERN_SPECS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "override_instructions",
@@ -152,7 +152,7 @@ _DANGEROUS_TOOL_PATTERNS = (
 
 _ZERO_WIDTH_RE = re.compile(r"[\u200b\u200c\u200d\u2060\ufeff\u180e\u200e\u200f]")
 
-# Common Latin lookalikes (Cyrillic / Greek) — best-effort, not a full confusable DB.
+# Common Latin lookalikes (Cyrillic / Greek): best-effort, not a full confusable DB.
 _HOMOGLYPH_MAP = str.maketrans(
     {
         "\u0430": "a",  # Cyrillic а
@@ -211,7 +211,7 @@ def normalize_untrusted_text(text: str) -> str:
     Applies Unicode NFKC, strips zero-width / bidi marks, folds common
     confusable spaces, and maps a small Latin-homoglyph table (Cyrillic /
     Greek / fullwidth lookalikes). This is **not** a complete confusable
-    defence — it only catches careless obfuscation.
+    defence: it only catches careless obfuscation.
 
     Parameters
     ----------
@@ -246,7 +246,7 @@ def detect_injection_findings(text: str) -> list[InjectionFinding]:
     -------
     list of InjectionFinding
         One entry per matching pattern, with reason codes. Empty when none
-        matched. Heuristic only — paraphrase trivially evades this list.
+        matched. Heuristic only: paraphrase trivially evades this list.
     """
     scanned = normalize_untrusted_text(text)
     findings: list[InjectionFinding] = []
@@ -269,7 +269,7 @@ def detect_injection_attempt(text: str) -> list[str]:
     ----------
     text:
         The text to scan. Typically something that came from outside the
-        prompt — a column name, a cell, a retrieved document.
+        prompt: a column name, a cell, a retrieved document.
 
     Returns
     -------
@@ -329,7 +329,7 @@ def refuse_injection(text: str, *, source: str = "data") -> None:
     reasons = sorted({f.reason for f in findings})
     raise ValidationError(
         f"Refused {source}: injection heuristics matched reason(s) "
-        f"{', '.join(reasons)}. Best-effort only — paraphrase can evade "
+        f"{', '.join(reasons)}. Best-effort only: paraphrase can evade "
         "pattern lists; closed tools and confirm-on-write remain primary."
     )
 
@@ -355,7 +355,7 @@ def validate_column_names(columns: list[str]) -> tuple[list[str], list[str]]:
     Notes
     -----
     **This reports; it does not filter.** Both lists are returned so the caller
-    decides — deny the column, rename it, or send it wrapped. Silently dropping
+    decides: deny the column, rename it, or send it wrapped. Silently dropping
     a column would change the model's picture of the data without telling
     anyone.
 
@@ -381,8 +381,8 @@ def validate_column_names(columns: list[str]) -> tuple[list[str], list[str]]:
 def validate_tool_call_safety(call: ToolCall) -> list[str]:
     """Look over a proposed call for things worth a second glance.
 
-    Checks two surfaces: whether the tool's name suggests destruction — drop,
-    delete, remove, truncate, destroy — and whether any string argument carries
+    Checks two surfaces: whether the tool's name suggests destruction: drop,
+    delete, remove, truncate, destroy: and whether any string argument carries
     injection text, which would mean untrusted content is being routed through
     a tool call.
 
@@ -442,7 +442,7 @@ def sanitize_for_prompt(text: str, source: str = "data") -> str:
     text:
         The untrusted content.
     source:
-        Where it came from — ``'data'``, ``'user'``, ``'retrieval'``.
+        Where it came from: ``'data'``, ``'user'``, ``'retrieval'``.
         Uppercased in the markers.
 
     Returns
@@ -512,8 +512,8 @@ def validate_no_code_execution(call: ToolCall) -> None:
     somewhere it should not be.
 
     **A false positive is possible and is acceptable.** An argument that
-    legitimately contains the text ``eval(`` — a code snippet being analysed,
-    say — is rejected. Pass such content through a tool that does not accept
+    legitimately contains the text ``eval(``: a code snippet being analysed,
+    say: is rejected. Pass such content through a tool that does not accept
     free-form strings.
 
     See Also
@@ -541,7 +541,7 @@ def validate_no_code_execution(call: ToolCall) -> None:
                 raise ValidationError(
                     f"Refused argument '{key}': string looks like a code-execution "
                     "primitive (eval/exec/import/os.system/subprocess). Heuristic "
-                    "only — paraphrase can evade it; the closed registry remains "
+                    "only: paraphrase can evade it; the closed registry remains "
                     "the primary control."
                 )
 
@@ -549,7 +549,7 @@ def validate_no_code_execution(call: ToolCall) -> None:
 class MaxIterationsExceeded(ValidationError):
     """Raised when an agent has taken too many turns.
 
-    An agent loop can fail to terminate — repeating a call that never succeeds,
+    An agent loop can fail to terminate: repeating a call that never succeeds,
     or alternating between two states forever. Each turn costs tokens and time,
     so the loop is bounded and this is what the bound raises.
 
@@ -559,7 +559,7 @@ class MaxIterationsExceeded(ValidationError):
         The ceiling that was reached.
     tool_name:
         The last tool attempted, when known. **The most useful field for
-        diagnosis** — a loop usually repeats one call.
+        diagnosis**: a loop usually repeats one call.
 
     Notes
     -----

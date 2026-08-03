@@ -24,7 +24,7 @@ caps, labeled holdout eval, and `buildml.activelearning_bundle.v1`.
 | Distinct AL bundle + explain catalog | Passive NaN-label propagation (`fit_semisupervised`) |
 
 Honesty: **labels come from the user**. Library core never invents an oracle.
-Examples and tests may simulate one — always disclose that.
+Examples and tests may simulate one: always disclose that.
 
 **vs semi-supervised:** Active learning is an *interactive* query loop
 (`suggest_query` → human `label_rows` → refit). Semi-supervised learning uses
@@ -63,14 +63,14 @@ semi-supervised).
 
 ## API loop
 
-1. `fit_active_learner(backend=..., strategy=..., label_budget=...)` — fit on labeled train
-2. `suggest_query(batch_size=...)` — ranked train-pool indices (no labels)
-3. `label_rows(indices=..., labels=...)` — **user** labels; auto-refit by default
+1. `fit_active_learner(backend=..., strategy=..., label_budget=...)`: fit on labeled train
+2. `suggest_query(batch_size=...)`: ranked train-pool indices (no labels)
+3. `label_rows(indices=..., labels=...)`: **user** labels; auto-refit by default
 4. Repeat until budget exhausted or pool empty
-5. `evaluate_active_learning(partition="test")` — labeled holdout only
-6. `save_active_learning_bundle(...)` — model + pool indices + query history
+5. `evaluate_active_learning(partition="test")`: labeled holdout only
+6. `save_active_learning_bundle(...)`: model + pool indices + query history
 
-`label_rows` is **Session-primary** and **not AI-allowlisted** — humans (or test
+`label_rows` is **Session-primary** and **not AI-allowlisted**: humans (or test
 harnesses that disclose simulation) supply labels.
 
 Leakage guards:

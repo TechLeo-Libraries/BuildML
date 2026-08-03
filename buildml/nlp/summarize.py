@@ -13,7 +13,7 @@ Three methods.
 
 **TextRank** builds a graph where sentences are nodes and edges weight how much
 vocabulary two sentences share, then runs PageRank. A sentence is important if
-it overlaps with other important sentences — which tends to surface the ones
+it overlaps with other important sentences: which tends to surface the ones
 expressing the document's central, repeated ideas.
 
 **LexRank** works the same way but measures similarity with TF-IDF cosine rather
@@ -158,7 +158,7 @@ def summarize_document(
     normalize_plan:
         The plan used to tokenise sentences for the similarity computation. It
         governs which words count as shared, so the stopword list has real
-        influence here — without it, sentences look similar because they both
+        influence here: without it, sentences look similar because they both
         contain "the".
     max_input_sentences:
         Read at most this many sentences from the document. The graph methods
@@ -175,7 +175,7 @@ def summarize_document(
     Notes
     -----
     A document with no more sentences than requested is returned whole rather
-    than treated as an error — the correct summary of a two-sentence document
+    than treated as an error: the correct summary of a two-sentence document
     is those two sentences.
 
     Where the graph carries no signal at all, selection falls back to the
@@ -241,7 +241,7 @@ def summarize_text(
         is safe.
     method:
         ``'textrank'``, ``'lexrank'``, or ``'lead'``. Try ``'lead'`` as a
-        baseline before assuming a graph method helps — on documents with a
+        baseline before assuming a graph method helps: on documents with a
         conventional structure it frequently wins.
     text_column:
         Which column holds the documents. Inferred when omitted.
@@ -275,7 +275,7 @@ def summarize_text(
     Notes
     -----
     **Nothing is generated.** Every sentence in the output appeared in the
-    input, so a summary cannot invent a fact — but it can mislead by omission,
+    input, so a summary cannot invent a fact: but it can mislead by omission,
     which is what ``mean_compression`` is there to warn you about.
 
     **Short documents pass through unchanged.** A document with no more
@@ -377,7 +377,7 @@ def summarize_text(
             "Sentence boundaries come from BuildML's abbreviation-aware splitter, "
             "so unusual formatting can change the candidate set.",
             "No reference summaries exist, so no ROUGE-style quality metric is "
-            "claimed — only compression is reported.",
+            "claimed: only compression is reported.",
         ),
         warnings=tuple(warnings),
     )

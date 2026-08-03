@@ -1,6 +1,6 @@
 # Keystone Underwrite ML
 
-**Tier B** cross-domain product proof — stacking ensemble + AutoML search +
+**Tier B** cross-domain product proof: stacking ensemble + AutoML search +
 declared-assumption causal outreach effect for synthetic mortgage underwriting.
 
 ## Product narrative
@@ -9,12 +9,12 @@ Keystone stacks base learners, searches model families under a budget, and
 estimates the effect of confounded borrower outreach:
 
 1. Fits a two-base stacking ensemble with OOF meta features (cv=3)
-2. Runs AutoML (native / FLAML / AutoGluon) with CV selection — never test
+2. Runs AutoML (native / FLAML / AutoGluon) with CV selection: never test
 3. Declares causal assumptions and estimates outreach ATE (AIPW)
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -42,5 +42,5 @@ estimates the effect of confounded borrower outreach:
 
 ## Limitations
 
-Synthetic mortgage — not FCRA / bureau data. Causal ATE assumes declared
+Synthetic mortgage: not FCRA / bureau data. Causal ATE assumes declared
 unconfoundedness (not proven).

@@ -2,8 +2,8 @@
 
 Session path for a **text column that lives on the dataset**: screen the corpus,
 fit a single-label document classifier on train, read the holdout once, attribute
-the decision to exact tokens, then layer unsupervised description — topics,
-keyphrases, extractive summaries, entities, sentiment, language — and persist via
+the decision to exact tokens, then layer unsupervised description: topics,
+keyphrases, extractive summaries, entities, sentiment, language: and persist via
 `buildml.nlp_bundle.v1`.
 
 Honesty: **document-level** modelling. Not sequence labelling, not multi-label,
@@ -68,7 +68,7 @@ print(test.metrics, test.per_class, test.oov_rate)
 
 predicted = session.predict_text(partition="test")
 
-# 4. Exact token attribution — coefficient x feature value, an identity for a
+# 4. Exact token attribution: coefficient x feature value, an identity for a
 #    linear head. Refused outright for hashing and dense backends.
 interpret = session.interpret_text_prediction(partition="test", top_k=8, max_documents=5)
 for item in interpret.document_attributions[0]:
@@ -107,7 +107,7 @@ session.save_nlp_bundle("artifacts/nlp_bundle")
 
 Optional extras: `buildml[nlp]` (NLTK morphology, langdetect, sentence-transformer
 embeddings, frozen transformer encoders), `buildml[nlp-industry]` (spaCy
-statistical NER — then `python -m spacy download en_core_web_sm`). Both are
+statistical NER: then `python -m spacy download en_core_web_sm`). Both are
 included in `buildml[production]`.
 
 **NLP vs its neighbours.** `Session.text_features` writes numeric columns back
@@ -115,5 +115,5 @@ onto the dataset so tabular models can consume text; NLP keeps its representatio
 inside the NLP plan. `buildml.rag` ingests and retrieves documents to ground
 generated answers. `Session.make_text_torch_loaders` / `fit_torch` fine-tune
 neural sequence models on token ids. `buildml.ai` calls an external LLM provider
-under an operator policy — NLP never touches the network. Sharing a text column
+under an operator policy: NLP never touches the network. Sharing a text column
 does not merge these surfaces.

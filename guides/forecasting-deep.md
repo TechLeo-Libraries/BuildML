@@ -79,12 +79,12 @@ bad.fit_forecast(method="naive")  # refused
 | Method | Role | Extra |
 | --- | --- | --- |
 | `auto` | ETS if statsmodels else `lag_ridge` | timeseries |
-| `naive` | Last train value | — |
-| `mean` | Train mean | — |
-| `drift` | Linear extrapolation from first→last train point | — |
-| `seasonal_naive` | Repeat last `seasonal_period` | — |
-| `lag_ridge` | Ridge on lag (+ optional exog) features | — |
-| `lag_hgb` | HistGradientBoosting on lag/exog features | — |
+| `naive` | Last train value |: |
+| `mean` | Train mean |: |
+| `drift` | Linear extrapolation from first→last train point |: |
+| `seasonal_naive` | Repeat last `seasonal_period` |: |
+| `lag_ridge` | Ridge on lag (+ optional exog) features |: |
+| `lag_hgb` | HistGradientBoosting on lag/exog features |: |
 | `ets` | Holt-Winters exponential smoothing | timeseries |
 | `arima` / `auto_arima` | ARIMA (auto = lightweight AIC grid) | timeseries |
 | `sarimax` | Seasonal ARIMAX with optional exog | timeseries |
@@ -115,7 +115,7 @@ rolling_origin = session.evaluate_forecast(partition="test", strategy="rolling_o
 print(roll.metrics, origin.metrics, rolling_origin.metrics)
 ```
 
-Metrics: **MAE**, **RMSE**, **MAPE**. MAPE may be NaN near zero actuals —
+Metrics: **MAE**, **RMSE**, **MAPE**. MAPE may be NaN near zero actuals :
 disclosed; lead with MAE/RMSE.
 
 ---
@@ -182,7 +182,7 @@ unsupervised, ensemble, or AutoML bundles. See
 | Unparseable timestamps | Time column not datetime-parseable |
 | Need more than max(lags) rows | Series too short for lag matrix |
 | `future_exog` required | Plan was fit with `exog_columns` |
-| MAPE is NaN | Near-zero actuals — use MAE/RMSE |
+| MAPE is NaN | Near-zero actuals: use MAE/RMSE |
 
 ---
 
@@ -192,4 +192,4 @@ unsupervised, ensemble, or AutoML bundles. See
 - No Torch sequence forecaster in this package (prefer a complete classical
   Session over a shallow DL stub).
 - No causal identification APIs; EDA remains associational.
-- Anomaly/fraud is the next Phase 1 item — not this guide.
+- Anomaly/fraud is the next Phase 1 item: not this guide.

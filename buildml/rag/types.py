@@ -3,7 +3,7 @@
 Retrieval-augmented generation answers a question by first finding relevant
 passages and then asking a language model to answer *from those passages*. The
 model's fluency is rarely the bottleneck. What limits the answer is whether the
-right passage was retrieved at all — and that is settled entirely by the
+right passage was retrieved at all: and that is settled entirely by the
 configuration in this module.
 
 The four decisions that matter most, in the order they bite:
@@ -74,7 +74,7 @@ class ChunkConfig:
     own, but its embedding averages several topics together and ends up
     moderately similar to every query and strongly similar to none. A small
     chunk embeds sharply, and then arrives at the model as a sentence stripped
-    of the paragraph that gave it meaning — the pronoun with no antecedent, the
+    of the paragraph that gave it meaning: the pronoun with no antecedent, the
     figure with no units.
 
     Attributes
@@ -188,13 +188,13 @@ class EmbedConfig:
     ----------
     embedder_id:
         Identifier recorded with the index. A query embedded by a different
-        model than the index is a silent failure — the vectors are comparable
-        arithmetically and meaningless semantically — so this is checked rather
+        model than the index is a silent failure: the vectors are comparable
+        arithmetically and meaningless semantically: so this is checked rather
         than trusted.
     dim:
         Vector width. Fixed at index build; changing it is a rebuild.
     backend:
-        ``'hashing'`` is dependency-free and **not semantic** — it matches
+        ``'hashing'`` is dependency-free and **not semantic**: it matches
         surface tokens, so synonyms do not match. ``'sentence-transformers'``
         is a real embedding model. ``'callable'`` is your own function.
     model_name:
@@ -283,7 +283,7 @@ class IndexConfig:
     """How vectors are stored and searched.
 
     Search over embeddings is either exact or approximate. Exact search compares
-    the query against every vector — correct by construction, and linear in
+    the query against every vector: correct by construction, and linear in
     corpus size. Approximate search trades a small amount of recall for a large
     amount of speed, which starts to matter somewhere in the hundreds of
     thousands of chunks.
@@ -352,7 +352,7 @@ class RetrieveConfig:
     Hybrid runs both and fuses the rankings, which is why it is the default
     wherever the dependencies allow. Reciprocal rank fusion combines by
     *position* rather than score, which avoids having to make two incomparable
-    scoring scales agree — a BM25 score of 12 and a cosine similarity of 0.7
+    scoring scales agree: a BM25 score of 12 and a cosine similarity of 0.7
     have no common unit.
 
     Attributes
@@ -493,7 +493,7 @@ class EvalConfig:
     Attributes
     ----------
     k:
-        Cutoff for the metrics. Should match what generation actually uses —
+        Cutoff for the metrics. Should match what generation actually uses :
         measuring recall at 20 while generating from 5 reports a number the
         system never benefits from.
     relevance_mode:
@@ -585,7 +585,7 @@ class GenerateConfig:
     max_tokens:
         Cap on the answer length. ``None`` leaves it to the provider.
     temperature:
-        Randomness. **Defaults to zero deliberately** — a grounded answer should
+        Randomness. **Defaults to zero deliberately**: a grounded answer should
         be determined by the passages, and sampling introduces variation the
         evidence does not support.
     max_context_chars:
@@ -601,7 +601,7 @@ class GenerateConfig:
     -----
     **``k`` and ``max_context_chars`` are both ceilings, and the tighter one
     wins.** Retrieving ten passages with a budget that fits four means six were
-    ranked, returned, and then discarded — no error, and no way to tell from the
+    ranked, returned, and then discarded: no error, and no way to tell from the
     answer.
 
     **Grounding is an instruction, not a guarantee.** The prompt asks the model

@@ -37,7 +37,7 @@ def analyze_timeseries(
 ) -> TSAnalysisResult:
     """Run decomposition, diagnostics, changepoints, and features on a temporal split.
 
-    This is descriptive EDA on ordered observations — not a forecast fit. After
+    This is descriptive EDA on ordered observations: not a forecast fit. After
     :meth:`~buildml.session.session.Session.time_split`, call with
     ``scope='train'`` to summarize structure before tuning forecast models.
     Each sub-analysis can be toggled off when you only need one view.
@@ -87,7 +87,7 @@ def analyze_timeseries(
     Notes
     -----
     **Leakage:** Requires ``time_split``. Default ``scope='train'`` analyzes only
-    the train partition. ``scope='all'`` is for EDA — do not use holdout rows to
+    the train partition. ``scope='all'`` is for EDA: do not use holdout rows to
     tune forecast hyperparameters without disclosure.
     """
     if scope == "train":
@@ -109,12 +109,12 @@ def analyze_timeseries(
     disclosures: list[str] = [
         f"Time-series analysis scope={scope} on target={target_col}, n={y.shape[0]}.",
         "Random/stratified splits are refused; chronological order enforced.",
-        "This is descriptive analysis — not a forecast fit and not a digital twin.",
+        "This is descriptive analysis: not a forecast fit and not a digital twin.",
     ]
     warnings: list[str] = []
     if scope == "all":
         warnings.append(
-            "scope='all' includes validation/test rows — use for EDA only, "
+            "scope='all' includes validation/test rows: use for EDA only, "
             "not for tuning before holdout evaluation."
         )
 

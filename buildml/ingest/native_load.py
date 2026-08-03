@@ -11,7 +11,7 @@ means a 10 GB parquet file can be filtered down to what you need before anything
 is allocated. That is the difference between processing data larger than memory
 and not.
 
-What lazy does and does not buy you: prep — filtering, selecting, aggregating —
+What lazy does and does not buy you: prep: filtering, selecting, aggregating :
 stays out of core, and the eventual training matrix still has to fit. scikit-learn
 takes a NumPy array. Lazy loading lets you narrow a huge source down to a
 trainable subset; it does not make scikit-learn out-of-core.
@@ -46,8 +46,8 @@ def load_native_path(
     """Load a file into the engine's own table type, skipping pandas entirely.
 
     Dispatches to the Polars or DuckDB reader for the detected format. The
-    returned handle is engine-native — a Polars ``DataFrame`` or ``LazyFrame``,
-    or a DuckDB relation — and stays that way until something needs pandas.
+    returned handle is engine-native: a Polars ``DataFrame`` or ``LazyFrame``,
+    or a DuckDB relation: and stays that way until something needs pandas.
 
     The schema is extracted without materializing the data. For a lazy Polars
     frame that means reading the file's metadata plus one narrow query for the
@@ -59,14 +59,14 @@ def load_native_path(
     path:
         The file to read.
     engine:
-        ``POLARS`` or ``DUCKDB``. Anything else is an error — pandas has its own
+        ``POLARS`` or ``DUCKDB``. Anything else is an error: pandas has its own
         loaders.
     format_name:
         The format from :func:`~buildml.ingest.detect.detect_path_format`:
         ``'csv'``, ``'tsv'``, ``'parquet'``, or ``'arrow'``.
     nrows:
         Cap the rows, for inspecting a large file. **Setting this disables lazy
-        scanning** — a row cap needs a concrete frame — so leave it out when the
+        scanning**: a row cap needs a concrete frame: so leave it out when the
         point is to avoid materializing.
     lazy:
         Keep a lazy handle where the engine supports one. Polars uses ``scan_*``
@@ -76,8 +76,8 @@ def load_native_path(
     -------
     tuple
         ``(native_table, schema, details)``. The details dict records what
-        actually happened — ``lazy_scan``, ``lazy_handle``, ``pandas_first``,
-        ``n_rows``, ``columns`` — because the requested and actual strategies
+        actually happened: ``lazy_scan``, ``lazy_handle``, ``pandas_first``,
+        ``n_rows``, ``columns``: because the requested and actual strategies
         can differ.
 
     Raises

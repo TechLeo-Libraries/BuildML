@@ -1,13 +1,13 @@
 """Synthetic-data systems (Session-shaped train-fitted tabular generators).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
-Phase 1–2 complete. Phase 3 — Application systems:
+Phase 1–2 complete. Phase 3: Application systems:
   Recommendation systems (**PASS**).
   Search / LTR (**PASS**).
   Knowledge graphs (**PASS**).
   Optimisation / decision helpers (**PASS**).
-  **Synthetic-data systems (this module)** — **PASS** (Phase-1 bar + R6.10 industry).
+  **Synthetic-data systems (this module)**: **PASS** (Phase-1 bar + R6.10 industry).
 
 Industry depth (R6.10):
   - Native fallback: bootstrap / Gaussian copula / SMOTE wrap.
@@ -18,12 +18,12 @@ Industry depth (R6.10):
 Honesty (this package):
   - Train-fitted generators only (never fit on validation/test).
   - Distinct from ``Session.resample`` (class-balance preprocess lineage).
-  - ``evaluate_synthetic`` offers fidelity metrics or TSTR utility — disclosed.
+  - ``evaluate_synthetic`` offers fidelity metrics or TSTR utility: disclosed.
   - Merge into Session train only with explicit provenance (role=ignore).
   - **Not** a differential-privacy product.
   - Core stays light; SDV stack is optional ``buildml[synthetic-industry]``.
 
-Lazy imports — keep the core import graph light.
+Lazy imports: keep the core import graph light.
 """
 
 from __future__ import annotations

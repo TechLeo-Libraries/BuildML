@@ -89,7 +89,7 @@ class ServingState:
     ) -> None:
         """Hold an already-loaded artifact and the metadata describing it.
 
-        Does no loading or validation of its own — the caller has already read
+        Does no loading or validation of its own: the caller has already read
         the artifact and knows which kind it is.
 
         Parameters
@@ -193,7 +193,7 @@ def load_serving_bundle(
     Loading is the expensive step and belongs at startup, not in a handler. For
     a pipeline bundle this reads the estimator, the fitted preprocessing plans,
     and the model card. For TorchScript it loads the module and puts it in eval
-    mode, which matters — dropout and batch-norm behave differently in training
+    mode, which matters: dropout and batch-norm behave differently in training
     mode, and a module left in training mode returns subtly wrong answers rather
     than failing.
 
@@ -206,7 +206,7 @@ def load_serving_bundle(
     kind:
         Which artifact kind to expect. Defaults to ``'pipeline'``.
     map_location:
-        Where to place TorchScript tensors — ``'cpu'`` (the default),
+        Where to place TorchScript tensors: ``'cpu'`` (the default),
         ``'cuda'``, or a specific device. Ignored for pipelines. Loading a
         GPU-saved module onto a CPU-only host needs this left at ``'cpu'``.
     trusted:
@@ -292,8 +292,8 @@ def create_serving_app(
     rather than on the first request.
 
     Request bodies differ by kind. A pipeline takes ``{"rows": [{col: value,
-    ...}, ...]}`` — records, by column name, with the fitted preprocessing
-    applied server-side. TorchScript takes ``{"inputs": [[...], ...]}`` — a
+    ...}, ...]}``: records, by column name, with the fitted preprocessing
+    applied server-side. TorchScript takes ``{"inputs": [[...], ...]}``: a
     batch of numeric vectors, already in the order and scale the module expects,
     because a TorchScript module carries no preprocessing.
 
@@ -418,7 +418,7 @@ def create_serving_app(
             "bind_recommendation": "127.0.0.1",
             "tls_note": (
                 "Prefer TLS at a reverse proxy. Optional local HTTPS via "
-                "ssl_certfile/ssl_keyfile is library-owned — still not managed certs."
+                "ssl_certfile/ssl_keyfile is library-owned: still not managed certs."
             ),
             "endpoints": ["/health", "/metadata", "/predict", "/predict/batch", "/docs"],
             "predict_contract": (

@@ -255,7 +255,7 @@ def evaluate_synthetic_op(
     """Evaluate the frozen synthesizer for fidelity or TSTR utility.
 
     Delegates to :func:`buildml.synthetic.evaluate.evaluate_synthetic`.
-    Holdout real data is used only for comparison — never to refit the synthesizer.
+    Holdout real data is used only for comparison: never to refit the synthesizer.
 
     Parameters
     ----------

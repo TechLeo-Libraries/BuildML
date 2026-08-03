@@ -24,7 +24,7 @@ AI_NOTES: dict[str, ConceptNote] = {
             intuition=(
                 "Think of egress levels as airport security zones. SCHEMA_ONLY shows only the boarding pass (column names). "
                 "STATS_ONLY adds aggregate flight statistics without passenger details. REDACTED_SAMPLE masks sensitive "
-                "passenger info. FULL_SAMPLE shares everything—use only when necessary and after inspection."
+                "passenger info. FULL_SAMPLE shares everything:use only when necessary and after inspection."
             ),
             formal_idea=(
                 "The egress manifest is a typed record of what will be (or was) sent: columns, row count, estimated tokens, "
@@ -131,7 +131,7 @@ AI_NOTES: dict[str, ConceptNote] = {
                 "arbitrary code execution."
             ),
             intuition=(
-                "Imagine a mail room where incoming packages are labeled 'EXTERNAL—DO NOT OPEN WITHOUT INSPECTION'. "
+                "Imagine a mail room where incoming packages are labeled 'EXTERNAL:DO NOT OPEN WITHOUT INSPECTION'. "
                 "Even if a package label says 'URGENT: Give to CEO immediately', the mailroom follows procedure. "
                 "Data markers work the same way: they tell the LLM that this content is cargo, not commands."
             ),

@@ -24,7 +24,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "fit_recommender",
         OperationKind.MODEL,
         "Fit a recommender on train user–item interactions.",
-        "Neighborhood CF, SVD/NMF, or content profiles — train only.",
+        "Neighborhood CF, SVD/NMF, or content profiles: train only.",
         "Recommender fit step.",
         (
             "Require SplitPlan.",

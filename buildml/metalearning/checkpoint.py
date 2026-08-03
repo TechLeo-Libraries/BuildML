@@ -31,7 +31,7 @@ CHECKPOINT_BOUNDARY = (
     "splits, history, and optional classical preprocess plans; it does not "
     "embed the meta-learner. Reload tabular workflow via checkpoint_load; "
     "reload the learner via load_metalearning_bundle. This is practical "
-    "tabular few-shot / episodic meta-learning — not foundation-model "
+    "tabular few-shot / episodic meta-learning: not foundation-model "
     "MAML-at-scale."
 )
 

@@ -32,7 +32,7 @@ class EnsembleConfig:
 
     A snapshot of the configuration, stored on the plan so a fit can be
     reproduced or explained later. Fields for all three strategies live
-    together, and the irrelevant ones simply keep their defaults — ``cv`` sits
+    together, and the irrelevant ones simply keep their defaults: ``cv`` sits
     at 5 in a voting config and means nothing there.
 
     The distinction that matters: this is the *request*. Where the resolved
@@ -112,7 +112,7 @@ class EnsembleConfig:
         -------
         dict
             JSON-serialisable settings, including the ones irrelevant to the
-            strategy — completeness is worth more here than tidiness, since a
+            strategy: completeness is worth more here than tidiness, since a
             reader comparing two configs wants the same keys in both.
 
         See Also

@@ -186,7 +186,7 @@ def meta_train_prototypical_torch(
     """Meta-train a tabular ProtoNet encoder on episodic tasks.
 
     Optimizes an MLP encoder with episodic prototype cross-entropy on tabular
-    features. Small-scale ProtoNet — not vision/foundation-model meta-learning.
+    features. Small-scale ProtoNet: not vision/foundation-model meta-learning.
 
     Parameters
     ----------

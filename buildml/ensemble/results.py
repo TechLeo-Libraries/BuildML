@@ -2,13 +2,13 @@
 
 Two objects that overlap on purpose. The plan carries the fitted estimator and
 is what you save, reload, and predict with. The result carries the same facts
-without the estimator, and is what goes into history, reports, and metadata —
+without the estimator, and is what goes into history, reports, and metadata :
 places where a multi-megabyte pickled model has no business being.
 
 Both carry ``disclosures``, sentences describing what was fitted on what. They
 are generated rather than written by hand, so they cannot drift from the code
 that produced the model, and they are the honest answer to "did the meta-learner
-see the test set" — which is the first question anyone should ask of a stack.
+see the test set": which is the first question anyone should ask of a stack.
 
 See Also
 --------
@@ -31,7 +31,7 @@ class EnsemblePlan:
     compatible, so ``evaluate``, ``predict``, and ``save_pipeline`` treat the
     ensemble as an ordinary model.
 
-    Several fields are strategy-specific and ``None`` outside their strategy —
+    Several fields are strategy-specific and ``None`` outside their strategy :
     ``voting`` for voting, ``cv`` for stacking, ``holdout_fraction`` and
     ``blend_method`` for blending. One dataclass rather than three keeps
     everything downstream from branching on type.
@@ -73,7 +73,7 @@ class EnsemblePlan:
         Generated sentences describing what was fitted on what. Safe to print
         into a report.
     warnings:
-        Conditions worth attention — a blend holdout too small to be stable, for
+        Conditions worth attention: a blend holdout too small to be stable, for
         instance. Empty when nothing was flagged.
     config:
         The requested configuration, as given. Useful for reproducing a fit, and
@@ -115,7 +115,7 @@ class EnsemblePlan:
         """Flatten to JSON-safe values, replacing the estimator with its name.
 
         The estimator cannot be serialised as JSON, so ``estimator`` becomes its
-        class name — enough to recognise what was built, not enough to run it.
+        class name: enough to recognise what was built, not enough to run it.
         Loading the model back is what the joblib half of a bundle is for.
 
         Tuples become lists so the result round-trips through JSON unchanged; a
@@ -163,7 +163,7 @@ class EnsembleFitResult:
     """The record of an ensemble fit, without the model attached.
 
     Deliberately estimator-free. This goes into Session history, report
-    metadata, and log lines — places where holding a reference to a fitted
+    metadata, and log lines: places where holding a reference to a fitted
     model would pin megabytes in memory and make the record unserialisable.
 
     It answers the questions you ask *about* a fit rather than the ones you ask
@@ -196,7 +196,7 @@ class EnsembleFitResult:
     disclosures:
         Generated sentences about what was fitted on what.
     warnings:
-        Conditions worth attention. **Read these** — an empty tuple is the
+        Conditions worth attention. **Read these**: an empty tuple is the
         signal that nothing was flagged, not that nothing was checked.
 
     See Also
@@ -221,7 +221,7 @@ class EnsembleFitResult:
     def to_dict(self) -> dict[str, Any]:
         """Flatten to JSON-safe values for history and metadata.
 
-        Every field is already serialisable — there is no estimator here — so
+        Every field is already serialisable: there is no estimator here: so
         this is a straight conversion, with tuples widened to lists so the
         result round-trips through JSON unchanged.
 

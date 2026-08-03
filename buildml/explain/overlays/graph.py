@@ -53,7 +53,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Separate structure from the node feature table explicitly.",),
         assumptions=("Edge endpoints match node_id values.",),
         failures=("Empty edges; missing columns; duplicate node ids.",),
-        leakage=("None — declaration does not fit models.",),
+        leakage=("None: declaration does not fit models.",),
         anti_patterns=(
             "Using row positions as edge endpoints without a stable id.",
             "Treating this as a Neo4j/KG store.",
@@ -127,8 +127,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "No GraphSpec; no train–train edges (inductive); missing extras.",
         ),
         leakage=(
-            "Fitting with holdout labels — refused.",
-            "Inductive fit using holdout–holdout edges — filtered out.",
+            "Fitting with holdout labels: refused.",
+            "Inductive fit using holdout–holdout edges: filtered out.",
         ),
         anti_patterns=(
             "Treating this as a full PyG algorithm zoo or Neo4j product.",

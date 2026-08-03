@@ -15,7 +15,7 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "The model tells you how likely rain is. The operating point is your household rule about when "
-            "to actually carry an umbrella — and that depends on how much you hate getting wet versus "
+            "to actually carry an umbrella: and that depends on how much you hate getting wet versus "
             "carrying things."
         ),
         steps=(
@@ -63,8 +63,8 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
         "decision-cost-matrix",
         plain=(
             "With more than two classes, a single threshold no longer works. A cost matrix says what each "
-            "possible mistake costs — predicting B when the truth is A, predicting C when the truth is A, "
-            "and so on — and the decision rule picks whichever action has the lowest expected cost."
+            "possible mistake costs: predicting B when the truth is A, predicting C when the truth is A, "
+            "and so on: and the decision rule picks whichever action has the lowest expected cost."
         ),
         analogy=(
             "A triage desk. Sending a heart-attack patient home is catastrophic; admitting someone with "
@@ -76,7 +76,7 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Fill each cell with the cost of taking that action when that class is true; the diagonal is usually zero.",
             "Get predicted probabilities for every class from your model.",
             "For each candidate action, compute the probability-weighted average cost.",
-            "Choose the action with the lowest expected cost — which is often not the most likely class.",
+            "Choose the action with the lowest expected cost: which is often not the most likely class.",
         ),
         use=(
             "Multiclass problems where the consequences of different confusions differ substantially.",
@@ -84,7 +84,7 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it with badly calibrated probabilities; the whole calculation multiplies them by costs, so distorted probabilities give distorted decisions.",
-            "Do not invent cost numbers to make the maths work — the matrix should come from the business, and a wrong matrix is worse than none.",
+            "Do not invent cost numbers to make the maths work: the matrix should come from the business, and a wrong matrix is worse than none.",
         ),
         myths=(
             (
@@ -93,7 +93,7 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "The matrix has to be square with actions equal to classes.",
-                "Actions can differ from classes — 'escalate to review' is an action with no corresponding true class, and it is often the most valuable column.",
+                "Actions can differ from classes: 'escalate to review' is an action with no corresponding true class, and it is often the most valuable column.",
             ),
         ),
         example=(
@@ -124,18 +124,18 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Decide what you are allocating: a count (top-K), a budget with per-item costs (knapsack), or divisible shares (linear programming).",
-            "Provide the value score per row — usually a model prediction, possibly an expected value.",
+            "Provide the value score per row: usually a model prediction, possibly an expected value.",
             "Provide the cost or weight per row when items are not equally expensive.",
             "State the constraint: how many, how much money, how much capacity.",
             "The solver returns the selected set, and you evaluate the realized value against alternatives.",
         ),
         use=(
-            "Marketing campaigns, inventory buys, inspection scheduling, credit limits — anywhere capacity is finite.",
+            "Marketing campaigns, inventory buys, inspection scheduling, credit limits: anywhere capacity is finite.",
             "When per-item costs vary, which is exactly where simple top-K stops being optimal.",
         ),
         avoid=(
             "Do not use top-K when items have very different costs; a cheap moderately-good item can beat an expensive slightly-better one.",
-            "Do not optimize against raw model scores when what you need is expected value — multiply by the payoff first.",
+            "Do not optimize against raw model scores when what you need is expected value: multiply by the payoff first.",
         ),
         myths=(
             (
@@ -165,7 +165,7 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "decision-bundle-boundary",
         plain=(
-            "A decision plan — the threshold, the cost matrix, or the allocation rule — saves as its own "
+            "A decision plan: the threshold, the cost matrix, or the allocation rule: saves as its own "
             "bundle. It is deliberately separate from the model, because the same model often serves "
             "several teams with different cost structures."
         ),

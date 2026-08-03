@@ -27,7 +27,7 @@ CHECKPOINT_BOUNDARY = (
     "stores data, roles, splits, history, and optionally a classical FitResult; "
     "it does not embed the SynthesizerPlan. Reload tabular workflow via "
     "checkpoint_load; reload the generator via load_synthetic_bundle. "
-    "Honesty: train-fitted generators only — not differential privacy. "
+    "Honesty: train-fitted generators only: not differential privacy. "
     "Cross-link: Session.resample remains class-balance preprocessing "
     "(buildml[imbalanced]); this bundle is the reusable synthetic-data path."
 )
@@ -43,7 +43,7 @@ def save_synthetic_bundle(
 ) -> Path:
     """Write a synthesizer bundle directory (``buildml.synthetic_bundle.v1``).
 
-Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints: reload workflow via checkpoint_load separately.
 
 Parameters
 ----------
@@ -90,7 +90,7 @@ ValidationError
 def load_synthetic_bundle(path: str | Path, *, trusted: bool = False) -> SynthesizerPlan:
     """Load a synthesizer bundle into a :class:`SynthesizerPlan`.
 
-    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints: reload workflow via checkpoint_load separately.
 
     Parameters
     ----------

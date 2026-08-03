@@ -40,7 +40,7 @@ def save_semisupervised_bundle(
 ) -> Path:
     """Write a semi-supervised bundle directory (``buildml.semisupervised_bundle.v1``).
 
-Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints: reload workflow via checkpoint_load separately.
 
 Parameters
 ----------
@@ -84,7 +84,7 @@ ValidationError
 def load_semisupervised_bundle(path: str | Path, *, trusted: bool = False) -> SemiSupervisedPlan:
     """Load a semi-supervised bundle into a :class:`SemiSupervisedPlan`.
 
-    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints: reload workflow via checkpoint_load separately.
 
     Parameters
     ----------

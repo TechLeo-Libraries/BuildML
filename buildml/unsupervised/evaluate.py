@@ -199,7 +199,7 @@ ValidationError
             diagnostics["stability_runs"] = int(stability_runs)
             disclosures.append(
                 "Bootstrap stability uses repeated k-means on train subsamples; "
-                "ARI measures label agreement — not ground truth."
+                "ARI measures label agreement: not ground truth."
             )
         else:
             warnings.append("Stability skipped: insufficient train rows or k for bootstrap.")
@@ -254,7 +254,7 @@ ValidationError
     if "silhouette" in metrics and metrics["silhouette"] < 0.15:
         recommendations.append(
             "Low silhouette suggests weak separation; revisit scaling, features, "
-            "or n_clusters — or accept overlapping structure."
+            "or n_clusters: or accept overlapping structure."
         )
     if partition == "train":
         recommendations.append(

@@ -28,7 +28,7 @@ See `results/results.json` (threshold test metrics + knapsack selection).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs a validation cost-threshold sweep
+Filled: `baseline_industry.py` runs a validation cost-threshold sweep
 (`results/comparison.json`).
 
 ## Limitations

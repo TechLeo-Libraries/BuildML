@@ -10,7 +10,7 @@ Inline synthetic policy articles + relevance judgments (same pattern as `support
 
 ## Leakage controls
 
-- Corpus contains policy articles only — not labeled answers
+- Corpus contains policy articles only: not labeled answers
 - Judgments used solely in `rag_evaluate` (not indexed)
 - EchoGroundedProvider for offline generate (no live LLM required)
 - Industry TF-IDF twin uses the same corpus and judgments
@@ -28,7 +28,7 @@ Primary retrieval: recall@k, MRR, nDCG@k (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `TfidfVectorizer` + cosine twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `TfidfVectorizer` + cosine twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

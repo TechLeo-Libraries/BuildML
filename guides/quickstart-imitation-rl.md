@@ -1,4 +1,4 @@
-# Quickstart — Imitation learning + Reinforcement learning
+# Quickstart: Imitation learning + Reinforcement learning
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
@@ -93,7 +93,7 @@ act = session.act_rl(partition="test", deterministic=True)
 print(act.actions[:5])
 
 ev = session.evaluate_rl(partition="validation")
-print(ev.offline, ev.metrics)  # DM / IPS — offline, not live A/B
+print(ev.offline, ev.metrics)  # DM / IPS: offline, not live A/B
 
 session.save_rl_bundle("artifacts/rl_bandit_demo_bundle")
 ```

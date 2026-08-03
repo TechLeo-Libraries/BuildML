@@ -33,7 +33,7 @@ def validate_vectorize_config(config: NlpVectorizeConfig) -> NlpVectorizeConfig:
     """Check vectorizer settings before anything expensive happens.
 
     Validating up front matters more here than it looks. Several of these
-    mistakes do not raise later — they silently produce an empty or degenerate
+    mistakes do not raise later: they silently produce an empty or degenerate
     vocabulary, and you discover it as a mysteriously useless model rather than
     as an error.
 
@@ -102,8 +102,8 @@ def build_sklearn_vectorizer(
     which would mean the vocabulary a model learns differs from the tokens
     BuildML reports. Word analyzers therefore hand the plan's tokenizer to the
     vectorizer as its analyzer, so the two agree exactly. Character analyzers
-    delegate n-gram extraction to scikit-learn — it has no notion of a "word"
-    to disagree about — but still receive normalised input through the
+    delegate n-gram extraction to scikit-learn: it has no notion of a "word"
+    to disagree about: but still receive normalised input through the
     preprocessor hook.
 
     Parameters
@@ -132,7 +132,7 @@ def build_sklearn_vectorizer(
     scikit-learn also do it would apply the step twice and hide it from the
     plan's record.
 
-    Hashing vectorizers are stateless — nothing is learned at fit time, so they
+    Hashing vectorizers are stateless: nothing is learned at fit time, so they
     can transform without fitting. That is what makes them cheap and what makes
     their vocabulary unrecoverable.
 
@@ -198,7 +198,7 @@ def build_document_vectorizer(
     Bag-of-n-grams counts words. It cannot tell that "cancel my subscription"
     and "I want to unsubscribe" mean the same thing, because they share almost
     no tokens. Sentence embeddings and pooled transformers can, because they
-    place documents in a space where meaning determines position — but they
+    place documents in a space where meaning determines position: but they
     were trained on somebody else's corpus, they produce dimensions that
     correspond to no particular word, and they forfeit token attributions
     entirely.
@@ -239,7 +239,7 @@ def build_document_vectorizer(
     -----
     **The pretrained encoders are frozen and not fine-tuned.** Only the head is
     fitted on your training data. This keeps the operation cheap and keeps the
-    train-only guarantee meaningful for everything that *is* fitted here — but
+    train-only guarantee meaningful for everything that *is* fitted here: but
     it also means the encoder's own training data sits entirely outside your
     split, which is disclosed rather than assumed away.
 
@@ -311,7 +311,7 @@ def feature_names_for(vectorizer: Any, *, limit: int | None = None) -> tuple[str
     -------
     tuple of str
         Feature names in column order, possibly truncated. Empty when the
-        representation has no recoverable vocabulary — hashing vectorizers and
+        representation has no recoverable vocabulary: hashing vectorizers and
         the neural backends both return nothing here.
 
     Notes
@@ -358,7 +358,7 @@ def vocabulary_size(vectorizer: Any) -> int:
     Notes
     -----
     Zero does not mean "learned nothing". Hashing vectorizers are stateless and
-    embedding backends produce fixed-width dense vectors — in both cases there
+    embedding backends produce fixed-width dense vectors: in both cases there
     are features but no vocabulary behind them, and the count is not
     applicable. Read a zero alongside the backend, not on its own.
     """
@@ -374,8 +374,8 @@ def vocabulary_size(vectorizer: Any) -> int:
 def matrix_width(matrix: Any) -> int:
     """Count a document matrix's columns, sparse or dense alike.
 
-    Backends return different matrix types — SciPy sparse from bag-of-words,
-    NumPy dense from the encoders — and callers need the feature count without
+    Backends return different matrix types: SciPy sparse from bag-of-words,
+    NumPy dense from the encoders: and callers need the feature count without
     caring which they have.
 
     Parameters
@@ -414,7 +414,7 @@ def oov_token_rate(
     """Measure how much of this text the model has simply never seen.
 
     The most useful single diagnostic for a deployed text model. A token
-    outside the training vocabulary contributes nothing — it has no weight, so
+    outside the training vocabulary contributes nothing: it has no weight, so
     it is as if the word were not there. At a low rate that is harmless; at a
     high rate the model is predicting from a fraction of each document and its
     confidence is unearned.
@@ -433,7 +433,7 @@ def oov_token_rate(
     -------
     float or None
         The unseen share of tokens, from 0.0 to 1.0. ``None`` when the question
-        cannot be answered — hashing vectorizers and the neural backends have
+        cannot be answered: hashing vectorizers and the neural backends have
         no vocabulary to check against, and a document with no tokens at all
         gives nothing to measure.
 
@@ -486,7 +486,7 @@ def densify(matrix: Any) -> np.ndarray:
     -----
     **Check the width before calling this on a bag-of-words matrix.** Text
     matrices are typically over 99% zeros, and densifying one costs
-    ``n_documents × n_features × 8`` bytes — ten thousand documents over fifty
+    ``n_documents × n_features × 8`` bytes: ten thousand documents over fifty
     thousand features is four gigabytes of mostly zeros.
     """
     if sparse.issparse(matrix):
@@ -508,7 +508,7 @@ def reduce_for_similarity(
     same thing land near each other even when they use different words, which
     plain cosine similarity over raw term counts would miss.
 
-    Used where a dense, lower-rank view is needed — near-duplicate screening
+    Used where a dense, lower-rank view is needed: near-duplicate screening
     and document similarity being the main cases.
 
     Parameters
@@ -527,7 +527,7 @@ def reduce_for_similarity(
     -------
     tuple
         ``(projected, reducer)``. The reducer is returned so the same basis can
-        be applied to further documents — a projection fitted separately would
+        be applied to further documents: a projection fitted separately would
         put them in a different space, making the coordinates incomparable.
 
     Notes

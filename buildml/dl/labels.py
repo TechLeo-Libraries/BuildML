@@ -41,7 +41,7 @@ def fit_class_labels(y: Any) -> tuple[Any, ...]:
     Raises
     ------
     ValidationError
-        If the targets contain ``NaN``, or if the labels cannot be sorted —
+        If the targets contain ``NaN``, or if the labels cannot be sorted :
         typically a column mixing strings and numbers, where no consistent
         ordering exists and any choice would be arbitrary.
 
@@ -49,7 +49,7 @@ def fit_class_labels(y: Any) -> tuple[Any, ...]:
     -----
     **Sorting is what makes the mapping reproducible.** Encounter order would
     make the class indices depend on how the rows happened to be shuffled, so
-    two runs on the same data could disagree about which class is 0 — and a
+    two runs on the same data could disagree about which class is 0: and a
     saved model would then be misread by a re-fitted vocabulary.
 
     **Fit this on training labels only.** A class that appears solely in the
@@ -78,7 +78,7 @@ def encode_class_targets(y: Any, class_labels: Sequence[Any]) -> np.ndarray:
 
     Replaces each label with its position in the vocabulary. ``CrossEntropyLoss``
     interprets targets as indices into the output layer, so labels such as
-    ``{10, 20, 30}`` must become ``{0, 1, 2}`` — leaving them raw would ask the
+    ``{10, 20, 30}`` must become ``{0, 1, 2}``: leaving them raw would ask the
     network for a 31-wide output and train three of its columns.
 
     Parameters
@@ -129,7 +129,7 @@ def encode_class_targets(y: Any, class_labels: Sequence[Any]) -> np.ndarray:
 def n_classes_from_labels(class_labels: Sequence[Any], *, minimum: int = 2) -> int:
     """Work out how wide the output layer should be.
 
-    The width is the number of distinct classes — the vocabulary length, never
+    The width is the number of distinct classes: the vocabulary length, never
     the largest label value. Labels ``{10, 20, 30}`` need three outputs, not
     thirty-one.
 
@@ -149,7 +149,7 @@ def n_classes_from_labels(class_labels: Sequence[Any], *, minimum: int = 2) -> i
     -----
     **The floor of two exists for the degenerate case.** A training partition
     with a single observed class would otherwise produce a one-wide head, which
-    softmax turns into a constant 1.0 and a gradient of zero — the model cannot
+    softmax turns into a constant 1.0 and a gradient of zero: the model cannot
     train and gives no indication why. Two outputs at least keep the machinery
     working, though a single-class training set is a data problem worth fixing
     rather than training around.

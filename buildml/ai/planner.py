@@ -6,7 +6,7 @@ registered tool, turned into a proposal, and executed under the confirmation
 policy that tool carries.
 
 The execution model is **pause, do not push through**. Hitting a step that needs
-confirmation stops the run and reports where — it does not skip ahead, and it
+confirmation stops the run and reports where: it does not skip ahead, and it
 does not assume. You supply confirmations by step index and run again. A
 destructive step requires explicit confirmation whatever else is configured.
 
@@ -68,7 +68,7 @@ class PlanStepExecution:
     skipped:
         Whether the step was passed over.
     skip_reason:
-        Why — usually that the operation matched no registered tool.
+        Why: usually that the operation matched no registered tool.
     requires_confirmation:
         Whether approval was needed.
     confirmed:
@@ -131,7 +131,7 @@ class PlanExecutionResult:
     """How far a plan got, and what stopped it.
 
     A run rarely completes in one call. It pauses at the first step needing
-    approval, and this says where and why — enough to confirm and resume.
+    approval, and this says where and why: enough to confirm and resume.
 
     Attributes
     ----------
@@ -423,7 +423,7 @@ def run_plan_step(
         Explicit approval for this step.
     auto_confirm_read_only:
         Treat read-only tools as approved. Reasonable, since they cannot change
-        anything — though they can still disclose.
+        anything: though they can still disclose.
 
     Returns
     -------
@@ -514,7 +514,7 @@ def run_plan(
     """Execute a plan, stopping the moment something needs you.
 
     Prepares every step, then walks them in order. By default the run halts at
-    the first step requiring approval it does not have, reporting where — you
+    the first step requiring approval it does not have, reporting where: you
     supply the confirmation and call again.
 
     Parameters
@@ -535,7 +535,7 @@ def run_plan(
         failures accumulate in the outcomes.
     stop_on_unconfirmed:
         Halt at the first unapproved step. When false, such steps are recorded
-        as blocked and the run continues — useful for seeing everything a plan
+        as blocked and the run continues: useful for seeing everything a plan
         would ask for in one pass.
     max_steps:
         Cap on how many steps may execute. Counts executions, not iterations,
@@ -690,7 +690,7 @@ class BudgetExceeded(ValidationError):
     Attributes
     ----------
     budget_type:
-        Which ceiling — tokens or cost.
+        Which ceiling: tokens or cost.
     limit:
         The ceiling.
     used:
@@ -797,7 +797,7 @@ class BudgetTracker:
         """Add a call's usage to the totals, then enforce the ceilings.
 
         Appends a timestamped entry to the internal history before checking, so
-        the spend is recorded even on the call that breaches the limit — a
+        the spend is recorded even on the call that breaches the limit: a
         budget that lost its last entry on failure would not add up.
 
         Parameters

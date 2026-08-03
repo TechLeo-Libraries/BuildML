@@ -1,6 +1,6 @@
 # Cornerstone Mortgage Suite
 
-**Tier B** cross-domain product proof — classical mortgage default scoring +
+**Tier B** cross-domain product proof: classical mortgage default scoring +
 declared-assumption causal counseling effect + cost-sensitive decisions.
 
 ## Product narrative
@@ -15,7 +15,7 @@ The suite:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -44,5 +44,5 @@ The suite:
 
 ## Limitations
 
-Synthetic mortgage — not FCRA / bureau data. Causal ATE assumes declared
+Synthetic mortgage: not FCRA / bureau data. Causal ATE assumes declared
 unconfoundedness (not proven).

@@ -28,7 +28,7 @@ See `results/results.json` (accuracy and related).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` fits sklearn `DecisionTreeClassifier`
+Filled: `baseline_industry.py` fits sklearn `DecisionTreeClassifier`
 (`results/comparison.json`).
 
 ## Limitations

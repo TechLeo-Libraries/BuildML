@@ -231,7 +231,7 @@ def causal_status(
                 "Session checkpoints do not embed CausalPlan; use "
                 "save_causal_bundle / load_causal_bundle.",
                 "Honesty: backdoor ATE under caller-declared CausalAssumptions "
-                "— not causal discovery; EDA stays associational.",
+                ": not causal discovery; EDA stays associational.",
                 "Industry backends (DoWhy/EconML) require buildml[causal-industry].",
             ]
         )

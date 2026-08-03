@@ -3,7 +3,7 @@
 ## Business purpose
 
 Few-shot repurchase prediction for cold-start product categories using
-meta-learning — distinct from the domain-task episodes in
+meta-learning: distinct from the domain-task episodes in
 `few-shot-domain-adapt`.
 
 ## Data source
@@ -29,7 +29,7 @@ See `results/results.json` (episodic accuracy / f1).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs per-category NearestCentroid k-shot
+Filled: `baseline_industry.py` runs per-category NearestCentroid k-shot
 (`results/comparison.json`).
 
 ## Limitations

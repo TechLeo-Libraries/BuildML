@@ -1,7 +1,7 @@
 """Decide whether saved roles and splits still apply to the data on disk.
 
 A checkpoint records what the data looked like when it was written. When it is
-loaded, the data may have changed — a column dropped, rows appended, a dtype
+loaded, the data may have changed: a column dropped, rows appended, a dtype
 altered upstream. Reusing the old split membership across such a change is the
 quiet failure this module exists to prevent: partition indices are positions,
 so appending rows or reordering them assigns rows to partitions they were never
@@ -56,8 +56,8 @@ class ReattachResult:
         The restored partition membership, or ``None`` when it could not be
         trusted. Deliberately cleared rather than returned with a warning.
     details:
-        The structured facts behind the verdict — added and removed columns,
-        saved and current row counts — for programmatic handling.
+        The structured facts behind the verdict: added and removed columns,
+        saved and current row counts: for programmatic handling.
 
     Notes
     -----
@@ -93,7 +93,7 @@ def validate_reattach(
     Works down from the most damaging change to the least. A column that is gone
     blocks the resume, because nothing downstream can be recomputed without it.
     A row count that no longer matches, or a split index pointing past the end of
-    the frame, invalidates the partitions — the split is dropped rather than
+    the frame, invalidates the partitions: the split is dropped rather than
     applied to the wrong rows. A new column allows the resume but flags that it
     has no role yet. Anything else passes, with dtype changes noted for the
     record.
@@ -109,7 +109,7 @@ def validate_reattach(
         The row count now, checked against the saved count because split
         membership is positional.
     meta:
-        The parsed ``meta.json``, or ``None`` for a data-only import — in which
+        The parsed ``meta.json``, or ``None`` for a data-only import: in which
         case there is nothing to validate against and the result is a fresh
         ingest.
     splits_payload:

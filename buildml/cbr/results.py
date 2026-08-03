@@ -1,13 +1,13 @@
 """What each stage of the case-based reasoning workflow hands back.
 
-One result type per operation — fit, predict, evaluate, retrieve, retain — plus
+One result type per operation: fit, predict, evaluate, retrieve, retain: plus
 :class:`CbrPlan`, which is the fitted artefact itself rather than a report of
 what happened.
 
 Two fields recur on all of them and are worth reading rather than skipping.
 ``disclosures`` state how a result was produced: which backend actually ran,
 whether a requested one was unavailable, what was inferred rather than
-specified. ``warnings`` flag things that are likely to mislead — a case base too
+specified. ``warnings`` flag things that are likely to mislead: a case base too
 small for the requested ``k``, neighbours far enough away that the prediction is
 extrapolation.
 
@@ -177,7 +177,7 @@ class CbrFitResult:
     ----------
     task, backend, metric, reuse, k:
         The settings that were actually used. Compare ``backend`` against what
-        you asked for — a missing optional dependency falls back rather than
+        you asked for: a missing optional dependency falls back rather than
         failing, and the fallback is recorded here and in ``disclosures``.
     n_train_rows, n_cases:
         Rows seen and cases stored. These differ when rows were dropped for
@@ -271,7 +271,7 @@ class CbrEvalResult:
         Accuracy for classification; RMSE, MAE, and R² for regression.
     mean_neighbor_distance:
         Average distance to the retrieved neighbours across all queries. Read
-        this alongside the metrics — it is the diagnostic that says whether the
+        this alongside the metrics: it is the diagnostic that says whether the
         score describes interpolation or extrapolation.
     disclosures, warnings:
         How the evaluation ran, and what may mislead about it.
@@ -415,7 +415,7 @@ class CbrRetrieveResult:
         How many queries were run.
     traces:
         One per query, carrying the neighbours and their distances. The
-        ``prediction`` field is unset — nothing was combined.
+        ``prediction`` field is unset: nothing was combined.
     backend:
         Which retrieval backend ran.
     disclosures, warnings:
@@ -483,7 +483,7 @@ class CbrRetainResult:
     n_cases_after:
         Total memory size afterwards.
     n_skipped:
-        Cases refused — duplicates, missing targets, or feature mismatches. A
+        Cases refused: duplicates, missing targets, or feature mismatches. A
         high count relative to ``n_added`` usually means the incoming data does
         not match the plan's column contract.
     disclosures, warnings:

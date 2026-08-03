@@ -10,7 +10,7 @@ the features and target, the metrics that were attached, a digest of the
 operations that produced it, and explicit notes about what the artifact is not.
 
 Cards are written twice, as JSON for tooling and Markdown for people. The
-Markdown is not decoration — the audience for a model card is frequently someone
+Markdown is not decoration: the audience for a model card is frequently someone
 without a Python environment, and a card nobody can open explains nothing.
 
 See Also
@@ -35,7 +35,7 @@ from buildml.core.errors import ValidationError
 class ModelCard:
     """What a saved model is, what it scored, and what it does not cover.
 
-    Descriptive, not enforcing — nothing here is checked at score time, which is
+    Descriptive, not enforcing: nothing here is checked at score time, which is
     the schema contract's job. The card is for the human trying to decide
     whether an artifact can be trusted for a purpose.
 
@@ -71,7 +71,7 @@ class ModelCard:
     Notes
     -----
     **An empty ``metrics`` is a real signal.** It means nothing was attached at
-    save time, so the artifact carries no stated performance at all — worth
+    save time, so the artifact carries no stated performance at all: worth
     treating as a reason to re-evaluate before deploying, not as an oversight to
     ignore.
 
@@ -135,7 +135,7 @@ class ModelCard:
     def from_dict(cls, payload: dict[str, Any]) -> ModelCard:
         """Rebuild a card from stored JSON, tolerating older or partial records.
 
-        Deliberately forgiving about the descriptive fields — a card written by
+        Deliberately forgiving about the descriptive fields: a card written by
         an earlier version may lack ``lineage`` or ``notes``, and refusing to
         read it would lose the information it does carry.
 
@@ -186,7 +186,7 @@ class ModelCard:
     def to_markdown(self) -> str:
         """Render the card as Markdown, stating absences as plainly as contents.
 
-        Where a section has nothing to show, it says so — "No evaluation metrics
+        Where a section has nothing to show, it says so: "No evaluation metrics
         were attached at save time" rather than an empty heading. A blank
         section reads like a formatting glitch; a sentence reads like a fact,
         and in this file the absences are facts worth knowing.
@@ -292,7 +292,7 @@ def build_model_card(
     Two details are handled for you. A scikit-learn ``Pipeline`` is named by its
     steps rather than reported as the useless ``'Pipeline'``, so the card says
     what is actually inside it. And the default notes state the limitations that
-    matter — a bundle is not a checkpoint, reload needs a compatible contract,
+    matter: a bundle is not a checkpoint, reload needs a compatible contract,
     resample plans are not replayed at inference.
 
     Parameters
@@ -309,7 +309,7 @@ def build_model_card(
     history:
         The operation log. The last forty entries are digested.
     metrics:
-        Scores by partition. Worth supplying — a card without metrics states no
+        Scores by partition. Worth supplying: a card without metrics states no
         performance at all.
     title:
         A display name. Defaults to one derived from the estimator.
@@ -379,7 +379,7 @@ def save_model_card(path: str | Path, card: ModelCard) -> Path:
     """Write the card twice, as JSON for tooling and Markdown for people.
 
     Both files come from the same object, so they cannot disagree. The JSON is
-    sorted and indented, which keeps a card diffable — two versions of a model
+    sorted and indented, which keeps a card diffable: two versions of a model
     can be compared line by line in review.
 
     Parameters

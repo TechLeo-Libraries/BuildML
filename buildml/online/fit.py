@@ -54,7 +54,7 @@ def fit_online(
     Backends
     --------
     sklearn (default):
-        Sklearn ``partial_fit`` family — always available.
+        Sklearn ``partial_fit`` family: always available.
     industry (``buildml[online-industry]``):
         River streaming models with ADWIN / Page-Hinkley drift hooks.
     torch (``buildml[torch]``):
@@ -64,7 +64,7 @@ def fit_online(
     -----------------------------
     On the first call, ``classes`` should cover the full label vocabulary the
     stream may emit. When omitted, BuildML discovers classes from the **entire
-    train target column** (labels only — features from unseen chunks are not
+    train target column** (labels only: features from unseen chunks are not
     used until ``partial_fit_online``). This matches sklearn's
     ``partial_fit(..., classes=...)`` contract and is disclosed on the plan.
 
@@ -264,7 +264,7 @@ def fit_online(
             "chunks carved from the Session train partition (or role-aligned "
             "user frames).",
             "Validation/test partitions are never used for incremental updates.",
-            "This is batch/stream-chunk updating — not a distributed streaming "
+            "This is batch/stream-chunk updating: not a distributed streaming "
             "platform or full lifelong-learning research suite.",
             f"Init chunk: n_init_rows={len(chunk_indices)} of n_train={n_train}; "
             f"cursor advanced to {cursor}.",
@@ -273,7 +273,7 @@ def fit_online(
     )
     if resolved_backend == "torch":
         disclosures.append(
-            "Torch continual path is a lite replay/EWC tabular MLP — not a "
+            "Torch continual path is a lite replay/EWC tabular MLP: not a "
             "full lifelong-learning research implementation."
         )
     if allow_refit_fallback:

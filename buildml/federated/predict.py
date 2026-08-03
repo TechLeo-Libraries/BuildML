@@ -102,7 +102,7 @@ def predict_federated(
             f"Predictions from backend={getattr(plan, 'backend', 'native')} "
             f"global estimator={plan.estimator_name} after "
             f"{len(plan.round_history)} federated round(s).",
-            "Honesty: local FL simulation — not a distributed FL platform.",
+            "Honesty: local FL simulation: not a distributed FL platform.",
         ),
         warnings=(),
     )

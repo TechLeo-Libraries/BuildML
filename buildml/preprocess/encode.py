@@ -1,20 +1,20 @@
 """Turn category labels into numbers, without smuggling the answer in.
 
 Estimators do arithmetic, and ``"Dublin"`` is not a number. Encoding bridges
-that gap, and the choice of bridge matters more than people expect — the wrong
+that gap, and the choice of bridge matters more than people expect: the wrong
 one either invents a relationship that does not exist or leaks the target into
 the features.
 
 The four methods here trade off along two axes: how much width they add, and
 how much they risk. **One-hot** creates an indicator column per category, which
 is unambiguous and safe but adds a column for every distinct value.
-**Ordinal** assigns 1, 2, 3, keeping the frame narrow but asserting an order —
+**Ordinal** assigns 1, 2, 3, keeping the frame narrow but asserting an order :
 harmless for a tree, actively wrong for a linear model unless the categories
 genuinely are ordered, since it claims "Cork" sits exactly halfway between
 "Dublin" and "Galway". **Infrequent** collapses rare categories into a single
 bucket before one-hot encoding, which controls the width explosion and stops
 the model memorising categories it saw twice. **Target** replaces each category
-with the average target value for that category — very compact, often very
+with the average target value for that category: very compact, often very
 predictive, and the most dangerous of the four.
 
 Target encoding is dangerous because the feature is built from the label. If a
@@ -70,7 +70,7 @@ class EncodePlan:
     on a frame with ``city_dublin`` and ``city_cork`` expects exactly those
     columns in that order forever after. Re-deriving them from a new batch that
     happens to contain only Dublin would produce a frame the model cannot
-    consume — or worse, one it consumes while interpreting the wrong column.
+    consume: or worse, one it consumes while interpreting the wrong column.
 
     Which fields are populated depends on ``method``; the unused ones stay at
     their defaults.
@@ -90,7 +90,7 @@ class EncodePlan:
         estimator.
     infrequent_maps_:
         For ``'infrequent'``, the training categories judged rare per column
-        and therefore folded into the shared bucket. Worth reading — if most of
+        and therefore folded into the shared bucket. Worth reading: if most of
         a column ended up here, the column is mostly noise.
     min_frequency:
         The rarity threshold that produced those maps.
@@ -136,7 +136,7 @@ class EncodePlan:
             ``min_frequency``; a ``'target'`` plan adds ``target_maps_``,
             ``target_prior_``, ``n_folds``, ``random_state``, and
             ``smoothing``. The fitted encoder object is omitted, since it does
-            not serialise to JSON — use a saved pipeline to round-trip it.
+            not serialise to JSON: use a saved pipeline to round-trip it.
         """
         payload: dict[str, Any] = {
             "columns": list(self.columns),
@@ -172,7 +172,7 @@ def fit_encoder(
 ) -> EncodePlan:
     """Learn the category vocabulary and output layout from the training rows.
 
-    Nothing is transformed here — pass the returned plan to
+    Nothing is transformed here: pass the returned plan to
     :func:`transform_encoder` to apply it.
 
     Parameters
@@ -182,7 +182,7 @@ def fit_encoder(
     split_plan:
         The split defining the training rows. Required, because a vocabulary
         built from all rows tells the model which categories exist in the test
-        set — and for target encoding it would hand over the labels outright.
+        set: and for target encoding it would hand over the labels outright.
     columns:
         Which columns to encode. Defaults to categorical ``feature`` columns,
         skipping the protected roles. Pass an explicit list to encode something
@@ -354,7 +354,7 @@ def transform_encoder(
     """Replace category labels with numbers using an already-learned plan.
 
     The source columns are removed and the plan's output columns take their
-    place, in the plan's own order — which is what keeps the frame consistent
+    place, in the plan's own order: which is what keeps the frame consistent
     with what the model was trained on even if the incoming data is missing a
     category or arrives in a different column order.
 
@@ -389,7 +389,7 @@ def transform_encoder(
     all zeros; with ordinal they take the encoder's unknown value; with
     infrequent they join the rare bucket; with target they fall back to the
     training prior. All four are reasonable, and none of them is a signal you
-    will notice unless you look — the returned result reports how often it
+    will notice unless you look: the returned result reports how often it
     happened, and a high rate means training and serving data have diverged.
 
     **Missing values are encoded as the literal string** ``"nan"``, so they

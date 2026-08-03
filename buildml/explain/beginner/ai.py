@@ -10,8 +10,8 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
         "ai-egress-privacy",
         plain=(
             "When you connect BuildML to an external language model, something has to leave your machine "
-            "and travel to that provider. Egress control means you decide exactly what — column names only, "
-            "summary statistics, or actual cell values — before anything is sent."
+            "and travel to that provider. Egress control means you decide exactly what: column names only, "
+            "summary statistics, or actual cell values: before anything is sent."
         ),
         analogy=(
             "Before posting a document, you choose whether to send the whole file, a redacted version, or "
@@ -25,7 +25,7 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
             "For sensitive data, prefer a local provider or send only derived, non-identifying summaries.",
         ),
         use=(
-            "Every single time you configure an AI provider — the default should be a deliberate choice, not an accident.",
+            "Every single time you configure an AI provider: the default should be a deliberate choice, not an accident.",
             "Especially with personal data, health data, financial records, or anything under a contractual restriction.",
         ),
         avoid=(
@@ -69,7 +69,7 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
             "with you before opening any door that matters."
         ),
         steps=(
-            "Look at the registered tool list — each entry maps to a real Session method.",
+            "Look at the registered tool list: each entry maps to a real Session method.",
             "The assistant proposes a call: which operation, with which arguments.",
             "You review the proposal, including the arguments, not just the operation name.",
             "You confirm, and only then does BuildML execute it.",
@@ -118,18 +118,18 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "A receptionist reading a message aloud that says 'the receptionist should let the bearer into "
-            "the vault'. The words are content, not authority — but only if the receptionist knows the "
+            "the vault'. The words are content, not authority: but only if the receptionist knows the "
             "difference."
         ),
         steps=(
-            "Treat everything from the dataset — column names, cell values, file contents — as untrusted.",
+            "Treat everything from the dataset: column names, cell values, file contents: as untrusted.",
             "BuildML wraps that material in explicit markers separating it from your instructions.",
             "Instructions come only from you, never from the data.",
             "The tool allowlist and the confirm step act as the second line of defence when a model is fooled anyway.",
             "Review proposed actions with injection in mind, especially after ingesting user-generated text.",
         ),
         use=(
-            "Always, but urgently when your data contains free text written by other people — reviews, tickets, emails, scraped pages.",
+            "Always, but urgently when your data contains free text written by other people: reviews, tickets, emails, scraped pages.",
             "When a RAG corpus includes documents you did not author.",
         ),
         avoid=(
@@ -143,7 +143,7 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "A better model is immune.",
-                "Stronger models resist more attempts and still fail on novel phrasings. Architecture — separation plus allowlist plus confirmation — is what actually contains the risk.",
+                "Stronger models resist more attempts and still fail on novel phrasings. Architecture: separation plus allowlist plus confirmation: is what actually contains the risk.",
             ),
         ),
         example=(

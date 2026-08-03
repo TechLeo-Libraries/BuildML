@@ -108,7 +108,7 @@ def layer_for(key: str) -> BeginnerLayer | None:
 
     Callers normally read the merged :data:`~buildml.explain.CONCEPT_NOTES`
     instead, where this material is already folded into the note. Use this when
-    you need the beginner layer on its own — checking coverage, for instance, or
+    you need the beginner layer on its own: checking coverage, for instance, or
     building tooling over the authored source.
 
     Parameters

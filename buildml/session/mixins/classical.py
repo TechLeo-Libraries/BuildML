@@ -27,7 +27,7 @@ class ClassicalSessionMixin:
     ) -> Session:
         """Train a model on the training rows.
 
-        Session facade over :func:`buildml.session.classical_ops.fit`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.fit`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -58,7 +58,7 @@ class ClassicalSessionMixin:
     ) -> pd.Series | pd.DataFrame:
         """Run the fitted model over one partition and return its predictions.
 
-        Session facade over :func:`buildml.session.classical_ops.predict`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.predict`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -82,7 +82,7 @@ class ClassicalSessionMixin:
     ) -> EvaluateResult:
         """Measure the fitted model, and explain what the measurement means.
 
-        Session facade over :func:`buildml.session.classical_ops.evaluate`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.evaluate`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -116,7 +116,7 @@ class ClassicalSessionMixin:
     ) -> PlotBoardReport:
         """Draw the standard diagnostic charts for a fitted model, in one call.
 
-        Session facade over :func:`buildml.session.classical_ops.eval_plots`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.eval_plots`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -159,7 +159,7 @@ class ClassicalSessionMixin:
     ) -> ModelComparison:
         """Try several models on the same data and rank what you get.
 
-        Session facade over :func:`buildml.session.classical_ops.compare_models`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.compare_models`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -195,7 +195,7 @@ class ClassicalSessionMixin:
     ) -> CVScoreResult:
         """Score a model across several rotating holdouts, not just one.
 
-        Session facade over :func:`buildml.session.classical_ops.cv_score`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.cv_score`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -251,7 +251,7 @@ class ClassicalSessionMixin:
     ) -> NestedCVResult:
         """Estimate how well your *tuning procedure* generalises, not just one model.
 
-        Session facade over :func:`buildml.session.classical_ops.nested_cv_score`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.nested_cv_score`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -308,7 +308,7 @@ class ClassicalSessionMixin:
     ) -> SearchResult:
         """Try every combination of the settings you list, and keep the best.
 
-        Session facade over :func:`buildml.session.classical_ops.grid_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.grid_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -356,7 +356,7 @@ class ClassicalSessionMixin:
     ) -> SearchResult:
         """Sample settings at random, which usually beats an exhaustive grid.
 
-        Session facade over :func:`buildml.session.classical_ops.randomized_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.randomized_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -406,7 +406,7 @@ class ClassicalSessionMixin:
     ) -> SearchResult:
         """Search adaptively, letting each trial learn from the ones before it.
 
-        Session facade over :func:`buildml.session.classical_ops.optuna_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.optuna_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -462,7 +462,7 @@ class ClassicalSessionMixin:
     ) -> SearchResult:
         """Evolve a population of configurations across generations.
 
-        Session facade over :func:`buildml.session.classical_ops.evolutionary_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.evolutionary_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -527,7 +527,7 @@ class ClassicalSessionMixin:
     def save_model(self, path: str | Path) -> Path:
         """Save the fitted estimator and the feature contract it expects.
 
-        Session facade over :func:`buildml.session.classical_ops.save_model`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.save_model`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -544,7 +544,7 @@ class ClassicalSessionMixin:
     def load_model(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an estimator bundle written by :meth:`save_model`.
 
-        Session facade over :func:`buildml.session.classical_ops.load_model`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.load_model`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -567,7 +567,7 @@ class ClassicalSessionMixin:
     ) -> Path:
         """Save everything needed to score new data: model, prep, and card.
 
-        Session facade over :func:`buildml.session.classical_ops.save_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.save_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -586,7 +586,7 @@ class ClassicalSessionMixin:
     def load_pipeline(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Restore a saved model together with its preprocessing.
 
-        Session facade over :func:`buildml.session.classical_ops.load_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.load_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -612,7 +612,7 @@ class ClassicalSessionMixin:
     ) -> PipelinePredictResult:
         """Score new rows through a saved bundle, in one call.
 
-        Session facade over :func:`buildml.session.classical_ops.predict_from_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.predict_from_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -644,7 +644,7 @@ class ClassicalSessionMixin:
     ) -> MaterializePrepResult:
         """Narrow the data in the engine before pulling it into memory.
 
-        Session facade over :func:`buildml.session.classical_ops.prepare_design_matrix`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.prepare_design_matrix`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -682,7 +682,7 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Check whether predicted probabilities mean what they claim.
 
-        Session facade over :func:`buildml.session.classical_ops.calibration`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.calibration`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -711,7 +711,7 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Choose the cut-off that turns a probability into a decision.
 
-        Session facade over :func:`buildml.session.classical_ops.tune_threshold`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.tune_threshold`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -745,7 +745,7 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Find out whether more data would help, before you go and get it.
 
-        Session facade over :func:`buildml.session.classical_ops.learning_curve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.learning_curve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -766,6 +766,24 @@ class ClassicalSessionMixin:
             export_html=export_html,
         ))
 
+    def explain_shap(
+        self,
+        *,
+        partition: Literal["train", "validation", "test"] = "test",
+        max_samples: int = 100,
+        random_state: int | None = 0,
+    ) -> Any:
+        """Attribute predictions with SHAP (requires ``buildml[shap]``).
+
+        Session facade over :func:`buildml.session.classical_ops.explain_shap`.
+        """
+        return classical_ops.explain_shap(
+            self,
+            partition=partition,
+            max_samples=max_samples,
+            random_state=random_state,
+        )
+
     def feature_importance(
         self,
         *,
@@ -776,7 +794,7 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Measure which features the model genuinely depends on.
 
-        Session facade over :func:`buildml.session.classical_ops.feature_importance`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.feature_importance`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -807,7 +825,7 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Break performance down by subgroup, to find where the model fails.
 
-        Session facade over :func:`buildml.session.classical_ops.error_slices`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.error_slices`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

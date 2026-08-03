@@ -11,7 +11,7 @@ error, you get swapping, then an out-of-memory kill with no traceback and no
 indication of which line caused it. The gates turn that into a warning you can
 read, before the allocation happens.
 
-Two thresholds, with different intent. The soft limit — 250 MiB by default —
+Two thresholds, with different intent. The soft limit: 250 MiB by default :
 warns and continues, because the estimate is approximate and the user may know
 better. The hard limit refuses, and is off unless you configure it, since a
 library that refuses to load your data by default is a library you stop using.
@@ -63,7 +63,7 @@ class MaterializationTelemetry:
     Attributes
     ----------
     context:
-        Where the check happened — ``'estimator fit'``, ``'preprocess'``. Names
+        Where the check happened: ``'estimator fit'``, ``'preprocess'``. Names
         the boundary in warnings, which is what makes them actionable.
     nbytes:
         Estimated footprint. Approximate; see the notes.
@@ -78,7 +78,7 @@ class MaterializationTelemetry:
     warnings:
         The messages generated. Empty when nothing was exceeded.
     guidance:
-        Concrete suggestions — use a lazy engine, narrow the columns. Populated
+        Concrete suggestions: use a lazy engine, narrow the columns. Populated
         only when a limit was exceeded, so it is advice at the moment it is
         needed rather than boilerplate on every check.
 
@@ -138,7 +138,7 @@ def schema_from_dataframe(frame: pd.DataFrame) -> TableSchema:
     """Describe a frame's columns as a schema BuildML can carry forward.
 
     Turns "what pandas happens to hold right now" into an explicit record of
-    column names, dtypes, and nullability — the thing a score-time contract is
+    column names, dtypes, and nullability: the thing a score-time contract is
     later checked against.
 
     Nullability is observed, not declared. A column is marked nullable because
@@ -201,7 +201,7 @@ def detect_path_format(path: Path) -> str:
     -------
     str
         ``'csv'``, ``'tsv'``, ``'parquet'``, ``'arrow'``, or ``'unknown'``.
-        Several extensions map to one format — ``.pq`` is parquet, and
+        Several extensions map to one format: ``.pq`` is parquet, and
         ``.feather``, ``.arrow``, and ``.ipc`` are all arrow.
 
     Notes
@@ -239,8 +239,8 @@ def estimate_path_bytes(path: Path) -> int | None:
     """Ask the filesystem how big a file is, returning ``None`` if it cannot say.
 
     The cheap first estimate of scale, used before deciding whether to load
-    eagerly or lazily. Any filesystem error — missing file, no permission, a
-    path that is not a file — becomes ``None`` rather than an exception, because
+    eagerly or lazily. Any filesystem error: missing file, no permission, a
+    path that is not a file: becomes ``None`` rather than an exception, because
     the caller's next step is to fall back to a row-count estimate, not to give
     up.
 
@@ -258,7 +258,7 @@ def estimate_path_bytes(path: Path) -> int | None:
     -----
     **On-disk size is not memory size, and the gap is large.** Parquet is
     columnar and compressed, so a 100 MB file can expand past a gigabyte once
-    read. CSV usually shrinks — text digits become 8-byte floats, but repeated
+    read. CSV usually shrinks: text digits become 8-byte floats, but repeated
     strings become categories. Neither direction is predictable enough to scale
     by a constant, which is why the mode heuristic is conservative.
 
@@ -276,7 +276,7 @@ def estimate_dataframe_bytes(frame: pd.DataFrame) -> int:
     """Measure what a frame currently occupies, following object references.
 
     ``deep=True`` is the whole point. Without it, an object column reports 8
-    bytes per row — the size of the pointers — and a frame of a million strings
+    bytes per row: the size of the pointers: and a frame of a million strings
     appears to weigh 8 MB when it actually weighs several hundred. Deep
     accounting is slower, since it walks every Python object, and it is the only
     version whose answer is worth acting on.
@@ -320,7 +320,7 @@ def check_materialization(
 ) -> MaterializationTelemetry:
     """Check a frame against the memory limits before something copies it.
 
-    Called at materialization boundaries — the moments where a lazy frame stops
+    Called at materialization boundaries: the moments where a lazy frame stops
     being a query plan and becomes real memory, most often when handing a design
     matrix to scikit-learn. That is the point where a job either proceeds or
     dies, and it is worth measuring.
@@ -328,7 +328,7 @@ def check_materialization(
     Two thresholds with different jobs. The soft limit warns: the estimate is
     approximate, the machine might have plenty of room, and refusing would be
     presumptuous. The hard limit refuses, and does not exist unless someone
-    configures it — the right setting for a shared cluster or a nightly job,
+    configures it: the right setting for a shared cluster or a nightly job,
     where an out-of-memory kill costs more than a clear failure.
 
     Parameters
@@ -348,7 +348,7 @@ def check_materialization(
         for no hard limit.
     on_soft:
         ``'warn'`` to emit a warning, ``'ignore'`` to record it in the telemetry
-        silently — for a caller that already knows the frame is large and does
+        silently: for a caller that already knows the frame is large and does
         not want the noise on every batch.
     on_hard:
         ``'error'`` to raise, ``'warn'`` to record and continue.
@@ -496,7 +496,7 @@ def available_engines() -> tuple[EngineName, ...]:
 
     Polars and DuckDB are optional extras, so what BuildML can do depends on
     what the environment has. This checks by looking for the module spec rather
-    than importing, which is fast and has no side effects — importing Polars to
+    than importing, which is fast and has no side effects: importing Polars to
     find out whether Polars is installed costs a noticeable fraction of a second
     and pulls a large library into memory that may never be used.
 
@@ -508,8 +508,8 @@ def available_engines() -> tuple[EngineName, ...]:
 
     Notes
     -----
-    **Importable is not the same as working.** A broken installation — a
-    corrupt wheel, a missing native library — has a module spec and fails on
+    **Importable is not the same as working.** A broken installation: a
+    corrupt wheel, a missing native library: has a module spec and fails on
     import. Rare, and it surfaces at load time rather than here.
 
     **Install both with** ``pip install 'buildml[engines]'``. They are the
@@ -555,7 +555,7 @@ def recommend_mode(
     -------
     DataMode
         ``LAZY`` when the data looks large, ``MEMORY`` otherwise. With no
-        information at all, ``MEMORY`` — the assumption that an unmeasurable
+        information at all, ``MEMORY``: the assumption that an unmeasurable
         source is small, which is right far more often than not.
 
     Notes
@@ -607,7 +607,7 @@ def recommend_engine(
 
     When lazy mode is wanted and neither is installed, this falls back to pandas
     with a warning rather than failing. Continuing on a best effort beats
-    refusing to load data at all — but the warning matters, because pandas in
+    refusing to load data at all: but the warning matters, because pandas in
     lazy mode is pandas, and the memory problem that prompted lazy mode is still
     there.
 
@@ -621,7 +621,7 @@ def recommend_engine(
     Returns
     -------
     tuple
-        ``(EngineName, list[str])`` — the engine, and any warnings to surface.
+        ``(EngineName, list[str])``: the engine, and any warnings to surface.
         The list is empty on the normal paths.
 
     Notes
@@ -696,7 +696,7 @@ def build_scale_details(
     Notes
     -----
     **The thresholds are read at call time**, so a report reflects the limits
-    that were actually in force — including one set through the environment.
+    that were actually in force: including one set through the environment.
 
     See Also
     --------

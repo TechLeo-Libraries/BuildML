@@ -1,7 +1,7 @@
 """Check for optional NLP dependencies, and demand them with a useful message.
 
-Core NLP runs on numpy, pandas, and scikit-learn alone. Everything heavier —
-NLTK, spaCy, transformers — is opt-in, so installing BuildML does not drag in
+Core NLP runs on numpy, pandas, and scikit-learn alone. Everything heavier :
+NLTK, spaCy, transformers: is opt-in, so installing BuildML does not drag in
 gigabytes of models you may never use.
 
 Two kinds of function live here, and the distinction is the point.
@@ -10,12 +10,12 @@ The ``*_available`` predicates ask a question and never raise, which is what you
 want for branching: use embeddings if they are here, otherwise fall back. The
 ``require_*`` functions demand a dependency and raise
 :class:`~buildml.core.errors.MissingExtraError` naming the exact extra to install
-— which is what you want at the moment a user has explicitly asked for something
+: which is what you want at the moment a user has explicitly asked for something
 that cannot run.
 
 Each predicate does two checks rather than one. Finding the module's spec is
 cheap and answers "is it installed"; actually importing it is slower but catches
-the install that is present and broken — a compiled dependency built against the
+the install that is present and broken: a compiled dependency built against the
 wrong library version, say, which would otherwise fail much later and much less
 clearly.
 """
@@ -23,9 +23,11 @@ clearly.
 from __future__ import annotations
 
 import importlib.util
+import sys
 from typing import Any
 
 from buildml.core.errors import MissingExtraError
+from buildml.dl.extras import _subprocess_import_ok, torch_available
 
 
 def _spec_present(module: str) -> bool:
@@ -38,7 +40,7 @@ def _spec_present(module: str) -> bool:
 def nltk_spec_present() -> bool:
     """Check whether NLTK is installed, without importing it.
 
-    The cheap check. Used where the cost of a real import is not warranted —
+    The cheap check. Used where the cost of a real import is not warranted :
     building a capability matrix, for instance, which asks about every optional
     dependency at once.
 
@@ -155,7 +157,7 @@ def spacy_available() -> bool:
     Notes
     -----
     The library alone is not enough. spaCy needs a language model downloaded
-    separately, which is a distinct check — see :func:`spacy_model_available`.
+    separately, which is a distinct check: see :func:`spacy_model_available`.
     """
     if not spacy_spec_present():
         return False
@@ -190,7 +192,7 @@ def spacy_model_available(model: str = "en_core_web_sm") -> bool:
     -----
     Missing models are downloaded with ``python -m spacy download <model>``.
     Model choice matters for entity extraction: the small English pipeline will
-    not recognise entities in French text, and will not say so — it will just
+    not recognise entities in French text, and will not say so: it will just
     find very few.
     """
     if not spacy_available():
@@ -244,9 +246,13 @@ def sentence_transformers_available() -> bool:
     """
     if not sentence_transformers_spec_present():
         return False
+    if not torch_available():
+        return False
+    if sys.platform.startswith("win"):
+        return _subprocess_import_ok("sentence_transformers")
     try:
         import sentence_transformers  # noqa: F401
-    except (ImportError, OSError):
+    except Exception:
         return False
     return True
 
@@ -255,7 +261,7 @@ def transformers_spec_present() -> bool:
     """Check whether Hugging Face transformers is installed, without importing it.
 
     The cheap check, which matters here because importing transformers is
-    heavy — it initialises a backend framework on the way in.
+    heavy: it initialises a backend framework on the way in.
 
     Returns
     -------
@@ -273,7 +279,7 @@ def transformers_available() -> bool:
     """Check whether Hugging Face transformers can actually be imported.
 
     Powers the pooled-encoder representation and the pretrained sentiment
-    backend. The encoders here are frozen feature extractors, not fine-tuned —
+    backend. The encoders here are frozen feature extractors, not fine-tuned :
     the Torch text path owns fine-tuning.
 
     Returns
@@ -284,9 +290,13 @@ def transformers_available() -> bool:
     """
     if not transformers_spec_present():
         return False
+    if not torch_available():
+        return False
+    if sys.platform.startswith("win"):
+        return _subprocess_import_ok("transformers")
     try:
         import transformers  # noqa: F401
-    except (ImportError, OSError):
+    except Exception:
         return False
     return True
 
@@ -294,8 +304,8 @@ def transformers_available() -> bool:
 def nlp_industry_available() -> bool:
     """Check whether any heavyweight NLP backend is available at all.
 
-    A coarse capability question — "can this install do more than bag-of-words"
-    — used in reporting rather than for choosing a specific backend.
+    A coarse capability question: "can this install do more than bag-of-words"
+   : used in reporting rather than for choosing a specific backend.
 
     Returns
     -------
@@ -308,7 +318,7 @@ def nlp_industry_available() -> bool:
 def require_nltk(*, feature: str = "NLTK stemming / lemmatization") -> Any:
     """Import NLTK, or explain exactly what to install and why.
 
-    For the call sites with no fallback — chiefly WordNet lemmatisation, where
+    For the call sites with no fallback: chiefly WordNet lemmatisation, where
     approximating the dictionary would give wrong answers rather than rough
     ones.
 

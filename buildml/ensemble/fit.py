@@ -2,7 +2,7 @@
 
 Different models make different mistakes. A linear model misses interactions a
 tree captures; a tree extrapolates badly where the linear model does not. When
-their errors are uncorrelated, combining them beats any one of them — which is
+their errors are uncorrelated, combining them beats any one of them: which is
 why ensembles win competitions and why almost every production system is one.
 
 Three ways to combine, in increasing order of power and of risk.
@@ -24,7 +24,7 @@ meta-learner trained on less data.
 
 The discipline this module adds is that every one of these fits on the Session
 train partition and nothing else. Blending's inner holdout comes out of train,
-never out of validation or test — an easy mistake to make by hand, and one that
+never out of validation or test: an easy mistake to make by hand, and one that
 produces a beautiful score and a model that does not work.
 
 See Also
@@ -107,7 +107,7 @@ def build_voting_estimator(
 
     Soft voting averages probabilities rather than counting votes, and is
     usually better because it keeps the information in *how* confident each
-    model was — a model that says 0.51 and a model that says 0.99 should not
+    model was: a model that says 0.51 and a model that says 0.99 should not
     count equally. It requires every base to expose ``predict_proba``, and a
     base that does not is caught here rather than at fit time.
 
@@ -133,8 +133,8 @@ def build_voting_estimator(
     Raises
     ------
     ValidationError
-        If ``weights`` has a different length than ``named`` — a mismatch would
-        otherwise silently misalign weights with models — or if soft voting was
+        If ``weights`` has a different length than ``named``: a mismatch would
+        otherwise silently misalign weights with models: or if soft voting was
         asked for and some base cannot produce probabilities.
 
     Notes
@@ -190,7 +190,7 @@ def build_stacking_estimator(
     Those predictions are memorised rather than earned, and a meta-learner
     trained on them learns to trust whichever base overfits hardest. Fitting
     each base ``cv`` times on folds and predicting the held-out fold each time
-    is what produces honest meta-features — and is why stacking costs roughly
+    is what produces honest meta-features: and is why stacking costs roughly
     ``cv`` times a plain fit.
 
     Parameters
@@ -200,7 +200,7 @@ def build_stacking_estimator(
     task:
         ``'classification'`` or ``'regression'``.
     final_estimator:
-        The meta-learner. Defaults to logistic regression or ridge — a simple,
+        The meta-learner. Defaults to logistic regression or ridge: a simple,
         regularised model is the standard choice, because a complex meta-learner
         on a handful of prediction columns overfits readily.
     cv:
@@ -211,7 +211,7 @@ def build_stacking_estimator(
         predictions. Occasionally helps; it also multiplies the meta-learner's
         input width and its chance of overfitting.
     stack_method:
-        What the bases contribute — ``'auto'`` picks probabilities where
+        What the bases contribute: ``'auto'`` picks probabilities where
         available, and ``'predict'``, ``'predict_proba'``, or
         ``'decision_function'`` force it. Regression ignores this.
 
@@ -224,7 +224,7 @@ def build_stacking_estimator(
     ------
     ValidationError
         If ``cv`` is below 2. One fold cannot produce out-of-fold predictions,
-        so the meta-learner would train on in-sample answers — the exact failure
+        so the meta-learner would train on in-sample answers: the exact failure
         stacking exists to avoid.
 
     Notes
@@ -304,14 +304,14 @@ def build_blending_estimator(
     blend_method:
         ``'predict_proba'`` or ``'predict'``. Probabilities carry more
         information, and are downgraded automatically when a base cannot supply
-        them — quietly, so check ``blend_method`` on the resulting plan if it
+        them: quietly, so check ``blend_method`` on the resulting plan if it
         matters.
     random_state:
         Seed for the inner split, so a blend is reproducible.
     refit_bases_on_full_train:
         After the meta-learner is fitted, refit the bases on all of train. This
-        is the standard deployment pattern and generally right — the bases get
-        the full data — but it does mean the deployed bases are not quite the
+        is the standard deployment pattern and generally right: the bases get
+        the full data: but it does mean the deployed bases are not quite the
         ones the meta-learner was calibrated against.
     passthrough:
         Also give the meta-learner the original features.
@@ -502,7 +502,7 @@ def fit_voting_ensemble(
     the best single model is real.
 
     Returns three objects because they answer different questions. The plan is
-    what you save and reload. The ensemble result is the disclosure record —
+    what you save and reload. The ensemble result is the disclosure record :
     which bases, which mode, what was and was not used. The fit result is the
     ordinary one every other BuildML model produces, so the ensemble drops into
     ``evaluate``, ``compare``, and the diagnostics unchanged.
@@ -512,7 +512,7 @@ def fit_voting_ensemble(
     dataset:
         The data, with roles assigned.
     split_plan:
-        Partition membership. Required — an ensemble without a holdout cannot be
+        Partition membership. Required: an ensemble without a holdout cannot be
         honestly evaluated, and the point of an ensemble is the comparison.
     estimators:
         At least two base estimators, as a mapping or ``(name, estimator)``
@@ -529,7 +529,7 @@ def fit_voting_ensemble(
     Returns
     -------
     tuple
-        ``(EnsemblePlan, EnsembleFitResult, FitResult)`` — the reloadable plan,
+        ``(EnsemblePlan, EnsembleFitResult, FitResult)``: the reloadable plan,
         the disclosure record, and the standard fit result.
 
     Raises
@@ -694,7 +694,7 @@ def fit_blending_ensemble(
     """Fit a blend ensemble using one inner split of train, not ``cv`` folds.
 
     The blend holdout is carved from **train**. Session validation and test rows
-    never reach the bases or the meta-learner — which is the whole reason to use
+    never reach the bases or the meta-learner: which is the whole reason to use
     this rather than hand-rolling the same idea, since the natural way to write
     blending by hand is to blend on the validation set, and that quietly makes
     every subsequent validation score meaningless.
@@ -745,7 +745,7 @@ def fit_blending_ensemble(
 
     **The refit is disclosed because it changes the model.** After
     ``refit_bases_on_full_train``, the deployed bases are not the ones the
-    meta-learner was calibrated against — usually an improvement, occasionally
+    meta-learner was calibrated against: usually an improvement, occasionally
     not, and always worth knowing.
 
     **Reach for stacking when the compute allows.** Blending exists for when

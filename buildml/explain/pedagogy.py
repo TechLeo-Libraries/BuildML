@@ -4,7 +4,7 @@
 The catalog holds 287 operations. Hand-writing a beginner briefing for each one
 would guarantee drift: the prose would age out of step with the parameters,
 prerequisites, and concept links that are already maintained elsewhere. So the
-primer is *derived* — from the operation's kind, its prerequisites, its
+primer is *derived*: from the operation's kind, its prerequisites, its
 parameters, the state it changes, and the beginner layer of the concepts it
 links to.
 
@@ -231,7 +231,7 @@ _PARAMETER_MEANINGS: dict[str, tuple[str, str, str, str]] = {
         "5 is the usual compromise.",
     ),
     "cv_strategy": (
-        "How cross-validation folds are formed — plain, stratified by class, grouped by entity, or ordered by time.",
+        "How cross-validation folds are formed: plain, stratified by class, grouped by entity, or ordered by time.",
         "",
         "",
         "Match it to your data: grouped when rows repeat per entity, time-ordered when order matters.",
@@ -273,7 +273,7 @@ _PARAMETER_MEANINGS: dict[str, tuple[str, str, str, str]] = {
         "Around 0.001 for neural networks; lower it if the loss bounces around.",
     ),
     "device": (
-        "Where the computation runs — the processor or the graphics card.",
+        "Where the computation runs: the processor or the graphics card.",
         "",
         "",
         "Leave it on automatic unless you are pinning a specific device.",
@@ -514,7 +514,7 @@ def parameter_meaning(parameter: ParameterSpec) -> ParameterMeaning:
     move the value, and what a reasonable starting value is.
 
     Resolution is a three-step fallback. Parameters that recur across the
-    catalog — ``random_state``, ``test_size``, ``threshold`` — have a curated
+    catalog: ``random_state``, ``test_size``, ``threshold``: have a curated
     reading. Anything else is matched against family patterns (``n_*``,
     ``max_*``, ``*_column``). Failing both, the catalog description is used,
     which is terse but always accurate.
@@ -710,7 +710,7 @@ def _pitfalls(spec: OperationSpec, avoid: tuple[str, ...], limit: int) -> tuple[
     Both sections draw on ``anti_patterns`` and ``leakage_risks``, so without
     subtraction a beginner reads the same warning twice in one briefing and
     learns nothing from the repetition. When subtraction would empty the list,
-    the unfiltered one is kept — a repeated warning beats a missing one.
+    the unfiltered one is kept: a repeated warning beats a missing one.
     """
     everything = _dedupe(spec.leakage_risks, spec.failure_modes, spec.anti_patterns)
     already = set(avoid)
@@ -771,8 +771,8 @@ def _as_call(item: str) -> str:
 def _related_tools(spec: OperationSpec) -> tuple[str, ...]:
     """Name the neighbours, without repeating any the alternatives already named.
 
-    The authored alternatives read as advice — "use ``group_split`` when
-    entities define boundaries" — while the derived neighbours are bare calls.
+    The authored alternatives read as advice: "use ``group_split`` when
+    entities define boundaries": while the derived neighbours are bare calls.
     Listing ``session.group_split()`` underneath that sentence adds a line and
     no information, so anything the advice already mentions is dropped.
     """
@@ -903,7 +903,7 @@ def primer_for(
     """Look up an operation by name and return its briefing, from cache.
 
     Derivation walks the catalog entry and every concept note it links, which is
-    wasted work when the same operation is explained repeatedly — and it is,
+    wasted work when the same operation is explained repeatedly: and it is,
     since the resolver calls this on every ``explain``. Results are immutable, so
     caching them per name and level is safe.
 

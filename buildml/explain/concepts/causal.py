@@ -67,7 +67,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="causal-ate-backdoor",
             title="Average treatment effect under backdoor adjustment",
-            summary="This surface identifies ATE under a declared backdoor adjustment set — not IV, not front-door, not causal discovery.",
+            summary="This surface identifies ATE under a declared backdoor adjustment set: not IV, not front-door, not causal discovery.",
             definition=(
                 "ATE = E[Y(1) − Y(0)]. Under backdoor, conditioning on declared "
                 "confounders identifies the ATE when unconfoundedness and "
@@ -86,7 +86,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
                 "assumptions.estimand='ATE'; assumptions.identification='backdoor'.",
             ),
             interpretation_rules=(
-                "CIs quantify sampling uncertainty under the estimator — not "
+                "CIs quantify sampling uncertainty under the estimator: not "
                 "uncertainty about whether assumptions are true.",
             ),
             assumptions=("No unmeasured confounding given W; positivity; SUTVA-style consistency.",),
@@ -104,7 +104,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
                 "arms, then estimates ATE as the mean of μ1(w)−μ0(w)."
             ),
             intuition=(
-                "Two outcome regressions — one per treatment arm — then average "
+                "Two outcome regressions: one per treatment arm: then average "
                 "how much the predictions differ."
             ),
             formal_idea="ATÊ = n⁻¹ Σᵢ (μ̂1(Wᵢ) − μ̂0(Wᵢ)).",
@@ -155,7 +155,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             why_it_matters=("Default method: more robust than pure regression or pure IPW.",),
             how_buildml_uses=("fit_causal(method='aipw') is the Session default.",),
             interpretation_rules=(
-                "Double robustness is about consistency under correct nuisances — "
+                "Double robustness is about consistency under correct nuisances: "
                 "not immunity to false assumptions.",
             ),
             assumptions=("At least one of {outcome models, propensity} correct + CausalAssumptions.",),
@@ -186,7 +186,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
                 "EDA text remains non-causal; causal methods require declare_causal_assumptions.",
             ),
             interpretation_rules=("Never paste an EDA finding into a causal claim without new assumptions.",),
-            assumptions=("N/A — this note is a product boundary.",),
+            assumptions=("N/A: this note is a product boundary.",),
             failure_modes=("Stakeholder slides that equate MI with ATE.",),
             anti_patterns=("Asking the AI operator to 'infer causality from eda()'.",),
             worked_example_pattern=(
@@ -222,7 +222,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "DoWhy CausalModel with treatment, outcome, common_causes=confounders, "
                 "and a caller-declared DAG (confounders→treatment/outcome, treatment→outcome). "
-                "Not causal discovery — the graph encodes assumptions only."
+                "Not causal discovery: the graph encodes assumptions only."
             ),
             intuition=(
                 "Industry-standard identification + refutation layered on the same "
@@ -250,11 +250,11 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "EconML double/debiased ML estimators with sklearn first-stage models "
                 "on Session train. causal_forest exposes CATE heterogeneity std; "
-                "policy_tree learns a treatment assignment rule — not a deployment product."
+                "policy_tree learns a treatment assignment rule: not a deployment product."
             ),
             intuition=(
                 "Industry DML for ATE with optional heterogeneity; still requires "
-                "explicit CausalAssumptions — no EDA shortcut."
+                "explicit CausalAssumptions: no EDA shortcut."
             ),
             formal_idea="DML orthogonal scores for ATE; forest variants for CATE surfaces.",
             why_it_matters=("Heterogeneous effects and policy exploration beyond scalar ATE.",),
@@ -263,7 +263,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
                 "fit_causal(backend='econml', method='causal_forest')."
             ,),
             interpretation_rules=(
-                "CATE std describes estimated heterogeneity — not proof of true effect variation.",
+                "CATE std describes estimated heterogeneity: not proof of true effect variation.",
             ),
             assumptions=("CausalAssumptions + correct nuisance models under DML theory.",),
             failure_modes=("Weak overlap; forest overfit on small n.",),

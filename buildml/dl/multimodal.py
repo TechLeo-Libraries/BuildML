@@ -7,13 +7,13 @@ interactions between them, which is frequently where the signal is.
 
 This module handles the combination. It builds loaders that yield one tensor per
 modality per batch, and a fusion model with a branch per modality whose outputs
-are joined before a shared head — late fusion. Tabular, text, image, and audio
+are joined before a shared head: late fusion. Tabular, text, image, and audio
 are supported, and any two or more can be mixed. One alone is not multimodal;
 use the single-modality loaders instead.
 
 The leakage surface is wider than usual and gets corresponding attention. Four
-things are fitted here — the token vocabulary, the tabular statistics, the image
-channel statistics, and the audio amplitude statistics — and every one of them
+things are fitted here: the token vocabulary, the tabular statistics, the image
+channel statistics, and the audio amplitude statistics: and every one of them
 is fitted on the training partition alone. All four are recorded in a
 :class:`MultimodalContract`, which must be reapplied rather than refitted when
 loading a saved model.
@@ -168,7 +168,7 @@ class MultimodalContract:
     class_labels:
         The class vocabulary, indexed by predicted class id.
     vocab:
-        The serialised token vocabulary — token-to-id map, id-to-token
+        The serialised token vocabulary: token-to-id map, id-to-token
         sequence, padding and unknown ids, and sequence length.
     normalize_mean, normalize_std:
         Per-column tabular statistics.
@@ -181,7 +181,7 @@ class MultimodalContract:
     audio_sample_rate, audio_max_samples, audio_source_sample_rate:
         The audio geometry.
     input_layout:
-        The order tensors arrive in the forward pass — ``numeric``, ``tokens``,
+        The order tensors arrive in the forward pass: ``numeric``, ``tokens``,
         ``image``, ``audio``, restricted to what is present. The model reads
         this to know which branch each tensor belongs to.
     modality:
@@ -191,7 +191,7 @@ class MultimodalContract:
     -----
     **``input_layout`` is load-bearing.** The fusion module walks it to route
     tensors to branches, so a mismatch between loaders and model is not a shape
-    error you would notice — it is images being fed to the audio branch.
+    error you would notice: it is images being fed to the audio branch.
 
     **Persist this alongside the weights.** A saved multimodal model without its
     contract cannot be used: nothing else records the vocabulary or the media
@@ -230,7 +230,7 @@ class MultimodalContract:
 
         Loader reports, evaluation, and export all take a plain
         :class:`~buildml.dl.types.FeatureContract`. This produces one by listing
-        every source column — numeric first, then text, image, and audio — and
+        every source column: numeric first, then text, image, and audio: and
         carrying the target, task, class labels, and numeric scaling across.
 
         Returns
@@ -264,7 +264,7 @@ class MultimodalContract:
     def to_dict(self) -> dict[str, Any]:
         """Return the whole contract as JSON-safe values.
 
-        Complete and round-trippable — :meth:`from_dict` reconstructs an
+        Complete and round-trippable: :meth:`from_dict` reconstructs an
         equivalent contract from this, which is how a saved multimodal model
         gets its preprocessing back. NumPy scalars and arrays are converted to
         Python types along the way.
@@ -591,9 +591,9 @@ def build_multimodal_fusion(
 ) -> Any:
     """Build a network that processes each modality separately, then combines.
 
-    This is late fusion: every modality gets its own branch — an MLP for
+    This is late fusion: every modality gets its own branch: an MLP for
     tabular, a mean-pooled embedding for text, a small 2D-CNN for images, a
-    small 1D-CNN for audio — and the branch outputs are joined before a shared
+    small 1D-CNN for audio: and the branch outputs are joined before a shared
     head. The alternative, early fusion, would concatenate raw inputs, which
     works poorly when the inputs have wildly different shapes and scales.
 
@@ -601,7 +601,7 @@ def build_multimodal_fusion(
     ----------
     n_numeric:
         Number of tabular columns, or a :class:`MultimodalContract` to take
-        every size from. Passing the contract is the reliable path — it
+        every size from. Passing the contract is the reliable path: it
         guarantees the model matches the loaders.
     vocab_size:
         Token vocabulary size. Below 2 disables the text branch.
@@ -887,7 +887,7 @@ def make_multimodal_loaders(
     Works out which columns hold which modality, fits every transformation on
     the training partition, and produces batches of
     ``(*modality_tensors, y)`` in the order ``numeric``, ``tokens``, ``image``,
-    ``audio`` — restricted to whichever are present.
+    ``audio``: restricted to whichever are present.
 
     Parameters
     ----------
@@ -911,7 +911,7 @@ def make_multimodal_loaders(
         ``'auto'`` to infer, or an explicit choice.
     preprocess:
         A frozen contract to reapply instead of fitting. This is how a reloaded
-        model gets loaders that match what it was trained on — refitting would
+        model gets loaders that match what it was trained on: refitting would
         produce a different vocabulary and different statistics, and the model
         would receive inputs it has never seen.
 
@@ -934,7 +934,7 @@ def make_multimodal_loaders(
 
     Notes
     -----
-    **Every fitted quantity comes from the training partition only** — the
+    **Every fitted quantity comes from the training partition only**: the
     vocabulary, the tabular statistics, the image channel statistics, and the
     audio amplitude statistics. Four separate opportunities to leak, and each
     one would inflate holdout scores invisibly.

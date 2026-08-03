@@ -1,4 +1,4 @@
-"""Ensemble capability matrix — honest sklearn voting / stacking / blending."""
+"""Ensemble capability matrix: honest sklearn voting / stacking / blending."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ def ensemble_capability_matrix() -> dict[str, Any]:
     """Report which ensemble strategies are available on this machine.
 
     Ensembles are core sklearn (plus an in-tree holdout blender). There is no
-    industry extra and no platform marker skip — availability is always
+    industry extra and no platform marker skip: availability is always
     ``True`` when BuildML's core dependencies import. Read-only introspection.
 
     Returns
@@ -88,7 +88,7 @@ def ensemble_status_payload() -> dict[str, Any]:
         "recommended_extra": None,
         "disclosures": [
             "Ensemble learning uses core scikit-learn voting/stacking plus "
-            "in-tree holdout blending — no optional industry extra.",
+            "in-tree holdout blending: no optional industry extra.",
             "Call Session.ensemble_capability_matrix() before choosing a strategy.",
         ],
     }

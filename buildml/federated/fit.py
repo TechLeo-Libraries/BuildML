@@ -93,13 +93,13 @@ def fit_federated(
         In-process weighted coef_/intercept_ aggregation (FedAvg / FedProx).
     flower (``buildml[federated-industry]``):
         Flower NumPyClient wrappers over Session partitions + flwr weighted
-        aggregation — still local simulation unless you deploy Flower yourself.
+        aggregation: still local simulation unless you deploy Flower yourself.
 
     Honesty
     -------
     Local FedAvg-style (or FedProx) orchestration on rows partitioned by a
     client/group column. Each "client" is a slice of the Session train
-    partition — not a networked FL runtime unless you operate one separately.
+    partition: not a networked FL runtime unless you operate one separately.
     No cryptographic secure aggregation; model updates are averaged in-process
     with clear privacy limits (the orchestrator sees client updates).
     Validation/test partitions are never used for local training.
@@ -291,7 +291,7 @@ def _prepare_federated_context(
         _, label_encoder, classes_tuple = encode_labels(train[target_col])
         disclosures.append(
             "Classification class vocabulary discovered from the full train "
-            "target column (labels only — client features used only during "
+            "target column (labels only: client features used only during "
             f"that client's local updates). classes={list(classes_tuple)}."
         )
 
@@ -445,8 +445,8 @@ def _fit_native(
             "are never used for local client updates.",
             "Each client sees only its own train rows during local updates.",
             "Aggregation is in-process weighted coefficient averaging "
-            "(FedAvg / weighted-by-n) — not cryptographic secure aggregation.",
-            "Honesty: local FL simulation for research/teaching/workflows — "
+            "(FedAvg / weighted-by-n): not cryptographic secure aggregation.",
+            "Honesty: local FL simulation for research/teaching/workflows: "
             "not a distributed FL platform unless you deploy one separately.",
             f"backend=native, method={ctx.method_key}, estimator={ctx.est_key}, "
             f"n_clients={len(ctx.eligible)}, n_rounds={n_rounds}, "

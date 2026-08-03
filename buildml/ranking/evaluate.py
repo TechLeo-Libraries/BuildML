@@ -63,7 +63,7 @@ def evaluate_ranker(
     -----
     Fit never sees holdout rows (caller / Session gate). MAP/MRR treat
     relevance > ``plan.relevance_threshold`` as relevant. Tabular LTR metrics
-    on labeled judgments — not RAG retrieve eval and not recommender CF metrics.
+    on labeled judgments: not RAG retrieve eval and not recommender CF metrics.
     """
     if int(k) < 1:
         raise ValidationError("k must be >= 1.")

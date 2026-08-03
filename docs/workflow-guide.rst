@@ -85,7 +85,7 @@ fit-capable work; the full exported frame contains every partition.
 For selection-time honesty inside ``cv_score``, ``grid_search``,
 ``optuna_search``, ``evolutionary_search``, or ``nested_cv_score``, use a fold-local
 ``PreprocessRecipe`` (dates, text, impute, encode, binning, scale, reduce/PCA,
-select, outliers) on **unpoisoned** data — do not fit Session-global plans on
+select, outliers) on **unpoisoned** data: do not fit Session-global plans on
 the full train partition first. When Session-global fit-capable plans already
 exist, CV/search **refuse** with ``LeakageError`` even if a fold-local recipe
 is passed (recipes do not rebuild from raw/unpoisoned rows). Opt in only via

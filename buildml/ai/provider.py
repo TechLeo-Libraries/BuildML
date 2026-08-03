@@ -7,14 +7,14 @@ hosted model for a scripted one changes nothing else.
 
 Two implementations ship. :class:`OpenAIProvider` calls an OpenAI-compatible
 endpoint. :class:`MockProvider` returns queued responses with no network, which
-is what makes the AI domain testable in CI and demonstrable offline — the tool
+is what makes the AI domain testable in CI and demonstrable offline: the tool
 registry, the confirmation flow, and the egress accounting all exercise
 identically against it.
 
 API keys are handled carefully throughout. :class:`ProviderConfig` reads from an
 environment variable by default, its ``repr`` reports only whether a key is set,
 its ``to_dict`` masks the value, and provider errors are scrubbed before being
-re-raised — an authentication failure that echoed the key back would be the
+re-raised: an authentication failure that echoed the key back would be the
 worst possible place to leak one.
 
 See Also
@@ -48,7 +48,7 @@ class ProviderConfig:
         The model identifier.
     api_key:
         The credential. Left ``None`` to read from the environment, which is
-        the safer habit — a key written into source is a key that gets
+        the safer habit: a key written into source is a key that gets
         committed.
     api_key_env:
         Which environment variable to read.
@@ -144,7 +144,7 @@ class ProviderResponse:
     content:
         The text. Empty when the model responded only with tool calls.
     tool_calls:
-        Actions the model wants taken. **Proposals** — nothing has run.
+        Actions the model wants taken. **Proposals**: nothing has run.
     finish_reason:
         Why generation stopped. ``'stop'`` for a complete answer,
         ``'tool_calls'`` when the model wants to act, ``'length'`` when it hit
@@ -228,7 +228,7 @@ class ProviderProtocol(Protocol):
         """Send the conversation and return what the model said.
 
         The single operation a provider must support. Everything the AI domain
-        does — advising, planning, acting — is built from repeated calls to
+        does: advising, planning, acting: is built from repeated calls to
         this.
 
         Parameters
@@ -266,7 +266,7 @@ class MockProvider:
     """A provider that returns what you told it to, with no network.
 
     Scripted rather than random. Queue the tool calls and the text you want,
-    and it hands them back in order — which turns an agent loop from something
+    and it hands them back in order: which turns an agent loop from something
     you observe into something you assert on.
 
     Every request is recorded in ``calls``, so a test can check not only what
@@ -279,7 +279,7 @@ class MockProvider:
     tool_responses:
         Canned outputs by tool name, for fixtures that need them.
     calls:
-        Every request received, in order — messages, tools, and the sampling
+        Every request received, in order: messages, tools, and the sampling
         overrides.
 
     Notes
@@ -340,7 +340,7 @@ class MockProvider:
         Parameters
         ----------
         tool_name:
-            The tool to propose. Not checked against any registry — proposing
+            The tool to propose. Not checked against any registry: proposing
             an unregistered tool is a useful thing to test.
         arguments:
             The arguments to propose. Not validated here either.
@@ -404,7 +404,7 @@ class MockProvider:
     def queue_responses(self, texts: list[str]) -> None:
         """Script the text replies that follow the tool calls.
 
-        Returned one per turn once the tool-call queues are empty — the
+        Returned one per turn once the tool-call queues are empty: the
         agent's closing summary after it has finished acting.
 
         Parameters
@@ -521,7 +521,7 @@ class OpenAIProvider:
 
     **Malformed tool arguments degrade rather than crash.** When a model emits
     invalid JSON for its arguments, the call is kept with empty arguments and
-    the schema check downstream reports what is missing — a more useful failure
+    the schema check downstream reports what is missing: a more useful failure
     than a parse error.
 
     Examples
@@ -616,7 +616,7 @@ class OpenAIProvider:
         Raises
         ------
         ValidationError
-            If the request fails — network, authentication, rate limit, or
+            If the request fails: network, authentication, rate limit, or
             malformed request. The original is chained, with any occurrence of
             the API key masked.
 

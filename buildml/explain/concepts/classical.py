@@ -14,8 +14,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             title="Column roles",
             summary="Roles label how each column participates in modeling, not what its dtype happens to be.",
             definition=(
-                "A column role is an explicit workflow label—feature, target, identifier, group, time, "
-                "weight, or ignore—that tells BuildML which columns may train, which must be predicted, "
+                "A column role is an explicit workflow label:feature, target, identifier, group, time, "
+                "weight, or ignore:that tells BuildML which columns may train, which must be predicted, "
                 "and which must stay out of the estimator matrix."
             ),
             intuition=(
@@ -44,7 +44,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Treat inferred roles as a draft: confirm every target, id, and ignore assignment before split.",
                 "A high-cardinality integer labeled feature is a review flag for accidental id use.",
-                "Multiple target roles imply a multitarget or mislabeled setup—resolve before fitting.",
+                "Multiple target roles imply a multitarget or mislabeled setup:resolve before fitting.",
                 "Weight roles affect training emphasis; verify they are not post-outcome quantities.",
             ),
             assumptions=(
@@ -75,7 +75,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             summary="Any statistic, vocabulary, or model parameter must be learned from training rows only.",
             definition=(
                 "The leakage boundary is the rule that evaluation rows must not influence parameters used "
-                "to transform or score them—imputers, encoders, scalers, selectors, samplers, and estimators "
+                "to transform or score them:imputers, encoders, scalers, selectors, samplers, and estimators "
                 "all learn on train (or nested train folds) and apply a frozen plan elsewhere."
             ),
             intuition=(
@@ -131,7 +131,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             title="Partition design",
             summary="A split assigns each row a membership that controls what may train, guide, and assess the model.",
             definition=(
-                "Data splitting partitions rows into disjoint sets—commonly train, validation, and test—so "
+                "Data splitting partitions rows into disjoint sets:commonly train, validation, and test:so "
                 "learning, iterative choices, and final estimation use separate observations under a stated "
                 "sampling design (random, stratified, grouped, or temporal)."
             ),
@@ -161,7 +161,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "Random-split metrics assume rows are exchangeable; reject that reading for panels or time series.",
                 "Stratification fixes marginal class rates, not duplicate-row or entity leakage.",
                 "Keep the same membership when comparing preprocessors and estimators.",
-                "Tiny validation sets (e.g. dozens of positives) make ranking noisy—treat gaps cautiously.",
+                "Tiny validation sets (e.g. dozens of positives) make ranking noisy:treat gaps cautiously.",
             ),
             assumptions=(
                 "The sampling design matches how new data will arrive (i.i.d., by group, or over time).",
@@ -219,7 +219,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "Always read a score with its partition tag (train / validation / test).",
                 "A large train–validation gap is a review flag for overfitting, leakage, or split mismatch.",
                 "If test was used to pick the winner, treat the test score as optimistic.",
-                "Small-n holdouts: wide uncertainty—prefer ranges or repeats over single-point bravado.",
+                "Small-n holdouts: wide uncertainty:prefer ranges or repeats over single-point bravado.",
             ),
             assumptions=(
                 "Validation and test are disjoint from each other and from training rows used to fit.",
@@ -239,7 +239,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             worked_example_pattern=(
                 "Freeze split; iterate model and threshold choices on validation only.",
                 "Once frozen, score test once and report partition, metric, and sample size.",
-                "If test disappoints, diagnose with train/validation curves—do not mine test for fixes.",
+                "If test disappoints, diagnose with train/validation curves:do not mine test for fixes.",
             ),
             related_concepts=("data-splitting", "model-selection", "overfitting"),
         ),
@@ -304,8 +304,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             title="Missing-data treatment",
             summary="Imputation fills gaps with a train-learned rule; it does not prove missingness is harmless.",
             definition=(
-                "Missing-data treatment decides how nulls and sentinel missings are handled—drop, impute, "
-                "or model natively—using policies justified by the missingness mechanism and by what will "
+                "Missing-data treatment decides how nulls and sentinel missings are handled:drop, impute, "
+                "or model natively:using policies justified by the missingness mechanism and by what will "
                 "be available at score time."
             ),
             intuition=(
@@ -332,7 +332,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Missing rate > ~20–30% in a key feature is a review flag for drop, indicator, or domain fix.",
                 "Median fills suit skewed numerics; mean fills are more pullable by tails.",
-                "Most-frequent category fill can erase rare-but-important levels—inspect value counts.",
+                "Most-frequent category fill can erase rare-but-important levels:inspect value counts.",
                 "If missingness correlates with the target, treat that as association to investigate, not proof of mechanism.",
             ),
             assumptions=(
@@ -363,7 +363,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             summary="Encoding maps category labels into numeric columns an estimator can consume.",
             definition=(
                 "Categorical encoding is a deterministic mapping from discrete level labels to numeric "
-                "features—commonly one-hot/dummy columns or ordinal integers—fit from the training "
+                "features:commonly one-hot/dummy columns or ordinal integers:fit from the training "
                 "vocabulary and applied with an explicit unknown-level policy at score time."
             ),
             intuition=(
@@ -419,8 +419,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             title="Feature scaling",
             summary="Scaling rewrites numeric units; it adds no new information and must be train-fitted.",
             definition=(
-                "Feature scaling applies an affine or robust transform to numeric columns—standardization, "
-                "min–max, or quantile-style maps—so magnitudes become comparable for scale-sensitive "
+                "Feature scaling applies an affine or robust transform to numeric columns:standardization, "
+                "min–max, or quantile-style maps:so magnitudes become comparable for scale-sensitive "
                 "learners, using parameters estimated on training rows only."
             ),
             intuition=(
@@ -448,8 +448,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "hard_limit_bytes or BUILDML_MATERIALIZATION_HARD_LIMIT_BYTES.",
             ),
             interpretation_rules=(
-                "After standard scaling, train means near 0 and variances near 1 are sanity checks—not proof of Gaussianity.",
-                "Min–max to [0, 1] on heavy-tailed data can crush typical values—review outlier influence.",
+                "After standard scaling, train means near 0 and variances near 1 are sanity checks:not proof of Gaussianity.",
+                "Min–max to [0, 1] on heavy-tailed data can crush typical values:review outlier influence.",
                 "If only tree models are compared, treat scaling as optional unless downstream steps need it.",
                 "Treat soft materialization warnings as scale signals; configure a hard limit when copies must refuse.",
             ),
@@ -507,7 +507,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Prevalence under ~5–10% is a review flag to prefer PR curves over accuracy headlines.",
                 "After oversampling train, judge models on unsamples validation/test.",
-                "A probability of 0.5 is not 'balanced risk' when π is tiny—set thresholds from costs.",
+                "A probability of 0.5 is not 'balanced risk' when π is tiny:set thresholds from costs.",
             ),
             assumptions=(
                 "Label definitions are stable; imbalance is not an artifact of labeling backlog.",
@@ -534,7 +534,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="model-selection",
             title="Model comparison",
-            summary="A ranked score supports one criterion under one protocol—not a universal best model.",
+            summary="A ranked score supports one criterion under one protocol:not a universal best model.",
             definition=(
                 "Model selection compares candidate estimators (and often pipelines) under a fixed data "
                 "partitioning protocol and metric, then chooses a candidate for deployment or further testing "
@@ -666,10 +666,10 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="diagnostic-uncertainty",
             title="Diagnostic uncertainty",
-            summary="Metrics, curves, and importances are sample estimates—not exact truths about the world.",
+            summary="Metrics, curves, and importances are sample estimates:not exact truths about the world.",
             definition=(
-                "Diagnostic uncertainty is the recognition that reported figures—scores, p-values, "
-                "importance ranks, drift stats—vary with sample size, split, and data composition, and "
+                "Diagnostic uncertainty is the recognition that reported figures:scores, p-values, "
+                "importance ranks, drift stats:vary with sample size, split, and data composition, and "
                 "must be read with those limits attached."
             ),
             intuition=(
@@ -751,8 +751,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Points near the diagonal on a reliability plot support calibration; systematic bows do not.",
-                "Brier score mixes calibration and sharpness—pair it with a curve.",
-                "With few positives, bin estimates are noisy—treat wiggles as uncertainty.",
+                "Brier score mixes calibration and sharpness:pair it with a curve.",
+                "With few positives, bin estimates are noisy:treat wiggles as uncertainty.",
                 "After heavy resampling, expect to re-check calibration on natural-prevalence data.",
             ),
             assumptions=(
@@ -788,7 +788,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "The model outputs a dial from 'probably no' to 'probably yes'. The threshold is where you "
-                "decide to act—send an alert, block a payment, call a patient. 0.5 is only special if costs "
+                "decide to act:send an alert, block a payment, call a patient. 0.5 is only special if costs "
                 "and calibration make it so."
             ),
             formal_idea=(
@@ -810,7 +810,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Select t on validation; confirm once on untouched test if needed for reporting.",
                 "Plot metric-versus-threshold; do not trust a single default.",
-                "If probabilities are miscalibrated, threshold meaning shifts—fix calibration language first.",
+                "If probabilities are miscalibrated, threshold meaning shifts:fix calibration language first.",
                 "Cost ratio changes preferred t more than tiny AUC differences do.",
             ),
             assumptions=(
@@ -842,7 +842,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Checkpoint integrity means a saved bundle can be reattached only when row/column "
                 "fingerprints, schema expectations, and bundle contents match enough to restore a coherent "
-                "Session—or fail loudly when they do not."
+                "Session:or fail loudly when they do not."
             ),
             intuition=(
                 "A checkpoint is a save file for the lab notebook: data version, who is train versus test, "
@@ -866,7 +866,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "Roles, splits, and history ride with full checkpoints for Teaching Studio continuity.",
             ),
             interpretation_rules=(
-                "A validation failure is a stop sign—reconcile data or start a new session path.",
+                "A validation failure is a stop sign:reconcile data or start a new session path.",
                 "Success means structural compatibility, not that renamed fields kept meaning.",
                 "Prefer full checkpoint resume when you need the same split and operation history.",
             ),
@@ -899,7 +899,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Reproducibility is the ability for someone (including future you) to regenerate the same "
                 "modeling artifacts and metrics from documented inputs, package versions, seeds, and "
-                "operation parameters—within the limits of platform nondeterminism."
+                "operation parameters:within the limits of platform nondeterminism."
             ),
             intuition=(
                 "A result without its recipe is a story. Seeds fix supported randomness; they do not freeze "
@@ -955,7 +955,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "An execution engine (pandas, polars, duckdb, ...) is the compute backend behind a Dataset "
                 "handle. It determines how scans, filters, and aggregates run and when data materializes to "
-                "sklearn-facing frames—not which loss the classifier optimizes."
+                "sklearn-facing frames:not which loss the classifier optimizes."
             ),
             intuition=(
                 "Engines are kitchens, not recipes. A larger kitchen helps when ingredients do not fit on "
@@ -985,7 +985,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "with_engine / with_mode adjust the handle without changing role or split semantics.",
             ),
             interpretation_rules=(
-                "Prefer lazy mode when row/byte estimates exceed comfortable RAM—not as a fashion choice.",
+                "Prefer lazy mode when row/byte estimates exceed comfortable RAM:not as a fashion choice.",
                 "Treat soft materialization warnings as scale signals; hard limits abort intentional oversized copies.",
                 "Measure end-to-end wall time including materialization, not only SQL fragments.",
                 "If metrics change after engine switches, suspect conversion/dtype issues before celebrating gains.",
@@ -1017,8 +1017,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             title="Baselines",
             summary="A baseline anchors whether added model complexity improves the decision-relevant metric.",
             definition=(
-                "A baseline is a simple, transparent predictor—prevalence/majority class, mean/median "
-                "target, or a shallow policy—evaluated under the same partition and metric protocol as "
+                "A baseline is a simple, transparent predictor:prevalence/majority class, mean/median "
+                "target, or a shallow policy:evaluated under the same partition and metric protocol as "
                 "candidate models."
             ),
             intuition=(
@@ -1054,7 +1054,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             failure_modes=(
                 "Computing a 'baseline' using test labels or full-data prevalence after peeking.",
-                "Comparing a tuned pipeline to an untuned baseline unfairly—or the reverse.",
+                "Comparing a tuned pipeline to an untuned baseline unfairly:or the reverse.",
                 "Ignoring that a strong baseline may already be the production policy.",
             ),
             anti_patterns=(
@@ -1074,8 +1074,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             title="Overfitting",
             summary="Overfitting is a harmful gap between training fit and behavior on relevant unseen rows.",
             definition=(
-                "Overfitting occurs when a model captures training-sample idiosyncrasies—noise, spurious "
-                "correlations, or leakage—so that training performance looks strong while performance on "
+                "Overfitting occurs when a model captures training-sample idiosyncrasies:noise, spurious "
+                "correlations, or leakage:so that training performance looks strong while performance on "
                 "appropriately held-out data is materially worse."
             ),
             intuition=(
@@ -1090,7 +1090,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "Overfit models fail in production despite impressive notebook screenshots.",
                 "Gap diagnosis guides whether you need more data, less capacity, or leakage fixes.",
-                "Early stopping, regularization, and simpler features are tools—not moral virtues.",
+                "Early stopping, regularization, and simpler features are tools:not moral virtues.",
             ),
             how_buildml_uses=(
                 "Partition-tagged metrics make train-versus-validation gaps visible.",
@@ -1100,9 +1100,9 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Compare the same metric on train and validation; a large gap is a review flag.",
-                "If both are poor, you may be underfit or missing features—not classic overfit.",
+                "If both are poor, you may be underfit or missing features:not classic overfit.",
                 "A gap that appears only after adding a suspicious feature suggests leakage first.",
-                "Tiny validation sets make gaps noisy—confirm with another split/seed.",
+                "Tiny validation sets make gaps noisy:confirm with another split/seed.",
             ),
             assumptions=(
                 "Holdout rows are relevantly unseen (not near-duplicates of train).",
@@ -1129,7 +1129,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="feature-importance",
             title="Feature importance",
-            summary="Importance describes fitted-model reliance under a dataset and score—not causal effect.",
+            summary="Importance describes fitted-model reliance under a dataset and score:not causal effect.",
             definition=(
                 "Feature importance methods quantify how much a fitted model's score degrades (or how much "
                 "impurity/gain concentrates) when a feature's information is removed or perturbed, relative "
@@ -1148,7 +1148,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "Guides audit questions and error analysis without pretending to be causal discovery.",
                 "Unstable ranks on small holdouts mislead feature deletion sprees.",
-                "Stakeholders often misread importance as 'drivers'—teaching must correct that.",
+                "Stakeholders often misread importance as 'drivers':teaching must correct that.",
             ),
             how_buildml_uses=(
                 "Model diagnostics can compute permutation-style reliance on a chosen partition.",
@@ -1158,7 +1158,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Report partition, metric, and repeat variability with every importance table.",
-                "Near-ties among correlated features are expected—do not over-order them.",
+                "Near-ties among correlated features are expected:do not over-order them.",
                 "Low importance ≠ safe to drop without a refit experiment.",
                 "Importance is not a leakage test by itself; timing/semantics still need review.",
             ),
@@ -1190,12 +1190,12 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             summary="Drift is a measured distribution change across defined populations or time windows.",
             definition=(
                 "Dataset drift is a statistically detected difference in feature and/or label "
-                "distributions between two collections—train versus recent traffic, batch A versus batch B—"
+                "distributions between two collections:train versus recent traffic, batch A versus batch B:"
                 "without automatically proving that model quality changed."
             ),
             intuition=(
                 "If last quarter's ages look older than training ages, something in the world or in the "
-                "pipeline moved. That something might break the model—or it might be harmless seasonality. "
+                "pipeline moved. That something might break the model:or it might be harmless seasonality. "
                 "Drift is a smoke alarm, not a fire report."
             ),
             formal_idea=(
@@ -1217,7 +1217,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Treat significant tests as review flags; inspect magnitude, support, and collection changes.",
                 "Train–test drift under a random split suggests leakage of structure or bad randomization.",
-                "Feature drift without labels cannot quantify accuracy drop—pair with delayed labels when possible.",
+                "Feature drift without labels cannot quantify accuracy drop:pair with delayed labels when possible.",
                 "Large-n tiny differences can be 'significant' yet operationally minor.",
             ),
             assumptions=(
@@ -1254,7 +1254,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             intuition=(
                 "If knowing zip code sharply narrows which churn label you expect, MI is high. That can "
                 "mean a useful pattern, a proxy for something else, or a peek at information you should "
-                "not use—MI alone does not say which."
+                "not use:MI alone does not say which."
             ),
             formal_idea=(
                 "I(X; Y) = H(Y) − H(Y|X) ≥ 0, zero under independence for the population quantities. "
@@ -1331,7 +1331,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "Concept notes mark thresholds such as VIF > 5 as review prompts.",
             ),
             interpretation_rules=(
-                "VIF above a conventional flag (often 5, sometimes 10) triggers collinearity review—not automatic deletion.",
+                "VIF above a conventional flag (often 5, sometimes 10) triggers collinearity review:not automatic deletion.",
                 "Trees can remain predictive under high VIF; linear coefficient stories should not.",
                 "VIF is undefined or unhelpful for constant columns and tiny complete-case n.",
                 "Association among features ≠ causal structure.",
@@ -1361,7 +1361,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="principal-components",
             title="Principal component analysis",
-            summary="PCA finds orthogonal linear combinations that capture shared numeric variance—not guaranteed predictive value.",
+            summary="PCA finds orthogonal linear combinations that capture shared numeric variance:not guaranteed predictive value.",
             definition=(
                 "Principal component analysis rotates numeric features into uncorrelated components ordered "
                 "by captured variance. It is a compression and collinearity tool; explained variance is not "
@@ -1369,7 +1369,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "If many columns move together, PCA builds a few 'summary directions' of that joint motion. "
-                "Those directions may help a linear model or visualization—or they may summarize noise you "
+                "Those directions may help a linear model or visualization:or they may summarize noise you "
                 "did not care about."
             ),
             formal_idea=(
@@ -1390,7 +1390,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "Scaling notes are linked because PCA is scale-sensitive.",
             ),
             interpretation_rules=(
-                "A knee in cumulative explained variance is a review cue for compression—not a magic k.",
+                "A knee in cumulative explained variance is a review cue for compression:not a magic k.",
                 "High variance components can still have low mutual information with Y.",
                 "Loadings tell linear feature contributions to a component; they are not causal effects.",
                 "If one raw feature dominates PC1, check whether scaling was skipped.",
@@ -1420,7 +1420,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="normality-screens",
             title="Normality screens",
-            summary="Normality tests ask whether a numeric sample is compatible with a Gaussian reference—not whether ML is allowed.",
+            summary="Normality tests ask whether a numeric sample is compatible with a Gaussian reference:not whether ML is allowed.",
             definition=(
                 "A normality screen applies a statistical test or visual check (histogram, Q–Q) to assess "
                 "compatibility of a numeric sample with a normal distribution under the chosen procedure."
@@ -1436,7 +1436,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "power rises; practical decisions should pair p-values with skew, tails, and plots."
             ),
             why_it_matters=(
-                "Informs optional transforms or robust statistics—not mandatory model families.",
+                "Informs optional transforms or robust statistics:not mandatory model families.",
                 "Prevents p-value theater from dictating pipelines.",
                 "Helps interpret mean/std summaries that assume symmetric noise.",
             ),
@@ -1479,7 +1479,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             title="Outlier handling",
             summary="Outlier fences are heuristic screens; learn them on train and choose detect, cap, or drop deliberately.",
             definition=(
-                "Outlier handling estimates numeric fences—commonly IQR Tukey bounds or z-score thresholds—on "
+                "Outlier handling estimates numeric fences:commonly IQR Tukey bounds or z-score thresholds:on "
                 "training rows, then detects, caps (winsorizes), or drops values outside those frozen bounds."
             ),
             intuition=(
@@ -1535,7 +1535,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             summary="Binning replaces numeric magnitudes with train-fitted intervals for compactness or stepwise effects.",
             definition=(
                 "Feature binning discretizes a numeric column into ordered intervals whose edges are estimated "
-                "from training data—quantile occupancy or uniform width—and then emits ordinal codes or one-hot "
+                "from training data:quantile occupancy or uniform width:and then emits ordinal codes or one-hot "
                 "indicators for those intervals."
             ),
             intuition=(
@@ -1645,8 +1645,8 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             title="Feature selection",
             summary="Feature selection chooses a subset using train-only scores and must be frozen before honest evaluation.",
             definition=(
-                "Feature selection retains a subset of candidate predictors according to a rule—variance filters, "
-                "univariate association scores, or model-based importance—fit exclusively on training rows and then "
+                "Feature selection retains a subset of candidate predictors according to a rule:variance filters, "
+                "univariate association scores, or model-based importance:fit exclusively on training rows and then "
                 "applied as a frozen keep-list."
             ),
             intuition=(
@@ -1703,7 +1703,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Imputation, categorical encoding, and feature scaling are representation transforms: they "
                 "fill missing values, map categories to numbers, and rewrite numeric units. In supervised "
-                "pipelines they are estimators of their own—fit on train, applied frozen to other partitions."
+                "pipelines they are estimators of their own:fit on train, applied frozen to other partitions."
             ),
             intuition=(
                 "Before a model studies the data, you often translate the data into a language the model "
@@ -1764,7 +1764,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "A short product review is not a usable float. Token features turn repeated words into "
-                "columns a linear or tree model can consume—still ignoring most grammar."
+                "columns a linear or tree model can consume:still ignoring most grammar."
             ),
             formal_idea=(
                 "Given documents D_train, a vectorizer learns a mapping f: text → R^k. Score-time texts "
@@ -1818,7 +1818,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "When a domain clip, score, or lookup is not built in, register it once, fit it on train, "
-                "and reuse the same artifact at score time—same discipline as a scaler."
+                "and reuse the same artifact at score time:same discipline as a scaler."
             ),
             formal_idea=(
                 "Registration stores fit: X_train → A and transform: (X, A) → X'. Leakage occurs if fit "
@@ -1868,7 +1868,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Before you run a risky transform, ask what would happen: what is missing, what would "
-                "change, and which leakage notes apply—without writing history or fitting anything."
+                "change, and which leakage notes apply:without writing history or fitting anything."
             ),
             formal_idea=(
                 "Dry-run maps an operation (or sequence) through the explanation catalog and workflow "
@@ -1913,7 +1913,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "decision origin, warnings, and before/after workflow state."
             ),
             intuition=(
-                "History is the session notebook: what ran, in what order, with which knobs—and which "
+                "History is the session notebook: what ran, in what order, with which knobs:and which "
                 "warnings fired. It cannot prove where a CSV originally came from."
             ),
             formal_idea=(

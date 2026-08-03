@@ -26,7 +26,7 @@ def tda_capability_matrix() -> dict[str, Any]:
 
     Call before :func:`fit_tda` or Session :meth:`~buildml.session.session.Session.fit_tda`
     to confirm ripser/persim (``buildml[tda]``) or giotto-tda (``buildml[tda-industry]``)
-    imported successfully. Read-only introspection — no point cloud required.
+    imported successfully. Read-only introspection: no point cloud required.
 
     Returns
     -------
@@ -82,7 +82,7 @@ def tda_capability_matrix() -> dict[str, Any]:
         "install_hints": {
             "tda": (
                 "pip install 'buildml[tda]'  "
-                "# ripser + persim — native VR PH + persistence images"
+                "# ripser + persim: native VR PH + persistence images"
             ),
             "tda-industry": (
                 "pip install 'buildml[tda-industry]'  "

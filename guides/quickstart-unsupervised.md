@@ -27,7 +27,7 @@ Classical `Session.fit` stays unchanged. Unsupervised methods are
 `fit_clusters` / `assign_clusters` / `evaluate_clusters` plus
 `save_unsupervised_bundle` / `load_unsupervised_bundle`.
 
-EDA IsolationForest / correlation-cluster screens are **not** this API — they
+EDA IsolationForest / correlation-cluster screens are **not** this API: they
 remain descriptive teaching signals.
 
 ```python
@@ -60,12 +60,12 @@ print(labels.n_rows, set(labels.labels))
 
 metrics = session.evaluate_clusters(
     partition="test",
-    external_label_column="segment",  # optional agreement check — not used in fit
+    external_label_column="segment",  # optional agreement check: not used in fit
 )
 print(metrics.metrics, metrics.external_metrics)
 
 bundle = session.save_unsupervised_bundle("artifacts/unsupervised_bundle")
-# Bundle stores the ClusterPlan only — reload features/splits via checkpoint or re-ingest.
+# Bundle stores the ClusterPlan only: reload features/splits via checkpoint or re-ingest.
 fresh = Session.ingest(session.to_pandas()).set_roles(
     {"x": "feature", "y": "feature", "segment": "ignore"}
 )
@@ -75,7 +75,7 @@ again = fresh.assign_clusters(partition="test")
 print(again.labels[:5])
 ```
 
-PCA then cluster (same ReducePlan — no forked PCA):
+PCA then cluster (same ReducePlan: no forked PCA):
 
 ```python
 session = (
@@ -101,8 +101,8 @@ print(session.explain("evaluate_clusters", moment="before").concept_links)
 - Internal metrics (silhouette, Calinski–Harabasz, Davies–Bouldin) measure
   **geometry**, not ground-truth taxonomy or business value.
 - Agglomerative holdout assign is nearest-centroid; DBSCAN holdout assign is
-  nearest-core within `eps` (else noise `-1`) — both are disclosed approximations.
+  nearest-core within `eps` (else noise `-1`): both are disclosed approximations.
 - Unsupervised bundles are complementary to Session checkpoints (data/splits/
-  classical plans) and to Torch/RAG bundles — not interchangeable.
+  classical plans) and to Torch/RAG bundles: not interchangeable.
 - Dedicated anomaly/fraud scoring is ``fit_anomaly`` (separate Session path);
   do not treat clustering or EDA IsolationForest as that product.

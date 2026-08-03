@@ -3,11 +3,11 @@
 Everything here is static data shipped with BuildML so the default NLP backends
 work without optional extras and without downloading corpora at runtime:
 
-* ``STOPWORDS`` — function-word lists per supported language.
-* ``SENTIMENT_LEXICON`` — signed valence weights for rule-based sentiment.
-* ``NEGATORS`` / ``INTENSIFIERS`` / ``EMOTICONS`` — rule modifiers.
-* ``SCRIPT_RANGES`` — Unicode block probes for non-Latin script detection.
-* ``SUFFIX_STEM_RULES`` — conservative English suffix-stripping rules.
+* ``STOPWORDS``: function-word lists per supported language.
+* ``SENTIMENT_LEXICON``: signed valence weights for rule-based sentiment.
+* ``NEGATORS`` / ``INTENSIFIERS`` / ``EMOTICONS``: rule modifiers.
+* ``SCRIPT_RANGES``: Unicode block probes for non-Latin script detection.
+* ``SUFFIX_STEM_RULES``: conservative English suffix-stripping rules.
 
 Honesty: these lists are compact and English-centred. Wider coverage is an
 opt-in extra (``buildml[nlp]`` for NLTK/langdetect, ``buildml[nlp-industry]``
@@ -323,7 +323,7 @@ RULE_ENTITY_PATTERNS: tuple[tuple[str, str], ...] = (
     ("PHONE", _PHONE_PATTERN),
     ("MONEY", _MONEY_PATTERN),
     # The word forms take a trailing \b; '%' must not, or "12%)" and a trailing
-    # "12%" would never match — '%' is itself a non-word character.
+    # "12%" would never match: '%' is itself a non-word character.
     ("PERCENT", r"\b\d+(?:\.\d+)?\s?(?:%|(?:percent|pct)\b)"),
     ("DATE", _DATE_PATTERN),
     ("TIME", r"\b(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?\s?(?:AM|PM|am|pm)?\b"),
@@ -338,7 +338,7 @@ RULE_ENTITY_LABELS: tuple[str, ...] = tuple(label for label, _ in RULE_ENTITY_PA
 def stopwords_for(language: str) -> frozenset[str]:
     """Return the shipped stopword list for a language.
 
-    Stopwords are the words too common to distinguish anything — "the", "of",
+    Stopwords are the words too common to distinguish anything: "the", "of",
     "and". Removing them shrinks the vocabulary and stops them dominating
     frequency counts. It is not always the right call: in short documents they
     can carry real signal, and phrase features like "not working" lose their

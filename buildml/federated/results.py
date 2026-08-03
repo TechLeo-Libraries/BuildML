@@ -14,7 +14,7 @@ class FederatedPlan:
 
     Persist via ``buildml.federated_bundle.v1``. Distinct from Session
     checkpoints. This is a **local FedAvg-style simulation** on partitioned
-    Session data — not a distributed FL network stack (Flower/OpenFL), and
+    Session data: not a distributed FL network stack (Flower/OpenFL), and
     not cryptographic secure aggregation.
     """
 

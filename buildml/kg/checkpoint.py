@@ -29,7 +29,7 @@ CHECKPOINT_BOUNDARY = (
     "vocabularies, embedding weights, train adjacency). A Session "
     "checkpoint stores data, roles, splits, and history; it does not embed "
     "the KG plan. Reload tabular workflow via checkpoint_load; reload the KG "
-    "via load_kg_bundle. Honesty: Session KG learning/query — not Neo4j, not "
+    "via load_kg_bundle. Honesty: Session KG learning/query: not Neo4j, not "
     "Graph ML node classification, not RAG."
 )
 

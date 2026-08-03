@@ -106,7 +106,7 @@ def impute(
 
     Most estimators cannot accept a missing value, so gaps have to be
     filled with a stand-in before fitting. The stand-in is computed from
-    the training rows and then applied everywhere — that ordering is the
+    the training rows and then applied everywhere: that ordering is the
     whole point. If you filled from all rows, the median would encode a
     little of the test set into every training row, and your score would
     drift upward for no real reason.
@@ -115,7 +115,7 @@ def impute(
     outliers, so it is the default and the safe choice for skewed
     quantities like income. The mean suits roughly symmetric measurements.
     The most frequent value is the sensible fallback for categoricals. A
-    constant is right when the gap itself is meaningful — "no prior claim"
+    constant is right when the gap itself is meaningful: "no prior claim"
     is information, not an accident, and filling it with the median would
     erase that.
 
@@ -207,7 +207,7 @@ def encode(
     """Turn category labels into numbers a model can work with.
 
     Estimators do arithmetic, and ``"Ireland"`` is not a number. Encoding
-    is how a category becomes something computable — but the choice of
+    is how a category becomes something computable: but the choice of
     encoding changes what the model is able to learn, so it is worth
     understanding rather than accepting the default blindly.
 
@@ -219,7 +219,7 @@ def encode(
 
     ``'ordinal'`` maps levels to ``0, 1, 2, …``. Compact, but it asserts
     that level 2 sits between level 1 and level 3. That is right for
-    ``small < medium < large`` and wrong for country names — a linear model
+    ``small < medium < large`` and wrong for country names: a linear model
     will happily conclude that Ireland is halfway between Iceland and
     Italy. Tree models are largely immune, which is why ordinal encoding is
     often fine with them and dangerous without them.
@@ -230,7 +230,7 @@ def encode(
     to learn from and generate columns that are almost entirely zero.
 
     ``'target'`` replaces each level with the average target for that level
-    — extremely compact and often the strongest encoder, but the one that
+   : extremely compact and often the strongest encoder, but the one that
     leaks most eagerly, since the target is being folded into a feature.
     BuildML defends against that on two fronts: training rows receive
     out-of-fold averages (a row never contributes to the mean it is given),
@@ -358,7 +358,7 @@ def handle_outliers(
     because the outliers themselves inflate the standard deviation.
 
     The treatment matters more than the detector. ``'detect'`` changes
-    nothing and simply reports — always start here. ``'cap'`` pulls flagged
+    nothing and simply reports: always start here. ``'cap'`` pulls flagged
     values back to the fence, keeping the row and its other columns while
     removing the extreme's leverage. ``'drop'`` deletes the row entirely
     and rebuilds split membership around the loss.
@@ -405,7 +405,7 @@ def handle_outliers(
     values that are unusual, not values that are wrong. In fraud, churn,
     and equipment failure the extreme rows are frequently the signal.
     Dropping them can quietly delete the very thing you set out to predict
-    — run ``'detect'`` first and look at what was flagged before removing
+   : run ``'detect'`` first and look at what was flagged before removing
     anything.
 
     Examples
@@ -579,7 +579,7 @@ def select_features(
     ``'variance'`` drops columns that barely change. A field that is the
     same value in 99% of rows cannot distinguish those rows, whatever the
     target is. This strategy never looks at the target, so it is cheap,
-    safe, and a reasonable first pass — but it cannot tell a constant-ish
+    safe, and a reasonable first pass: but it cannot tell a constant-ish
     column that matters from one that does not.
 
     ``'univariate'`` scores each column against the target on its own and
@@ -590,7 +590,7 @@ def select_features(
     ``'model'`` fits an estimator and keeps the features it actually
     relied on. This is the only option that accounts for interactions and
     redundancy, because the model weighs features against each other. It
-    costs a fit, and the selection inherits that model's biases —
+    costs a fit, and the selection inherits that model's biases :
     tree-based importances, for instance, favour high-cardinality columns.
 
     Parameters
@@ -637,7 +637,7 @@ def select_features(
 
     Selection is itself a fitted decision. Choosing features on the whole
     dataset and then cross-validating is a classic way to produce scores
-    that cannot be reproduced — the columns were already chosen with
+    that cannot be reproduced: the columns were already chosen with
     knowledge of the held-out rows. Selecting on train alone, as this does,
     avoids that.
 
@@ -698,8 +698,8 @@ def scale(
     extremes are real, and it is the default.
 
     ``'minmax'`` squeezes each column into the ``[0, 1]`` range using the
-    training minimum and maximum. Useful when a bounded input is required —
-    some neural network layers, some visualisations — but fragile: one
+    training minimum and maximum. Useful when a bounded input is required :
+    some neural network layers, some visualisations: but fragile: one
     extreme training value compresses everything else into a narrow band,
     and a larger value at score time lands outside ``[0, 1]`` entirely.
 
@@ -715,7 +715,7 @@ def scale(
     columns:
         Which columns to scale. ``None`` selects numeric ``feature``-role
         columns and skips ``ignore``, ``id``, ``target``, ``group``,
-        ``time``, and ``weight`` — so monetary amounts you are predicting
+        ``time``, and ``weight``: so monetary amounts you are predicting
         and identifiers you need to read back stay in their original units.
         Name columns explicitly to override.
     method:
@@ -731,7 +731,7 @@ def scale(
     ------
     ~buildml.core.errors.ValidationError
         No split exists, a named column is absent or non-numeric, or a
-        column still contains missing values — impute first.
+        column still contains missing values: impute first.
 
     Notes
     -----
@@ -793,7 +793,7 @@ def text_features(
 
     ``'hashing'`` skips the vocabulary altogether and hashes each word into
     a fixed number of slots. Nothing needs to be stored, so it handles
-    streaming text and vocabularies too large to hold — at the price of
+    streaming text and vocabularies too large to hold: at the price of
     collisions (two unrelated words can share a slot) and features you
     cannot map back to words.
 
@@ -815,7 +815,7 @@ def text_features(
     ngram_range:
         The inclusive span of word-group sizes to include. ``(1, 1)`` uses
         single words only. ``(1, 2)`` adds adjacent pairs, which is how the
-        vectoriser can tell "not good" from "good" — worth the extra
+        vectoriser can tell "not good" from "good": worth the extra
         columns for sentiment-like problems.
     drop_input_columns:
         When True (the default), remove the original text column once its
@@ -838,7 +838,7 @@ def text_features(
     from train documents only. Missing text becomes empty strings.
 
     Words that appear only in test documents are outside the fitted
-    vocabulary and are ignored. That is correct — the model has no
+    vocabulary and are ignored. That is correct: the model has no
     evidence about a word it never saw during training.
 
     These are bag-of-words representations: they record which words occur,
@@ -912,7 +912,7 @@ def reduce_dimensions(
 
     ``'pca'`` finds the directions along which the training data varies
     most and projects onto them. It is linear, fast, deterministic, and
-    genuinely reusable — a new row can be projected with the same fitted
+    genuinely reusable: a new row can be projected with the same fitted
     rotation, which is what makes it safe in a scoring pipeline.
 
     ``'umap'`` learns a non-linear embedding that tries to preserve local
@@ -937,7 +937,7 @@ def reduce_dimensions(
         ``'pca'``, ``'umap'``, or ``'tsne'``, as described above.
     n_components:
         How many output columns to produce. An integer sets the count
-        directly. For PCA a float in ``(0, 1]`` instead names a target —
+        directly. For PCA a float in ``(0, 1]`` instead names a target :
         ``0.95`` keeps however many components are needed to retain 95% of
         the training variance, which is usually the more meaningful way to
         ask. ``None`` uses the method's default.
@@ -961,7 +961,7 @@ def reduce_dimensions(
     tsne_perplexity:
         For t-SNE, roughly how many neighbours each point is balanced
         against. It must be well below the number of rows, and the
-        resulting picture changes noticeably with it — try several before
+        resulting picture changes noticeably with it: try several before
         drawing conclusions.
     tsne_learning_rate:
         For t-SNE, the optimiser step size. ``'auto'`` scales it to the
@@ -983,7 +983,7 @@ def reduce_dimensions(
     Notes
     -----
     **Leakage:** Requires a split. The transform is learned on train only.
-    Explained variance / embedding quality is unsupervised — not predictive utility.
+    Explained variance / embedding quality is unsupervised: not predictive utility.
     Scale numeric inputs first when magnitudes differ.
 
     That middle sentence is the trap. PCA maximises variance, and variance
@@ -1064,7 +1064,7 @@ def register_transform(
     """Teach BuildML a preprocessing step of your own.
 
     The built-in transforms cover the common cases, but domain work
-    routinely needs something specific — a currency conversion using rates
+    routinely needs something specific: a currency conversion using rates
     learned from the training period, a geospatial encoding, a
     normalisation your field defines its own way.
 
@@ -1087,7 +1087,7 @@ def register_transform(
         The identifier you will pass to :meth:`apply_custom_transform`.
     fit:
         A callable receiving the training rows for the selected columns and
-        returning whatever state the transform needs — a mapping, a fitted
+        returning whatever state the transform needs: a mapping, a fitted
         object, a tuple of statistics. Only training rows are ever passed
         in, which is what makes the step leakage-safe by construction.
     transform:
@@ -1112,7 +1112,7 @@ def register_transform(
         pipeline bundle.
     overwrite:
         Allow replacing an existing registration under the same name.
-        Without it, re-registering raises — which catches the case of two
+        Without it, re-registering raises: which catches the case of two
         modules quietly claiming the same name.
 
     Returns
@@ -1172,7 +1172,7 @@ def list_transforms(session_cls) -> tuple[CustomTransformSpec, ...]:
     """List the custom transforms currently registered.
 
     Registration is process-wide, so this shows everything available to
-    :meth:`apply_custom_transform` — including transforms registered by
+    :meth:`apply_custom_transform`: including transforms registered by
     modules you imported rather than wrote.
 
     Parameters
@@ -1276,7 +1276,7 @@ def extract_dates(
 
     A raw timestamp is nearly useless as a feature. As a number it counts
     seconds since 1970, which increases forever and tells a model nothing
-    about the patterns that actually drive behaviour — those live in the
+    about the patterns that actually drive behaviour: those live in the
     parts. Retail spikes in December, support tickets arrive on weekdays,
     traffic peaks at rush hour. Splitting one datetime column into year,
     month, day, day-of-week, and optionally hour and minute makes each of
@@ -1294,7 +1294,7 @@ def extract_dates(
         coarser data, where the clock parts would be constant noise.
     drop_original:
         Remove the source timestamp after expanding. Keep it if a later
-        step still needs to order rows — :meth:`time_split` reads the
+        step still needs to order rows: :meth:`time_split` reads the
         ``time``-role column, and dropping it out from under that will
         break the split.
 
@@ -1353,7 +1353,7 @@ def apply_preprocess_plans(
 ) -> ApplyPlansResult:
     """Replay fitted preprocessing on new rows, in the original order.
 
-    Training-time preprocessing learns things — the median used to fill
+    Training-time preprocessing learns things: the median used to fill
     gaps, the category vocabulary, the scaler's mean and spread. New data
     must be transformed with *those* learned values, not with values
     recomputed from itself. This method replays the stored plans to do
@@ -1375,7 +1375,7 @@ def apply_preprocess_plans(
         Active Session instance this operation mutates or reads.
     data:
         The rows to transform, as a Dataset or a DataFrame. ``None`` uses
-        this session's own dataset — which is what you want after
+        this session's own dataset: which is what you want after
         :meth:`load_pipeline` has restored plans onto a session holding
         fresh data.
     plans:
@@ -1476,13 +1476,13 @@ def resample(
     duplicates existing ones, which is safe but gives the model repeated
     copies to overfit. ``'smote'`` instead synthesises new rows by
     interpolating between nearby minority examples, producing variety
-    rather than duplicates — usually the better default.
+    rather than duplicates: usually the better default.
     ``'borderline_smote'`` concentrates that synthesis near the decision
     boundary, where the difficult cases are. ``'adasyn'`` puts more
     synthetic rows around minority examples the model currently gets wrong.
 
     ``'random_undersample'`` goes the other way and discards majority rows.
-    Fast, and it throws away real data — reasonable only when the majority
+    Fast, and it throws away real data: reasonable only when the majority
     class is enormous and largely redundant.
 
     Only the training partition is altered. Validation and test keep the
@@ -1503,7 +1503,7 @@ def resample(
     sampling_strategy:
         How far to rebalance. ``'auto'`` levels the classes fully. A float
         sets the target minority-to-majority ratio, so ``0.5`` brings the
-        minority to half the majority rather than all the way — often a
+        minority to half the majority rather than all the way: often a
         better trade, since full balancing can push a model into
         over-predicting the rare class. A dict names target counts per
         class.
@@ -1527,7 +1527,7 @@ def resample(
     SMOTE interpolates between neighbours, so it needs numeric features:
     encode and impute first. It also assumes the space between two
     minority rows is itself plausible, which is false when features are
-    categorical or constrained — a synthetic point can be an impossible
+    categorical or constrained: a synthetic point can be an impossible
     record.
 
     Resampling is not the only answer to imbalance, and often not the best.

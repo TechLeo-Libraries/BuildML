@@ -22,6 +22,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` fits BayesianRidge and calibrates a residual quantile interval on validation only (`results/comparison.json`).
+Filled: `baseline_industry.py` fits BayesianRidge and calibrates a residual quantile interval on validation only (`results/comparison.json`).
 ## Limitations
 Coverage claims are empirical on holdout under exchangeability assumptions.

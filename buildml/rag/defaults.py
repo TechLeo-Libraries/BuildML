@@ -1,8 +1,8 @@
 """Choose RAG defaults from what is actually installed, at call time.
 
 Two demands pull in opposite directions. Users who install the full stack should
-get the strong configuration without asking — hybrid retrieval, semantic
-embeddings — because a library that hides its best behaviour behind flags is a
+get the strong configuration without asking: hybrid retrieval, semantic
+embeddings: because a library that hides its best behaviour behind flags is a
 library most people use badly. Users with only the core install should still get
 something that works, not an import error.
 
@@ -63,7 +63,7 @@ def default_embedder_spec() -> str:
 
     Returns the string ``"auto"`` rather than resolving to a concrete backend
     here. Deferring the choice to :func:`~buildml.rag.embed.resolve_embedder`
-    keeps it in one place, and means the decision is made — and disclosed —
+    keeps it in one place, and means the decision is made: and disclosed :
     where the embedder is actually built.
 
     Returns

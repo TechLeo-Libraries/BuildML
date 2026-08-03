@@ -5,8 +5,8 @@ raise; reorder them and it may not; pass strings where floats were expected and
 pandas may quietly upcast to object, at which point the estimator sees garbage
 and returns a confident answer. None of these announce themselves.
 
-A schema contract is what the training frame looked like — the columns, their
-types, their roles, their nullability — saved alongside the model and checked
+A schema contract is what the training frame looked like: the columns, their
+types, their roles, their nullability: saved alongside the model and checked
 before each batch of predictions. It turns a silent wrong answer into a clear
 error naming the column.
 
@@ -65,7 +65,7 @@ class SchemaContract:
     Two column lists, for the two stages. ``columns`` is the raw frame expected
     before transforms run; ``feature_columns`` is what the estimator was fitted
     on afterwards. They differ whenever encoding, binning, or feature selection
-    is involved, and conflating them produces confusing failures — a one-hot
+    is involved, and conflating them produces confusing failures: a one-hot
     output column is not something a caller can supply.
 
     Parameters
@@ -95,7 +95,7 @@ class SchemaContract:
     Notes
     -----
     **The target is excluded from ``columns`` on purpose.** Score-time frames do
-    not have labels — that is the point of scoring — so requiring the target
+    not have labels: that is the point of scoring: so requiring the target
     would fail every real prediction request.
 
     **Roles are required by *kind*, not by name.** If training had a group
@@ -254,7 +254,7 @@ class SchemaContractValidation:
     -----
     **``ok=True`` with ``contract_present=False`` means unchecked, not valid.**
     Older bundles have no contract, and passing a frame through unvalidated is
-    the compatible behaviour — but it is not evidence the frame was right.
+    the compatible behaviour: but it is not evidence the frame was right.
 
     See Also
     --------
@@ -301,7 +301,7 @@ def dtype_family(dtype: Any) -> DtypeFamily:
 
     Exact dtype comparison is the wrong test for a score-time contract. The same
     column can be ``int64`` from pandas, ``Int64`` from a nullable read,
-    ``int32`` from Arrow, and ``Float64`` from Polars — all of them the same
+    ``int32`` from Arrow, and ``Float64`` from Polars: all of them the same
     column as far as a model is concerned. Comparing families keeps the check
     meaningful without firing on round-trip noise.
 
@@ -408,8 +408,8 @@ def families_compatible(expected: DtypeFamily, actual: DtypeFamily) -> bool:
     not matter which side is which.
 
     **This is a deliberately loose check.** It catches a string where a number
-    belongs, or a date where a category belongs — the mistakes that produce
-    nonsense predictions — and lets through the representational differences
+    belongs, or a date where a category belongs: the mistakes that produce
+    nonsense predictions: and lets through the representational differences
     that do not.
 
     Examples
@@ -445,7 +445,7 @@ def input_columns_from_plans(plans: dict[str, Any] | None) -> list[str]:
     """Work out which raw columns a caller must supply, from the plans themselves.
 
     The plans know what they consume, so the contract can be derived rather than
-    hand-written — and a derived list does not drift out of date the way a
+    hand-written: and a derived list does not drift out of date the way a
     hand-written one does.
 
     The subtlety is exclusion. An encode plan reads ``city`` and produces
@@ -592,7 +592,7 @@ def build_schema_contract(
         Column roles at training time. Without them the contract cannot require
         roles at score time, only columns.
     feature_columns:
-        What the estimator was fitted on — the features-stage expectation.
+        What the estimator was fitted on: the features-stage expectation.
     target_column:
         The training target, excluded from the expected inputs.
     input_columns:
@@ -602,7 +602,7 @@ def build_schema_contract(
     encoded_numeric_columns:
         Feature columns that are numeric post-transform. Inferred when omitted,
         by taking feature columns that are already numeric or that do not appear
-        among the inputs — the latter being engineered outputs.
+        among the inputs: the latter being engineered outputs.
 
     Returns
     -------
@@ -719,7 +719,7 @@ def save_schema_contract(path: str | Path, contract: SchemaContract) -> Path:
     Returns
     -------
     Path
-        The path of the written file, not the directory — useful for logging the
+        The path of the written file, not the directory: useful for logging the
         exact artifact.
 
     Raises
@@ -794,7 +794,7 @@ def validate_score_frame(
 
     Checks four things and collects all of them before returning: columns that
     are missing, columns that are extra, columns whose type family does not
-    match, and roles with no column to fill them. Nothing raises — the caller
+    match, and roles with no column to fill them. Nothing raises: the caller
     decides what is fatal, usually via :func:`raise_for_contract`.
 
     Parameters
@@ -830,7 +830,7 @@ def validate_score_frame(
     reported once, as missing, rather than twice.
 
     **Nullability is advisory.** A column that was non-nullable in training and
-    arrives entirely null produces a warning, never a failure — the model will
+    arrives entirely null produces a warning, never a failure: the model will
     still predict, and whether that is acceptable depends on the column.
 
     **Extra columns at the features stage deserve more suspicion than at
@@ -963,7 +963,7 @@ def coerce_score_frame(
     Parameters
     ----------
     frame:
-        The frame to coerce. Never modified — a copy is returned.
+        The frame to coerce. Never modified: a copy is returned.
     contract:
         The contract to coerce toward, or ``None`` to copy and skip.
     stage:
@@ -987,7 +987,7 @@ def coerce_score_frame(
     **Numeric coercion uses ``errors='coerce'``, which turns unparseable values
     into nulls.** A column of mostly-numeric strings with a few ``'N/A'``
     entries converts, and those entries become missing. That is usually what was
-    meant, and it is worth knowing it happened — check ``coerced_columns``
+    meant, and it is worth knowing it happened: check ``coerced_columns``
     against your expectations rather than assuming a clean conversion.
 
     **Coercion is not free on large frames.** It touches every expected column;
@@ -1063,7 +1063,7 @@ def raise_for_contract(result: SchemaContractValidation, *, allow_extra: bool = 
     The separation between checking and raising is deliberate: some callers want
     to inspect and recover, others want to stop. This is the stopping half, and
     it builds a message that lists missing columns, missing roles, and each
-    wrong-typed column with what was expected and what arrived — enough to fix
+    wrong-typed column with what was expected and what arrived: enough to fix
     the caller without a debugging session.
 
     Passing validations return silently, so this can be called unconditionally.

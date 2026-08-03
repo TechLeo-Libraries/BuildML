@@ -1,6 +1,6 @@
 ﻿# Atlas Label Studio
 
-**Tier B** cross-domain product proof — SSL pretext + semi-supervised
+**Tier B** cross-domain product proof: SSL pretext + semi-supervised
 propagation + active-learning budget loop with a simulated oracle.
 
 ## Product narrative
@@ -11,12 +11,12 @@ masked; holdouts keep full labels for evaluation only. The product:
 1. Fits a masked-tabular SSL pretext (and optional head) on train features
 2. Runs label propagation / semi-supervised learning on the scarce labeled pool
 3. Runs a margin-sampling active-learning budget loop querying **train** only
-4. Uses a simulated oracle (ground-truth for queried train indices) — not a
+4. Uses a simulated oracle (ground-truth for queried train indices): not a
    production workforce UI
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` plus `ssl.json`,
+`completed`: run `script.py`; see `results/summary.json` plus `ssl.json`,
 `semisupervised.json`, `active_learning.json`.
 
 ## How to run

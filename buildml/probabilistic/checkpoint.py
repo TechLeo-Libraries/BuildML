@@ -28,7 +28,7 @@ CHECKPOINT_BOUNDARY = (
     "history, and optional classical preprocess plans; it does not embed the "
     "probabilistic learner. Reload tabular workflow via checkpoint_load; "
     "reload the learner via load_probabilistic_bundle. Honesty: sklearn "
-    "uncertainty quantification — not a PyMC/Stan MCMC platform."
+    "uncertainty quantification: not a PyMC/Stan MCMC platform."
 )
 
 

@@ -60,7 +60,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use when moving from partition frames to batched Torch training.",),
         assumptions=(
             "Features and targets are numeric; non-numeric columns were encoded or dropped earlier.",
-            "Classification targets may be sparse integer ids — loaders remap to 0..K-1.",
+            "Classification targets may be sparse integer ids: loaders remap to 0..K-1.",
         ),
         failures=("Missing Torch extra, empty train, non-numeric columns, or NaNs in the design matrix.",),
         leakage=(
@@ -570,7 +570,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=("No trainer, export op failure, or missing Torch extra.",),
         leakage=("Exported weights can retain training-data patterns; control access.",),
         anti_patterns=(
-            "Treating export alone as a full production serving stack — use serve_bundle / "
+            "Treating export alone as a full production serving stack: use serve_bundle / "
             "buildml-serve for the library-owned local server path.",
         ),
         state_changes=("Writes an artifact file; stores dl_export_result.",),
@@ -680,7 +680,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "fit_speech_torch",
         OperationKind.MODEL,
         "Fine-tune a tiny speech encoder + classifier head (finetune-lite).",
-        "Train a small speech classifier under the Session split — not a foundation model from scratch.",
+        "Train a small speech classifier under the Session split: not a foundation model from scratch.",
         "Speech finetune-lite training boundary.",
         (
             "Build speech loaders when missing.",
@@ -800,7 +800,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Not registered in the AI tool allowlist (network listener / CLI-primary)."
         ,),
         assumptions=(
-            "Optional API-key middleware is library-local auth — not managed IAM/cloud identity.",
+            "Optional API-key middleware is library-local auth: not managed IAM/cloud identity.",
             "Prefer TLS termination at a reverse proxy for non-local exposure.",
             "trusted=True means you accept pickle/TorchScript execution risk for this artifact.",
             "Localhost defaults stay open-with-honesty; public binds need keys or a loud override.",
@@ -815,7 +815,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Using allow_insecure_public_bind in production.",
             "Claiming a managed cloud product from this local server.",
             "Claiming Kubernetes multi-cluster orchestration from this local server.",
-            "Expecting the AI operator to call serve_bundle — use CLI/Session instead.",
+            "Expecting the AI operator to call serve_bundle: use CLI/Session instead.",
         ),
         state_changes=("Stores serve handle; starts a background (or blocking) server.",),
         result_reading=("Read url/kind and /health auth flag before clients call /predict.",),
@@ -863,7 +863,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "pack_torchserve",
         OperationKind.PERSIST,
         "Pack a TorchScript file into a TorchServe-ready model directory.",
-        "Write model.pt, handler, config.properties, and manifest — does not run TorchServe.",
+        "Write model.pt, handler, config.properties, and manifest: does not run TorchServe.",
         "TorchServe packaging boundary.",
         (
             "Resolve TorchScript path (explicit or last export_torch).",
@@ -893,7 +893,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "prepare_tensorrt_export",
         OperationKind.PERSIST,
         "Write a TensorRT trtexec plan next to a validated ONNX artifact.",
-        "Validate ONNX when possible and emit a recipe — does not build TensorRT engines.",
+        "Validate ONNX when possible and emit a recipe: does not build TensorRT engines.",
         "TensorRT plan boundary.",
         (
             "Resolve ONNX path (explicit or last export_torch).",
@@ -925,7 +925,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "emit_k8s_ddp_job",
         OperationKind.EXPORT,
         "Emit a Kubernetes Job YAML for torchrun multi-node DDP.",
-        "Render an Indexed Job + Service (+ optional ConfigMap) template — not live multi-cluster orchestration.",
+        "Render an Indexed Job + Service (+ optional ConfigMap) template: not live multi-cluster orchestration.",
         "K8s torchrun template boundary.",
         (
             "Render Job+Service YAML with nnodes / nproc_per_node / image / script_path.",
@@ -997,7 +997,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use when you want domain-adapt naming without implying FM continued pretrain.",),
         assumptions=("Small labeled corpus under Session splits; not web-scale audio pretrain.",),
         failures=("Missing Torch, empty train, or non-numeric class labels.",),
-        leakage=("Same as fit_speech_torch — keep amp stats train-only.",),
+        leakage=("Same as fit_speech_torch: keep amp stats train-only.",),
         anti_patterns=(
             "Calling this continued pretrain of Whisper/Wav2Vec at foundation scale.",
             "Marketing domain adapt as training a foundation model from scratch.",
@@ -1029,7 +1029,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use to keep product claims honest when automation asks for impossible pretrain.",),
         assumptions=("Whisper-scale pretrain needs data/compute outside a pip package.",),
         failures=("Always fails by design with a clear ValidationError.",),
-        leakage=("N/A — no training occurs.",),
+        leakage=("N/A: no training occurs.",),
         anti_patterns=("Catching the error and silently claiming pretrain succeeded.",),
         state_changes=("Appends a history record, then raises.",),
         result_reading=("Read the ValidationError message for the honest alternative APIs.",),
@@ -1077,7 +1077,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "evaluate_asr",
         OperationKind.DIAGNOSTIC,
         "Score ASR hypotheses against references with WER/CER.",
-        "Cheap transcript metrics for stub or transformers ASR outputs — not FM pretrain.",
+        "Cheap transcript metrics for stub or transformers ASR outputs: not FM pretrain.",
         "ASR evaluation boundary.",
         (
             "Resolve hypotheses (explicit or last transcribe_speech texts).",
@@ -1108,7 +1108,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "emit_k8s_serve_deployment",
         OperationKind.EXPORT,
         "Emit a Kubernetes Deployment+Service YAML for managed BuildML serve.",
-        "Render a starter serve Deployment template — not live multi-cluster orchestration.",
+        "Render a starter serve Deployment template: not live multi-cluster orchestration.",
         "K8s serve template boundary.",
         (
             "Render Deployment+Service YAML with image/replicas/port/resources.",

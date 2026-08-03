@@ -3,7 +3,7 @@
 ## Business purpose
 
 Synthesize a retail catalog / sales utility table (price, units, margin,
-category) and measure fidelity vs holdout — distinct from the demographic
+category) and measure fidelity vs holdout: distinct from the demographic
 privacy table in `synthetic-privacy-utility`.
 
 ## Data source
@@ -30,7 +30,7 @@ See `results/results.json` (KS / TV / corr fidelity metrics).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` uses independent column bootstrap from train
+Filled: `baseline_industry.py` uses independent column bootstrap from train
 (`results/comparison.json`). No DP claims.
 
 ## Limitations

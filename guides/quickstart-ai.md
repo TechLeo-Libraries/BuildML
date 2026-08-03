@@ -24,7 +24,7 @@ methods use the `ai_*` prefix and store results in `session.ai_result` /
 
 This alpha defaults to **advisor → plan → confirmed execute**. Optional
 `ai_run_autonomous` is explicit operator automation under hard caps (allowlist,
-max steps, blocked sample egress, transcript audit) — not unconstrained agency.
+max steps, blocked sample egress, transcript audit): not unconstrained agency.
 
 ## Bring your own API key
 
@@ -103,7 +103,7 @@ payload = session.ai_dry_run("Suggest next preprocessing steps")
 print(payload["messages"])       # system + user messages
 print(payload["tools"])          # available tool schemas
 print(payload["egress_manifest"])  # egress details
-# provider.calls is empty — no API request made
+# provider.calls is empty: no API request made
 ```
 
 ## Advisor: read-only Q&A
@@ -236,7 +236,7 @@ result = session.ai_advisor("Test question")
 # Works offline; returns canned responses
 ```
 
-CI runs with `MockProvider` only — real API keys are never required for tests.
+CI runs with `MockProvider` only: real API keys are never required for tests.
 
 ## Explicit autonomy (opt-in)
 
@@ -253,7 +253,7 @@ result = session.ai_run_autonomous(
 print(result.completed_steps, result.stop_reason, result.residual_risks)
 ```
 
-This is operator automation inside an allowlist — not unconstrained agency.
+This is operator automation inside an allowlist: not unconstrained agency.
 
 ## Explain catalog
 
@@ -269,7 +269,7 @@ print(before.leakage_risks)  # egress privacy warnings
 
 **Prompt injection:** The operator treats all data (column names, cell values,
 user prompts, RAG chunks) as untrusted. Injection patterns are detected and
-flagged. The tool registry is the trust boundary — the operator cannot execute
+flagged. The tool registry is the trust boundary: the operator cannot execute
 tools not in the allowlist.
 
 **Never put secrets in prompts.** API keys, passwords, and sensitive values
@@ -295,7 +295,7 @@ them. The operator is not a substitute for domain expertise.
 - **Default egress is STATS_ONLY.** Raw rows require explicit opt-in and
   confirmation.
 - **Propose → confirm → execute by default.** `ai_run_autonomous` is opt-in
-  allowlisted automation with residual risk — review transcripts.
+  allowlisted automation with residual risk: review transcripts.
 - **Tool registry is the trust boundary.** The operator cannot execute
   arbitrary code or tools not in the registry.
 - **Transcript ≠ checkpoint.** AI conversation history is stored separately

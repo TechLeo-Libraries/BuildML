@@ -187,7 +187,7 @@ def fit_causal_op(
     Notes
     -----
     **Leakage:** Requires a split. Nuisance models fit on train only.
-    **Assumptions:** Requires validated CausalAssumptions — refused otherwise.
+    **Assumptions:** Requires validated CausalAssumptions: refused otherwise.
     Backends: native (T-learner/IPW/AIPW), dowhy, econml when
     ``buildml[causal-industry]`` is installed. Not causal discovery; EDA
     remains associational.

@@ -14,7 +14,7 @@ its classification head removed, ready for :func:`attach_backbone_head`.
 Three weight modes, and picking the right one matters. ``pretrained`` downloads
 the real published weights and is what you want for actual work. ``mock``
 constructs the architecture with random weights, which is fast, offline, and
-useless for accuracy — it exists so tests can exercise the plumbing without
+useless for accuracy: it exists so tests can exercise the plumbing without
 pulling gigabytes. ``none`` is the same thing without even the random
 initialisation pass.
 
@@ -76,7 +76,7 @@ class PretrainedBackbone:
         Which one was loaded.
     weight_mode:
         ``'pretrained'``, ``'mock'``, or ``'none'``. **Check this before
-        drawing conclusions from any result** — mock weights are random.
+        drawing conclusions from any result**: mock weights are random.
     frozen:
         Whether the parameters are excluded from gradient updates.
     feature_dim:
@@ -116,7 +116,7 @@ class PretrainedBackbone:
     def to_dict(self) -> dict[str, Any]:
         """Return the backbone's provenance as JSON-safe values.
 
-        Records what was loaded and under which weight mode — the thing that
+        Records what was loaded and under which weight mode: the thing that
         determines whether a downstream result means anything. The module
         itself is reported by class name.
 
@@ -156,7 +156,7 @@ class BackboneHeadResult:
     disclosures:
         What was attached.
     limitations:
-        What remains yours — loaders, training configuration, the fit call.
+        What remains yours: loaders, training configuration, the fit call.
     warnings:
         Anything notable.
 
@@ -250,7 +250,7 @@ def freeze_module(module: Any, *, freeze: bool = True) -> Any:
     -----
     **Frozen makes training much faster and much less flexible.** No gradients
     are computed for those layers, so each step is cheaper and uses less memory
-    — but the representations cannot adapt to your data at all.
+   : but the representations cannot adapt to your data at all.
 
     **Unfreezing after the head has trained is the usual refinement.** Training
     a random head against an unfrozen backbone lets large early gradients damage
@@ -416,7 +416,7 @@ def attach_backbone_head(
         n_classes=int(n_classes),
         disclosures=(
             f"Attached Linear({feature_dim} → {n_classes}) on {backbone.architecture}.",
-            "Linear-probe / finetune-head helper — not foundation-model pretrain.",
+            "Linear-probe / finetune-head helper: not foundation-model pretrain.",
         ),
         limitations=(
             "Caller still owns DataLoaders / TrainConfig / fit_torch wiring.",
@@ -470,7 +470,7 @@ def load_vision_backbone(
     reach higher ceilings but are more sensitive to fine-tuning data volume, and
     ResNet-18 is a better first attempt on a small labelled set.
 
-    **Pretrained weights expect ImageNet-style input** — three channels,
+    **Pretrained weights expect ImageNet-style input**: three channels,
     224x224, normalised with ImageNet statistics. Feeding differently prepared
     images works mechanically and degrades the representations, sometimes
     substantially.
@@ -525,7 +525,7 @@ def load_vision_backbone(
 
     if weights == "mock":
         _apply_mock_weights(model, seed=seed)
-        warnings.append("mock weights: random init for CI — not ImageNet quality.")
+        warnings.append("mock weights: random init for CI: not ImageNet quality.")
     elif weights == "none":
         warnings.append("weights=none: random architecture init; no pretrained tensors.")
     freeze_module(model, freeze=freeze)
@@ -541,7 +541,7 @@ def load_vision_backbone(
             "fc/head replaced with Identity for feature extraction.",
         ),
         limitations=(
-            "Not a full pretrained zoo product — curated ResNet/ViT hooks only.",
+            "Not a full pretrained zoo product: curated ResNet/ViT hooks only.",
             "pretrained mode may download large weights; prefer mock/none in CI.",
         ),
         warnings=tuple(warnings),
@@ -597,7 +597,7 @@ def load_audio_backbone(
     for exactly this reason.
 
     **The output has a time dimension.** These emit one vector per frame rather
-    than one per clip, so a head has to pool across time —
+    than one per clip, so a head has to pool across time :
     :func:`attach_backbone_head` mean-pools automatically.
 
     **Wav2Vec2 and HuBERT are close in practice.** They differ in training
@@ -639,7 +639,7 @@ def load_audio_backbone(
         model = model_cls(config)
         if weights == "mock":
             _apply_mock_weights(model, seed=seed)
-            warnings.append(f"mock weights: random init for CI — not {architecture} quality.")
+            warnings.append(f"mock weights: random init for CI: not {architecture} quality.")
         else:
             warnings.append("weights=none: random architecture init.")
     freeze_module(model, freeze=freeze)
@@ -655,7 +655,7 @@ def load_audio_backbone(
             f"model_id={resolved_id}",
         ),
         limitations=(
-            "Integration hook — not a full audio FM zoo or pretraining stack.",
+            "Integration hook: not a full audio FM zoo or pretraining stack.",
             "pretrained mode may download large weights; prefer mock/none in CI.",
         ),
         warnings=tuple(warnings),
@@ -675,8 +675,8 @@ def load_speech_backbone(
 
     Whisper was trained on a very large multilingual transcription corpus. Its
     encoder learned representations that capture linguistic content well, and
-    those transfer usefully to speech classification tasks. The decoder — the
-    part that generates text — is discarded here.
+    those transfer usefully to speech classification tasks. The decoder: the
+    part that generates text: is discarded here.
 
     Parameters
     ----------
@@ -707,7 +707,7 @@ def load_speech_backbone(
 
     Notes
     -----
-    **Whisper expects log-mel spectrograms, not raw waveforms** — a different
+    **Whisper expects log-mel spectrograms, not raw waveforms**: a different
     input format from Wav2Vec2 and HuBERT. Use the Hugging Face Whisper
     feature extractor to prepare audio for it.
 
@@ -750,7 +750,7 @@ def load_speech_backbone(
         model = transformers.WhisperModel(config)
         if weights == "mock":
             _apply_mock_weights(model, seed=seed)
-            warnings.append("mock weights: random init for CI — not Whisper quality.")
+            warnings.append("mock weights: random init for CI: not Whisper quality.")
         else:
             warnings.append("weights=none: random architecture init.")
     encoder = model.get_encoder() if hasattr(model, "get_encoder") else model.encoder
@@ -766,7 +766,7 @@ def load_speech_backbone(
         disclosures=(
             f"Speech encoder {architecture} via transformers (weights={weights}).",
             f"model_id={resolved_id}",
-            "Encoder for finetune/feature extract — not Whisper-scale FM training from scratch.",
+            "Encoder for finetune/feature extract: not Whisper-scale FM training from scratch.",
         ),
         limitations=(
             "BuildML does not train Whisper-scale FMs from scratch.",

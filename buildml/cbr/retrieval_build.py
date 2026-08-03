@@ -1,8 +1,8 @@
 """Build, once at fit time, whatever the chosen backend needs to search.
 
 Exact search over raw features needs nothing; the numeric matrix is already the
-search space. The other backends need something constructed first — text
-embedded into vectors, a metric encoder trained, an approximate index built —
+search space. The other backends need something constructed first: text
+embedded into vectors, a metric encoder trained, an approximate index built :
 and all of it belongs here, at fit time, on training rows.
 
 Doing it once is not only an optimisation. These artefacts define the space
@@ -12,7 +12,7 @@ distances comparable at all.
 
 The build degrades rather than fails. If an approximate index cannot be built,
 the search matrix is still produced and retrieval falls back to an exact scan
-over it — same answers, less speed — and the fallback is recorded in the notes.
+over it: same answers, less speed: and the fallback is recorded in the notes.
 
 See Also
 --------
@@ -53,8 +53,8 @@ def build_search_artifacts(
 ) -> tuple[np.ndarray, Any, str | None, str | None, Any, list[str]]:
     """Construct the search space and index the chosen backend needs.
 
-    Produces the matrix that will actually be searched — raw features, text
-    embeddings, or a learned encoding depending on the backend — and, where
+    Produces the matrix that will actually be searched: raw features, text
+    embeddings, or a learned encoding depending on the backend: and, where
     possible, an approximate index over it.
 
     Parameters
@@ -113,7 +113,7 @@ def build_search_artifacts(
     neighbours more slowly. The note records what happened.
 
     **This is the expensive part of fitting.** Embedding a corpus or training an
-    encoder can take minutes, against near-zero for exact search — which is why
+    encoder can take minutes, against near-zero for exact search: which is why
     persisting the plan is worth doing.
 
     **The learned backends produce a space nobody can read.** Neighbours are
@@ -143,7 +143,7 @@ def build_search_artifacts(
             f"Text case embedding via {embedder_id}; hybrid numeric concat when present."
         )
     elif backend_key == "torch":
-        # Lazy import — keep sklearn/industry paths free of torch DLL init.
+        # Lazy import: keep sklearn/industry paths free of torch DLL init.
         from buildml.cbr.adapters.torch_metric import (
             build_torch_encoder,
             encode_with_torch,
@@ -184,7 +184,7 @@ def build_search_artifacts(
         notes.append(f"Approximate NN index built with {ann_library} (metric={metric}).")
     elif backend_key == "industry":
         notes.append(
-            "cbr-industry extra missing — falling back to exact kNN on search matrix."
+            "cbr-industry extra missing: falling back to exact kNN on search matrix."
         )
 
     return search, ann_index, ann_library, embedder_id, torch_encoder, notes

@@ -3,8 +3,8 @@
 Terms here describe the current BuildML 2.x API. They are not interchangeable with similarly named
 objects in every machine-learning library.
 
-For general machine-learning vocabulary rather than BuildML's own objects — leakage, stratification,
-calibration, ROC-AUC — call `session.learn("<term>")`, which returns a plain-language definition plus
+For general machine-learning vocabulary rather than BuildML's own objects: leakage, stratification,
+calibration, ROC-AUC: call `session.learn("<term>")`, which returns a plain-language definition plus
 the concept note that teaches it and what to read first.
 
 **Action**  
@@ -81,7 +81,7 @@ once the recipe is fixed.
 **evaluate_asr / WER / CER**  
 `Session.evaluate_asr` (and `buildml.dl.speech.evaluate_asr`) scores ASR
 hypotheses against references with word and character error rates via
-Levenshtein edit distance. String metrics only — not a speech quality / MOS
+Levenshtein edit distance. String metrics only: not a speech quality / MOS
 product. Omitting `hypotheses=` reuses texts from the last `transcribe_speech`.
 
 **Engine**  
@@ -216,7 +216,7 @@ An unfitted fold-local preprocess specification (`PreprocessRecipe`) refit on ea
 training rows. Supported fold-local steps include dates, text features, outliers, impute, encode,
 binning, scale, PCA (`reduce`), and feature selection. Resample and registered custom transforms
 remain Session-global only. If Session fit-capable plans were already fitted on the full train
-partition, CV/search refuse even when a fold-local recipe is passed — recipes run on the
+partition, CV/search refuse even when a fold-local recipe is passed: recipes run on the
 already-transformed frame and do not rebuild from raw rows. Re-ingest unpoisoned data, or set
 `allow_session_global_preprocess=True` as an explicit override (scores remain leakage-biased).
 
@@ -241,8 +241,8 @@ section with hand-written prose.
 
 **Learning level**  
 `beginner` (default), `intermediate`, or `advanced`, accepted by `Session.explain` and
-`Session.learn`. The level controls how much scaffolding is rendered — analogy, glossary, step
-detail — never which facts are true. Assumptions, leakage risks, and failure modes are present at
+`Session.learn`. The level controls how much scaffolding is rendered: analogy, glossary, step
+detail: never which facts are true. Assumptions, leakage risks, and failure modes are present at
 every level.
 
 **Learning brief**  
@@ -312,7 +312,7 @@ checkpoints and from RAG / recommender bundles.
 **Reinforcement learning (Session)**  
 `fit_rl` covers contextual bandits on logged train tables (LinUCB / ε-greedy /
 softmax) plus optional Gymnasium env loops behind `buildml[rl]`: tabular TD
-control (`tabular_q` — Q-learning / SARSA / Expected SARSA / Double Q-learning)
+control (`tabular_q`: Q-learning / SARSA / Expected SARSA / Double Q-learning)
 and REINFORCE-lite (`gym_reinforce`); SB3 PPO/DQN/A2C behind
 `buildml[rl-industry]`. Bandit holdout metrics are offline (DM/IPS); env-loop
 metrics are online returns. Not a MuJoCo / robotics / multi-agent platform.
@@ -336,7 +336,7 @@ Directory schema `buildml.imitation_bundle.v1` (`meta.json` +
 **Topological Data Analysis (Session)**  
 `fit_tda` builds local Vietoris–Rips persistence diagrams (ripser) on kNN train
 neighborhoods, vectorizes them (persim images/landscapes or in-tree
-silhouettes), and optionally fits a sklearn head — all on train only. Requires
+silhouettes), and optionally fits a sklearn head: all on train only. Requires
 `buildml[tda]`. Not a Mapper research suite.
 
 **TDA bundle**  
@@ -349,12 +349,12 @@ The `buildml.nlp` surface for one text column that lives on the Session dataset:
 `evaluate_text_classifier` / `interpret_text_prediction`, plus `fit_topics` /
 `assign_topics`, `extract_keyphrases`, `analyze_sentiment`, `extract_entities`,
 `summarize_text`, and `detect_language`. Single-label document classification and
-analysis — not multi-label, not span labelling, not generation, and not document
+analysis: not multi-label, not span labelling, not generation, and not document
 retrieval for generation (that is RAG).
 
 **Text normalization plan**  
-The deterministic, stateless part of a text pipeline — the normalization steps,
-tokenizer settings, stopword list, and stemming or lemmatization choice — stored
+The deterministic, stateless part of a text pipeline: the normalization steps,
+tokenizer settings, stopword list, and stemming or lemmatization choice: stored
 on an `NlpTextPlan`. Because it learns nothing from the corpus it cannot leak, so
 it replays freely on holdout rows. The vocabulary, document frequencies, and IDF
 weights beside it are train-only.

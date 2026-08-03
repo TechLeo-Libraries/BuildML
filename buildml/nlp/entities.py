@@ -14,7 +14,7 @@ It deliberately does not guess at free-form person or place names, because rules
 cannot do that without a false-positive rate that makes the output useless.
 
 The **spaCy** backend runs a statistical model that will find names it has never
-seen — genuinely impossible for rules. In exchange it produces confident false
+seen: genuinely impossible for rules. In exchange it produces confident false
 positives on text unlike its training data, and it needs a model download.
 
 Overlapping matches are resolved by keeping the longest span, then by label
@@ -49,7 +49,7 @@ def compile_gazetteers(
 ) -> tuple[tuple[str, re.Pattern[str]], ...]:
     """Turn phrase lists into matchers for terms only you know about.
 
-    A gazetteer is a list of known names — your products, your regions, your
+    A gazetteer is a list of known names: your products, your regions, your
     internal system identifiers. No general model knows them, and no regular
     expression describes them, but you can enumerate them, and enumeration is
     enough.
@@ -153,7 +153,7 @@ def extract_rule_entities(
         passed, which is what makes redaction and highlighting possible.
     labels:
         Restrict to these labels. Worth using when you only care about one kind
-        of thing — scanning for personal data, say — since it also avoids the
+        of thing: scanning for personal data, say: since it also avoids the
         cost of patterns you will discard.
     gazetteers:
         Compiled phrase matchers from :func:`compile_gazetteers`.
@@ -171,7 +171,7 @@ def extract_rule_entities(
     number, and a gazetteer phrase containing a date is not fragmented by it.
 
     **Precision over recall, deliberately.** These patterns will miss unusual
-    formats — an unfamiliar date layout, a phone number written oddly. What
+    formats: an unfamiliar date layout, a phone number written oddly. What
     they find is almost always right, which is the property that makes the
     output usable without review.
 
@@ -250,7 +250,7 @@ def extract_entities(
     labels:
         Restrict to these entity types. For the rules backend, a label that
         neither a built-in pattern nor a gazetteer produces is an error rather
-        than an empty result — otherwise a typo looks like "nothing found".
+        than an empty result: otherwise a typo looks like "nothing found".
     gazetteers:
         Label to phrases for domain names no general model knows. See
         :func:`compile_gazetteers`.
@@ -282,7 +282,7 @@ def extract_entities(
     Notes
     -----
     **Check ``top_mentions`` before trusting the counts.** It is the fastest
-    way to spot a pattern firing on the wrong thing — an ``ORG`` list full of
+    way to spot a pattern firing on the wrong thing: an ``ORG`` list full of
     ordinary sentence openers tells you immediately that something is wrong,
     where a label count alone would not.
 

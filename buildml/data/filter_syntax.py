@@ -18,7 +18,7 @@ _ALLOWED_OPS = frozenset({">", ">=", "<", "<=", "==", "!=", "=", "<>"})
 def quote_identifier(name: str) -> str:
     """Quote a column name so the engine reads it as a name, not as syntax.
 
-    Unquoted identifiers break on anything unusual — a space, a reserved word
+    Unquoted identifiers break on anything unusual: a space, a reserved word
     like ``order``, a leading digit, mixed case in a case-folding engine. Double
     quotes make the engine take the text literally.
 
@@ -80,7 +80,7 @@ def sql_literal(value: Any) -> str:
     ------
     ValidationError
         If the value is NaN, or of an unsupported type. Dates, decimals, and
-        collections are deliberately excluded — their SQL spellings are
+        collections are deliberately excluded: their SQL spellings are
         engine-specific, so a portable rendering would be a guess.
 
     Notes
@@ -153,7 +153,7 @@ def portable_filter_expr(column: str, op: str, value: Any) -> str:
     Notes
     -----
     **Comparisons only.** ``IN`` lists, ``LIKE``, function calls, joins, and
-    window functions are not portable and are not covered — write those directly
+    window functions are not portable and are not covered: write those directly
     for the engine you are on.
 
     **Comparing against ``None`` produces ``= NULL``, which is never true.** SQL

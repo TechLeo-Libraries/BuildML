@@ -98,7 +98,7 @@ def fit_kg(
     4. Train embeddings with the selected backend.
     5. Store train adjacency for symbolic neighborhood/path/typed queries.
 
-    Honesty: Session KG learning/query — not a Neo4j / graph-DB product,
+    Honesty: Session KG learning/query: not a Neo4j / graph-DB product,
     not Graph ML node classification, not RAG.
     """
     resolved_backend, resolved_method = resolve_backend_method(
@@ -255,7 +255,7 @@ def _fit_native(
     )
     disclosures.append(
         "Symbolic query_kg (neighbors/path/typed) uses the train adjacency "
-        "only — not an LLM and not a graph database."
+        "only: not an LLM and not a graph database."
     )
     if method == "transe":
         disclosures.append(

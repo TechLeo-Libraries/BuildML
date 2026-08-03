@@ -22,7 +22,7 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "triples. Embeddings and symbolic queries use the train store."
             ),
             intuition=(
-                "Alice —works_at→ Acme is one triple. Link prediction asks "
+                "Alice :works_at→ Acme is one triple. Link prediction asks "
                 "which tails complete (Alice, works_at, ?); symbolic query "
                 "walks the train edges without an LLM."
             ),
@@ -96,7 +96,7 @@ KG_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Read disclosures for backend, neg_ratio, and scoring formula.",
-                "Loss alone is not ranking quality — use evaluate_kg.",
+                "Loss alone is not ranking quality: use evaluate_kg.",
             ),
             assumptions=("Dense embeddings fit in memory for the train catalog.",),
             failure_modes=("Too few epochs; collapsed embeddings; tiny entity sets.",),
@@ -154,7 +154,7 @@ KG_NOTES: dict[str, ConceptNote] = {
             title="Symbolic neighborhood / path / typed query",
             summary=(
                 "query_kg walks the train adjacency: neighbors, typed "
-                "(entity, relation, ?), or shortest path — not an LLM."
+                "(entity, relation, ?), or shortest path: not an LLM."
             ),
             definition=(
                 "Symbolic queries operate on the materialised train triple "
@@ -162,7 +162,7 @@ KG_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Ask 'who does Alice work with?' or 'is there a path from A to B?' "
-                "using stored edges — not generated text."
+                "using stored edges: not generated text."
             ),
             formal_idea=(
                 "neighbors(v); typed(v,r); path(s,t) via BFS on directed out-edges."
@@ -176,7 +176,7 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "relation=..., source=..., target=...).",
             ),
             interpretation_rules=(
-                "Empty path means no train path within max_hops — not model failure.",
+                "Empty path means no train path within max_hops: not model failure.",
             ),
             assumptions=("KgPlan with train adjacency from fit_kg.",),
             failure_modes=("OOV entities; disconnected train graphs.",),

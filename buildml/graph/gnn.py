@@ -285,7 +285,7 @@ class GCNClassifier:
         return obj
 
 
-def _GCNModule(  # noqa: N802 — factory matching nn.Module usage
+def _GCNModule(  # noqa: N802: factory matching nn.Module usage
     in_dim: int,
     hidden_dim: int,
     n_classes: int,

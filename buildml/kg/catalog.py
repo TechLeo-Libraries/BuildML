@@ -72,7 +72,7 @@ def kg_capability_matrix() -> dict[str, Any]:
         "industry_extra_present": kg_industry_available(),
         "pykeen_import_honesty": (
             "pykeen backend 'available' reflects package install (find_spec). "
-            "PyKEEN training also requires a working torch install — broken "
+            "PyKEEN training also requires a working torch install: broken "
             "wheels may fail at require_pykeen / require_torch."
         ),
         "train_only_honesty": (

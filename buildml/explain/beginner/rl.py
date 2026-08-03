@@ -15,14 +15,14 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Learning to drive by watching thousands of hours of a good driver and copying what they do in "
-            "each situation. You never work out *why* — you just reproduce the behaviour."
+            "each situation. You never work out *why*: you just reproduce the behaviour."
         ),
         steps=(
             "Assemble a table of demonstrations: one row per decision, with the situation described by features and the chosen action as the target.",
             "Split as usual, respecting any episode or session grouping so one episode does not straddle the boundary.",
             "Fit an ordinary classifier or regressor on the training demonstrations.",
             "Predict actions for new situations.",
-            "Evaluate on held-out demonstrations — you are measuring agreement with the expert, not real-world outcome quality.",
+            "Evaluate on held-out demonstrations: you are measuring agreement with the expert, not real-world outcome quality.",
         ),
         use=(
             "When you have a substantial log of good decisions and no safe way to experiment.",
@@ -30,7 +30,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it when your demonstrations are of mediocre decisions; the policy will faithfully clone the mediocrity.",
-            "Do not deploy it into situations unlike anything in the demonstrations — a cloned policy has no idea what to do off-distribution.",
+            "Do not deploy it into situations unlike anything in the demonstrations: a cloned policy has no idea what to do off-distribution.",
         ),
         myths=(
             (
@@ -108,7 +108,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "rl-contextual-bandit",
         plain=(
             "A contextual bandit is the simplest genuine decision-learning setting. You see a situation, "
-            "pick one of a few actions, and observe a reward for the action you picked only — never for the "
+            "pick one of a few actions, and observe a reward for the action you picked only: never for the "
             "ones you did not. There is no long-term state to plan through."
         ),
         analogy=(
@@ -123,12 +123,12 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Evaluate offline, with the strong caveats that come with counterfactual estimation.",
         ),
         use=(
-            "Content selection, offer targeting, treatment assignment — anywhere you choose among a small set of options repeatedly.",
+            "Content selection, offer targeting, treatment assignment: anywhere you choose among a small set of options repeatedly.",
             "When you can log the action and reward together, which is the minimum requirement.",
         ),
         avoid=(
             "Do not use it when today's action changes tomorrow's situation; that is full reinforcement learning and bandits will get it wrong.",
-            "Do not use it when your logs came from a deterministic policy — with no variation, there is nothing to learn about the untried actions.",
+            "Do not use it when your logs came from a deterministic policy: with no variation, there is nothing to learn about the untried actions.",
         ),
         myths=(
             (
@@ -160,7 +160,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Evaluating a new policy from old logs is genuinely hard, because you only recorded what "
             "happened under the old policy. Offline estimators such as the direct method and inverse "
-            "propensity scoring try to answer 'what would the new policy have earned?' — with real "
+            "propensity scoring try to answer 'what would the new policy have earned?': with real "
             "limitations that BuildML states explicitly."
         ),
         analogy=(
@@ -172,7 +172,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "The direct method fits a reward model and asks it what the new policy's actions would have earned.",
             "Inverse propensity scoring re-weights logged rewards by how likely the new policy was to take the action that was actually taken.",
             "Both need the logging policy to have had some chance of taking the new policy's actions.",
-            "Read the disclosures — variance is often enormous when the two policies disagree a lot.",
+            "Read the disclosures: variance is often enormous when the two policies disagree a lot.",
             "Treat the result as a screen before an online test, never as a substitute for one.",
         ),
         use=(
@@ -181,7 +181,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not report an offline estimate as expected live performance; the confidence intervals are usually far wider than they look.",
-            "Do not use it when the new policy would take actions the logging policy essentially never took — there is no evidence to reweight.",
+            "Do not use it when the new policy would take actions the logging policy essentially never took: there is no evidence to reweight.",
         ),
         myths=(
             (
@@ -211,13 +211,13 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Full reinforcement learning needs an environment the agent can interact with, not just a table "
             "of logs. With the optional extra, BuildML can train a simple policy-gradient agent on small "
-            "Gymnasium environments — a teaching surface for how the loop works, not a research platform."
+            "Gymnasium environments: a teaching surface for how the loop works, not a research platform."
         ),
         analogy=(
             "A driving simulator. Safe to crash in, cheap to repeat, and clearly not the same as the road."
         ),
         steps=(
-            "Install `pip install buildml[rl]` — the core never requires Gymnasium.",
+            "Install `pip install buildml[rl]`: the core never requires Gymnasium.",
             "Choose a small discrete environment such as CartPole.",
             "The agent runs an episode, collecting states, actions, and rewards.",
             "REINFORCE increases the probability of actions that preceded good returns and decreases the rest.",
@@ -229,7 +229,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it for anything real-world; REINFORCE is high-variance and sample-inefficient.",
-            "Do not use it when you have logged data but no environment — that is offline reinforcement learning, which is a different problem entirely.",
+            "Do not use it when you have logged data but no environment: that is offline reinforcement learning, which is a different problem entirely.",
         ),
         myths=(
             (
@@ -269,7 +269,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "rl-sb3-industry",
         plain=(
             "Stable-Baselines3 provides well-tested implementations of the standard reinforcement-learning "
-            "algorithms — PPO, DQN, A2C. When the industry extra is installed, BuildML routes to them by "
+            "algorithms: PPO, DQN, A2C. When the industry extra is installed, BuildML routes to them by "
             "default because a correct implementation matters enormously in this field."
         ),
         analogy=(
@@ -289,7 +289,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it on a static dataset; you still need an environment to step through.",
-            "Do not report a single-seed result — the seed-to-seed variation frequently exceeds the difference between algorithms.",
+            "Do not report a single-seed result: the seed-to-seed variation frequently exceeds the difference between algorithms.",
         ),
         myths=(
             (
@@ -320,7 +320,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "rl-bundle-boundary",
         plain=(
-            "The learned policy — bandit weights or a trained agent — saves as an RL bundle. Session "
+            "The learned policy: bandit weights or a trained agent: saves as an RL bundle. Session "
             "checkpoints hold your logged data and workflow state, never the policy."
         ),
         analogy=(
@@ -377,14 +377,14 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "trip you update a few scores based on how the rest of the journey went."
         ),
         steps=(
-            "Start with a table of zeros — the agent believes nothing about anything.",
+            "Start with a table of zeros: the agent believes nothing about anything.",
             "Act mostly greedily but sometimes at random, so unexplored actions get tried.",
             "After each step, compute the target: the reward received plus the discounted best value of the next situation.",
             "Move the used entry a small step (`alpha`) toward that target.",
             "Repeat over many episodes; the table converges toward the values of acting optimally.",
         ),
         use=(
-            "When the situations and actions are few enough to enumerate — grid worlds, small simulators, discretized problems.",
+            "When the situations and actions are few enough to enumerate: grid worlds, small simulators, discretized problems.",
             "When you want a policy you can read: the whole thing is a table you can print.",
         ),
         avoid=(
@@ -419,7 +419,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "rl-sarsa-on-policy",
         plain=(
             "SARSA is Q-learning's cautious sibling. Instead of assuming it will behave perfectly from the "
-            "next step onward, it updates using the action it is actually going to take — exploration "
+            "next step onward, it updates using the action it is actually going to take: exploration "
             "mistakes included. The result is a policy that accounts for its own fallibility."
         ),
         analogy=(
@@ -435,11 +435,11 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "When exploration mistakes are costly and the policy should route around its own errors.",
-            "When you want to understand the on-policy versus off-policy distinction concretely — this is the cleanest demonstration.",
+            "When you want to understand the on-policy versus off-policy distinction concretely: this is the cleanest demonstration.",
         ),
         avoid=(
             "Do not use it with a high fixed exploration rate; the learned values stay permanently pessimistic.",
-            "Do not compare its returns against Q-learning without matching seeds and environments — the difference is subtle and easily swamped by noise.",
+            "Do not compare its returns against Q-learning without matching seeds and environments: the difference is subtle and easily swamped by noise.",
         ),
         myths=(
             (
@@ -468,7 +468,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "rl-state-discretization",
         plain=(
             "A lookup table needs a finite list of situations, but many environments report continuous "
-            "measurements — position, angle, velocity. Discretization chops each measurement into a few "
+            "measurements: position, angle, velocity. Discretization chops each measurement into a few "
             "buckets so every combination becomes one table row."
         ),
         analogy=(
@@ -480,11 +480,11 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Bucket numbers across dimensions combine into one integer state index.",
             "Where the environment declares finite bounds, BuildML uses them.",
             "Where it does not, a seeded random-policy probe estimates a sensible range and records that it did so.",
-            "The table has `n_bins` to the power of the number of dimensions — BuildML refuses allocations above a hard cap.",
+            "The table has `n_bins` to the power of the number of dimensions: BuildML refuses allocations above a hard cap.",
         ),
         use=(
             "When you want tabular methods on an environment with continuous measurements.",
-            "As a teaching device for the curse of dimensionality — the table size is right there in front of you.",
+            "As a teaching device for the curse of dimensionality: the table size is right there in front of you.",
         ),
         avoid=(
             "Do not add bins to improve accuracy without checking coverage; more bins means fewer visits each and nothing gets learned.",
@@ -518,16 +518,16 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Monte Carlo methods wait until an episode ends, then credit each action with the "
             "actual return that followed. BuildML's gym_reinforce path uses these full-episode "
-            "returns — unbiased but noisy compared with bootstrapped TD or actor-critic updates."
+            "returns: unbiased but noisy compared with bootstrapped TD or actor-critic updates."
         ),
         analogy=(
-            "Judge each chess move only after you see whether the game was won or lost — no "
+            "Judge each chess move only after you see whether the game was won or lost: no "
             "guessing mid-game from a value table."
         ),
         steps=(
             "Install buildml[rl] so Gymnasium env loops are available.",
             "fit_rl(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=...).",
-            "Plot mean_return over episodes — expect high variance.",
+            "Plot mean_return over episodes: expect high variance.",
             "Compare sample efficiency against tabular_q or gym_sb3 on the same env and seed.",
         ),
         use=(
@@ -536,7 +536,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Expecting sample efficiency matching PPO or DQN on the same timestep budget.",
-            "Calling REINFORCE actor-critic — it has no critic network by default.",
+            "Calling REINFORCE actor-critic: it has no critic network by default.",
         ),
         myths=(
             ("REINFORCE is actor-critic.", "It is Monte Carlo policy gradient without a critic."),
@@ -576,7 +576,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Teaching on-policy vs off-policy control with inspectable Q tables.",
         ),
         avoid=(
-            "Calling tabular_q offline RL — it still interacts with the env online.",
+            "Calling tabular_q offline RL: it still interacts with the env online.",
             "Cranking n_bins until the state cap error instead of switching to function approximation.",
         ),
         myths=(
@@ -599,12 +599,12 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "rl-actor-critic",
         plain=(
             "Actor-critic learns a policy (actor) and a value estimate (critic) together. The critic "
-            "smooths learning versus raw Monte Carlo returns — SB3 PPO and A2C expose this industry "
+            "smooths learning versus raw Monte Carlo returns: SB3 PPO and A2C expose this industry "
             "path when buildml[rl-industry] is installed."
         ),
         analogy=(
             "A player (actor) chooses moves while a coach (critic) estimates how promising the "
-            "position looks — smoother feedback than waiting for the final score alone."
+            "position looks: smoother feedback than waiting for the final score alone."
         ),
         steps=(
             "pip install 'buildml[rl-industry]'.",

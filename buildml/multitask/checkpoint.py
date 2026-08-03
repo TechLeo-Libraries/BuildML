@@ -25,7 +25,7 @@ CHECKPOINT_BOUNDARY = (
     "splits, history, and optional classical preprocess plans; it does not "
     "embed the multi-task learner. Reload tabular workflow via "
     "checkpoint_load; reload the learner via load_multitask_bundle. This is "
-    "sklearn MultiOutput / Chain on shared features — not a deep MTL platform."
+    "sklearn MultiOutput / Chain on shared features: not a deep MTL platform."
 )
 
 

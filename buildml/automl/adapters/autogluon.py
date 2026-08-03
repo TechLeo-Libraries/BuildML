@@ -39,7 +39,7 @@ def run_autogluon_adapter(
     """Run AutoGluon TabularPredictor on Session train only; never touch test.
 
     AutoGluon performs internal model selection and featurization on train-only
-    data. BuildML fold-local PreprocessRecipe search is bypassed — disclosures
+    data. BuildML fold-local PreprocessRecipe search is bypassed: disclosures
     state this explicitly. Session test never enters fit or selection scoring.
 
     Parameters
@@ -173,13 +173,13 @@ def run_autogluon_adapter(
     )
     disclosures = [
         "backend=autogluon (buildml[automl-industry]); AutoGluon internal stacking on train only.",
-        "Fold-local PreprocessRecipe search bypassed — AutoGluon handles featurization internally.",
+        "Fold-local PreprocessRecipe search bypassed: AutoGluon handles featurization internally.",
         "Session test never entered AutoGluon fit or selection scoring.",
         f"time_limit={int(seconds)}s; eval_metric={ag_metric}; best_model={best_model_name}.",
     ]
     limitations = [
         "AutoGluon adapter does not support nested CV or fold-local recipe strategy search.",
-        "Saved estimator is a thin sklearn wrapper around TabularPredictor — use save_automl_bundle.",
+        "Saved estimator is a thin sklearn wrapper around TabularPredictor: use save_automl_bundle.",
     ]
 
     plan = AutoMLPlan(

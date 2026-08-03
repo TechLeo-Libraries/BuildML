@@ -101,7 +101,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split / preprocess; before retrieve/predict/evaluate.",),
         alternatives=("Classical fit() for parametric models; RAG for documents.",),
         rationale=(
-            "Ship leakage-safe tabular CBR with explanation traces — not RAG.",
+            "Ship leakage-safe tabular CBR with explanation traces: not RAG.",
         ),
         assumptions=("Numeric features available after encode/scale when needed.",),
         failures=("No split; null features/targets; invalid reuse for task.",),
@@ -325,7 +325,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Separate learner artifact from Session checkpoint.",),
         assumptions=("Writable path.",),
         failures=("No plan attached.",),
-        leakage=("None — persistence only.",),
+        leakage=("None: persistence only.",),
         anti_patterns=("Expecting checkpoint_load to restore the plan.",),
         state_changes=("History record only.",),
         result_reading=("Confirm meta.json format.",),

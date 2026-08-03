@@ -110,7 +110,7 @@ def fit_ranker(
 
     Notes
     -----
-    Session tabular LTR — not a search-engine product, not RAG retrieve/generate,
+    Session tabular LTR: not a search-engine product, not RAG retrieve/generate,
     not recommender CF. Never trains on holdout rows.
     """
     assert_fit_partition(split_plan, "train")

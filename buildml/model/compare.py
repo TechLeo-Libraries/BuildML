@@ -7,7 +7,7 @@ wins. Reasoning about which *should* work is a poor substitute for fitting a few
 and looking.
 
 The one thing that makes such a comparison meaningful is that every candidate
-gets exactly the same treatment — the same split, the same features, the same
+gets exactly the same treatment: the same split, the same features, the same
 evaluation partition. That is what this module guarantees.
 
 It is a screen, not a verdict. Every estimator runs at its default settings, and
@@ -39,7 +39,7 @@ class ModelComparison:
 
     The fitted estimators and their full evaluation cards are retained, not just
     the ranking table. That matters because the table shows which model scored
-    highest and not why, and "why" is often where the decision actually lies —
+    highest and not why, and "why" is often where the decision actually lies :
     two models can post the same F1 while one misses a different class entirely.
 
     Attributes
@@ -179,7 +179,7 @@ def compare_estimators(
         If ``estimators`` is empty.
     ValidationError
         If the split is missing, or if any estimator cannot be fitted on the
-        resolved features — for example one that rejects a weight column.
+        resolved features: for example one that rejects a weight column.
 
     Notes
     -----

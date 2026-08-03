@@ -7,7 +7,7 @@ boundary.
 Honesty: this is **not** a Netflix-scale recsys platform (no streaming feature
 store, no multi-stage industrial cascade). With ``buildml[recommenders-industry]``
 it uses real industry libraries (``implicit`` ALS/BPR, LightFM hybrid) as
-defaults for implicit feedback — not a from-scratch reimplementation.
+defaults for implicit feedback: not a from-scratch reimplementation.
 
 ---
 
@@ -22,7 +22,7 @@ defaults for implicit feedback — not a from-scratch reimplementation.
 | `buildml.recommender_bundle.v1` | Session checkpoint payload |
 
 EDA **Recommendation** objects (`buildml.explain.schemas.Recommendation`) are
-teaching advice linked to Findings — they never rank items. RAG
+teaching advice linked to Findings: they never rank items. RAG
 (`rag_retrieve` / `rag_generate`) ranks **documents**, not catalog items from
 an interaction matrix.
 
@@ -59,9 +59,9 @@ feedback-aware defaults (ALS for implicit when ``implicit`` is installed).
 
 Interactions are rows with:
 
-1. **User id** — `user_column=` (required kwargs; not a dedicated `ColumnRole`)
-2. **Item id** — `item_column=`
-3. **Rating / signal** — Session `target` or `rating_column=` for explicit;
+1. **User id**: `user_column=` (required kwargs; not a dedicated `ColumnRole`)
+2. **Item id**: `item_column=`
+3. **Rating / signal**: Session `target` or `rating_column=` for explicit;
    `feedback='implicit'` for presence-only positives
 
 Suggested roles: mark user/item as `id` or `ignore` so classical `fit()` does
@@ -75,15 +75,15 @@ not treat them as features. Optional numeric **item features** support
 
 ### Core (sklearn / numpy)
 
-- **item_knn** — cosine item–user similarity
-- **user_knn** — cosine user–user similarity
-- **svd** / **nmf** — matrix factorization
-- **content** — rating-weighted item feature profiles
+- **item_knn**: cosine item–user similarity
+- **user_knn**: cosine user–user similarity
+- **svd** / **nmf**: matrix factorization
+- **content**: rating-weighted item feature profiles
 
 ### Industry (`recommenders-industry`)
 
-- **als** / **bpr** — ``implicit`` library on sparse implicit-feedback matrices
-- **lightfm** — hybrid WARP with optional user/item side features
+- **als** / **bpr**: ``implicit`` library on sparse implicit-feedback matrices
+- **lightfm**: hybrid WARP with optional user/item side features
 
 All methods restrict candidates to the **train item catalog** (known-item
 protocol). Holdout-only items are never collaborative candidates.
@@ -183,6 +183,6 @@ Benchmark: ``python benchmarks/recommenders/ranking_quality.py``
 
 ## Tracker
 
-Phase 3 application systems — **recommenders** (this guide) — PASS (R5.3 industry depth).
-Search/LTR — PASS. Knowledge graphs — PASS.
+Phase 3 application systems: **recommenders** (this guide): PASS (R5.3 industry depth).
+Search/LTR: PASS. Knowledge graphs: PASS.
 **Next (R5.4):** Causal inference (dowhy/econml).

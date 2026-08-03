@@ -15,7 +15,7 @@ bolted onto EDA.
      confounders, DoWhy identification + backdoor estimation
    - **econml** (`buildml[causal-industry]`): DML, CausalForestDML, PolicyTree
 3. `estimate_causal` / `evaluate_causal` score a partition with **fixed** train
-   models. Holdout metrics check predictive quality — they do **not** prove
+   models. Holdout metrics check predictive quality: they do **not** prove
    identification.
 4. `refute_causal` runs sensitivity checks. Native: placebo / random confounder.
    DoWhy: full refutation suite (placebo, random common cause, unobserved
@@ -49,7 +49,7 @@ are numeric (after Session preprocess). Empty confounders require
 - Nuisance fitting never sees validation/test.
 - Bootstrap in `fit_causal` resamples **train** (native/econml).
 - Partition bootstrap in `estimate_causal` keeps nuisances fixed (native).
-- Instruments, if supplied, are **refused** until an IV path exists — unused
+- Instruments, if supplied, are **refused** until an IV path exists: unused
   instruments must not silently count as identification.
 
 ## Bundle boundary

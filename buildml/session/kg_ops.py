@@ -101,7 +101,7 @@ def fit_kg_op(
     **Leakage:** Requires a split. Vocabularies, embeddings, and adjacency
     use train triples only. Holdout triples never update the model.
     Distinct from Graph ML (``set_graph`` / ``fit_graph``) and from RAG.
-    Honesty: Session KG learning — not a Neo4j / graph-DB product.
+    Honesty: Session KG learning: not a Neo4j / graph-DB product.
     """
     session.assert_can_fit("train")
     plan, result = fit_kg(

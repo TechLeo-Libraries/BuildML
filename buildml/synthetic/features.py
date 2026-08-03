@@ -41,7 +41,7 @@ ValidationError
 
 
 def assert_train_only_fit(partition: str) -> None:
-    """Synthesizers always fit on Session train — never validation/test.
+    """Synthesizers always fit on Session train: never validation/test.
 
 Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 

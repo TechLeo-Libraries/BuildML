@@ -33,7 +33,7 @@ class TimeseriesSessionMixin:
     ) -> Any:
         """Run time-series analysis on train-only or full-dataset scope.
 
-        Session facade over :func:`buildml.session.timeseries_ops.analyze_timeseries_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.timeseries_ops.analyze_timeseries_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -73,7 +73,7 @@ class TimeseriesSessionMixin:
     ) -> Any:
         """Run decomposition-only time-series analysis on Session data.
 
-        Session facade over :func:`buildml.session.timeseries_ops.ts_decompose_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.timeseries_ops.ts_decompose_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -105,7 +105,7 @@ class TimeseriesSessionMixin:
     ) -> Any:
         """Run diagnostics-only time-series analysis on Session data.
 
-        Session facade over :func:`buildml.session.timeseries_ops.ts_diagnostics_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.timeseries_ops.ts_diagnostics_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

@@ -1,12 +1,12 @@
 """Tabular learning-to-rank / search ranking (Session-shaped LTR path).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
-Phase 1–2 complete. Phase 3 — Application systems:
+Phase 1–2 complete. Phase 3: Application systems:
   Recommendation systems (**PASS**).
-  **Search / learning-to-rank (this module)** — **PASS** (R6.8 industry depth).
-  Knowledge graphs — **PASS**. Optimisation / decision helpers — **PASS**.
-  Synthetic-data systems — **PASS** (``buildml.synthetic``).
+  **Search / learning-to-rank (this module)**: **PASS** (R6.8 industry depth).
+  Knowledge graphs: **PASS**. Optimisation / decision helpers: **PASS**.
+  Synthetic-data systems: **PASS** (``buildml.synthetic``).
 
 Honesty (this package):
   - Tabular query–item (or query–document) feature rows with relevance labels.
@@ -23,7 +23,7 @@ Honesty (this package):
 Dependency policy: core stays numpy/pandas/sklearn. Industry rankers and torch
 listwise are optional extras with honest capability matrix disclosure.
 
-Lazy imports — keep the core import graph light.
+Lazy imports: keep the core import graph light.
 """
 
 from __future__ import annotations

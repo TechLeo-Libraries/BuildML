@@ -108,11 +108,11 @@ def ranking_capability_matrix() -> dict[str, Any]:
             ),
             "rag": (
                 "Chunk embedding retrieve + optional generate; rag_evaluate uses "
-                "chunk-level nDCG/MRR — different protocol from LTR."
+                "chunk-level nDCG/MRR: different protocol from LTR."
             ),
             "recommenders": (
                 "User–item interaction CF or content recommenders; "
-                "evaluate_recommender on known-item ranking — not query–document LTR."
+                "evaluate_recommender on known-item ranking: not query–document LTR."
             ),
         },
         "split_discipline": {

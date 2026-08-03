@@ -10,7 +10,7 @@ Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Torch and industry
 paths use optional extras. Sklearn remains the honest fallback when extras
 are missing.
 
-Lazy imports — core never grows heavy meta-learning stacks.
+Lazy imports: core never grows heavy meta-learning stacks.
 """
 
 from __future__ import annotations

@@ -32,7 +32,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "accuracy/macro_f1 (discrete) or rmse/mae/r2 (continuous) vs demos.",
-                "train_score is in-sample — prefer holdout evaluate_imitation.",
+                "train_score is in-sample: prefer holdout evaluate_imitation.",
             ),
             assumptions=("Non-null state features and actions on train; split present.",),
             failure_modes=(
@@ -85,7 +85,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Given features about a user/context, pick an action that maximizes "
-                "expected reward — learned from historical logs."
+                "expected reward: learned from historical logs."
             ),
             formal_idea=(
                 "LinUCB: a_hat = argmax_a [theta_a·x + alpha*sqrt(x⊤A_a^{-1}x)]. "
@@ -124,7 +124,7 @@ RL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="rl-offline-metrics",
             title="Offline bandit evaluation (DM / IPS)",
-            summary="Holdout bandit scores are offline estimators with explicit disclosures — not live A/B.",
+            summary="Holdout bandit scores are offline estimators with explicit disclosures: not live A/B.",
             definition=(
                 "Direct method uses predicted rewards under the learned policy. "
                 "IPS reweights logged rewards by inverse propensity when the "
@@ -170,7 +170,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             formal_idea="π(a|s)=softmax(Ws); ∇J ≈ Σ_t G_t ∇log π(a_t|s_t).",
             why_it_matters=(
                 "Optional depth without weighing the core install.",
-                "Honest small-env teaching path — not MuJoCo/robotics.",
+                "Honest small-env teaching path: not MuJoCo/robotics.",
             ),
             how_buildml_uses=(
                 "Session.fit_rl(mode='gym_reinforce', env_id='CartPole-v1') → "
@@ -201,7 +201,7 @@ RL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="rl-tabular-q-learning",
             title="Tabular Q-learning (off-policy TD control)",
-            summary="Learn Q[s,a] by bootstrapping from max_a' Q[s',a'] — the foundation DQN scales up with a neural network.",
+            summary="Learn Q[s,a] by bootstrapping from max_a' Q[s',a']: the foundation DQN scales up with a neural network.",
             definition=(
                 "Q-learning is off-policy temporal-difference control. It stores "
                 "one action-value per (state, action) pair and moves each entry "
@@ -225,7 +225,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "It is the reference point for value-based RL: DQN is Q-learning "
                 "with a neural network, a replay buffer, and a target network.",
-                "The Q-table is fully inspectable — greedy_policy_table() and "
+                "The Q-table is fully inspectable: greedy_policy_table() and "
                 "state_value_table() show exactly what was learned.",
                 "Converges to the optimal policy under standard conditions "
                 "(every state-action visited infinitely often, decaying α).",
@@ -255,7 +255,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             anti_patterns=(
                 "Using tabular Q-learning on high-dimensional observations "
                 "instead of gym_reinforce / gym_sb3 function approximation.",
-                "Calling off-policy TD control 'offline RL' — tabular_q is an "
+                "Calling off-policy TD control 'offline RL': tabular_q is an "
                 "online env loop, not batch RL from a fixed dataset.",
             ),
             worked_example_pattern=(
@@ -283,7 +283,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             intuition=(
                 "Q-learning learns the value of behaving optimally afterwards. "
                 "SARSA learns the value of continuing to behave the way you "
-                "actually behave — including your exploration mistakes."
+                "actually behave: including your exploration mistakes."
             ),
             formal_idea=(
                 "SARSA: Q(s,a) ← Q(s,a) + α[r + γ Q(s',a') − Q(s,a)]. "
@@ -359,7 +359,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "bound_sources tells you which dims used declared space bounds, "
                 "which were probed, and which fell back to [-1, 1].",
-                "Low state_coverage means most bins are unreachable — reduce n_bins.",
+                "Low state_coverage means most bins are unreachable: reduce n_bins.",
             ),
             assumptions=(
                 "Box or Discrete observation space; MultiDiscrete is refused.",
@@ -442,7 +442,7 @@ RL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="rl-monte-carlo-returns",
             title="Monte Carlo returns (full-episode credit assignment)",
-            summary="Update from complete episode returns — the baseline REINFORCE uses; contrasts with bootstrapped TD and actor-critic.",
+            summary="Update from complete episode returns: the baseline REINFORCE uses; contrasts with bootstrapped TD and actor-critic.",
             definition=(
                 "Monte Carlo methods wait until an episode ends, then assign each "
                 "step the actual return G_t from that step forward. BuildML's "
@@ -451,16 +451,16 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Only after seeing how the episode actually ended do you judge "
-                "each action — no guessing about the future from a value table."
+                "each action: no guessing about the future from a value table."
             ),
             formal_idea="G_t = Σ_{k=t}^{T} γ^{k−t} r_k; REINFORCE uses ∇ log π(a_t|s_t) · G_t.",
             why_it_matters=(
-                "Unbiased gradient estimates but high variance — why baselines and "
+                "Unbiased gradient estimates but high variance: why baselines and "
                 "bootstrapping (TD, actor-critic) exist.",
                 "Bridge concept linking REINFORCE to SB3 policy-gradient methods.",
             ),
             how_buildml_uses=(
-                "Session.fit_rl(mode='gym_reinforce') — see rl-gym-reinforce concept.",
+                "Session.fit_rl(mode='gym_reinforce'): see rl-gym-reinforce concept.",
                 "Session.fit_rl(mode='gym_sb3', algorithm='ppo'|'a2c') uses industry "
                 "actor-critic stacks instead of raw MC REINFORCE.",
             ),
@@ -470,7 +470,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             assumptions=("Episodic env with well-defined termination.",),
             failure_modes=("High-variance updates on long episodes without baseline.",),
             anti_patterns=(
-                "Calling REINFORCE 'actor-critic' — it is Monte Carlo policy gradient without a critic.",
+                "Calling REINFORCE 'actor-critic': it is Monte Carlo policy gradient without a critic.",
             ),
             worked_example_pattern=(
                 "fit_rl(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=300).",
@@ -480,7 +480,7 @@ RL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="rl-n-step-td",
             title="n-step TD bootstrapping (between MC and one-step TD)",
-            summary="Blend k steps of real rewards with a bootstrap value — SARSA/Q-learning use n=1; longer n approaches Monte Carlo.",
+            summary="Blend k steps of real rewards with a bootstrap value: SARSA/Q-learning use n=1; longer n approaches Monte Carlo.",
             definition=(
                 "n-step TD targets sum n immediate rewards plus γⁿ times an "
                 "estimated value at step t+n. One-step Q-learning and SARSA in "
@@ -489,7 +489,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Look a few steps ahead with real rewards, then guess the rest "
-                "from your value table — a middle ground between waiting for the "
+                "from your value table: a middle ground between waiting for the "
                 "episode end and updating from a single step."
             ),
             formal_idea=(
@@ -498,7 +498,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Explains why tabular_q, SARSA, and REINFORCE sit on a spectrum.",
-                "SB3 DQN uses replay + target nets — scaled n-step/bootstrapping in function approximation.",
+                "SB3 DQN uses replay + target nets: scaled n-step/bootstrapping in function approximation.",
             ),
             how_buildml_uses=(
                 "algorithm='q_learning' | 'sarsa' | 'expected_sarsa' on mode='tabular_q'.",
@@ -525,7 +525,7 @@ RL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="rl-actor-critic",
             title="Actor-critic (policy + value together)",
-            summary="Learn a policy (actor) and a value baseline (critic) jointly — SB3 PPO/A2C path; contrasts with REINFORCE and pure Q-learning.",
+            summary="Learn a policy (actor) and a value baseline (critic) jointly: SB3 PPO/A2C path; contrasts with REINFORCE and pure Q-learning.",
             definition=(
                 "Actor-critic methods update a policy π_θ and a value function "
                 "V_φ or Q_φ together: the critic reduces variance for the actor's "
@@ -555,7 +555,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             assumptions=("Discrete small Gymnasium env; rl-industry extra for SB3 path.",),
             failure_modes=("Under-trained policies on CartPole-class envs.",),
             anti_patterns=(
-                "Calling tabular Q-learning actor-critic — it is pure value-based control.",
+                "Calling tabular Q-learning actor-critic: it is pure value-based control.",
                 "Claiming SB3 path equals production robotics stack.",
             ),
             worked_example_pattern=(

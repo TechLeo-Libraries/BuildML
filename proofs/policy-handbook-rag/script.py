@@ -80,14 +80,50 @@ def _policy_corpus() -> tuple[list[dict], dict[str, list[str]]]:
             ),
             "metadata": {"topic": "travel"},
         },
+        {
+            "doc_id": "leave-unpaid",
+            "text": (
+                "Unpaid leave is separate from PTO accrual. Managers may approve "
+                "unpaid leave after PTO is exhausted. Unpaid days never roll over."
+            ),
+            "metadata": {"topic": "leave"},
+        },
+        {
+            "doc_id": "expense-corporate-card",
+            "text": (
+                "Corporate card purchases still need receipts over $25. Pre-approval "
+                "rules for amounts over $75 apply even when a card is used."
+            ),
+            "metadata": {"topic": "finance"},
+        },
+        {
+            "doc_id": "security-password",
+            "text": (
+                "Password rotation is quarterly for privileged accounts. Phishing "
+                "reports go to security@example.com; password resets go to IT helpdesk."
+            ),
+            "metadata": {"topic": "security"},
+        },
+        {
+            "doc_id": "noise-handbook-index",
+            "text": (
+                "This handbook index mentions leave, expenses, remote work, security, "
+                "conduct, and travel without stating the operative policy details."
+            ),
+            "metadata": {"topic": "noise"},
+        },
     ]
+    # Paraphrased queries + distractors so hashing cannot trivially hit 1.0.
     judgments = {
-        "How many PTO days do employees accrue?": ["leave-policy"],
-        "When are receipts required for expenses?": ["expense-policy"],
-        "What are core collaboration hours for remote work?": ["remote-work"],
-        "How do I report phishing?": ["security-access"],
-        "Where do I report harassment?": ["code-of-conduct"],
-        "What class of flight for short domestic trips?": ["travel-policy"],
+        "annual paid vacation accrual amount": ["leave-policy"],
+        "unpaid days after PTO runs out": ["leave-unpaid"],
+        "receipt threshold for submitting a claim": ["expense-policy"],
+        "card spend still needs receipts": ["expense-corporate-card"],
+        "mandatory overlapping hours for distributed teams": ["remote-work"],
+        "suspicious email reporting destination": ["security-access"],
+        "privileged account credential rotation": ["security-password"],
+        "anonymous channel for workplace harassment": ["code-of-conduct"],
+        "cabin class for a three-hour domestic flight": ["travel-policy"],
     }
     return docs, judgments
 

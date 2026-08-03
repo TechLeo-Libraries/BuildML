@@ -29,7 +29,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         (
             "Refuse when Session-global preprocess poisoned the frame (same as classical CV).",
             "Sample or enumerate model families × recipe strategies × modest params.",
-            "Rank on train CV, nested outer folds, or Session validation — never test.",
+            "Rank on train CV, nested outer folds, or Session validation: never test.",
             "Optionally score voting ensembles of diverse top families.",
             "Refit the winner on full train; store AutoMLPlan + FitResult.",
         ),
@@ -94,7 +94,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Use when you need joint model-family + preprocess-strategy selection under leakage discipline.",
         ),
         assumptions=(
-            "Finite disclosed catalogs — not NAS.",
+            "Finite disclosed catalogs: not NAS.",
             "No causal claims; association / predictive ranking only.",
         ),
         failures=(
@@ -103,7 +103,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         leakage=(
             "Session test must not enter selection scoring.",
-            "Session-global impute/encode/scale before AutoML poisons fold honesty — refused by default.",
+            "Session-global impute/encode/scale before AutoML poisons fold honesty: refused by default.",
         ),
         anti_patterns=(
             "Calling AutoML a fully automated AI scientist.",
@@ -141,7 +141,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         outputs=("EvaluateResult with automl diagnostics when AutoMLPlan is present.",),
         prerequisites=(DATASET, SPLIT, FIT),
         ordering=("After run_automl or load_automl_bundle.",),
-        alternatives=("Session.evaluate — same metrics without AutoML-specific tips.",),
+        alternatives=("Session.evaluate: same metrics without AutoML-specific tips.",),
         rationale=("Use to confirm the winner on a holdout after selection.",),
         assumptions=("Feature columns match the fitted contract.",),
         failures=("No fit_result; missing partition.",),

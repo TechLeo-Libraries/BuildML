@@ -29,7 +29,7 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Whenever the corpus and the evaluation set were built by the same process or the same person.",
         ),
         avoid=(
-            "Do not build your evaluation questions by reading the indexed documents and writing questions about them — that is a different, easier task than real user queries.",
+            "Do not build your evaluation questions by reading the indexed documents and writing questions about them: that is a different, easier task than real user queries.",
             "Do not add documents to the index between evaluation runs without re-baselining; the comparison is no longer like for like.",
         ),
         myths=(
@@ -65,14 +65,14 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Chunking is cutting a book into paragraphs; indexing is writing the index at the back. Neither "
-            "step teaches anyone the content — they just make it findable."
+            "step teaches anyone the content: they just make it findable."
         ),
         steps=(
             "Ingest your corpus so BuildML knows what documents exist.",
             "Chunk: choose a passage size and an overlap so a sentence spanning a boundary is not lost.",
             "Embed and index: each chunk becomes a vector, stored in a searchable structure.",
             "Retrieve: a query becomes a vector, and the index returns the nearest chunks.",
-            "Save a RAG bundle if you want the index to survive the session — a checkpoint will not carry it.",
+            "Save a RAG bundle if you want the index to survive the session: a checkpoint will not carry it.",
         ),
         use=(
             "Whenever you want a language model to answer from your documents rather than from its training data.",
@@ -120,13 +120,13 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Assemble questions paired with the passages that should answer them.",
             "Choose k to match how many passages you actually feed the language model.",
-            "Run retrieval and compute recall@k first — if the right passage is not in the top k, nothing downstream can save you.",
+            "Run retrieval and compute recall@k first: if the right passage is not in the top k, nothing downstream can save you.",
             "Then look at MRR and nDCG@k to see whether ranking, not coverage, is the weak point.",
             "Compare configurations at the same k, on the same questions, over the same corpus.",
         ),
         use=(
             "Whenever you change the embedding model, the chunk size, or the number of retrieved passages.",
-            "To diagnose a RAG system that generates poor answers — retrieval is the usual culprit.",
+            "To diagnose a RAG system that generates poor answers: retrieval is the usual culprit.",
         ),
         avoid=(
             "Do not report these metrics as end-to-end answer quality; a perfect retrieval score says nothing about what the language model then wrote.",

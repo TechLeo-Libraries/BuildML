@@ -12,7 +12,7 @@ drifting from the truth.
 
 **Resolving.** The two ``resolve_*`` functions turn a partial request into a
 concrete, valid triple, or refuse. Asking for ``algorithm='q_learning'`` implies
-tabular control on the native backend, and that inference happens here — once,
+tabular control on the native backend, and that inference happens here: once,
 so that every caller agrees. Invalid combinations fail at this boundary with a
 message naming the alternatives, rather than deeper down where the cause is
 harder to see.
@@ -123,7 +123,7 @@ def rl_capability_matrix() -> dict[str, Any]:
                 "methods": list(SKLEARN_IMITATION_ESTIMATORS),
                 "modality": "tabular",
                 "notes": (
-                    "Behavioral cloning from demonstration tables on train only — "
+                    "Behavioral cloning from demonstration tables on train only: "
                     "always available sklearn fallback."
                 ),
             },
@@ -163,8 +163,8 @@ def rl_capability_matrix() -> dict[str, Any]:
                 "modality": "gymnasium",
                 "notes": (
                     "REINFORCE-lite linear softmax (policy gradient) and tabular "
-                    "TD control — Q-learning / SARSA / Expected SARSA / Double "
-                    "Q-learning — on small discrete Gymnasium envs (buildml[rl]). "
+                    "TD control: Q-learning / SARSA / Expected SARSA / Double "
+                    "Q-learning: on small discrete Gymnasium envs (buildml[rl]). "
                     "Continuous Box observations are uniformly discretized for "
                     "the tabular path."
                 ),
@@ -204,7 +204,7 @@ def rl_capability_matrix() -> dict[str, Any]:
             "offline_rl_disclosure": (
                 "BuildML does not ship batch offline RL (CQL/IQL/Decision Transformer). "
                 "Bandit IPS/DM and imitation-from-demos are disclosed offline paths. "
-                "tabular_q is *online* off-policy TD control inside an env loop — "
+                "tabular_q is *online* off-policy TD control inside an env loop: "
                 "off-policy is not the same thing as batch offline RL."
             ),
         },
@@ -274,7 +274,7 @@ def list_imitation_methods(
     -------
     list of str
         Method names, in backend order and de-duplicated. Empty when the named
-        backend is unknown or not installed — the same answer for both, since
+        backend is unknown or not installed: the same answer for both, since
         from a caller's position they are equivalent.
 
     Examples
@@ -310,7 +310,7 @@ def list_rl_algorithms(
     """List the RL algorithms you can actually use right now.
 
     Filters the capability matrix down to installed backends, optionally
-    narrowing further to one mode — useful because the native backend serves two
+    narrowing further to one mode: useful because the native backend serves two
     modes with entirely different algorithm sets.
 
     Parameters
@@ -375,7 +375,7 @@ def imitation_backend_available(name: ImitationBackendName) -> bool:
     -------
     bool
         ``True`` when the backend exists and its dependencies are installed.
-        An unknown name returns ``False`` rather than raising — unusable and
+        An unknown name returns ``False`` rather than raising: unusable and
         non-existent amount to the same thing for a caller.
 
     See Also
@@ -426,7 +426,7 @@ def resolve_imitation_backend_method(
 
     Callers may specify a backend, an estimator, a method, all of them, or none.
     This works out what was meant, fills in defaults that suit the task, and
-    refuses combinations that cannot work — at the boundary, where the message
+    refuses combinations that cannot work: at the boundary, where the message
     can name the alternatives.
 
     Parameters
@@ -523,7 +523,7 @@ def resolve_rl_backend_mode_algorithm(
     The three settings constrain one another, so specifying any of them usually
     determines the rest. Asking for ``algorithm='q_learning'`` can only mean
     tabular control on the native backend, and this is where that inference
-    happens — once, so every caller resolves it the same way.
+    happens: once, so every caller resolves it the same way.
 
     Parameters
     ----------
@@ -561,7 +561,7 @@ def resolve_rl_backend_mode_algorithm(
     -----
     **``'linucb'`` under ``'tabular_q'`` is treated as unset**, not as an error.
     It is ``fit_rl``'s shared default, so a caller who passed only
-    ``mode='tabular_q'`` never chose it — rejecting them for a default they did
+    ``mode='tabular_q'`` never chose it: rejecting them for a default they did
     not set would be unhelpful. They get ``'q_learning'``.
 
     See Also

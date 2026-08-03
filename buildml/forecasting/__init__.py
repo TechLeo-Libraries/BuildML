@@ -1,13 +1,13 @@
 """Classical time-series forecasting domain (lag/baseline Session path).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**):
-  1. Unsupervised learning — done (``buildml.unsupervised``).
-  2. Ensemble learning — done (``buildml.ensemble``).
-  3. AutoML — done (``buildml.automl``).
-  4. Time-series forecasting — real forecast API. **This module.**
-  5. Anomaly / fraud detection — done (see ``buildml.anomaly``).
+  1. Unsupervised learning: done (``buildml.unsupervised``).
+  2. Ensemble learning: done (``buildml.ensemble``).
+  3. AutoML: done (``buildml.automl``).
+  4. Time-series forecasting: real forecast API. **This module.**
+  5. Anomaly / fraud detection: done (see ``buildml.anomaly``).
 
 Later phases (do not start until Phase 1 items hit the Torch/RAG bar):
   Phase 2: semi/self/active/online done; **next=multi-task**; then
@@ -31,7 +31,7 @@ Refuses shuffled random splits. Not a digital twin.
 Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Optional:
 ``buildml[timeseries]``, ``buildml[timeseries-prophet]``, ``buildml[timeseries-ml]``.
 
-Lazy imports — core never grows heavy forecast stacks.
+Lazy imports: core never grows heavy forecast stacks.
 """
 
 from __future__ import annotations

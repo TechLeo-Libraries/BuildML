@@ -38,7 +38,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "Session.fit_tda → transform_tda / predict_tda / evaluate_tda.",
             ),
             interpretation_rules=(
-                "Empty H1 diagrams are common for tiny clouds — vectors may be sparse.",
+                "Empty H1 diagrams are common for tiny clouds: vectors may be sparse.",
                 "Prefer holdout evaluate_tda over train_score.",
             ),
             assumptions=(
@@ -214,7 +214,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "fit_tda(backend='giotto', vectorization='betti_curve', mapper=True)."
             ,),
             interpretation_rules=(
-                "Mapper output is diagnostic disclosure only — not supervised features.",
+                "Mapper output is diagnostic disclosure only: not supervised features.",
             ),
             assumptions=("buildml[tda-industry] installed.",),
             failure_modes=("giotto missing → MissingExtraError; Mapper may warn on tiny train.",),

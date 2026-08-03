@@ -22,6 +22,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` uses label-free PCA pretext + logistic probe on the same split (`results/comparison.json`).
+Filled: `baseline_industry.py` uses label-free PCA pretext + logistic probe on the same split (`results/comparison.json`).
 ## Limitations
 Tabular masked pretext; not ImageNet SSL SOTA.

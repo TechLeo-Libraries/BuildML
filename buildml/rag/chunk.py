@@ -5,7 +5,7 @@ retrieval quality that no amount of tuning downstream can lift. If the sentence
 answering a question is split across two chunks, neither chunk answers it.
 
 Two strategies. **Fixed** slides a window of ``size`` characters across the text
-at regular steps — predictable, uniform, and indifferent to whether it cuts
+at regular steps: predictable, uniform, and indifferent to whether it cuts
 through the middle of a word. **Recursive** tries a list of separators from
 coarsest to finest and cuts at the largest boundary that fits, so paragraphs
 stay whole where they can and only fall back to arbitrary cuts when a single
@@ -228,7 +228,7 @@ def chunk_documents(
     documents too; the indexing path is where they are excluded.
 
     **The overrides are applied one at a time.** Passing ``size`` and
-    ``strategy`` together with a ``config`` follows a precedence chain — pass a
+    ``strategy`` together with a ``config`` follows a precedence chain: pass a
     complete :class:`~buildml.rag.types.ChunkConfig` when setting several.
 
     **Metadata is copied to every chunk**, so a document with large metadata

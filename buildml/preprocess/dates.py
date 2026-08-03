@@ -2,7 +2,7 @@
 
 A raw timestamp is close to useless to most estimators. Treated as a number it
 becomes "seconds since 1970", which grows monotonically and tells the model
-almost nothing beyond "later" — and worse, guarantees that every future row
+almost nothing beyond "later": and worse, guarantees that every future row
 falls outside the training range. Treated as a category, every timestamp is
 unique and the column carries no signal at all.
 
@@ -12,7 +12,7 @@ because mornings are not evenings; whether the date is the start or end of a
 month, because billing cycles are real. Splitting one timestamp into those
 components gives the model something it can learn a pattern from.
 
-This module does that expansion. It is deliberately not fitted — the calendar
+This module does that expansion. It is deliberately not fitted: the calendar
 is the same for training and test rows, so there is no statistic to learn and
 no way for this step to leak. For lag features and rolling windows, which
 absolutely can leak, see :mod:`buildml.forecasting.features`.
@@ -36,7 +36,7 @@ from buildml.ingest.detect import schema_from_dataframe
 class DateFeaturePlan:
     """A record of which timestamps were expanded and what came out.
 
-    There is nothing learned from the data here — unlike a scaler or an
+    There is nothing learned from the data here: unlike a scaler or an
     imputer, this plan holds no statistics. It exists so the expansion can be
     replayed identically at inference time, and so a model card can state
     exactly which columns the model expects.
@@ -108,7 +108,7 @@ def extract_date_features(
     include_time:
         Also extract hour, minute, and second. Leave this off for daily or
         coarser data, where those parts are all zero and only add noise and
-        width. Turn it on for anything with intraday rhythm — web traffic,
+        width. Turn it on for anything with intraday rhythm: web traffic,
         transactions, sensor readings.
     drop_original:
         Remove the source timestamp after expanding it. Useful because the raw
@@ -132,7 +132,7 @@ def extract_date_features(
     **Unparseable values become missing.** Parsing is lenient: a string that is
     not a date is turned into "not a time" rather than raising, and every part
     extracted from it is missing. That keeps one malformed row from stopping
-    the pipeline, but check the resulting missing-value counts — a column that
+    the pipeline, but check the resulting missing-value counts: a column that
     is suddenly half empty means the format was not what you assumed.
 
     **Cyclical parts are left as integers.** Month is 1 through 12, which
@@ -140,7 +140,7 @@ def extract_date_features(
     adjacent. Tree models handle this fine. For linear models and neural
     networks, consider a sine and cosine encoding of the part instead.
 
-    **This step cannot leak** — the calendar does not depend on your data — so
+    **This step cannot leak**: the calendar does not depend on your data: so
     it is safe to run before splitting, unlike almost everything else in this
     package.
 

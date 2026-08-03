@@ -75,7 +75,7 @@ Schemas to remember: `buildml.torch_bundle.v1`, `buildml.rag_bundle.v1`,
 
 ---
 
-## Use case — checkpoint mid-loop, pipeline at the end
+## Use case: checkpoint mid-loop, pipeline at the end
 
 ```python
 import pandas as pd
@@ -113,16 +113,16 @@ restored.fit(LogisticRegression(max_iter=500), task="classification")
 restored.save_pipeline("artifacts/pipeline", evaluate_partition="test")
 print(restored.model_card.lineage.get("plans_present"))
 
-# Estimator-only (no plans) — prefer pipeline when prep must travel:
+# Estimator-only (no plans): prefer pipeline when prep must travel:
 restored.save_model("artifacts/model_only")
 ```
 
-`data_only=True` on load deliberately discards prior workflow semantics — use
+`data_only=True` on load deliberately discards prior workflow semantics: use
 when you want the frame without replaying history.
 
 ---
 
-## Use case — predict_from_pipeline on new rows
+## Use case: predict_from_pipeline on new rows
 
 ```python
 from buildml.pipeline import predict_from_pipeline
@@ -140,13 +140,13 @@ Schema mismatches raise clearly. Resample plans do not synthesize inference rows
 
 ---
 
-## Use case — Torch / RAG / AI stay separate
+## Use case: Torch / RAG / AI stay separate
 
 ```python
 # Torch (buildml[torch])
 # session.save_torch_bundle("artifacts/torch_bundle")
 # restored.load_torch_bundle(path, module, map_location="cpu")
-# restored.make_torch_loaders(...)  # required again — load does not rebuild loaders
+# restored.make_torch_loaders(...)  # required again: load does not rebuild loaders
 
 # RAG (buildml[rag])
 # session.save_rag_bundle("artifacts/rag_bundle")
@@ -173,10 +173,10 @@ Do not assume a checkpoint is a deployable model.
 
 | Mistake | Consequence |
 | --- | --- |
-| Expecting weights in a checkpoint | No estimator — call `save_pipeline` / `save_torch_bundle` |
+| Expecting weights in a checkpoint | No estimator: call `save_pipeline` / `save_torch_bundle` |
 | Expecting dataset in a pipeline | Scoring artifact only |
-| Loading Torch bundle and evaluating without loaders | `ValidationError` — rebuild correct loader kind |
-| Committing AI transcripts with FULL_SAMPLE | Privacy risk — prefer STATS_ONLY + redact |
+| Loading Torch bundle and evaluating without loaders | `ValidationError`: rebuild correct loader kind |
+| Committing AI transcripts with FULL_SAMPLE | Privacy risk: prefer STATS_ONLY + redact |
 | Treating TorchServe/TRT/K8s helpers as managed cloud | Recipes/templates only |
 
 ---

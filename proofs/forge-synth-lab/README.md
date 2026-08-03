@@ -1,6 +1,6 @@
 # Forge Synth Lab
 
-**Tier B** cross-domain product proof — tabular synthesis + classical TSTR
+**Tier B** cross-domain product proof: tabular synthesis + classical TSTR
 utility + unsupervised clustering on synthetic samples.
 
 ## Product narrative
@@ -15,7 +15,7 @@ holdout; clustering explores synthetic segment structure. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

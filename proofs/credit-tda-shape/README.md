@@ -3,7 +3,7 @@
 ## Business purpose
 
 Use persistence (TDA) features from applicant feature clouds to classify credit
-risk shape — a topological descriptor path alongside classical tabular models.
+risk shape: a topological descriptor path alongside classical tabular models.
 
 ## Data source
 
@@ -30,7 +30,7 @@ See `results/results.json` after a successful run (accuracy / macro_f1).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` fits a classical logistic baseline on scaled
+Filled: `baseline_industry.py` fits a classical logistic baseline on scaled
 raw features (not TDA) on the same stratified split
 (`results/comparison.json`). Competitiveness means the TDA head is in the same
 ballpark on this synthetic draw.

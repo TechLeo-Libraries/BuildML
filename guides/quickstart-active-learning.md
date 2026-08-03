@@ -2,7 +2,7 @@
 
 > **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
 > install Session 2.x. Install 2.x from GitHub (or an editable checkout).
-> Active learning uses core sklearn — no optional extra is required.
+> Active learning uses core sklearn: no optional extra is required.
 > See [installation](../docs/installation.rst).
 
 Human-in-the-loop labeling on the **train** pool: fit a learner on scarce seed
@@ -69,7 +69,7 @@ for round_i in range(3):
     q = session.suggest_query(batch_size=8)
     if not q.indices:
         break
-    # Example-only simulated oracle — production code must use a human labeler.
+    # Example-only simulated oracle: production code must use a human labeler.
     human_labels = [int(truth.loc[i]) for i in q.indices]
     labeled = session.label_rows(indices=q.indices, labels=human_labels)
     print(round_i, labeled.n_newly_labeled, labeled.n_labeled_now, labeled.budget_remaining)

@@ -1,6 +1,6 @@
 # BuildML Proof Suite
 
-Deep, industry-standard proofs that BuildML works end-to-end — not thin smoke.
+Deep, industry-standard proofs that BuildML works end-to-end: not thin smoke.
 Each project uses honest splits, train-only fitting, holdout evaluation, persisted
 artifacts where applicable, and JSON metrics under `results/` (gitignored).
 
@@ -31,7 +31,7 @@ deepen `torch-*` / `nova-torch-bench` when importable.
 
 Library note: default `Session.scale` / `encode` / `impute` (and related
 numeric/categorical preprocess) skip `ignore` / `id` / `target` / `group` /
-`time` / `weight` roles — knapsack cost columns stay usable without
+`time` / `weight` roles: knapsack cost columns stay usable without
 feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products).
 
 ---
@@ -44,12 +44,14 @@ feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products)
    # domain extras as needed, e.g.:
    pip install -e ".[tda,rl,rag,torch]"
    ```
-2. Run one project or the full harness from the repo root:
+2. Run one project, the CI smoke subset (always re-runs; no skip-existing), or
+   the full harness from the repo root:
    ```bash
    .\.venv\Scripts\python.exe proofs\loan-approval-classical\script.py
+   .\.venv\Scripts\python.exe -m proofs._lib.run_all --smoke
    .\.venv\Scripts\python.exe -m proofs._lib.run_all --tier all
    ```
-3. Read `proofs/<slug>/results/*.json` — look for `"status": "completed"` (or an
+3. Read `proofs/<slug>/results/*.json`: look for `"status": "completed"` (or an
    honest `skipped_missing_extra` with a documented reason). Tier C writes
    `results/comparison.json` on the **same split** as the BuildML path.
 
@@ -87,7 +89,7 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
   gaps: BuildML must fit/select on train/validation only and evaluate on held-out
   test; the twin must use the same indices.
 - Competitive bar **5-B**: BuildML should be in the same qualitative band as a
-  competent sklearn / classical baseline — not required to dominate every metric.
+  competent sklearn / classical baseline: not required to dominate every metric.
 - `"status": "filled"` means the twin ran and wrote `comparison.json`; it does
   **not** mean production certification.
 
@@ -117,7 +119,7 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 
 ---
 
-## Tier A — Single-domain deep projects
+## Tier A: Single-domain deep projects
 
 ### Baseline cohort (1–27)
 
@@ -191,7 +193,7 @@ BuildML API steps, metrics, limitations, and an **Industry comparison** section.
 
 ---
 
-## Tier B — Named cross-domain products
+## Tier B: Named cross-domain products
 
 ### Baseline cohort
 
@@ -241,7 +243,7 @@ BuildML API steps, metrics, limitations, and an **Industry comparison** section.
 
 ---
 
-## Tier C — Industry baseline twins
+## Tier C: Industry baseline twins
 
 For each completed Tier A: `baseline_industry.py` **or** a comparison section
 in `script.py` on the **same split**, writing `results/comparison.json`.
@@ -274,4 +276,4 @@ Re-run Tier C after the matching Tier A `script.py`:
 1. AutoGluon on Py3.13 / Windows when upstream wheels resolve (FLAML covers
    industry AutoML today).
 2. LightFM / learn2learn / giotto-tda / neuralforecast where markers still skip.
-3. Release cut (PyPI 2.x) — only when explicitly requested.
+3. Release cut (PyPI 2.x): only when explicitly requested.

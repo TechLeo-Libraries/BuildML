@@ -22,15 +22,15 @@ Short on-ramp: [quickstart-torch](quickstart-torch.md). Speech-specific path:
 
 ## Why a Session-native Torch path
 
-1. **Shared roles and splits** — train/val/test membership stays authoritative.
-2. **Train-only normalize / vocab** — loaders fit statistics on train partitions.
-3. **History + explain** — Torch ops appear in the teaching catalog.
-4. **Honest limits** — multimodal fusion and speech finetune-lite are alpha
+1. **Shared roles and splits**: train/val/test membership stays authoritative.
+2. **Train-only normalize / vocab**: loaders fit statistics on train partitions.
+3. **History + explain**: Torch ops appear in the teaching catalog.
+4. **Honest limits**: multimodal fusion and speech finetune-lite are alpha
    helpers, not foundation-model training products.
 
 ---
 
-## Use case A — Tabular MLP (custom or built-in)
+## Use case A: Tabular MLP (custom or built-in)
 
 ```python
 import pandas as pd
@@ -92,7 +92,7 @@ session.fit_torch(epochs=5, device="auto", hidden=(64, 32), dropout=0.1)
 
 ---
 
-## Use case B — Text / sequence loaders
+## Use case B: Text / sequence loaders
 
 ```python
 text_df = pd.DataFrame(
@@ -122,11 +122,11 @@ print(text_session.evaluate_torch(partition="test").metrics)
 ```
 
 Vocab and length rules come from **train**. After a text fit, rebuilding tabular
-loaders and calling `evaluate_torch` is refused — keep loader kind consistent.
+loaders and calling `evaluate_torch` is refused: keep loader kind consistent.
 
 ---
 
-## Use case C — Multimodal fusion (tabular + text)
+## Use case C: Multimodal fusion (tabular + text)
 
 Default built-in fusion (when `fit_torch` omits a module) uses **concat** late
 fusion. Pass V also ships **gated** late fusion via
@@ -193,7 +193,7 @@ Do not pass both `preprocess=` and `use_saved_preprocess=True`.
 
 ---
 
-## Use case D — Image multimodal
+## Use case D: Image multimodal
 
 ```python
 # image_column: filesystem path or array cell; train-only normalize stats
@@ -203,12 +203,12 @@ Do not pass both `preprocess=` and `use_saved_preprocess=True`.
 # img.fit_torch(epochs=5, device="cpu")
 ```
 
-Small CNN branch for fusion — not a full vision FM product. Paths need readable
+Small CNN branch for fusion: not a full vision FM product. Paths need readable
 files in your environment; array cells work for CI-style tests.
 
 ---
 
-## Use case E — Audio multimodal
+## Use case E: Audio multimodal
 
 ```python
 # pip install "buildml[torch]"  # includes soundfile
@@ -227,7 +227,7 @@ see [speech](speech-asr-finetune.md).
 
 ---
 
-## Use case F — Fold-local CV, search, nested
+## Use case F: Fold-local CV, search, nested
 
 ```python
 cv = session.cross_validate_torch(n_folds=3, epochs=2)
@@ -255,7 +255,7 @@ automatically refit inside `cross_validate_torch`.
 
 ---
 
-## Use case G — AMP, DDP, export, reload
+## Use case G: AMP, DDP, export, reload
 
 ```python
 # AMP (CUDA only; ignored/safe on CPU when mixed_precision=False)
@@ -283,7 +283,7 @@ restored.fit_torch(TinyMLP(), epochs=2, resume=True, device="cpu")
 ```
 
 `emit_k8s_ddp_job`, `pack_torchserve`, and `prepare_tensorrt_export` are
-**recipe emitters** — see [serve-deploy](serve-deploy.md).
+**recipe emitters**: see [serve-deploy](serve-deploy.md).
 
 ---
 
@@ -312,11 +312,11 @@ CV as separate honesty protocols unless you know the interaction.
 
 ## Failure modes / limits
 
-- **CPU-first CI** — GPU not a PR merge gate.
+- **CPU-first CI**: GPU not a PR merge gate.
 - **No Polars zero-copy** into DataLoaders.
 - **Wrong loader kind after text/multimodal/speech fit** → `ValidationError`.
 - **DDP with 1 GPU** refused unless `allow_cpu_ddp=True`.
-- **Not** Whisper-scale FM pretrain — see speech refuse API.
+- **Not** Whisper-scale FM pretrain: see speech refuse API.
 - Multimodal image/audio are honest alpha fusion helpers (`concat` / `gated`).
 - `use_saved_preprocess=True` without prior `multimodal_preprocess` meta →
   `ValidationError`.

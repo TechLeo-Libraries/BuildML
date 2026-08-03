@@ -33,7 +33,7 @@ class WorkflowSessionMixin:
     ) -> DryRunReport:
         """See what an operation would do, without doing it.
 
-        Session facade over :func:`buildml.session.workflow_ops.dry_run`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.dry_run`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -59,7 +59,7 @@ class WorkflowSessionMixin:
     def summarize_history(self) -> HistorySummary:
         """Condense what this session did, and flag what looks risky.
 
-        Session facade over :func:`buildml.session.workflow_ops.summarize_history`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.summarize_history`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -85,7 +85,7 @@ class WorkflowSessionMixin:
     def workflow(self) -> tuple[WorkflowStep, ...]:
         """List every operation, with what it needs and whether it can run now.
 
-        Session facade over :func:`buildml.session.workflow_ops.workflow`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.workflow`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -103,10 +103,11 @@ class WorkflowSessionMixin:
         self,
         *,
         export_html: str | Path | None = None,
+        capability_probe: str = "lazy",
     ) -> WorkflowWalkthroughReport:
         """Narrate everything this session did, and why.
 
-        Session facade over :func:`buildml.session.workflow_ops.walkthrough`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.walkthrough`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -118,7 +119,14 @@ class WorkflowSessionMixin:
         :func:`buildml.session.workflow_ops.walkthrough`
             Canonical documentation for parameters, raises, and examples.
         """
-        return cast("WorkflowWalkthroughReport", workflow_ops.walkthrough(self, export_html=export_html))
+        return cast(
+            "WorkflowWalkthroughReport",
+            workflow_ops.walkthrough(
+                self,
+                export_html=export_html,
+                capability_probe=capability_probe,
+            ),
+        )
 
     @property
     def last_walkthrough(self) -> WorkflowWalkthroughReport | None:
@@ -140,7 +148,7 @@ class WorkflowSessionMixin:
     ) -> Any:
         """Ask what an operation does, in plain language, at any point.
 
-        Session facade over :func:`buildml.session.workflow_ops.explain`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.explain`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -155,9 +163,9 @@ class WorkflowSessionMixin:
         return workflow_ops.explain(self, operation=operation, moment=moment, level=level)
 
     def learn(self, topic: str | None = None, *, level: str = "beginner") -> Any:
-        """Teach a concept, an operation, or a term — and say what to read first.
+        """Teach a concept, an operation, or a term: and say what to read first.
 
-        Session facade over :func:`buildml.session.workflow_ops.learn`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.learn`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

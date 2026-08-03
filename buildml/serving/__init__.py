@@ -1,7 +1,7 @@
 """BuildML managed model serving (local FastAPI alpha).
 
 Install ``buildml[serve]``. Bind defaults to localhost. Optional API-key/Bearer
-middleware is available; still not a managed IAM / cloud product — put a
+middleware is available; still not a managed IAM / cloud product: put a
 reverse proxy (TLS) in front for any non-local exposure.
 """
 

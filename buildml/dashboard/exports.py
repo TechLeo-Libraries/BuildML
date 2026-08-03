@@ -38,7 +38,7 @@ def list_csv_sections(report: dict[str, Any]) -> list[dict[str, str]]:
 
     Builds each section to see whether it has rows, and reports only the ones
     that do. So the download menu offers a drift table when drift was analysed
-    and does not when it was not — rather than offering everything and returning
+    and does not when it was not: rather than offering everything and returning
     an empty file for half of it.
 
     Parameters
@@ -103,7 +103,7 @@ def export_csv(report: dict[str, Any], section: str) -> tuple[str, str]:
     KeyError
         If the section is unknown, or known but empty for this report. Empty is
         an error rather than a zero-row file, because a zero-row CSV looks like
-        a finding — "no problems found" — when it actually means the analysis
+        a finding: "no problems found": when it actually means the analysis
         never ran.
 
     Notes
@@ -138,7 +138,7 @@ def export_pdf(
 ) -> bytes:
     """Produce a PDF briefing: cover, contents, findings, charts, teaching notes.
 
-    For the audience that wants a document — a reviewer, a regulator, an
+    For the audience that wants a document: a reviewer, a regulator, an
     attachment to a ticket. Same content as the studio, laid out for reading
     linearly and printing.
 
@@ -155,7 +155,7 @@ def export_pdf(
     view:
         Which layout. ``'briefing'`` is the full document.
     title:
-        Cover title. Set it to something identifying — these get filed.
+        Cover title. Set it to something identifying: these get filed.
     include_charts:
         Embed rasterised charts. Turning this off is much faster and produces a
         far smaller file, which is often what you want for a findings-only
@@ -174,7 +174,7 @@ def export_pdf(
 
     Notes
     -----
-    **Chart rendering is the slow part** — a headless browser per figure, so
+    **Chart rendering is the slow part**: a headless browser per figure, so
     seconds to tens of seconds. ``include_charts=False`` is near-instant.
 
     **A PDF is a snapshot.** It cannot be filtered or drilled into; pair it with
@@ -671,8 +671,8 @@ def _teaching_story_blocks(
 def escape_xml(text: Any) -> str:
     """Escape a value for ReportLab's markup, which is XML-ish and unforgiving.
 
-    ReportLab paragraphs accept a small markup dialect — ``<b>``, ``<i>``,
-    ``<font>`` — parsed as XML. So a column literally named ``a<b`` produces a
+    ReportLab paragraphs accept a small markup dialect: ``<b>``, ``<i>``,
+    ``<font>``: parsed as XML. So a column literally named ``a<b`` produces a
     parse error and takes the whole PDF with it, and a value containing ``&``
     does the same.
 

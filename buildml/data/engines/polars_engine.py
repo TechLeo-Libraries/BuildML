@@ -1,6 +1,6 @@
 """Fast columnar prep, with an option to defer the work entirely.
 
-Polars offers two things pandas does not. Its eager DataFrame is simply faster —
+Polars offers two things pandas does not. Its eager DataFrame is simply faster :
 multi-threaded, columnar, and free of the index that makes pandas alignment
 surprising. Its ``LazyFrame`` is more interesting: operations build a plan
 instead of computing, and when the plan finally runs the optimiser has seen all
@@ -10,7 +10,7 @@ and skip reading what nothing asked for.
 The adapter accepts either, and the distinction determines what is cheap.
 Projection stays lazy. Row counts, samples, and positional masks force a
 collect, because they need to know what the data actually is. So does pandas
-promotion — which is where sklearn always ends up.
+promotion: which is where sklearn always ends up.
 
 Requires the ``polars`` extra.
 
@@ -46,7 +46,7 @@ class PolarsEngine:
 
     Notes
     -----
-    **Lazy in, lazy out — mostly.** :meth:`select_columns`, :meth:`filter_expr`,
+    **Lazy in, lazy out: mostly.** :meth:`select_columns`, :meth:`filter_expr`,
     and :meth:`aggregate` return LazyFrames when given one. :meth:`sample_rows`
     and :meth:`filter_rows` collect and return eager frames.
 
@@ -104,7 +104,7 @@ class PolarsEngine:
 
         Notes
         -----
-        **Eager, not lazy.** There is no plan to optimise — the data is already
+        **Eager, not lazy.** There is no plan to optimise: the data is already
         in memory, so the deferral would buy nothing. Laziness pays off when
         reading from disk; see :meth:`from_parquet`.
 
@@ -120,7 +120,7 @@ class PolarsEngine:
 
         With ``lazy=True`` this is the most efficient entry point in the module.
         The scan knows the schema but has read no values, and any projection or
-        filter applied afterwards is pushed into it — so columns you never ask
+        filter applied afterwards is pushed into it: so columns you never ask
         for are never read off disk.
 
         Parameters
@@ -166,7 +166,7 @@ class PolarsEngine:
         """Write a table to Parquet, streaming a lazy plan where possible.
 
         For a LazyFrame this prefers ``sink_parquet``, which executes the plan
-        in batches and writes as it goes — so a result larger than memory can
+        in batches and writes as it goes: so a result larger than memory can
         still be written.
 
         Parameters
@@ -336,7 +336,7 @@ class PolarsEngine:
 
         **The operation laziness exists for.** Applied to a lazy scan, the
         projection is pushed into the file read, so unselected columns are never
-        touched — on a wide table that is most of the cost avoided.
+        touched: on a wide table that is most of the cost avoided.
 
         Parameters
         ----------
@@ -443,7 +443,7 @@ class PolarsEngine:
 
         Unlike :meth:`filter_rows`, this keeps a LazyFrame lazy. The predicate
         becomes part of the plan, so Polars can use Parquet row-group statistics
-        to skip blocks that cannot match — those rows are never read.
+        to skip blocks that cannot match: those rows are never read.
 
         Parameters
         ----------
@@ -455,7 +455,7 @@ class PolarsEngine:
         Returns
         -------
         Any
-            The same kind of object that was passed in, filtered — unless the
+            The same kind of object that was passed in, filtered: unless the
             older fallback path runs, which collects.
 
         Raises
@@ -492,7 +492,7 @@ class PolarsEngine:
         """Report whether this handle is a lazy plan.
 
         Lets callers tell whether an operation will be free or will trigger
-        execution — :class:`~buildml.data.dataset.Dataset` uses it to decide
+        execution: :class:`~buildml.data.dataset.Dataset` uses it to decide
         what to report about pending work.
 
         Parameters

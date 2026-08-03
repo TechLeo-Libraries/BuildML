@@ -8,12 +8,12 @@ train-only seasonal diagnostics before locking a forecast method.
 ## Data source
 
 Synthetic daily sales (`load_store_sales_synthetic`) with trend, weekly
-seasonality, and promo spikes — license-clear.
+seasonality, and promo spikes: license-clear.
 
 ## Leakage controls
 
 - `time_split` (chronological; latest rows = test)
-- `analyze_timeseries(scope="train")` — no peek at future
+- `analyze_timeseries(scope="train")`: no peek at future
 - Model fit on train; rolling metrics on validation for disclosure
 - Test `evaluate_forecast` only after the model is locked
 
@@ -27,12 +27,12 @@ seasonality, and promo spikes — license-clear.
 
 ## Metrics
 
-Rolling one-step forecast errors on validation/test (MAE/RMSE/MAPE-style —
+Rolling one-step forecast errors on validation/test (MAE/RMSE/MAPE-style :
 see JSON).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` fits statsmodels SARIMAX (fallback: seasonal naive) with rolling one-step evaluation on the same `time_split`, writing `results/comparison.json`.
+Filled: `baseline_industry.py` fits statsmodels SARIMAX (fallback: seasonal naive) with rolling one-step evaluation on the same `time_split`, writing `results/comparison.json`.
 ## Limitations
 
 Single synthetic series; not hierarchical multi-store M5.

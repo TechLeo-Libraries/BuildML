@@ -19,7 +19,7 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "any member."
         ),
         steps=(
-            "Pick two or more models that make different kinds of mistakes — a linear model, a tree ensemble, a nearest-neighbour model.",
+            "Pick two or more models that make different kinds of mistakes: a linear model, a tree ensemble, a nearest-neighbour model.",
             "Choose how to combine them: hard voting takes a majority of the predicted classes, soft voting averages the predicted probabilities.",
             "Fit them all on the same training rows through `fit_voting`.",
             "Evaluate the ensemble against each individual member on validation.",
@@ -31,7 +31,7 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not combine models that are all variations of the same algorithm; their errors correlate and averaging buys almost nothing.",
-            "Do not use it when one member is far better than the rest — averaging drags the good model toward the bad ones.",
+            "Do not use it when one member is far better than the rest: averaging drags the good model toward the bad ones.",
         ),
         myths=(
             (
@@ -72,7 +72,7 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "specialist's calls on cases the specialist had not already been told the answer to."
         ),
         steps=(
-            "Choose your base models and one simple meta-model — logistic or linear regression is usually enough.",
+            "Choose your base models and one simple meta-model: logistic or linear regression is usually enough.",
             "BuildML splits the training rows into folds and, for each fold, trains the base models on the other folds and predicts the held-out one.",
             "Those out-of-fold predictions become the meta-model's features.",
             "The meta-model learns the combination weights from those honest predictions.",
@@ -83,7 +83,7 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "In competition-style settings where a small consistent gain is worth the extra complexity and compute.",
         ),
         avoid=(
-            "Do not stack when your dataset is small — folds get thin, the meta-features get noisy, and the meta-model overfits them.",
+            "Do not stack when your dataset is small: folds get thin, the meta-features get noisy, and the meta-model overfits them.",
             "Do not stack when the added serving complexity outweighs a fractional metric gain.",
         ),
         myths=(
@@ -125,19 +125,19 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "you had better hope that afternoon was representative."
         ),
         steps=(
-            "BuildML carves an inner holdout out of the Session training partition — not from validation or test.",
+            "BuildML carves an inner holdout out of the Session training partition: not from validation or test.",
             "Base models train on the remaining training rows.",
             "They predict the inner holdout, and those predictions train the combiner.",
             "The result is one blended plan you can evaluate on validation as usual.",
             "Compare it against stacking; if the gap is large, your inner holdout was probably too small.",
         ),
         use=(
-            "When cross-validated stacking is too slow — many base models, large data, or expensive fits.",
+            "When cross-validated stacking is too slow: many base models, large data, or expensive fits.",
             "As a quick check on whether combining is worth pursuing at all before investing in stacking.",
         ),
         avoid=(
             "Do not blend on small datasets; a single thin slice gives the combiner almost nothing to learn from.",
-            "Do not carve the blending holdout from validation or test — the whole point is that it stays inside train.",
+            "Do not carve the blending holdout from validation or test: the whole point is that it stays inside train.",
         ),
         myths=(
             (
@@ -169,7 +169,7 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
         "ensemble-bundle-boundary",
         plain=(
             "A fitted ensemble is saved as its own artifact holding the ensemble plan and its fit result. "
-            "It is not a Session checkpoint and not a single-model pipeline bundle — three different things "
+            "It is not a Session checkpoint and not a single-model pipeline bundle: three different things "
             "with three different contracts."
         ),
         analogy=(
@@ -189,7 +189,7 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not expect a pipeline bundle to contain the ensemble; a pipeline stores preprocess plans plus one active estimator.",
-            "Do not load an ensemble bundle from an untrusted source — it deserializes fitted estimators.",
+            "Do not load an ensemble bundle from an untrusted source: it deserializes fitted estimators.",
         ),
         myths=(
             (

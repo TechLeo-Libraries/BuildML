@@ -4,8 +4,8 @@ The Session records what happened, and the walkthrough explains it. Both need
 ensemble facts in a plain, JSON-safe shape rather than as live objects holding
 fitted estimators.
 
-These helpers read defensively — ``getattr`` with defaults rather than attribute
-access, missing keys treated as ``None`` — because they run against whatever
+These helpers read defensively: ``getattr`` with defaults rather than attribute
+access, missing keys treated as ``None``: because they run against whatever
 state the Session happens to be in, including partial and legacy states. A
 status helper that raises is worse than one that reports an absence.
 
@@ -23,7 +23,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     """Reduce an ensemble fit to the handful of fields history should keep.
 
     History entries are written on every operation and are meant to stay small,
-    so this keeps only what identifies the ensemble — strategy, task, bases,
+    so this keeps only what identifies the ensemble: strategy, task, bases,
     meta-learner, and the strategy-specific setting that mattered (``cv`` for
     stacking, ``holdout_fraction`` for blending). The fitted estimator is
     deliberately left out; history should stay serialisable and small.
@@ -83,7 +83,7 @@ def ensemble_status(
 
     Distinguishes three states, and the distinction is the point. A live plan
     means an ensemble is attached now. History without a plan means one was
-    fitted earlier and then lost — most often because the Session was restored
+    fitted earlier and then lost: most often because the Session was restored
     from a checkpoint, which by design does not carry the ensemble. Neither
     means no ensemble was ever involved.
 
@@ -104,11 +104,11 @@ def ensemble_status(
     Returns
     -------
     dict
-        ``enabled`` — a plan is attached. ``present`` — a plan is attached or
+        ``enabled``: a plan is attached. ``present``: a plan is attached or
         history shows one was. ``has_ensemble_plan``, ``strategy``, ``task``,
-        ``estimator_names``, ``has_fit_result`` — the details, ``None`` when
-        absent. ``disclosures`` — the plan's own notes plus the standing ones
-        about train-only meta-learner fitting. ``boundary`` — the reminder that
+        ``estimator_names``, ``has_fit_result``: the details, ``None`` when
+        absent. ``disclosures``: the plan's own notes plus the standing ones
+        about train-only meta-learner fitting. ``boundary``: the reminder that
         this path differs from passing a single forest to ``fit``.
 
     Notes
@@ -193,7 +193,7 @@ def ensemble_status_for_session(session: Any) -> dict[str, Any]:
     ----------
     session:
         A :class:`~buildml.session.Session`. Attributes are read defensively, so
-        a Session in any state — including one that never touched ensembles —
+        a Session in any state: including one that never touched ensembles :
         produces a report rather than an error.
 
     Returns

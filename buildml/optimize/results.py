@@ -15,7 +15,7 @@ class DecisionPlan:
     """Fitted decision policy (thresholds, cost matrix, or allocation rules).
 
     Persist via ``buildml.decision_bundle.v1``. Distinct from Session
-    checkpoints and from classical ``DiagnosticReport`` threshold sweeps —
+    checkpoints and from classical ``DiagnosticReport`` threshold sweeps :
     this plan is the reusable operating policy; ``tune_threshold`` remains
     the diagnostic explorer.
     """
@@ -42,7 +42,7 @@ class DecisionPlan:
     objective: str = "maximize_score"
     min_score: float | None = None
     lp_max_fraction: float = 1.0
-    # Fit-partition diagnostics (not reapplied blindly — stored for audit)
+    # Fit-partition diagnostics (not reapplied blindly: stored for audit)
     n_rows_fitted: int = 0
     expected_cost_at_fit: float | None = None
     selected_value_at_fit: float | None = None

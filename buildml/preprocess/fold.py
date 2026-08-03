@@ -157,7 +157,7 @@ class PreprocessRecipe:
     Session-global ``encode(method='target')`` writes out-of-fold values on the
     full train partition. Fold-local target encoding instead fits means on each
     fold's training rows and applies those frozen means to fold-train and
-    fold-eval — the CV eval fold never supplies label statistics.
+    fold-eval: the CV eval fold never supplies label statistics.
 
     **Still Session-global only:** ``resample`` (train-row rewrite),
     ``Session.apply_custom_transform`` (registered callables), and any Session
@@ -277,7 +277,7 @@ class PreprocessRecipe:
         -------
         bool
             ``True`` when no step is enabled. Column lists and tuning knobs do
-            not count — a recipe naming ``scale_columns`` but leaving ``scale``
+            not count: a recipe naming ``scale_columns`` but leaving ``scale``
             as ``None`` is still empty.
         """
         return (
@@ -296,7 +296,7 @@ class PreprocessRecipe:
         """Report whether fitting this recipe needs the labels.
 
         Most preprocessing looks only at the features, but target encoding and
-        the supervised selection strategies read the labels — which is exactly
+        the supervised selection strategies read the labels: which is exactly
         why they must be fitted per fold rather than once up front. Callers
         check this before fitting so a missing label vector produces a clear
         error rather than a confusing one deeper in.
@@ -315,7 +315,7 @@ class PreprocessRecipe:
         This is how a hyperparameter search explores preprocessing settings.
         Each candidate configuration produces a fresh recipe, so the search can
         try ``select_k=10`` and ``select_k=30`` without the two runs
-        interfering — and, because the copy is made per fold, the choice stays
+        interfering: and, because the copy is made per fold, the choice stays
         fold-local and does not leak across the search.
 
         Parameters
@@ -323,7 +323,7 @@ class PreprocessRecipe:
         knobs:
             Settings to override, named from :data:`SAFE_RECIPE_KNOBS`. Only
             numeric and categorical knobs are permitted, not the strategy
-            fields themselves — you can search over ``n_bins``, but switching
+            fields themselves: you can search over ``n_bins``, but switching
             ``binning`` from quantile to uniform is a change to the base recipe.
             An unknown key raises rather than being ignored, so a typo in a
             search space is caught immediately instead of silently doing
@@ -371,7 +371,7 @@ class FoldLocalPreprocessor:
     evaluation rows contributed to the medians, vocabularies, and standard
     deviations that shaped the fold's training rows. The score comes out
     optimistic, and the effect is largest exactly when your dataset is
-    small — when you most needed cross-validation to be trustworthy.
+    small: when you most needed cross-validation to be trustworthy.
 
     An instance of this class is fitted separately for each fold, seeing only
     that fold's training rows, and then applied to both halves. It follows the
@@ -449,7 +449,7 @@ class FoldLocalPreprocessor:
 
         Runs the recipe's steps in order, each fitting on the output of the
         last, and stores what each one learned. Only the rows passed here are
-        seen, which is the whole point — the fold's evaluation rows must not
+        seen, which is the whole point: the fold's evaluation rows must not
         influence any of it.
 
         Parameters
@@ -480,7 +480,7 @@ class FoldLocalPreprocessor:
         -----
         Fitting is per fold, so its cost multiplies by the fold count. A recipe
         with text vectorisation and model-based selection can dominate the
-        runtime of a search — worth knowing before setting fifty candidates
+        runtime of a search: worth knowing before setting fifty candidates
         against ten folds.
         """
         recipe = self.recipe
@@ -632,7 +632,7 @@ class FoldLocalPreprocessor:
         ------
         ~buildml.core.errors.ValidationError
             :meth:`fit` has not run, or selection retained no column that
-            exists in this frame — which means the frame does not match what
+            exists in this frame: which means the frame does not match what
             was fitted.
         """
         if not self._feature_names_ and self._selector is None:
@@ -1131,7 +1131,7 @@ def build_fold_preprocessor(
     Raises
     ------
     ~buildml.core.errors.ValidationError
-        The recipe has no steps enabled, or fitting failed — see
+        The recipe has no steps enabled, or fitting failed: see
         :meth:`FoldLocalPreprocessor.fit` for the specific conditions.
 
     See Also
@@ -1152,7 +1152,7 @@ def transform_fold_features(preprocessor: Any, x: pd.DataFrame) -> pd.DataFrame:
     user-supplied scikit-learn transformer may hand back a bare NumPy array
     with no column names. This normalises both cases, recovering names from
     ``get_feature_names_out`` when the transformer offers it, so downstream
-    code — feature importance, error analysis, explanations — always has
+    code: feature importance, error analysis, explanations: always has
     something to refer to columns by.
 
     Parameters

@@ -2,10 +2,10 @@
 
 The step everything downstream depends on. A language model cannot answer from a
 passage it was never given, so retrieval quality is a hard ceiling on answer
-quality — and when answers are poor, this is where to look first.
+quality: and when answers are poor, this is where to look first.
 
 The pipeline is: pick a mode, pull candidates, optionally rerank, truncate to
-``k``. Reranking is why the candidate pool is wider than ``k`` — a cross-encoder
+``k``. Reranking is why the candidate pool is wider than ``k``: a cross-encoder
 that only ever saw the top five could not promote the passage that placed
 twentieth, which is precisely the kind of rescue it is for.
 
@@ -125,8 +125,8 @@ def retrieve(
 ) -> RetrieveResult:
     """Return the ``k`` passages most likely to answer the query.
 
-    The main retrieval entry point. Defaults come from the environment — hybrid
-    where the optional dependencies allow it, dense otherwise — and any argument
+    The main retrieval entry point. Defaults come from the environment: hybrid
+    where the optional dependencies allow it, dense otherwise: and any argument
     given here overrides them.
 
     Parameters
@@ -166,7 +166,7 @@ def retrieve(
     passages. Judging whether they are relevant is the caller's job.
 
     **Hybrid pulls a wider pool from each method before fusing**, so a passage
-    ranked tenth by both can still surface — which is where fusion earns its
+    ranked tenth by both can still surface: which is where fusion earns its
     keep.
 
     **Reranking is the largest single quality gain available**, and it costs a

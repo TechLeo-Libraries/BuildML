@@ -28,7 +28,7 @@ class EdaSessionMixin:
     ) -> EDAReport:
         """Understand the data before you model it.
 
-        Session facade over :func:`buildml.session.eda_ops.eda`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.eda_ops.eda`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -66,7 +66,7 @@ class EdaSessionMixin:
     ) -> EDAAppHandle:
         """Explore the data interactively in a browser instead of on paper.
 
-        Session facade over :func:`buildml.session.eda_ops.eda_app`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.eda_ops.eda_app`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -102,9 +102,9 @@ class EdaSessionMixin:
         max_columns: int = 100,
         blocking: bool = False,
     ) -> EDAAppHandle:
-        """Open the interactive EDA studio — an alias for :meth:`eda_app`.
+        """Open the interactive EDA studio: an alias for :meth:`eda_app`.
 
-        Session facade over :func:`buildml.session.eda_ops.open_eda_dashboard`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.eda_ops.open_eda_dashboard`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

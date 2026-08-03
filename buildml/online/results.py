@@ -12,7 +12,7 @@ class OnlinePlan:
 
     Persist via ``buildml.online_bundle.v1``. Distinct from Session checkpoints
     and from full-batch classical FitResult / active-learning / semi-supervised
-    plans. This is batch/stream-chunk updates on Session data — not a
+    plans. This is batch/stream-chunk updates on Session data: not a
     distributed streaming platform.
     """
 

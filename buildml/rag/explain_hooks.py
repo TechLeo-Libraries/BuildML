@@ -2,8 +2,8 @@
 
 A full :class:`~buildml.rag.results.RetrieveResult` carries the text of every
 retrieved passage, and a Session that ran fifty retrievals would carry fifty
-copies of it. History needs the shape of what happened — the mode, the counts,
-the top document IDs — not the payload. These functions extract that shape.
+copies of it. History needs the shape of what happened: the mode, the counts,
+the top document IDs: not the payload. These functions extract that shape.
 
 Everything here is defensive by design. Each summariser accepts ``None``, a
 result object, or a plain dict, and reads through ``.get`` so a missing field
@@ -70,7 +70,7 @@ def retrieve_result_summary(retrieve_result: Any) -> dict[str, Any]:
     """Reduce a retrieval result to a history-sized record.
 
     Keeps the query, the settings that were actually used, and the top document
-    IDs — enough to see later that a query returned the wrong sources, without
+    IDs: enough to see later that a query returned the wrong sources, without
     storing their text.
 
     Parameters
@@ -159,7 +159,7 @@ def generate_result_summary(generate_result: Any) -> dict[str, Any]:
     """Reduce a generation result to a history-sized record.
 
     Records that an answer was produced, how long it was, which model produced
-    it, and what it was allowed to cite — without storing the answer text.
+    it, and what it was allowed to cite: without storing the answer text.
 
     Parameters
     ----------
@@ -239,7 +239,7 @@ def rag_status(
     dict
         ``enabled`` (an index is attached), ``present`` (RAG has been used at
         all), ``disclosures`` (plain-language statements), and per-stage
-        sections ``index``, ``eval``, ``retrieve``, ``generate``, ``corpus`` —
+        sections ``index``, ``eval``, ``retrieve``, ``generate``, ``corpus`` :
         each ``None`` when that stage has not run.
 
     Notes

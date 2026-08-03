@@ -50,11 +50,11 @@ Recipes do not undo poisoned cells. Options:
 
 1. Re-ingest clean data and use only the recipe inside CV (preferred).
 2. Explicit override: `allow_session_global_preprocess=True` (scores remain
-   biased — use only when you understand the contamination).
+   biased: use only when you understand the contamination).
 
 ---
 
-## Good example — fold-local CV on clean data
+## Good example: fold-local CV on clean data
 
 ```python
 import pandas as pd
@@ -100,13 +100,13 @@ full train (with Session prep or a final recipe path) and evaluate test once.
 
 ---
 
-## Bad example — Session-global prep then CV (refused)
+## Bad example: Session-global prep then CV (refused)
 
 ```python
 session.impute(strategy="median")
 session.scale(method="standard")
 
-# Raises LeakageError by default — frame already poisoned for fold-local CV.
+# Raises LeakageError by default: frame already poisoned for fold-local CV.
 try:
     session.cv_score(
         LogisticRegression(max_iter=500),
@@ -116,7 +116,7 @@ try:
 except Exception as exc:  # LeakageError
     print(type(exc).__name__, exc)
 
-# Explicit override — biased scores; do not treat as honest CV.
+# Explicit override: biased scores; do not treat as honest CV.
 biased = session.cv_score(
     LogisticRegression(max_iter=500),
     cv=4,
@@ -128,7 +128,7 @@ print("biased override:", biased.mean_metrics)
 
 ---
 
-## Good example — nested CV with recipe knobs
+## Good example: nested CV with recipe knobs
 
 ```python
 from sklearn.tree import DecisionTreeClassifier
@@ -160,7 +160,7 @@ inside nested loops.
 
 ---
 
-## Bad example — target encoding without fold locality
+## Bad example: target encoding without fold locality
 
 Target (mean) encoding must never see fold-eval labels. Inside a recipe,
 `encode="target"` fits smoothed means on **fold-train labels only**:
@@ -252,7 +252,7 @@ recipe = PreprocessRecipe(
 ```
 
 Session-global `handle_outliers(..., action="drop")` rebuilds splits after
-dropping train rows — use carefully, then avoid honest CV on that poisoned
+dropping train rows: use carefully, then avoid honest CV on that poisoned
 frame without re-ingest.
 
 ---

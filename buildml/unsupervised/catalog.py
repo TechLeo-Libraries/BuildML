@@ -1,4 +1,4 @@
-"""Clustering method catalog — backends, assign strategies, install hints."""
+"""Clustering method catalog: backends, assign strategies, install hints."""
 
 from __future__ import annotations
 
@@ -192,7 +192,7 @@ dict[str, Any]
                 "available": True,
                 "extra": None,
                 "methods": sorted(CORE_SKLEARN_METHODS),
-                "notes": "Core sklearn clustering — always available.",
+                "notes": "Core sklearn clustering: always available.",
             },
             "hdbscan": {
                 "available": hdbscan_available(),

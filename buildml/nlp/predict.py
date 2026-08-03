@@ -1,7 +1,7 @@
 """Assign labels to documents using an already-fitted text plan.
 
 Scoring is strictly transform-only. The vocabulary, the IDF weights, and the
-head all come from the training fit and are not updated by anything seen here —
+head all come from the training fit and are not updated by anything seen here :
 which is what makes a holdout number honest and what makes production scoring
 match the notebook.
 
@@ -9,7 +9,7 @@ The consequence worth understanding is that new documents will contain words the
 model has never seen. Those words contribute nothing: they are not in the
 vocabulary, so they have no weight, and the prediction is made from whatever
 remains. A document made entirely of unseen words falls back to the head's class
-prior — it gets a confident-looking answer derived from no evidence at all. The
+prior: it gets a confident-looking answer derived from no evidence at all. The
 out-of-vocabulary rate is reported for exactly this reason, and a high one means
 the documents you are scoring are not drawn from the same population you trained
 on.
@@ -35,7 +35,7 @@ def transform_documents(plan: NlpTextPlan, documents: list[str]):
     """Turn raw strings into the numeric matrix the fitted head expects.
 
     The low-level step underneath :func:`predict_documents`, exposed because
-    the vectors are sometimes useful on their own — for clustering documents,
+    the vectors are sometimes useful on their own: for clustering documents,
     for a nearest-neighbour lookup, or for feeding another model.
 
     Parameters
@@ -46,7 +46,7 @@ def transform_documents(plan: NlpTextPlan, documents: list[str]):
         saved bundle.
     documents:
         Raw document strings. Normalisation is applied here, so pass the text
-        as it arrives rather than pre-processing it yourself — doing that twice
+        as it arrives rather than pre-processing it yourself: doing that twice
         gives a representation the head was not trained on.
 
     Returns
@@ -81,7 +81,7 @@ def predict_documents(
 ) -> tuple[tuple[str, ...], tuple[tuple[float, ...], ...]]:
     """Classify a list of raw document strings.
 
-    The direct entry point when your documents are not in a dataset — scoring a
+    The direct entry point when your documents are not in a dataset: scoring a
     request in a web service, or trying a handful of strings by hand.
 
     Parameters
@@ -92,7 +92,7 @@ def predict_documents(
         Raw strings, one per document.
     return_probabilities:
         Also return per-class probabilities. Silently produces nothing when the
-        head does not support them — ``'linear_svm'`` has no probability
+        head does not support them: ``'linear_svm'`` has no probability
         output. Check ``plan.supports_proba`` if you need to know in advance.
 
     Returns
@@ -143,8 +143,8 @@ def predict_text(
     """Score a dataset partition and report how well the model covers it.
 
     The dataset-level entry point. Beyond the predictions themselves it
-    measures how much of the incoming text the model can actually see —
-    the out-of-vocabulary rate and the blank-document rate — which is the
+    measures how much of the incoming text the model can actually see :
+    the out-of-vocabulary rate and the blank-document rate: which is the
     difference between a prediction you can act on and one that came from the
     class prior.
 
@@ -160,7 +160,7 @@ def predict_text(
         The split defining partitions. Required unless ``partition`` is
         ``'all'``.
     partition:
-        Which rows to score — ``'train'``, ``'validation'``, ``'test'``, or
+        Which rows to score: ``'train'``, ``'validation'``, ``'test'``, or
         ``'all'``. Scoring ``'train'`` shows in-sample behaviour and will look
         better than the model really is.
     return_probabilities:

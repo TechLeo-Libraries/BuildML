@@ -182,7 +182,7 @@ def symbolic_status(
                 "Validation/test are evaluation / scoring only.",
                 "Session checkpoints do not embed SymbolicPlan; use "
                 "save_symbolic_bundle / load_symbolic_bundle.",
-                "Honesty: structured tabular if-then rules — not Prolog/Z3/AGI.",
+                "Honesty: structured tabular if-then rules: not Prolog/Z3/AGI.",
             ]
         )
         for note in getattr(symbolic_plan, "disclosures", ()) or ():
@@ -198,7 +198,7 @@ def symbolic_status(
                 f"n_rules={len(getattr(getattr(neuro_plan, 'knowledge_base', None), 'rules', ()) or ())}.",
                 "Hybrid integrates sklearn predictions with symbolic "
                 "constraints/features in one Session API (not separate ad-hoc calls).",
-                "Honesty: sklearn + rule hybrid — not a deep neuro-symbolic research stack.",
+                "Honesty: sklearn + rule hybrid: not a deep neuro-symbolic research stack.",
             ]
         )
         for note in getattr(neuro_plan, "disclosures", ()) or ():

@@ -10,7 +10,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         "activelearning-train-pool",
         plain=(
             "Active learning is about spending a limited labelling budget well. The pool it picks from is "
-            "the unlabelled rows inside your training partition — rows whose target is blank. Validation "
+            "the unlabelled rows inside your training partition: rows whose target is blank. Validation "
             "and test rows are never candidates, because labelling them would consume the very data you "
             "need for an honest score."
         ),
@@ -20,7 +20,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Put labelled and unlabelled rows in one table with blank targets for the unlabelled ones.",
-            "Split as usual — the unlabelled pool lives inside the train partition.",
+            "Split as usual: the unlabelled pool lives inside the train partition.",
             "Fit an active learner on the labelled training rows.",
             "Ask for query suggestions; BuildML returns row indices from the training pool only.",
             "Label those rows externally, feed the labels back, and refit.",
@@ -31,7 +31,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it when labelling is cheap and fast; just label a random sample and move on.",
-            "Do not let the pool include validation or test rows, even accidentally — you would be labelling your own exam.",
+            "Do not let the pool include validation or test rows, even accidentally: you would be labelling your own exam.",
         ),
         myths=(
             (
@@ -61,7 +61,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         "activelearning-human-labels",
         plain=(
             "BuildML suggests which rows to label. It never makes up the labels. There is no built-in "
-            "oracle, no auto-labelling, no silent guess — a human (or a test harness that stands in for "
+            "oracle, no auto-labelling, no silent guess: a human (or a test harness that stands in for "
             "one) provides the answers and hands them back."
         ),
         analogy=(
@@ -70,7 +70,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Call `suggest_query` to get the row indices worth labelling next.",
-            "Export those rows to whatever your annotation process is — a spreadsheet, a labelling tool, an expert review.",
+            "Export those rows to whatever your annotation process is: a spreadsheet, a labelling tool, an expert review.",
             "Collect the real labels.",
             "Feed them back with `label_rows`.",
             "Refit and repeat until the budget runs out or the score plateaus.",
@@ -80,7 +80,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "In tests, where a harness supplies known labels to simulate the loop deterministically.",
         ),
         avoid=(
-            "Do not substitute model predictions for human labels and call it active learning — that is self-training, and it has quite different risks.",
+            "Do not substitute model predictions for human labels and call it active learning: that is self-training, and it has quite different risks.",
             "Do not run the loop without recording who labelled what; label quality is part of your provenance.",
         ),
         myths=(
@@ -122,7 +122,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Least-confidence picks rows whose top predicted probability is lowest.",
-            "Margin picks rows where the top two classes are closest — usually the best default.",
+            "Margin picks rows where the top two classes are closest: usually the best default.",
             "Entropy picks rows whose whole probability distribution is flattest, which matters with many classes.",
             "Committee strategies train several models and pick rows they disagree about most.",
             "Coverage strategies such as CoreSet pick rows far from anything already labelled, guarding against blind spots.",
@@ -133,7 +133,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use uncertainty sampling with a badly calibrated model; its confidence numbers are the input to the whole strategy.",
-            "Do not query one row at a time on large pools — batch queries and accept some redundancy, or you will refit forever.",
+            "Do not query one row at a time on large pools: batch queries and accept some redundancy, or you will refit forever.",
         ),
         myths=(
             (
@@ -162,8 +162,8 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "activelearning-bundle-boundary",
         plain=(
-            "The active-learning state — the current model, which rows are still in the pool, and the "
-            "history of what was queried — saves as its own bundle. That history matters: an active-learning "
+            "The active-learning state: the current model, which rows are still in the pool, and the "
+            "history of what was queried: saves as its own bundle. That history matters: an active-learning "
             "run is a sequence, and resuming it needs the sequence."
         ),
         analogy=(
@@ -183,7 +183,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not restart from scratch each session; you lose the pool bookkeeping and will re-query labelled rows.",
-            "Do not assume a checkpoint preserves the query history — it does not embed the active-learning plan.",
+            "Do not assume a checkpoint preserves the query history: it does not embed the active-learning plan.",
         ),
         myths=(
             (

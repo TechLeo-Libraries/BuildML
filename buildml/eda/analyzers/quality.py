@@ -1,6 +1,6 @@
 """Find the problems that break models before any modelling starts.
 
-Not statistics — defects. A constant column, a duplicated row, an identifier
+Not statistics: defects. A constant column, a duplicated row, an identifier
 that will be treated as a feature, a numeric field stored as text with a few
 ``"N/A"`` values in it. None of these are interesting distributions; all of them
 change what happens downstream, and most are invisible in a ``describe()``.
@@ -9,7 +9,7 @@ The checks are deliberately blunt and cheap. Each is a heuristic with a
 threshold, and the thresholds are conventions rather than discoveries: 95% for
 quasi-constant, 98% distinct for identifier-like, 5% to 95% numeric-looking for
 mixed types. They will occasionally flag something legitimate. That is the right
-error to make here — a false positive costs a glance, a missed identifier column
+error to make here: a false positive costs a glance, a missed identifier column
 costs a model that scores perfectly in testing and fails completely in
 production.
 
@@ -51,7 +51,7 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
 
     *High-cardinality and identifier-like columns.* A column with a distinct
     value for nearly every row is a key, not a feature. Left in, it lets a model
-    memorise the training set — the classic cause of perfect validation scores
+    memorise the training set: the classic cause of perfect validation scores
     and useless predictions.
 
     *Mixed types.* A text column where between 5% and 95% of values look numeric
@@ -80,13 +80,13 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
         ``quasi_constant_columns``, ``high_cardinality_columns``,
         ``id_like_columns``, ``mixed_type_suspect_columns``),
         ``string_pattern_hints``, ``sample_used_for_associations``, and
-        ``completeness_score`` — the share of cells that are present, where 1.0
+        ``completeness_score``: the share of cells that are present, where 1.0
         is a frame with no gaps.
 
     Notes
     -----
     **These are heuristics, and they will occasionally be wrong.** A legitimate
-    high-cardinality feature — a postcode, a product SKU — trips the
+    high-cardinality feature: a postcode, a product SKU: trips the
     identifier-like check. Look at what was flagged and decide; do not drop
     columns on the strength of a threshold.
 

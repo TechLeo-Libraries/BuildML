@@ -3,7 +3,7 @@
 ## Business purpose
 
 Classify manufacturing process health from sensor feature clouds using
-topological (TDA) descriptors — distinct from credit-risk TDA proofs.
+topological (TDA) descriptors: distinct from credit-risk TDA proofs.
 
 ## Data source
 
@@ -30,7 +30,7 @@ See `results/results.json` after a successful run (accuracy / macro_f1).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` fits classical logistic regression on scaled
+Filled: `baseline_industry.py` fits classical logistic regression on scaled
 raw process features (no TDA) on the same stratified split
 (`results/comparison.json`).
 

@@ -4,11 +4,11 @@ Every adapter is imported lazily so ``import buildml.nlp`` stays on the core
 numpy / pandas / scikit-learn stack and never pulls a transformer or spaCy
 runtime into a Session that does not ask for one.
 
-* :mod:`buildml.nlp.adapters.sentence_embedding` — sentence-transformer document
+* :mod:`buildml.nlp.adapters.sentence_embedding`: sentence-transformer document
   vectors (``buildml[nlp]``).
-* :mod:`buildml.nlp.adapters.transformer_encoder` — mean-pooled Hugging Face
+* :mod:`buildml.nlp.adapters.transformer_encoder`: mean-pooled Hugging Face
   encoder vectors (``buildml[nlp]``).
-* :mod:`buildml.nlp.adapters.spacy_pipeline` — statistical entity extraction
+* :mod:`buildml.nlp.adapters.spacy_pipeline`: statistical entity extraction
   (``buildml[nlp-industry]``, plus a downloaded model).
 """
 

@@ -6,7 +6,7 @@ recorded. Every preprocessing operation in BuildML returns one of these
 alongside the transformed data, so the reasoning survives.
 
 The structure separates what was observed from what it means and what to do
-about it — evidence, findings, interpretation, limitations, recommendations.
+about it: evidence, findings, interpretation, limitations, recommendations.
 That separation is what lets the same object serve a notebook reader, an HTML
 report, and an audit trail without being rewritten for each.
 """
@@ -33,7 +33,7 @@ class PreprocessResult:
     Attributes
     ----------
     operation:
-        Which step produced this — ``'impute'``, ``'encode'``, ``'scale'``, and
+        Which step produced this: ``'impute'``, ``'encode'``, ``'scale'``, and
         so on.
     plan:
         The fitted plan as plain data: the learned constants, the columns
@@ -46,7 +46,7 @@ class PreprocessResult:
         missing or a category that appeared only in the test rows. A step
         completing successfully does not mean it found nothing concerning.
     interpretation:
-        Plain-language readings of the evidence — what the numbers mean for
+        Plain-language readings of the evidence: what the numbers mean for
         this dataset, rather than what they are.
     limitations:
         What this step cannot tell you. Reading these prevents over-reading the
@@ -88,7 +88,7 @@ class PreprocessResult:
         -------
         dict
             All attributes in expanded form, plus a ``summary`` key holding
-            counts of findings and recommendations and the plan's key names —
+            counts of findings and recommendations and the plan's key names :
             enough for a report to render a headline without walking the whole
             structure.
         """

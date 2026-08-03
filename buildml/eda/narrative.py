@@ -1,7 +1,7 @@
 """The old narrative interface, kept working on top of the new findings.
 
 BuildML's EDA once produced a list of sentences. It now produces findings with
-severity, affected columns, and evidence, which is strictly more useful — and
+severity, affected columns, and evidence, which is strictly more useful: and
 code written against the old shape still exists.
 
 Rather than maintaining two generators, this derives the strings from the

@@ -240,7 +240,7 @@ def fit_flower(
     -------
     Uses ``flwr`` NumPyClient wrappers over Session client partitions and
     Flower's weighted ``aggregate`` helper. This still executes in-process on
-    Session data — not a networked Flower deployment unless you operate one
+    Session data: not a networked Flower deployment unless you operate one
     separately. No cryptographic secure aggregation.
 
     Parameters
@@ -392,7 +392,7 @@ def fit_flower(
         [
             "Flower backend: NumPyClient local fit on Session client partitions "
             "+ flwr weighted ndarray aggregation.",
-            "Honesty: still an in-process simulation on Session data — not a "
+            "Honesty: still an in-process simulation on Session data: not a "
             "networked Flower deployment unless you operate one separately.",
             "No cryptographic secure aggregation; orchestrator sees client updates.",
             f"backend=flower, flwr aggregation rounds={len(round_history)}.",

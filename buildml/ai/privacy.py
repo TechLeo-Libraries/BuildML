@@ -6,14 +6,14 @@ is the boundary where that decision gets made explicitly rather than by
 accident.
 
 Two things happen here for every call. A **payload** is built at the configured
-:class:`~buildml.ai.types.EgressLevel` — schema, statistics, a redacted sample,
+:class:`~buildml.ai.types.EgressLevel`: schema, statistics, a redacted sample,
 or raw rows. And an :class:`EgressManifest` is produced alongside it, naming
 every column sent, every column withheld, every rename applied, and how many
 rows went. The manifest travels with the result and into the transcript, so
 "what did we send them" always has an answer.
 
 Redaction here is defence in depth, not a guarantee. :func:`detect_pii_columns`
-matches column *names* against common patterns — it catches ``customer_email``
+matches column *names* against common patterns: it catches ``customer_email``
 and misses ``field_7`` holding the same addresses. Treat it as a reminder to
 configure ``deny_columns``, never as a substitute.
 
@@ -49,7 +49,7 @@ class EgressConfig:
     ----------
     level:
         How much detail is permitted. Defaults to
-        :attr:`~buildml.ai.types.EgressLevel.STATS_ONLY` — aggregates but no
+        :attr:`~buildml.ai.types.EgressLevel.STATS_ONLY`: aggregates but no
         rows.
     allow_columns:
         An explicit allowlist. When set, **only** these columns are considered,
@@ -109,7 +109,7 @@ class EgressConfig:
         """Return the egress rules as JSON-safe values.
 
         Records the policy that was in force, which is the other half of an
-        audit trail — the manifest says what was sent, this says what was
+        audit trail: the manifest says what was sent, this says what was
         allowed.
 
         Returns
@@ -142,7 +142,7 @@ class EgressManifest:
     level:
         Which level was applied.
     columns_sent:
-        The names as the provider saw them — after renaming or header
+        The names as the provider saw them: after renaming or header
         stripping, so this reflects the wire, not your schema.
     columns_denied:
         What was withheld. **Worth reading as carefully as ``columns_sent``**;
@@ -153,7 +153,7 @@ class EgressManifest:
         How many rows went. Zero at ``SCHEMA_ONLY`` and ``STATS_ONLY``.
     estimated_tokens:
         A rough size estimate, useful for cost and context-limit checks.
-        Approximate — see :func:`build_egress_payload`.
+        Approximate: see :func:`build_egress_payload`.
     warnings:
         Columns whose names matched a personal-data pattern, and what was done
         about them.
@@ -276,7 +276,7 @@ def filter_columns(
     columns:
         The names to partition.
     allow:
-        The allowlist. ``None`` means no allowlist, not an empty one — an empty
+        The allowlist. ``None`` means no allowlist, not an empty one: an empty
         tuple denies everything.
     deny:
         The denylist, used only when ``allow`` is ``None``.
@@ -337,7 +337,7 @@ def rename_columns(
     -------
     tuple of (list of str, dict)
         The outgoing names in order, and only the renames that actually
-        applied — so the manifest records what happened rather than what was
+        applied: so the manifest records what happened rather than what was
         configured.
 
     Notes
@@ -409,8 +409,8 @@ def scrub_headers(columns: list[str]) -> list[str]:
 def redact_value(value: Any, patterns: tuple[str, ...] = ()) -> Any:
     """Replace matching substrings in a string value with ``[REDACTED]``.
 
-    For content that is sensitive wherever it appears — a key, an identifier
-    format, a name — rather than sensitive because of which column it is in.
+    For content that is sensitive wherever it appears: a key, an identifier
+    format, a name: rather than sensitive because of which column it is in.
 
     Parameters
     ----------
@@ -461,7 +461,7 @@ def build_schema_payload(
     """Describe the data's structure without disclosing any of its content.
 
     Sends column names, dtypes, and the row count. No values, no aggregates.
-    The most private level that still lets a model give useful advice — it can
+    The most private level that still lets a model give useful advice: it can
     reason about types, spot likely identifiers, and suggest a preprocessing
     order from names alone.
 
@@ -476,7 +476,7 @@ def build_schema_payload(
     Returns
     -------
     tuple of (dict, EgressManifest)
-        The payload — columns, dtypes, row count — and the record of what it
+        The payload: columns, dtypes, row count: and the record of what it
         contains.
 
     Notes
@@ -540,7 +540,7 @@ def build_stats_payload(
     """Describe the data's shape and distributions, but send no rows.
 
     Everything :func:`build_schema_payload` sends, plus per-column null counts,
-    distinct counts, and — for numeric columns — mean, standard deviation,
+    distinct counts, and: for numeric columns: mean, standard deviation,
     minimum, and maximum. Enough for a model to notice skew, missingness,
     constant columns, and likely identifiers.
 
@@ -557,7 +557,7 @@ def build_stats_payload(
     Returns
     -------
     tuple of (dict, EgressManifest)
-        The payload — per-column statistics keyed by sent name — and the
+        The payload: per-column statistics keyed by sent name: and the
         manifest, with ``rows_sent`` at zero.
 
     Notes
@@ -571,7 +571,7 @@ def build_stats_payload(
     disclose.
 
     Only numeric columns get distribution statistics. Categorical columns
-    contribute dtype, null count, and cardinality — never the categories
+    contribute dtype, null count, and cardinality: never the categories
     themselves, since those are values.
 
     See Also
@@ -642,7 +642,7 @@ def build_redacted_sample_payload(
     short hash; configured redaction patterns are then applied to what remains
     in string columns.
 
-    Real rows are what let a model see the things statistics hide — mixed
+    Real rows are what let a model see the things statistics hide: mixed
     formats, embedded units, encoding damage, a categorical stored as text.
 
     Parameters
@@ -655,8 +655,8 @@ def build_redacted_sample_payload(
     Returns
     -------
     tuple of (dict, EgressManifest)
-        The payload — row count, sample size, columns, and the sample records
-        — and the manifest with the true ``rows_sent``.
+        The payload: row count, sample size, columns, and the sample records
+       : and the manifest with the true ``rows_sent``.
 
     Notes
     -----
@@ -666,7 +666,7 @@ def build_redacted_sample_payload(
     detection.
 
     **The sample is the first rows, not a random draw.** Sorted or grouped data
-    therefore sends an unrepresentative slice — often all of one category. That
+    therefore sends an unrepresentative slice: often all of one category. That
     keeps the payload reproducible, which is worth more here than
     representativeness, but it is worth knowing.
 
@@ -740,7 +740,7 @@ def build_full_sample_payload(
 
     Column filtering and renaming still apply, but every value in an allowed
     column goes as written. Personal-data name detection still runs and still
-    warns — and the warning is all it does here.
+    warns: and the warning is all it does here.
 
     Parameters
     ----------
@@ -837,8 +837,8 @@ def build_egress_payload(
     -------
     tuple of (dict or None, EgressManifest)
         The payload and its manifest. The payload is ``None`` when there is no
-        data, and the manifest is still returned — an empty one, with a warning
-        — so callers never have to branch on whether a record exists.
+        data, and the manifest is still returned: an empty one, with a warning
+       : so callers never have to branch on whether a record exists.
 
     Notes
     -----

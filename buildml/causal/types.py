@@ -177,7 +177,7 @@ class CausalAssumptions:
         Returns
         -------
         CausalAssumptions
-            Parsed assumption object (not yet validated — call ``validate()``).
+            Parsed assumption object (not yet validated: call ``validate()``).
 
         Raises
         ------

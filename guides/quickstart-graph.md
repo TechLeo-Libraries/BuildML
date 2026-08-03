@@ -14,9 +14,9 @@ partitions.
 - `transductive`: full topology with train-label-only supervision (disclosed).
 
 **Three complete paths:**
-1. Classical — NetworkX metrics + sklearn (`pip install 'buildml[graph]'`)
-2. Pure-Torch GCN — dense adjacency, no PyG (`pip install 'buildml[torch]'`)
-3. PyTorch Geometric — GCN / GraphSAGE / GAT (`pip install 'buildml[graph-pyg]'`)
+1. Classical: NetworkX metrics + sklearn (`pip install 'buildml[graph]'`)
+2. Pure-Torch GCN: dense adjacency, no PyG (`pip install 'buildml[torch]'`)
+3. PyTorch Geometric: GCN / GraphSAGE / GAT (`pip install 'buildml[graph-pyg]'`)
 
 Honesty: not a Neo4j/KG product, not a full PyG algorithm zoo, not link-prediction
 depth in this surface.
@@ -55,7 +55,7 @@ session = (
     .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
 )
 session.set_graph(edges_df, node_id_col="node_id")
-# Scale features only — avoid mutating node_id (set_graph also snapshots ids).
+# Scale features only: avoid mutating node_id (set_graph also snapshots ids).
 session.scale(columns=["f1", "f2"], method="standard")
 
 fit = session.fit_graph(method="classical", mode="inductive")

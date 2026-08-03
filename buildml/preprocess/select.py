@@ -2,7 +2,7 @@
 
 More features is not better. Each one adds a dimension the model must estimate
 in, and with limited rows that means more parameters fitted on the same
-evidence — the model starts learning the quirks of your training set instead of
+evidence: the model starts learning the quirks of your training set instead of
 the pattern underneath. Irrelevant columns also give a tree somewhere to make a
 spurious split, and they slow everything down.
 
@@ -20,7 +20,7 @@ discard a feature that is useless by itself and decisive in combination with
 another, and it will keep several columns that all say the same thing.
 
 **Model-based** fits an estimator and keeps the features it relied on. This one
-sees interactions and redundancy, which is what makes it the most accurate — at
+sees interactions and redundancy, which is what makes it the most accurate: at
 the cost of fitting a model, and of inheriting that model's biases about what
 matters.
 
@@ -75,7 +75,7 @@ class FeatureSelectPlan:
     Attributes
     ----------
     strategy:
-        Which selection method produced this — ``'variance'``,
+        Which selection method produced this: ``'variance'``,
         ``'univariate'``, or ``'model'``.
     selected_features_:
         The features kept, and therefore the exact set the model will be
@@ -87,7 +87,7 @@ class FeatureSelectPlan:
         genuinely useless.
     scores_:
         The score each candidate received. Interpretation depends on the
-        strategy — variance for ``'variance'``, the test statistic for
+        strategy: variance for ``'variance'``, the test statistic for
         ``'univariate'``, the estimator's importance for ``'model'``. Look at
         the gap between the last kept and first dropped feature; if it is
         tiny, the cutoff is arbitrary.
@@ -147,7 +147,7 @@ def fit_feature_selector(
 ) -> FeatureSelectPlan:
     """Decide which feature columns to keep, judging only by the training rows.
 
-    Nothing is removed here — pass the plan to
+    Nothing is removed here: pass the plan to
     :func:`transform_feature_selector` to apply it. The separation matters:
     you should read ``dropped_features_`` before acting on it.
 
@@ -180,13 +180,13 @@ def fit_feature_selector(
         ``'f_regression'`` test for a *linear* relationship and are fast but
         blind to curved ones. ``'mutual_info'`` detects any dependence
         including non-linear, at more computational cost and with more variance
-        in its estimates — usually the better choice when you have the rows to
+        in its estimates: usually the better choice when you have the rows to
         support it.
     estimator:
         The model whose importances drive ``'model'`` selection. Left as
         ``None``, a logistic regression is used for classification and a random
         forest for regression. Supply your own when you want the selection to
-        reflect the model you actually intend to deploy — a linear model and a
+        reflect the model you actually intend to deploy: a linear model and a
         gradient booster disagree substantially about which features matter.
 
     Returns
@@ -346,8 +346,8 @@ def transform_feature_selector(
     """Narrow the dataset to the features the plan selected.
 
     Removes the dropped columns from every partition, so training and test rows
-    carry the same feature set. Columns holding protected roles — target, id,
-    group, time, weight — are retained regardless of the plan, since dropping
+    carry the same feature set. Columns holding protected roles: target, id,
+    group, time, weight: are retained regardless of the plan, since dropping
     them would break the split and the evaluation.
 
     Parameters

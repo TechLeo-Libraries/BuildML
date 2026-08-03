@@ -3,7 +3,7 @@
 Every function in this package eventually needs the same three things: a numeric
 matrix of state or context features, integer codes for discrete actions, and
 metrics comparing chosen actions against known ones. Doing that consistently is
-what this module is for — if column resolution differed between
+what this module is for: if column resolution differed between
 :mod:`~buildml.rl.imitation` and :mod:`~buildml.rl.fit`, a plan fitted by one
 could not be scored by the other.
 
@@ -100,7 +100,7 @@ def resolve_rl_columns(
 
     State and context features are everything *except* the things that are not
     part of the situation: the action taken, the reward observed, and the
-    target. Getting this wrong is the most direct route to a useless policy — a
+    target. Getting this wrong is the most direct route to a useless policy: a
     bandit that can see the reward column will learn to read it rather than to
     predict it.
 
@@ -121,7 +121,7 @@ def resolve_rl_columns(
     target_column:
         The Dataset target, excluded from features.
     exclude_columns:
-        Additional columns to drop — in practice the action and reward columns.
+        Additional columns to drop: in practice the action and reward columns.
 
     Returns
     -------
@@ -190,7 +190,7 @@ def infer_imitation_task(action: pd.Series) -> str:
     columns with at most 20 distinct values are classification, on the reasoning
     that a genuinely continuous quantity rarely takes so few values. Float
     columns are classification only if they hold at most 8 values, all drawn
-    from 0–7 — the shape of a category that lost its integer dtype somewhere.
+    from 0–7: the shape of a category that lost its integer dtype somewhere.
     Everything else is regression.
 
     **The 20-value threshold is a heuristic and will occasionally be wrong.** A
@@ -300,8 +300,8 @@ def decode_discrete_actions(pred_codes: np.ndarray, label_encoder: Any) -> list[
     stringified everything, so decoding parses the strings back: digits become
     integers, strings containing a dot become floats where possible, everything
     else stays a string. An action column of integers round-trips to integers,
-    which is what almost all callers expect. An exotic type — a Decimal, a
-    timestamp — comes back as its string form.
+    which is what almost all callers expect. An exotic type: a Decimal, a
+    timestamp: comes back as its string form.
 
     See Also
     --------
@@ -365,7 +365,7 @@ def classification_metrics(
     """Score how often chosen actions match demonstrated ones.
 
     Discrete imitation is judged as a classification problem, so the metrics
-    are the classification ones — but what they measure is agreement with a
+    are the classification ones: but what they measure is agreement with a
     demonstrator, not correctness.
 
     Parameters
@@ -428,7 +428,7 @@ def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, floa
     -----
     **MAE and RMSE answer different questions.** MAE is the typical error in the
     action's own units. RMSE squares before averaging, so a few large deviations
-    move it much more than many small ones — read it when occasionally acting
+    move it much more than many small ones: read it when occasionally acting
     far off is much worse than routinely acting slightly off, which for a policy
     it usually is.
 
@@ -479,7 +479,7 @@ def softmax(logits: np.ndarray, *, temperature: float = 1.0, axis: int = -1) -> 
     -----
     The maximum is subtracted before exponentiating. Without that step,
     moderately large logits overflow to infinity and the result becomes ``NaN``
-    — a policy failure that surfaces only on the inputs where scores happen to
+   : a policy failure that surfaces only on the inputs where scores happen to
     be large.
 
     Examples

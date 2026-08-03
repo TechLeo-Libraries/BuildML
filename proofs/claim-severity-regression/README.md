@@ -6,7 +6,7 @@ Estimate insurance claim severity (loss amount) from vehicle age, driver age, pr
 
 ## Data source
 
-In-repo synthetic severity table (`load_claim_severity_synthetic`) — license-clear, deterministic. **Not** a real P&C claims extract.
+In-repo synthetic severity table (`load_claim_severity_synthetic`): license-clear, deterministic. **Not** a real P&C claims extract.
 
 ## Leakage controls
 
@@ -29,7 +29,7 @@ Primary holdout: R², RMSE, MAE on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `StandardScaler` + `Ridge` twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `StandardScaler` + `Ridge` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

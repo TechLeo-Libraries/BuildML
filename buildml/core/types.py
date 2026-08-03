@@ -40,7 +40,7 @@ class ColumnRole(str, Enum):
         What is being predicted. Never becomes a feature, and its statistics may
         only be computed from training rows.
     GROUP:
-        Rows that belong together — the same patient, customer, or session.
+        Rows that belong together: the same patient, customer, or session.
         Group-aware splitters keep them in one partition, because a model that
         saw one visit from a patient in training has effectively seen that
         patient at test time.
@@ -64,7 +64,7 @@ class ColumnRole(str, Enum):
     simply set aside.
 
     **The role is a promise the library keeps on your behalf.** Marking a column
-    ``GROUP`` does nothing on its own — it takes effect the moment a
+    ``GROUP`` does nothing on its own: it takes effect the moment a
     group-aware splitter or cross-validator runs.
 
     See Also
@@ -86,7 +86,7 @@ class DataMode(str, Enum):
 
     ``memory`` materializes tables eagerly. ``lazy`` keeps a native lazy/scan
     handle when an engine supports it (Polars LazyFrame). There is no separate
-    out-of-core *fitting* mode — sklearn still requires an in-memory design
+    out-of-core *fitting* mode: sklearn still requires an in-memory design
     matrix. Legacy string ``out_of_core`` is accepted as an alias of
     ``lazy`` via :func:`coerce_data_mode`.
     """
@@ -99,7 +99,7 @@ def coerce_data_mode(mode: DataMode | str) -> DataMode:
     """Accept a data mode as an enum or a string, including the legacy spelling.
 
     Checkpoints written by older versions recorded ``out_of_core`` as a mode.
-    That distinction no longer exists — it was always the same thing as lazy —
+    That distinction no longer exists: it was always the same thing as lazy :
     so the old name is mapped forward rather than rejected, and old checkpoints
     keep loading.
 
@@ -234,8 +234,8 @@ class TableSchema:
     def columns(self) -> list[str]:
         """Return just the column names, in schema order.
 
-        The common case when only names are needed — checking membership,
-        reporting a difference — without unpacking the fields.
+        The common case when only names are needed: checking membership,
+        reporting a difference: without unpacking the fields.
 
         Returns
         -------

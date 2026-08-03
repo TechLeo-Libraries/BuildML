@@ -1,6 +1,6 @@
 # Ballast Energy Desk
 
-**Tier B** cross-domain product proof — chronological energy forecast +
+**Tier B** cross-domain product proof: chronological energy forecast +
 probabilistic intervals + optimize allocation for demand-response capacity.
 
 ## Product narrative
@@ -15,7 +15,7 @@ knapsack allocation picks generation / DR blocks. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

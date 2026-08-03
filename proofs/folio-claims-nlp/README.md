@@ -1,6 +1,6 @@
 # Folio Claims NLP
 
-**Tier B** cross-domain product proof — NLP claim-note routing + CBR case
+**Tier B** cross-domain product proof: NLP claim-note routing + CBR case
 memory + symbolic escalation guardrails for synthetic P&C claims.
 
 ## Product narrative
@@ -14,7 +14,7 @@ escalate-or-not, and induces explainable policy rules:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -42,4 +42,4 @@ escalate-or-not, and induces explainable policy rules:
 
 ## Limitations
 
-Claim notes reuse synthetic ticket language — not a real P&C extract.
+Claim notes reuse synthetic ticket language: not a real P&C extract.

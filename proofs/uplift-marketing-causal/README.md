@@ -3,7 +3,7 @@
 ## Business purpose
 
 Estimate the average treatment effect of a marketing promo on spend under
-declared causal assumptions (AIPW), with a placebo refute — distinct from the
+declared causal assumptions (AIPW), with a placebo refute: distinct from the
 generic backdoor DGP in `causal-treatment-effect`.
 
 ## Data source
@@ -30,7 +30,7 @@ See `results/results.json` (ATE, CI, refute shift).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs sklearn AIPW-style estimation
+Filled: `baseline_industry.py` runs sklearn AIPW-style estimation
 (`results/comparison.json`).
 
 ## Limitations

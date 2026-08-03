@@ -175,7 +175,7 @@ def fit_dowhy(
     if not assumptions.confounders:
         warnings.append(
             "Empty confounders with allow_empty_confounders=True: "
-            "graph has treatment→outcome only — extremely strong assumption."
+            "graph has treatment→outcome only: extremely strong assumption."
         )
         disclosures.append(warnings[-1])
 
@@ -251,7 +251,7 @@ def estimate_dowhy_partition(
 
     Rebuilds the declared causal graph and runs DoWhy identification plus
     backdoor estimation on the requested partition rows only. Train-fitted
-    nuisances are **not** reused — this is a fresh estimate on holdout data.
+    nuisances are **not** reused: this is a fresh estimate on holdout data.
 
     Parameters
     ----------
@@ -405,13 +405,13 @@ def refute_dowhy(
     disclosures = [
         f"DoWhy refutation kind={kind_key} (method={refute_method}).",
         f"Original train ATE={original:.6g}; refute estimate={refute_ate:.6g}.",
-        "DoWhy refutation is a sensitivity disclosure — not proof of identification.",
+        "DoWhy refutation is a sensitivity disclosure: not proof of identification.",
         "EDA / association paths never substitute for CausalAssumptions.",
     ]
     warnings: list[str] = []
     if refute_p_value is not None and refute_p_value < 0.05:
         warnings.append(
-            f"DoWhy refutation p-value={refute_p_value:.4g} — treat the original "
+            f"DoWhy refutation p-value={refute_p_value:.4g}: treat the original "
             "estimate with caution."
         )
 

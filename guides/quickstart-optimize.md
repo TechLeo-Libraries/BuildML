@@ -1,10 +1,10 @@
-# Quickstart — Optimisation / decision helpers
+# Quickstart: Optimisation / decision helpers
 
 **Proof:** [cost-sensitive-collections](../proofs/cost-sensitive-collections/) · Tier B allocation in [harbor-demand-desk](../proofs/harbor-demand-desk/), [aegis-fraud-platform](../proofs/aegis-fraud-platform/), and [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/).
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core path — sklearn + transitive `scipy.optimize` for LP allocation.
+> Core path: sklearn + transitive `scipy.optimize` for LP allocation.
 > Industry solvers: `pip install 'buildml[optimize-industry]'` (PuLP, OR-Tools,
 > CVXPY, XGBoost). See [installation](../docs/installation.rst).
 
@@ -100,7 +100,7 @@ session.save_decision_bundle("artifacts/decision_demo_bundle")
 
 ## Honesty
 
-Decision helpers for ML scores/costs/allocations — scoped PuLP/OR-Tools MIP
+Decision helpers for ML scores/costs/allocations: scoped PuLP/OR-Tools MIP
 knapsack and CVXPY LP only; not a general OR platform or digital twin.
 `tune_threshold` remains the classical diagnostic sweep;
 `fit_decision_policy(method="threshold")` persists the chosen operating point.

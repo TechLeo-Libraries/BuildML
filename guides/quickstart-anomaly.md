@@ -94,7 +94,7 @@ session.evaluate_anomaly(partition="test", k=10)
 ## Honesty limits
 
 - Higher `anomaly_score` means more anomalous. Score calibration differs by
-  backend — compare detectors with ranking metrics (PR-AUC), not raw score scale.
+  backend: compare detectors with ranking metrics (PR-AUC), not raw score scale.
 - Tune thresholds on validation via `tune_anomaly_threshold`; reserve test for
   final claims (same discipline as `Session.tune_threshold`).
 - Not a full fraud platform (no graph fraud, no online streaming product).

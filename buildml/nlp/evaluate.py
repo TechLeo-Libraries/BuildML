@@ -54,7 +54,7 @@ def evaluate_text_classifier(
     partition:
         Which rows to evaluate. Defaults to ``'validation'``, which is the
         partition to iterate against. Keep ``'test'`` for a single final
-        measurement — every time you look at it and change something in
+        measurement: every time you look at it and change something in
         response, it becomes a little less of a holdout.
 
     Returns
@@ -73,7 +73,7 @@ def evaluate_text_classifier(
     -----
     **Read the confusion matrix, not just the metrics.** It tells you *which*
     categories the model conflates, and text classifiers usually fail in a
-    structured way — two categories that genuinely share vocabulary — rather
+    structured way: two categories that genuinely share vocabulary: rather
     than uniformly. That is actionable in a way that a single number is not.
 
     **Labels present here but absent from training are flagged.** Those rows
@@ -143,7 +143,7 @@ def evaluate_text_classifier(
         classes=classes,
         oov_rate=unseen_tokens,
         disclosures=(
-            "Holdout evaluation only — the representation, vocabulary, and head "
+            "Holdout evaluation only: the representation, vocabulary, and head "
             "were not updated from this partition.",
             "train_score on the fit result is in-sample and is not comparable to "
             "these holdout metrics.",

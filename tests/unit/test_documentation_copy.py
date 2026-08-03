@@ -13,6 +13,7 @@ import pandas as pd
 from buildml import Session
 from scripts.lint_user_copy import (
     COPY_RULES,
+    EM_DASH,
     MOJIBAKE_MARKERS,
     SOFT_LEAKAGE_FALSE_CLAIM,
     STALE_API,
@@ -84,6 +85,7 @@ def test_copy_lint_rejects_approved_banned_filler_and_stale_apis() -> None:
     for text in banned:
         assert any(pattern.search(text) for _, pattern in COPY_RULES), text
     assert STALE_API.search("Call buildml.preprocessing before fitting")
+    assert EM_DASH.search("plain clause\u2014then more text")
 
 
 def test_copy_lint_catches_multiline_soft_leakage_and_mojibake(tmp_path: Path) -> None:

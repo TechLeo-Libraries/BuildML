@@ -149,6 +149,19 @@ def _run(script: Path, timeout: int = 600) -> tuple[str, float, str]:
         return "error", time.perf_counter() - t0, f"{type(exc).__name__}: {exc}"
 
 
+# Fast, core-only Tier A subset for CI (no torch / heavy industry required).
+CI_SMOKE_TIER_A: tuple[str, ...] = (
+    "loan-approval-classical",
+    "cluster-customer-segments",
+    "network-intrusion-anomaly",
+    "voting-ensemble-attrition",
+    "stream-fraud-online",
+    "support-kb-rag",
+    "ticket-routing-nlp",
+    "policy-rules-neuro-symbolic",
+)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="BuildML proofs runner")
     parser.add_argument(
@@ -162,23 +175,53 @@ def main() -> int:
         action="store_true",
         help="Skip projects that already have results/summary.json or results/comparison.json",
     )
+    parser.add_argument(
+        "--smoke",
+        action="store_true",
+        help=(
+            "CI smoke subset of Tier A (ignores --tier for slug selection). "
+            "Never skips existing results."
+        ),
+    )
+    parser.add_argument(
+        "--slugs",
+        nargs="+",
+        default=None,
+        help="Optional explicit slug filter (still respects --tier script kind)",
+    )
     parser.add_argument("--timeout", type=int, default=600)
     args = parser.parse_args()
+
+    if args.smoke:
+        # CI gate: always re-run; never trust stale results/.
+        args.skip_existing = False
+        args.tier = "A"
+        slug_filter = set(CI_SMOKE_TIER_A)
+    elif args.slugs:
+        slug_filter = set(args.slugs)
+    else:
+        slug_filter = None
 
     jobs: list[tuple[str, str, Path, Path]] = []
     # (tier, slug, script, result_marker)
     if args.tier in ("A", "AB", "all"):
         for slug in TIER_A:
+            if slug_filter is not None and slug not in slug_filter:
+                continue
             jobs.append(
                 ("A", slug, PROOFS / slug / "script.py", PROOFS / slug / "results" / "results.json")
             )
     if args.tier in ("B", "AB", "all"):
         for slug in TIER_B:
+            if slug_filter is not None and slug not in slug_filter:
+                continue
             jobs.append(
                 ("B", slug, PROOFS / slug / "script.py", PROOFS / slug / "results" / "summary.json")
             )
     if args.tier in ("C", "all"):
         for slug in TIER_C:
+            if slug_filter is not None and slug not in slug_filter:
+                continue
             jobs.append(
                 (
                     "C",
@@ -187,6 +230,10 @@ def main() -> int:
                     PROOFS / slug / "results" / "comparison.json",
                 )
             )
+
+    if not jobs:
+        print("No proof jobs matched the requested filters.", file=sys.stderr)
+        return 2
 
     rows = []
     for tier, slug, script, marker in jobs:

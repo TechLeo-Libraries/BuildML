@@ -6,7 +6,7 @@ Flag factory IoT sensor faults (temperature, vibration, current, pressure, RPM) 
 
 ## Data source
 
-In-repo synthetic industrial sensors (`load_iot_sensor_anomaly_synthetic`) — license-clear, deterministic. **Not** a real SCADA extract.
+In-repo synthetic industrial sensors (`load_iot_sensor_anomaly_synthetic`): license-clear, deterministic. **Not** a real SCADA extract.
 
 ## Leakage controls
 
@@ -29,7 +29,7 @@ Primary labeled holdout: ROC-AUC, average precision, F1, precision, recall.
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `IsolationForest` twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `IsolationForest` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

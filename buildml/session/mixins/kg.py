@@ -56,7 +56,7 @@ class KgSessionMixin:
     ) -> KgFitResult:
         """Fit a knowledge-graph embedding model on Session train triples only.
 
-        Session facade over :func:`buildml.session.kg_ops.fit_kg_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.kg_ops.fit_kg_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -93,7 +93,7 @@ class KgSessionMixin:
     ) -> ScoreTriplesResult:
         """Score head-relation-tail triples with the frozen KgPlan.
 
-        Session facade over :func:`buildml.session.kg_ops.score_triples_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.kg_ops.score_triples_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -121,7 +121,7 @@ class KgSessionMixin:
     ) -> PredictLinksResult:
         """Predict missing link components using the frozen KgPlan.
 
-        Session facade over :func:`buildml.session.kg_ops.predict_links_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.kg_ops.predict_links_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -156,7 +156,7 @@ class KgSessionMixin:
     ) -> KgQueryResult:
         """Run symbolic KG queries over the train-fitted graph structure.
 
-        Session facade over :func:`buildml.session.kg_ops.query_kg_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.kg_ops.query_kg_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -187,7 +187,7 @@ class KgSessionMixin:
     ) -> KgEvalResult:
         """Evaluate link prediction with filtered MRR and Hits@K.
 
-        Session facade over :func:`buildml.session.kg_ops.evaluate_kg_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.kg_ops.evaluate_kg_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -273,7 +273,7 @@ class KgSessionMixin:
     def save_kg_bundle(self, path: str | Path) -> Path:
         """Persist the active KgPlan as ``buildml.kg_bundle.v1``.
 
-        Session facade over :func:`buildml.session.kg_ops.save_kg_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.kg_ops.save_kg_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -290,7 +290,7 @@ class KgSessionMixin:
     def load_kg_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a knowledge-graph bundle into this Session.
 
-        Session facade over :func:`buildml.session.kg_ops.load_kg_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.kg_ops.load_kg_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

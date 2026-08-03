@@ -14,7 +14,7 @@ DL_NOTES: dict[str, ConceptNote] = {
             title="Batch and loader leakage",
             summary="Train-only shuffling and train-fit batch transforms must not remix evaluation rows into learning.",
             definition=(
-                "Batch leakage occurs when evaluation-partition rows influence training batches—through "
+                "Batch leakage occurs when evaluation-partition rows influence training batches:through "
                 "shared shuffling, oversampling, or statistics (normalize/augment) fit on more than train."
             ),
             intuition=(
@@ -60,7 +60,7 @@ DL_NOTES: dict[str, ConceptNote] = {
             title="Early-stopping partition",
             summary="Stopping rules may read validation metrics; the test partition remains a final estimate only.",
             definition=(
-                "Early stopping selects a training epoch using a monitor partition—almost always validation—"
+                "Early stopping selects a training epoch using a monitor partition:almost always validation:"
                 "so that test metrics stay out of the stopping decision."
             ),
             intuition=(

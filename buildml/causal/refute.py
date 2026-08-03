@@ -33,18 +33,18 @@ def refute_causal(
 
     Perturbs treatment labels or confounders and refits (native/EconML) or
     invokes DoWhy refuters to surface instability relative to the original ATE.
-    Results are sensitivity disclosures — not proof of identification.
+    Results are sensitivity disclosures: not proof of identification.
 
     Native backend
     --------------
-    placebo_treatment, random_confounder — sklearn refit disclosures.
+    placebo_treatment, random_confounder: sklearn refit disclosures.
 
     DoWhy backend (``buildml[causal-industry]``)
     --------------------------------------------
     placebo_treatment, random_common_cause, add_unobserved_common_cause,
-    data_subset, placebo_outcome — full DoWhy refutation suite.
+    data_subset, placebo_outcome: full DoWhy refutation suite.
 
-    Honesty: refutation is a sensitivity disclosure — not proof of
+    Honesty: refutation is a sensitivity disclosure: not proof of
     identification. EDA never substitutes for CausalAssumptions.
 
     Parameters
@@ -129,7 +129,7 @@ def _refute_native(
     disclosures = [
         f"Refutation kind={kind_key} on Session train "
         f"(original ATE={original:.6g}).",
-        "Native sensitivity disclosure — use backend='dowhy' for the full "
+        "Native sensitivity disclosure: use backend='dowhy' for the full "
         "DoWhy refutation suite when buildml[causal-industry] is installed.",
         "A passing placebo does not prove identification; a failing one "
         "is a warning to revisit assumptions / overlap / specification.",
@@ -196,7 +196,7 @@ def _refute_native(
     shift = float(refute_ate) - original
     if kind_key == "placebo_treatment" and abs(float(refute_ate)) > abs(original) * 0.5 + 0.05:
         warnings.append(
-            "Placebo ATE is not near zero relative to the original estimate — "
+            "Placebo ATE is not near zero relative to the original estimate: "
             "treat the effect estimate with caution."
         )
 
@@ -242,7 +242,7 @@ def _refute_econml(
     disclosures = [
         f"EconML refutation kind={kind_key} on Session train "
         f"(original ATE={original:.6g}).",
-        "EconML refit sensitivity disclosure — not proof of identification.",
+        "EconML refit sensitivity disclosure: not proof of identification.",
     ]
     warnings: list[str] = []
 

@@ -100,7 +100,7 @@ def timeseries_status_payload() -> dict[str, Any]:
             "Time-series analysis defaults to statsmodels STL/ACF/ADF/KPSS when "
             "buildml[timeseries] is installed.",
             "Core fallback: moving-average decomposition, numpy ACF, lightweight CUSUM "
-            "changepoints — stationarity tests require statsmodels.",
+            "changepoints: stationarity tests require statsmodels.",
             "Analysis APIs refuse shuffled splits; prefer time_split with scope='train'.",
         ],
     }
@@ -112,7 +112,7 @@ def timeseries_capability_matrix() -> dict[str, Any]:
     Call before :func:`analyze_timeseries` or Session
     :meth:`~buildml.session.session.Session.analyze_timeseries` to choose
     decomposition and changepoint methods that will actually run here. Read-only
-    introspection — no dataset required.
+    introspection: no dataset required.
 
     Returns
     -------
@@ -129,7 +129,7 @@ def timeseries_capability_matrix() -> dict[str, Any]:
                 "extra": None,
                 "decompose": ["moving_average"],
                 "changepoint": sorted(CHANGEPOINT_METHODS_CORE),
-                "notes": "Numpy moving-average + CUSUM — always available.",
+                "notes": "Numpy moving-average + CUSUM: always available.",
             },
             "statsmodels": {
                 "available": statsmodels_available(),
@@ -160,7 +160,7 @@ def timeseries_capability_matrix() -> dict[str, Any]:
             "analysis_only": True,
             "note": (
                 "Time-series *analysis* (decompose / diagnostics / changepoints) "
-                "has no fitted-plan bundle by design — forecasting bundles live "
+                "has no fitted-plan bundle by design: forecasting bundles live "
                 "under buildml.forecasting."
             ),
         },

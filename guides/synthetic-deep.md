@@ -1,4 +1,4 @@
-# Synthetic-data systems — deep guide
+# Synthetic-data systems: deep guide
 
 Session path for **train-fitted tabular generators**. Phase-1 bar + **R6.10
 industry depth**: native fallback, SDV when installed, honest capability matrix.
@@ -43,18 +43,18 @@ When `backend=None`, method name resolves the backend (`gaussian_copula` → nat
 
 ### Native (`backend='native'`)
 
-**bootstrap** — row resample (+ optional `smooth_sigma` noise).
+**bootstrap**: row resample (+ optional `smooth_sigma` noise).
 
-**gaussian_copula** — mixed-type empirical CDF + correlation latent; optional
+**gaussian_copula**: mixed-type empirical CDF + correlation latent; optional
 `condition={col: value}` rejection sampling.
 
-**smote** — reusable imblearn wrap (`buildml[imbalanced]`).
+**smote**: reusable imblearn wrap (`buildml[imbalanced]`).
 
 ### SDV (`backend='sdv'`, `buildml[synthetic-industry]`)
 
-**ctgan**, **tvae**, **copulagan** — SDV single-table deep synthesizers.
+**ctgan**, **tvae**, **copulagan**: SDV single-table deep synthesizers.
 Knobs: `epochs`, `batch_size`. Train-only fit; not differential privacy.
-Small train sets (n<100) may underfit — disclosures warn accordingly.
+Small train sets (n<100) may underfit: disclosures warn accordingly.
 
 ## Leakage
 
@@ -67,9 +67,9 @@ Small train sets (n<100) may underfit — disclosures warn accordingly.
 
 ### Built-in (`eval_backend='builtin'` or `'auto'` without SDMetrics)
 
-**fidelity** — KS / total variation / correlation L1.
+**fidelity**: KS / total variation / correlation L1.
 
-**tstr** — train-on-synthetic, test-on-real sklearn utility + TRTR baseline.
+**tstr**: train-on-synthetic, test-on-real sklearn utility + TRTR baseline.
 
 ### SDMetrics (`eval_backend='sdmetrics'` or `'auto'` when installed)
 
@@ -104,7 +104,7 @@ Session checkpoints do **not** embed `SynthesizerPlan`.
 
 ## Benchmark
 
-`benchmarks/synthetic/tstr_quality.py` — TSTR vs native copula baseline; SDV
+`benchmarks/synthetic/tstr_quality.py`: TSTR vs native copula baseline; SDV
 methods run when `buildml[synthetic-industry]` is installed.
 
 ## Privacy
@@ -114,7 +114,7 @@ control without a dedicated privacy review.
 
 ## Phase tracker
 
-R6.10 **PASS** — native fallback + SDV industry depth + capability matrix +
+R6.10 **PASS**: native fallback + SDV industry depth + capability matrix +
 benchmark + guides/explain/AI allowlist/tests/production extra.
 
 Next: R6.11 imitation + RL (final R6 item).

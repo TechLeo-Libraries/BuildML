@@ -17,8 +17,8 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         "forecast-temporal-leakage",
         plain=(
             "In forecasting, the split boundary is time. If any training row comes from after any "
-            "evaluation row, the model has seen the future and your score is fiction. A random split — "
-            "perfectly fine for ordinary tabular work — destroys a forecasting evaluation."
+            "evaluation row, the model has seen the future and your score is fiction. A random split: "
+            "perfectly fine for ordinary tabular work: destroys a forecasting evaluation."
         ),
         analogy=(
             "Predicting Monday's weather after being shown Tuesday's. Impressive on paper, useless on "
@@ -27,7 +27,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Sort your rows by the time column and confirm the order is genuinely chronological.",
             "Split by time: everything before a cut-off trains, everything after evaluates.",
-            "Check every engineered feature for future information — a 'monthly total' that includes the target month is a future leak.",
+            "Check every engineered feature for future information: a 'monthly total' that includes the target month is a future leak.",
             "Make sure rolling statistics only look backwards.",
             "Verify the maximum training timestamp is earlier than the minimum evaluation timestamp.",
         ),
@@ -37,7 +37,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use `split(shuffle=True)` or stratified splitting on a time series.",
-            "Do not shuffle rows for 'better mixing' before a forecasting fit — you are shuffling the future into the past.",
+            "Do not shuffle rows for 'better mixing' before a forecasting fit: you are shuffling the future into the past.",
         ),
         myths=(
             (
@@ -67,7 +67,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         "forecast-lag-features",
         plain=(
             "A lag feature is simply 'what the value was N steps ago', turned into its own column. Once you "
-            "have a few of those, an ordinary regression model can forecast — no specialized sequence model "
+            "have a few of those, an ordinary regression model can forecast: no specialized sequence model "
             "required, because the history is now sitting in the row."
         ),
         analogy=(
@@ -76,13 +76,13 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Choose lags that match the rhythm of your data: 1 for yesterday, 7 for the same weekday, 12 or 365 for yearly cycles.",
-            "Optionally add rolling summaries — a 7-day mean, a 28-day maximum — always computed strictly backwards.",
+            "Optionally add rolling summaries: a 7-day mean, a 28-day maximum: always computed strictly backwards.",
             "BuildML builds the supervised table where each row's features are past values and its target is the current one.",
             "Rows at the very start have no history and are dropped; note how many.",
             "Fit any ordinary regression model on that table.",
         ),
         use=(
-            "As the first thing to try on almost any forecasting problem — it is fast, interpretable, and often hard to beat.",
+            "As the first thing to try on almost any forecasting problem: it is fast, interpretable, and often hard to beat.",
             "When you want to reuse the gradient-boosting model you already trust rather than learn a new framework.",
         ),
         avoid=(
@@ -107,7 +107,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "print(session.forecast_plan.n_dropped_warmup_rows)",
         ),
         check=(
-            "Do your lag choices match a real cycle in the data — weekly, monthly, yearly?",
+            "Do your lag choices match a real cycle in the data: weekly, monthly, yearly?",
             "How many rows did you lose to the warm-up period?",
         ),
         tools=("fit_forecast", "generate_forecast", "evaluate_forecast", "eda"),
@@ -119,7 +119,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "When statsmodels is installed, BuildML can fit classical ETS (Holt-Winters) and ARIMA-family "
             "models on the target history alone. SARIMAX can add seasonal structure and optional exog "
-            "columns. These are not the same as lag_ridge — read the method on the plan."
+            "columns. These are not the same as lag_ridge: read the method on the plan."
         ),
         analogy=(
             "Lag models ask 'what do the last few days look like as features?' ETS/ARIMA ask 'how does "
@@ -128,9 +128,9 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Use time_split before any forecast fit.",
             "Start with method='auto' (often ETS) or pick ets/arima/sarimax explicitly.",
-            "Only pass exog_columns to arima/sarimax/lag paths — ETS/Prophet/N-BEATS refuse exog.",
+            "Only pass exog_columns to arima/sarimax/lag paths: ETS/Prophet/N-BEATS refuse exog.",
             "Evaluate with rolling_one_step before trusting long generate paths.",
-            "Read auto_arima warnings — it is a small AIC grid, not pmdarima.",
+            "Read auto_arima warnings: it is a small AIC grid, not pmdarima.",
         ),
         use=(
             "Smooth seasonal business series with enough history for trend/seasonal components.",
@@ -143,7 +143,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "ETS is always better than lag_ridge.",
-                "Neither is universal — evaluate both on your holdout protocol.",
+                "Neither is universal: evaluate both on your holdout protocol.",
             ),
             (
                 "auto_arima is pmdarima.",
@@ -171,7 +171,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "forecast H steps ahead you need to already know those drivers H steps ahead."
         ),
         analogy=(
-            "Predicting ice-cream sales from temperature works beautifully — until you realize forecasting "
+            "Predicting ice-cream sales from temperature works beautifully: until you realize forecasting "
             "next month's sales now requires forecasting next month's weather."
         ),
         steps=(
@@ -186,7 +186,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When domain experts can name a cause your target's own history cannot express.",
         ),
         avoid=(
-            "Do not add an exogenous column whose future you cannot obtain — you will build a model you cannot run.",
+            "Do not add an exogenous column whose future you cannot obtain: you will build a model you cannot run.",
             "Do not add many exogenous columns on a short series; each one costs degrees of freedom you do not have.",
         ),
         myths=(
@@ -226,19 +226,19 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "and every flaw you introduced early is still there, magnified."
         ),
         steps=(
-            "Freeze the fitted plan — generation never refits.",
+            "Freeze the fitted plan: generation never refits.",
             "Predict the next step from the real observed history.",
             "Append that prediction to the history as if it were actual.",
             "Repeat until you reach the horizon.",
             "Report the horizon length alongside the numbers, and expect accuracy to decay with distance.",
         ),
         use=(
-            "When you genuinely need multiple future periods — a quarter of demand, a month of capacity.",
+            "When you genuinely need multiple future periods: a quarter of demand, a month of capacity.",
             "For planning scenarios where the trajectory matters more than any single point.",
         ),
         avoid=(
             "Do not compare a 14-step generated forecast against a rolling one-step evaluation and call them the same accuracy; they measure different tasks.",
-            "Do not push the horizon far beyond what you validated — the error growth is not linear and not guessable.",
+            "Do not push the horizon far beyond what you validated: the error growth is not linear and not guessable.",
         ),
         myths=(
             (
@@ -276,7 +276,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "whole route on the original instructions. Both are fair tests; they are not the same test."
         ),
         steps=(
-            "Decide which question you need answered — next-step quality, or full-horizon planning quality.",
+            "Decide which question you need answered: next-step quality, or full-horizon planning quality.",
             "For rolling one-step, the evaluator walks forward, predicting one step and then revealing the actual.",
             "For origin evaluation, it fixes an origin and scores the recursive multi-step path from there.",
             "Read the metric together with the protocol name; a number without a protocol is uninterpretable.",
@@ -325,7 +325,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "and creates a new problem: being 5 off when the truth is 0.1 is a 5000% error."
         ),
         steps=(
-            "Start with MAE — it is in your units and easy to explain to anyone.",
+            "Start with MAE: it is in your units and easy to explain to anyone.",
             "Add RMSE when a few large misses are disproportionately costly.",
             "Use MAPE only when your series stays comfortably away from zero and stakeholders need percentages.",
             "Always report the metric alongside a naive baseline, such as 'predict the last observed value'.",
@@ -336,7 +336,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "MAPE for communication, with an explicit caveat about small denominators.",
         ),
         avoid=(
-            "Do not use MAPE on intermittent demand — the zero days will dominate the average and hide everything else.",
+            "Do not use MAPE on intermittent demand: the zero days will dominate the average and hide everything else.",
             "Do not compare MAE across series with different scales; a MAE of 100 is excellent for revenue and catastrophic for a percentage.",
         ),
         myths=(
@@ -365,7 +365,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "forecast-bundle-boundary",
         plain=(
-            "Your fitted forecasting plan — the model, the lag configuration, the feature contract — saves "
+            "Your fitted forecasting plan: the model, the lag configuration, the feature contract: saves "
             "as a forecast bundle. A Session checkpoint stores your data, roles, split, and history. They "
             "are different files answering different questions."
         ),

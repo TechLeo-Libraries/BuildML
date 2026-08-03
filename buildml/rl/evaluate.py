@@ -6,15 +6,15 @@ worth understanding before reading any number this module produces.
 A classifier can be checked against holdout labels because the right answer was
 recorded. A policy cannot: your log records what reward followed the action that
 *was* taken, and says nothing about the reward that would have followed the
-action your new policy would take instead. That missing quantity — the
-counterfactual — is the whole difficulty.
+action your new policy would take instead. That missing quantity: the
+counterfactual: is the whole difficulty.
 
 Two estimators approach it from opposite directions, which is why both are
 reported.
 
 **The direct method** fits a model of reward given context and action, then asks
 it what the new policy's choices would have earned. It uses every row, so it is
-low-variance, but it inherits every error in the reward model — and the reward
+low-variance, but it inherits every error in the reward model: and the reward
 model is least reliable precisely for the context-action pairs the log rarely
 contains, which are often the ones a new policy favours.
 
@@ -33,7 +33,7 @@ estimates are trivially reliable. If it almost never agrees, both estimates rest
 on very little overlapping data and should not drive a decision.
 
 None of this applies to the environment modes. There the policy is actually run,
-so the returns are measured rather than estimated — ``offline`` on the result is
+so the returns are measured rather than estimated: ``offline`` on the result is
 ``False``, and the number means what it says.
 
 See Also
@@ -135,7 +135,7 @@ def evaluate_rl(
 
     **Tabular evaluation reports ``unseen_state_rate``.** A tabular policy has no
     way to generalise to a state it never visited, so its action there comes
-    from an untouched Q-row — effectively arbitrary. Above 20% a warning is
+    from an untouched Q-row: effectively arbitrary. Above 20% a warning is
     raised, because the mean return is then substantially a measure of luck.
 
     Examples
@@ -318,7 +318,7 @@ def _eval_gym(
         disclosures=(
             "Gymnasium evaluation rolls out the policy in the env (online returns).",
             "Requires buildml[rl] (gymnasium).",
-            "Honesty: small-env teaching loop — not MuJoCo/robotics.",
+            "Honesty: small-env teaching loop: not MuJoCo/robotics.",
         ),
     )
 
@@ -363,8 +363,8 @@ def _eval_tabular(
             "(online returns).",
             "Requires buildml[rl] (gymnasium).",
             "unseen_state_rate reports how often evaluation reached a state the "
-            "Q-table never updated — the honest generalization limit of tabular RL.",
-            "Honesty: small discrete-control teaching loop — not MuJoCo/robotics.",
+            "Q-table never updated: the honest generalization limit of tabular RL.",
+            "Honesty: small discrete-control teaching loop: not MuJoCo/robotics.",
         ),
         warnings=tuple(warnings),
     )
@@ -401,7 +401,7 @@ def _eval_sb3(
         disclosures=(
             "SB3 evaluation rolls out the policy in the env (online returns).",
             "Requires buildml[rl-industry] (stable-baselines3 + gymnasium + imitation).",
-            "Honesty: small-env teaching loop — not MuJoCo/robotics/AV.",
+            "Honesty: small-env teaching loop: not MuJoCo/robotics/AV.",
             "Offline RL (batch RL) is out of scope; bandit IPS/DM are separate.",
         ),
     )

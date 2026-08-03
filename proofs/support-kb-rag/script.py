@@ -110,7 +110,8 @@ def main() -> None:
                 ),
             },
             "limitations": [
-                "Tiny corpus; hashing embeddings are lexical, not semantic SOTA",
+                "Adversarial distractors / paraphrases: hashing is lexical, not semantic SOTA",
+                "Perfect MRR/nDCG is not expected on this corpus under hashing",
                 "Echo generate is faithfulness scaffolding, not a production LLM",
             ],
         },

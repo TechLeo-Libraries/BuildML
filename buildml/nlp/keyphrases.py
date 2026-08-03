@@ -11,7 +11,7 @@ corpus to compare against, and it is the most reliable when you have one.
 
 **RAKE** looks at the words between stopwords. A phrase's score is the sum of
 its words' scores, and each word scores by how many phrase-slots it occupies
-relative to how often it appears — so words that consistently show up inside
+relative to how often it appears: so words that consistently show up inside
 longer, more specific phrases win. It works on a single document and favours
 multi-word technical terms.
 
@@ -21,7 +21,7 @@ single-document, and better than RAKE at finding phrases whose importance comes
 from context rather than rarity.
 
 None of these fits anything. Nothing is stored for reuse and no target is
-consulted, which is why keyphrase extraction can be run on any partition —
+consulted, which is why keyphrase extraction can be run on any partition :
 though reading holdout text still informs you, and the disclosures say so.
 """
 
@@ -87,7 +87,7 @@ def rake_scores(
 
     RAKE's insight is that stopwords mark phrase boundaries. Split a document
     at every stopword and punctuation mark, and what remains between the splits
-    are candidate phrases — "the printer keeps jamming on thick paper" yields
+    are candidate phrases: "the printer keeps jamming on thick paper" yields
     "printer keeps jamming" and "thick paper".
 
     Each word then scores as its degree divided by its frequency, where degree
@@ -119,7 +119,7 @@ def rake_scores(
     Notes
     -----
     **RAKE needs no corpus and no training**, which is what makes it usable on
-    a single document — the case where TF-IDF has nothing to compare against.
+    a single document: the case where TF-IDF has nothing to compare against.
 
     **It is sensitive to the stopword list in a way the other methods are
     not.** The list defines the phrase boundaries, so a list missing your
@@ -177,7 +177,7 @@ def textrank_word_scores(
 
     Build a graph where words are nodes and an edge joins any two words that
     appear near each other, then run the algorithm that ranked web pages. A
-    word is important if it sits near many important words — a recursive
+    word is important if it sits near many important words: a recursive
     definition that PageRank resolves by iterating to a stable state.
 
     The practical difference from RAKE is what "important" means. RAKE rewards
@@ -195,7 +195,7 @@ def textrank_word_scores(
         windows capture looser association and produce a denser graph; narrow
         ones approximate direct adjacency.
     damping:
-        PageRank's damping factor — the probability of continuing along an edge
+        PageRank's damping factor: the probability of continuing along an edge
         rather than jumping to a random node. The conventional 0.85 comes from
         the original PageRank work and rarely needs changing.
     iterations:
@@ -210,7 +210,7 @@ def textrank_word_scores(
 
     Notes
     -----
-    Like RAKE, this needs no corpus — a single document has enough
+    Like RAKE, this needs no corpus: a single document has enough
     co-occurrence structure to build a graph from.
 
     See Also
@@ -265,7 +265,7 @@ def extract_keyphrases(
     """Find the phrases that characterise a set of documents.
 
     Runs the chosen scorer and reports two views: the phrases that
-    characterise the collection as a whole, and — optionally — the phrases that
+    characterise the collection as a whole, and: optionally: the phrases that
     distinguish each individual document. The first is how you understand a
     corpus quickly; the second is how you tag or index it.
 
@@ -277,7 +277,7 @@ def extract_keyphrases(
         The split defining partitions. Required unless ``partition`` is
         ``'all'``.
     partition:
-        Which rows to analyse. Defaults to ``'train'`` — not because holdout
+        Which rows to analyse. Defaults to ``'train'``: not because holdout
         text is unsafe here, but because it is the habit worth keeping.
     method:
         ``'tfidf'``, ``'rake'``, or ``'textrank'``. See the module docstring
@@ -298,7 +298,7 @@ def extract_keyphrases(
         grows with every one.
     stopword_language:
         Built-in stopword list to apply. Defaults to English. For RAKE this is
-        not cosmetic — stopwords define where phrases begin and end.
+        not cosmetic: stopwords define where phrases begin and end.
     stopwords:
         Additional terms to treat as stopwords. Add domain boilerplate here.
     min_df:
@@ -328,7 +328,7 @@ def extract_keyphrases(
     Notes
     -----
     **Nothing is fitted and nothing is stored.** This is description, not
-    modelling — there is no plan to reuse and no model to deploy.
+    modelling: there is no plan to reuse and no model to deploy.
 
     **Scores are not comparable across methods or corpora.** Each method has
     its own scale. Use them to rank within one result.

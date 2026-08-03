@@ -60,7 +60,7 @@ def get_state() -> DashboardState:
 
     Every request handler starts here. Raising rather than returning ``None``
     means a route cannot accidentally serve an empty page when the state was
-    never installed — the failure is loud and points at the setup, not at the
+    never installed: the failure is loud and points at the setup, not at the
     route.
 
     Returns
@@ -90,7 +90,7 @@ def clear_state() -> None:
 
     Called when a dashboard shuts down. An EDA report holds analyzer output and
     possibly rendered figures, so leaving it installed after the server stops
-    keeps all of that alive for the life of the process — which matters in a
+    keeps all of that alive for the life of the process: which matters in a
     notebook, where the process lives a long time.
 
     Returns

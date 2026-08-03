@@ -197,7 +197,7 @@ def evaluate_probabilistic(
             if interval.lower is not None and interval.upper is not None:
                 lo = np.asarray(interval.lower, dtype=float)
                 hi = np.asarray(interval.upper, dtype=float)
-                # Align lengths if partition='all' vs filtered frame — rebuild
+                # Align lengths if partition='all' vs filtered frame: rebuild
                 # from the same x used above when lengths mismatch.
                 if lo.shape[0] != y_num.shape[0]:
                     lo, hi = _regression_bounds_for_x(

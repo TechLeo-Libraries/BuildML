@@ -6,7 +6,7 @@ Score payment-rail authorizations for attack risk with a holdout-blend ensemble 
 
 ## Data source
 
-In-repo synthetic payment authorizations (`load_payment_rail_anomaly_synthetic`) — license-clear, deterministic. **Not** a card-network extract.
+In-repo synthetic payment authorizations (`load_payment_rail_anomaly_synthetic`): license-clear, deterministic. **Not** a card-network extract.
 
 ## Leakage controls
 
@@ -30,7 +30,7 @@ Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn holdout-blend twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn holdout-blend twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

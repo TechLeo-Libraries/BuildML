@@ -19,7 +19,7 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Build one loader per partition, never a single loader over all rows.",
-            "Shuffle only the training loader — shuffling evaluation loaders changes nothing useful and hides ordering bugs.",
+            "Shuffle only the training loader: shuffling evaluation loaders changes nothing useful and hides ordering bugs.",
             "Fit any batch-level transform (normalization statistics, augmentation parameters) on training rows only.",
             "Freeze those statistics and reuse them for validation and test batches.",
             "Confirm the row counts per loader match your split before you start a long run.",
@@ -29,7 +29,7 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Especially with multimodal or text loaders, where the tokenizer or feature extractor may also be fitted from data.",
         ),
         avoid=(
-            "Do not build loaders before the split exists — BuildML requires the boundary first, on purpose.",
+            "Do not build loaders before the split exists: BuildML requires the boundary first, on purpose.",
             "Do not reuse a training loader for evaluation to 'save memory'; the shuffling and any train-time augmentation will corrupt the score.",
         ),
         myths=(
@@ -60,7 +60,7 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "early-stopping-partition",
         plain=(
             "Early stopping watches a score during training and halts when it stops improving. Whichever "
-            "partition it watches becomes part of the training process — so it must be validation, never "
+            "partition it watches becomes part of the training process: so it must be validation, never "
             "test, or your final number is no longer independent."
         ),
         analogy=(
@@ -68,14 +68,14 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Using the real exam for that purpose is not."
         ),
         steps=(
-            "Pick the metric that matters and the partition to monitor — validation.",
+            "Pick the metric that matters and the partition to monitor: validation.",
             "Set patience: how many epochs without improvement you will tolerate before stopping.",
             "Train, letting the monitor decide when to stop and which epoch's weights to keep.",
             "Record the stopping epoch, because it is a fitted choice like any other hyperparameter.",
             "Score test once, after training has finished.",
         ),
         use=(
-            "On essentially every neural-network run — it is the cheapest overfitting control you have.",
+            "On essentially every neural-network run: it is the cheapest overfitting control you have.",
             "When training time is expensive and you would otherwise guess an epoch count.",
         ),
         avoid=(
@@ -111,7 +111,7 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "training-curves",
         plain=(
             "A training curve plots loss or a metric against epoch, usually for both the training and the "
-            "monitored partition. It is the single most informative picture in deep learning — but only if "
+            "monitored partition. It is the single most informative picture in deep learning: but only if "
             "you also know which device it ran on, which partition it monitored, and what it cannot tell you."
         ),
         analogy=(
@@ -120,7 +120,7 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Train while recording per-epoch loss and metrics for train and the monitored partition.",
-            "Plot both lines together — the gap between them is the overfitting story.",
+            "Plot both lines together: the gap between them is the overfitting story.",
             "Read the shape: both still falling means undertrained; train falling while validation rises means overfitting; both flat and high means the model or the features are wrong.",
             "Note the device and the seed alongside the plot, because both change the trace.",
             "Do not read fine detail from a single run; epoch-level noise is large.",
@@ -131,7 +131,7 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not compare curves from runs with different batch sizes or learning rates as if the x-axis meant the same thing.",
-            "Do not plot the test partition on the curve — watching it is how it stops being a test partition.",
+            "Do not plot the test partition on the curve: watching it is how it stops being a test partition.",
         ),
         myths=(
             (

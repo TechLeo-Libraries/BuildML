@@ -3,7 +3,7 @@
 DistributedDataParallel is the standard way to scale Torch training. Each
 process holds a full copy of the model and a distinct slice of the data. After
 every backward pass the processes average their gradients, which keeps the
-copies identical while spreading the work — so N processes get through an epoch
+copies identical while spreading the work: so N processes get through an epoch
 in roughly a fraction of the time, at the cost of an effective batch size N
 times larger.
 
@@ -19,8 +19,8 @@ variable is missing rather than hanging at the rendezvous, which is the failure
 mode most worth avoiding.
 
 Treat the whole module as alpha. Single-process training handles most datasets,
-and the operational surface here — NCCL connectivity, firewall rules, pickling
-across the spawn boundary — is genuinely more than it appears.
+and the operational surface here: NCCL connectivity, firewall rules, pickling
+across the spawn boundary: is genuinely more than it appears.
 
 See Also
 --------
@@ -116,7 +116,7 @@ class DDPConfig:
     find_unused_parameters:
         Let DDP tolerate parameters that receive no gradient. Costs an extra
         pass over the graph each step, so leave off unless your model has
-        conditional branches that skip layers — DDP will otherwise hang waiting
+        conditional branches that skip layers: DDP will otherwise hang waiting
         for gradients that never arrive.
     allow_cpu_ddp:
         Permit the CPU gloo path. This is for testing distributed code without
@@ -190,7 +190,7 @@ class DDPTrainResult:
     -----
     **The returned module is unwrapped and on CPU.** DDP wraps your module in a
     layer that only makes sense inside the process group, so the wrapper is
-    stripped before returning. Optimiser state is cleared for the same reason —
+    stripped before returning. Optimiser state is cleared for the same reason :
     it refers to distributed parameters and would not restore meaningfully.
 
     See Also
@@ -234,8 +234,8 @@ class DDPTrainResult:
 def ddp_cuda_device_count() -> int:
     """Count usable CUDA devices, returning 0 rather than failing.
 
-    A probe for capability checks and launch decisions. Any failure — Torch
-    absent, CUDA absent, a broken driver — reports zero devices, because from
+    A probe for capability checks and launch decisions. Any failure: Torch
+    absent, CUDA absent, a broken driver: reports zero devices, because from
     the caller's point of view all of those mean the same thing.
 
     Returns
@@ -305,7 +305,7 @@ def parse_torchrun_env(
 
     ``torchrun`` communicates placement through environment variables. This
     parses them, validates them against each other, and returns a typed record
-    — so a misconfigured launch fails with a clear message rather than a
+   : so a misconfigured launch fails with a clear message rather than a
     confusing hang or a wrong-device error deep in training.
 
     Parameters
@@ -335,7 +335,7 @@ def parse_torchrun_env(
     wrong on several.** Single-node runs have identical global and local ranks,
     so the default is safe and convenient. On multiple nodes the two diverge,
     and using the global rank as a CUDA device index selects a device that does
-    not exist — hence ``require_local_rank=True`` on the multi-node path, which
+    not exist: hence ``require_local_rank=True`` on the multi-node path, which
     turns that silent misplacement into an explicit error.
 
     Examples
@@ -606,7 +606,7 @@ def _train_single_node(
             "Train sampler shards batches per rank; validation metrics come from rank 0.",
         ),
         limitations=(
-            "Single-node spawn mode — for multi-node use multi_node=True under torchrun.",
+            "Single-node spawn mode: for multi-node use multi_node=True under torchrun.",
             "Loader datasets must be picklable under the spawn start method.",
             "Alpha quality: prefer single-process fit_torch unless you need multi-GPU scale.",
         ),
@@ -730,7 +730,7 @@ def train_supervised_module_ddp(
     ----------
     module_factory:
         A zero-argument callable returning a **fresh** module. Called once per
-        process. It must construct rather than return a shared object — under
+        process. It must construct rather than return a shared object: under
         the spawn start method the factory is pickled and re-executed, and a
         captured module would not survive that meaningfully.
     loader_bundle:
@@ -765,7 +765,7 @@ def train_supervised_module_ddp(
     -----
     **The effective batch size is multiplied by the world size**, and this
     changes training. Four processes at batch 32 apply gradients averaged over
-    128 rows, which usually means fewer, smoother updates per epoch — often
+    128 rows, which usually means fewer, smoother updates per epoch: often
     worth raising the learning rate to compensate.
 
     **Validation runs on rank 0 only.** Every rank evaluating the same

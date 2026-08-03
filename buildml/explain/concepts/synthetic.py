@@ -23,7 +23,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "If the generator sees test rows, synthetic data carries "
-                "holdout structure into later training — classic leakage."
+                "holdout structure into later training: classic leakage."
             ),
             formal_idea=(
                 "θ̂ = argmax_θ L(train); x̃ ~ p_θ̂; never θ̂(test)."
@@ -102,7 +102,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             ),
             definition=(
                 "Fidelity: KS / TV / correlation gaps. TSTR: Train on Synthetic, "
-                "Test on Real — a downstream utility proxy."
+                "Test on Real: a downstream utility proxy."
             ),
             intuition=(
                 "Good fidelity does not guarantee useful models; good TSTR does "
@@ -145,7 +145,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "If synthetics land in the table without a flag, later fits "
-                "treat them as real — often undesirable."
+                "treat them as real: often undesirable."
             ),
             formal_idea=("train' = train ∪ {(x̃, flag=1)}; val, test unchanged."),
             why_it_matters=("Silent merges corrupt audit trails and metrics.",),

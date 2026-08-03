@@ -144,7 +144,7 @@ ValidationError
     disclosures = [
         f"Validated n={len(frame)} synthetic rows against plan method={plan.method!r}.",
         "Built-in checks: column presence, null rates, categorical vocabulary, "
-        "numeric range slack — not a privacy or leakage audit.",
+        "numeric range slack: not a privacy or leakage audit.",
     ]
     if ge_checks:
         disclosures.append(

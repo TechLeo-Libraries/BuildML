@@ -2,7 +2,7 @@
 
 Similarity search over unit-length vectors is a matrix multiply. Normalise every
 row when the store is built, normalise the query, and the dot product *is* the
-cosine similarity — no per-query normalisation, no division, one BLAS call
+cosine similarity: no per-query normalisation, no division, one BLAS call
 across the whole corpus.
 
 The default store does exactly that and nothing else: exact, brute-force, and
@@ -34,7 +34,7 @@ class VectorStore(Protocol):
 
     Parallel arrays and one search method. Row ``i`` of ``embeddings`` is the
     vector for ``chunks[i]``, and that correspondence is the store's whole
-    contract — break it and every result points at the wrong passage.
+    contract: break it and every result points at the wrong passage.
 
     Attributes
     ----------
@@ -87,7 +87,7 @@ class VectorStore(Protocol):
         Notes
         -----
         **Filters apply before ranking**, so filtering never leaves a gap in
-        the results — it changes which chunks were eligible in the first place.
+        the results: it changes which chunks were eligible in the first place.
         """
         ...
 
@@ -96,7 +96,7 @@ class VectorStore(Protocol):
 class NumpyCosineStore:
     """Exact cosine search over every vector, in one matrix multiply.
 
-    No approximation and no index structure — the query is compared against all
+    No approximation and no index structure: the query is compared against all
     ``n_chunks`` vectors. That sounds expensive and generally is not: a single
     BLAS matrix-vector product over tens of thousands of rows takes
     milliseconds, and the result is exactly correct rather than probably close.
@@ -117,7 +117,7 @@ class NumpyCosineStore:
     Notes
     -----
     **Everything is resident in memory.** Roughly ``n_chunks × dim × 4`` bytes
-    — a million chunks at 384 dimensions is about 1.5 GB, plus the chunk text.
+   : a million chunks at 384 dimensions is about 1.5 GB, plus the chunk text.
 
     **Cost is linear in corpus size.** Search time grows in proportion, which is
     the point at which an approximate index starts to earn its recall loss.
@@ -148,7 +148,7 @@ class NumpyCosineStore:
         Normalisation happens here rather than per query, so that every later
         search is a plain dot product. The row count is checked against the
         chunk count, because a mismatch would mean every hit reports the wrong
-        passage — with no error and no obvious symptom.
+        passage: with no error and no obvious symptom.
 
         Parameters
         ----------
@@ -224,7 +224,7 @@ class NumpyCosineStore:
         ValidationError
             If ``k`` is not positive, or the query width does not match the
             index. **A width mismatch usually means the query was embedded by a
-            different model than the index** — the check is what turns that into
+            different model than the index**: the check is what turns that into
             an error rather than confident nonsense.
 
         Notes
@@ -313,7 +313,7 @@ class NumpyCosineStore:
         Notes
         -----
         **Unknown identifiers are ignored.** Deleting something that is not
-        there is not an error, so a typo removes nothing and says nothing —
+        there is not an error, so a typo removes nothing and says nothing :
         compare chunk counts to confirm.
 
         **The result can be empty**, and an empty store returns no hits for

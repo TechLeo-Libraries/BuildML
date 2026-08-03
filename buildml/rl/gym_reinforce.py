@@ -6,7 +6,7 @@ to read.
 
 The idea: run an episode, see what it earned, then adjust the policy so that the
 actions taken in a good episode become more likely and those in a bad one become
-less. There is no value function and no model of the environment — just the
+less. There is no value function and no model of the environment: just the
 policy, nudged by outcomes.
 
 Two refinements make it usable. **Returns-to-go** credit each action with the
@@ -19,7 +19,7 @@ the bad ones.
 
 The policy here is linear: action scores are a matrix times the observation,
 passed through a softmax. That is deliberately modest. It cannot represent
-anything a linear model cannot, and it will not solve a hard control problem —
+anything a linear model cannot, and it will not solve a hard control problem :
 but it needs no deep learning framework, it trains in seconds, and every
 parameter is inspectable. Use ``'gym_sb3'`` when you need PPO or DQN on a real
 task; use this to see the mechanism.
@@ -51,7 +51,7 @@ class LinearSoftmaxPolicy:
     Holds one weight vector per action. Scoring an observation is a matrix
     multiply; turning the scores into a distribution is a softmax. Sampling from
     that distribution is how the policy acts, and it is also where exploration
-    comes from — nothing else in REINFORCE explores, so a policy that becomes
+    comes from: nothing else in REINFORCE explores, so a policy that becomes
     confident too early stops learning.
 
     Attributes
@@ -113,7 +113,7 @@ class LinearSoftmaxPolicy:
         -------
         numpy.ndarray
             One unnormalised score per action. These are on an arbitrary scale
-            — only their differences matter.
+           : only their differences matter.
         """
         x = np.asarray(obs, dtype=float).reshape(-1)
         return self.weights @ x
@@ -192,7 +192,7 @@ class LinearSoftmaxPolicy:
         Returns
         -------
         float
-            The undiscounted total reward for the episode — what you plot to
+            The undiscounted total reward for the episode: what you plot to
             see whether learning is happening.
 
         Notes
@@ -303,7 +303,7 @@ def train_gym_reinforce(
     disclosures = [
         "Gymnasium REINFORCE-lite trains a linear softmax policy in an env loop.",
         "This path requires buildml[rl] (gymnasium). Core BC/bandit paths do not.",
-        "Honesty: small discrete-action env teaching loop — not MuJoCo/robotics.",
+        "Honesty: small discrete-action env teaching loop: not MuJoCo/robotics.",
         f"env_id={env_id!r}; n_episodes={n_episodes}; gamma={gamma}.",
     ]
     warnings: list[str] = []
@@ -376,7 +376,7 @@ def train_gym_reinforce(
     if metrics["mean_return_last_20"] < 20 and env_id.startswith("CartPole"):
         warnings.append(
             "CartPole mean return (last 20) is still low; try more episodes "
-            "or a different learning_rate — this is a lite teaching loop."
+            "or a different learning_rate: this is a lite teaching loop."
         )
     return policy, metrics, disclosures, warnings
 
@@ -401,7 +401,7 @@ def evaluate_gym_policy(
     policy:
         The trained policy.
     env_id:
-        The environment to roll out in. Normally the one it was trained on —
+        The environment to roll out in. Normally the one it was trained on :
         a different environment measures transfer, not performance.
     n_episodes:
         How many episodes to run. Returns vary a great deal episode to episode,
@@ -513,7 +513,7 @@ def act_gym_observation(
     -----
     **The probabilities are the interesting part.** ``(0.26, 0.25, 0.25, 0.24)``
     means the policy has essentially no opinion and the returned action is close
-    to arbitrary — worth knowing before acting on it.
+    to arbitrary: worth knowing before acting on it.
 
     See Also
     --------

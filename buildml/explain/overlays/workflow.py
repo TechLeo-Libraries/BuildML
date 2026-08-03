@@ -298,8 +298,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "An operation is blocked and you want the exact reason.",
         ),
         when_not_to_use=(
-            "You want the concept behind the operation rather than its effect here — use learn instead.",
-            "You want to see the effect on real rows without committing — use dry_run.",
+            "You want the concept behind the operation rather than its effect here: use learn instead.",
+            "You want to see the effect on real rows without committing: use dry_run.",
         ),
         mini_example=(
             "before = session.explain('split')",
@@ -345,7 +345,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         concepts=("explain-learning-levels", "reproducibility"),
         plain=(
             "A dictionary that knows what order things should be learned in. Give it a word you did not "
-            "understand — 'leakage', 'stratified', 'ROC AUC' — or the name of an operation, and it "
+            "understand: 'leakage', 'stratified', 'ROC AUC': or the name of an operation, and it "
             "explains the idea from scratch, then tells you which two or three ideas come before it and "
             "which come after."
         ),
@@ -365,8 +365,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "You want the idea behind an operation, separate from your current session.",
         ),
         when_not_to_use=(
-            "You want to know why an operation is blocked right now — that is explain or workflow.",
-            "You need to see the effect on your actual rows — that is dry_run.",
+            "You want to know why an operation is blocked right now: that is explain or workflow.",
+            "You need to see the effect on your actual rows: that is dry_run.",
         ),
         mini_example=(
             "brief = session.learn('leakage-boundary')",

@@ -82,6 +82,10 @@ MOJIBAKE_MARKERS = re.compile(
     r"\u00ce[\u0080-\u00bf]|\u00cf[\u0080-\u00bf])"
 )
 
+# Em dash (U+2014) is a common LLM typography tell in this project's copy.
+# Prefer ASCII punctuation (: ; , . or hyphen) in docs and user-facing strings.
+EM_DASH = re.compile("\u2014")
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -140,6 +144,8 @@ def lint_paths(paths: Iterable[Path] | None = None) -> list[Violation]:
                 violations.append(Violation(relative, number, "stale-public-api", line.strip()))
             if MOJIBAKE_MARKERS.search(line):
                 violations.append(Violation(relative, number, "mojibake-text", line.strip()))
+            if EM_DASH.search(line):
+                violations.append(Violation(relative, number, "em-dash-punctuation", line.strip()))
         for number, window in _soft_leakage_windows(lines):
             if not SOFT_LEAKAGE_FALSE_CLAIM.search(window):
                 continue

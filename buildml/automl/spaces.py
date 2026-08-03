@@ -1,6 +1,6 @@
 """Default model-family and preprocess-recipe catalogs for AutoML.
 
-These catalogs are deliberately finite and disclosed — not neural architecture
+These catalogs are deliberately finite and disclosed: not neural architecture
 search, not an unbounded Autosklearn zoo, and not causal discovery.
 """
 
@@ -374,7 +374,7 @@ def recipe_strategies(
 
     When ``include_recipe_search`` is False, returns a single strategy from
     ``fixed`` (or passthrough). When True, returns the default discrete catalog
-    (optionally capped), ignoring Session-global plans — fold-local only.
+    (optionally capped), ignoring Session-global plans: fold-local only.
 
     Parameters
     ----------

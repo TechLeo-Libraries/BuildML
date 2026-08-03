@@ -1,6 +1,6 @@
 # Kiln Process TDA
 
-**Tier B** cross-domain product proof — TDA shape descriptors + unsupervised
+**Tier B** cross-domain product proof: TDA shape descriptors + unsupervised
 clustering + anomaly detection for synthetic kiln process clouds.
 
 ## Product narrative
@@ -15,7 +15,7 @@ topology and density. The desk:
 
 ## Status
 
-`completed` / `partial` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed` / `partial`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -43,5 +43,5 @@ topology and density. The desk:
 
 ## Limitations
 
-Synthetic kiln clouds — not plant SPC charts. TDA stage skipped when
+Synthetic kiln clouds: not plant SPC charts. TDA stage skipped when
 `ripser`/`persim` extras are missing.

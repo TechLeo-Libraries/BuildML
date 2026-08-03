@@ -5,7 +5,7 @@ real array in memory, and the size of that array is set by how much narrowing
 happened first.
 
 This module does the narrowing at that boundary. It projects to exactly the
-columns the model needs, optionally caps rows, and then materialises — using the
+columns the model needs, optionally caps rows, and then materialises: using the
 native handle where one exists so the full-width frame is never built. It also
 records what it did, because "the model was fitted on 50,000 sampled rows of 4
 million" is a fact that has to survive into the run history rather than being
@@ -54,7 +54,7 @@ class MaterializePrepResult:
         Rows in the frame.
     sampled:
         Whether rows were dropped to meet a cap. **The single most important
-        field** — a fit on a sample is not a fit on the population.
+        field**: a fit on a sample is not a fit on the population.
     engine:
         Which engine did the prep.
     used_native_handle:
@@ -128,14 +128,14 @@ def prepare_design_frame(
     """Narrow to the modelled columns, then materialise, recording what it cost.
 
     Called at the estimator boundary. Projection happens first and, where a
-    native handle is attached, entirely inside the engine — so a table with
+    native handle is attached, entirely inside the engine: so a table with
     hundreds of columns is never widened into pandas just to fit on twelve of
     them.
 
     Three paths exist, and which one runs determines how much is avoided. With
     pandas, projection is a slice of an already-loaded frame. With an attached
     native handle, projection and sampling both run in the engine. With an
-    engine selected but no handle, only the projected columns are converted —
+    engine selected but no handle, only the projected columns are converted :
     better than nothing, and a sign that ``with_engine`` should be called to
     attach one.
 
@@ -146,7 +146,7 @@ def prepare_design_frame(
     columns:
         Everything the design matrix needs, features and target.
     sample_rows:
-        Cap rows before materialising. Changes what a fit means — see the notes.
+        Cap rows before materialising. Changes what a fit means: see the notes.
     random_state:
         Seed for the cap, so the same rows are drawn across runs.
     hard_limit_bytes:
@@ -177,7 +177,7 @@ def prepare_design_frame(
     memory; the estimator boundary is unchanged.
 
     **Projection is by column, not by role.** Pass the target too if the caller
-    needs it — it is not added automatically.
+    needs it: it is not added automatically.
 
     Examples
     --------
@@ -256,7 +256,7 @@ def prepare_design_frame(
         frame = engine.to_pandas(table)
         frame = frame.loc[:, [c for c in cols if c in frame.columns]]
     else:
-        # Engine selected but no persistent native handle — convert projected cols only.
+        # Engine selected but no persistent native handle: convert projected cols only.
         narrow = dataset._ensure_pandas().loc[:, cols]
         disclosures.append(
             f"Projected to {len(cols)} requested column(s) before materialization."

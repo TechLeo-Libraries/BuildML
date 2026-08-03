@@ -104,7 +104,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=("cv < 2, missing split, incompatible final_estimator.",),
         leakage=(
             "Using Session test rows to build stacking meta features is leakage.",
-            "Session-global preprocess before CV can still poison fold honesty — see leakage guides.",
+            "Session-global preprocess before CV can still poison fold honesty: see leakage guides.",
         ),
         anti_patterns=(
             "Scoring meta features on the evaluation partition during fit.",
@@ -191,7 +191,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         outputs=("EvaluateResult with ensemble diagnostics when EnsemblePlan is present.",),
         prerequisites=(DATASET, SPLIT, FIT),
         ordering=("After fit_voting / fit_stacking / fit_blending or load_ensemble_bundle.",),
-        alternatives=("Session.evaluate — same metrics without ensemble-specific tips.",),
+        alternatives=("Session.evaluate: same metrics without ensemble-specific tips.",),
         rationale=("Use to read supervised metrics beside ensemble strategy disclosures.",),
         assumptions=("Feature columns match the fitted contract.",),
         failures=("No fit_result; missing partition.",),

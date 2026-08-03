@@ -69,7 +69,7 @@ def federated_capability_matrix() -> dict[str, Any]:
                     "Uses Flower (flwr) NumPyClient wrappers over Session client "
                     "partitions and Flower's weighted aggregation helpers. Still "
                     "runs locally unless you deploy a real Flower ServerApp/ClientApp "
-                    "yourself — not a turnkey production FL network stack."
+                    "yourself: not a turnkey production FL network stack."
                 ),
             },
         },

@@ -22,7 +22,7 @@ Related: [leakage-cv-recipes](leakage-cv-recipes.md),
 - **CV / search:** folds stay inside **train**; Session test is reserved.
 
 Violating that protocol is the most common way “great offline metrics” fail in
-production — and BuildML cannot stop you from peeking at test in your own code.
+production: and BuildML cannot stop you from peeking at test in your own code.
 It *can* refuse Session-global prep poisoning of CV
 ([leakage guide](leakage-cv-recipes.md)).
 
@@ -59,7 +59,7 @@ recipe = PreprocessRecipe(encode="onehot", scale="standard")
 
 ---
 
-## Use case — compare_models on validation
+## Use case: compare_models on validation
 
 ```python
 comparison = session.compare_models(
@@ -75,15 +75,15 @@ print(comparison)
 # Winner becomes session.fit_result
 ```
 
-Default `partition="test"` is convenient for a final card — dangerous during
+Default `partition="test"` is convenient for a final card: dangerous during
 iterative selection. Prefer validation until the recipe is frozen.
 
 ---
 
-## Use case — grid, randomized, Optuna, and evolutionary search
+## Use case: grid, randomized, Optuna, and evolutionary search
 
 ```python
-# Fold-local prep — do not Session-impute first
+# Fold-local prep: do not Session-impute first
 grid = session.grid_search(
     DecisionTreeClassifier(random_state=0),
     param_grid={"max_depth": [2, 4, 6], "min_samples_leaf": [1, 3, 5]},
@@ -102,7 +102,7 @@ rand = session.randomized_search(
 )
 print(rand.best_params)
 
-# In-tree NumPy GA (no extra). HPO backend — not neuroevolution / NAS.
+# In-tree NumPy GA (no extra). HPO backend: not neuroevolution / NAS.
 evo = session.evolutionary_search(
     DecisionTreeClassifier(random_state=0),
     param_space={
@@ -130,7 +130,7 @@ print(evo.best_params, evo.best_score)
 
 ---
 
-## Use case — nested CV for post-selection estimate
+## Use case: nested CV for post-selection estimate
 
 ```python
 nested = session.nested_cv_score(
@@ -149,7 +149,7 @@ print(
 
 ---
 
-## Use case — calibration, thresholds, importance, slices
+## Use case: calibration, thresholds, importance, slices
 
 ```python
 # Final fit after selection (Session-global prep OK here)
@@ -195,7 +195,7 @@ Use both when you want a metric card **and** a teaching-oriented board.
 | Search after Session prep | Re-ingest or `allow_session_global_preprocess=True` (biased) |
 | Ranking on test during iteration | Use `partition="validation"` |
 | Optuna missing | Install `buildml[optuna]` |
-| Importance as causality | Do not — report as reliance only |
+| Importance as causality | Do not: report as reliance only |
 
 ---
 

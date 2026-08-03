@@ -89,7 +89,7 @@ class PipelineBundle:
     """Everything needed to turn a raw row into a prediction, in one object.
 
     The plan fields are each ``None`` when that step was not part of training.
-    Their *order* matters and is not encoded here — it is fixed by
+    Their *order* matters and is not encoded here: it is fixed by
     :func:`~buildml.pipeline.score.predict_from_pipeline`, which must apply them
     exactly as they were applied during training. Scaling before encoding
     produces different numbers than encoding before scaling.
@@ -100,12 +100,12 @@ class PipelineBundle:
         The estimator, its task, and the feature columns it expects in order.
     impute_plan, encode_plan, scale_plan, date_plan:
         The fitted transforms, each holding the values learned from training
-        data — the medians, the category maps, the means and scales. These are
+        data: the medians, the category maps, the means and scales. These are
         what make a prediction reproducible.
     outlier_plan, binning_plan, feature_select_plan:
-        As above — outlier handling, binning, and feature selection.
+        As above: outlier handling, binning, and feature selection.
     text_plan, reduce_plan, custom_plan:
-        As above — text featurisation, dimensionality reduction, and any
+        As above: text featurisation, dimensionality reduction, and any
         user-supplied transform.
     resample_plan:
         Kept for lineage only. Resampling rewrites training rows to rebalance
@@ -113,7 +113,7 @@ class PipelineBundle:
         be wrong. Recorded so the model card can say the model was trained on
         resampled data, which changes how its probabilities should be read.
     model_card:
-        Provenance — data, metrics, history, and limitations.
+        Provenance: data, metrics, history, and limitations.
     schema_contract:
         What an input frame must contain, checked at score time.
     plans_format, bundle_format:
@@ -156,7 +156,7 @@ class PipelineBundle:
         """Describe the bundle as JSON, for ``meta.json``.
 
         This is the human-readable index of the bundle. The plans appear here as
-        dictionaries — their configuration and learned values — while the
+        dictionaries: their configuration and learned values: while the
         objects that actually do the work live in ``plans.joblib``. Anyone can
         read ``meta.json`` to see what a bundle contains and what it was trained
         with, without unpickling anything.
@@ -231,9 +231,9 @@ def pack_plans_payload(
         The fitted transforms to store, each ``None`` when that step was not
         used.
     outlier_plan, binning_plan, feature_select_plan:
-        As above — outlier handling, binning, and feature selection.
+        As above: outlier handling, binning, and feature selection.
     text_plan, reduce_plan, custom_plan:
-        As above — text featurisation, dimensionality reduction, and any
+        As above: text featurisation, dimensionality reduction, and any
         user-supplied transform.
     resample_plan:
         Stored for lineage only; never applied at inference.
@@ -247,7 +247,7 @@ def pack_plans_payload(
     Notes
     -----
     **The plans are stored as live objects, not serialised dictionaries**, which
-    is why this goes through joblib rather than JSON — the transforms have to be
+    is why this goes through joblib rather than JSON: the transforms have to be
     callable again after loading.
 
     See Also
@@ -295,8 +295,8 @@ def unpack_plans_payload(loaded: Any) -> tuple[dict[str, Any], str]:
     Returns
     -------
     tuple of (dict, str)
-        The plan dictionary with every key present — missing plans as ``None``
-        — and the detected format label.
+        The plan dictionary with every key present: missing plans as ``None``
+       : and the detected format label.
 
     Raises
     ------
@@ -390,7 +390,7 @@ def save_pipeline_bundle(
 
     The model card is built from the fit result, the plan summaries, and
     whatever history and metrics were passed. Providing ``metrics`` and
-    ``history`` is worth the effort — six months on, a card that records what
+    ``history`` is worth the effort: six months on, a card that records what
     the model scored and how it got there is the difference between trusting an
     artifact and rebuilding it.
 
@@ -407,9 +407,9 @@ def save_pipeline_bundle(
         produces a bundle that silently under-prepares its inputs, which is the
         main way to get a bundle wrong.
     outlier_plan, binning_plan, feature_select_plan:
-        As above — outlier handling, binning, and feature selection.
+        As above: outlier handling, binning, and feature selection.
     text_plan, reduce_plan, custom_plan:
-        As above — text featurisation, dimensionality reduction, and any
+        As above: text featurisation, dimensionality reduction, and any
         user-supplied transform.
     resample_plan:
         Recorded for lineage, never replayed at inference.
@@ -421,7 +421,7 @@ def save_pipeline_bundle(
     roles:
         Column roles at training time, recorded on the contract.
     input_columns:
-        Override the inferred input columns. Rarely needed — inference from the
+        Override the inferred input columns. Rarely needed: inference from the
         plans is usually more accurate than a hand-written list, which drifts.
     schema_contract:
         A contract to use as-is instead of building one.
@@ -603,7 +603,7 @@ def load_pipeline_bundle(path: str | Path, *, trusted: bool = False) -> Pipeline
     and rejected rather than partially restored.
 
     Everything else degrades. Missing plans give a bundle with ``None`` in those
-    slots — correct for a model trained without them, and wrong for one whose
+    slots: correct for a model trained without them, and wrong for one whose
     plans were lost, which is why the plan set is worth checking against the
     card. A missing contract disables score-time validation with a warning.
 
@@ -631,7 +631,7 @@ def load_pipeline_bundle(path: str | Path, *, trusted: bool = False) -> Pipeline
     Notes
     -----
     **Loading unpickles an estimator, which executes code.** Only load bundles
-    from a source you trust — this is a property of joblib and pickle, not of
+    from a source you trust: this is a property of joblib and pickle, not of
     BuildML.
 
     **A version mismatch in scikit-learn may warn or fail.** Estimators are

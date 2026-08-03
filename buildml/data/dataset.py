@@ -1,8 +1,8 @@
 """Hold a table, and postpone loading all of it for as long as possible.
 
 Scikit-learn needs a NumPy array in memory. That is not negotiable, and it sets
-a hard ceiling on what can be fitted. But most of what happens before fitting —
-selecting columns, filtering rows, aggregating, sampling — does not need
+a hard ceiling on what can be fitted. But most of what happens before fitting :
+selecting columns, filtering rows, aggregating, sampling: does not need
 everything in memory, and doing it in Polars or DuckDB first can mean the array
 that eventually gets built is a fraction of the size.
 
@@ -14,7 +14,7 @@ a frame. A Polars ``LazyFrame`` goes further and does not execute at all until
 that moment.
 
 Two things follow from this design and are worth stating plainly. **Native
-handles do not enable out-of-core fitting** — they narrow what must be
+handles do not enable out-of-core fitting**: they narrow what must be
 materialised, and the estimator boundary is still a hard limit. And **DuckDB
 connections need closing**: a Dataset that opened one owns it, derived Datasets
 share it, and ``with dataset:`` releases it on the way out.
@@ -210,7 +210,7 @@ class Dataset:
         native:
             A Polars DataFrame or LazyFrame, or a DuckDB relation.
         engine:
-            ``'polars'`` or ``'duckdb'``. Pandas is rejected — there would be
+            ``'polars'`` or ``'duckdb'``. Pandas is rejected: there would be
             nothing native about it.
         schema:
             Column types. Inferred when the pandas cache is built.
@@ -303,7 +303,7 @@ class Dataset:
         """Wrap a transformed frame, carrying the original's context forward.
 
         Preprocessing runs on pandas and hands back a new frame. This rebuilds a
-        Dataset around it while preserving mode, engine, source, and roles — so
+        Dataset around it while preserving mode, engine, source, and roles: so
         a transform does not silently drop the fact that the data came from
         Parquet, or that it was Polars-backed.
 
@@ -378,7 +378,7 @@ class Dataset:
     def attach_native(self, *, rebuild: bool = False) -> Any:
         """Build a native engine handle from the current pandas frame.
 
-        Converts eagerly — a full pass over the data — so that subsequent
+        Converts eagerly: a full pass over the data: so that subsequent
         projection, filtering, and aggregation can run in the engine rather
         than in pandas.
 
@@ -520,7 +520,7 @@ class Dataset:
 
         Notes
         -----
-        Nothing is suppressed — an exception from the block propagates after
+        Nothing is suppressed: an exception from the block propagates after
         the connection is closed.
         """
         self.close_native()
@@ -772,7 +772,7 @@ class Dataset:
     ) -> Dataset:
         """Summarise columns, optionally grouped, in the engine.
 
-        Turns a large table into a small one — counts per category, means per
+        Turns a large table into a small one: counts per category, means per
         group, a global summary row. Runs natively where possible, which is what
         makes it usable on data that would not fit in memory.
 
@@ -800,7 +800,7 @@ class Dataset:
         **This is a reporting helper, not a modelling transform.** It is not
         fold-local and not part of
         :class:`~buildml.preprocess.fold.PreprocessRecipe`. Aggregating over the
-        whole table and feeding the result back in as a feature is a leak —
+        whole table and feeding the result back in as a feature is a leak :
         target encoding and similar group statistics belong in preprocessing,
         where they are fitted on train only.
 
@@ -944,7 +944,7 @@ class Dataset:
         """Keep rows matching a predicate evaluated inside the engine.
 
         The efficient filter. Because the condition is a string the engine
-        understands, it is applied during the scan — rows that fail are never
+        understands, it is applied during the scan: rows that fail are never
         read into memory at all, and on a LazyFrame nothing executes until
         something asks for the result.
 
@@ -971,7 +971,7 @@ class Dataset:
         ------
         ValidationError
             If no native handle is attached, or if the engine has no
-            expression-filter support. There is no pandas fallback — silently
+            expression-filter support. There is no pandas fallback: silently
             evaluating engine SQL in pandas would mean two different dialects
             answering the same question.
 
@@ -1086,7 +1086,7 @@ class Dataset:
         """Hand back the data as a native engine table.
 
         The escape hatch for doing something in Polars or DuckDB that BuildML
-        does not wrap — a join, a window function, engine-specific SQL.
+        does not wrap: a join, a window function, engine-specific SQL.
 
         Parameters
         ----------
@@ -1135,7 +1135,7 @@ class Dataset:
         """Write the data to a Parquet file.
 
         Parquet keeps dtypes, compresses columnwise, and can be read back
-        column-at-a-time — which is what makes the lazy paths in this module
+        column-at-a-time: which is what makes the lazy paths in this module
         worthwhile on the next run. CSV throws all three away.
 
         Parameters
@@ -1235,7 +1235,7 @@ class Dataset:
         Notes
         -----
         **An empty list is not an error here.** Callers that need a role to be
-        present must say so — see :meth:`require_target`.
+        present must say so: see :meth:`require_target`.
 
         See Also
         --------
@@ -1264,7 +1264,7 @@ class Dataset:
         Notes
         -----
         **Two targets usually means a leak.** The second column is often
-        something derived from the label — a flag, a bucketed version — which
+        something derived from the label: a flag, a bucketed version: which
         would be in the feature matrix if it were not caught here.
 
         See Also
@@ -1281,7 +1281,7 @@ class Dataset:
     def metadata(self) -> dict[str, Any]:
         """Describe the dataset without including any of its data.
 
-        Shape, schema, roles, engine, and provenance — everything needed to
+        Shape, schema, roles, engine, and provenance: everything needed to
         record what was used in a run, and nothing that would put row values
         into a log.
 

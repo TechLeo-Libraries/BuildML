@@ -75,7 +75,7 @@ def launch_eda_app(
 
     Turns a report you already have into an interactive dashboard on
     ``localhost``. Non-blocking by default, so a notebook cell returns
-    immediately and the server keeps running in the background — call
+    immediately and the server keeps running in the background: call
     :meth:`EDAAppHandle.stop` when done.
 
     The port is checked before the server starts. That check exists because
@@ -90,7 +90,7 @@ def launch_eda_app(
         :func:`~buildml.eda.profile.explore_dataset`.
     host:
         Bind address. **Keep this at ``127.0.0.1``.** Binding to ``0.0.0.0``
-        exposes the dashboard — and your data — to everything that can reach the
+        exposes the dashboard: and your data: to everything that can reach the
         machine, with no authentication of any kind.
     port:
         Bind port.
@@ -244,7 +244,7 @@ def open_eda_dashboard(
     report:
         The EDA result to serve.
     **kwargs:
-        Passed through — ``host``, ``port``, ``open_browser``, ``title``,
+        Passed through: ``host``, ``port``, ``open_browser``, ``title``,
         ``session_meta``, ``blocking``.
 
     Returns

@@ -33,7 +33,7 @@ def dry_run(
 
     Some steps are expensive and some are hard to undo. A dry run checks
     whether an operation could run right now, what it would need, and what
-    it would change — and then changes nothing. No fitting, no
+    it would change: and then changes nothing. No fitting, no
     transforming, no history entry.
 
     It is the natural companion to :meth:`workflow`: that tells you which
@@ -92,9 +92,9 @@ def dry_run(
 def summarize_history(session) -> HistorySummary:
     """Condense what this session did, and flag what looks risky.
 
-    The raw :attr:`history` is complete but long. This summarises it —
+    The raw :attr:`history` is complete but long. This summarises it :
     which operations ran, in what order, which choices were explicit and
-    which were defaults — and adds a list of unresolved risks worth a
+    which were defaults: and adds a list of unresolved risks worth a
     second look.
 
     The risk list is the reason to call it. Preprocessing that ran before
@@ -119,7 +119,7 @@ def summarize_history(session) -> HistorySummary:
     not proof of leakage or invalid results.
 
     Treat a flagged risk as a question rather than a verdict. Some are
-    deliberate — you may have every reason to preprocess before splitting
+    deliberate: you may have every reason to preprocess before splitting
     on a dataset you are only exploring. The point is that the decision
     should be one you made rather than one that happened.
 
@@ -148,7 +148,7 @@ def workflow(session) -> tuple[WorkflowStep, ...]:
     session's current state and reports the status of each step.
 
     It answers "what can I do next?" without reading the documentation
-    first, which is also why it backs the AI tooling — an agent needs the
+    first, which is also why it backs the AI tooling: an agent needs the
     same answer, in the same machine-readable form.
 
     Parameters
@@ -176,13 +176,18 @@ def workflow(session) -> tuple[WorkflowStep, ...]:
     return resolve_workflow(session)
 
 
-def walkthrough(session, *, export_html: str | Path | None = None) -> WorkflowWalkthroughReport:
+def walkthrough(
+    session,
+    *,
+    export_html: str | Path | None = None,
+    capability_probe: str = "lazy",
+) -> WorkflowWalkthroughReport:
     """Narrate everything this session did, and why.
 
     Turns the operation history into a readable account: which steps ran,
     what they were given, which choices were yours and which were BuildML's
     defaults, and what each one changed. It is the report you produce when
-    someone asks how a number was arrived at — a colleague reviewing the
+    someone asks how a number was arrived at: a colleague reviewing the
     work, an auditor, or yourself in three months.
 
     Because it is generated from the recorded history rather than written
@@ -195,6 +200,10 @@ def walkthrough(session, *, export_html: str | Path | None = None) -> WorkflowWa
     export_html:
         Path to write a self-contained HTML version to. ``None`` returns
         the report without writing anything.
+    capability_probe:
+        ``lazy`` (default) probes capability matrices only for domains that
+        already have Session artifacts. ``eager`` probes every domain
+        (cached process-wide). ``skip`` never loads industry stacks.
 
     Returns
     -------
@@ -213,7 +222,7 @@ def walkthrough(session, *, export_html: str | Path | None = None) -> WorkflowWa
     Session.model_card : The equivalent artefact for a saved pipeline.
     Session.history : The raw records underneath.
     """
-    report = build_walkthrough(session)
+    report = build_walkthrough(session, capability_probe=capability_probe)
     if export_html is not None:
         report.export_html(export_html)
     session._last_walkthrough = report
@@ -232,7 +241,7 @@ def explain(
     BuildML's explanations are part of the library rather than a separate
     manual, so you can ask from inside your code. Name an operation and you
     get an account of what it does, what it needs, what it will change, and
-    the traps worth knowing about — written for someone meeting the concept
+    the traps worth knowing about: written for someone meeting the concept
     for the first time.
 
     The ``moment`` argument changes the tense and therefore the usefulness.
@@ -275,7 +284,7 @@ def explain(
     Notes
     -----
     The conceptual material lives in :mod:`buildml.explain`, which is also
-    where the guides and the AI tooling read from — so what you are told
+    where the guides and the AI tooling read from: so what you are told
     here is the same thing every other surface is told. The level changes
     how much is shown, never what is true.
 
@@ -296,13 +305,13 @@ def explain(
 
 
 def learn(session, topic: str | None = None, *, level: str = "beginner") -> LearningBrief:
-    """Teach a concept, an operation, or a term — and say what to read first.
+    """Teach a concept, an operation, or a term: and say what to read first.
 
     :meth:`explain` answers "what will this call do here, now?".
     :meth:`learn` answers the prior question: "what is this, and what do I
     need to understand before it makes sense?". You can name either side of
-    the vocabulary — the operation (``'split'``), the concept behind it
-    (``'data-splitting'``), or the word you tripped over (``'leakage'``) —
+    the vocabulary: the operation (``'split'``), the concept behind it
+    (``'data-splitting'``), or the word you tripped over (``'leakage'``) :
     and BuildML works out which you meant.
 
     Called with no topic it returns the foundation concepts, which is the

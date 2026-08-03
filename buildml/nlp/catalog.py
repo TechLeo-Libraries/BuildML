@@ -3,7 +3,7 @@
 Half of this package's capabilities depend on optional dependencies, and the
 worst way to discover that is a failed import in the middle of a workflow. The
 functions here answer "can I do this?" before you try, and the capability matrix
-answers "what would I have to install?" — so a missing feature is a decision
+answers "what would I have to install?": so a missing feature is a decision
 rather than a surprise.
 
 Defaults are chosen to always work. The bag-of-n-grams backend needs nothing
@@ -58,7 +58,7 @@ def nlp_capability_matrix() -> dict[str, Any]:
 
     A full picture of the package as installed right now: which representation
     backends can run, which task surfaces are reachable, what each one needs,
-    and — the part that is easy to skip — what each one honestly cannot do.
+    and: the part that is easy to skip: what each one honestly cannot do.
 
     That last part is the reason this exists rather than a simple availability
     check. Knowing that lexicon sentiment is available matters much less than
@@ -289,7 +289,7 @@ def nlp_capability_matrix() -> dict[str, Any]:
             ),
             "rag": (
                 "Corpus ingestion, chunking, indexing, and retrieval to ground "
-                "generated answers with citations — a retrieval product, not a "
+                "generated answers with citations: a retrieval product, not a "
                 "supervised text model."
             ),
             "preprocess_text_features": (
@@ -381,8 +381,8 @@ def list_nlp_backends(*, available_only: bool = True) -> list[str]:
 def backend_available(name: str) -> bool:
     """Check whether one backend can run in this environment.
 
-    Useful for branching — try embeddings when they are installed, fall back to
-    bag-of-n-grams when they are not — rather than catching an import error
+    Useful for branching: try embeddings when they are installed, fall back to
+    bag-of-n-grams when they are not: rather than catching an import error
     after the fact.
 
     Parameters
@@ -417,7 +417,7 @@ def resolve_backend_estimator(
 
     Not every head works with every representation, and the incompatibilities
     are not obvious from the names. Catching them here means a clear message
-    instead of an error from deep inside scikit-learn — or worse, silently
+    instead of an error from deep inside scikit-learn: or worse, silently
     degraded results.
 
     Parameters
@@ -512,8 +512,8 @@ def resolve_entity_backend(backend: str | None) -> str:
     Notes
     -----
     The two extractors fail in genuinely different ways, so the choice matters
-    beyond availability. Rules are precise on structured things — dates,
-    amounts, reference codes — and blind to anything their patterns do not
+    beyond availability. Rules are precise on structured things: dates,
+    amounts, reference codes: and blind to anything their patterns do not
     describe. spaCy's statistical model generalises to names and organisations
     it has never seen, and in exchange produces confident false positives on
     unusual text.

@@ -112,7 +112,7 @@ def fit_metalearning_op(
     **Leakage:** Requires a split. Meta-train uses train only. Validation/test
     are never used for meta-training. Needs a task/group column (role or
     ``task_column=``) and exactly one ``role='target'``. Honesty: tabular
-    few-shot / episodic protocols — not foundation-model meta-learning.
+    few-shot / episodic protocols: not foundation-model meta-learning.
     """
     session.assert_can_fit("train")
     plan, result = fit_metalearning(

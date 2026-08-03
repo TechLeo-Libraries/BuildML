@@ -21,7 +21,7 @@ def detect_changepoints(
 
     Runs PELT or binary segmentation via ruptures when installed, otherwise a
     lightweight CUSUM heuristic. Changepoints are descriptive on the analyzed
-    scope — refit forecasts after structural breaks rather than treating breaks
+    scope: refit forecasts after structural breaks rather than treating breaks
     as labels.
 
     Parameters
@@ -54,7 +54,7 @@ def detect_changepoints(
     warnings: list[str] = []
     disclosures: list[str] = [
         f"Changepoint method={method}, n={n}, penalty={penalty}.",
-        "Changepoints are descriptive on the analyzed scope — refit forecasts after breaks.",
+        "Changepoints are descriptive on the analyzed scope: refit forecasts after breaks.",
     ]
 
     if method in {"pelt", "binseg"}:

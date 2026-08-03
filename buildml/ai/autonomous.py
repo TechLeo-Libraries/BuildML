@@ -89,7 +89,7 @@ class AutonomyConfig:
         plan gets before you see it.
     tool_allowlist:
         Which tools may run unattended. A subset of the registry, and the
-        primary control — a tool absent from this list cannot be
+        primary control: a tool absent from this list cannot be
         auto-confirmed however the plan is phrased.
     allow_destructive:
         Whether destructive tools may run at all. **Off by default, and
@@ -98,7 +98,7 @@ class AutonomyConfig:
         Halt at the first failure. Usually right: a plan's later steps assume
         the earlier ones worked.
     require_explicit:
-        Require ``confirm_autonomy=True`` at the call site. Leave on — it is
+        Require ``confirm_autonomy=True`` at the call site. Leave on: it is
         what stops autonomy from being entered by accident.
     egress_levels_blocked:
         Levels under which autonomy refuses to run. Sample levels are blocked
@@ -138,7 +138,7 @@ class AutonomyConfig:
         """Return the autonomy bounds as JSON-safe values.
 
         Records the constraints a run operated under, which is what makes the
-        audit trail meaningful — the record of what happened means little
+        audit trail meaningful: the record of what happened means little
         without the record of what was permitted.
 
         Returns
@@ -171,7 +171,7 @@ class AutonomyStepRecord:
     tool_name:
         Which tool ran, or would have.
     arguments:
-        With what arguments. **Kept in full** — a summary would defeat the
+        With what arguments. **Kept in full**: a summary would defeat the
         purpose of an audit record.
     auto_confirmed:
         Whether it was approved without a person.
@@ -180,7 +180,7 @@ class AutonomyStepRecord:
     skipped:
         Whether it was passed over.
     skip_reason:
-        Why — unmapped operation, or not on the allowlist.
+        Why: unmapped operation, or not on the allowlist.
     error:
         What went wrong.
     result_summary:
@@ -604,7 +604,7 @@ def run_autonomous(
         "Sample/raw egress levels remain blocked in this mode.",
     )
     limitations = (
-        "This is operator automation inside an allowlist — not an unconstrained agent.",
+        "This is operator automation inside an allowlist: not an unconstrained agent.",
         "Planner quality depends on the provider; MockProvider is for CI only.",
         "Auto-confirm does not imply the workflow is production-safe or leakage-free.",
     )

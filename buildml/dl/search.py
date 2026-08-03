@@ -219,7 +219,7 @@ class TorchNestedCVResult:
     -----
     **``mean_metrics`` estimates the whole procedure, not one model.** It says
     "searching this space this way, on data like this, yields models that score
-    around here" — which is the useful claim, and is not the same as a
+    around here": which is the useful claim, and is not the same as a
     guarantee about any particular fitted model.
 
     **When ``best_params_per_fold`` disagrees, the search space is not clearly
@@ -251,7 +251,7 @@ class TorchNestedCVResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the whole nested run as JSON-safe values.
 
-        Includes every outer fold's record and its nested inner winner —
+        Includes every outer fold's record and its nested inner winner :
         keeping the per-fold disagreement visible, which a summary of the means
         alone would hide.
 
@@ -302,7 +302,7 @@ class TorchSearchResult:
     best_params:
         The top configuration. This is what the search is for.
     best_metrics:
-        Its cross-validated scores. **Optimistic** — the maximum over many
+        Its cross-validated scores. **Optimistic**: the maximum over many
         trials, which is not the same as a typical outcome.
     held_out_partitions:
         Session partitions the search never touched. Score there for an honest
@@ -316,7 +316,7 @@ class TorchSearchResult:
     -----
     **Take ``best_params`` and leave ``best_metrics``.** The selected score is
     biased upward by the selection itself. Refit with the chosen configuration
-    and evaluate on a partition that played no part in the search — that is the
+    and evaluate on a partition that played no part in the search: that is the
     number to report.
 
     See Also
@@ -341,7 +341,7 @@ class TorchSearchResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the search as JSON-safe values.
 
-        Every trial is included, not just the winner — the runners-up are what
+        Every trial is included, not just the winner: the runners-up are what
         tell you whether the winner won by a margin or by noise.
 
         Returns
@@ -783,7 +783,7 @@ def search_torch(
     spends its budget varying every parameter equally, including the ones that
     do not matter; sampling explores more distinct values of the ones that do.
 
-    **Only tabular MLP knobs are searchable by default** — learning rate,
+    **Only tabular MLP knobs are searchable by default**: learning rate,
     hidden widths, dropout, batch size, epochs, and weight decay. Anything else
     is rejected explicitly rather than silently ignored. Pass a
     ``module_factory`` to search over your own architecture.
@@ -863,7 +863,7 @@ def search_torch(
         "Use nested_cv_torch for an outer generalization estimate after search.",
         "Default search space covers tabular MLP knobs only "
         f"({', '.join(sorted(_SEARCHABLE))}); text/multimodal search is not covered here.",
-        "Tiny epoch budgets produce noisy ranks — treat as alpha selection, not production AutoML.",
+        "Tiny epoch budgets produce noisy ranks: treat as alpha selection, not production AutoML.",
     )
     return TorchSearchResult(
         task=resolved_task,
@@ -1137,7 +1137,7 @@ def nested_cv_torch(
     limitations = (
         "Outer mean_metrics estimate selection+fit honesty under the searched space; "
         "they are not a production SLA.",
-        "consensus_params is a modal/median summary across outer winners — refit on full "
+        "consensus_params is a modal/median summary across outer winners: refit on full "
         "train with an explicit chosen config before deployment claims.",
         "Default factory searches tabular MLP knobs only; multimodal/text nested search "
         "requires a custom module_factory.",

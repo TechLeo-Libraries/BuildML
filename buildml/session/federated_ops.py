@@ -99,7 +99,7 @@ def fit_federated_op(
     **Leakage:** Requires a split. Local client updates use train only.
     Validation/test are never used for training. Needs a client/group column
     (role or ``client_column=``) and exactly one ``role='target'``. Honesty:
-    local FedAvg-style simulation — ``backend='flower'`` uses Flower libraries
+    local FedAvg-style simulation: ``backend='flower'`` uses Flower libraries
     but still runs in-process unless you deploy Flower separately; not
     cryptographic secure aggregation.
     """

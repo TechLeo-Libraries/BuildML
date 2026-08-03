@@ -86,17 +86,16 @@ def induce_imodels_rules(
         raise ValidationError(f"Unknown imodels method {method!r}.")
 
     est.fit(x, y_arr)
-    rules_df = getattr(est, "rules_", None)
-    if rules_df is None or len(rules_df) == 0:
+    rules_raw = getattr(est, "rules_", None)
+    if rules_raw is None or len(rules_raw) == 0:
         raise ValidationError(
             f"imodels {method_key} produced no exportable rules; "
             "try backend='sklearn' or relax max_depth."
         )
 
+    rule_rows = _normalize_imodels_rules(rules_raw, max_rules=max_rules)
     rules_out: list[Rule] = []
-    for rank, row in rules_df.head(max_rules).iterrows():
-        rule_str = str(row.get("rule", row.iloc[0] if len(row) else ""))
-        coef = float(row.get("coef", row.get("coefficient", 1.0)) or 1.0)
+    for rank, rule_str, coef in rule_rows:
         antecedents = _parse_imodels_rule_string(rule_str, columns)
         if not antecedents:
             continue
@@ -139,6 +138,42 @@ def induce_imodels_rules(
         provenance=provenance,
     )
     return kb, est
+
+
+def _normalize_imodels_rules(
+    rules_raw: Any, *, max_rules: int
+) -> list[tuple[int, str, float]]:
+    """Normalize imodels ``rules_`` exports to ``(rank, rule_str, coef)`` rows.
+
+    Newer imodels releases may expose ``rules_`` as a DataFrame, a list of
+    rule strings, or a list of objects with ``rule`` / ``coef`` attributes.
+    """
+    rows: list[tuple[int, str, float]] = []
+    if isinstance(rules_raw, pd.DataFrame):
+        for rank, row in rules_raw.head(max_rules).iterrows():
+            rule_str = str(row.get("rule", row.iloc[0] if len(row) else ""))
+            coef = float(row.get("coef", row.get("coefficient", 1.0)) or 1.0)
+            rows.append((int(rank) if isinstance(rank, (int, np.integer)) else len(rows), rule_str, coef))
+        return rows
+
+    sequence = list(rules_raw)[: int(max_rules)]
+    for rank, item in enumerate(sequence):
+        if isinstance(item, str):
+            rows.append((rank, item, 1.0))
+            continue
+        if isinstance(item, dict):
+            rule_str = str(item.get("rule", item.get("rule_str", "")))
+            coef = float(item.get("coef", item.get("coefficient", 1.0)) or 1.0)
+            rows.append((rank, rule_str, coef))
+            continue
+        rule_str = str(getattr(item, "rule", getattr(item, "rule_str", item)))
+        coef_raw = getattr(item, "coef", getattr(item, "coefficient", 1.0))
+        try:
+            coef = float(coef_raw if coef_raw is not None else 1.0)
+        except (TypeError, ValueError):
+            coef = 1.0
+        rows.append((rank, rule_str, coef))
+    return rows
 
 
 def _build_rulefit(imodels: Any, *, task: str, random_state: int | None, max_depth: int) -> Any:

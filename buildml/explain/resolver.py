@@ -406,9 +406,9 @@ def explain_before(
     The expensive mistakes in a machine-learning workflow are made before a call
     runs, not after: preprocessing fitted on the wrong rows, a split chosen after
     the fact, a metric picked because it looked good. This assembles what is
-    knowable in advance — whether the preconditions hold, what the operation is
+    knowable in advance: whether the preconditions hold, what the operation is
     for, what it will change, what could go wrong, and what else could be used
-    instead — and fronts all of it with a beginner primer.
+    instead: and fronts all of it with a beginner primer.
 
     Parameters
     ----------

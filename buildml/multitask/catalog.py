@@ -65,7 +65,7 @@ def multitask_capability_matrix() -> dict[str, Any]:
                 "notes": (
                     "Shared MLP trunk with per-task heads and joint training "
                     "(buildml[torch]). Supports mixed classification+regression "
-                    "targets via separate heads — not a research MTL platform."
+                    "targets via separate heads: not a research MTL platform."
                 ),
             },
         },

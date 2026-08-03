@@ -136,7 +136,7 @@ def interpret_text_prediction(
 
     Produces two views. Per document, the tokens that pushed the prediction
     toward or away from a class, with the exact amount each contributed. Across
-    the model, the vocabulary that carries the most weight overall — which is
+    the model, the vocabulary that carries the most weight overall: which is
     often where you discover that your classifier learned something
     embarrassing, like a ticket-routing model keying on the name of the agent
     who happened to handle every billing case.
@@ -153,7 +153,7 @@ def interpret_text_prediction(
         The dataset holding the documents.
     plan:
         A fitted plan from :func:`~buildml.nlp.fit.fit_text_classifier`. It must
-        use the sklearn backend with a count or TF-IDF vectorizer — see the
+        use the sklearn backend with a count or TF-IDF vectorizer: see the
         notes.
     split_plan:
         The split defining partitions.
@@ -166,7 +166,7 @@ def interpret_text_prediction(
         one.
     top_k:
         How many tokens to report per document, taken by absolute
-        contribution — so both the strongest evidence for and the strongest
+        contribution: so both the strongest evidence for and the strongest
         evidence against appear.
     max_documents:
         Cap on documents explained, since per-document output gets unwieldy

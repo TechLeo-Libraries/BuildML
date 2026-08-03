@@ -2,7 +2,7 @@
 
 scikit-learn ships stacking but not blending, so these two estimators fill the
 gap. They follow the standard estimator protocol, which means they work
-anywhere a scikit-learn model does — inside a pipeline, a grid search, or a
+anywhere a scikit-learn model does: inside a pipeline, a grid search, or a
 cross-validation.
 
 The idea in one paragraph: split the data you are given, fit the base models on
@@ -20,7 +20,7 @@ test never enter meta-learner fitting when the estimator is built through
 :mod:`buildml.ensemble.fit`.
 
 After the meta-learner is fitted, the bases are optionally refit on everything
-they were given — the standard deployment pattern, disclosed because it means
+they were given: the standard deployment pattern, disclosed because it means
 the deployed bases differ slightly from those the meta-learner saw.
 
 See Also
@@ -140,7 +140,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
 
     Two details are worth knowing because they affect results. The inner split
     is stratified whenever the target has more than one class, which keeps rare
-    classes present in both halves — without it, a class with twenty examples
+    classes present in both halves: without it, a class with twenty examples
     can end up entirely on one side. And for binary problems only the
     positive-class probability column is kept, since the two columns sum to one
     and feeding both gives the meta-learner perfectly collinear inputs.
@@ -191,7 +191,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         """Record the configuration, validating nothing until ``fit``.
 
         Parameters are stored unmodified, as scikit-learn requires for ``clone``
-        and ``get_params`` to work — which is what lets this estimator be used
+        and ``get_params`` to work: which is what lets this estimator be used
         inside a grid search. Validation therefore happens in :meth:`fit`.
 
         Parameters
@@ -232,7 +232,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         Parameters
         ----------
         X:
-            Training features. **Train-partition rows only** — the holdout comes
+            Training features. **Train-partition rows only**: the holdout comes
             out of these.
         y:
             Training labels.
@@ -377,7 +377,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         ------
         AttributeError
             If the meta-learner has no ``predict_proba``. Choose one that does
-            — the default logistic regression is such a model.
+           : the default logistic regression is such a model.
         NotFittedError
             If called before ``fit``.
 
@@ -401,11 +401,11 @@ class HoldoutBlendRegressor(RegressorMixin, BaseEstimator):
     The regression counterpart, and simpler than the classifier for two reasons.
     There is nothing to stratify on, so the inner split is plain random. And
     there are no probabilities, so the meta-features are always the bases'
-    predicted values — one column per base.
+    predicted values: one column per base.
 
     With a ridge meta-learner, the fitted coefficients read as weights: how much
     each base contributes to the final answer. That is unusually interpretable
-    for an ensemble, and worth looking at — a base with a coefficient near zero
+    for an ensemble, and worth looking at: a base with a coefficient near zero
     is contributing nothing but latency, and a negative coefficient means the
     meta-learner is using that model as a correction rather than a prediction.
 
@@ -466,7 +466,7 @@ class HoldoutBlendRegressor(RegressorMixin, BaseEstimator):
             Share reserved for the meta-learner, between 0.05 and 0.5.
         blend_method:
             Accepted for symmetry with the classifier and effectively fixed at
-            ``'predict'`` — there are no probabilities in regression.
+            ``'predict'``: there are no probabilities in regression.
         random_state:
             Seed for the inner split.
         refit_bases_on_full_train:
@@ -597,7 +597,7 @@ class HoldoutBlendRegressor(RegressorMixin, BaseEstimator):
         **Predictions are not bounded by the bases' range.** A ridge
         meta-learner with an intercept and non-convex coefficients can output
         values outside what any base predicted, which matters when the target
-        has a physical floor — a count, a price, a duration. Clip afterwards if
+        has a physical floor: a count, a price, a duration. Clip afterwards if
         the domain requires it.
         """
         return self.final_estimator_.predict(self._transform_meta(X))

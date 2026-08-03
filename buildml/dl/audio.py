@@ -3,7 +3,7 @@
 Audio arrives in inconsistent shapes: files on disk at whatever sample rate they
 were recorded at, arrays already in memory, stereo or mono, of varying lengths.
 Batching requires all of it to become one fixed shape, and this module does that
-conversion — decode, mix down to mono, resample to a common rate, and pad or
+conversion: decode, mix down to mono, resample to a common rate, and pad or
 truncate to a fixed length. The output is always ``(1, T)`` float32.
 
 Two decisions here are worth understanding.
@@ -11,7 +11,7 @@ Two decisions here are worth understanding.
 **Short clips are repeat-padded, not zero-padded.** The fusion audio branch ends
 in global average pooling, so a half-second clip zero-padded into a five-second
 window would have four and a half seconds of silence averaged into its
-representation — the model would mostly learn how long each clip was. Tiling the
+representation: the model would mostly learn how long each clip was. Tiling the
 content keeps the pooled statistics about the audio. The alternative, masked
 pooling, would require passing lengths through ``forward``, which complicates
 both the batch contract and ONNX export.
@@ -213,7 +213,7 @@ def stack_audio_column(
     Parameters
     ----------
     values:
-        An iterable of audio cells — a pandas Series or a list.
+        An iterable of audio cells: a pandas Series or a list.
     sample_rate:
         Target rate in Hz.
     max_samples:
@@ -325,8 +325,8 @@ def fit_audio_waveform_stats(
     """Learn the amplitude scale of the training audio.
 
     Computes a single mean and standard deviation across all training samples.
-    Audio amplitude varies enormously with recording conditions — the same words
-    at different distances from a microphone differ by orders of magnitude —
+    Audio amplitude varies enormously with recording conditions: the same words
+    at different distances from a microphone differ by orders of magnitude :
     and standardising removes that so the network learns from structure rather
     than volume.
 

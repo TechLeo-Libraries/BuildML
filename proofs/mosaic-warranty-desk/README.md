@@ -1,6 +1,6 @@
 # Mosaic Warranty Desk
 
-**Tier B** cross-domain product proof — CBR case memory + symbolic guardrails +
+**Tier B** cross-domain product proof: CBR case memory + symbolic guardrails +
 classical scoring for synthetic warranty claim decisions.
 
 ## Product narrative
@@ -14,7 +14,7 @@ explainable deny rules, and scoring with a classical logistic baseline:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -27,7 +27,7 @@ explainable deny rules, and scoring with a classical logistic baseline:
 - Stratified split before CBR / symbolic / classical
 - CBR case memory built from train cases only
 - Symbolic rules induced on the same train split; test after lock
-- Classical scorer uses `inject_split` — never refits on test
+- Classical scorer uses `inject_split`: never refits on test
 
 ## What fails if leakage is ignored
 
@@ -42,4 +42,4 @@ explainable deny rules, and scoring with a classical logistic baseline:
 
 ## Limitations
 
-Synthetic warranty claims — not a real OEM extract. CBR ≠ RAG.
+Synthetic warranty claims: not a real OEM extract. CBR ≠ RAG.

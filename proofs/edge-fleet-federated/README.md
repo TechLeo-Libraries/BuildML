@@ -3,7 +3,7 @@
 ## Business purpose
 
 Simulate FedAvg fault classification across non-IID edge devices (telemetry
-clients) — distinct from the hospital-silo narrative in
+clients): distinct from the hospital-silo narrative in
 `federated-hospital-sim`.
 
 ## Data source
@@ -30,9 +30,9 @@ See `results/results.json` (accuracy / f1).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs pooled centralized SGD
+Filled: `baseline_industry.py` runs pooled centralized SGD
 (`results/comparison.json`).
 
 ## Limitations
 
-Local FedAvg simulation only — not a deployed FL network.
+Local FedAvg simulation only: not a deployed FL network.

@@ -6,7 +6,7 @@ self-contained artifact that carries the computation graph along with the
 weights.
 
 Two formats, with different reach. **TorchScript** stays inside the Torch
-ecosystem and is the higher-fidelity option — it handles the widest range of
+ecosystem and is the higher-fidelity option: it handles the widest range of
 model code and reloads with ``torch.jit.load``. **ONNX** is the interchange
 format, readable by onnxruntime, TensorRT, and other engines, at the cost of
 narrower operator coverage: not every Torch operation has an ONNX equivalent at
@@ -16,7 +16,7 @@ Both export by tracing, which is where the important caveat lives. Tracing runs
 the model once on an example input and records the operations that executed. Any
 branch not taken during that run is not in the artifact. A model whose behaviour
 depends on its input values will export cleanly and then be wrong for inputs that
-would have taken a different path — no error, just a different answer. Use
+would have taken a different path: no error, just a different answer. Use
 ``method="script"`` for TorchScript when control flow matters.
 
 Export produces a file. It does not serve it, and validating the artifact against
@@ -174,7 +174,7 @@ def resolve_example_input(
     -----
     **The example's shape defines the artifact's expectations.** A batch of 16
     traces to an artifact that assumes 16 unless the batch axis is marked
-    dynamic — which the ONNX path does by default.
+    dynamic: which the ONNX path does by default.
 
     See Also
     --------
@@ -202,7 +202,7 @@ def export_torchscript(
     """Save a module as TorchScript, runnable without your model class.
 
     Produces a ``.pt`` file containing both the computation graph and the
-    weights. Reload it with ``torch.jit.load`` anywhere Torch is available — no
+    weights. Reload it with ``torch.jit.load`` anywhere Torch is available: no
     Python source, no class definition.
 
     Parameters
@@ -240,7 +240,7 @@ def export_torchscript(
     the cost of only supporting a subset of Python.
 
     **Evaluation mode is applied and baked in.** Dropout is off and batch-norm
-    uses its running statistics, which is what inference should do — and is not
+    uses its running statistics, which is what inference should do: and is not
     reversible in the exported artifact.
 
     **Reload with a compatible Torch major version.** TorchScript is not
@@ -288,7 +288,7 @@ def export_torchscript(
             "Reload with torch.jit.load in a matching Torch major version.",
         ),
         limitations=(
-            "TorchScript is an alpha escape hatch — not a full serving product.",
+            "TorchScript is an alpha escape hatch: not a full serving product.",
             "Dynamic Python control flow and data-dependent shapes may not transfer.",
         ),
         warnings=tuple(warnings),
@@ -309,7 +309,7 @@ def export_onnx(
     """Save a module as ONNX, runnable outside PyTorch entirely.
 
     Produces a graph in the open ONNX format, which onnxruntime, TensorRT, and
-    other engines can execute — often faster than PyTorch, and without the
+    other engines can execute: often faster than PyTorch, and without the
     PyTorch dependency. The exported model is validated with the ONNX checker
     when possible.
 
@@ -363,7 +363,7 @@ def export_onnx(
 
     **A checker complaint is a warning, not an error.** Some models the strict
     checker objects to run correctly in practice, so the export completes and
-    the objection is recorded — but verify against your actual runtime.
+    the objection is recorded: but verify against your actual runtime.
 
     Examples
     --------
@@ -617,8 +617,8 @@ def export_train_result(
     CPU-traced one loads anywhere and can be moved afterwards. The side effect
     is worth knowing about if you plan to keep training.
 
-    **Multimodal inputs are named after the layout** — ``numeric``, ``tokens``,
-    ``image``, ``audio`` — rather than ``input_0`` and friends, which makes the
+    **Multimodal inputs are named after the layout**: ``numeric``, ``tokens``,
+    ``image``, ``audio``: rather than ``input_0`` and friends, which makes the
     resulting graph considerably easier to wire up correctly.
 
     **The contract travels in ``meta``, and it is the thing that makes the
@@ -690,7 +690,7 @@ def load_torchscript(
 ) -> Any:
     """Load a TorchScript artifact back into a runnable module.
 
-    Reads a file written by :func:`export_torchscript`. No model class needed —
+    Reads a file written by :func:`export_torchscript`. No model class needed :
     the graph is in the file. Requires ``trusted=True`` because TorchScript
     load can execute code depending on Torch version / settings.
 

@@ -5,7 +5,7 @@ get tuned, and it is unreliable in a specific way: you look at the queries you
 thought of, and the failures are on the ones you did not. Measuring against a
 labelled set replaces that with a number you can compare between configurations.
 
-The labels are called *qrels* — for each query, which documents or chunks should
+The labels are called *qrels*: for each query, which documents or chunks should
 have come back. Building fifty of them by hand is a couple of hours of work and
 is almost always worth it, because without them every tuning decision is a
 guess.
@@ -26,7 +26,7 @@ Four retrieval metrics, each answering a different question:
     The most complete single number when you want just one.
 
 Generation evaluation is deliberately more modest. The heuristics here are
-lexical — token overlap against a reference answer, citation coverage — and they
+lexical: token overlap against a reference answer, citation coverage: and they
 catch gross failure rather than judging quality. They are honest about that
 rather than dressing up a weak signal as a score.
 
@@ -84,7 +84,7 @@ def _normalize_qrels(
     Notes
     -----
     **Empty relevance sets are rejected rather than skipped.** A query with no
-    relevant documents cannot be scored — recall would divide by zero — and
+    relevant documents cannot be scored: recall would divide by zero: and
     silently dropping it would inflate the average over the rest.
 
     **IDs are stringified**, so integer document IDs in the labels match string
@@ -140,7 +140,7 @@ def _dcg(relevances: Sequence[float]) -> float:
 
     Discounted cumulative gain. Each position contributes
     ``(2**rel - 1) / log2(rank + 1)``, so a relevant result at rank 1 is worth
-    considerably more than the same result at rank 10 — which matches how people
+    considerably more than the same result at rank 10: which matches how people
     read ranked lists.
 
     Parameters
@@ -167,7 +167,7 @@ def _ndcg_at_k(ranked_ids: Sequence[str], relevant: set[str], *, k: int) -> floa
 
     Normalises :func:`_dcg` by the DCG of a perfect ordering, which puts the
     result in ``[0, 1]`` and makes queries comparable even when they have
-    different numbers of relevant documents — a query with one relevant
+    different numbers of relevant documents: a query with one relevant
     document cannot lose points for not filling all ``k`` slots.
 
     Parameters
@@ -211,7 +211,7 @@ def evaluate_retrieval(
 
     Runs every query in the qrels through the index and computes recall@k,
     MRR, nDCG@k, and hit-rate@k, plus a per-query breakdown. The per-query rows
-    are usually the more useful half — an average hides which queries fail, and
+    are usually the more useful half: an average hides which queries fail, and
     the failures are what you fix.
 
     Parameters
@@ -428,8 +428,8 @@ def compare_retrieval_configs(
 
     Notes
     -----
-    **Every row rebuilds the index from scratch**, which is the point — chunk
-    size changes the chunks, so the indexes genuinely differ — and it is why
+    **Every row rebuilds the index from scratch**, which is the point: chunk
+    size changes the chunks, so the indexes genuinely differ: and it is why
     this is slow. Cost is roughly the number of configurations times the corpus
     size, and with a semantic embedder every row re-embeds everything.
 
@@ -578,8 +578,8 @@ def evaluate_generation(
 
     Be clear about what this is. Both signals are lexical: faithfulness checks
     citation markers and answer-to-context overlap, relevance checks
-    answer-to-reference overlap. They detect a system that has stopped working —
-    answers ignoring their context, answers unrelated to the reference — and
+    answer-to-reference overlap. They detect a system that has stopped working :
+    answers ignoring their context, answers unrelated to the reference: and
     they cannot rank two reasonable answers. Treat movement as a signal to go
     read the outputs, not as a quality score.
 
@@ -596,7 +596,7 @@ def evaluate_generation(
         Retrieval settings; defaults resolve from the current install.
     provider:
         The chat provider. Defaults to :class:`EchoGroundedProvider`, which
-        needs no network — useful for testing the plumbing, meaningless as a
+        needs no network: useful for testing the plumbing, meaningless as a
         quality measurement.
 
     Returns

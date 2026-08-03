@@ -77,7 +77,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "If you liked fast red cars, recommend other items with similar "
-                "numeric descriptors — even without collaborative neighbors."
+                "numeric descriptors: even without collaborative neighbors."
             ),
             formal_idea="u = Σ r_i x_i / Σ |r_i|; score(i) = cos(u, x_i).",
             why_it_matters=(

@@ -11,7 +11,7 @@ from buildml.activelearning.extras import scikit_activeml_available
 
 _FALLBACK_DISCLOSURE = (
     "Industry query scoring uses native CoreSet/QBC numpy paths. "
-    "scikit-activeml is installed but could not be imported on this host — "
+    "scikit-activeml is installed but could not be imported on this host: "
     "native fallback is active (disclosed)."
 )
 
@@ -60,7 +60,7 @@ def score_industry_pool(
                 estimator=estimator,
                 committee=committee,
             )
-        except Exception:  # noqa: BLE001 — broken skactiveml/skorch stacks fall back
+        except Exception:  # noqa: BLE001: broken skactiveml/skorch stacks fall back
             pass
     return score_industry_native_pool(
         strategy=strategy,

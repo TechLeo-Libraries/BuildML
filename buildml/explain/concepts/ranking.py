@@ -23,7 +23,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Given query features and item/document features, learn which "
-                "candidates should rank higher for that query — not which "
+                "candidates should rank higher for that query: not which "
                 "users like which catalog items (recommenders), and not "
                 "embedding nearest-neighbor retrieve (RAG)."
             ),
@@ -124,7 +124,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Closer to ranking preferences than pointwise RMSE.",
-                "Sklearn-core fallback — industry GBDT rankers when installed.",
+                "Sklearn-core fallback: industry GBDT rankers when installed.",
             ),
             how_buildml_uses=(
                 "fit_ranker(method='pairwise', max_pairs_per_query=...).",
@@ -163,7 +163,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Stronger tabular LTR baseline than Ridge for many judgment tables.",
-                "Still requires honest query-group splits — not a search product.",
+                "Still requires honest query-group splits: not a search product.",
             ),
             how_buildml_uses=(
                 "fit_ranker(backend='industry', method='lambdarank_lgbm'|...); "

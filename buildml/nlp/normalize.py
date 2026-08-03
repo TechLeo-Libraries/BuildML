@@ -2,7 +2,7 @@
 
 Nothing in this module learns from data, so it is safe to apply before a split.
 Anything that builds a vocabulary (vectorizers, topic models, classifiers) is
-fitted on the train partition only — see :mod:`buildml.nlp.vectorize`.
+fitted on the train partition only: see :mod:`buildml.nlp.vectorize`.
 """
 
 from __future__ import annotations
@@ -62,12 +62,12 @@ _ABBREVIATIONS = (
 
 @dataclass(slots=True)
 class TextNormalizePlan:
-    """A resolved normalisation recipe — the settings plus everything they resolved to.
+    """A resolved normalisation recipe: the settings plus everything they resolved to.
 
     A :class:`~buildml.nlp.types.TextNormalizeConfig` says *what you asked for*;
     this says what you actually got. Requesting a language's stopwords becomes
     the materialised term set. Requesting stemming becomes a specific backend,
-    which differs depending on whether NLTK is installed — and the plan records
+    which differs depending on whether NLTK is installed: and the plan records
     which one ran, because two stemmers do not produce the same tokens.
 
     Every NLP plan embeds one of these, which is what lets a saved model
@@ -97,7 +97,7 @@ class TextNormalizePlan:
     keep_numbers:
         Whether numeric tokens survive.
     stem_backend:
-        Which stemmer actually ran — ``'nltk-porter'`` when NLTK is available,
+        Which stemmer actually ran: ``'nltk-porter'`` when NLTK is available,
         ``'native-suffix'`` for the built-in conservative rules, or ``'none'``.
         The two produce different roots, so a plan stemmed one way cannot score
         documents stemmed the other.
@@ -154,7 +154,7 @@ def build_normalize_plan(config: TextNormalizeConfig | None = None) -> TextNorma
 
     Validates what you asked for, materialises the stopword set, and works out
     which stemming and lemmatisation backends are actually available in this
-    environment — recording the answer, so a plan built on a machine with NLTK
+    environment: recording the answer, so a plan built on a machine with NLTK
     is distinguishable from one built without it.
 
     Parameters
@@ -176,7 +176,7 @@ def build_normalize_plan(config: TextNormalizeConfig | None = None) -> TextNorma
         ``max_token_length`` is below ``min_token_length``.
     ~buildml.core.errors.MissingExtraError
         Lemmatisation was requested without NLTK. Unlike stemming there is no
-        built-in fallback — a lemmatiser needs a dictionary, and approximating
+        built-in fallback: a lemmatiser needs a dictionary, and approximating
         one would produce wrong roots rather than crude ones.
 
     Notes
@@ -184,7 +184,7 @@ def build_normalize_plan(config: TextNormalizeConfig | None = None) -> TextNorma
     **Stemming degrades gracefully; lemmatisation does not.** Without NLTK,
     stemming falls back to conservative built-in suffix rules and records that
     it did. This keeps the library working on a bare install, but it means the
-    same configuration can produce different tokens on different machines —
+    same configuration can produce different tokens on different machines :
     check ``stem_backend`` on the plan when a model behaves differently after a
     deploy.
 
@@ -264,9 +264,9 @@ def build_normalize_plan(config: TextNormalizeConfig | None = None) -> TextNorma
 def normalize_document(text: Any, plan: TextNormalizePlan) -> str:
     """Clean one document's raw characters, without splitting it into tokens.
 
-    Runs the plan's character-level steps in order — stripping HTML, URLs, and
+    Runs the plan's character-level steps in order: stripping HTML, URLs, and
     email addresses, lowercasing, removing punctuation, collapsing runs of
-    whitespace — and returns the cleaned string. Tokenisation, stopword
+    whitespace: and returns the cleaned string. Tokenisation, stopword
     removal, and morphology happen later, in :func:`tokenize_document`.
 
     Useful on its own when you want cleaned text rather than features: for
@@ -448,7 +448,7 @@ def tokenize_document(
         document; leave it ``None`` for one-off calls.
     normalize:
         Whether to run character cleanup first. Set it ``False`` only when the
-        text has already been through :func:`normalize_document` — cleaning
+        text has already been through :func:`normalize_document`: cleaning
         twice can change the result, since some steps are not idempotent.
 
     Returns
@@ -576,7 +576,7 @@ class TextAnalyzer:
 
         Tokenises through the plan, then joins adjacent tokens into n-grams
         across the configured range. Word order survives only within an n-gram
-        — this is why ``(1, 2)`` is a common default: "not good" stays intact
+       : this is why ``(1, 2)`` is a common default: "not good" stays intact
         as a term rather than dissolving into two independent words.
 
         Parameters
@@ -629,7 +629,7 @@ def build_analyzer(
     :func:`~buildml.nlp.fit.fit_text_classifier`,
     :func:`~buildml.nlp.topics.fit_topics`, and
     :func:`~buildml.nlp.keyphrases.extract_keyphrases` on the same
-    preprocessing contract — a token means the same thing across all three, so
+    preprocessing contract: a token means the same thing across all three, so
     their outputs can be compared.
 
     Parameters
@@ -665,7 +665,7 @@ def split_sentences(text: Any, *, max_sentences: int | None = None) -> list[str]
     "Inc." stay attached to the sentence they belong to.
 
     Sentences are the unit for extractive summarisation, and they are often the
-    right unit for sentiment too — a review that is positive overall can
+    right unit for sentiment too: a review that is positive overall can
     contain a sharply negative sentence worth surfacing on its own.
 
     Parameters
@@ -687,7 +687,7 @@ def split_sentences(text: Any, *, max_sentences: int | None = None) -> list[str]
     -----
     The abbreviation list is finite and English-oriented, so an unusual
     abbreviation will still cause a split. Sentence boundaries in text without
-    reliable punctuation — transcripts, chat logs, OCR output — are unreliable
+    reliable punctuation: transcripts, chat logs, OCR output: are unreliable
     for any rule-based splitter, this one included.
 
     Examples
@@ -773,7 +773,7 @@ def documents_from_frame(frame: Any, column: str) -> list[str]:
     Notes
     -----
     Blank documents are kept rather than dropped, so positions stay aligned
-    with the frame's rows — dropping them here would silently break the
+    with the frame's rows: dropping them here would silently break the
     correspondence between predictions and the rows they describe.
     """
     if column not in frame.columns:

@@ -23,7 +23,7 @@ def compute_diagnostics(
 
     Uses statsmodels FFT ACF and Yule-Walker PACF when available; falls back to
     numpy autocorrelation without confidence bands or unit-root tests. Interpret
-    ADF and KPSS jointly — conflicting signals often indicate trend-stationarity
+    ADF and KPSS jointly: conflicting signals often indicate trend-stationarity
     or undetected structural breaks.
 
     Parameters
@@ -101,7 +101,7 @@ def compute_diagnostics(
             warnings.append(f"KPSS test failed: {exc}")
 
         disclosures.append(
-            "ADF/KPSS via statsmodels; interpret jointly — conflicting signals often "
+            "ADF/KPSS via statsmodels; interpret jointly: conflicting signals often "
             "indicate trend-stationarity or structural breaks."
         )
     else:
@@ -115,7 +115,7 @@ def compute_diagnostics(
         kpss_crit = {}
         warnings.append(
             "statsmodels not installed: using numpy ACF/PACF only. "
-            "ADF/KPSS unavailable — install buildml[timeseries]."
+            "ADF/KPSS unavailable: install buildml[timeseries]."
         )
         disclosures.append("Core fallback ACF via normalized autocovariance.")
 

@@ -7,7 +7,7 @@ resolver pairs a requested backend with a requested metric and refuses
 combinations that cannot be honoured.
 
 That refusal is the important part. Approximate index libraries implement
-Euclidean and cosine distance and nothing else — there is no Manhattan or
+Euclidean and cosine distance and nothing else: there is no Manhattan or
 Gower-style mixed distance in an HNSW graph. Silently substituting a metric the
 backend does support would change what "similar" means without telling anyone,
 so an impossible pairing raises instead.
@@ -70,7 +70,7 @@ def cbr_capability_matrix() -> dict[str, Any]:
     Notes
     -----
     **Availability comes from real imports where it is affordable**, so an
-    installed-but-broken compiled library reports as unavailable — which matches
+    installed-but-broken compiled library reports as unavailable: which matches
     what the user would experience.
 
     **The metric lists are narrower for the optional backends, and that is
@@ -99,7 +99,7 @@ def cbr_capability_matrix() -> dict[str, Any]:
                 "modality": "tabular",
                 "retrieval": "exact kNN (numpy/sklearn distances)",
                 "notes": (
-                    "Native brute-force case memory retrieval — always available "
+                    "Native brute-force case memory retrieval: always available "
                     "fallback when industry extras are absent."
                 ),
             },
@@ -165,7 +165,7 @@ def cbr_capability_matrix() -> dict[str, Any]:
             ),
             "rag": (
                 "Text corpus chunks; retrieve passages to ground LLM generation / "
-                "citations — not case→solution reuse."
+                "citations: not case→solution reuse."
             ),
             "boundary": (
                 "Sharing nearest-neighbor retrieval does not make CBR a RAG "
@@ -225,7 +225,7 @@ def _default_metric_when_installed() -> str:
 
     Euclidean, unconditionally. It is supported by every backend, needs no
     categorical handling, and behaves predictably on standardised numeric
-    features — so the default never constrains which backend can be chosen.
+    features: so the default never constrains which backend can be chosen.
 
     Returns
     -------
@@ -332,7 +332,7 @@ def resolve_backend_metric(
     Returns
     -------
     tuple
-        ``(backend, metric)`` — both resolved and validated.
+        ``(backend, metric)``: both resolved and validated.
 
     Raises
     ------
@@ -365,7 +365,7 @@ def resolve_backend_metric(
         elif metric_key in {"manhattan", "mixed"}:
             resolved_backend = "sklearn"
         else:
-            # Prefer industry/sklearn defaults — never probe torch here.
+            # Prefer industry/sklearn defaults: never probe torch here.
             resolved_backend = _default_backend_when_installed()  # type: ignore[assignment]
     else:
         resolved_backend = backend

@@ -42,7 +42,7 @@ class MetalearningSessionMixin:
     ) -> MetaLearningFitResult:
         """Meta-train on episodic tasks carved from the train partition only.
 
-        Session facade over :func:`buildml.session.metalearning_ops.fit_metalearning_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.metalearning_ops.fit_metalearning_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -88,7 +88,7 @@ class MetalearningSessionMixin:
     ) -> MetaAdaptResult:
         """Fast-adapt the meta-learner to one task's labeled support set.
 
-        Session facade over :func:`buildml.session.metalearning_ops.adapt_to_task_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.metalearning_ops.adapt_to_task_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -121,7 +121,7 @@ class MetalearningSessionMixin:
     ) -> MetaLearningEvalResult:
         """Run episodic holdout evaluation without meta-training on holdout.
 
-        Session facade over :func:`buildml.session.metalearning_ops.evaluate_metalearning_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.metalearning_ops.evaluate_metalearning_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -187,7 +187,7 @@ class MetalearningSessionMixin:
     def save_metalearning_bundle(self, path: str | Path) -> Path:
         """Persist the active MetaLearningPlan as ``buildml.metalearning_bundle.v1``.
 
-        Session facade over :func:`buildml.session.metalearning_ops.save_metalearning_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.metalearning_ops.save_metalearning_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -204,7 +204,7 @@ class MetalearningSessionMixin:
     def load_metalearning_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a meta-learning bundle into this Session.
 
-        Session facade over :func:`buildml.session.metalearning_ops.load_metalearning_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.metalearning_ops.load_metalearning_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

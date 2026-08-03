@@ -5,7 +5,7 @@ that becomes the dominant cost of every prediction, and the usual answer is to
 stop checking everything: build a graph or a partition over the vectors and
 follow it toward the query's neighbourhood, visiting a fraction of the data.
 
-The trade is recall. Approximate search can miss a true nearest neighbour —
+The trade is recall. Approximate search can miss a true nearest neighbour :
 rarely, but it can, and no parameter setting eliminates it. Over a large memory
 where the tenth-nearest and the twelfth-nearest are much of a muchness, that is
 a good bargain. Over a few thousand cases it buys nothing that exact search was
@@ -103,7 +103,7 @@ def build_ann_index(
     Returns
     -------
     tuple
-        ``(index, library)`` — the built index and which library built it.
+        ``(index, library)``: the built index and which library built it.
 
     Raises
     ------
@@ -120,7 +120,7 @@ def build_ann_index(
     problem.
 
     **The faiss path uses a flat index, which is exact.** It is fast because
-    faiss's inner loops are heavily optimised, not because it approximates —
+    faiss's inner loops are heavily optimised, not because it approximates :
     so an installation with faiss but not hnswlib gets speed without any recall
     loss.
 
@@ -172,8 +172,8 @@ def query_ann_index(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Search the index, returning distances on a consistent convention.
 
-    The two libraries disagree about what they return — faiss gives inner
-    products for cosine indexes, where larger means *more* similar — so this
+    The two libraries disagree about what they return: faiss gives inner
+    products for cosine indexes, where larger means *more* similar: so this
     normalises everything to a distance where smaller means more similar, and
     callers need not know which library is underneath.
 

@@ -9,8 +9,8 @@ from dataclasses import dataclass
 class DomainSpec:
     """One board in the studio: what it shows, teaches, and exports.
 
-    The dashboard is organised by question rather than by analyzer — "is my data
-    clean", "what predicts the target", "will this generalise" — because that is
+    The dashboard is organised by question rather than by analyzer: "is my data
+    clean", "what predicts the target", "will this generalise": because that is
     how someone arrives at a report. Each spec maps one of those questions onto
     the report sections that answer it, the concepts a reader might need
     explained, and the tables they can export.
@@ -32,7 +32,7 @@ class DomainSpec:
         Icon name for the navigation entry.
     report_keys:
         Which report sections feed this board. A board whose sections are all
-        empty renders as empty rather than being hidden — an absent board would
+        empty renders as empty rather than being hidden: an absent board would
         look like an omission.
     concept_keys:
         Glossary entries offered alongside, from :mod:`buildml.explain`. This is

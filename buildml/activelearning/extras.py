@@ -32,7 +32,7 @@ def scikit_activeml_spec_present() -> bool:
 def scikit_activeml_available() -> bool:
     """Return whether scikit-activeml is installed for industry host enhancements.
 
-    Uses ``find_spec`` only — no import probe — so broken installs are not
+    Uses ``find_spec`` only: no import probe: so broken installs are not
     reported as available until a real import is attempted.
 
     Returns
@@ -52,7 +52,7 @@ def activelearning_industry_available() -> bool:
     Returns
     -------
     bool
-        ``True`` — industry strategies use the native scorer by default.
+        ``True``: industry strategies use the native scorer by default.
     """
     return True
 

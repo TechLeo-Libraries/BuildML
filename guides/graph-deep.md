@@ -14,7 +14,7 @@ database and not an exhaustive PyG research suite.
 4. `fit_graph` learns under an explicit `mode`:
    - **inductive** (default): fit edges = train–train only.
    - **transductive**: full adjacency; loss / sklearn fit rows = train labels
-     only (holdout features may participate via edges — disclosed).
+     only (holdout features may participate via edges: disclosed).
 5. `predict_graph` / `evaluate_graph` score holdout nodes with a frozen plan.
 6. `save_graph_bundle` / `load_graph_bundle` persist `GraphPlan` separately
    from Session checkpoints.
@@ -48,7 +48,7 @@ print(graph_capability_matrix()["backends"])
 - Inductive score keeps train↔holdout edges (semi-inductive neighborhood) but
   drops holdout↔holdout edges so unlabeled cliques cannot invent structure
   unseen at fit.
-- Transductive is available and clearly disclosed — do not call it inductive.
+- Transductive is available and clearly disclosed: do not call it inductive.
 
 ## Bundle boundary
 
@@ -59,7 +59,7 @@ label encoder). Session checkpoints do **not** embed the graph learner.
 
 - Node classification only (no link prediction / graph-level classify depth).
 - Not Neo4j / KG (separate `buildml.kg` path).
-- PyG surface ships GCN / GraphSAGE / GAT only — not GIN, PNA, etc.
+- PyG surface ships GCN / GraphSAGE / GAT only: not GIN, PNA, etc.
 - Size guard (≤5000 nodes) for dense adjacency (gcn) and Session materialization.
 - Default `scale()` / `encode()` skip `id` / `ignore` / `target` / `group` /
   `time` / `weight` roles. Pass `columns=[...]` only when you intentionally

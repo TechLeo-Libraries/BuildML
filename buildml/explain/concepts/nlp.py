@@ -12,7 +12,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
         _note(
             key="nlp-text-normalization",
             title="Text normalization and tokenization (fit-free)",
-            summary="Character cleanup plus tokenization learns nothing from the corpus, so it is safe before a split — but it must be identical at fit and score time.",
+            summary="Character cleanup plus tokenization learns nothing from the corpus, so it is safe before a split: but it must be identical at fit and score time.",
             definition=(
                 "Normalization is an ordered pipeline of character-level steps "
                 "(strip_html, strip_urls, strip_emails, lowercase, "
@@ -39,7 +39,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "A preprocessing mismatch between fit and score silently destroys accuracy while every metric still 'works'.",
-                "Because normalization is fit-free, it is not a leakage risk — which makes it important to say clearly, so the real risk (vocabulary fitting) is not confused with it.",
+                "Because normalization is fit-free, it is not a leakage risk: which makes it important to say clearly, so the real risk (vocabulary fitting) is not confused with it.",
                 "Stemming and lemmatization change what a token means; the plan records which backend produced them.",
             ),
             how_buildml_uses=(
@@ -89,8 +89,8 @@ NLP_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Bag-of-n-grams asks 'which words appear, and how surprising are "
-                "they?' — sparse, fast, and readable. An embedding asks 'what "
-                "does this document mean?' — dense, better on paraphrase, and "
+                "they?': sparse, fast, and readable. An embedding asks 'what "
+                "does this document mean?': dense, better on paraphrase, and "
                 "unreadable position by position."
             ),
             formal_idea=(
@@ -144,7 +144,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
         _note(
             key="nlp-token-attribution",
             title="Token attribution for linear document models",
-            summary="For a linear head the decision score decomposes exactly into per-token terms, so attribution is arithmetic — not an approximation, and not always available.",
+            summary="For a linear head the decision score decomposes exactly into per-token terms, so attribution is arithmetic: not an approximation, and not always available.",
             definition=(
                 "For a linear classifier the score of class c on document d is "
                 "bias_c + sum over features j of coef[c, j] * x_j(d). Each term "
@@ -267,7 +267,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
         _note(
             key="nlp-keyphrases-vs-topics",
             title="Keyphrases describe documents; topics describe corpora",
-            summary="TF-IDF, RAKE, and TextRank rank phrases without supervision — useful description, but no precision or recall can be claimed without a gold set.",
+            summary="TF-IDF, RAKE, and TextRank rank phrases without supervision: useful description, but no precision or recall can be claimed without a gold set.",
             definition=(
                 "Keyphrase extraction scores candidate phrases inside documents. "
                 "TF-IDF ranks corpus-weighted n-grams; RAKE scores "
@@ -290,7 +290,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "Keyphrases are the cheapest honest summary of what a corpus is about, and they need no labels.",
                 "Because there is no ground truth, reporting a quality metric would be fabrication; only within-run comparability is claimed.",
-                "Running extraction on holdout text is description, not model selection — but reading holdout still informs the analyst, so it is disclosed.",
+                "Running extraction on holdout text is description, not model selection: but reading holdout still informs the analyst, so it is disclosed.",
             ),
             how_buildml_uses=(
                 "extract_keyphrases(method='tfidf' | 'rake' | 'textrank') returns corpus-level and per-document rankings.",
@@ -328,7 +328,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
         _note(
             key="nlp-lexicon-sentiment",
             title="Lexicon sentiment: transparent rules with a measurable blind spot",
-            summary="A valence lexicon with negation, intensifier, contrast, punctuation and capitalisation rules needs no training data — and reports how often it matched nothing.",
+            summary="A valence lexicon with negation, intensifier, contrast, punctuation and capitalisation rules needs no training data: and reports how often it matched nothing.",
             definition=(
                 "Lexicon sentiment sums per-term valence scores, then applies "
                 "rules: a negator within a short window flips and damps the "
@@ -352,7 +352,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "It works on day one with no labels, which makes it the right baseline before any supervised sentiment model.",
                 "The matched-term rate distinguishes 'genuinely balanced' from 'the lexicon recognised nothing', which a bare neutral share hides.",
-                "A supervised classifier fitted on your own labels usually beats it — and the comparison is only meaningful if the baseline is stated.",
+                "A supervised classifier fitted on your own labels usually beats it: and the comparison is only meaningful if the baseline is stated.",
             ),
             how_buildml_uses=(
                 "analyze_sentiment(backend='lexicon') scores documents with the shipped English lexicon and no install.",
@@ -452,7 +452,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
         _note(
             key="nlp-extractive-summarization",
             title="Extractive summarization selects sentences; it does not write them",
-            summary="TextRank and LexRank rank sentences by graph centrality and return the originals in order — and the lead-k baseline is often hard to beat.",
+            summary="TextRank and LexRank rank sentences by graph centrality and return the originals in order: and the lead-k baseline is often hard to beat.",
             definition=(
                 "Extractive summarization scores the sentences of a document and "
                 "returns the highest-scoring ones, unchanged and in their "
@@ -573,7 +573,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
         _note(
             key="nlp-corpus-contamination",
             title="Text contamination: duplicate and near-duplicate documents across a split",
-            summary="Text corpora are full of copies, and a holdout document that also appears in train turns evaluation into memorisation — so BuildML measures it and reports it.",
+            summary="Text corpora are full of copies, and a holdout document that also appears in train turns evaluation into memorisation: so BuildML measures it and reports it.",
             definition=(
                 "Text contamination is the presence of holdout documents that "
                 "are identical, or near-identical, to train documents. BuildML "
@@ -595,7 +595,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Duplicate documents are the single most common reason a text model's holdout score does not survive deployment.",
-                "Reporting contamination instead of silently deduplicating keeps the decision — and its consequences — with the analyst.",
+                "Reporting contamination instead of silently deduplicating keeps the decision: and its consequences: with the analyst.",
                 "Vocabulary drift and contamination are opposite failure signals; seeing both at once tells you which risk you actually have.",
             ),
             how_buildml_uses=(

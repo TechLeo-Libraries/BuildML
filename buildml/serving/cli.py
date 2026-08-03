@@ -127,7 +127,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse arguments, announce the configuration, and serve until stopped.
 
-    Prints a one-line summary to stderr before starting — the scheme, address,
+    Prints a one-line summary to stderr before starting: the scheme, address,
     bundle, and whether authentication is on. That last part is the reason the
     line exists: a server started without keys should say so where an operator
     will see it, not only in a docstring.
@@ -149,7 +149,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     SystemExit
         From argparse, on ``--help`` or a malformed argument list.
     ValidationError
-        If the configuration is refused — most often a public bind without
+        If the configuration is refused: most often a public bind without
         ``--api-key``.
     MissingExtraError
         If the serving extra is not installed.

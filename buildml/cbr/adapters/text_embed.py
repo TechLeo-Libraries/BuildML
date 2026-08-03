@@ -61,7 +61,7 @@ def embed_text_cases(
     Returns
     -------
     tuple
-        ``(embeddings, embedder_id)`` — the vectors and an identifier recording
+        ``(embeddings, embedder_id)``: the vectors and an identifier recording
         which model produced them.
 
     Raises

@@ -3,14 +3,14 @@
 Each result carries three kinds of thing, and it helps to know which you are
 reading.
 
-The **findings** are what you asked for — the predictions, the metrics, the
+The **findings** are what you asked for: the predictions, the metrics, the
 topics. The **context** is what the operation saw while producing them, such as
 how many rows, how much of the vocabulary was unseen, how many documents were
 blank. And the **disclosures and warnings** are the caveats: what this number
 does not mean, and what looked wrong on the way.
 
 That last part is deliberate. A number without its caveats invites confident
-misuse, and text results are unusually easy to misread — a strong accuracy on a
+misuse, and text results are unusually easy to misread: a strong accuracy on a
 corpus where half the holdout duplicates the training set is not a strong model.
 Rather than making you go and look, the caveat travels with the number.
 
@@ -33,7 +33,7 @@ class NlpTextPlan:
 
     Everything needed to turn a raw string into a predicted label, held as one
     object. Keeping the three stages together is what guarantees a document
-    scored next year goes through the identical pipeline — mismatch any one of
+    scored next year goes through the identical pipeline: mismatch any one of
     them and the head receives features that mean something different from what
     it was trained on, silently.
 
@@ -41,7 +41,7 @@ class NlpTextPlan:
 
     This is single-label document classification over a train-fitted
     representation. Not sequence labelling, not generation, and not document
-    retrieval — :mod:`buildml.rag` owns that.
+    retrieval: :mod:`buildml.rag` owns that.
 
     Attributes
     ----------
@@ -59,7 +59,7 @@ class NlpTextPlan:
         How many documents the fit saw and how wide the representation is.
         Features far exceeding rows is the classic overfitting shape for text.
     classes_:
-        The fitted class labels, in the head's own order — which is also the
+        The fitted class labels, in the head's own order: which is also the
         column order of any probability output.
     vectorizer_, estimator_:
         The fitted objects themselves. Excluded from ``repr`` because printing
@@ -100,7 +100,7 @@ class NlpTextPlan:
     def to_dict(self) -> dict[str, Any]:
         """Describe the fitted plan as plain JSON-safe values.
 
-        The fitted vectorizer and head are deliberately omitted — they are
+        The fitted vectorizer and head are deliberately omitted: they are
         arbitrary Python objects, not data. The vocabulary is reduced to
         ``n_feature_names`` for the same reason a model card does not list
         fifty thousand terms. What remains is enough to identify and compare
@@ -136,12 +136,12 @@ class NlpTextPlan:
 
 @dataclass(slots=True)
 class NlpFitResult:
-    """What the fit saw — the report that comes back alongside the model.
+    """What the fit saw: the report that comes back alongside the model.
 
     Separate from the plan on purpose: the plan is the thing that scores
     documents, this is the thing you read to decide whether it should. It
     answers the questions that decide whether the model is worth evaluating at
-    all — is the vocabulary a sane size, are the classes hopelessly imbalanced,
+    all: is the vocabulary a sane size, are the classes hopelessly imbalanced,
     are the documents long enough to model.
 
     Attributes
@@ -158,7 +158,7 @@ class NlpFitResult:
         reason to regularise.
     vocabulary_size:
         How many distinct terms were learned. Zero means the representation has
-        no vocabulary at all — hashing or an embedding backend — not that
+        no vocabulary at all: hashing or an embedding backend: not that
         nothing was learned.
     classes:
         The fitted class labels.
@@ -197,7 +197,7 @@ class NlpFitResult:
         """Return the fit report as plain JSON-safe values.
 
         Everything here is already plain data, so this is a faithful record
-        rather than a summary — suitable for logging every fit in an experiment
+        rather than a summary: suitable for logging every fit in an experiment
         and diffing them later.
 
         Returns
@@ -245,7 +245,7 @@ class NlpPredictResult:
         The predicted class label per document, in partition order.
     probabilities:
         Per-class probabilities aligned to ``classes``, or empty when the head
-        has none. Poorly calibrated on high-dimensional text — read them as a
+        has none. Poorly calibrated on high-dimensional text: read them as a
         ranking, not as frequencies.
     classes:
         The class labels, in the same order as the probability columns.
@@ -274,7 +274,7 @@ class NlpPredictResult:
 
         The predictions themselves are counted rather than listed, and
         probabilities reduced to a boolean. This is a run record, not a
-        results export — reach for ``predictions`` directly when you want the
+        results export: reach for ``predictions`` directly when you want the
         labels.
 
         Returns
@@ -318,7 +318,7 @@ class NlpEvalResult:
         wide error bars, whatever the decimal places suggest.
     metrics:
         Accuracy, balanced accuracy, macro and weighted F1, macro precision and
-        recall — plus log loss and ROC AUC when probabilities allowed them.
+        recall: plus log loss and ROC AUC when probabilities allowed them.
     per_class:
         Precision, recall, F1, and support for each class.
     confusion:
@@ -349,7 +349,7 @@ class NlpEvalResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the full evaluation as plain JSON-safe values.
 
-        Nothing is summarised away here — the confusion matrix and per-class
+        Nothing is summarised away here: the confusion matrix and per-class
         table come through in full, because an evaluation record is only useful
         for later comparison if it is complete.
 
@@ -386,13 +386,13 @@ class TokenAttribution:
     Attributes
     ----------
     token:
-        The term, exactly as it appears in the vocabulary — so already
+        The term, exactly as it appears in the vocabulary: so already
         normalised, and stemmed if the plan stems.
     weight:
         The model's coefficient for this term and class. A property of the
         model, identical across every document.
     value:
-        This term's value in this document — a TF-IDF weight, or a count.
+        This term's value in this document: a TF-IDF weight, or a count.
         Zero for terms the document does not contain.
     contribution:
         ``weight * value``: the amount this token actually added to this
@@ -430,7 +430,7 @@ class NlpInterpretResult:
     """Why individual documents scored as they did, and what the model relies on.
 
     Two views held together because they answer different questions. The
-    per-document attributions explain a particular decision — useful when a
+    per-document attributions explain a particular decision: useful when a
     specific prediction looks wrong. The global view shows the vocabulary the
     model leans on across every document, which is where you find out it
     learned a proxy: a date, an agent's name, a template phrase that happens to
@@ -446,7 +446,7 @@ class NlpInterpretResult:
         The class the attributions are oriented toward. Positive contributions
         support this class.
     method:
-        How the weights were derived — exact linear coefficients, or centred
+        How the weights were derived: exact linear coefficients, or centred
         naive Bayes log-likelihoods. The two are not on the same scale, so this
         matters when comparing across models.
     document_attributions:
@@ -479,7 +479,7 @@ class NlpInterpretResult:
         """Return the explanation as plain JSON-safe values.
 
         Nested attributions are expanded in full, so the output can grow large
-        — it scales with documents times tokens per document. Cap
+       : it scales with documents times tokens per document. Cap
         ``max_documents`` and ``top_k`` at call time if you intend to log this.
 
         Returns
@@ -509,7 +509,7 @@ class NlpInterpretResult:
 
 @dataclass(slots=True)
 class Topic:
-    """One discovered topic — the terms that define it and how prevalent it is.
+    """One discovered topic: the terms that define it and how prevalent it is.
 
     A topic is not a category the model was told about; it is a cluster of
     words that tend to appear together, which the algorithm found on its own.
@@ -588,7 +588,7 @@ class NlpTopicPlan:
     text_column:
         The column fitted against.
     n_topics:
-        How many topics were requested. Your choice, not a discovery — a
+        How many topics were requested. Your choice, not a discovery: a
         different number produces a different and equally valid decomposition.
     n_train_rows:
         How many documents the fit saw.
@@ -654,7 +654,7 @@ class NlpTopicResult:
 
     The report you read to judge whether the decomposition is worth keeping.
     Since topic modelling is unsupervised there is no accuracy to check
-    against, so the quality signals here are indirect — and reading the terms
+    against, so the quality signals here are indirect: and reading the terms
     yourself remains the most reliable check of all.
 
     Attributes
@@ -672,7 +672,7 @@ class NlpTopicResult:
     mean_coherence:
         Average coherence across topics, where computable. The single best
         proxy for "are these topics real", and the usual way to choose
-        ``n_topics`` — fit several and take the peak.
+        ``n_topics``: fit several and take the peak.
     reconstruction_error:
         How much of the original matrix the decomposition failed to
         reproduce, for the matrix-factorisation methods. Always falls as topics
@@ -680,7 +680,7 @@ class NlpTopicResult:
     perplexity:
         How surprised a probabilistic model is by the corpus, for LDA. Lower is
         better, and it notoriously disagrees with human judgements of topic
-        quality — treat coherence as the better guide.
+        quality: treat coherence as the better guide.
     disclosures, warnings:
         Caveats about the fit.
     """
@@ -729,7 +729,7 @@ class NlpTopicAssignResult:
     Topic assignment is not classification. A document does not get one topic;
     it gets a weight over all of them, because a support ticket really can be
     60% billing and 40% technical. The dominant topic is a convenience for
-    when you need a single answer, and it discards that nuance — a document
+    when you need a single answer, and it discards that nuance: a document
     split 34/33/33 gets a dominant topic that means almost nothing.
 
     Attributes
@@ -773,7 +773,7 @@ class NlpTopicAssignResult:
     def to_dict(self) -> dict[str, Any]:
         """Summarise the assignment as plain JSON-safe values.
 
-        The full per-document weight matrix is omitted — it is
+        The full per-document weight matrix is omitted: it is
         ``n_rows × n_topics`` floats and belongs in an array, not a log entry.
         Read ``topic_weights`` directly when you need it.
 
@@ -841,7 +841,7 @@ class NlpKeyphraseResult:
     """The phrases that characterise a corpus, and each document within it.
 
     Both scopes are reported because they answer different questions. Corpus
-    keyphrases tell you what the collection is about — a fast way to understand
+    keyphrases tell you what the collection is about: a fast way to understand
     a dataset you have just been handed. Per-document keyphrases tell you what
     distinguishes each document from the rest, which is what you want for
     tagging or for a searchable index.
@@ -930,7 +930,7 @@ class NlpSentimentResult:
         The distribution across the partition.
     mean_score:
         Average compound score. Near zero can mean a balanced corpus or a
-        polarised one — check the rates before concluding either.
+        polarised one: check the rates before concluding either.
     matched_term_rate:
         Share of tokens the lexicon recognised. The evidence base for the whole
         result; ``None`` for the backends where it does not apply.
@@ -939,7 +939,7 @@ class NlpSentimentResult:
         ``compare_to_target`` was set. The only real validation available for
         an unsupervised backend.
     disclosures, warnings:
-        Caveats — including, for the transformer backend, that its training
+        Caveats: including, for the transformer backend, that its training
         data lies outside your split entirely.
     """
 
@@ -960,7 +960,7 @@ class NlpSentimentResult:
     def to_dict(self) -> dict[str, Any]:
         """Summarise the sentiment run as plain JSON-safe values.
 
-        Per-document labels and scores are omitted — they are one entry per row
+        Per-document labels and scores are omitted: they are one entry per row
         and belong in a column, not a log record. Read ``labels`` and
         ``scores`` directly for those.
 
@@ -992,7 +992,7 @@ class Entity:
     Attributes
     ----------
     text:
-        The mention exactly as it appears in the source, uncleaned — so it can
+        The mention exactly as it appears in the source, uncleaned: so it can
         be located, highlighted, or redacted in the original.
     label:
         What kind of thing it is: a person, an organisation, a date, a
@@ -1036,7 +1036,7 @@ class Entity:
 class NlpEntityResult:
     """Every entity mention found, plus what the corpus contains overall.
 
-    Per-document mentions are what you act on — redacting personal data,
+    Per-document mentions are what you act on: redacting personal data,
     linking records, pulling structured fields out of prose. The corpus
     aggregates are what you check first: they show at a glance whether the
     extractor is finding what you expected, or whether one label is wildly
@@ -1061,7 +1061,7 @@ class NlpEntityResult:
         Row identifiers, so mentions trace back to their source record.
     top_mentions:
         Per label, the most frequent surface forms. The quickest way to spot a
-        misfiring pattern — an ``ORG`` list full of ordinary sentence openers
+        misfiring pattern: an ``ORG`` list full of ordinary sentence openers
         tells you immediately.
     disclosures, warnings:
         Caveats, including what the backend cannot detect.
@@ -1116,7 +1116,7 @@ class NlpSummaryResult:
 
     These summaries are extractive: sentences are scored and the best ones
     kept. Nothing is rewritten and no sentence is invented, which means the
-    summary cannot say anything the document did not — a real guarantee, and
+    summary cannot say anything the document did not: a real guarantee, and
     the reason generative summarisation is out of scope here.
 
     The cost is that the result reads like excerpts rather than prose, and a
@@ -1164,7 +1164,7 @@ class NlpSummaryResult:
     def to_dict(self) -> dict[str, Any]:
         """Summarise the run as plain JSON-safe values.
 
-        The summary text is counted rather than included — it is the payload,
+        The summary text is counted rather than included: it is the payload,
         not metadata about the run. The selected sentence indices are kept,
         since they are what makes a summary auditable against its source.
 
@@ -1209,7 +1209,7 @@ class NlpLanguageResult:
         The detected language code per document.
     confidences:
         How sure the detector was, per document. Short documents get low
-        confidence for good reason — five words are often not enough to tell
+        confidence for good reason: five words are often not enough to tell
         two related languages apart.
     language_counts:
         Documents per detected language.
@@ -1263,7 +1263,7 @@ class NlpCorpusProfile:
 
     Read the contamination fields first. Duplicates across the split are the
     one problem here that invalidates results rather than merely degrading
-    them, and they are invisible to every tabular leakage check — no column is
+    them, and they are invisible to every tabular leakage check: no column is
     shared, no statistic crosses the boundary, and the holdout score is
     nonetheless measuring memorisation.
 
@@ -1282,7 +1282,7 @@ class NlpCorpusProfile:
         Distinct terms across the corpus.
     hapax_rate:
         Share of terms appearing exactly once. High values mean typos, names,
-        and identifiers — terms that cannot generalise and are worth removing
+        and identifiers: terms that cannot generalise and are worth removing
         with ``min_df``.
     type_token_ratio:
         Distinct terms divided by total tokens. Low means repetitive text,
@@ -1297,7 +1297,7 @@ class NlpCorpusProfile:
         Holdout documents identical to a training document. Any non-zero value
         means your holdout score is partly measuring memorisation.
     train_holdout_near_duplicate:
-        Holdout documents highly similar to a training one — the same problem,
+        Holdout documents highly similar to a training one: the same problem,
         harder to see, and usually more common.
     near_duplicate_threshold:
         The similarity cut-off used, so the count can be interpreted.

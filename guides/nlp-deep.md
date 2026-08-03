@@ -40,7 +40,7 @@ Read-only accessors mirror the other domains: `session.nlp_text_plan`,
 The default stays `sklearn` **even when the extras are installed**. It is
 reproducible, needs no download, and is the only representation that can explain
 its own decisions. Choose a dense backend deliberately, when word overlap
-genuinely is not enough — and accept losing attribution when you do.
+genuinely is not enough: and accept losing attribution when you do.
 
 ```python
 matrix = Session.nlp_capability_matrix()
@@ -56,7 +56,7 @@ Heads: `logistic`, `linear_svm`, `complement_nb`, `multinomial_nb`, `sgd` on
 dense backends. **Naive Bayes on embeddings is refused**, not silently degraded:
 it models features as counts and requires them non-negative, and encoder vectors
 are signed. `vectorizer='hashing'` with a dense backend is refused for the same
-class of reason — there is no hashing step to configure.
+class of reason: there is no hashing step to configure.
 
 ## Normalization is deterministic, vocabulary is learned
 
@@ -64,9 +64,9 @@ The split between the two is the whole leakage story for text.
 
 | Stage | Learns from data? | When it runs |
 | --- | --- | --- |
-| Normalization steps (`strip_html`, `strip_urls`, `strip_emails`, `lowercase`, `strip_accents`, `strip_numbers`, `strip_punctuation`, `collapse_whitespace`, `collapse_repeats`) | No — stateless string rewriting | Any partition, any time |
-| Tokenization, token-length filters, stemming, lemmatization | No — rule-based per document | Any partition, any time |
-| Stopword list | No — supplied or built-in | Any partition |
+| Normalization steps (`strip_html`, `strip_urls`, `strip_emails`, `lowercase`, `strip_accents`, `strip_numbers`, `strip_punctuation`, `collapse_whitespace`, `collapse_repeats`) | No: stateless string rewriting | Any partition, any time |
+| Tokenization, token-length filters, stemming, lemmatization | No: rule-based per document | Any partition, any time |
+| Stopword list | No: supplied or built-in | Any partition |
 | Vocabulary, document frequencies, IDF weights, `min_df` / `max_df` cuts | **Yes** | Train only |
 | Topic decomposition (NMF / LDA components) | **Yes** | Train only |
 | Classifier coefficients | **Yes** | Train only |
@@ -76,7 +76,7 @@ apply it to holdout rows freely. Everything in the "yes" column is frozen at
 `fit_text_classifier` / `fit_topics` and reused verbatim afterwards.
 
 Default steps are `strip_html`, `strip_urls`, `strip_emails`, `lowercase`,
-`collapse_whitespace` — the ones that are almost always right. Override
+`collapse_whitespace`: the ones that are almost always right. Override
 explicitly:
 
 ```python
@@ -153,14 +153,14 @@ print(interpret.global_top_tokens)      # per-class, from coefficients alone
 
 Refused, with the reason, when it cannot be exact:
 
-- `vectorizer='hashing'` — no invertible vocabulary, so tokens cannot be recovered
+- `vectorizer='hashing'`: no invertible vocabulary, so tokens cannot be recovered
   from feature positions
-- `backend='embedding'` / `'transformer'` — features are latent dimensions, not tokens
+- `backend='embedding'` / `'transformer'`: features are latent dimensions, not tokens
 - heads without per-feature weights
 
 Naive Bayes gets centred log-likelihoods (`method` says so) because raw class
 log-probabilities are not comparable across classes. This is not a SHAP or LIME
-substitute for non-linear models — it is the exact answer for the linear case,
+substitute for non-linear models: it is the exact answer for the linear case,
 and a refusal otherwise.
 
 ## Topics
@@ -186,7 +186,7 @@ NPMI coherence is computed on the **train** partition with the train vocabulary,
 and clamped to its mathematical bounds. `assign_topics` is a pure transform: it
 never refits the vectorizer or the decomposition, which is what makes holdout
 topic shares comparable to train ones. Topic `label`s are generated from top
-terms — they are a reading aid, not validated category names.
+terms: they are a reading aid, not validated category names.
 
 ## Description surfaces (no quality metric is claimed)
 
@@ -219,25 +219,25 @@ print(lang.dominant_language, lang.language_counts, lang.undetermined_rate)
 
 Each of these is unsupervised and reports its own limits:
 
-- **Keyphrases** — three genuinely different scorers. TF-IDF finds
+- **Keyphrases**: three genuinely different scorers. TF-IDF finds
   corpus-distinctive terms, RAKE finds phrases between stopword boundaries,
   TextRank finds phrases central to a co-occurrence graph. No gold metric.
-- **Summaries** — sentences are **selected, never generated**. Abstractive
+- **Summaries**: sentences are **selected, never generated**. Abstractive
   summarization is an explicit non-goal; use `buildml.ai` with provider
   disclosure if you need prose.
-- **Entities** — rules are precision-first on structured mentions (dates,
+- **Entities**: rules are precision-first on structured mentions (dates,
   amounts, percentages, emails, URLs, IPs, phones, times, reference codes,
   suffixed organisation names, titled person names, and any gazetteer terms you
   supply) with exact character offsets, and blind to everything else.
   spaCy generalises to unseen names in exchange for confident false positives,
   and needs `buildml[nlp-industry]` plus a downloaded model.
-- **Sentiment** — the lexicon backend applies valence with negation and
+- **Sentiment**: the lexicon backend applies valence with negation and
   intensifier handling and is **domain-blind**: it will misread your jargon.
   `matched_term_rate` tells you how much of the corpus it actually had an
   opinion about, which is the number to check before quoting a rate.
   `backend='supervised'` reuses your fitted classifier; `'transformer'` needs
   `buildml[nlp]`.
-- **Language** — native detection combines Unicode script probes with
+- **Language**: native detection combines Unicode script probes with
   function-word scoring for seven Latin-script languages. Both backends degrade
   on very short strings, and a confident answer about a three-word document
   should be distrusted whichever backend gave it.
@@ -254,7 +254,7 @@ Each of these is unsupervised and reports its own limits:
 
 ## Anti-patterns
 
-- Fitting a vectorizer on the full frame before `split` — the classic text leak,
+- Fitting a vectorizer on the full frame before `split`: the classic text leak,
   because IDF and the `min_df` cut both see holdout documents.
 - Quoting holdout accuracy without reading `train_holdout_exact_overlap`.
 - Reading a strong score next to a high `oov_rate` as generalisation.
@@ -282,7 +282,7 @@ Sharing a text column, or a sentence-transformer, does not merge these surfaces.
 
 See `buildml.nlp.checkpoint.CHECKPOINT_BOUNDARY`. `buildml.nlp_bundle.v1` stores
 the normalization plan, the train-fitted representation, the fitted head, and
-optionally the topic plan. It does **not** store data, roles, splits, or history —
+optionally the topic plan. It does **not** store data, roles, splits, or history :
 reload the workflow via `checkpoint_load` and the text model via
 `load_nlp_bundle`. Because the normalization plan travels with the vectorizer, a
 reloaded bundle reproduces the holdout score exactly; the proof and the
@@ -290,7 +290,7 @@ integration smoke both assert that.
 
 ## Proof
 
-[ticket-routing-nlp](../proofs/ticket-routing-nlp/) — Tier A route with a Tier C
+[ticket-routing-nlp](../proofs/ticket-routing-nlp/): Tier A route with a Tier C
 hand-built `sklearn.Pipeline(TfidfVectorizer + LogisticRegression)` twin on the
 same split indices. The twin matches the model; what it does not provide without
 extra code is the contamination screen, the stored normalization plan, token
@@ -298,7 +298,7 @@ attribution, topic coherence, and the audit history.
 
 ## Benchmark
 
-`benchmarks/nlp/representation_tradeoff.py` — one fixed corpus and split across
+`benchmarks/nlp/representation_tradeoff.py`: one fixed corpus and split across
 word/char n-grams, count vs TF-IDF vs hashing, and the dense backends when
 `--include-optional` is passed. Records holdout accuracy, fit/score latency,
 vocabulary size, and whether token attribution survives each choice.

@@ -12,7 +12,7 @@ when extras installed:
   - ``buildml[unsupervised]`` → hdbscan, umap-learn
   - ``buildml[torch]`` → DEC/IDEC deep clustering
 
-Lazy imports — core never grows heavy unsupervised stacks.
+Lazy imports: core never grows heavy unsupervised stacks.
 """
 
 from __future__ import annotations

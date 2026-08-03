@@ -9,7 +9,7 @@ and unit variance removes the problem.
 The split into ``fit`` and ``apply`` is what makes it safe. Statistics are
 computed once, on the training partition, and then applied unchanged to
 validation, test, and anything seen later. Recomputing them per partition would
-scale each by its own distribution — which changes what the model sees at
+scale each by its own distribution: which changes what the model sees at
 inference, and does so without any error to notice.
 
 See Also
@@ -58,7 +58,7 @@ def fit_standardize(x_train: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     that would propagate through every subsequent batch.
 
     ``nanmean`` and ``nanstd`` are used so a stray ``NaN`` does not poison the
-    statistics — though :func:`frame_to_numeric_matrix` rejects ``NaN`` upstream
+    statistics: though :func:`frame_to_numeric_matrix` rejects ``NaN`` upstream
     anyway.
 
     See Also
@@ -101,7 +101,7 @@ def apply_standardize(
     Raises
     ------
     ValidationError
-        If the matrix width does not match the statistics — normally a sign
+        If the matrix width does not match the statistics: normally a sign
         that columns were added, dropped, or reordered since fitting.
 
     Notes
@@ -122,7 +122,7 @@ def frame_to_numeric_matrix(frame: pd.DataFrame, columns: list[str]) -> np.ndarr
     """Extract columns as a float matrix, refusing anything ambiguous.
 
     The gate between pandas and tensors. Tensors have no notion of a string
-    category or a missing value, so both must be resolved before this point —
+    category or a missing value, so both must be resolved before this point :
     and this function refuses rather than guessing.
 
     Parameters
@@ -146,7 +146,7 @@ def frame_to_numeric_matrix(frame: pd.DataFrame, columns: list[str]) -> np.ndarr
     Notes
     -----
     **Non-numeric columns are refused rather than encoded here.** How a category
-    should be represented — one-hot, ordinal, target-encoded — is a modelling
+    should be represented: one-hot, ordinal, target-encoded: is a modelling
     decision with real consequences, and it belongs in an explicit preprocessing
     step where the choice is recorded, not in a silent cast.
 

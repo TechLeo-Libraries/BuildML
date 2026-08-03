@@ -7,7 +7,7 @@ model families and preprocess recipes under a disclosed trial budget.
 
 ## Data source
 
-Synthetic telco churn (`load_telco_churn_synthetic`) — license-clear stand-in
+Synthetic telco churn (`load_telco_churn_synthetic`): license-clear stand-in
 for IBM Telco-style schemas.
 
 ## Leakage controls
@@ -30,7 +30,7 @@ Classification metrics on validation/test; search summary in JSON.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs sklearn `RandomizedSearchCV` over logistic / RF / GBM on the same stratified split (`results/comparison.json`).
+Filled: `baseline_industry.py` runs sklearn `RandomizedSearchCV` over logistic / RF / GBM on the same stratified split (`results/comparison.json`).
 ## Limitations
 
 Finite budget; synthetic labels; not a full CRM feature store.

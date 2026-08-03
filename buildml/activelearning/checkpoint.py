@@ -28,7 +28,7 @@ CHECKPOINT_BOUNDARY = (
     "checkpoint stores data, roles, splits, history, and optional classical "
     "preprocess plans; it does not embed the active learner. Reload tabular "
     "workflow via checkpoint_load; reload the learner via "
-    "load_active_learning_bundle. Labels always come from the user — the bundle "
+    "load_active_learning_bundle. Labels always come from the user: the bundle "
     "does not embed a fake oracle."
 )
 

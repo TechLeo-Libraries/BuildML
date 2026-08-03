@@ -2,7 +2,7 @@
 
 The encoder stays **frozen**: BuildML pools its last hidden states and fits a
 linear head on top. Full fine-tuning of a transformer lives in the Torch path
-(:mod:`buildml.dl`), not here — pooling a frozen encoder is cheap, reproducible,
+(:mod:`buildml.dl`), not here: pooling a frozen encoder is cheap, reproducible,
 and honest about what it does.
 """
 
@@ -20,7 +20,7 @@ class TransformerEncoderVectorizer:
     """Turn documents into vectors by averaging a frozen transformer's outputs.
 
     A transformer produces one vector per token. To get one vector per
-    document, those are averaged — weighted by the attention mask, so padding
+    document, those are averaged: weighted by the attention mask, so padding
     contributes nothing. Crude compared to a model trained to produce document
     vectors, and it works well enough to be worth having when
     sentence-transformers is not an option or you want a specific encoder.
@@ -63,7 +63,7 @@ class TransformerEncoderVectorizer:
         max_seq_tokens:
             How many tokens of each document to read. Text beyond this is
             truncated and cannot influence the vector, so raise it for long
-            documents whose signal is not front-loaded — attention cost grows
+            documents whose signal is not front-loaded: attention cost grows
             quadratically with this number.
         batch_size:
             How many documents to encode at once. Smaller than the
@@ -131,7 +131,7 @@ class TransformerEncoderVectorizer:
     def fit_transform(self, documents: list[str], y: Any = None) -> np.ndarray:
         """Encode the training documents and record the output width.
 
-        Equivalent to fit then transform, and cheaper — since the encoder is
+        Equivalent to fit then transform, and cheaper: since the encoder is
         frozen, doing it in one step avoids running the model twice over the
         same documents, which is the expensive part.
 
@@ -162,7 +162,7 @@ class TransformerEncoderVectorizer:
         """Encode documents by running the transformer and pooling its outputs.
 
         Each document is tokenised, passed through the encoder, and its
-        token vectors averaged — masked so padding contributes nothing, which
+        token vectors averaged: masked so padding contributes nothing, which
         is what keeps a short document in a padded batch from being diluted.
 
         Parameters
@@ -185,7 +185,7 @@ class TransformerEncoderVectorizer:
 
         Notes
         -----
-        Runs under ``torch.no_grad()`` in evaluation mode — no gradients, no
+        Runs under ``torch.no_grad()`` in evaluation mode: no gradients, no
         dropout, and the same input always gives the same vector.
 
         **Documents longer than ``max_seq_tokens`` are silently truncated.**

@@ -5,7 +5,7 @@ by REINFORCE, and a Q-table over discretised states. Both are readable and both
 have hard ceilings. When a problem genuinely needs a neural policy, this adapter
 hands off to Stable-Baselines3 rather than reimplementing PPO.
 
-Three algorithms are exposed. **PPO** is the general-purpose default — on-policy,
+Three algorithms are exposed. **PPO** is the general-purpose default: on-policy,
 stable across a wide range of problems, and forgiving of hyperparameters. **DQN**
 is off-policy and reuses past experience, which makes it more sample-efficient
 when interaction is expensive, but it only handles discrete actions and is
@@ -17,7 +17,7 @@ uniform result shape; Stable-Baselines3 does the learning. That keeps the surfac
 small and the behaviour identical to using the library directly.
 
 Two limits are worth stating. The scope is small discrete-action environments,
-for learning and for modest problems — not robotics, autonomous driving, or
+for learning and for modest problems: not robotics, autonomous driving, or
 multi-agent simulation. And ``act_sb3_observation`` cannot return true action
 probabilities, because Stable-Baselines3 does not expose them uniformly across
 algorithms; see that function for what it returns instead.
@@ -169,7 +169,7 @@ def train_sb3_policy(
         experience and needs fewer interactions, at the cost of being harder to
         tune. ``'a2c'`` is faster per step and less stable.
     total_timesteps:
-        The interaction budget — the single setting that most determines
+        The interaction budget: the single setting that most determines
         whether the policy learns anything. Deep RL needs far more steps than
         feels reasonable; 20,000 is a starting point, not a sufficient one.
     max_steps:
@@ -221,7 +221,7 @@ def train_sb3_policy(
     disclosures = [
         "SB3 industry path trains PPO/DQN/A2C on a Gymnasium env loop.",
         "Requires buildml[rl-industry] (stable-baselines3 + gymnasium).",
-        "Honesty: small discrete-action env teaching — not MuJoCo/robotics/AV.",
+        "Honesty: small discrete-action env teaching: not MuJoCo/robotics/AV.",
         "Offline RL / batch-constrained Q-learning are out of scope here.",
         f"env_id={env_id!r}; algorithm={algorithm}; "
         f"total_timesteps={total_timesteps}.",
@@ -297,7 +297,7 @@ def train_sb3_policy(
         and total_timesteps < 50_000
     ):
         warnings.append(
-            "CartPole mean return is still low; increase total_timesteps — "
+            "CartPole mean return is still low; increase total_timesteps: "
             "this is an honest small-env teaching loop, not a robotics product."
         )
     return wrapper, metrics, disclosures, warnings
@@ -424,7 +424,7 @@ def act_sb3_observation(
     int
         The chosen action index.
     tuple of float
-        A one-hot vector marking the chosen action — **not** action
+        A one-hot vector marking the chosen action: **not** action
         probabilities.
 
     Raises
@@ -438,9 +438,9 @@ def act_sb3_observation(
     **The scores are one-hot, and that is a real limitation.** The other modes
     return genuine distributions, and code that reads confidence from
     :class:`~buildml.rl.results.RlActResult` scores will see false certainty
-    here. Stable-Baselines3 does not expose action probabilities uniformly —
+    here. Stable-Baselines3 does not expose action probabilities uniformly :
     DQN has Q-values rather than probabilities, and PPO's distribution is not
-    surfaced by ``predict`` — so a one-hot marker is returned rather than a
+    surfaced by ``predict``: so a one-hot marker is returned rather than a
     number that would look like a probability without being one.
 
     See Also

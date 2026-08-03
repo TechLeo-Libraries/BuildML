@@ -29,7 +29,7 @@ CHECKPOINT_BOUNDARY = (
     "checkpoint stores data, roles, splits, history, and optional classical "
     "preprocess plans; it does not embed the federated global model. Reload "
     "tabular workflow via checkpoint_load; reload the learner via "
-    "load_federated_bundle. This is a local FedAvg-style simulation — not a "
+    "load_federated_bundle. This is a local FedAvg-style simulation: not a "
     "distributed FL network stack and not cryptographic secure aggregation."
 )
 

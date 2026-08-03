@@ -1,4 +1,4 @@
-"""Deep-learning domain (Torch). Lazy imports — core BuildML never requires Torch."""
+"""Deep-learning domain (Torch). Lazy imports: core BuildML never requires Torch."""
 
 from __future__ import annotations
 

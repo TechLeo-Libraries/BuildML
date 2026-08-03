@@ -10,7 +10,7 @@ contain any given word.
 What BM25 cannot do is match a word it has never seen. "Cancel" does not find
 "terminate", and no parameter setting changes that.
 
-Dense retrieval has the opposite profile — it handles paraphrase and misses
+Dense retrieval has the opposite profile: it handles paraphrase and misses
 exact identifiers. Hybrid runs both, which leaves the problem of combining two
 score scales that have nothing in common: BM25 is unbounded and corpus-relative,
 cosine similarity sits in ``[-1, 1]``. Two answers here. **Reciprocal rank
@@ -45,7 +45,7 @@ def tokenize(text: str) -> list[str]:
     """Split text into lowercase alphanumeric tokens.
 
     Deliberately simple, and shared by indexing and querying so that both sides
-    tokenise identically — a mismatch there means query terms that cannot match
+    tokenise identically: a mismatch there means query terms that cannot match
     anything.
 
     Parameters
@@ -92,7 +92,7 @@ class BM25Index:
         The passages being ranked.
     k1:
         Term-frequency saturation. Controls how quickly repeated occurrences
-        stop adding relevance — a word appearing ten times is not ten times as
+        stop adding relevance: a word appearing ten times is not ten times as
         good a signal as appearing once.
     b:
         Length normalisation, 0 to 1. At 1, long passages are fully penalised
@@ -101,7 +101,7 @@ class BM25Index:
     Notes
     -----
     **Rebuilt per query when filters are used.** Unlike the vector store, which
-    persists, this is constructed from the filtered chunk set each time — fine
+    persists, this is constructed from the filtered chunk set each time: fine
     for moderate corpora, and a cost that grows with corpus size.
 
     **Exact matching only.** No stemming, no synonyms. This is the half of
@@ -155,7 +155,7 @@ class BM25Index:
         -----
         **Statistics are relative to this chunk set.** A term's rarity is
         measured against the passages given here, so building over a filtered
-        subset produces different — and correct — weights for that subset.
+        subset produces different: and correct: weights for that subset.
 
         **Every token of every chunk is held in memory.**
         """
@@ -307,7 +307,7 @@ def rrf_fuse(
     and the sums are compared.
 
     A chunk ranked highly by both methods beats one ranked first by a single
-    method, which is exactly the behaviour hybrid retrieval is for — agreement
+    method, which is exactly the behaviour hybrid retrieval is for: agreement
     between two different notions of relevance is stronger evidence than
     excellence under one.
 
@@ -427,7 +427,7 @@ def weighted_fuse(
     Notes
     -----
     **A chunk missing from one list scores zero for that half**, which is a real
-    penalty — unlike RRF, where absence merely means no contribution. This makes
+    penalty: unlike RRF, where absence merely means no contribution. This makes
     weighted fusion favour chunks both methods found.
 
     **Prefer RRF unless you have a measured reason not to.** Per-query
@@ -498,7 +498,7 @@ def match_metadata_filters(
     """Test one chunk's metadata against a set of equality constraints.
 
     All constraints must hold. Used to restrict retrieval to a document version,
-    a language, a date range expressed as a label — anything recorded on the
+    a language, a date range expressed as a label: anything recorded on the
     chunk at ingest.
 
     Parameters

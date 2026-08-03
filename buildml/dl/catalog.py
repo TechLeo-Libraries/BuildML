@@ -1,4 +1,4 @@
-"""Deep-learning capability matrix — honest defaults and modality boundaries."""
+"""Deep-learning capability matrix: honest defaults and modality boundaries."""
 
 from __future__ import annotations
 
@@ -68,7 +68,7 @@ def dl_capability_matrix() -> dict[str, Any]:
                 "available": torch_ok,
                 "extra": "torch",
                 "entrypoints": ["fit_torch (text column)", "make_text_loaders"],
-                "notes": "Char/word vocab classifiers — not HF transformer fine-tuning.",
+                "notes": "Char/word vocab classifiers: not HF transformer fine-tuning.",
             },
             "multimodal": {
                 "available": torch_ok,
@@ -81,7 +81,7 @@ def dl_capability_matrix() -> dict[str, Any]:
             "supported": list(WEIGHT_MODES),
             "default_zoo_mode": "mock",
             "disclosure": (
-                "mock/none use random or uninitialized weights — for plumbing tests only. "
+                "mock/none use random or uninitialized weights: for plumbing tests only. "
                 "Use weight_mode='pretrained' for real transfer learning."
             ),
         },

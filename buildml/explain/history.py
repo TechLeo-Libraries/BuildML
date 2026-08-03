@@ -5,7 +5,7 @@ and what changed as a result. Reconstructing that from a fitted model afterwards
 is impossible, so it is recorded as it happens.
 
 Two constraints shape the format. Records must be JSON-safe, because history
-travels in checkpoints and reports where a live object cannot go — so
+travels in checkpoints and reports where a live object cannot go: so
 :func:`json_safe` converts everything and falls back to ``repr`` rather than
 failing. And records must stay readable across versions, because a checkpoint
 written months ago should still load: v1 keys are kept alongside their v2
@@ -87,7 +87,7 @@ def json_safe(value: Any) -> Any:
     -----
     **The ``repr`` fallback never fails, which is the point.** History recording
     must not break the operation it is recording. The cost is that an
-    unrecognised object lands as text — informative for a human, useless for
+    unrecognised object lands as text: informative for a human, useless for
     reloading.
 
     **Strings and bytes are not treated as sequences**, which would otherwise
@@ -122,7 +122,7 @@ def json_safe(value: Any) -> Any:
 def session_state(session: Any) -> dict[str, Any]:
     """Take a flat snapshot of what a Session currently has.
 
-    Not the Session's data — a set of booleans and small values saying what
+    Not the Session's data: a set of booleans and small values saying what
     exists: is there a dataset, a split, a fit, an imputation plan. Comparing two
     of these before and after an operation is what produces the change list in a
     history record.
@@ -199,7 +199,7 @@ def state_changes(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[s
     committing to a reading of it.
 
     Keys are sorted, so the same change always produces the same line in the
-    same position — which is what makes two runs comparable.
+    same position: which is what makes two runs comparable.
 
     Parameters
     ----------
@@ -269,12 +269,12 @@ def make_operation_record(
         Position in the history, from 1. Ordering does not depend on timestamps,
         which can collide at this resolution.
     operation_id:
-        What was called — ``'impute'``, ``'fit'``, ``'split'``.
+        What was called: ``'impute'``, ``'fit'``, ``'split'``.
     parameters:
         The arguments, converted for storage.
     decision_origin:
         Who decided. ``'explicit'`` for a user's choice, ``'auto'`` for one
-        BuildML made. **This is the field that keeps automation honest** — it is
+        BuildML made. **This is the field that keeps automation honest**: it is
         how a reader tells their own decisions from the library's.
     before:
         State snapshot before.
@@ -339,7 +339,7 @@ def normalize_history(history: Sequence[Mapping[str, Any]] | None) -> list[dict[
 
     The interesting case is a v1 record with no transition. Since v1 did not
     record state, the previous record's "after" is carried forward as this
-    record's "before" and "after" — which produces an empty change list. That is
+    record's "before" and "after": which produces an empty change list. That is
     the honest answer: the change was not recorded, and inventing one would be
     worse than reporting none.
 
@@ -426,8 +426,8 @@ def prior_state(history: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     Returns
     -------
     dict
-        The last record's "after" snapshot. The empty workflow state — every
-        flag ``False`` — when the history is empty or the last record has no
+        The last record's "after" snapshot. The empty workflow state: every
+        flag ``False``: when the history is empty or the last record has no
         usable transition.
 
     Notes

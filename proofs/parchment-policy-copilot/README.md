@@ -1,6 +1,6 @@
 # Parchment Policy Copilot
 
-**Tier B** cross-domain product proof — RAG retrieval/generate + learning-to-rank
+**Tier B** cross-domain product proof: RAG retrieval/generate + learning-to-rank
 over policy queries + CBR case memory for escalations.
 
 ## Product narrative
@@ -15,7 +15,7 @@ The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -25,7 +25,7 @@ The platform:
 
 ## Leakage controls
 
-- RAG corpus contains policy articles only — judgments never indexed
+- RAG corpus contains policy articles only: judgments never indexed
 - LTR `group_split` on `query_id` before fit
 - CBR case memory built from train only
 - Test retrieval / rank / CBR metrics after lock

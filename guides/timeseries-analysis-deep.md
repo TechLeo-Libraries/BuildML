@@ -1,6 +1,6 @@
 # Time-series analysis (deep)
 
-Phase R3 analysis plugin — distinct Session surface from forecasting.
+Phase R3 analysis plugin: distinct Session surface from forecasting.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ random/stratified/group splits refused).
 Full report with toggles:
 
 - `include_decompose`, `include_diagnostics`, `include_changepoints`, `include_features`
-- `scope='train'` (default) or `'all'` (EDA — disclosed leakage risk)
+- `scope='train'` (default) or `'all'` (EDA: disclosed leakage risk)
 
 ### `ts_decompose`
 
@@ -45,10 +45,10 @@ ACF/PACF arrays (+ confidence intervals with statsmodels), ADF and KPSS p-values
 
 `TSAnalysisResult` holds optional sub-results:
 
-- `TSDecomposeResult` — trend/seasonal/residual tuples + timestamps
-- `TSDiagnosticsResult` — exportable ACF/PACF for plotting
-- `TSChangepointResult` — index boundaries
-- `TSFeatureResult` — rolling mean/std, dominant spectral period
+- `TSDecomposeResult`: trend/seasonal/residual tuples + timestamps
+- `TSDiagnosticsResult`: exportable ACF/PACF for plotting
+- `TSChangepointResult`: index boundaries
+- `TSFeatureResult`: rolling mean/std, dominant spectral period
 
 ## Walkthrough / AI
 

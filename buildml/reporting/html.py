@@ -15,8 +15,8 @@ Three ideas run through the components. Everything is escaped unless a field is
 explicitly documented as trusted HTML. Everything is bounded, so a frame with a
 hundred thousand rows produces a readable report rather than a browser that
 stops responding. And everything carries the accessibility attributes that make
-a report usable with a screen reader or a keyboard — captions, scopes, landmark
-roles, skip links — because reports get read by people who did not run the
+a report usable with a screen reader or a keyboard: captions, scopes, landmark
+roles, skip links: because reports get read by people who did not run the
 analysis.
 
 See Also
@@ -45,7 +45,7 @@ def escape(value: object, *, quote: bool = True) -> str:
 
     The single point where caller data becomes HTML. Applied everywhere in this
     module, on the assumption that any value reaching a report might contain
-    markup — a column named ``<b>total</b>``, a category value with an
+    markup: a column named ``<b>total</b>``, a category value with an
     apostrophe, an error message quoting user input.
 
     Non-strings are stringified rather than rejected, since report values are
@@ -91,13 +91,13 @@ def escape(value: object, *, quote: bool = True) -> str:
 def element_id(value: object, *, prefix: str = "section") -> str:
     """Turn a human label into an id that is safe in a URL fragment.
 
-    Section keys come from analysis names — ``"Missing Values"``, ``"ROC / PR
-    curves"`` — and those cannot be used directly as ids, because a fragment
+    Section keys come from analysis names: ``"Missing Values"``, ``"ROC / PR
+    curves"``: and those cannot be used directly as ids, because a fragment
     link containing a space or a slash breaks navigation.
 
     Everything outside lowercase letters, digits, hyphens, and underscores
     collapses to a hyphen, and leading and trailing separators are trimmed. The
-    mapping is deterministic, so the same key produces the same id every time —
+    mapping is deterministic, so the same key produces the same id every time :
     which is what lets a table of contents link to a section rendered
     separately.
 
@@ -146,7 +146,7 @@ def encode_asset(
 
     This is what makes a report portable. A ``<img src="figure.png">`` is a
     promise that the file will still be beside the HTML when someone opens it,
-    and reports get emailed, copied to shared drives, and attached to tickets —
+    and reports get emailed, copied to shared drives, and attached to tickets :
     the promise does not survive. Base64 into a data URI, and the image is part
     of the document.
 
@@ -154,7 +154,7 @@ def encode_asset(
     ----------
     source:
         A path to read, or the bytes themselves when the content was generated
-        in memory — a Matplotlib figure saved to a buffer, for instance.
+        in memory: a Matplotlib figure saved to a buffer, for instance.
     media_type:
         The MIME type. Guessed from the file extension when a path was given;
         required for bytes if the browser is to render rather than download
@@ -204,7 +204,7 @@ def encode_asset(
 def render_badge(label: object, *, tone: str = "neutral") -> str:
     """Render a small coloured label for a status or count.
 
-    Used for the short signals that would be noise as full sentences — a
+    Used for the short signals that would be noise as full sentences: a
     severity, a pass or fail, a count of affected columns.
 
     Parameters
@@ -224,7 +224,7 @@ def render_badge(label: object, *, tone: str = "neutral") -> str:
     -----
     **An unrecognised tone silently becomes ``'neutral'``.** The alternative is
     a report that fails to render over a typo in a colour name, which is a bad
-    trade — but it does mean a misspelled tone shows up as a missing colour
+    trade: but it does mean a misspelled tone shows up as a missing colour
     rather than an error.
 
     **Colour is never the only signal.** The label text carries the meaning, so
@@ -255,7 +255,7 @@ def severity_tone(severity: object) -> str:
     rather than each caller picking its own.
 
     Critical and high both map to danger, because the visual distinction between
-    two shades of alarming is not one a reader reliably picks up — the severity
+    two shades of alarming is not one a reader reliably picks up: the severity
     text carries that difference.
 
     Parameters
@@ -271,7 +271,7 @@ def severity_tone(severity: object) -> str:
     Notes
     -----
     **Unknown severities become ``'neutral'``**, so a new severity introduced
-    elsewhere renders uncoloured rather than breaking the report — and looks
+    elsewhere renders uncoloured rather than breaking the report: and looks
     plain enough to notice.
 
     Examples
@@ -309,8 +309,8 @@ def render_reading_frame(
 
     A number without a frame around it invites the reader to supply their own
     interpretation, which is where most misreadings start. The frame is a fixed
-    structure — what was examined, what came out, why it matters, what it cannot
-    tell you, and what to do next — and its value comes from being the same
+    structure: what was examined, what came out, why it matters, what it cannot
+    tell you, and what to do next: and its value comes from being the same
     everywhere. A reader learns the shape once and then knows where to look in
     every report.
 
@@ -321,7 +321,7 @@ def render_reading_frame(
     Parameters
     ----------
     examined:
-        What the analysis looked at — which data, which partition, which
+        What the analysis looked at: which data, which partition, which
         columns.
     observed:
         What came out, stated as a result rather than an interpretation.
@@ -368,7 +368,7 @@ def render_card(
 ) -> str:
     """Render a titled block of text with a coloured edge for its tone.
 
-    The workhorse for a single observation — a finding, a recommendation, a
+    The workhorse for a single observation: a finding, a recommendation, a
     caveat. Both title and body are escaped, so this is the safe choice for
     anything containing values from the data.
 
@@ -423,8 +423,8 @@ def render_card(
 def render_list(items: Iterable[object], *, ordered: bool = False) -> str:
     """Render items as a list, escaping each one.
 
-    Use an ordered list when the sequence carries meaning — ranked features,
-    steps to follow — and an unordered one otherwise. The distinction is not
+    Use an ordered list when the sequence carries meaning: ranked features,
+    steps to follow: and an unordered one otherwise. The distinction is not
     cosmetic: a screen reader announces an ordered list's positions, which tells
     the listener the order matters.
 
@@ -444,8 +444,8 @@ def render_list(items: Iterable[object], *, ordered: bool = False) -> str:
 
     Notes
     -----
-    **There is no length bound here.** A list built from an unbounded source —
-    every distinct category, say — should be truncated by the caller, which
+    **There is no length bound here.** A list built from an unbounded source :
+    every distinct category, say: should be truncated by the caller, which
     knows what "the rest" means well enough to say so.
 
     Examples
@@ -476,7 +476,7 @@ def render_table(
     The bounds are the point. Rendering a frame straight to HTML works fine on
     the developer's thousand-row sample and produces an unopenable file on the
     real data. Defaults of 500 rows and 50 columns keep a report readable, and
-    when anything is dropped a note above the table says how much — a silently
+    when anything is dropped a note above the table says how much: a silently
     truncated table is worse than no table, because it looks complete.
 
     Cells are formatted before escaping, so floats get six significant figures
@@ -493,7 +493,7 @@ def render_table(
         rows, which keeps output stable for a given input.
     caption:
         A caption, rendered as ``<caption>`` and reused as the scroll region's
-        accessible label. Worth supplying — it is what tells a screen-reader
+        accessible label. Worth supplying: it is what tells a screen-reader
         user what the table contains before they enter it.
     empty_message:
         Shown instead of the table when there are no rows. A sentence saying
@@ -520,7 +520,7 @@ def render_table(
     Notes
     -----
     **Truncation takes the first N, not a sample.** Sort the rows so that the
-    interesting ones come first — largest effect, worst error — because the tail
+    interesting ones come first: largest effect, worst error: because the tail
     is what disappears.
 
     **Floats use six significant figures.** Enough to distinguish values,
@@ -587,8 +587,8 @@ class ReportSection:
     """One section of a report: a heading, a body, and a link target.
 
     The only place in this module where a caller supplies raw HTML. That is
-    necessary — a section body is assembled from the render helpers, and
-    escaping it again would show the markup as text — and it means the
+    necessary: a section body is assembled from the render helpers, and
+    escaping it again would show the markup as text: and it means the
     responsibility for safety moves to the caller.
 
     Attributes
@@ -677,8 +677,8 @@ def render_report(
 ) -> str:
     """Assemble sections into one HTML file that depends on nothing.
 
-    The document shell. Everything is inlined — the stylesheet, the JavaScript,
-    and whatever assets the sections encoded — so the result opens on a machine
+    The document shell. Everything is inlined: the stylesheet, the JavaScript,
+    and whatever assets the sections encoded: so the result opens on a machine
     with no network, no BuildML, and no Python.
 
     What the shell adds beyond the sections: a skip link and landmark roles for
@@ -695,7 +695,7 @@ def render_report(
     sections:
         The content, in order. At least one is required.
     subtitle:
-        A sentence under the title. The place for run context — which dataset,
+        A sentence under the title. The place for run context: which dataset,
         which date, which model version.
     metadata:
         Key-value pairs shown in the header. Rows, columns, target, split
@@ -812,7 +812,7 @@ def write_report(
 
     UTF-8 explicitly, not the platform default. On Windows that default is
     still often cp1252, which cannot encode the arrows and symbols the report
-    uses — and the failure appears as an encoding error partway through writing,
+    uses: and the failure appears as an encoding error partway through writing,
     on one machine and not another.
 
     Parameters
@@ -824,7 +824,7 @@ def write_report(
     sections:
         The content, in order.
     **kwargs:
-        Passed to :func:`render_report` — ``subtitle``, ``metadata``, ``lang``.
+        Passed to :func:`render_report`: ``subtitle``, ``metadata``, ``lang``.
 
     Returns
     -------

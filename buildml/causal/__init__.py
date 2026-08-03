@@ -1,14 +1,14 @@
 """Causal ML domain (assumption-declared backdoor ATE).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
 
 Phase 2:
-  1–8. Semi-supervised → … → Bayesian / probabilistic — done.
-  9. Causal ML — **this module** (PASS vs Phase-1 bar).
-  10. Graph ML / GNNs — see ``buildml.graph``.
-  Next: **Evolutionary algorithms** (search/HPO backend — not swarm zoo).
+  1–8. Semi-supervised → … → Bayesian / probabilistic: done.
+  9. Causal ML: **this module** (PASS vs Phase-1 bar).
+  10. Graph ML / GNNs: see ``buildml.graph``.
+  Next: **Evolutionary algorithms** (search/HPO backend: not swarm zoo).
   Later: symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation /
   synthetic / NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
 
@@ -35,7 +35,7 @@ Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Industry causal
 backends install via ``buildml[causal-industry]`` (dowhy, econml). EDA /
 association paths never satisfy CausalAssumptions.
 
-Lazy imports — core never grows heavy causal stacks.
+Lazy imports: core never grows heavy causal stacks.
 """
 
 from __future__ import annotations

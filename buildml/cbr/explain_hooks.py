@@ -2,8 +2,8 @@
 
 A prediction result carries a trace per row, each naming its neighbours and
 their distances; a session that predicted a large partition would carry all of
-it. History wants the shape of what happened — settings, counts, headline
-metrics — not the payload.
+it. History wants the shape of what happened: settings, counts, headline
+metrics: not the payload.
 
 Each summariser accepts ``None``, a result object, or a plain dict, and reads
 fields through ``.get``, so a missing key becomes ``None`` rather than an
@@ -149,8 +149,8 @@ def predict_result_summary(predict_result: Any) -> dict[str, Any]:
 def retrieve_result_summary(retrieve_result: Any) -> dict[str, Any]:
     """Reduce a retrieval run to its settings and counts.
 
-    Keeps the two things that make a later retrieval comparable to this one —
-    ``k`` and the metric — plus how much was retrieved.
+    Keeps the two things that make a later retrieval comparable to this one :
+    ``k`` and the metric: plus how much was retrieved.
 
     Parameters
     ----------
@@ -189,7 +189,7 @@ def retain_result_summary(retain_result: Any) -> dict[str, Any]:
     """Reduce a retention outcome to its three counts.
 
     How many cases were added, how large memory is now, and how many were
-    refused — enough to reconstruct how the case base grew.
+    refused: enough to reconstruct how the case base grew.
 
     Parameters
     ----------
@@ -310,7 +310,7 @@ def cbr_status(
                 "(retain refuses holdout indices).",
                 "Session checkpoints do not embed CbrPlan; use "
                 "save_cbr_bundle / load_cbr_bundle.",
-                "Honesty: tabular case→solution CBR — not RAG document "
+                "Honesty: tabular case→solution CBR: not RAG document "
                 "retrieval for generation, not a vector DB product.",
             ]
         )

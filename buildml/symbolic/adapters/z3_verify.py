@@ -65,7 +65,7 @@ def verify_rule_constraints(
 
     Notes
     -----
-    Honesty: lightweight SAT check on numeric column bounds — not a full SMT
+    Honesty: lightweight SAT check on numeric column bounds: not a full SMT
     product or complete rule-set consistency prover.
     """
     hard_rules = [
@@ -74,7 +74,7 @@ def verify_rule_constraints(
         if r.kind == "constraint" or r.hardness == "hard"
     ]
     disclosures = [
-        "Z3 constraint verification is optional lite SAT on numeric predicates — "
+        "Z3 constraint verification is optional lite SAT on numeric predicates: "
         "not a complete symbolic AI verifier.",
     ]
     if not hard_rules:
@@ -156,7 +156,7 @@ def verify_rule_constraints(
     warnings: list[str] = []
     if not sat:
         warnings.append(
-            "Hard constraint antecedents are jointly unsatisfiable — review rule set."
+            "Hard constraint antecedents are jointly unsatisfiable: review rule set."
         )
     return ConstraintVerificationResult(
         status=status,

@@ -12,7 +12,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
         _note(
             key="federated-simulation",
             title="Local federated learning simulation on Session clients",
-            summary="Partition train rows by a client/group column; run local updates; average coefficients in-process — not a networked FL platform.",
+            summary="Partition train rows by a client/group column; run local updates; average coefficients in-process: not a networked FL platform.",
             definition=(
                 "Federated learning in BuildML simulates FedAvg-style rounds on "
                 "Session data: each distinct client/group id is a 'client' whose "
@@ -21,7 +21,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Many small sites train privately on their own sheets, then send "
-                "weight updates to a coordinator that averages them — here the "
+                "weight updates to a coordinator that averages them: here the "
                 "sites are columns in one table and the coordinator is local."
             ),
             formal_idea=(
@@ -39,7 +39,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Read backend, n_clients, round_history, global + per-client holdout metrics, disclosures.",
-                "Disclosures state simulation limits — not secure aggregation; flower still local by default.",
+                "Disclosures state simulation limits: not secure aggregation; flower still local by default.",
             ),
             assumptions=(
                 "Exactly one target; a client/group column; numeric non-null features; "
@@ -64,7 +64,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
         ),
         _note(
             key="federated-flower-backend",
-            title="Flower (flwr) backend — NumPyClient + aggregation (still local sim)",
+            title="Flower (flwr) backend: NumPyClient + aggregation (still local sim)",
             summary=(
                 "backend='flower' with buildml[federated-industry] wraps Session "
                 "client partitions as Flower NumPyClients and aggregates with flwr."
@@ -171,7 +171,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "A federated bundle persists the global estimator, client column "
                 "contract, round history, and class vocabulary. Session checkpoints "
-                "persist data/roles/splits/history — not FederatedPlan."
+                "persist data/roles/splits/history: not FederatedPlan."
             ),
             intuition=(
                 "Saving the lab notebook is not the same as saving the averaged "

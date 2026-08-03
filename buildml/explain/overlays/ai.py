@@ -386,7 +386,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=("confirm_autonomy missing, sample egress configured, or empty allowlist.",),
         leakage=(
             "Auto-confirmed write tools still mutate Session state; review transcripts.",
-            "Injection filters are best-effort — not a formal sandbox.",
+            "Injection filters are best-effort: not a formal sandbox.",
         ),
         anti_patterns=(
             "Treating autonomy as unconstrained agency or production autopilot.",

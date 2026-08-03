@@ -5,7 +5,7 @@ Federated learning quickstart
 
    PyPI ``buildml`` is still legacy 1.x and does **not** install Session 2.x.
    Install 2.x from GitHub (or an editable checkout). Federated learning uses
-   core sklearn façades — no optional extra. See :doc:`installation`.
+   core sklearn façades: no optional extra. See :doc:`installation`.
 
 Local FedAvg-style simulation on Session data partitioned by a client/group
 column: ``fit_federated`` runs train-only local updates, aggregates

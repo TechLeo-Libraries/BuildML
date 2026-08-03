@@ -1,6 +1,6 @@
 # Beacon Label Factory
 
-**Tier B** cross-domain product proof — SSL pretext + semi-supervised
+**Tier B** cross-domain product proof: SSL pretext + semi-supervised
 propagation + active-learning budget loop for scarce inspection labels.
 
 ## Product narrative
@@ -15,7 +15,7 @@ labels are masked; holdouts keep full labels for evaluation. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` plus stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` plus stage JSONs.
 
 ## How to run
 

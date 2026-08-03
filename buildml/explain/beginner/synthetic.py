@@ -9,8 +9,8 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "synthetic-train-only-generator",
         plain=(
-            "A synthesizer learns what your table looks like — the range of each column, how columns move "
-            "together — and can then produce brand-new rows that resemble the real ones without being "
+            "A synthesizer learns what your table looks like: the range of each column, how columns move "
+            "together: and can then produce brand-new rows that resemble the real ones without being "
             "copies. It learns from training rows only."
         ),
         analogy=(
@@ -30,7 +30,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not fit the generator before splitting; synthetic rows would then carry holdout structure into training.",
-            "Do not fit a copula on a tiny training set — there is not enough there to estimate a joint distribution.",
+            "Do not fit a copula on a tiny training set: there is not enough there to estimate a joint distribution.",
         ),
         myths=(
             (
@@ -60,7 +60,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         "synthetic-vs-resample",
         plain=(
             "These two look alike and answer different questions. `resample` fixes class imbalance by "
-            "changing which training rows exist — it is a preprocessing step. `fit_synthesizer` builds a "
+            "changing which training rows exist: it is a preprocessing step. `fit_synthesizer` builds a "
             "reusable generator you can save, share, and sample from repeatedly."
         ),
         analogy=(
@@ -109,7 +109,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         "synthetic-fidelity-vs-tstr",
         plain=(
             "There are two very different ways to ask whether synthetic data is any good. Fidelity asks "
-            "'do the numbers look statistically similar?'. TSTR — train on synthetic, test on real — asks "
+            "'do the numbers look statistically similar?'. TSTR: train on synthetic, test on real: asks "
             "'can a model learn from the fake data and still work on real data?'."
         ),
         analogy=(
@@ -121,7 +121,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "It reports gaps: how far the synthetic distribution sits from the real one.",
             "TSTR mode trains a model entirely on synthetic rows.",
             "It then scores that model on real held-out rows.",
-            "Compare against training on real data — that baseline is what tells you how much you lost.",
+            "Compare against training on real data: that baseline is what tells you how much you lost.",
         ),
         use=(
             "Fidelity when the synthetic data will be looked at or analysed directly.",
@@ -159,7 +159,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "By default, sampling hands you a separate frame and changes nothing. If you ask BuildML to "
             "merge synthetic rows into your training set, it adds a marker column recording which rows were "
-            "generated — and it never touches validation or test."
+            "generated: and it never touches validation or test."
         ),
         analogy=(
             "Stamping every reproduction in the archive. It can sit on the same shelf as the originals "
@@ -177,7 +177,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When an audit will ask which rows in this training set were real.",
         ),
         avoid=(
-            "Do not merge into validation or test — BuildML will not do it, and neither should you by hand.",
+            "Do not merge into validation or test: BuildML will not do it, and neither should you by hand.",
             "Do not reuse an existing column name for provenance; you will silently overwrite real data.",
         ),
         myths=(
@@ -218,7 +218,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Understand what your method does: bootstrap resamples real rows, so outputs can be near-duplicates.",
             "Copulas and SMOTE build from real values and can still reproduce rare combinations.",
-            "None of these provide a formal privacy guarantee — no calibrated noise, no privacy accounting.",
+            "None of these provide a formal privacy guarantee: no calibrated noise, no privacy accounting.",
             "Read the disclosures attached to fitting, sampling, and the bundle.",
             "Before sharing anything outside your organization, run an actual privacy review.",
         ),
@@ -257,7 +257,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         "synthetic-bundle-boundary",
         plain=(
             "The fitted generator saves as a synthetic bundle. A Session checkpoint stores your data, "
-            "roles, splits, and history — it does not contain the generator."
+            "roles, splits, and history: it does not contain the generator."
         ),
         analogy=(
             "The mould and the batch of castings are separate items. Storing the castings does not give "
@@ -265,7 +265,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a synthesizer.",
-            "Call `save_synthetic_bundle(path)` — the generator state and a metadata file are written.",
+            "Call `save_synthetic_bundle(path)`: the generator state and a metadata file are written.",
             "Reload with `load_synthetic_bundle(path)`.",
             "Sample new rows from the restored generator.",
             "Keep checkpoints separate for the workflow itself.",

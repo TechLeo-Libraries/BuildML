@@ -7,7 +7,7 @@ common length so documents can be batched.
 
 The vocabulary is the fitted part, and it is fitted on the training partition
 alone. A vocabulary built across all partitions would give the model a slot for
-every word in the test set, which both leaks and misleads — at deployment, words
+every word in the test set, which both leaks and misleads: at deployment, words
 it has never seen will arrive, and a model that never encountered an unknown
 token during training has no idea what to do with one. Reserving ``<unk>`` and
 training with it present is what makes that case survivable.
@@ -69,8 +69,8 @@ class TextVocab:
 
     Notes
     -----
-    **This must be persisted with the model.** Token ids are arbitrary — they
-    depend on the training corpus's word frequencies — so a model paired with a
+    **This must be persisted with the model.** Token ids are arbitrary: they
+    depend on the training corpus's word frequencies: so a model paired with a
     different vocabulary is reading a different language.
 
     **Truncation at ``max_len`` silently discards the tail.** A model with
@@ -105,7 +105,7 @@ class TextVocab:
     def to_dict(self) -> dict[str, Any]:
         """Return the vocabulary as JSON-safe values.
 
-        Complete enough to reconstruct — which is how a saved text model gets
+        Complete enough to reconstruct: which is how a saved text model gets
         its vocabulary back when loaders are rebuilt.
 
         Returns
@@ -323,7 +323,7 @@ def fit_vocab(
     Parameters
     ----------
     texts:
-        The training documents. **Training only** — including holdout text here
+        The training documents. **Training only**: including holdout text here
         leaks.
     max_vocab:
         Cap including the two reserved ids, so ``5000`` allows 4998 words.
@@ -478,7 +478,7 @@ def make_text_loaders(
     Notes
     -----
     **The vocabulary comes from training documents only**, so words appearing
-    exclusively in validation or test arrive as ``<unk>`` — which is exactly
+    exclusively in validation or test arrive as ``<unk>``: which is exactly
     what will happen in production, and therefore what the holdout should
     measure.
 
@@ -603,7 +603,7 @@ def make_text_loaders(
 def loader_config_from_text(cfg: TextLoaderConfig) -> LoaderConfig:
     """Translate text loader settings into the shared config shape.
 
-    Some code paths — the training loop, checkpoint metadata — take a generic
+    Some code paths: the training loop, checkpoint metadata: take a generic
     :class:`~buildml.dl.types.LoaderConfig`. This carries the fields the two
     have in common across.
 
@@ -622,7 +622,7 @@ def loader_config_from_text(cfg: TextLoaderConfig) -> LoaderConfig:
     **Text-specific settings do not survive.** Sequence length, vocabulary cap,
     and frequency floor have no equivalent field, so keep the
     ``TextLoaderConfig`` if you need to rebuild loaders. ``normalize`` is always
-    false — standardising token ids would be meaningless, since they are labels
+    false: standardising token ids would be meaningless, since they are labels
     rather than quantities.
     """
     return LoaderConfig(

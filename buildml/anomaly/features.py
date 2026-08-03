@@ -25,7 +25,7 @@ def resolve_anomaly_columns(
 
 When ``prefer_reduce_components`` is True and a Session ``ReducePlan`` is
 present with component columns still on the frame, those components are
-preferred — same integration contract as clustering (no forked PCA).
+preferred: same integration contract as clustering (no forked PCA).
 Protected roles (target/id/group/time/weight) and any ``extra_exclude``
 names (e.g. normal-label columns) are never used as features.
 

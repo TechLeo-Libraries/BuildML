@@ -24,7 +24,7 @@ CHECKPOINT_BOUNDARY = (
     "checkpoint stores data, roles, splits, history, and optional classical "
     "preprocess plans; it does not embed the online learner. Reload tabular "
     "workflow via checkpoint_load; reload the learner via load_online_bundle. "
-    "This is batch/stream-chunk partial_fit state — not a streaming platform."
+    "This is batch/stream-chunk partial_fit state: not a streaming platform."
 )
 
 

@@ -62,8 +62,8 @@ def require_ai_stack(*, feature: str = "AI operator") -> None:
 def require_openai(*, feature: str = "OpenAI provider") -> Any:
     """Import the OpenAI client, or explain how to install it.
 
-    Imported lazily, so the AI domain stays importable — and the mock provider
-    stays usable — on installations that have no LLM client at all.
+    Imported lazily, so the AI domain stays importable: and the mock provider
+    stays usable: on installations that have no LLM client at all.
 
     Parameters
     ----------
@@ -115,8 +115,8 @@ def ai_available() -> bool:
 
     Notes
     -----
-    Use this to branch — offering AI features when available and hiding them
-    otherwise — rather than to gate. Gating belongs in
+    Use this to branch: offering AI features when available and hiding them
+    otherwise: rather than to gate. Gating belongs in
     :func:`require_ai_stack`, where the failure carries an actionable message.
 
     **A ``False`` result does not mean the AI domain is unusable.** The mock

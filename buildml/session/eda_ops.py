@@ -37,7 +37,7 @@ def eda(
     columns, suspicious cardinality), distributions and their skew,
     correlations between features and multicollinearity via VIF and PCA,
     mutual information against the target, and outlier detection. When a
-    split exists it also compares train against test and reports drift —
+    split exists it also compares train against test and reports drift :
     systematic differences between the two that would make your holdout
     estimate misleading.
 
@@ -66,7 +66,7 @@ def eda(
         Upper bound on charts generated, so a wide table does not produce
         hundreds of figures.
     export_html:
-        Path for a self-contained HTML report — the artefact to share with
+        Path for a self-contained HTML report: the artefact to share with
         someone who will not run the code.
     export_figures:
         Directory to write individual PNG figures into.
@@ -93,8 +93,8 @@ def eda(
     Notes
     -----
     **Leakage:** Exploration is how analysts leak without noticing. Every
-    pattern you find by looking at the whole dataset — including the test
-    rows — informs decisions you then make about the model, so the test set
+    pattern you find by looking at the whole dataset: including the test
+    rows: informs decisions you then make about the model, so the test set
     stops being independent. Split first, and explore the training rows.
     The drift comparison is the exception: it exists precisely to compare
     partitions and reports only aggregate differences.
@@ -185,7 +185,7 @@ def eda_app(
     """Explore the data interactively in a browser instead of on paper.
 
     Starts a local web server and opens the EDA studio: the same analysis
-    :meth:`eda` produces, but navigable — click into a column to see its
+    :meth:`eda` produces, but navigable: click into a column to see its
     distribution, sort correlations, filter findings, read the concept
     explanations behind each screen, and export what you find as PDF or
     CSV.
@@ -231,7 +231,7 @@ def eda_app(
     -------
     ~buildml.dashboard.launch.EDAAppHandle
         A handle exposing ``url``, ``is_running``, and ``stop()``. Call
-        ``stop()`` when finished — a non-blocking server keeps running
+        ``stop()`` when finished: a non-blocking server keeps running
         until you do.
 
     Raises
@@ -301,7 +301,7 @@ def open_eda_dashboard(
     max_columns: int = 100,
     blocking: bool = False,
 ) -> Any:
-    """Open the interactive EDA studio — an alias for :meth:`eda_app`.
+    """Open the interactive EDA studio: an alias for :meth:`eda_app`.
 
     Identical behaviour under a more discoverable name. See
     :meth:`eda_app` for the full description of every argument.

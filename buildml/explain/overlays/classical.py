@@ -492,7 +492,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "columns",
                 "list[str] | None",
                 "Numeric feature-role columns by default "
-                "(skips ignore/id/target/group/time/weight — costs/ids stay unmutated); "
+                "(skips ignore/id/target/group/time/weight: costs/ids stay unmutated); "
                 "pass explicitly to force-include.",
             ),
             _p("method", "standard | minmax", "Scaling formula.", "standard"),
@@ -869,7 +869,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         leakage=("Ranking repeatedly on test overfits model choice to test.",),
         anti_patterns=("Declaring the first-ranked row universally best without examining uncertainty.",),
         state_changes=("Stores last comparison and sets the ranked winner as active fit.",),
-        result_reading=("Compare metric spread, task baselines, and practical constraints—not rank alone.",),
+        result_reading=("Compare metric spread, task baselines, and practical constraints:not rank alone.",),
         next_steps=("Run deep diagnostics on finalists and confirm once on untouched data.",),
         concepts=("model-selection", "evaluation-partitions", "diagnostic-uncertainty", "baselines", "overfitting"),
     ),
@@ -1846,7 +1846,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use data_only only when prior roles/splits/history/plans are intentionally invalid.",),
         assumptions=(
             "Bundle is trusted and created by a compatible BuildML version.",
-            "lazy_intent restore uses scan_parquet/read_parquet over sidecar bytes — "
+            "lazy_intent restore uses scan_parquet/read_parquet over sidecar bytes: "
             "not resurrection of the original plan graph. Collect-on-promote still applies.",
         ),
         failures=(

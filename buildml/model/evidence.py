@@ -68,7 +68,7 @@ def diagnostic_finding(
         The observation, including the numbers and what they indicate.
     evidence:
         The measurements or observations this rests on. Not optional in
-        practice — a finding without evidence is just an opinion.
+        practice: a finding without evidence is just an opinion.
     severity:
         How much attention this warrants, from ``INFO`` up.
 
@@ -107,7 +107,7 @@ def metric_evidence(
 ) -> Evidence:
     """Record a measured number as evidence, with where it came from.
 
-    Metric evidence is a computed quantity — an ECE, an AUC, a fold spread. The
+    Metric evidence is a computed quantity: an ECE, an AUC, a fold spread. The
     ``source`` is what makes it auditable: the same value measured on train and
     on validation supports very different conclusions, and without the source
     a reader cannot tell which they are looking at.
@@ -122,7 +122,7 @@ def metric_evidence(
         The measurement. Coerced to something JSON-safe, so NumPy scalars and
         arrays are converted rather than rejected.
     source:
-        Where it came from — which report, which partition. The context that
+        Where it came from: which report, which partition. The context that
         makes the number interpretable.
     limitations:
         What this measurement cannot support. A binary-only metric on multiclass
@@ -136,7 +136,7 @@ def metric_evidence(
     Notes
     -----
     **Limitations travel with the value.** They survive serialisation into a
-    report, which is the point — the caveat is useless if it is lost the moment
+    report, which is the point: the caveat is useless if it is lost the moment
     the number is copied elsewhere.
 
     See Also
@@ -167,7 +167,7 @@ def observation_evidence(
     without being a scalar: which panels were skipped and why, which segments
     were too small to score, what the estimator does not support. These are
     frequently the most useful evidence in a report, because they explain
-    absences — and an absence with no explanation reads as an oversight.
+    absences: and an absence with no explanation reads as an oversight.
 
     Parameters
     ----------
@@ -176,7 +176,7 @@ def observation_evidence(
     summary:
         One line describing what was observed.
     value:
-        The observation — a list, a mapping, whatever holds it. Coerced to
+        The observation: a list, a mapping, whatever holds it. Coerced to
         something JSON-safe.
     source:
         Where it came from.
@@ -299,7 +299,7 @@ def compatibility_recommendations(
 
     Recommendations used to be a list of strings, and callers and reports still
     consume that shape. Rather than breaking them, each recommendation is
-    rendered to a line that keeps the links inline — the title, the rationale,
+    rendered to a line that keeps the links inline: the title, the rationale,
     the finding keys, and the action label all survive in readable form.
 
     Parameters
@@ -338,9 +338,9 @@ def evidence_for_diagnostic(
 ) -> tuple[list[Finding], list[Recommendation], list[str], list[str]]:
     """Read a diagnostic's numbers and write down what they mean.
 
-    The editorial layer for :mod:`buildml.model.diagnostics`. Each report kind —
+    The editorial layer for :mod:`buildml.model.diagnostics`. Each report kind :
     calibration, threshold, learning curve, permutation importance, segment
-    error — has its own thresholds and its own way of going wrong, so each is
+    error: has its own thresholds and its own way of going wrong, so each is
     interpreted on its own terms rather than through a generic rule.
 
     Every produced record is linked back to a value in the payload, which means
@@ -358,7 +358,7 @@ def evidence_for_diagnostic(
     Returns
     -------
     tuple
-        ``(findings, recommendations, limitations, methods)`` — what was
+        ``(findings, recommendations, limitations, methods)``: what was
         observed, what to do, what the results cannot support, and how they were
         computed.
 
@@ -637,7 +637,7 @@ def evidence_for_plot_board(
 
     Skipped panels get equal treatment. When an estimator offers no
     probabilities, the ROC, precision-recall, calibration, and threshold panels
-    cannot be drawn — and a board with four missing panels and no explanation
+    cannot be drawn: and a board with four missing panels and no explanation
     looks like something failed. Recording the reasons turns an apparent gap
     into a stated limitation.
 

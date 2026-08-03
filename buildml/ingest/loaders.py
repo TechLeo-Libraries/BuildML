@@ -1,13 +1,13 @@
 """Read a file into pandas, and turn any failure into one recognisable error.
 
-Thin wrappers over ``pandas.read_*``, and the thinness is the point — pandas
+Thin wrappers over ``pandas.read_*``, and the thinness is the point: pandas
 already knows how to read these formats. What these add is a uniform failure
 mode: every underlying exception, whatever library raised it, becomes an
 :class:`~buildml.core.errors.IngestError` naming the path.
 
 Without that, a caller has to catch ``ParserError``, ``ArrowInvalid``,
 ``UnicodeDecodeError``, ``FileNotFoundError``, and whatever the parquet engine
-happens to raise this version — a list that changes with dependencies. The
+happens to raise this version: a list that changes with dependencies. The
 original exception is chained, so the specific cause is still there when you
 need it.
 
@@ -31,7 +31,7 @@ def load_dataframe(source: pd.DataFrame) -> pd.DataFrame:
 
     The copy is the whole function. Someone who hands a frame to BuildML and
     keeps using it in the next notebook cell should not find that BuildML has
-    changed it underneath them — and preprocessing does modify frames.
+    changed it underneath them: and preprocessing does modify frames.
 
     Parameters
     ----------
@@ -78,7 +78,7 @@ def load_csv(path: Path, *, nrows: int | None = None) -> pd.DataFrame:
         The file to read. Only the suffix is inspected, for the separator.
     nrows:
         Stop after this many rows. Useful for inspecting the shape of a large
-        file cheaply — a header and a hundred rows tell you the columns without
+        file cheaply: a header and a hundred rows tell you the columns without
         reading a gigabyte.
 
     Returns
@@ -89,7 +89,7 @@ def load_csv(path: Path, *, nrows: int | None = None) -> pd.DataFrame:
     Raises
     ------
     IngestError
-        On any failure — missing file, malformed rows, an encoding pandas
+        On any failure: missing file, malformed rows, an encoding pandas
         cannot decode. The original exception is chained.
 
     Notes
@@ -168,7 +168,7 @@ def load_arrow(path: Path) -> pd.DataFrame:
 
     Arrow's on-disk layout is its in-memory layout, so reading is close to a
     memory map rather than a parse. That makes it the right choice for
-    intermediate artifacts — a cached frame between pipeline stages — where the
+    intermediate artifacts: a cached frame between pipeline stages: where the
     file is written and read by the same tooling and speed matters more than
     portability.
 

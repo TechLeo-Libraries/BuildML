@@ -8,8 +8,8 @@ the raw appendix.
 
 That ordering is the design. Someone who reads only the first section should
 come away with an accurate impression; someone who reads everything should find
-the evidence for it. The reverse order — analyzer dumps first, conclusions
-buried — is what most generated reports do, and it is why most generated reports
+the evidence for it. The reverse order: analyzer dumps first, conclusions
+buried: is what most generated reports do, and it is why most generated reports
 go unread.
 
 Each section uses the shared five-part reading frame from
@@ -17,7 +17,7 @@ Each section uses the shared five-part reading frame from
 was found, why it matters, what it cannot tell you, and what to do next.
 
 A size budget applies. Every figure is base64-inlined, and a report with three
-dozen of them can reach tens of megabytes — past which browsers struggle and
+dozen of them can reach tens of megabytes: past which browsers struggle and
 mail gateways refuse. The budget drops figures rather than producing a file
 nobody can open, and says in the document that it did.
 
@@ -78,8 +78,8 @@ def export_eda_html(
     path:
         Where to write. Parent directories are created.
     title:
-        The document title. Worth setting to something identifying — the dataset
-        and the date — since these files accumulate.
+        The document title. Worth setting to something identifying: the dataset
+        and the date: since these files accumulate.
     figures:
         Rendered figures to embed. Error entries are handled and reported in the
         document rather than skipped silently.
@@ -377,7 +377,7 @@ def _relationship_section(report: dict[str, Any]) -> ReportSection:
     body += "<h3>Ranked associations</h3>"
     body += render_table(bivariate.get("top_abs_pearson_pairs") or [], caption="Pearson pairs by absolute coefficient")
     body += render_table(bivariate.get("kendall_top_pairs") or [], caption="Selected Kendall pairs")
-    body += render_table(cat_rows, caption="Categorical pairs — Cramér's V")
+    body += render_table(cat_rows, caption="Categorical pairs: Cramér's V")
     body += render_table(mi_rows, caption="Mutual information versus target")
     body += "<h3>Multivariate structure</h3>"
     body += render_table(multivariate.get("vif") or [], caption="Variance inflation factors")

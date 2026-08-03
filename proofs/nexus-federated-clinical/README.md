@@ -1,6 +1,6 @@
 ﻿# Nexus Federated Clinical
 
-**Tier B** cross-domain product proof — federated hospital simulation +
+**Tier B** cross-domain product proof: federated hospital simulation +
 probabilistic uncertainty + honest evaluation disclosures.
 
 ## Product narrative
@@ -15,7 +15,7 @@ FL network or PHI:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -32,8 +32,8 @@ FL network or PHI:
 
 ## Disclosures
 
-- Local FedAvg simulation — raw rows stay in-process; not a deployed FL network
-- Aggregation is weighted coefficient averaging — not cryptographic secure aggregation
+- Local FedAvg simulation: raw rows stay in-process; not a deployed FL network
+- Aggregation is weighted coefficient averaging: not cryptographic secure aggregation
 - No PHI; synthetic labs with site shift only
 - Probabilistic intervals are empirical coverage tools, not clinical guarantees
 

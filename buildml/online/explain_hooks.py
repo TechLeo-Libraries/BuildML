@@ -199,7 +199,7 @@ def online_status(
                 "explicitly enabled (always disclosed).",
                 "Session checkpoints do not embed OnlinePlan; use "
                 "save_online_bundle / load_online_bundle.",
-                "Honesty: batch/stream-chunk Session updates — not a distributed "
+                "Honesty: batch/stream-chunk Session updates: not a distributed "
                 "streaming platform or lifelong-learning research suite.",
             ]
         )

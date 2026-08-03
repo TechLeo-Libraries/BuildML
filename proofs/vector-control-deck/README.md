@@ -1,6 +1,6 @@
 # Vector Control Deck
 
-**Tier B** cross-domain product proof — imitation learning (+ optional gym RL)
+**Tier B** cross-domain product proof: imitation learning (+ optional gym RL)
 + decision/optimize allocation + classical supervised action baseline.
 
 ## Product narrative
@@ -16,7 +16,7 @@ allocated under a capacity budget. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 Core stages keep the product completed when gym RL skips.
 
 ## How to run

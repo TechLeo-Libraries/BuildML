@@ -1,7 +1,7 @@
 # ruff: noqa: E501
 """Render a diagnostic report as a single HTML file that works offline.
 
-Model results usually have to leave the notebook — to a reviewer, a stakeholder,
+Model results usually have to leave the notebook: to a reviewer, a stakeholder,
 an audit trail, a pull request. A screenshot loses the numbers and a JSON dump
 loses the reading.
 
@@ -61,8 +61,8 @@ def export_diagnostics_html(
 ) -> Path:
     """Write the report to one HTML file with everything embedded.
 
-    Builds the standard sections — summary, metrics, evidence, interpretation,
-    visuals, actions, methods, and anything skipped — using the shared BuildML
+    Builds the standard sections: summary, metrics, evidence, interpretation,
+    visuals, actions, methods, and anything skipped: using the shared BuildML
     report shell, so diagnostics look the same wherever they come from.
 
     Figures are encoded into the document rather than linked, which is what
@@ -325,7 +325,7 @@ def _assets_section(report: Mapping[str, Any], figures: Mapping[str, Any]) -> Re
     )
     body += f'<div class="bml-gallery">{gallery}</div>'
     body += render_table(failures, caption="Asset rendering failures")
-    return ReportSection("visuals", "Visual evidence — Figure board", body)
+    return ReportSection("visuals", "Visual evidence: Figure board", body)
 
 
 def _actions_section(recommendations: list[dict[str, Any]]) -> ReportSection:

@@ -26,7 +26,7 @@ bundle**, with upsert/delete for incremental ops.
 
 ---
 
-## Use case A — Dense, BM25, and hybrid retrieve
+## Use case A: Dense, BM25, and hybrid retrieve
 
 ```python
 from buildml import Session
@@ -70,7 +70,7 @@ print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
 
 ---
 
-## Use case B — Grounded generate with citations + faithfulness
+## Use case B: Grounded generate with citations + faithfulness
 
 ```python
 from buildml.rag.generate import EchoGroundedProvider, score_faithfulness
@@ -104,11 +104,11 @@ print(report.to_dict())
 
 Grounded generate without a provider fails clearly. Citations are first-class;
 do not treat echo providers as factual QA. Faithfulness is a **cheap heuristic**
-(not NLI / LLM-as-judge) — high overlap does not prove factual correctness.
+(not NLI / LLM-as-judge): high overlap does not prove factual correctness.
 
 ---
 
-## Use case C — Evaluate with qrels
+## Use case C: Evaluate with qrels
 
 ```python
 metrics = session.rag_evaluate(
@@ -123,7 +123,7 @@ print(metrics.recall_at_k, metrics.mrr, metrics.ndcg_at_k, metrics.hit_rate_at_k
 
 ---
 
-## Use case D — eval_only hygiene (hard refuse)
+## Use case D: eval_only hygiene (hard refuse)
 
 ```python
 # Documents reserved for evaluation must not enter the index corpus.
@@ -147,7 +147,7 @@ except Exception as exc:  # LeakageError when eval_only would contaminate
 
 ---
 
-## Use case E — Semantic embedder, upsert, delete, bundle
+## Use case E: Semantic embedder, upsert, delete, bundle
 
 ```python
 from buildml.rag.embed import SentenceTransformerEmbedder
@@ -190,7 +190,7 @@ gates ([ai-tools](ai-tools-operator-patterns.md)).
 
 ---
 
-## Use case F — Cross-encoder rerank + generation eval
+## Use case F: Cross-encoder rerank + generation eval
 
 ```python
 from buildml.rag.evaluate import evaluate_generation
@@ -214,7 +214,7 @@ print(gen_metrics.mean_faithfulness, gen_metrics.mean_answer_relevance)
 
 ---
 
-## Use case G — Explicit hashing fallback
+## Use case G: Explicit hashing fallback
 
 ```python
 session.rag_embed_and_index(embedder="hashing")  # lexical CI path
@@ -253,7 +253,7 @@ Compares hashing vs ST vs hybrid+rerank on an in-repo corpus with metric floors 
 - Not a managed vector-DB cloud product.
 - Not tabular learning-to-rank (`fit_ranker` on labeled query–item feature
   rows) and not recommender CF (`fit_recommender`). Shared metric names
-  (nDCG/MRR) use different protocols — see [ranking-deep.md](ranking-deep.md).
+  (nDCG/MRR) use different protocols: see [ranking-deep.md](ranking-deep.md).
 
 ---
 

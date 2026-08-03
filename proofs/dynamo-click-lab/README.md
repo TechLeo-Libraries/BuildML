@@ -1,6 +1,6 @@
 # Dynamo Click Lab
 
-**Tier B** cross-domain product proof — online stream conversion + metalearning
+**Tier B** cross-domain product proof: online stream conversion + metalearning
 cold-start + classical supervised baseline for synthetic clickstream.
 
 ## Product narrative
@@ -13,7 +13,7 @@ Dynamo studies conversion under streaming updates and few-shot new categories:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

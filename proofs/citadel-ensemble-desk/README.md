@@ -1,6 +1,6 @@
 # Citadel Ensemble Desk
 
-**Tier B** cross-domain product proof — voting/stacking ensembles + unsupervised
+**Tier B** cross-domain product proof: voting/stacking ensembles + unsupervised
 anomaly + decision thresholds for attrition review.
 
 ## Product narrative
@@ -15,7 +15,7 @@ policies allocate review capacity. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

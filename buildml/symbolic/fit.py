@@ -125,7 +125,7 @@ def fit_symbolic(
 
     Notes
     -----
-    Honesty: structured if-then rules over tabular columns — not Prolog, AGI, or
+    Honesty: structured if-then rules over tabular columns: not Prolog, AGI, or
     a full Z3 SMT product.
     """
     assert_fit_partition(split_plan, "train")
@@ -306,7 +306,7 @@ def fit_symbolic(
         f"Symbolic backend={resolved_backend}, source/method={source_key}."
     )
     disclosures.append(
-        "Honesty: structured tabular rules — not Prolog/Z3/AGI symbolic AI."
+        "Honesty: structured tabular rules: not Prolog/Z3/AGI symbolic AI."
     )
 
     preds, _, _ = fire_rules(train, kb)
@@ -449,7 +449,7 @@ def fit_neuro_symbolic(
 
     Notes
     -----
-    Honesty: sklearn + rule hybrid — not a deep neuro-symbolic research platform.
+    Honesty: sklearn + rule hybrid: not a deep neuro-symbolic research platform.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -617,7 +617,7 @@ def fit_neuro_symbolic(
         "estimator fitting. Holdout is for evaluate_neuro_symbolic / predict."
     )
     disclosures.append(
-        "Honesty: tabular rule hybrid — not a deep neuro-symbolic research "
+        "Honesty: tabular rule hybrid: not a deep neuro-symbolic research "
         "platform, Prolog, or full Z3 product."
     )
 

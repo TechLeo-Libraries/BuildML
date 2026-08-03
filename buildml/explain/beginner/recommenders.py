@@ -10,7 +10,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         "recommender-collaborative-filtering",
         plain=(
             "Collaborative filtering recommends by pattern-matching across people. It does not need to know "
-            "anything about what the items *are* — only who interacted with what. If people who liked the "
+            "anything about what the items *are*: only who interacted with what. If people who liked the "
             "things you liked also liked something else, that something else gets recommended to you."
         ),
         analogy=(
@@ -20,7 +20,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Build a table of interactions: who, what, and optionally how much they liked it.",
             "Split so that some interactions are held out for evaluation.",
-            "Fit on training interactions — either neighbourhood-style (find similar users or items) or matrix factorization (learn hidden traits).",
+            "Fit on training interactions: either neighbourhood-style (find similar users or items) or matrix factorization (learn hidden traits).",
             "Ask for the top-K items for a user; candidates come from the training catalogue.",
             "Evaluate against the held-out interactions to see whether the real items surfaced.",
         ),
@@ -30,7 +30,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it for brand-new users or brand-new items; with no interactions there is nothing to match on.",
-            "Do not use it when interactions are extremely sparse — a handful of interactions per user gives the model almost nothing.",
+            "Do not use it when interactions are extremely sparse: a handful of interactions per user gives the model almost nothing.",
         ),
         myths=(
             (
@@ -69,19 +69,19 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
             "roast. They are reasoning about the product, not about other customers."
         ),
         steps=(
-            "Assemble numeric features describing each item — price, category flags, attributes, embeddings.",
+            "Assemble numeric features describing each item: price, category flags, attributes, embeddings.",
             "For each user, take the items they interacted with in training and average their features, weighted by rating.",
             "That average is the user profile.",
             "Score candidate items by similarity to the profile.",
             "Return the top-K most similar items the user has not already seen.",
         ),
         use=(
-            "When new items appear constantly and have no interaction history yet — content features work from day one.",
+            "When new items appear constantly and have no interaction history yet: content features work from day one.",
             "When you can explain a recommendation by pointing at an attribute, which matters in regulated or trust-sensitive settings.",
         ),
         avoid=(
             "Do not use it when your item features are thin or uninformative; averaging noise gives you a noise profile.",
-            "Do not expect serendipity — it recommends more of what the user already chose, which can feel narrow over time.",
+            "Do not expect serendipity: it recommends more of what the user already chose, which can feel narrow over time.",
         ),
         myths=(
             (
@@ -122,12 +122,12 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Hold out some interactions the model never trained on.",
             "For each user, generate the top-K recommendations from the training catalogue.",
-            "Compare against that user's held-out items — those are the known positives.",
+            "Compare against that user's held-out items: those are the known positives.",
             "Compute precision@K, recall@K, nDCG@K, and MAP@K averaged across users.",
             "Fix K to the number your interface actually shows, and keep it fixed across comparisons.",
         ),
         use=(
-            "For every recommender comparison — offline ranking metrics are the standard first filter.",
+            "For every recommender comparison: offline ranking metrics are the standard first filter.",
             "When tuning the number of factors, the similarity measure, or the candidate generation step.",
         ),
         avoid=(
@@ -166,12 +166,12 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "A regular walks in and the barista knows their order. A first-time visitor gets a guess based "
-            "on what is popular — and the shop should be honest that it is a guess."
+            "on what is popular: and the shop should be honest that it is a guess."
         ),
         steps=(
             "After fitting, BuildML records which users and items appeared in training.",
             "At recommendation time, any user or item outside that set is marked cold.",
-            "Candidates always come from the training item catalogue — a never-seen item cannot be scored by collaborative filtering.",
+            "Candidates always come from the training item catalogue: a never-seen item cannot be scored by collaborative filtering.",
             "Evaluation reports warm and cold counts separately so a good warm score cannot hide total cold failure.",
             "Handle cold cases explicitly: popularity fallback, content-based features, or an onboarding step.",
         ),
@@ -219,7 +219,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Install `pip install buildml[recommenders-industry]`.",
-            "For implicit feedback — clicks, views, plays — the `implicit` backend with ALS or BPR becomes the default.",
+            "For implicit feedback: clicks, views, plays: the `implicit` backend with ALS or BPR becomes the default.",
             "For hybrid models that need side features, use LightFM.",
             "BuildML still controls the split boundary and the candidate catalogue.",
             "Evaluate with the same top-K metrics so results stay comparable with the native backend.",
@@ -230,7 +230,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not install the extra for a small dataset; the native path is adequate and has fewer moving parts.",
-            "Do not use an implicit-feedback model on explicit star ratings without thinking — the loss functions assume different things about what a non-interaction means.",
+            "Do not use an implicit-feedback model on explicit star ratings without thinking: the loss functions assume different things about what a non-interaction means.",
         ),
         myths=(
             (

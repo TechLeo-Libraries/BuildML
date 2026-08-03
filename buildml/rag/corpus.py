@@ -1,7 +1,7 @@
 """Get documents in, and keep the answers out of the index.
 
-Three ways in — a directory of text files, a list of in-memory documents, or a
-column of a DataFrame — all producing the same
+Three ways in: a directory of text files, a list of in-memory documents, or a
+column of a DataFrame: all producing the same
 :class:`~buildml.rag.results.CorpusHandle`.
 
 The part worth understanding is the ``role`` on each document. RAG has its own
@@ -82,7 +82,7 @@ def load_text_corpus(
     path:
         A single file, or a directory to scan.
     glob:
-        Which files to take from a directory. **Not recursive** — subdirectories
+        Which files to take from a directory. **Not recursive**: subdirectories
         are skipped.
     encoding:
         Text encoding. A file that does not decode raises rather than being
@@ -227,7 +227,7 @@ def corpus_from_frame(
     """Turn one column of a DataFrame into a corpus.
 
     The bridge between tabular work and retrieval: support tickets, product
-    descriptions, review text. You name the column explicitly — the function
+    descriptions, review text. You name the column explicitly: the function
     will never guess which column holds the text, because indexing the wrong one
     produces a system that returns results and answers nothing.
 
@@ -262,7 +262,7 @@ def corpus_from_frame(
     frame; compare the counts if that matters.
 
     **Only the text column is carried over.** Other columns are not attached as
-    metadata, so they cannot be used as retrieval filters — build documents
+    metadata, so they cannot be used as retrieval filters: build documents
     through :func:`corpus_from_documents` when you need that.
 
     **Positional IDs are fragile.** Pass ``id_column`` whenever the frame has a
@@ -336,7 +336,7 @@ def indexable_documents(corpus: CorpusHandle) -> tuple[Document, ...]:
     Notes
     -----
     **Filtering is silent by design.** Dropping eval-only documents is the
-    intended behaviour, so it does not warn — but the returned tuple can be much
+    intended behaviour, so it does not warn: but the returned tuple can be much
     shorter than the corpus, and that is worth checking when an index seems
     small.
 
@@ -365,7 +365,7 @@ def refuse_eval_only_index(corpus: CorpusHandle) -> None:
     """Refuse outright if the corpus contains any held-out document.
 
     The strict counterpart to :func:`indexable_documents`. Where that one
-    filters, this one raises — for callers that intend to index a whole corpus
+    filters, this one raises: for callers that intend to index a whole corpus
     and want to be told, rather than quietly given a subset, if it is not clean.
 
     Parameters

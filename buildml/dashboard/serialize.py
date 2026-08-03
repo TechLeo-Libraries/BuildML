@@ -8,8 +8,8 @@ from typing import Any
 def flagged_column_names(flagged: Any) -> list[str]:
     """Pull column names out of a flag list, whichever shape it arrived in.
 
-    Analyzers report flagged columns two ways. Some return plain names —
-    ``['age', 'income']`` — and some return rows with the measurement attached —
+    Analyzers report flagged columns two ways. Some return plain names :
+    ``['age', 'income']``: and some return rows with the measurement attached :
     ``[{'column': 'age', 'ks_stat': 0.3}]``. Both are reasonable for their
     purpose, and a caller that only wants names should not have to know which
     one it has.
@@ -58,8 +58,8 @@ def json_safe(value: Any) -> Any:
     Analyzer output is full of values that look like numbers and are not:
     ``numpy.int64``, ``numpy.float32``, pandas timestamps, NumPy booleans. Every
     one of them raises ``TypeError`` from the JSON encoder, and the failure
-    happens at serialisation time — after the whole response has been assembled
-    — with a message naming a type rather than a field.
+    happens at serialisation time: after the whole response has been assembled
+   : with a message naming a type rather than a field.
 
     Recurses through dicts and lists, converting leaves. NumPy and pandas
     scalars are unwrapped through their ``item()`` method, which yields the

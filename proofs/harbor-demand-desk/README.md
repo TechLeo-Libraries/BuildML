@@ -1,6 +1,6 @@
 ﻿# Harbor Demand Desk
 
-**Tier B** cross-domain product proof — train-scoped TS analysis + lag forecast
+**Tier B** cross-domain product proof: train-scoped TS analysis + lag forecast
 + probabilistic residual intervals + knapsack allocation over forecast SKUs
 candidates.
 
@@ -13,7 +13,7 @@ candidates derived from the frozen forecast.
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` plus
+`completed`: run `script.py`; see `results/summary.json` plus
 `timeseries_analysis.json`, `forecast.json`, `probabilistic.json`,
 `allocation.json`.
 

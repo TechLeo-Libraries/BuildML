@@ -6,7 +6,7 @@ Recommend catalog SKUs from user–item interactions using ALS (when `implicit` 
 
 ## Data source
 
-In-repo synthetic catalog interactions (`load_catalog_interactions_synthetic`) — license-clear, deterministic. **Not** a real retail extract.
+In-repo synthetic catalog interactions (`load_catalog_interactions_synthetic`): license-clear, deterministic. **Not** a real retail extract.
 
 ## Leakage controls
 
@@ -28,7 +28,7 @@ Primary holdout: hit-rate@k / nDCG@k (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — item-cosine + popularity cold-start twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: item-cosine + popularity cold-start twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

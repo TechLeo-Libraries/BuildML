@@ -191,7 +191,7 @@ def activelearning_status(
                 f"n_queries_used={getattr(plan, 'n_queries_used', None)}, "
                 f"label_budget={getattr(plan, 'label_budget', None)}.",
                 "Unlabeled pool uses NaN missingness by default (train partition only).",
-                "Labels come from the user — core never invents an oracle.",
+                "Labels come from the user: core never invents an oracle.",
                 "Session checkpoints do not embed ActiveLearningPlan; use "
                 "save_active_learning_bundle / load_active_learning_bundle.",
                 "Distinct from semi-supervised propagation and self-supervised pretext.",

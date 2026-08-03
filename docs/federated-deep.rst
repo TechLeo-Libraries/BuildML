@@ -32,10 +32,10 @@ Supported estimators: ``sgd_classifier``, ``logistic_regression``,
 Session API
 -----------
 
-* ``fit_federated`` — train-only federated rounds
-* ``evaluate_federated`` — global and optional per-client holdout metrics
-* ``predict_federated`` — global predictions (no update)
-* ``save_federated_bundle`` / ``load_federated_bundle`` —
+* ``fit_federated``: train-only federated rounds
+* ``evaluate_federated``: global and optional per-client holdout metrics
+* ``predict_federated``: global predictions (no update)
+* ``save_federated_bundle`` / ``load_federated_bundle`` :
   ``buildml.federated_bundle.v1``
 
 Properties: ``federated_plan``, ``federated_fit_result``,

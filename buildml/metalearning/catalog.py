@@ -47,7 +47,7 @@ def metalearning_capability_matrix() -> dict[str, Any]:
                 "methods": list(SKLEARN_METHODS),
                 "modality": "tabular",
                 "notes": (
-                    "Nearest-centroid prototypical and warm-start sklearn adapt — "
+                    "Nearest-centroid prototypical and warm-start sklearn adapt: "
                     "always available; honest fallback when torch/industry extras "
                     "are missing."
                 ),

@@ -358,7 +358,7 @@ def chunk_drift_notes(
     notes = [
         "Optional drift disclosure compares this chunk's feature means to the "
         "init-chunk means (relative shift ≥ 0.5 flagged). This is not a full "
-        "drift product — use Session.eda() train/test drift screens for richer "
+        "drift product: use Session.eda() train/test drift screens for richer "
         "partition diagnostics."
     ]
     if not flagged:

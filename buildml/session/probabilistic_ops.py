@@ -100,7 +100,7 @@ def fit_probabilistic_op(
 
     **Leakage:** Requires a split. Fit and optional split-conformal calibration
     use train only (conformal carve never touches validation/test). Honesty:
-    uncertainty quantification for tabular estimators — not PyMC/Stan MCMC.
+    uncertainty quantification for tabular estimators: not PyMC/Stan MCMC.
     Classical ``Session.calibration()`` is unchanged.
     """
     session.assert_can_fit("train")

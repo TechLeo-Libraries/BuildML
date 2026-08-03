@@ -270,7 +270,7 @@ def learn(
     A beginner does not know whether the thing confusing them is a concept, an
     operation, or a word, so this resolves all three from one argument. Concept
     keys are tried first, then operation names, then the glossary, and each is
-    tried under several spellings — ``'ROC AUC'``, ``'roc-auc'``, and
+    tried under several spellings: ``'ROC AUC'``, ``'roc-auc'``, and
     ``'roc_auc'`` are the same question.
 
     Parameters

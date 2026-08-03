@@ -19,7 +19,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "central statistician. No patient record ever leaves its hospital."
         ),
         steps=(
-            "Mark the column identifying which client each row came from — a `group` role or `client_column`.",
+            "Mark the column identifying which client each row came from: a `group` role or `client_column`.",
             "Each round, every client starts from the current shared weights.",
             "Each client trains on its own training rows only.",
             "The coordinator averages the resulting weights, weighted by how many rows each client had.",
@@ -31,7 +31,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not present this as a deployed federated system; the data is all in one process and one table.",
-            "Do not use it as a privacy mechanism — no cryptography or differential privacy is involved.",
+            "Do not use it as a privacy mechanism: no cryptography or differential privacy is involved.",
         ),
         myths=(
             (
@@ -80,7 +80,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you want to cross-check BuildML's native averaging against a standard implementation.",
         ),
         avoid=(
-            "Do not assume the Flower backend implies network transport, gRPC, or secure aggregation — it does not.",
+            "Do not assume the Flower backend implies network transport, gRPC, or secure aggregation: it does not.",
             "Do not request it without the extra installed; you will get a clear error naming what to install.",
         ),
         myths=(
@@ -116,7 +116,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Everyone copies the same starting draft, edits it based on their own experience, and the "
-            "coordinator merges the edits — with a bigger say for people who reviewed more material."
+            "coordinator merges the edits: with a bigger say for people who reviewed more material."
         ),
         steps=(
             "Copy the current global coefficients to each selected client.",
@@ -130,7 +130,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When clients have broadly similar data distributions.",
         ),
         avoid=(
-            "Do not use it with models that have no coefficients to average — tree ensembles cannot be combined this way.",
+            "Do not use it with models that have no coefficients to average: tree ensembles cannot be combined this way.",
             "Do not use plain FedAvg when clients differ sharply; local models drift apart and the average satisfies nobody.",
         ),
         myths=(
@@ -174,7 +174,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "After each local epoch, move the client's coefficients a fraction `mu` back toward the round's global weights.",
             "Aggregate as usual.",
             "Small `mu` means a gentle pull; large `mu` means clients barely move at all.",
-            "`mu` must be greater than zero — at zero this is just FedAvg, and BuildML refuses the ambiguity.",
+            "`mu` must be greater than zero: at zero this is just FedAvg, and BuildML refuses the ambiguity.",
         ),
         use=(
             "When your clients have visibly different data and FedAvg is unstable across rounds.",
@@ -182,7 +182,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not set `mu` high enough to freeze local learning; you will converge quickly to a model that learned nothing local.",
-            "Do not use it before trying FedAvg — you need the baseline to know whether the pull helps.",
+            "Do not use it before trying FedAvg: you need the baseline to know whether the pull helps.",
         ),
         myths=(
             (
@@ -209,8 +209,8 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "federated-bundle-boundary",
         plain=(
-            "The federated plan — the averaged global model, the client column contract, the round history, "
-            "and the class vocabulary — saves as its own bundle. Session checkpoints do not include it."
+            "The federated plan: the averaged global model, the client column contract, the round history, "
+            "and the class vocabulary: saves as its own bundle. Session checkpoints do not include it."
         ),
         analogy=(
             "The agreed final draft is archived separately from each contributor's working notes."

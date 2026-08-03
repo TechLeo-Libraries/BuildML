@@ -205,7 +205,7 @@ def probabilistic_status(
                 "Session checkpoints do not embed ProbabilisticPlan; use "
                 "save_probabilistic_bundle / load_probabilistic_bundle.",
                 "Honesty: native sklearn + optional MAPIE/NGBoost industry "
-                "backends — not a PyMC/Stan MCMC platform.",
+                "backends: not a PyMC/Stan MCMC platform.",
             ]
         )
         for note in getattr(plan, "disclosures", ()) or ():

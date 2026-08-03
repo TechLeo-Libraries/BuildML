@@ -60,7 +60,7 @@ def decision_capability_matrix() -> dict[str, Any]:
                 "solvers": {"knapsack": "0-1 integer MIP (PuLP + CBC)"},
                 "notes": (
                     "Exact 0-1 knapsack via binary integer program. "
-                    "Scoped to single-constraint selection — not a general MIP suite."
+                    "Scoped to single-constraint selection: not a general MIP suite."
                 ),
             },
             "ortools": {
@@ -80,7 +80,7 @@ def decision_capability_matrix() -> dict[str, Any]:
                 "solvers": {"lp_allocate": "convex LP (CVXPY + default solver)"},
                 "notes": (
                     "Continuous fractional budget allocation. Same problem class as "
-                    "native linprog — CVXPY when convex modelling hooks are needed."
+                    "native linprog: CVXPY when convex modelling hooks are needed."
                 ),
             },
             "calibrated": {
@@ -108,7 +108,7 @@ def decision_capability_matrix() -> dict[str, Any]:
         },
         "allocation_vs_threshold": {
             "threshold": (
-                "Binary operating point on scores — wraps tune_threshold engine "
+                "Binary operating point on scores: wraps tune_threshold engine "
                 "or industry cost-sensitive classifiers."
             ),
             "allocation": (
@@ -141,7 +141,7 @@ def decision_capability_matrix() -> dict[str, Any]:
         "cvxpy_present": cvxpy_available(),
         "cvxpy_import_honesty": (
             "cvxpy backend 'available' reflects package install (find_spec). "
-            "Broken wheels may fail at require_cvxpy — prefer native linprog "
+            "Broken wheels may fail at require_cvxpy: prefer native linprog "
             "unless convex hooks are explicitly needed."
         ),
         "xgboost_present": xgboost_available(),

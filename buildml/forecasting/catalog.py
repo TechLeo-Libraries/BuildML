@@ -1,4 +1,4 @@
-"""Forecast method catalog — backends, defaults, install hints."""
+"""Forecast method catalog: backends, defaults, install hints."""
 
 from __future__ import annotations
 
@@ -238,13 +238,13 @@ def forecast_capability_matrix() -> dict[str, Any]:
                 "methods": sorted(
                     m for m in CORE_BASELINE_METHODS if m not in {"lag_ridge", "lag_hgb"}
                 ),
-                "notes": "Naive / seasonal / drift / mean baselines — always available.",
+                "notes": "Naive / seasonal / drift / mean baselines: always available.",
             },
             "sklearn": {
                 "available": True,
                 "extra": None,
                 "methods": ["lag_ridge", "lag_hgb"],
-                "notes": "Lag-feature tabular regressors — always available fallback.",
+                "notes": "Lag-feature tabular regressors: always available fallback.",
             },
             "statsmodels": {
                 "available": statsmodels_available(),

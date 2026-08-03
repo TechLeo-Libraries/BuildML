@@ -1,7 +1,7 @@
 """Add newly resolved cases to memory, with the guards that keep it honest.
 
 Retention is what distinguishes case-based reasoning from a static model. Solve
-a case, find out how it actually turned out, keep it — and the reasoner improves
+a case, find out how it actually turned out, keep it: and the reasoner improves
 without any retraining. In production this is the loop that makes the method
 attractive.
 
@@ -13,7 +13,7 @@ up.
 
 So the guards here are strict rather than convenient. Holdout indices are
 refused outright, not warned about. A ``source_disclosure`` is mandatory,
-forcing the caller to state in writing where the labels came from — the point
+forcing the caller to state in writing where the labels came from: the point
 being that having to write "human review of production traffic" makes it hard to
 retain a holdout partition without noticing.
 
@@ -77,7 +77,7 @@ def retain_cbr(
     solution_column:
         Where the outcome lives, defaulting to the plan's target column.
     source_disclosure:
-        Mandatory, non-empty. Where these labels came from — human review, a
+        Mandatory, non-empty. Where these labels came from: human review, a
         resolved support ticket, a settled transaction. Never a Session holdout
         partition.
     allow_overlap_with_train:
@@ -87,7 +87,7 @@ def retain_cbr(
     Returns
     -------
     tuple
-        ``(plan, result)`` — the plan with extended memory, and the counts of
+        ``(plan, result)``: the plan with extended memory, and the counts of
         what was added and skipped.
 
     Raises
@@ -108,13 +108,13 @@ def retain_cbr(
     surfaces "these came from the test set" before the data does.
 
     **Distance transforms are not refitted.** Standardisation and vocabularies
-    stay as fitted on train, which is what keeps evaluation comparable — and
+    stay as fitted on train, which is what keeps evaluation comparable: and
     means a sustained distribution shift in retained cases is scaled by
     increasingly stale statistics. Refit periodically.
 
     **Identity is the frame index, not the feature values.** A new frame built
     with a default ``RangeIndex`` collides with the row indices already in
-    memory, and every row is skipped as a duplicate — ``n_added`` comes back
+    memory, and every row is skipped as a duplicate: ``n_added`` comes back
     zero for data that is genuinely new. Carry the original indices, or assign
     fresh ones outside the dataset's range.
 
@@ -235,7 +235,7 @@ def retain_cbr(
         f"source_disclosure: {source_disclosure}",
         "Holdout (validation/test) indices are refused. Train-fit distance "
         "transforms were reused (not refit on retained rows).",
-        "Honesty: lite retain hook — not a full CBR revise/retain research cycle.",
+        "Honesty: lite retain hook: not a full CBR revise/retain research cycle.",
     ]
 
     if not new_cases:
@@ -394,7 +394,7 @@ def retain_from_indices(
     """Retain rows that are already in the dataset, named by index.
 
     A convenience over :func:`retain_cbr` for the common case where the newly
-    resolved cases are rows you already have — labelled after the fact, or
+    resolved cases are rows you already have: labelled after the fact, or
     corrected. Pulls them from the dataset and hands them over with the same
     guards applied.
 
@@ -414,7 +414,7 @@ def retain_from_indices(
     Returns
     -------
     tuple
-        ``(plan, result)`` — the extended plan and the retention report.
+        ``(plan, result)``: the extended plan and the retention report.
 
     Raises
     ------

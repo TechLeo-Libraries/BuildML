@@ -7,7 +7,7 @@ name the explain layer recognises.
 
 The indirection earns its place in two ways. It gives the explain layer a stable
 set of names to import, so a rename inside :mod:`buildml.dl.results` does not
-ripple outward. And it is where the non-trivial cases live — the training curve
+ripple outward. And it is where the non-trivial cases live: the training curve
 is rebuilt when a reloaded result did not carry one, and the Session-level status
 handles the case where training happened but the live result is gone.
 
@@ -61,7 +61,7 @@ def train_summary(result: TrainResult) -> dict[str, Any]:
     """Summarise a training run for Session history.
 
     Records what ``fit_torch`` produced. Weights and optimiser state are
-    described rather than embedded — history is a log, and a log with tensors in
+    described rather than embedded: history is a log, and a log with tensors in
     it is neither readable nor small.
 
     Parameters
@@ -86,7 +86,7 @@ def evaluate_summary(result: DLEvaluateResult) -> dict[str, Any]:
     """Summarise an evaluation for Session history.
 
     Records what ``evaluate_torch`` found, including the confusion matrix or
-    residual summary — the parts that distinguish one kind of failure from
+    residual summary: the parts that distinguish one kind of failure from
     another.
 
     Parameters
@@ -110,7 +110,7 @@ def curve_summary(result: TrainResult) -> dict[str, Any]:
     """Produce the training curve payload the teaching surfaces render.
 
     Uses the curve already on the result when there is one, and derives it from
-    the epoch history otherwise — which is the case after loading a bundle,
+    the epoch history otherwise: which is the case after loading a bundle,
     where the history survives but the derived curve does not.
 
     Parameters

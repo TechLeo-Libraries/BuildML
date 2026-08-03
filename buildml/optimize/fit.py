@@ -68,7 +68,7 @@ def fit_decision_policy(
     -------
     threshold
         Cost-sensitive (or F1) binary operating point via classical
-        ``threshold_report`` — same engine as ``Session.tune_threshold``.
+        ``threshold_report``: same engine as ``Session.tune_threshold``.
     cost_matrix
         Multiclass Bayes action under a user cost matrix.
     topk
@@ -84,7 +84,7 @@ def fit_decision_policy(
         Defaults to industry when installed (PuLP/OR-Tools knapsack MIP,
         CVXPY LP, XGB cost-sensitive threshold); otherwise native scipy/numpy.
 
-    Honesty: decision helpers for ML scores/costs/allocations — not a general
+    Honesty: decision helpers for ML scores/costs/allocations: not a general
     operations-research platform or digital twin. Never tunes on Session test
     without ``allow_test_tuning=True``.
 
@@ -357,7 +357,7 @@ def _fit_allocation_policy(
     )
     disclosures = [
         f"method={method!r} allocation on partition={partition}.",
-        "Constrained selection over ML scores/costs — not a general OR / MIP suite.",
+        "Constrained selection over ML scores/costs: not a general OR / MIP suite.",
         f"backend={backend or 'native'} solver routing via decision_capability_matrix.",
     ]
     warnings: list[str] = []

@@ -223,15 +223,15 @@ and ``read_next`` concept notes, so a newcomer gets a reading order rather than
 an index. Concept notes themselves are layered: plain summary, analogy,
 beginner steps, when to use and when not to, misconceptions with corrections, a
 worked example, self-check questions, and the technical material. Teaching
-content is static — it explains ideas and BuildML's contract, and inspects none
+content is static: it explains ideas and BuildML's contract, and inspects none
 of your data.
 
 ``Session.workflow()`` resolves every cataloged operation to one of:
 
-* ``done`` — recorded in history or satisfied by current state;
-* ``available`` — prerequisites pass (not a recommendation to run);
-* ``blocked`` — prerequisites fail, with a reason;
-* ``skipped`` — not applicable given current task or configuration.
+* ``done``: recorded in history or satisfied by current state;
+* ``available``: prerequisites pass (not a recommendation to run);
+* ``blocked``: prerequisites fail, with a reason;
+* ``skipped``: not applicable given current task or configuration.
 
 ``Session.walkthrough()`` combines workflow resolution, operation history,
 unresolved catalog risks, and optional offline HTML export. It is the audit
@@ -267,7 +267,7 @@ Practical guidance:
   before sklearn materialization.
 * Use ``portable_filter_expr`` for simple predicates shared across Polars and
   DuckDB; keep complex SQL engine-specific.
-* Close DuckDB with ``with session:`` or ``session.close_native()`` — root
+* Close DuckDB with ``with session:`` or ``session.close_native()``: root
   datasets own the connection.
 * Lazy Polars ``LazyFrame`` plans collect at sklearn boundaries; that is not
   out-of-core training.

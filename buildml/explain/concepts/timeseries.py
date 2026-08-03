@@ -82,7 +82,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "If today's value strongly predicts tomorrow, the series is not "
-                "stationary — and many classical models assume you handled that first."
+                "stationary: and many classical models assume you handled that first."
             ),
             formal_idea=(
                 "ADF H0: unit root; reject → evidence against unit root. "
@@ -97,7 +97,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "statsmodels paths when buildml[timeseries] installed; honest refusal otherwise.",
             ),
             interpretation_rules=(
-                "Report both ADF and KPSS — they test opposite nulls.",
+                "Report both ADF and KPSS: they test opposite nulls.",
                 "Diagnostics describe the series given; they do not certify a model.",
             ),
             assumptions=("Chronological order; numeric target.",),
@@ -142,7 +142,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "Session.analyze_timeseries(include_changepoints=True) on train scope.",
             ),
             interpretation_rules=(
-                "Treat changepoints as hypotheses — validate with domain knowledge.",
+                "Treat changepoints as hypotheses: validate with domain knowledge.",
                 "More changepoints with weak penalty often mean over-segmentation.",
             ),
             assumptions=("Regular enough sampling for segment costs to be meaningful.",),
@@ -163,7 +163,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
             title="Time-series analysis vs forecasting",
             summary=(
                 "analyze_timeseries is diagnostic EDA on train scope; fit_forecast is "
-                "predictive modelling — run analysis first so method choice is informed."
+                "predictive modelling: run analysis first so method choice is informed."
             ),
             definition=(
                 "Analysis surfaces structure (seasonality, stationarity, breaks, spectral "
@@ -171,7 +171,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "and generates future values under temporal split rules."
             ),
             intuition=(
-                "Look at the shape of the river before you pick a boat — analysis is "
+                "Look at the shape of the river before you pick a boat: analysis is "
                 "the map, forecasting is the voyage."
             ),
             formal_idea=(
@@ -193,7 +193,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
             ),
             assumptions=("Temporal SplitPlan present for honest defaults.",),
             failure_modes=(
-                "Random split then analyze_timeseries — refused or misleading.",
+                "Random split then analyze_timeseries: refused or misleading.",
             ),
             anti_patterns=(
                 "Using analyze_timeseries on holdout to pick a forecaster silently.",

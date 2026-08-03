@@ -1,18 +1,18 @@
 """Online / continual learning domain (sklearn ``partial_fit`` + industry backends).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
 
 Phase 2:
-  1. Semi-supervised learning — done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks — done (``buildml.selfsupervised``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit + River + torch continual) — **this module**.
-  5. Multi-task learning — done (``buildml.multitask``).
-  6. Meta-learning — done (``buildml.metalearning``).
-  7. Federated learning — done (``buildml.federated``).
-  8. Bayesian / probabilistic — done (``buildml.probabilistic``); next = Causal.
+  1. Semi-supervised learning: done (``buildml.semisupervised``).
+  2. Self-supervised learning hooks: done (``buildml.selfsupervised``).
+  3. Active learning: done (``buildml.activelearning``).
+  4. Online / continual (partial_fit + River + torch continual): **this module**.
+  5. Multi-task learning: done (``buildml.multitask``).
+  6. Meta-learning: done (``buildml.metalearning``).
+  7. Federated learning: done (``buildml.federated``).
+  8. Bayesian / probabilistic: done (``buildml.probabilistic``); next = Causal.
   Later: graph, evolutionary,
   symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
   NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
@@ -23,20 +23,20 @@ full COCO detection/segmentation suite.
 
 Honesty (this package):
   - Batch/stream-chunk ``partial_fit`` updates on Session train data (or
-    role-aligned user frames) — NOT a distributed streaming platform and NOT a
+    role-aligned user frames): NOT a distributed streaming platform and NOT a
     full lifelong-learning research suite.
   - Validation/test are never used for updates.
   - Silent full refits pretending to be online are refused; optional
     ``allow_refit_fallback`` is always disclosed.
   - Classifiers require a ``classes`` vocabulary on first fit (explicit or
-    discovered from the full train target column — labels only).
+    discovered from the full train target column: labels only).
 
 Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Sklearn
 ``partial_fit`` is the default path. River streaming + drift detectors require
 ``buildml[online-industry]``; torch replay/EWC continual paths require
 ``buildml[torch]``.
 
-Lazy imports — core never grows heavy streaming stacks.
+Lazy imports: core never grows heavy streaming stacks.
 """
 
 from __future__ import annotations

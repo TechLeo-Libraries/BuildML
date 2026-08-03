@@ -30,14 +30,14 @@ class EDAReport:
     """The complete result of exploring a dataset.
 
     Sections in the order they were produced, then the interpretation layer,
-    then the artifacts. Every field has a default, so a partial pass — one
-    without a split, or without plots — yields a report with empty sections
+    then the artifacts. Every field has a default, so a partial pass: one
+    without a split, or without plots: yields a report with empty sections
     rather than missing attributes.
 
     Attributes
     ----------
     overview:
-        Shape, dtypes, roles, and the feature-eligibility bookkeeping — which
+        Shape, dtypes, roles, and the feature-eligibility bookkeeping: which
         columns were excluded and why, separated into explicit role exclusions
         and heuristic ones. Also records how many rows and columns the detailed
         analyzers actually saw.
@@ -85,7 +85,7 @@ class EDAReport:
     and flat. Same for ``recommendation_details`` and ``recommendations``. The
     structured forms carry severity, evidence, and caveats; prefer them.
 
-    **A section can be empty for two different reasons** — nothing was found, or
+    **A section can be empty for two different reasons**: nothing was found, or
     nothing was run. The warnings and the ``available`` flags disambiguate.
 
     See Also
@@ -116,7 +116,7 @@ class EDAReport:
         """Flatten to a JSON-safe dict, replacing figures with placeholders.
 
         A Matplotlib figure cannot be serialised, so each becomes the string
-        ``'figure'`` — enough to know one was rendered under that key, and small
+        ``'figure'``: enough to know one was rendered under that key, and small
         enough that the dict stays writable. Dict-valued figure entries, which
         are already data, pass through unchanged. The figures themselves stay on
         the report object.
@@ -186,7 +186,7 @@ class EDAReport:
 
         Notes
         -----
-        **``warnings`` is not printed.** Check it separately — a report built
+        **``warnings`` is not printed.** Check it separately: a report built
         from a 1% sample looks exactly like one built from everything.
 
         See Also
@@ -219,8 +219,8 @@ class EDAReport:
         """Write this report as a self-contained HTML file.
 
         Two shells for two audiences. ``'studio'`` produces the offline Teaching
-        Studio snapshot — guided, explanatory, the same surface as
-        ``session.eda_app()`` — and suits someone who needs the analysis
+        Studio snapshot: guided, explanatory, the same surface as
+        ``session.eda_app()``: and suits someone who needs the analysis
         explained as well as shown. ``'research'`` produces the layered shell
         with embedded figures, denser and aimed at a reader who already knows
         what they are looking at.
@@ -250,7 +250,7 @@ class EDAReport:
         Notes
         -----
         **The studio shell falls back to the research shell** if it cannot be
-        built — a missing optional dependency, say. You get a report either way,
+        built: a missing optional dependency, say. You get a report either way,
         which is the right behaviour, but it does mean the format you asked for
         is not guaranteed. Check the output if it matters.
 

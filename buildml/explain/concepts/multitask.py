@@ -12,7 +12,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
         _note(
             key="multitask-multi-output",
             title="Multi-output / multi-task on shared features",
-            summary="Sklearn MultiOutput/Chain, industry GBDT multi-target, or torch shared-trunk multi-head — not a deep MTL research platform.",
+            summary="Sklearn MultiOutput/Chain, industry GBDT multi-target, or torch shared-trunk multi-head: not a deep MTL research platform.",
             definition=(
                 "Multi-task learning in BuildML fits multiple targets that share "
                 "the same feature matrix. Backends: sklearn MultiOutput/Chain "
@@ -23,7 +23,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "One practice binder with several answer columns graded by "
-                "related but separate rubrics — not a research lab inventing "
+                "related but separate rubrics: not a research lab inventing "
                 "new shared neural heads."
             ),
             formal_idea=(
@@ -65,7 +65,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
                 "features for later tasks. order= must permute the target columns."
             ),
             intuition=(
-                "Grade question 1 first, then let that grade inform question 2 — "
+                "Grade question 1 first, then let that grade inform question 2: "
                 "order matters when tasks are dependent."
             ),
             formal_idea=(
@@ -95,7 +95,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Assign multiple columns role='target' (or pass targets=) for "
                 "fit_multitask. Classical require_target() still enforces a "
-                "single target for Session.fit — the paths are distinct."
+                "single target for Session.fit: the paths are distinct."
             ),
             intuition=(
                 "Two graded columns need the multi-task desk; the single-target "
@@ -128,7 +128,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "A multi-task bundle persists the multi-output / chain estimator, "
                 "target contract, and per-task label encoders. Session "
-                "checkpoints persist data/roles/splits/history — not MultiTaskPlan."
+                "checkpoints persist data/roles/splits/history: not MultiTaskPlan."
             ),
             intuition=(
                 "Saving the binder resume is not the same as saving the joint "

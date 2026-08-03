@@ -1,6 +1,6 @@
 # Compass Catalog Recs
 
-**Tier B** cross-domain product proof — collaborative recommenders + item
+**Tier B** cross-domain product proof: collaborative recommenders + item
 co-purchase graph features + classical repurchase scoring.
 
 ## Product narrative
@@ -14,7 +14,7 @@ scores item repurchase propensity:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -42,5 +42,5 @@ scores item repurchase propensity:
 
 ## Limitations
 
-Synthetic catalog interactions — not a real retail extract. Co-purchase graph
+Synthetic catalog interactions: not a real retail extract. Co-purchase graph
 is derived from the same interactions table.

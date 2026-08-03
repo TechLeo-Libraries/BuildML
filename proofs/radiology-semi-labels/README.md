@@ -3,7 +3,7 @@
 ## Business purpose
 
 Train a lesion-present classifier when only a scarce fraction of radiology
-proxy patches are labeled — semi-supervised efficiency for imaging workflows
+proxy patches are labeled: semi-supervised efficiency for imaging workflows
 (tabular feature proxy, not raw pixels).
 
 ## Data source
@@ -30,10 +30,10 @@ See `results/results.json` (accuracy / f1 on fully labeled holdouts).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs sklearn `LabelPropagation` with the same
+Filled: `baseline_industry.py` runs sklearn `LabelPropagation` with the same
 train-only masking policy (`results/comparison.json`).
 
 ## Limitations
 
-Tabular imaging proxy only — not DICOM or CNN training. Masking is a proof
+Tabular imaging proxy only: not DICOM or CNN training. Masking is a proof
 harness, not a PACS annotation UI.

@@ -111,7 +111,7 @@ def evaluate_federated(
         f"method={plan.method}, estimator={plan.estimator_name}, "
         f"n_rounds_completed={len(plan.round_history)}, "
         f"n_clients_trained={len(plan.client_ids)}.",
-        "Honesty: local FL simulation metrics — not a networked FL benchmark.",
+        "Honesty: local FL simulation metrics: not a networked FL benchmark.",
     ]
     warnings: list[str] = []
     metrics: dict[str, float] = {}

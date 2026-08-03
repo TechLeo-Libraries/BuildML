@@ -129,7 +129,7 @@ def main() -> None:
             random_state=ctx.seed,
         )
     )
-    reloaded.load_nlp_bundle(bundle)
+    reloaded.load_nlp_bundle(bundle, trusted=True)
     reloaded_test = reloaded.evaluate_text_classifier(partition="test")
     reproduced = bool(
         abs(

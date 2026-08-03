@@ -39,7 +39,7 @@ class SymbolicSessionMixin:
     ) -> SymbolicFitResult:
         """Compile or induce a symbolic rule base on Session train.
 
-        Session facade over :func:`buildml.session.symbolic_ops.fit_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.fit_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -75,7 +75,7 @@ class SymbolicSessionMixin:
     ) -> SymbolicEvalResult:
         """Evaluate the symbolic plan on a holdout partition.
 
-        Session facade over :func:`buildml.session.symbolic_ops.evaluate_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.evaluate_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -97,7 +97,7 @@ class SymbolicSessionMixin:
     ) -> SymbolicPredictResult:
         """Predict with the symbolic rule base (no update).
 
-        Session facade over :func:`buildml.session.symbolic_ops.predict_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.predict_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -137,7 +137,7 @@ class SymbolicSessionMixin:
     ) -> NeuroSymbolicFitResult:
         """Fit a sklearn + symbolic hybrid on Session train.
 
-        Session facade over :func:`buildml.session.symbolic_ops.fit_neuro_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.fit_neuro_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -176,7 +176,7 @@ class SymbolicSessionMixin:
     ) -> SymbolicEvalResult:
         """Evaluate the neuro-symbolic plan on a holdout partition.
 
-        Session facade over :func:`buildml.session.symbolic_ops.evaluate_neuro_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.evaluate_neuro_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -198,7 +198,7 @@ class SymbolicSessionMixin:
     ) -> SymbolicPredictResult:
         """Predict with the neuro-symbolic hybrid (no update).
 
-        Session facade over :func:`buildml.session.symbolic_ops.predict_neuro_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.predict_neuro_symbolic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -282,7 +282,7 @@ class SymbolicSessionMixin:
     def save_symbolic_bundle(self, path: str | Path) -> Path:
         """Persist the active symbolic or neuro-symbolic plan.
 
-        Session facade over :func:`buildml.session.symbolic_ops.save_symbolic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.save_symbolic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -299,7 +299,7 @@ class SymbolicSessionMixin:
     def load_symbolic_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a symbolic bundle into this Session.
 
-        Session facade over :func:`buildml.session.symbolic_ops.load_symbolic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.load_symbolic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -317,7 +317,7 @@ class SymbolicSessionMixin:
     def symbolic_capability_matrix() -> dict[str, Any]:
         """Honest capability matrix for symbolic / neuro-symbolic backends.
 
-        Session facade over :func:`buildml.session.symbolic_ops.symbolic_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.symbolic_ops.symbolic_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

@@ -31,7 +31,7 @@ Classical `Session.fit` and Torch `*_torch` stay unchanged. RAG methods use the
 `session.rag_eval_result`.
 
 Distinct from tabular LTR (`fit_ranker` on labeled query–item feature rows) and
-from recommenders (`fit_recommender` user–item CF) — see
+from recommenders (`fit_recommender` user–item CF): see
 [LTR quickstart](quickstart-ranking.md).
 
 The path is **ingest → chunk → embed/index → retrieve → generate → evaluate →
@@ -110,9 +110,9 @@ session.save_rag_bundle("artifacts/rag_bundle")
 
 ## Explicit fallbacks
 
-- `embedder="hashing"` — sklearn HashingVectorizer (lexical, deterministic CI)
-- `mode="dense"` — cosine-only retrieve (no BM25 fusion)
-- `rerank=False` — skip cross-encoder (default)
+- `embedder="hashing"`: sklearn HashingVectorizer (lexical, deterministic CI)
+- `mode="dense"`: cosine-only retrieve (no BM25 fusion)
+- `rerank=False`: skip cross-encoder (default)
 
 ## Related
 

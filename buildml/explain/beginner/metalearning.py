@@ -10,7 +10,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         "metalearning-episodic",
         plain=(
             "Meta-learning is learning how to learn quickly. Instead of one big model for one big dataset, "
-            "you have many small related jobs — one per store, per client, per device — and you want a "
+            "you have many small related jobs: one per store, per client, per device: and you want a "
             "system that handles a brand-new job well after seeing only a handful of its labelled examples."
         ),
         analogy=(
@@ -18,7 +18,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "are not starting from nothing; they have learned what to look for in the first ten minutes."
         ),
         steps=(
-            "Name the column that identifies which job each row belongs to — a `group` role or `task_column`.",
+            "Name the column that identifies which job each row belongs to: a `group` role or `task_column`.",
             "Meta-training uses only tasks from the training partition.",
             "Each round is an episode: a few labelled rows from one task are the *support* set, the rest are the *query* set.",
             "The system adapts using the support set, then is scored on the query set.",
@@ -29,7 +29,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When new tasks appear regularly and you cannot retrain from scratch each time.",
         ),
         avoid=(
-            "Do not use it when you have one dataset — that is ordinary supervised learning.",
+            "Do not use it when you have one dataset: that is ordinary supervised learning.",
             "Do not use it when the tasks are unrelated; there is no shared structure to transfer.",
         ),
         myths=(
@@ -60,7 +60,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         "metalearning-prototypical",
         plain=(
             "The prototypical method is the simplest thing that works. For each class, average the few "
-            "labelled examples you have into one representative point — the prototype. Classify a new row "
+            "labelled examples you have into one representative point: the prototype. Classify a new row "
             "by whichever prototype it sits closest to."
         ),
         analogy=(
@@ -68,18 +68,18 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "person belongs to by whichever sketch they most resemble."
         ),
         steps=(
-            "Take the support set for a task — `k_shot` labelled rows per class.",
+            "Take the support set for a task: `k_shot` labelled rows per class.",
             "Average the feature vectors within each class to get one prototype per class.",
             "For a query row, measure the straight-line distance to every prototype.",
             "Assign the nearest one.",
-            "That is the whole method — no weights are trained inside the episode.",
+            "That is the whole method: no weights are trained inside the episode.",
         ),
         use=(
             "As your first few-shot attempt; it is fast, has almost no knobs, and is a genuine baseline.",
             "When you have very few examples per class and a trained model would simply overfit.",
         ),
         avoid=(
-            "Do not use it when a class is spread across several distinct clumps — one average point cannot represent two clusters.",
+            "Do not use it when a class is spread across several distinct clumps: one average point cannot represent two clusters.",
             "Do not use it on unscaled features; nearest-point logic is entirely at the mercy of column scale.",
         ),
         myths=(
@@ -110,14 +110,14 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Warm start trains one ordinary model on all your tasks pooled together, then uses it as a "
             "starting point. For a new task, it copies that model and refits it on the handful of examples "
-            "you have — quicker and better than starting from nothing."
+            "you have: quicker and better than starting from nothing."
         ),
         analogy=(
             "Hiring someone with ten years in the industry rather than a new graduate. They still need a "
             "week to learn your specifics, but the week is enough."
         ),
         steps=(
-            "Fit a logistic or SGD classifier on all training tasks pooled together — that is the meta-initialization.",
+            "Fit a logistic or SGD classifier on all training tasks pooled together: that is the meta-initialization.",
             "For a new task, clone it.",
             "Refit the clone on that task's small support set.",
             "Predict with the adapted clone.",
@@ -128,7 +128,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you want something that behaves like a normal sklearn model and is easy to reason about.",
         ),
         avoid=(
-            "Do not use it if the label meanings differ between tasks — the pooled model assumes one shared label space.",
+            "Do not use it if the label meanings differ between tasks: the pooled model assumes one shared label space.",
             "Do not use it when the support set is smaller than the base estimator needs to refit at all.",
         ),
         myths=(
@@ -164,8 +164,8 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "nearest-prototype classification happens in that new space."
         ),
         analogy=(
-            "Rather than comparing photographs directly, first learn what to look at — jawline, eye "
-            "spacing — and then compare on those. The comparison is easy once the right view is learned."
+            "Rather than comparing photographs directly, first learn what to look at: jawline, eye "
+            "spacing: and then compare on those. The comparison is easy once the right view is learned."
         ),
         steps=(
             "A small multilayer network encodes each row into an embedding.",
@@ -185,7 +185,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "Deep few-shot learning is always better than the simple version.",
-                "On tabular data with modest task counts, nearest-centroid frequently wins. Measure both — that is why both exist.",
+                "On tabular data with modest task counts, nearest-centroid frequently wins. Measure both: that is why both exist.",
             ),
             (
                 "This is the image prototypical network from the literature.",
@@ -222,7 +222,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Inner loop: take a task, copy the weights, take a few gradient steps on its support set.",
             "Measure how well the adapted copy does on that task's query set.",
             "Outer loop: nudge the original weights so that future inner loops end up better.",
-            "Reptile is the cheaper variant — just move the original weights toward the adapted ones.",
+            "Reptile is the cheaper variant: just move the original weights toward the adapted ones.",
             "BuildML implements the first-order form, which is what makes it practical.",
         ),
         use=(
@@ -261,8 +261,8 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "metalearning-bundle-boundary",
         plain=(
-            "The meta-learning plan — the episodic protocol, the feature and task contract, the label "
-            "encoder, and any warm-start initialization — saves as its own bundle. Session checkpoints do "
+            "The meta-learning plan: the episodic protocol, the feature and task contract, the label "
+            "encoder, and any warm-start initialization: saves as its own bundle. Session checkpoints do "
             "not carry it."
         ),
         analogy=(
@@ -282,7 +282,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not confuse this with multitask or online bundles; they solve different problems and will not load here.",
-            "Do not expect the bundle to hold a model for a specific task — it holds the machinery for producing one.",
+            "Do not expect the bundle to hold a model for a specific task: it holds the machinery for producing one.",
         ),
         myths=(
             (

@@ -150,7 +150,7 @@ def fit_forecaster(
     disclosures: list[str] = [
         "Forecaster fitted on train partition only after chronological ordering.",
         "Lag features at time t use only y[t-lag] (no future target leakage).",
-        "This is a classical lag/baseline forecast path — not a full econometrics "
+        "This is a classical lag/baseline forecast path: not a full econometrics "
         "suite, not ARIMA productization, and not a digital twin.",
     ]
     warnings: list[str] = []

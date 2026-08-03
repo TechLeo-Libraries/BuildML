@@ -63,7 +63,7 @@ session.split(
 eda = session.eda(include_plots=False)
 
 # Learned plans fit on train and apply frozen values to every partition.
-# Default impute/encode/scale touch feature-role columns only — ignore/id/target
+# Default impute/encode/scale touch feature-role columns only: ignore/id/target
 # (and group/time/weight) stay unmutated unless you pass columns=[...] explicitly.
 session.impute(strategy="median")
 session.handle_outliers(method="iqr", action="cap")
@@ -172,7 +172,7 @@ import pandas as pd
 
 from buildml import Session
 
-# Multiple rows per customer — random split leaks the same customer across partitions
+# Multiple rows per customer: random split leaks the same customer across partitions
 visits = pd.DataFrame(
     {
         "customer_id": [1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5],
@@ -232,7 +232,7 @@ after = session.explain("impute", moment="after")
 walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 ```
 
-`workflow()` marks steps `available` when prerequisites pass — that is not a
+`workflow()` marks steps `available` when prerequisites pass: that is not a
 recommendation to run them. `eda()` findings and recommendations are also
 read-only; acting on a recommendation still requires an explicit Session call.
 
@@ -270,7 +270,7 @@ with Session.ingest("data.csv", engine="duckdb") as session:
 ```
 
 `with session:` closes owned DuckDB connections. Lazy Polars frames collect at
-sklearn boundaries — that is not out-of-core training. After Session preprocess
+sklearn boundaries: that is not out-of-core training. After Session preprocess
 steps, native handles rebuild so `Dataset.project` / `prepare_design_matrix`
 can prefer engine ops where implemented.
 
@@ -298,7 +298,7 @@ search = session.grid_search(
     cv=5,
 )
 
-# In-tree GA HPO (no extra) — not neuroevolution / NAS
+# In-tree GA HPO (no extra): not neuroevolution / NAS
 # evo = session.evolutionary_search(
 #     DecisionTreeClassifier(random_state=0),
 #     param_space={"max_depth": {"type": "int", "low": 2, "high": 6}},
@@ -329,13 +329,13 @@ print(
 )
 ```
 
-Prefer `PreprocessRecipe` inside CV for fold-local honesty — on data that has
+Prefer `PreprocessRecipe` inside CV for fold-local honesty: on data that has
 **not** already been Session-globally imputed/encoded/scaled. Resample and
 `apply_custom_transform` remain Session-global. If Session-global preprocess
 already ran, CV/search refuse **even with** a fold-local recipe (recipes do
 not undo poisoned frames). Re-ingest unpoisoned data, or set
 `allow_session_global_preprocess=True` only as an explicit override.
-`compare_models` ranks on one partition — override the default to
+`compare_models` ranks on one partition: override the default to
 `validation` during iterative selection.
 
 ---

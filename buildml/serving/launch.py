@@ -38,7 +38,7 @@ class ServingLaunchError(BuildMLError):
     """Raised when the server cannot take the port or dies during startup.
 
     Separate from :class:`~buildml.core.errors.ValidationError` because the
-    request was valid and the environment refused it — the port is taken, the
+    request was valid and the environment refused it: the port is taken, the
     address is not assignable, or the thread exited before the server reported
     itself started. Nothing in the calling code is wrong; something outside it
     has to change.
@@ -109,7 +109,7 @@ class ServeHandle:
         **The join times out rather than hanging.** A request still in flight
         after five seconds leaves the thread running; since it is a daemon, it
         will not keep the interpreter alive. The bundle is cleared either way,
-        so a straggling request may fail — which is the right trade for a stop
+        so a straggling request may fail: which is the right trade for a stop
         that always returns.
 
         **Calling this twice is harmless.**
@@ -134,7 +134,7 @@ class ServeHandle:
         -----
         **A live thread is not the same as a ready server.** The thread starts
         before uvicorn finishes binding, and :func:`serve_bundle` already waits
-        for readiness before returning — so use this to detect a server that has
+        for readiness before returning: so use this to detect a server that has
         *stopped*, and ``/health`` to confirm one that is *working*.
         """
         return self._thread.is_alive()
@@ -247,7 +247,7 @@ def serve_bundle(
     allow_insecure_public_bind:
         Bind a public address with no keys at all. Named at length because it
         should be conspicuous in review. Only defensible when something in front
-        — a proxy, a service mesh — is doing the authentication.
+       : a proxy, a service mesh: is doing the authentication.
     ssl_certfile:
         A PEM certificate for local HTTPS. Must be paired with ``ssl_keyfile``.
     ssl_keyfile:
@@ -272,7 +272,7 @@ def serve_bundle(
         'buildml[serve]'``.
     ServingLaunchError
         If the port cannot be bound, or the server thread exits during the
-        ten-second startup window — usually a failure inside uvicorn's own
+        ten-second startup window: usually a failure inside uvicorn's own
         startup, such as an unreadable certificate.
 
     Notes
@@ -283,7 +283,7 @@ def serve_bundle(
     control. Supply ``api_keys``, or state the override explicitly.
 
     **The TLS support here is genuinely local.** Uvicorn will terminate HTTPS
-    with the PEM files you give it, and that is all — no certificate issuance,
+    with the PEM files you give it, and that is all: no certificate issuance,
     renewal, or rotation. For anything that outlives an afternoon, terminate TLS
     at a proxy.
 

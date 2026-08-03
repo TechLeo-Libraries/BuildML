@@ -2,7 +2,7 @@
 
 The exact-search path needs nothing beyond numpy and scikit-learn, and it is
 correct: it examines every case and returns the genuinely nearest. What the
-optional backends buy is speed at scale — approximate indexes that skip most of
+optional backends buy is speed at scale: approximate indexes that skip most of
 the memory, sentence-transformer embeddings for text features, and torch for
 learned metrics.
 
@@ -13,8 +13,8 @@ the install command; use them where a named backend genuinely cannot proceed.
 
 Each predicate checks the module spec first and then actually imports. The spec
 check is cheap and rules out the common absence; the import is what catches a
-package that is installed but unloadable — a mismatched binary wheel, a broken
-CUDA library — which a spec check would happily report as present.
+package that is installed but unloadable: a mismatched binary wheel, a broken
+CUDA library: which a spec check would happily report as present.
 
 See Also
 --------
@@ -25,10 +25,11 @@ buildml.core.errors.MissingExtraError : The error, with its install hint.
 from __future__ import annotations
 
 import importlib.util
+import sys
 from typing import Any
 
 from buildml.core.errors import MissingExtraError
-from buildml.dl.extras import torch_available, torch_spec_available
+from buildml.dl.extras import _subprocess_import_ok, torch_available, torch_spec_available
 
 
 def hnswlib_spec_present() -> bool:
@@ -100,12 +101,16 @@ def hnswlib_available() -> bool:
 
     Notes
     -----
-    **Every exception is swallowed.** A compiled extension can fail with an
-    ``OSError``, a version conflict, or something stranger; for a predicate
-    whose only job is to answer "can I use this?", any failure is a no.
+    Catchable import failures are swallowed. On Windows, the probe runs in a
+    child process because a broken native wheel can hard-crash the parent.
     """
     if not hnswlib_spec_present():
         return False
+    # Native wheels on Windows can hard-crash (access violation) instead of
+    # raising a catchable ImportError. Probe in a child process so walkthrough /
+    # capability matrices never kill the parent Session.
+    if sys.platform.startswith("win"):
+        return _subprocess_import_ok("hnswlib")
     try:
         import hnswlib  # noqa: F401
     except Exception:
@@ -116,8 +121,8 @@ def hnswlib_available() -> bool:
 def faiss_available() -> bool:
     """Report whether faiss actually imports.
 
-    The stronger check. A faiss install can be present and broken — a mismatched
-    build or a missing GPU runtime — and only an import reveals it.
+    The stronger check. A faiss install can be present and broken: a mismatched
+    build or a missing GPU runtime: and only an import reveals it.
 
     Returns
     -------
@@ -126,12 +131,13 @@ def faiss_available() -> bool:
 
     Notes
     -----
-    **Every exception is swallowed**, for the same reason as
-    :func:`hnswlib_available`: a compiled library has many ways to be present
-    and unusable, and they all mean the same thing here.
+    Catchable import failures are swallowed. On Windows, the probe runs in a
+    child process for the same hard-crash reason as :func:`hnswlib_available`.
     """
     if not faiss_spec_present():
         return False
+    if sys.platform.startswith("win"):
+        return _subprocess_import_ok("faiss")
     try:
         import faiss  # noqa: F401
     except Exception:
@@ -183,7 +189,7 @@ def text_embedding_available() -> bool:
     """Report whether text case features are usable.
 
     Gates the embedding backend, which turns text columns into vectors so that
-    two cases described in different words can still be recognised as similar —
+    two cases described in different words can still be recognised as similar :
     something no categorical encoding can do.
 
     Returns
@@ -199,9 +205,15 @@ def text_embedding_available() -> bool:
     """
     if not sentence_transformers_spec_present():
         return False
+    # sentence-transformers imports torch; on Windows a broken torch wheel can
+    # hard-crash the process. Match the RAG probe: torch first, then subprocess.
+    if not torch_available():
+        return False
+    if sys.platform.startswith("win"):
+        return _subprocess_import_ok("sentence_transformers")
     try:
         import sentence_transformers  # noqa: F401
-    except (ImportError, OSError):
+    except Exception:
         return False
     return True
 

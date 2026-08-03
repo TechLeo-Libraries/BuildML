@@ -6,7 +6,7 @@ Train a small Torch MLP on mortgage tabular features for default risk underwriti
 
 ## Data source
 
-In-repo synthetic mortgage table (`load_mortgage_default_synthetic`) — license-clear, deterministic. **Not** a real servicing extract.
+In-repo synthetic mortgage table (`load_mortgage_default_synthetic`): license-clear, deterministic. **Not** a real servicing extract.
 
 ## Leakage controls
 
@@ -28,7 +28,7 @@ Primary holdout: accuracy / F1 / ROC-AUC (or Torch report metrics) on test.
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `MLPClassifier` twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `MLPClassifier` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

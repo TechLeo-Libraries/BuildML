@@ -32,7 +32,7 @@ preprocessing contracts, and breaking upstream changes. BuildML instead:
 
 ---
 
-## Catalog — `list_pretrained_backbones`
+## Catalog: `list_pretrained_backbones`
 
 ```python
 from buildml.dl.zoo import list_pretrained_backbones
@@ -54,7 +54,7 @@ over memorizing a stale table when the installed version may differ.
 
 ---
 
-## Use case — Vision backbone + attach head (mock)
+## Use case: Vision backbone + attach head (mock)
 
 ```python
 from buildml import Session
@@ -80,7 +80,7 @@ head (linear-probe style).
 
 ---
 
-## Use case — Audio / speech encoders
+## Use case: Audio / speech encoders
 
 ```python
 # audio modality
@@ -111,7 +111,7 @@ head (linear-probe style).
 | Mode | Behavior |
 | --- | --- |
 | `none` | Architecture shell without meaningful weights |
-| `mock` | Deterministic/CI-safe tensors — default for tests |
+| `mock` | Deterministic/CI-safe tensors: default for tests |
 | `pretrained` | Load upstream weights when extras + network allow |
 
 `freeze=True` is typical when attaching a small task head.
@@ -134,7 +134,7 @@ architecture names and weight modes before confirming execution.
 - `pretrained` without network/cache → upstream download errors.
 - `attach_backbone_head` without a prior `load_pretrained_backbone` → validation error.
 - Not a substitute for `make_image_multimodal_torch_loaders` contracts.
-- Not Whisper-scale training — see `refuse_speech_foundation_pretrain`.
+- Not Whisper-scale training: see `refuse_speech_foundation_pretrain`.
 
 ---
 

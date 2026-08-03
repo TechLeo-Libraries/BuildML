@@ -240,14 +240,27 @@ def load_customer_segments_synthetic(
 
 
 def load_support_kb_corpus() -> tuple[list[dict[str, Any]], dict[str, list[str]]]:
-    """Small support knowledge-base corpus + retrieval relevance judgments."""
+    """Adversarial support KB corpus + retrieval judgments.
+
+    Includes near-duplicate distractors and paraphrased queries so lexical
+    hashing cannot trivially score perfect MRR/nDCG on every query.
+    """
     docs = [
         {
             "doc_id": "billing-refund",
             "text": (
                 "To request a refund, open Billing > Invoices, select the charge, "
-                "and choose Request refund. Refunds post within 5–10 business days. "
+                "and choose Request refund. Refunds post within 5-10 business days. "
                 "Subscriptions canceled mid-cycle are prorated."
+            ),
+            "metadata": {"topic": "billing"},
+        },
+        {
+            "doc_id": "billing-credit-note",
+            "text": (
+                "Credit notes are accounting adjustments, not cash refunds. "
+                "Open Billing > Credits to apply a credit note to a future invoice. "
+                "Do not use Request refund when you only need a credit note."
             ),
             "metadata": {"topic": "billing"},
         },
@@ -261,11 +274,28 @@ def load_support_kb_corpus() -> tuple[list[dict[str, Any]], dict[str, list[str]]
             "metadata": {"topic": "account"},
         },
         {
+            "doc_id": "password-mfa",
+            "text": (
+                "Multi-factor authentication codes are separate from password resets. "
+                "If login fails after a password change, check the authenticator app "
+                "or SMS OTP before requesting another reset link."
+            ),
+            "metadata": {"topic": "account"},
+        },
+        {
             "doc_id": "data-export",
             "text": (
                 "Workspace admins can export project data from Settings > Data export. "
                 "Exports are ZIP archives of CSV files. Large workspaces may take up to "
                 "an hour; you receive an email when the export is ready."
+            ),
+            "metadata": {"topic": "admin"},
+        },
+        {
+            "doc_id": "data-import",
+            "text": (
+                "CSV import uses Settings > Data import. Imports never create ZIP "
+                "exports. Mapping columns incorrectly will skip rows silently."
             ),
             "metadata": {"topic": "admin"},
         },
@@ -279,6 +309,14 @@ def load_support_kb_corpus() -> tuple[list[dict[str, Any]], dict[str, list[str]]
             "metadata": {"topic": "api"},
         },
         {
+            "doc_id": "rate-limits-webhooks",
+            "text": (
+                "Webhook delivery retries are not API rate limits. Failed webhooks "
+                "retry with backoff for 24 hours. HTTP 429 on the REST API is unrelated."
+            ),
+            "metadata": {"topic": "api"},
+        },
+        {
             "doc_id": "leakage-eval",
             "text": (
                 "Never index labeled evaluation answers into the retrieval corpus. "
@@ -286,13 +324,46 @@ def load_support_kb_corpus() -> tuple[list[dict[str, Any]], dict[str, list[str]]
             ),
             "metadata": {"topic": "ml-hygiene"},
         },
+        {
+            "doc_id": "leakage-train-test",
+            "text": (
+                "Train/test leakage in tabular ML is different from RAG corpus "
+                "contamination. Keep holdout rows out of fitting; keep judgment "
+                "answers out of the index."
+            ),
+            "metadata": {"topic": "ml-hygiene"},
+        },
+        {
+            "doc_id": "shipping-sla",
+            "text": (
+                "Standard shipping arrives in 3-5 business days. Express shipping "
+                "is overnight in-region only. Tracking updates every four hours."
+            ),
+            "metadata": {"topic": "logistics"},
+        },
+        {
+            "doc_id": "noise-marketing",
+            "text": (
+                "Marketing campaigns can mention refunds, passwords, exports, and "
+                "API limits in promotional copy without being support procedures."
+            ),
+            "metadata": {"topic": "noise"},
+        },
     ]
+    # Paraphrases + distractor pressure: relevant ids are intentional, not
+    # keyword-identical to a single doc.
     judgments = {
-        "how do I get a refund for a charge": ["billing-refund"],
-        "forgot password reset link expired": ["password-reset"],
-        "export workspace csv data": ["data-export"],
-        "api returns 429 too many requests": ["rate-limits"],
-        "evaluation contamination indexed answers": ["leakage-eval"],
+        "customer wants money back for a double charge": ["billing-refund"],
+        "need a credit on next invoice not cash": ["billing-credit-note"],
+        "cannot sign in and the email link died": ["password-reset"],
+        "otp fails after changing credentials": ["password-mfa"],
+        "download all project tables as spreadsheet archive": ["data-export"],
+        "upload csv mappings into the workspace": ["data-import"],
+        "rest client keeps getting too many requests": ["rate-limits"],
+        "outbound event retries after failure": ["rate-limits-webhooks"],
+        "why offline rag scores look perfect but prod fails": ["leakage-eval"],
+        "holdout rows used during model fitting": ["leakage-train-test"],
+        "when does express parcel arrive overnight": ["shipping-sla"],
     }
     return docs, judgments
 

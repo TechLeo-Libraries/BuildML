@@ -13,7 +13,7 @@ columns that do not match leave the estimator reading the wrong column as the
 wrong feature.
 
 Warnings accumulate through the process rather than being raised, because most
-of them are informative rather than fatal — extra columns ignored, a resample
+of them are informative rather than fatal: extra columns ignored, a resample
 plan skipped, a coercion applied. They are worth reading on the first run
 against a new data source.
 
@@ -61,7 +61,7 @@ class PipelinePredictResult:
         Class probabilities as a frame with one ``proba_<class>`` column per
         class, or ``None`` when not requested or unsupported.
     apply_result:
-        What the transform replay did — which plans applied, which were skipped,
+        What the transform replay did: which plans applied, which were skipped,
         and why. ``None`` when no plans ran.
     feature_columns:
         The columns fed to the estimator, in order.
@@ -102,8 +102,8 @@ class PipelinePredictResult:
         """Summarise the run as plain data, without the predictions themselves.
 
         The values are deliberately excluded. This is the record you log for
-        every scoring run — row counts, which transforms ran, what the contract
-        found — and writing the predictions into a log would be both enormous
+        every scoring run: row counts, which transforms ran, what the contract
+        found: and writing the predictions into a log would be both enormous
         and, for personal data, inappropriate.
 
         Returns
@@ -148,7 +148,7 @@ def predict_from_pipeline(
     estimator's feature columns are present, and predicts.
 
     Accepts either a bundle directory or an already-loaded bundle. Pass the
-    loaded object when scoring repeatedly — reloading per batch re-reads and
+    loaded object when scoring repeatedly: reloading per batch re-reads and
     re-unpickles the model every time.
 
     Parameters
@@ -186,7 +186,7 @@ def predict_from_pipeline(
         if the frame has rows but no usable features; or if the estimator itself
         fails during predict. The last case is wrapped rather than propagated,
         because a bare scikit-learn shape error says nothing about which column
-        was wrong — the wrapped message names the expected contract.
+        was wrong: the wrapped message names the expected contract.
 
     Notes
     -----
@@ -209,7 +209,7 @@ def predict_from_pipeline(
     simply absent.
 
     **Bundles without a contract still work**, with only the feature-column
-    check applied — which catches missing columns but not wrong types.
+    check applied: which catches missing columns but not wrong types.
 
     Examples
     --------
@@ -317,7 +317,7 @@ def predict_from_pipeline(
         elif apply_plans and plan_present:
             hint = (
                 " After plan replay the score frame still lacks the fitted feature "
-                "contract — check date/encode/binning/select outputs."
+                "contract: check date/encode/binning/select outputs."
             )
         raise ValidationError(
             f"Score frame missing feature columns required by the pipeline: {missing}.{hint}"

@@ -4,13 +4,13 @@ The front door for getting data into BuildML. Detects the format, estimates the
 scale, picks a mode and engine, loads, and returns both the dataset and a report
 of every decision it made.
 
-The report is not decoration. Ingest makes several choices on your behalf — this
-file looked large, so lazy; Polars was not installed, so pandas — and each one
+The report is not decoration. Ingest makes several choices on your behalf: this
+file looked large, so lazy; Polars was not installed, so pandas: and each one
 changes what happens later. A loader that made those choices silently would be a
 loader you could not debug.
 
 The one hard rule: a source that looks large is not loaded blindly into pandas.
-Ingest refuses, explains, and offers four ways forward — force it, inspect it,
+Ingest refuses, explains, and offers four ways forward: force it, inspect it,
 sample it, or install an engine that can stream it. That refusal is deliberate
 friction, chosen because the alternative is a killed kernel with no message.
 
@@ -52,7 +52,7 @@ def ingest(
     what was actually chosen, and every warning raised on the way.
 
     The refusal is the part worth knowing about. A path that looks large gets no
-    blind pandas load — instead an :class:`~buildml.core.errors.IngestError`
+    blind pandas load: instead an :class:`~buildml.core.errors.IngestError`
     listing four ways forward: ``mode='memory'`` to insist, ``dry_run=True`` to
     inspect the schema without reading, ``read_nrows=N`` to sample, or install
     ``buildml[engines]`` and read it natively. Annoying once, better than a
@@ -60,7 +60,7 @@ def ingest(
 
     When a native engine is used, no pandas frame is created at all. The Dataset
     holds an engine handle and promotes to pandas only when something requires
-    it — preprocessing, a scikit-learn fit, or an explicit ``to_pandas``.
+    it: preprocessing, a scikit-learn fit, or an explicit ``to_pandas``.
 
     Parameters
     ----------
@@ -102,7 +102,7 @@ def ingest(
     Notes
     -----
     **Read ``report.warnings``.** They record the decisions that differ from
-    what you might assume — a pandas fallback in lazy mode, a native handle that
+    what you might assume: a pandas fallback in lazy mode, a native handle that
     will collect later, a DataFrame source that keeps its pandas cache
     regardless of mode.
 
@@ -167,7 +167,7 @@ def ingest(
         force_memory = mode is not None and coerce_data_mode(mode) == DataMode.MEMORY
         explicit_engine = EngineName(engine) if engine is not None else None
         explicit_mode = coerce_data_mode(mode) if mode is not None else None
-        # Large sources need an explicit engine and/or lazy mode —
+        # Large sources need an explicit engine and/or lazy mode :
         # do not auto-load just because optional engines happen to be installed.
         engine_requests_native = explicit_engine in {
             EngineName.POLARS,

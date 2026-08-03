@@ -7,7 +7,7 @@ particularly on text unlike what it was trained on.
 
 The labels are remapped onto BuildML's own vocabulary here, so results from
 spaCy and from the rules backend can be compared without the caller re-keying
-anything. The mapping is approximate — spaCy's categories are finer-grained than
+anything. The mapping is approximate: spaCy's categories are finer-grained than
 BuildML's, and several collapse into one.
 """
 
@@ -69,7 +69,7 @@ def load_spacy_pipeline(model: str = DEFAULT_SPACY_MODEL) -> Any:
         spaCy itself is not installed. Install ``buildml[nlp-industry]``.
     ~buildml.core.errors.ValidationError
         spaCy is installed but this model is not. The message gives the exact
-        download command — these are two separate failures with two separate
+        download command: these are two separate failures with two separate
         fixes, which is why they raise differently.
 
     Notes
@@ -112,7 +112,7 @@ def extract_spacy_entities(
         Which spaCy pipeline to use.
     labels:
         Keep only these labels, matched against the *remapped* names rather
-        than spaCy's originals — so filter for ``'LOCATION'``, not ``'GPE'``.
+        than spaCy's originals: so filter for ``'LOCATION'``, not ``'GPE'``.
     batch_size:
         How many documents spaCy processes at once. Larger is faster and uses
         more memory.
@@ -139,7 +139,7 @@ def extract_spacy_entities(
     unchanged.
 
     **Statistical recognition is confident when it is wrong.** On text unlike
-    the model's training data — internal jargon, logs, transcripts — it
+    the model's training data: internal jargon, logs, transcripts: it
     produces plausible-looking false positives with no signal that anything is
     amiss.
 

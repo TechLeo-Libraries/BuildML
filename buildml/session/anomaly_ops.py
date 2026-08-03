@@ -66,7 +66,7 @@ def fit_anomaly(
     :class:`~buildml.anomaly.results.AnomalyPlan` on Session, and records
     the fit. ``backend`` selects sklearn (core), pyod
     (``buildml[anomaly-industry]``), or torch (``buildml[torch]``). ``method``
-    must belong to the backend catalog — see :func:`anomaly_capability_matrix_op`.
+    must belong to the backend catalog: see :func:`anomaly_capability_matrix_op`.
 
     Parameters
     ----------

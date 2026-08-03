@@ -104,7 +104,7 @@ def encode_labeled_targets(
     classes:
         Tuple of class labels in encoder order.
     labeled_mask:
-        Boolean mask aligned to ``y`` — ``True`` for labeled rows.
+        Boolean mask aligned to ``y``: ``True`` for labeled rows.
     n_labeled:
         Count of labeled rows.
     n_unlabeled:

@@ -12,19 +12,19 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
         _note(
             key="activelearning-train-pool",
             title="Active learning train-only pool",
-            summary="The unlabeled query pool is train-partition target missingness (NaN by default) — never validation/test.",
+            summary="The unlabeled query pool is train-partition target missingness (NaN by default): never validation/test.",
             definition=(
                 "Pool-based active learning selects unlabeled *train* rows for a "
                 "human to label. BuildML reuses the semi-supervised missingness "
                 "contract: NaN/NA/None (or unlabeled_marker) marks pool rows."
             ),
             intuition=(
-                "Ask the human about the practice worksheet blanks — never peek at "
+                "Ask the human about the practice worksheet blanks: never peek at "
                 "the exam paper to decide which practice questions to ask."
             ),
             formal_idea=(
                 "Pool U subset of train; query q subset of U; holdout H is disjoint "
-                "from U for selection — never query validation/test to pick labels."
+                "from U for selection: never query validation/test to pick labels."
             ),
             why_it_matters=(
                 "Querying test is silent leakage and invalidates holdout claims.",
@@ -99,7 +99,7 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
                 "Torch BALD uses MC-dropout disagreement; mc_dropout uses predictive entropy."
             ),
             intuition=(
-                "Ask about the examples the model is least sure of — or where a "
+                "Ask about the examples the model is least sure of: or where a "
                 "committee of clones argue the loudest."
             ),
             formal_idea=(
@@ -131,7 +131,7 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "An active-learning bundle persists the estimator, label encoder, "
                 "labeled/pool index contract, query history, and budget. Session "
-                "checkpoints persist data/roles/splits/history/preprocess plans — "
+                "checkpoints persist data/roles/splits/history/preprocess plans: "
                 "not the ActiveLearningPlan weights."
             ),
             intuition=(

@@ -23,6 +23,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs sklearn `LabelPropagation` with the same train-only masking policy (`results/comparison.json`).
+Filled: `baseline_industry.py` runs sklearn `LabelPropagation` with the same train-only masking policy (`results/comparison.json`).
 ## Limitations
 Synthetic 2-blob data; oracle masking is proof-only.

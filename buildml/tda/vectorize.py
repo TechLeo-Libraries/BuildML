@@ -36,7 +36,7 @@ def fit_vectorizer_state(
 
     Chooses birth/persistence ranges (persistence images), filtration grids
     (landscapes/silhouettes), and output dimensionality. Holdout transforms must
-    reuse this frozen state — never refit on validation or test diagrams.
+    reuse this frozen state: never refit on validation or test diagrams.
 
     Parameters
     ----------
@@ -115,7 +115,7 @@ def fit_vectorizer_state(
         }
 
     if key == "landscape":
-        # In-tree landscapes (same tent construction as silhouettes) — avoids
+        # In-tree landscapes (same tent construction as silhouettes): avoids
         # persim PersLandscapeApprox empty-grid failures on narrow H1 diagrams.
         return {
             "kind": "landscape",

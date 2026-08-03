@@ -6,7 +6,7 @@ Rank sponsored ads within a query using graded relevance judgments (LambdaRank w
 
 ## Data source
 
-In-repo synthetic ad LTR judgments (`load_ad_ltr_judgments_synthetic`) — license-clear, deterministic. **Not** a real auction log.
+In-repo synthetic ad LTR judgments (`load_ad_ltr_judgments_synthetic`): license-clear, deterministic. **Not** a real auction log.
 
 ## Leakage controls
 
@@ -28,7 +28,7 @@ Primary holdout: nDCG@k on test queries (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn pointwise Ridge LTR twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn pointwise Ridge LTR twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

@@ -23,6 +23,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` mirrors train-cursor `SGDClassifier.partial_fit` chunks (`results/comparison.json`).
+Filled: `baseline_industry.py` mirrors train-cursor `SGDClassifier.partial_fit` chunks (`results/comparison.json`).
 ## Limitations
-Chunked Session updates — not a distributed streaming platform.
+Chunked Session updates: not a distributed streaming platform.

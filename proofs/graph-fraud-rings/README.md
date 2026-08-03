@@ -23,6 +23,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` builds networkx degree/clustering on the train∪val visible graph + logistic classifier (`results/comparison.json`).
+Filled: `baseline_industry.py` builds networkx degree/clustering on the train∪val visible graph + logistic classifier (`results/comparison.json`).
 ## Limitations
 Classical NetworkX path primary; torch/PyG optional.

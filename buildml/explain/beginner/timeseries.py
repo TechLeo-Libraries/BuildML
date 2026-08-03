@@ -59,13 +59,13 @@ TIMESERIES_BEGINNER: dict[str, BeginnerLayer] = _index(
             "or seasonal adjustment is needed before classical forecasting."
         ),
         analogy=(
-            "A roulette wheel that slowly gains a bias is not fair over time — differencing or "
+            "A roulette wheel that slowly gains a bias is not fair over time: differencing or "
             "detrending tries to restore 'fairness' for models that assume it."
         ),
         steps=(
             "Ensure chronological order and a train-only scope.",
             "Run ts_diagnostics or analyze_timeseries with diagnostics enabled.",
-            "Read ADF and KPSS together — they test opposite nulls.",
+            "Read ADF and KPSS together: they test opposite nulls.",
             "Inspect ACF/PACF for slow decay or sharp spikes at seasonal lags.",
             "Decide on differencing or lag features before fit_forecast.",
         ),
@@ -80,7 +80,7 @@ TIMESERIES_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "Non-stationary series cannot be forecast.",
-                "You transform or model the structure — diagnostics tell you which path is honest.",
+                "You transform or model the structure: diagnostics tell you which path is honest.",
             ),
         ),
         example=(
@@ -98,12 +98,12 @@ TIMESERIES_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "ts-changepoint-detection",
         plain=(
-            "Changepoint detection finds moments when the series behaviour shifts — a policy change, "
+            "Changepoint detection finds moments when the series behaviour shifts: a policy change, "
             "a product launch, or a broken sensor. Spotting breaks keeps you from training one model "
             "across two different regimes."
         ),
         analogy=(
-            "A speed camera that suddenly starts ticketing on a road where limits changed last month — "
+            "A speed camera that suddenly starts ticketing on a road where limits changed last month: "
             "the 'normal' before and after are not the same distribution."
         ),
         steps=(
@@ -158,7 +158,7 @@ TIMESERIES_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "On every new temporal dataset before the first fit_forecast call.",
-            "When stakeholders ask why a forecast method was chosen — analysis is the evidence trail.",
+            "When stakeholders ask why a forecast method was chosen: analysis is the evidence trail.",
         ),
         avoid=(
             "Skipping straight to fit_forecast on a series you have not inspected.",
@@ -167,7 +167,7 @@ TIMESERIES_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "analyze_timeseries produces forecast accuracy.",
-                "It produces structure reports — evaluate_forecast measures predictive skill.",
+                "It produces structure reports: evaluate_forecast measures predictive skill.",
             ),
         ),
         example=(

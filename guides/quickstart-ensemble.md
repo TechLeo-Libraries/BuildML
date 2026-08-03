@@ -3,10 +3,10 @@
 > **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
 > install Session 2.x. Use
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> (or an editable checkout). Ensembles use core sklearn — no optional extra.
+> (or an editable checkout). Ensembles use core sklearn: no optional extra.
 > See [installation](../docs/installation.rst).
 
-Native voting, stacking, and holdout blending on the Session — not merely
+Native voting, stacking, and holdout blending on the Session: not merely
 passing a `RandomForest` to `Session.fit`.
 
 **Go deeper:** [Ensemble deep](ensemble-deep.md) ·

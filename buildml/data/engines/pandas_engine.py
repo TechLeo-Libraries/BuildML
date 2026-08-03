@@ -1,6 +1,6 @@
 """Satisfy the engine protocol using pandas itself.
 
-Nothing here is optimised, and nothing is deferred — pandas is already an
+Nothing here is optimised, and nothing is deferred: pandas is already an
 in-memory DataFrame, so there is no plan to build and no scan to push work into.
 The adapter exists so that code written against the engine protocol runs
 unchanged when no optional engine is installed.
@@ -56,7 +56,7 @@ class PandasEngine:
     def from_pandas(self, frame: pd.DataFrame) -> pd.DataFrame:
         """Take a copy of the frame.
 
-        There is no conversion to do — the copy is the whole operation, and it
+        There is no conversion to do: the copy is the whole operation, and it
         is what stops the Dataset from aliasing the caller's data.
 
         Parameters
@@ -94,7 +94,7 @@ class PandasEngine:
 
         Notes
         -----
-        **Unlike the other engines, this materialises nothing** — there was
+        **Unlike the other engines, this materialises nothing**: there was
         never a plan. Code that treats this as the expensive boundary is right
         about Polars and DuckDB and wrong about pandas.
         """
@@ -118,7 +118,7 @@ class PandasEngine:
 
         Notes
         -----
-        Free — pandas tracks its own length.
+        Free: pandas tracks its own length.
         """
         return int(len(table))
 
@@ -197,7 +197,7 @@ class PandasEngine:
         Notes
         -----
         **This saves less than it does on other engines.** The frame is already
-        in memory, so nothing is avoided — the copy is smaller, that is all.
+        in memory, so nothing is avoided: the copy is smaller, that is all.
         On a lazy engine the same call prevents columns from being read.
         """
         return table.loc[:, list(columns)].copy()

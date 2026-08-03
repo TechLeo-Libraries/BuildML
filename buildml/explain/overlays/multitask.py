@@ -168,7 +168,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use for per-task inference snapshots without mutating the plan.",),
         assumptions=("Feature columns match the plan contract.",),
         failures=("No plan; missing columns; null features; attach without partition='all'.",),
-        leakage=("None inherent — still do not train on predictions.",),
+        leakage=("None inherent: still do not train on predictions.",),
         anti_patterns=("Writing predictions back into target roles without disclosure.",),
         state_changes=("Stores multitask_predict_result; may replace dataset when attach=True.",),
         result_reading=("Read predictions dict keyed by target column; n_rows; disclosures.",),

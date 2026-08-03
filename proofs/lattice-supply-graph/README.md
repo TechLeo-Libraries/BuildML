@@ -1,6 +1,6 @@
 # Lattice Supply Graph
 
-**Tier B** cross-domain product proof — classical graph node features +
+**Tier B** cross-domain product proof: classical graph node features +
 knowledge-graph link prediction + classical supervised late-risk scoring.
 
 ## Product narrative
@@ -15,7 +15,7 @@ late-delivery risk. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

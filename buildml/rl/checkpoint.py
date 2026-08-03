@@ -2,9 +2,9 @@
 
 A Session checkpoint and a policy bundle answer different questions, and
 conflating them is the mistake this module exists to prevent. **A checkpoint
-resumes your work** — data, roles, splits, history, classical preprocessing —
-and it does not embed IL or RL policies. **A bundle deploys a policy** — the
-fitted model, its columns, its action vocabulary — and it carries none of your
+resumes your work**: data, roles, splits, history, classical preprocessing :
+and it does not embed IL or RL policies. **A bundle deploys a policy**: the
+fitted model, its columns, its action vocabulary: and it carries none of your
 data.
 
 Fitted a bandit and want to score new rows next week? Save a bundle. Stopped
@@ -82,7 +82,7 @@ def save_imitation_bundle(
         The fitted policy from
         :func:`~buildml.rl.imitation.fit_imitation`.
     fit_result:
-        The fit report, recorded in the metadata. Optional but worth passing —
+        The fit report, recorded in the metadata. Optional but worth passing :
         it is the record of what the policy was trained on, and a bundle
         without it cannot answer that later.
     eval_result:
@@ -159,7 +159,7 @@ def load_imitation_bundle(path: str | Path, *, trusted: bool = False) -> Imitati
     Notes
     -----
     **The bundle carries no data.** The reloaded policy expects the same state
-    columns, in the same order, that it was fitted on — read them from
+    columns, in the same order, that it was fitted on: read them from
     ``plan.columns``.
 
     **Loading executes pickled code.** Only load bundles you produced or trust.
@@ -206,7 +206,7 @@ def save_rl_bundle(
 
     Writes a two-file directory: the live policy in joblib form, and a readable
     ``meta.json`` recording the mode, algorithm, configuration, and any results.
-    Works for all four modes — a bandit's columns and encoder, or an
+    Works for all four modes: a bandit's columns and encoder, or an
     environment policy's weights, are carried the same way.
 
     Parameters
@@ -220,7 +220,7 @@ def save_rl_bundle(
         The fit report, recorded in the metadata.
     eval_result:
         The evaluation, recorded in the metadata. Particularly worth passing
-        here, because it carries the ``offline`` flag — a saved bandit metric
+        here, because it carries the ``offline`` flag: a saved bandit metric
         that has lost track of whether it was estimated or measured is a metric
         that will eventually be over-read.
 

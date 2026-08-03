@@ -13,7 +13,7 @@ The public 2.x entry point is `buildml.Session`.
 
 | Path | What it is |
 | --- | --- |
-| Classical tabular | Main path — ingest → roles → split → preprocess → fit → evaluate |
+| Classical tabular | Main path: ingest → roles → split → preprocess → fit → evaluate |
 | Torch DL | Optional multimodal / speech / vision extras on the same Session |
 | RAG | Optional retrieve → generate → evaluate |
 | AI operator | Optional LLM-assisted plan/execute with allowlists |
@@ -52,7 +52,7 @@ pip install -e ".[dev]"
 | Graph / RL / TDA | `buildml[graph]`, `[graph-pyg]`, `[rl]`, `[rl-industry]`, `[tda]` | NetworkX / PyG; Gymnasium / SB3; ripser/persim |
 | AI | `buildml[ai]` / `[llm]` | LLM operator (BYO API key) |
 | Classical bundle | `buildml[all-classical]` | engines + imbalanced + eda + excel + dashboard + optuna + automl |
-| Industry meta | `buildml[production]` | R1–R6 industry extras — **best-effort** (see below) |
+| Industry meta | `buildml[production]` | R1–R6 industry extras: **best-effort** (see below) |
 
 ```bash
 pip install "buildml[production]"   # after GitHub / editable install above
@@ -62,7 +62,7 @@ pip install "buildml[production]"   # after GitHub / editable install above
 
 R1–R6 industry refinement is **complete** (capability matrices, backend routing,
 benchmark smokes, guides). `buildml[production]` is a **best-effort** meta-extra:
-it pulls domain depth plus `*-industry` adapters — **not** a guarantee that every
+it pulls domain depth plus `*-industry` adapters: **not** a guarantee that every
 nested industry wheel installs on every platform.
 
 On **Python 3.13** (especially Windows) some nested pins are skipped via
@@ -85,7 +85,7 @@ It does **not** include dashboard, serve, or AI operator extras.
   pipeline bundles, domain `*_plan.joblib`, and Torch trainer / TorchScript
   payloads can execute code on load. Public loaders default to `trusted=False`
   and raise `ValidationError` until you pass `trusted=True` for artifacts you
-  created or fully trust — for example `Session.checkpoint_load(path, trusted=True)`,
+  created or fully trust: for example `Session.checkpoint_load(path, trusted=True)`,
   `session.load_anomaly_bundle(path, trusted=True)`,
   `Session().predict_from_pipeline(path, frame, trusted=True)`, or
   `buildml-serve --bundle … --trusted`. Prefer JSON sidecars / parquet /
@@ -93,7 +93,7 @@ It does **not** include dashboard, serve, or AI operator extras.
   `trusted`) or re-fitting when provenance is unclear. Optional `sha256`
   integrity in manifests detects *tampering after save*; it does **not** make a
   malicious author safe. **Residual risk:** `trusted=True` on an
-  attacker-controlled artifact still executes code — untrusted pickle cannot be
+  attacker-controlled artifact still executes code: untrusted pickle cannot be
   made safe.
 - **AI operator.** Prompt-injection heuristics in `buildml.ai.security` are a
   best-effort layer (NFKC + zero-width / bidi strip, Latin-homoglyph fold,
@@ -101,7 +101,7 @@ It does **not** include dashboard, serve, or AI operator extras.
   reason codes). Primary controls remain the closed tool registry (runtime
   `register` refused), confirm-on-write for mutating tools, and egress levels in
   `buildml.ai.privacy`. **Residual risk:** paraphrase / novel attacks may
-  bypass heuristics — do not treat pattern matching as injection-proof.
+  bypass heuristics: do not treat pattern matching as injection-proof.
 
 ---
 
@@ -128,7 +128,7 @@ session.set_roles(
 session.split(test_size=0.25, stratify=True, random_state=42)
 
 # Fit on train; apply frozen transforms everywhere else.
-# Default impute/encode/scale touch feature-role columns only —
+# Default impute/encode/scale touch feature-role columns only :
 # ignore / id / target / group / time / weight stay unmutated
 # (pass columns=[...] to force-include).
 session.impute(strategy="median")
@@ -166,7 +166,7 @@ print(search.best_params, search.best_score)
 ```
 
 Pass a `PreprocessRecipe` when encoding, binning, feature selection, or outlier
-fences should be refit inside each fold — on **unpoisoned** data (no prior
+fences should be refit inside each fold: on **unpoisoned** data (no prior
 Session-global impute/encode/scale). Opt in only with
 `allow_session_global_preprocess=True` when you intentionally accept leakage-biased
 scores, or re-ingest / checkpoint-load unpoisoned data first.
@@ -189,7 +189,7 @@ walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 ```
 
 Checkpoints store data workflow state. Model and pipeline bundles store fitted
-estimators and preprocess plans — they do not embed each other.
+estimators and preprocess plans: they do not embed each other.
 `workflow()` marks operations as done / available / blocked / skipped from API
 prerequisites; it does not judge domain fit.
 
@@ -215,7 +215,7 @@ session.explain("split", moment="after")   # what it did, in this session
 session.explain("split", level="advanced") # same facts, no hand-holding
 ```
 
-`explain` is about **this session right now** — what is missing, what changed,
+`explain` is about **this session right now**: what is missing, what changed,
 how to read the result. When the question is conceptual instead, use `learn`,
 which takes a concept key, an operation name, or whatever word tripped you up:
 
@@ -278,7 +278,8 @@ are installed.
 | Classical | [quickstart-classical](guides/quickstart-classical.md) | Roles, splits, preprocess, fit, CV/search |
 | Unsupervised / ensembles | [unsupervised](guides/quickstart-unsupervised.md), [ensemble](guides/quickstart-ensemble.md) | Core clustering + voting/stacking |
 | AutoML | [automl](guides/quickstart-automl.md) | Native + Optuna; FLAML/AutoGluon via industry |
-| Forecast / TS | [forecasting](guides/quickstart-forecasting.md) | `time_split` lags/baselines |
+| Forecast | [forecasting](guides/quickstart-forecasting.md) | `time_split` lags/baselines |
+| Time-series analysis | [timeseries-analysis](guides/quickstart-timeseries-analysis.md) | `analyze_timeseries` / decompose / diagnostics (no forecast fit) |
 | Anomaly | [anomaly](guides/quickstart-anomaly.md) | IsolationForest / LOF / OCSVM + supervised |
 | Semi / SSL / AL / Online | matching quickstarts | sklearn floor; industry/torch deepen |
 | Multi-task / Meta / Federated | matching quickstarts | MultiOutput / few-shot / FedAvg sim |
@@ -293,12 +294,12 @@ are installed.
 | AI operator | [ai](guides/quickstart-ai.md) | Propose→confirm→execute; allowlisted autonomy |
 
 Torch covers tabular MLP, text/sequence, and multimodal fusion; speech
-(`buildml[speech]`) is ASR + finetune-lite — not Whisper-scale FM training from
+(`buildml[speech]`) is ASR + finetune-lite: not Whisper-scale FM training from
 scratch. RAG defaults to lexical hashing; semantic embeddings and grounded
 `rag_generate` are first-class when extras resolve. NLP models a text column that
-lives on the dataset — document classification and analysis, distinct from RAG
+lives on the dataset: document classification and analysis, distinct from RAG
 retrieval and from Torch fine-tuning. The AI operator defaults to
-propose→confirm→execute — not unconstrained agency.
+propose→confirm→execute: not unconstrained agency.
 
 Full guide index: [`guides/README.md`](guides/README.md).
 
@@ -307,7 +308,7 @@ Full guide index: [`guides/README.md`](guides/README.md).
 ## Proof suite
 
 End-to-end evidence that Session domains work with honest splits and holdout
-metrics lives under [`proofs/`](proofs/README.md) — **not** smoke tests.
+metrics lives under [`proofs/`](proofs/README.md): **not** smoke tests.
 
 | Tier | Status | Meaning |
 | --- | --- | --- |
@@ -343,22 +344,29 @@ and re-run instructions.
 ## Alpha status
 
 This is pre-release software. Bundle schema version strings, report layouts,
-and method signatures may change. There is no out-of-core sklearn training,
-first-class SHAP or fairness reporting, or unconstrained LLM agency.
+and method signatures may change before a stable 2.x cut. See
+[`docs/stability.md`](docs/stability.md) for the public-surface freeze policy.
+
+Shipped: observational fairness disparity reports (`evaluate_fairness`) and
+optional SHAP attribution (`explain_shap` via `buildml[shap]`). Still out of
+scope: out-of-core sklearn training, legal fairness certification, and
+unconstrained LLM agency. Speech ASR defaults to a CI-safe stub backend;
+`backend="transformers"` is optional and not Whisper-scale FM training.
+
 See [CHANGELOG.md](CHANGELOG.md) for release notes and
-[guides/glossary.md](guides/glossary.md) for BuildML terminology —
+[guides/glossary.md](guides/glossary.md) for BuildML terminology:
 `session.learn(term)` covers general machine-learning vocabulary.
 
 ---
 
 ## Documentation
 
-- [Proof suite](proofs/README.md) — Tier A/B/C inventory, harness, Tier C interpretation
-- [Guides](guides/README.md) — quickstarts (each major domain links its proof) and glossary
-- [Concepts](docs/concepts.rst) — roles, partitions, train-fitted plans
-- [Workflow guide](docs/workflow-guide.rst) — ordering, leakage, diagnostics
-- [Sphinx docs](docs/index.rst) — installation, features, API reference, legacy boundary
-- [Changelog](CHANGELOG.md) — release notes
+- [Proof suite](proofs/README.md): Tier A/B/C inventory, harness, Tier C interpretation
+- [Guides](guides/README.md): quickstarts (each major domain links its proof) and glossary
+- [Concepts](docs/concepts.rst): roles, partitions, train-fitted plans
+- [Workflow guide](docs/workflow-guide.rst): ordering, leakage, diagnostics
+- [Sphinx docs](docs/index.rst): installation, features, API reference, legacy boundary
+- [Changelog](CHANGELOG.md): release notes
 
 ---
 
@@ -373,7 +381,7 @@ root. There is no compatibility shim that re-exports 1.x APIs from
 
 ## Author and license
 
-**Leonard Onyiriuba** — [LinkedIn](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/) · leonard.c.onyiriuba@gmail.com
+**Leonard Onyiriuba**: [LinkedIn](https://www.linkedin.com/in/chukwubuikem-leonard-onyiriuba/) · leonard.c.onyiriuba@gmail.com
 
 Issues: [GitHub](https://github.com/TechLeo-Libraries/BuildML/issues)
 

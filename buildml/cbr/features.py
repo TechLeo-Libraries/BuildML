@@ -5,7 +5,7 @@ are features, building the numeric matrix, encoding labels, fitting the scaling
 statistics, and computing the holdout metrics.
 
 Two rules run through all of it. Anything fitted is fitted on training rows and
-applied everywhere else — standardisation, ranges, label encodings — because a
+applied everywhere else: standardisation, ranges, label encodings: because a
 statistic recomputed on holdout data would let that data shape the notion of
 similarity. And nulls are refused rather than imputed or dropped. There is no
 defensible distance between a missing value and a present one, and silently
@@ -78,7 +78,7 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
     -----
     **Nulls are refused rather than filled.** A missing value has no distance to
     anything, and substituting a mean would place the row at the centre of the
-    data — where it would retrieve neighbours it has no relationship to. Impute
+    data: where it would retrieve neighbours it has no relationship to. Impute
     deliberately, before fitting.
     """
     try:
@@ -105,7 +105,7 @@ def resolve_cbr_columns(
     features.
 
     That last choice is worth understanding rather than accepting. Distance
-    degrades badly in high dimensions — as columns multiply, every pair of
+    degrades badly in high dimensions: as columns multiply, every pair of
     points drifts toward the same distance and "nearest" stops meaning much.
     Reducing first restores a useful geometry, at the cost that neighbours are
     now neighbours under the projection, and the components are not columns
@@ -129,7 +129,7 @@ def resolve_cbr_columns(
     Returns
     -------
     tuple
-        ``(columns, used_reduce, disclosures)`` — the resolved features, whether
+        ``(columns, used_reduce, disclosures)``: the resolved features, whether
         reduced components were chosen, and plain-language notes on how.
 
     Notes
@@ -183,7 +183,7 @@ def resolve_categorical_columns(
     Returns
     -------
     tuple
-        ``(columns, disclosures)`` — the validated columns and notes on the
+        ``(columns, disclosures)``: the validated columns and notes on the
         resolution.
 
     Raises
@@ -263,7 +263,7 @@ def encode_classification_targets(
     Returns
     -------
     tuple
-        ``(codes, encoder, classes)`` — the integer codes, the fitted encoder,
+        ``(codes, encoder, classes)``: the integer codes, the fitted encoder,
         and the class labels in code order.
 
     Raises
@@ -513,7 +513,7 @@ def standardize_fit(x: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     Returns
     -------
     tuple
-        ``(standardized, mean, scale)`` — the transformed matrix and the
+        ``(standardized, mean, scale)``: the transformed matrix and the
         statistics, which must be kept and applied to every later query.
 
     Notes
@@ -523,7 +523,7 @@ def standardize_fit(x: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     the distances meaningless.
 
     **A constant column gets a scale of 1.0 rather than dividing by zero.** It
-    then contributes nothing to distance, which is correct — a feature that
+    then contributes nothing to distance, which is correct: a feature that
     never varies carries no information about similarity.
 
     **Standardising assumes roughly symmetric features.** A heavily skewed
@@ -565,7 +565,7 @@ def standardize_apply(
 
     The counterpart to :func:`standardize_fit`, and the reason it returns its
     parameters. Queries must land in the same coordinate system as memory, which
-    means using memory's mean and scale — not their own.
+    means using memory's mean and scale: not their own.
 
     Parameters
     ----------
@@ -586,7 +586,7 @@ def standardize_apply(
     -----
     **Transformed values are not bounded to any range.** A query far outside the
     training distribution produces large standardised values, and therefore
-    large distances — which is the correct signal that it has no close analogue.
+    large distances: which is the correct signal that it has no close analogue.
 
     Examples
     --------

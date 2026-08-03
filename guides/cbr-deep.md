@@ -19,7 +19,7 @@ reuse/adapt → optional retain, explanation traces, and a dedicated bundle.
 
 | `backend` | Extra | Retrieval |
 | --- | --- | --- |
-| `sklearn` (fallback) | core | Exact kNN — euclidean / manhattan / cosine / mixed |
+| `sklearn` (fallback) | core | Exact kNN: euclidean / manhattan / cosine / mixed |
 | `industry` (default when installed) | `buildml[cbr-industry]` | hnswlib (preferred) or faiss ANN on numeric features |
 | `embedding` | `buildml[rag]` or `buildml[ssl]` | sentence-transformer case embeddings (+ optional numeric concat) |
 | `torch` | `buildml[torch]` | Learned metric MLP encoder + kNN |
@@ -80,7 +80,7 @@ score/retain time.
 | Goal | Reuse/adapt a label or numeric outcome | Ground generation / citations |
 | Extras | Core + optional `cbr-industry` / `rag` for embeddings | `buildml[rag]` |
 | Bundle | `buildml.cbr_bundle.v1` | `buildml.rag_bundle.v1` |
-| Traces | `CaseTrace` — which cases influenced the prediction | Chunk citations for generation |
+| Traces | `CaseTrace`: which cases influenced the prediction | Chunk citations for generation |
 
 Sharing “nearest neighbors” or sentence-transformers does **not** make CBR a
 RAG submodule. Do not call CBR “tabular RAG.” CBR embeds **cases with
@@ -114,5 +114,5 @@ See `buildml.cbr.checkpoint.CHECKPOINT_BOUNDARY`. Reload workflow via
 
 ## Benchmark
 
-`benchmarks/cbr/retrieval_accuracy.py` — k vs holdout accuracy and retrieve
+`benchmarks/cbr/retrieval_accuracy.py`: k vs holdout accuracy and retrieve
 latency for sklearn / industry / torch backends (skips missing extras).

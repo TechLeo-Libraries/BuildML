@@ -3,8 +3,8 @@
 A model's advice is only as trustworthy as the record of how it was produced.
 Three types carry that record.
 
-:class:`TranscriptEntry` is one event in the conversation — a message, a
-proposed call, a result, a confirmation, or a failure — timestamped and paired
+:class:`TranscriptEntry` is one event in the conversation: a message, a
+proposed call, a result, a confirmation, or a failure: timestamped and paired
 with the egress manifest that says what left the machine at that moment.
 
 :class:`PlanStep` is one recommended action. It carries not just the operation
@@ -198,7 +198,7 @@ class PlanStep:
     description:
         What it does, in plain terms.
     rationale:
-        Why it is recommended here. **The field most worth reading** — a
+        Why it is recommended here. **The field most worth reading**: a
         rationale that does not follow from your data is the clearest sign the
         plan is generic rather than considered.
     prerequisites:
@@ -264,7 +264,7 @@ class PlanResult:
     """A proposed sequence of steps toward a stated goal.
 
     What ``ai_plan`` returns. The steps are ordered, but the ordering is the
-    model's suggestion — the real dependencies live in each step's
+    model's suggestion: the real dependencies live in each step's
     ``prerequisites``.
 
     Attributes
@@ -275,7 +275,7 @@ class PlanResult:
     steps:
         The recommended actions in order.
     current_state_summary:
-        The model's reading of where your Session is. **Check this first** — if
+        The model's reading of where your Session is. **Check this first**: if
         it is wrong, nothing after it can be right.
     assumptions:
         What the model took for granted. Often where an unstated leap hides.

@@ -8,8 +8,8 @@ models have the same problem: the penalty applies to coefficients, and a feature
 measured in small units needs a large coefficient to have any effect, so it gets
 penalised for its units.
 
-Scaling removes the unit from the comparison. Tree-based models are immune —
-they split on ordering, which scaling preserves — so this is optional for random
+Scaling removes the unit from the comparison. Tree-based models are immune :
+they split on ordering, which scaling preserves: so this is optional for random
 forests and gradient boosting, and close to mandatory for linear models, SVMs,
 k-nearest neighbours, and neural networks.
 
@@ -54,7 +54,7 @@ class ScalePlan:
         them. Applying the plan to a frame missing any of them is an error
         rather than a silent skip.
     method:
-        ``'standard'`` or ``'minmax'`` — which transform was fitted.
+        ``'standard'`` or ``'minmax'``: which transform was fitted.
     scaler:
         The fitted scikit-learn scaler. Exposed for inspection; prefer
         :func:`transform_scaler` over calling it directly, since that path
@@ -68,7 +68,7 @@ class ScalePlan:
     def to_dict(self) -> dict[str, Any]:
         """Return the learned constants as plain JSON-safe values.
 
-        Used for model cards, checkpoints, and audit trails — anywhere the
+        Used for model cards, checkpoints, and audit trails: anywhere the
         numbers need to be read by something that is not Python. Which keys
         appear depends on the method: ``'standard'`` contributes ``mean_`` and
         ``scale_``, ``'minmax'`` contributes ``data_min_`` and ``data_max_``.
@@ -104,7 +104,7 @@ def fit_scaler(
     """Learn scaling constants from the training rows.
 
     Reads the training partition, measures each column's centre and spread, and
-    returns those constants as a plan. Nothing is transformed yet — pass the
+    returns those constants as a plan. Nothing is transformed yet: pass the
     plan to :func:`transform_scaler` to apply it.
 
     Requiring a split is deliberate. Fitting a scaler is the most common way
@@ -117,7 +117,7 @@ def fit_scaler(
     dataset:
         The full dataset. Only rows the split assigns to ``train`` are read.
     split_plan:
-        The split that defines which rows are training rows. Required — there
+        The split that defines which rows are training rows. Required: there
         is no safe default for "fit on everything".
     columns:
         Columns to scale. By default this is the numeric ``feature`` columns,
@@ -152,7 +152,7 @@ def fit_scaler(
     -----
     Values outside the training range are not clipped. With ``'minmax'``, a test
     row beyond the training minimum or maximum lands outside ``[0, 1]``, which
-    is correct behaviour — it reflects genuinely unseen data — but can surprise
+    is correct behaviour: it reflects genuinely unseen data: but can surprise
     a downstream model that assumes bounded inputs.
 
     See Also
@@ -221,7 +221,7 @@ def transform_scaler(
     Raises
     ------
     ~buildml.core.errors.ValidationError
-        A column the plan expects is missing from the dataset — usually a sign
+        A column the plan expects is missing from the dataset: usually a sign
         the plan and the data have drifted out of step, for example because a
         column was dropped after fitting.
     ~buildml.core.errors.MemoryLimitError

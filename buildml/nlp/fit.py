@@ -6,8 +6,8 @@ second. Support tickets into routing categories, reviews into star ratings,
 emails into spam or not.
 
 Two things happen in one call, and it helps to keep them separate in your head.
-First a *representation* is fitted — the machinery that turns a string into
-numbers. Second a *head* is fitted — an ordinary classifier trained on those
+First a *representation* is fitted: the machinery that turns a string into
+numbers. Second a *head* is fitted: an ordinary classifier trained on those
 numbers. Both are learned from training documents only, and both are stored in
 the returned plan so new documents can be put through the identical pipeline.
 
@@ -16,7 +16,7 @@ built from every document in the dataset knows which words appear in the test
 set, and the IDF weights encode how rare they are there. That is leakage, and it
 is invisible: nothing errors, the holdout score is simply too high. Fitting
 train-only means holdout documents will contain words the model has never seen,
-which is exactly the situation the model will face in production — so the
+which is exactly the situation the model will face in production: so the
 out-of-vocabulary rate gets reported rather than hidden.
 
 What this module does *not* do: multi-label assignment, span or token-level
@@ -70,7 +70,7 @@ def build_estimator(
 ) -> tuple[Any, bool]:
     """Construct the classifier that sits on top of the text representation.
 
-    The "head" is an ordinary tabular classifier — text modelling has already
+    The "head" is an ordinary tabular classifier: text modelling has already
     happened by the time it sees anything. What makes these five suitable is
     that they cope with the shape of text features: tens of thousands of
     columns, almost all zero for any given document.
@@ -86,7 +86,7 @@ def build_estimator(
         able to say exactly why a document was classified as it was.
 
         ``'linear_svm'`` often edges out logistic regression on accuracy for
-        high-dimensional sparse text, but produces no probabilities at all —
+        high-dimensional sparse text, but produces no probabilities at all :
         only a decision. Choose it when you need the label and not a confidence.
 
         ``'sgd'`` fits by stochastic gradient descent, so it scales to corpora
@@ -107,7 +107,7 @@ def build_estimator(
     C:
         Inverse regularisation strength for ``'logistic'`` and ``'linear_svm'``.
         Lower values regularise harder, shrinking coefficients toward zero,
-        which helps when you have many more features than documents — the usual
+        which helps when you have many more features than documents: the usual
         situation with text. Raise it when the model is underfitting.
     alpha:
         Additive smoothing for the naive Bayes heads and the regularisation
@@ -120,7 +120,7 @@ def build_estimator(
     Returns
     -------
     tuple
-        ``(estimator, supports_predict_proba)`` — the unfitted head, and
+        ``(estimator, supports_predict_proba)``: the unfitted head, and
         whether it can produce class probabilities. The flag is recorded on the
         plan so prediction can warn rather than fail when probabilities are
         requested from a head that has none.
@@ -223,8 +223,8 @@ def fit_text_classifier(
     classifier head on the resulting vectors, and returns both as a replayable
     plan alongside a report of what the fit saw.
 
-    Everything vocabulary-bearing — the tokenizer's output, document
-    frequencies, IDF weights, class priors — comes from training documents.
+    Everything vocabulary-bearing: the tokenizer's output, document
+    frequencies, IDF weights, class priors: comes from training documents.
     Holdout documents are only ever transformed, never fitted, so tokens the
     model has not seen are reported as an out-of-vocabulary rate instead of
     being quietly absorbed into the vocabulary.
@@ -234,7 +234,7 @@ def fit_text_classifier(
     dataset:
         The dataset holding the text and its labels.
     split_plan:
-        The split defining the training documents. Required — a vocabulary
+        The split defining the training documents. Required: a vocabulary
         fitted across the whole corpus produces a holdout score that cannot be
         trusted.
     backend:
@@ -259,18 +259,18 @@ def fit_text_classifier(
         almost always the right starting point. ``'count'`` uses raw
         occurrences, which lets common words dominate. ``'hashing'`` maps terms
         into a fixed number of buckets, giving constant memory on an unbounded
-        vocabulary — but it has no invertible vocabulary, so token attributions
+        vocabulary: but it has no invertible vocabulary, so token attributions
         become impossible and a warning is recorded.
     analyzer:
         ``'word'`` splits on word boundaries and is what you want for ordinary
         prose. ``'char'`` builds features from character sequences instead,
         which is more robust to typos, handles languages without whitespace
         word boundaries, and works better on very short strings like product
-        codes — at the cost of a much larger feature space.
+        codes: at the cost of a much larger feature space.
     ngram_range:
         The term lengths to extract, as ``(min_n, max_n)``. The default
         ``(1, 2)`` takes single words and adjacent pairs, which recovers some
-        of the word order that bag-of-words discards — "not good" becomes its
+        of the word order that bag-of-words discards: "not good" becomes its
         own feature rather than dissolving into "not" and "good". Widening
         beyond pairs grows the vocabulary steeply for diminishing returns.
     max_features:
@@ -278,7 +278,7 @@ def fit_text_classifier(
         control on memory: an uncapped word-bigram vocabulary over a large
         corpus runs to millions of features. ``None`` removes the cap.
     min_df:
-        Ignore terms appearing in fewer than this many documents — an integer
+        Ignore terms appearing in fewer than this many documents: an integer
         is a document count, a float a proportion. Raising it removes typos and
         one-off tokens that cannot generalise. Set it to at least 2 on a noisy
         corpus.
@@ -298,7 +298,7 @@ def fit_text_classifier(
         Number of buckets for the hashing vectorizer. Larger means fewer
         collisions between unrelated terms, at proportional memory cost.
     normalize_steps:
-        Which normalisation steps to apply — lowercasing, punctuation
+        Which normalisation steps to apply: lowercasing, punctuation
         stripping, and so on. Defaults to a conservative sequence. See
         :mod:`buildml.nlp.normalize`.
     stopwords:
@@ -332,7 +332,7 @@ def fit_text_classifier(
     max_seq_tokens:
         How much of each document the transformer backends read. Text beyond
         this is truncated, so raise it if your documents are long and the
-        signal is not front-loaded — attention cost grows quadratically with
+        signal is not front-loaded: attention cost grows quadratically with
         this number.
     device:
         Where to run the neural backends. ``'cpu'`` works everywhere;
@@ -344,7 +344,7 @@ def fit_text_classifier(
     -------
     tuple of (~buildml.nlp.results.NlpTextPlan, ~buildml.nlp.results.NlpFitResult)
         The plan carries the fitted representation and head for scoring new
-        documents. The result reports what the fit saw — vocabulary size, class
+        documents. The result reports what the fit saw: vocabulary size, class
         counts, mean document length, blank-document rate, and any warnings.
 
     Raises
@@ -374,7 +374,7 @@ def fit_text_classifier(
     **Start with the sklearn backend.** A TF-IDF bag of n-grams with logistic
     regression is a genuinely strong baseline on document classification, it
     trains in seconds, and it can tell you which words drove each decision.
-    Reach for embeddings when word overlap is not enough — when documents mean
+    Reach for embeddings when word overlap is not enough: when documents mean
     the same thing in different words.
 
     Examples

@@ -1,6 +1,6 @@
 ﻿# Pulse Support Copilot
 
-**Tier B** cross-domain product proof — RAG + ranking + CBR case memory +
+**Tier B** cross-domain product proof: RAG + ranking + CBR case memory +
 symbolic guardrails for a synthetic support desk.
 
 ## Product narrative
@@ -15,7 +15,7 @@ bypassing escalation policy:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -44,5 +44,5 @@ bypassing escalation policy:
 
 ## Limitations
 
-Synthetic KB + tickets — not a live helpdesk. Echo generate is offline
+Synthetic KB + tickets: not a live helpdesk. Echo generate is offline
 scaffolding. Missing extras are skipped with JSON disclosures (`MissingExtraError`).

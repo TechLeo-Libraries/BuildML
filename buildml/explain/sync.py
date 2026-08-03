@@ -147,7 +147,7 @@ REQUIRED_AI_TOOL_SESSION_METHODS: frozenset[str] = frozenset(
 AI_TOOL_BUILTINS: frozenset[str] = frozenset({"describe_dataset", "ai_status"})
 
 # Session methods that must NOT appear in the AI tool registry.
-# serve_bundle starts a network listener — CLI / Session-primary only.
+# serve_bundle starts a network listener: CLI / Session-primary only.
 EXPLICITLY_NON_AI_SESSION_METHODS: frozenset[str] = frozenset({"serve_bundle"})
 
 
@@ -165,7 +165,7 @@ class ParameterIndex:
     name:
         The parameter name.
     kind:
-        How it can be passed — ``'POSITIONAL_OR_KEYWORD'``, ``'KEYWORD_ONLY'``,
+        How it can be passed: ``'POSITIONAL_OR_KEYWORD'``, ``'KEYWORD_ONLY'``,
         ``'VAR_KEYWORD'``, and so on, from ``inspect``. Part of the contract:
         making a positional parameter keyword-only breaks callers.
     annotation:
@@ -192,7 +192,7 @@ class ParameterIndex:
     def to_dict(self) -> dict[str, Any]:
         """Flatten to a plain dict for the JSON index.
 
-        No conversion is needed — every field is already a string or a bool,
+        No conversion is needed: every field is already a string or a bool,
         which is the reason they were stored that way. The method exists so the
         index writer can treat parameters and operations uniformly.
 
@@ -232,7 +232,7 @@ class OperationIndexEntry:
     parameters:
         The parameters, in declaration order, excluding ``self`` and ``cls``.
     is_classmethod:
-        Whether it is a classmethod — ``Session.from_csv`` and similar.
+        Whether it is a classmethod: ``Session.from_csv`` and similar.
     is_staticmethod:
         Whether it is a staticmethod.
 
@@ -283,8 +283,8 @@ class DriftReport:
     def ok(self) -> bool:
         """Whether anything blocking was found.
 
-        Errors fail the build; warnings do not. A check that could not run —
-        because an optional extra is missing — records a warning, so a partial
+        Errors fail the build; warnings do not. A check that could not run :
+        because an optional extra is missing: records a warning, so a partial
         environment does not block a merge over something it cannot verify.
 
         Returns
@@ -298,7 +298,7 @@ class DriftReport:
         """Raise with every error listed, or return quietly.
 
         For use as a test assertion. Every error is included in the message
-        rather than only the first, because drift usually comes in batches — one
+        rather than only the first, because drift usually comes in batches: one
         renamed parameter shows up in the catalog check, the index check, and
         the AI tool check at once, and fixing them one CI run at a time is
         needlessly slow.
@@ -326,7 +326,7 @@ def public_session_operations(session_cls: type | None = None) -> dict[str, Call
     """List the Session's public methods, which define what operations exist.
 
     The Session class is the source of truth for the operation surface. Every
-    other list — the catalog, the AI tool registry, the generated index — is
+    other list: the catalog, the AI tool registry, the generated index: is
     checked against this one rather than maintained beside it.
 
     Public means not starting with an underscore. A simple rule, and one that
@@ -348,7 +348,7 @@ def public_session_operations(session_cls: type | None = None) -> dict[str, Call
     Notes
     -----
     **Renaming a public method is a breaking change here as well as for
-    users** — the catalog, the index, and possibly a tool registry all reference
+    users**: the catalog, the index, and possibly a tool registry all reference
     the old name and will fail until updated.
 
     See Also
@@ -401,8 +401,8 @@ def build_operation_index(session_cls: type | None = None) -> dict[str, Any]:
     and comparing it against the checked-in copy is how signature drift gets
     caught before it reaches a release.
 
-    A method whose signature cannot be read — which happens with some decorated
-    callables — is indexed with no parameters rather than skipped. Present and
+    A method whose signature cannot be read: which happens with some decorated
+    callables: is indexed with no parameters rather than skipped. Present and
     incomplete is more useful than absent, since absence would look like the
     method had been removed.
 
@@ -414,7 +414,7 @@ def build_operation_index(session_cls: type | None = None) -> dict[str, Any]:
     Returns
     -------
     dict
-        ``schema_version``, ``source``, ``n_operations``, and ``operations`` —
+        ``schema_version``, ``source``, ``n_operations``, and ``operations`` :
         the entries keyed by name, sorted for a stable diff.
 
     Notes
@@ -493,7 +493,7 @@ def write_operation_index(
     error message says so.
 
     Indented and key-sorted, with a trailing newline. That formatting is not
-    cosmetic — an index written compactly would show every signature change as
+    cosmetic: an index written compactly would show every signature change as
     one enormous modified line, and reviewing it would be impossible.
 
     Parameters
@@ -544,7 +544,7 @@ def load_operation_index(path: Path | None = None) -> dict[str, Any]:
 
     The counterpart to :func:`write_operation_index`. Used by the freshness
     check, and by anything that wants the operation surface without importing
-    Session — documentation tooling, for instance, which can then describe the
+    Session: documentation tooling, for instance, which can then describe the
     API without paying for the import.
 
     Parameters
@@ -596,7 +596,7 @@ def check_session_catalog_parity(
     """Check that the catalog covers exactly the Session's public operations.
 
     Both directions are errors, for different reasons. A Session method missing
-    from the catalog is an operation with no teaching content — it exists, users
+    from the catalog is an operation with no teaching content: it exists, users
     can call it, and nothing explains it. A catalog entry with no Session method
     is teaching content for something that does not exist, which is worse: a
     reader follows the documentation and gets an ``AttributeError``.
@@ -645,7 +645,7 @@ def check_catalog_parameters_vs_signatures(
     Both directions again, and both are real failures. A catalog parameter that
     does not exist means the documentation describes an argument nobody can
     pass. A signature parameter missing from the catalog means an argument
-    exists and nothing explains it — which is how a parameter ends up
+    exists and nothing explains it: which is how a parameter ends up
     permanently undiscovered.
 
     ``self`` and ``cls`` are excluded on both sides.
@@ -743,7 +743,7 @@ def check_operation_index_fresh(
 
     Notes
     -----
-    **The remedy is in the error message** — run the sync script and commit the
+    **The remedy is in the error message**: run the sync script and commit the
     result.
 
     See Also
@@ -797,7 +797,7 @@ def check_ai_tools_vs_catalog(
     """Check the AI tool registry against Session and the catalog, both ways.
 
     The AI tools are an allowlist, not a mirror. Not every Session method should
-    be callable by an agent, and the registry is curated — so unlike the catalog
+    be callable by an agent, and the registry is curated: so unlike the catalog
     this is not checked for exact parity. What is checked is that every listed
     tool resolves to something real, and that two specific lists are respected.
 
@@ -895,8 +895,8 @@ def check_ai_tools_vs_catalog(
 def check_dashboard_teaching_concepts() -> DriftReport:
     """Check that the studio's concept links all point at real glossary entries.
 
-    Teaching panels offer concept chips — "what is a variance inflation factor",
-    "what is a leakage boundary" — and each is a key into ``CONCEPT_NOTES``. A
+    Teaching panels offer concept chips: "what is a variance inflation factor",
+    "what is a leakage boundary": and each is a key into ``CONCEPT_NOTES``. A
     renamed or removed note leaves a chip pointing nowhere, and the failure
     surfaces as a dead link in a UI that a developer may not open.
 

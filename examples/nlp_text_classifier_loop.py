@@ -139,7 +139,7 @@ def main() -> None:
     out = Path("artifacts") / "nlp_demo_bundle"
     session.save_nlp_bundle(out)
     reloaded = new_session(frame)
-    reloaded.load_nlp_bundle(out)
+    reloaded.load_nlp_bundle(out, trusted=True)
     print("reloaded", reloaded.evaluate_text_classifier(partition="test").metrics)
 
 

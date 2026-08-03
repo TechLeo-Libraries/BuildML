@@ -22,7 +22,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Instead of a single point guess, the model also says how wide "
-                "its uncertainty band is — and conformal wraps that band so "
+                "its uncertainty band is: and conformal wraps that band so "
                 "coverage claims do not rely only on Gaussian assumptions."
             ),
             formal_idea=(
@@ -153,7 +153,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             intuition=(
                 "Keep a sealed envelope of train examples to measure how wrong "
                 "the model is, then widen intervals enough to cover that error "
-                "rate — without peeking at the test set."
+                "rate: without peeking at the test set."
             ),
             formal_idea=(
                 "Split conformal: q̂ = s_{(k)}, k=⌈(n+1)(1−α)⌉ on calibration scores."
@@ -195,7 +195,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "A probabilistic bundle persists the estimator, conformal quantile, "
                 "train carve indices, and class vocabulary. Session checkpoints "
-                "persist data/roles/splits/history — not ProbabilisticPlan."
+                "persist data/roles/splits/history: not ProbabilisticPlan."
             ),
             intuition=(
                 "Saving the lab notebook is not the same as saving the uncertainty "

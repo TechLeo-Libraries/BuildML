@@ -10,7 +10,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         "kg-triples",
         plain=(
             "A knowledge graph stores facts as three-part statements: a head, a relation, and a tail. "
-            "'Paris — capital_of — France'. Millions of those, and you have a structured representation of "
+            "'Paris: capital_of: France'. Millions of those, and you have a structured representation of "
             "what you know, which a model can learn patterns from."
         ),
         analogy=(
@@ -22,15 +22,15 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Split the triples so some are held out for evaluation.",
             "BuildML builds vocabularies of entities and relations from the training triples only.",
             "It also builds the adjacency structure from those training triples.",
-            "Anything absent from the training vocabulary cannot be scored — that boundary is enforced, not implied.",
+            "Anything absent from the training vocabulary cannot be scored: that boundary is enforced, not implied.",
         ),
         use=(
-            "When your domain is naturally relational — products and categories, people and organizations, genes and diseases.",
+            "When your domain is naturally relational: products and categories, people and organizations, genes and diseases.",
             "When you want to infer facts that were never explicitly recorded.",
         ),
         avoid=(
             "Do not force tabular data into triples when rows are independent; you gain nothing and lose the convenience of a table.",
-            "Do not use it when relations are numeric quantities rather than named types — 'price 42' is a column, not a relation.",
+            "Do not use it when relations are numeric quantities rather than named types: 'price 42' is a column, not a relation.",
         ),
         myths=(
             (
@@ -62,7 +62,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Knowledge-graph embedding gives every entity and every relation a short list of numbers, "
             "arranged so that true facts score highly and false ones do not. TransE treats a relation as a "
-            "translation — head plus relation should land near tail. DistMult uses a multiplicative score instead."
+            "translation: head plus relation should land near tail. DistMult uses a multiplicative score instead."
         ),
         analogy=(
             "Placing every city on a map so that 'is north of' becomes an actual upward step. Once the "
@@ -77,7 +77,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "TransE for relations that behave like one-to-one translations.",
-            "DistMult when relations are symmetric — it cannot represent direction, which is sometimes exactly right.",
+            "DistMult when relations are symmetric: it cannot represent direction, which is sometimes exactly right.",
         ),
         avoid=(
             "Do not use TransE for one-to-many relations such as 'has_employee'; the translation cannot land on many different tails at once.",
@@ -90,7 +90,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "A corrupted triple is definitely false.",
-                "It might be an unrecorded true fact. This is why filtered evaluation exists — it removes known-true triples from the corrupted candidates.",
+                "It might be an unrecorded true fact. This is why filtered evaluation exists: it removes known-true triples from the corrupted candidates.",
             ),
         ),
         example=(
@@ -111,7 +111,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "kg-link-prediction",
         plain=(
-            "Link prediction fills in a blank. Given 'Paris — capital_of — ?', the model ranks every "
+            "Link prediction fills in a blank. Given 'Paris: capital_of: ?', the model ranks every "
             "candidate entity by how plausible that completed fact would be. You can leave any of the three "
             "slots blank."
         ),
@@ -122,7 +122,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Use `score_triples` when you have a complete fact and want its plausibility.",
             "Use `predict_links` with one slot blank to get a ranked list of completions.",
-            "The candidates come from the training vocabulary — nothing outside it can be proposed.",
+            "The candidates come from the training vocabulary: nothing outside it can be proposed.",
             "Read the ranking as a shortlist for review, not as a set of asserted facts.",
             "Evaluate with filtered MRR and Hits@K, which ignore other known-true triples in the candidate list.",
         ),
@@ -132,7 +132,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not treat a top-ranked prediction as a fact; these models are pattern matchers with no notion of truth.",
-            "Do not predict links involving entities absent from training — there is no embedding for them.",
+            "Do not predict links involving entities absent from training: there is no embedding for them.",
         ),
         myths=(
             (
@@ -179,7 +179,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "When you need exact, explainable answers about what is actually recorded.",
-            "For debugging your graph — path queries quickly reveal whether two entities are connected at all.",
+            "For debugging your graph: path queries quickly reveal whether two entities are connected at all.",
         ),
         avoid=(
             "Do not use it to infer missing facts; it only reports what is stored. That is what link prediction is for.",
@@ -211,8 +211,8 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "kg-bundle-boundary",
         plain=(
-            "The knowledge-graph plan — embeddings, entity and relation vocabularies, and the training "
-            "adjacency — saves as its own bundle. It is distinct from Session checkpoints, from graph-ML "
+            "The knowledge-graph plan: embeddings, entity and relation vocabularies, and the training "
+            "adjacency: saves as its own bundle. It is distinct from Session checkpoints, from graph-ML "
             "bundles, and from RAG bundles, even though all four involve some notion of connected information."
         ),
         analogy=(

@@ -6,7 +6,7 @@ Score mortgage applications for default risk from LTV, DTI, credit score, note r
 
 ## Data source
 
-In-repo synthetic mortgage table (`load_mortgage_default_synthetic`) — license-clear, deterministic, with MCAR-style missingness on credit score. **Not** a real servicing / HMDA extract.
+In-repo synthetic mortgage table (`load_mortgage_default_synthetic`): license-clear, deterministic, with MCAR-style missingness on credit score. **Not** a real servicing / HMDA extract.
 
 ## Leakage controls
 
@@ -29,7 +29,7 @@ Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `ColumnTransformer` + `LogisticRegression` twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `ColumnTransformer` + `LogisticRegression` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

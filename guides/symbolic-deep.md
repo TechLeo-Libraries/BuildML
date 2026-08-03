@@ -21,8 +21,8 @@ those rules.
 | Backend | Extra | Symbolic induction | Neuro-symbolic base |
 | --- | --- | --- | --- |
 | `sklearn` | none (core) | `declared`, `decision_tree`, `decision_list` | LR / Ridge / RF / DT |
-| `industry` | `symbolic-industry` | `skope_rules`, `rulefit`, `boosted_rules` | — |
-| `torch` | `torch` | — | `concept_bottleneck_lite`, `neural_additive_lite` |
+| `industry` | `symbolic-industry` | `skope_rules`, `rulefit`, `boosted_rules` |: |
+| `torch` | `torch` |: | `concept_bottleneck_lite`, `neural_additive_lite` |
 
 Defaults when installed: industry symbolic backend when skope-rules/imodels
 present; torch neuro-symbolic when torch present; otherwise sklearn.
@@ -32,10 +32,10 @@ present; torch neuro-symbolic when torch present; otherwise sklearn.
 | `source` / `method` | Provenance | Learning? |
 | --- | --- | --- |
 | `declared` | Expert / caller | No |
-| `decision_tree` | `induced_tree` | Yes — train only |
-| `decision_list` | `induced_list` | Yes — sequential covering, train only |
-| `skope_rules` | `induced_skope` | Yes — skope-rules on train |
-| `rulefit` / `boosted_rules` | `induced_*` | Yes — imodels export on train |
+| `decision_tree` | `induced_tree` | Yes: train only |
+| `decision_list` | `induced_list` | Yes: sequential covering, train only |
+| `skope_rules` | `induced_skope` | Yes: skope-rules on train |
+| `rulefit` / `boosted_rules` | `induced_*` | Yes: imodels export on train |
 
 Induction never uses Session validation/test. Declared rules are never silently
 relabeled as induced.
@@ -56,7 +56,7 @@ and `repaired`.
 
 Set `verify_constraints=True` on `fit_symbolic` when `z3-solver` is installed
 (via `buildml[symbolic-industry]`). This runs a **lite SAT check** on hard
-constraint antecedents — not a complete rule-set consistency prover or SMT
+constraint antecedents: not a complete rule-set consistency prover or SMT
 product.
 
 ## Leakage discipline
@@ -68,12 +68,12 @@ product.
 
 ## Honesty boundary
 
-- Structured if-then rules over columns — readable, auditable.
-- Industry backends export interpretable models as rules — not Prolog products.
+- Structured if-then rules over columns: readable, auditable.
+- Industry backends export interpretable models as rules: not Prolog products.
 - **Not** an AGI symbolic reasoner.
 - **Not** Prolog, ASP, or a full Z3 SMT product.
 - **Not** a fuzzy-logic product or full expert-system suite.
-- Neuro-symbolic here means sklearn/torch lite + rules hybrid — **not** Logic
+- Neuro-symbolic here means sklearn/torch lite + rules hybrid: **not** Logic
   Tensor Networks / differentiable theorem proving.
 
 ## Anti-patterns

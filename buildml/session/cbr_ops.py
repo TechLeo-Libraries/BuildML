@@ -101,7 +101,7 @@ def fit_cbr_op(
     Notes
     -----
     **Leakage:** Requires a split. Case memory uses train only. Honesty:
-    tabular case→solution CBR — not RAG document retrieval.
+    tabular case→solution CBR: not RAG document retrieval.
     """
     session.assert_can_fit("train")
     plan, result = fit_cbr(

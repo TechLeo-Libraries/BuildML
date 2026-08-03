@@ -43,6 +43,11 @@ tests/.pytest_tmp/
 .pytest_cache/
 .ruff_cache/
 .coverage
+.coverage.*
+.coverage_full_parts/
+coverage-full.json
+coverage-full.log
+coverage-full-crashes.json
 htmlcov/
 .buildml-artifacts/
 __pycache__/

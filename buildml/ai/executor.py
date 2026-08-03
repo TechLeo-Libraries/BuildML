@@ -1,8 +1,8 @@
 """Turn a proposed action into a real one, with a checkpoint in between.
 
 Nothing a model asks for runs immediately. A request becomes an
-:class:`ExecutorProposal` first — validated against the registry, annotated with
-what it will change and what to be careful about — and only then, if it is
+:class:`ExecutorProposal` first: validated against the registry, annotated with
+what it will change and what to be careful about: and only then, if it is
 confirmed, does :func:`execute_tool` call the Session method and return an
 :class:`ExecutorResult`.
 
@@ -11,7 +11,7 @@ to happen, and where the confirmation policy is enforced.
 
 Dispatch is also constrained. When a tool takes an estimator by name, the name
 is resolved through a fixed table of known scikit-learn classes rather than
-imported dynamically — a model naming an arbitrary import path gets an error,
+imported dynamically: a model naming an arbitrary import path gets an error,
 not an import.
 
 Notes
@@ -174,7 +174,7 @@ class ExecutorProposal:
     confirm_policy:
         The tool's declared policy.
     warnings:
-        Risks — that the operation is destructive, or that it will modify
+        Risks: that the operation is destructive, or that it will modify
         Session state.
 
     Notes
@@ -248,7 +248,7 @@ class ExecutorResult:
     **``confirmed`` without ``executed`` means it was approved and then
     failed.** Neither flag set means it was refused before being attempted.
 
-    **``result`` can be a large live object** — a fitted model, a frame. Use
+    **``result`` can be a large live object**: a fitted model, a frame. Use
     ``result_summary`` for anything that gets logged or sent onward.
 
     See Also
@@ -373,7 +373,7 @@ def execute_tool(
 ) -> ExecutorResult:
     """Run a proposal, if it is confirmed and still permitted.
 
-    Re-validates against the registry before doing anything — the registry
+    Re-validates against the registry before doing anything: the registry
     could have changed between proposal and execution, and the check is cheap
     relative to the consequence of skipping it. Then dispatches to the Session
     method and summarises what came back.
@@ -402,8 +402,8 @@ def execute_tool(
     Notes
     -----
     **Refusals and failures come back as results.** Only a call that has left
-    the registry raises; everything else — unconfirmed, destructive without
-    approval, failed mid-execution — is reported in the result so an agent
+    the registry raises; everything else: unconfirmed, destructive without
+    approval, failed mid-execution: is reported in the result so an agent
     loop can continue and the model can see why.
 
     **Destructive tools are checked twice**, at proposal and again here, so a
@@ -3374,7 +3374,7 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         backend_note = f", backend={backend}" if backend else ""
         changes.append(
             f"Will fit decision policy method={method}{backend_note} on partition={partition} "
-            "(ML score/cost/allocation helpers — not a general OR platform; "
+            "(ML score/cost/allocation helpers: not a general OR platform; "
             "test tuning requires allow_test_tuning=True)."
         )
 

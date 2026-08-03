@@ -1,6 +1,6 @@
 # Canyon Segment Studio
 
-**Tier B** cross-domain product proof — unsupervised clustering + classical
+**Tier B** cross-domain product proof: unsupervised clustering + classical
 segment propensity + decision thresholds for CRM targeting.
 
 ## Product narrative
@@ -14,7 +14,7 @@ allocates a contact budget. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

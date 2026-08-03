@@ -1,6 +1,6 @@
 # Apex Uplift Studio
 
-**Tier B** cross-domain product proof — causal marketing uplift + classical
+**Tier B** cross-domain product proof: causal marketing uplift + classical
 conversion scoring + validation-tuned promo allocation.
 
 ## Product narrative
@@ -14,7 +14,7 @@ confounded by RFM features; true spend ATE ≈ 1.2. The studio:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -43,5 +43,5 @@ confounded by RFM features; true spend ATE ≈ 1.2. The studio:
 
 ## Limitations
 
-Synthetic uplift DGP — not a real CRM extract. ATE assumes declared
+Synthetic uplift DGP: not a real CRM extract. ATE assumes declared
 unconfoundedness (not proven).

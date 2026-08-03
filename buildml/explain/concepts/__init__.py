@@ -7,8 +7,8 @@ so a single :class:`~buildml.explain.schemas.ConceptNote` carries all three
 reading levels: plain language first, then the working definition, then the
 formal statement.
 
-The merge also derives the navigational fields a learner needs — which glossary
-terms the note uses, which concepts to read first, and which to read next — from
+The merge also derives the navigational fields a learner needs: which glossary
+terms the note uses, which concepts to read first, and which to read next: from
 material that already exists, so nothing is authored twice.
 """
 
@@ -181,8 +181,8 @@ CONCEPT_NOTES: dict[str, ConceptNote] = _build()
 def get_concept(key: str) -> ConceptNote:
     """Fetch one teaching note, with its beginner layer already merged in.
 
-    Notes are authored in two halves — the technical note and the beginner
-    layer — and joined at import. Callers always receive the joined note, so no
+    Notes are authored in two halves: the technical note and the beginner
+    layer: and joined at import. Callers always receive the joined note, so no
     surface can accidentally render only the expert phrasing.
 
     Parameters

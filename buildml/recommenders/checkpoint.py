@@ -29,7 +29,7 @@ CHECKPOINT_BOUNDARY = (
     "splits, history, and optional classical preprocess plans; it does not "
     "embed the recommender. Reload tabular workflow via checkpoint_load; reload "
     "the recommender via load_recommender_bundle. "
-    "Honesty: Session CF + optional content — not a Netflix-scale platform; "
+    "Honesty: Session CF + optional content: not a Netflix-scale platform; "
     "distinct from RAG retrieve/generate and from EDA Recommendation Findings."
 )
 
@@ -46,7 +46,7 @@ def save_recommender_bundle(
 
     Persists the fitted :class:`~buildml.recommenders.results.RecommenderPlan`
     and optional fit/eval/recommend summaries. Distinct from Session
-    checkpoints — reload via :func:`load_recommender_bundle`.
+    checkpoints: reload via :func:`load_recommender_bundle`.
 
     Parameters
     ----------

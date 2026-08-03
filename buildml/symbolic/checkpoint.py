@@ -29,7 +29,7 @@ CHECKPOINT_BOUNDARY = (
     "splits, history, and optional classical preprocess plans; it does not "
     "embed the symbolic / neuro-symbolic learner. Reload tabular workflow via "
     "checkpoint_load; reload the learner via load_symbolic_bundle. Honesty: "
-    "structured tabular rules + optional sklearn hybrid — not Prolog/Z3/AGI."
+    "structured tabular rules + optional sklearn hybrid: not Prolog/Z3/AGI."
 )
 
 

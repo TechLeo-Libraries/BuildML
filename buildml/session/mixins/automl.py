@@ -45,7 +45,7 @@ class AutomlSessionMixin:
     ) -> AutoMLResult:
         """Run AutoML model-family and recipe-strategy search on the train partition.
 
-        Session facade over :func:`buildml.session.automl_ops.run_automl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.automl_ops.run_automl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -90,7 +90,7 @@ class AutomlSessionMixin:
     ) -> EvaluateResult:
         """Evaluate the last AutoML winner with classical supervised metrics.
 
-        Session facade over :func:`buildml.session.automl_ops.evaluate_automl`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.automl_ops.evaluate_automl`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -135,7 +135,7 @@ class AutomlSessionMixin:
     def save_automl_bundle(self, path: str | Path) -> Path:
         """Persist the active AutoML plan as ``buildml.automl_bundle.v1``.
 
-        Session facade over :func:`buildml.session.automl_ops.save_automl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.automl_ops.save_automl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -152,7 +152,7 @@ class AutomlSessionMixin:
     def load_automl_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an AutoML bundle into this Session.
 
-        Session facade over :func:`buildml.session.automl_ops.load_automl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.automl_ops.load_automl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -172,7 +172,7 @@ class AutomlSessionMixin:
         Report which AutoML search backends and model families are available here.
 
         Call before :meth:`run_automl` to confirm FLAML, Optuna HPO, or native
-        sklearn search paths on this install. Read-only — no dataset required.
+        sklearn search paths on this install. Read-only: no dataset required.
 
         Returns
         -------

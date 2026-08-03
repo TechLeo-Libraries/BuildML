@@ -2,7 +2,7 @@
 
 The default backend, and the one everything else is measured against. It
 computes the distance to every case and takes the smallest, which means the
-neighbours it returns are the neighbours — no approximation, no index parameters
+neighbours it returns are the neighbours: no approximation, no index parameters
 to tune, no recall to lose.
 
 The cost is linear in memory size per query. That is entirely fine up to tens of
@@ -52,7 +52,7 @@ def batch_neighbor_orders(
     Returns
     -------
     tuple
-        ``(orders, distances)`` — per query, the neighbour indices nearest first
+        ``(orders, distances)``: per query, the neighbour indices nearest first
         and their distances.
 
     Raises

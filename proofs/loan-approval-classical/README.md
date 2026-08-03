@@ -8,7 +8,7 @@ leakage-safe classical baseline before AutoML or cost-sensitive policies.
 
 ## Data source
 
-In-repo synthetic credit table (`load_credit_approval_synthetic`) — license-clear,
+In-repo synthetic credit table (`load_credit_approval_synthetic`): license-clear,
 deterministic, with MCAR-style missingness. **Not** a real FCRA / bureau extract.
 
 ## Leakage controls
@@ -35,7 +35,7 @@ CV mean±std reported for model selection disclosure.
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `ColumnTransformer` + `LogisticRegression` twin on the same SplitPlan indices, written to `results/comparison.json` from `script.py`.
+Filled: sklearn `ColumnTransformer` + `LogisticRegression` twin on the same SplitPlan indices, written to `results/comparison.json` from `script.py`.
 ## Limitations
 
 Synthetic labels; no fairness audit; single seed; not a deployment certification.

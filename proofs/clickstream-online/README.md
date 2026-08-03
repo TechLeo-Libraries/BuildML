@@ -3,7 +3,7 @@
 ## Business purpose
 
 Score binary conversion from streaming clickstream features (pages, dwell,
-cart adds) using online SGD with a train cursor — not batch fraud streaming.
+cart adds) using online SGD with a train cursor: not batch fraud streaming.
 
 ## Data source
 
@@ -28,7 +28,7 @@ See `results/results.json` (accuracy / f1 / roc_auc).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs sklearn `SGDClassifier.partial_fit` on the
+Filled: `baseline_industry.py` runs sklearn `SGDClassifier.partial_fit` on the
 same split (`results/comparison.json`).
 
 ## Limitations

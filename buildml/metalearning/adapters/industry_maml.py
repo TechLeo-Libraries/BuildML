@@ -196,7 +196,7 @@ def meta_train_maml(
     """Meta-train tabular MAML on episodic support/query tasks.
 
     Uses learn2learn first-order MAML when installed; otherwise an honest native
-    SGD meta-loop. Small-scale tabular protocol — not second-order MAML-at-scale.
+    SGD meta-loop. Small-scale tabular protocol: not second-order MAML-at-scale.
 
     Parameters
     ----------
@@ -280,7 +280,7 @@ def meta_train_maml(
 
     notes = [
         "Industry MAML meta-train: first-order tabular MAML on episodic "
-        "support/query tasks (honest small-scale — not second-order MAML-at-scale)."
+        "support/query tasks (honest small-scale: not second-order MAML-at-scale)."
     ]
     if learn2learn_available():
         import learn2learn as l2l

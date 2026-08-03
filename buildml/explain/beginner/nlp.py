@@ -31,12 +31,12 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not strip punctuation before sentiment scoring; exclamation marks and capitals carry emphasis the scorer uses.",
-            "Do not remove stopwords blindly — 'not' and 'no' are stopwords in many lists and completely reverse meaning.",
+            "Do not remove stopwords blindly: 'not' and 'no' are stopwords in many lists and completely reverse meaning.",
         ),
         myths=(
             (
                 "Normalization must happen after the split to avoid leakage.",
-                "It learns nothing from your data — it is fixed text substitution. What must be train-only is anything counted, like the vocabulary or the document frequencies.",
+                "It learns nothing from your data: it is fixed text substitution. What must be train-only is anything counted, like the vocabulary or the document frequencies.",
             ),
             (
                 "More aggressive cleaning is better.",
@@ -73,18 +73,18 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "TF-IDF counts each word in a document, then downweights words that appear in many documents.",
             "The vocabulary and the document frequencies are learned from training documents only.",
-            "N-grams let you count phrases too — `ngram_range=(1, 2)` counts single words and adjacent pairs.",
+            "N-grams let you count phrases too: `ngram_range=(1, 2)` counts single words and adjacent pairs.",
             "Hashing skips the vocabulary entirely, which saves memory and makes features unnameable.",
             "Embeddings run each document through a frozen pretrained model and take the output vector.",
         ),
         use=(
-            "TF-IDF when you want speed, interpretability, and a strong baseline — which is most of the time.",
+            "TF-IDF when you want speed, interpretability, and a strong baseline: which is most of the time.",
             "Character n-grams when your text has typos, mixed morphology, or no clear word boundaries.",
             "Embeddings when paraphrase matters and different words mean the same thing.",
         ),
         avoid=(
             "Do not fit the vectorizer before splitting; the vocabulary and document frequencies would be learned from your test set.",
-            "Do not choose embeddings and then ask which words the model looked at — those positions have no word attached.",
+            "Do not choose embeddings and then ask which words the model looked at: those positions have no word attached.",
         ),
         myths=(
             (
@@ -112,7 +112,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "nlp-token-attribution",
         plain=(
-            "For a linear text model you can say exactly which words pushed a prediction which way — not "
+            "For a linear text model you can say exactly which words pushed a prediction which way: not "
             "an estimate, but arithmetic. The model's score is a sum of one small contribution per word, "
             "and attribution simply sorts those contributions."
         ),
@@ -125,14 +125,14 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Multiply them and you get that word's contribution to the score.",
             "Add all contributions plus the bias and you recover the score exactly.",
             "Positive contributions push toward the class; negative ones push away.",
-            "BuildML also reports global top words per class — the highest weights regardless of any document.",
+            "BuildML also reports global top words per class: the highest weights regardless of any document.",
         ),
         use=(
             "When someone asks why a specific document was classified the way it was.",
             "For debugging: attribution quickly reveals that your model is keying on a boilerplate footer.",
         ),
         avoid=(
-            "Do not expect attribution after using hashing, embeddings, or a transformer encoder — BuildML refuses, because those features have no word names.",
+            "Do not expect attribution after using hashing, embeddings, or a transformer encoder: BuildML refuses, because those features have no word names.",
             "Do not read the global top-word list as an explanation of one prediction; a high-weight word contributes nothing if it does not appear.",
         ),
         myths=(
@@ -142,7 +142,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "Attribution is an approximation like SHAP.",
-                "For a linear head it is exact — the contributions provably sum to the score. That is why BuildML refuses rather than approximating when the representation does not allow it.",
+                "For a linear head it is exact: the contributions provably sum to the score. That is why BuildML refuses rather than approximating when the representation does not allow it.",
             ),
         ),
         example=(
@@ -164,7 +164,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "A topic model reads a pile of documents with no labels and finds recurring vocabulary "
             "patterns. Each 'topic' it returns is a ranked list of words that tend to appear together. It "
-            "does not name the topic — that is your job."
+            "does not name the topic: that is your job."
         ),
         analogy=(
             "Sorting a huge unlabelled pile of correspondence into stacks that feel similar. The machine "
@@ -183,7 +183,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not treat topics as validated categories; the auto-generated label is a convenience, not a finding.",
-            "Do not fit topics on the whole corpus and then use topic weights as model features — that is leakage through the back door.",
+            "Do not fit topics on the whole corpus and then use topic weights as model features: that is leakage through the back door.",
         ),
         myths=(
             (
@@ -203,7 +203,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         check=(
             "Which topics have low coherence? Those are noise, not themes.",
-            "Is boilerplate — signatures, disclaimers — dominating every topic?",
+            "Is boilerplate: signatures, disclaimers: dominating every topic?",
         ),
         tools=("fit_topics", "assign_topics", "extract_keyphrases"),
         terms=("topic model", "corpus", "coherence", "clustering"),
@@ -229,7 +229,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "As the cheapest possible summary of what a body of text contains, with no labels needed.",
-            "As a sanity check alongside topic modelling — if they disagree wildly, something is off.",
+            "As a sanity check alongside topic modelling: if they disagree wildly, something is off.",
         ),
         avoid=(
             "Do not claim precision or recall; without an annotated reference set those numbers cannot exist.",
@@ -287,7 +287,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "A large neutral share means the text is balanced.",
-                "It often means the lexicon recognized nothing. That is why BuildML reports the matched-term rate — near zero means ignorance, not balance.",
+                "It often means the lexicon recognized nothing. That is why BuildML reports the matched-term rate: near zero means ignorance, not balance.",
             ),
             (
                 "The compound score is a probability.",
@@ -322,7 +322,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "The rules backend applies precision-first patterns for dates, money, percentages, emails, URLs, phone numbers, and identifiers.",
-            "You can add gazetteers — your own lists of product names or codes, matched as whole words.",
+            "You can add gazetteers: your own lists of product names or codes, matched as whole words.",
             "Overlapping matches are resolved deterministically by length and pattern priority.",
             "Every span reports which rule found it, so a false positive is traceable and fixable.",
             "The spaCy backend runs a trained model instead, requiring the industry extra and a downloaded model.",
@@ -333,7 +333,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not add a gazetteer term that is a common word; you will flood the output.",
-            "Do not read a zero count for a type as 'the corpus contains none' — it may mean no rule covers that type.",
+            "Do not read a zero count for a type as 'the corpus contains none': it may mean no rule covers that type.",
         ),
         myths=(
             (
@@ -373,7 +373,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             "cannot misquote."
         ),
         steps=(
-            "Split the document into sentences, carefully — 'Dr. Smith' is not two sentences.",
+            "Split the document into sentences, carefully: 'Dr. Smith' is not two sentences.",
             "Measure how similar each sentence is to every other one.",
             "Run a centrality algorithm: the most representative sentence is the one most like the rest.",
             "Take the top `n_sentences` and emit them in document order.",
@@ -385,7 +385,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it on lists, tables, or single-sentence documents; sentence boundaries carry no meaning there.",
-            "Do not report ROUGE scores without reference summaries — there is nothing to compare against.",
+            "Do not report ROUGE scores without reference summaries: there is nothing to compare against.",
         ),
         myths=(
             (
@@ -423,14 +423,14 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             "a handful of common short words usually settles it."
         ),
         steps=(
-            "Measure which Unicode scripts the characters belong to — Latin, Cyrillic, Han, Arabic, and so on.",
+            "Measure which Unicode scripts the characters belong to: Latin, Cyrillic, Han, Arabic, and so on.",
             "For Latin script, score discriminative function words such as 'the', 'le', 'der', 'el'.",
             "Below a minimum length or a minimum score, return 'und' for undetermined.",
             "Report per-document codes, the dominant language, and the undetermined rate.",
             "The langdetect backend delegates to a trained n-gram model instead.",
         ),
         use=(
-            "Before choosing stopword lists, stemmers, or a sentiment lexicon — all of them are language-specific.",
+            "Before choosing stopword lists, stemmers, or a sentiment lexicon: all of them are language-specific.",
             "As a cheap data-quality screen on any new text corpus.",
         ),
         avoid=(
@@ -464,7 +464,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "nlp-corpus-contamination",
         plain=(
-            "Text collections are full of copies — reposts, syndicated articles, templated emails, the same "
+            "Text collections are full of copies: reposts, syndicated articles, templated emails, the same "
             "review submitted twice. If a document in your test set also appears in training, the model "
             "does not have to generalize to score it. Random splitting cannot see this, because it only "
             "looks at rows."
@@ -478,7 +478,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             "It also finds near-duplicates: pairs whose character-level similarity exceeds a threshold.",
             "It reports the holdout out-of-vocabulary rate as the complementary signal.",
             "Findings surface as warnings on the result and in the walkthrough.",
-            "Nothing is removed automatically — deduplicating stays your explicit decision.",
+            "Nothing is removed automatically: deduplicating stays your explicit decision.",
         ),
         use=(
             "Always, right after splitting a text corpus and before fitting anything.",
@@ -486,7 +486,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not deduplicate silently and report the resulting clean score; the decision and its consequences belong in the record.",
-            "Do not quote a near-duplicate count without the threshold that produced it — the number is meaningless alone.",
+            "Do not quote a near-duplicate count without the threshold that produced it: the number is meaningless alone.",
         ),
         myths=(
             (
@@ -564,8 +564,8 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "nlp-bundle-boundary",
         plain=(
-            "The fitted text model — vectorizer, classifier head, topic model, and crucially the "
-            "normalization plan — saves as an NLP bundle. A Session checkpoint stores your data and "
+            "The fitted text model: vectorizer, classifier head, topic model, and crucially the "
+            "normalization plan: saves as an NLP bundle. A Session checkpoint stores your data and "
             "workflow and contains none of it."
         ),
         analogy=(
@@ -574,7 +574,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a text classifier, a topic model, or both.",
-            "Call `save_nlp_bundle(path)` — the normalization plan travels inside it.",
+            "Call `save_nlp_bundle(path)`: the normalization plan travels inside it.",
             "Reload with `load_nlp_bundle(path)` in a Session exposing the same text column name.",
             "Loading clears stale fit, evaluation, prediction, and interpretation results so nothing is misattributed.",
             "Evaluate on holdout after loading rather than trusting the recorded metrics for a new dataset.",
@@ -585,7 +585,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not ship a fitted vectorizer without its normalization plan; the preprocessing mismatch will quietly destroy accuracy.",
-            "Do not expect a RAG bundle to load as an NLP bundle — the formats are validated on load.",
+            "Do not expect a RAG bundle to load as an NLP bundle: the formats are validated on load.",
         ),
         myths=(
             (

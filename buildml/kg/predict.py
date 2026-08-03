@@ -253,7 +253,7 @@ def predict_links(
 
     When ``filtered=True``, other train-known true triples are removed from
     the ranking (standard KG filtered protocol); the query's own true fill-in
-    is not required here — this is a prediction API.
+    is not required here: this is a prediction API.
     """
     if int(k) < 1:
         raise ValidationError("k must be >= 1.")

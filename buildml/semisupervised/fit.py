@@ -59,7 +59,7 @@ def fit_semisupervised(
 Backends
 --------
 sklearn (default):
-    LabelPropagation, LabelSpreading, SelfTrainingClassifier — core sklearn.
+    LabelPropagation, LabelSpreading, SelfTrainingClassifier: core sklearn.
 industry (``buildml[semisupervised-industry]``):
     XGBoost/LightGBM iterative pseudo-labeling when installed.
 torch (``buildml[torch]``):

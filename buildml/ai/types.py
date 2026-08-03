@@ -7,14 +7,14 @@ single most consequential setting in this domain, because an LLM provider is a
 third party and the data you send is data you have disclosed.
 
 :class:`ConfirmPolicy` says whether the model may act on its own. Language models
-propose plausible things, and plausible is not the same as correct — the policy
+propose plausible things, and plausible is not the same as correct: the policy
 decides who checks.
 
 :class:`ToolCall` and :class:`Message` are the units of conversation: what the
 model asked to run, and what was said. Both round-trip through dictionaries so
 a transcript survives being written to disk.
 
-:class:`StateDigest` is what the model is told about your Session — shape, roles,
+:class:`StateDigest` is what the model is told about your Session: shape, roles,
 and progress, never values.
 
 See Also
@@ -39,7 +39,7 @@ class EgressLevel(str, Enum):
     Attributes
     ----------
     SCHEMA_ONLY:
-        Column names, dtypes, and roles. No values of any kind — not even
+        Column names, dtypes, and roles. No values of any kind: not even
         aggregates. The safest useful level, and enough for the model to reason
         about structure.
     STATS_ONLY:
@@ -58,7 +58,7 @@ class EgressLevel(str, Enum):
     -----
     **Once data has been sent, it has been sent.** Provider retention policies
     vary and change; the only reliable control is what leaves the machine.
-    Choose the lowest level that lets the model do the job — for most planning
+    Choose the lowest level that lets the model do the job: for most planning
     and advisory work, ``SCHEMA_ONLY`` is enough.
 
     **This is a ``str`` enum**, so it compares equal to its value and serialises
@@ -82,7 +82,7 @@ class ConfirmPolicy(str, Enum):
     Attributes
     ----------
     AUTO:
-        Run without asking. Reserved for tools that only read — describing the
+        Run without asking. Reserved for tools that only read: describing the
         data, summarising history, listing what is available.
     CONFIRM:
         Ask before running. The default for anything that changes Session state.
@@ -217,7 +217,7 @@ class SessionLike(Protocol):
     **The narrowness is deliberate.** Reading history, the dataset, and metadata
     is enough to describe what has happened and what could happen next. Anything
     beyond that would let the AI domain reach into state it has no business
-    touching directly — state changes go through the tool registry, where they
+    touching directly: state changes go through the tool registry, where they
     are named, validated, and confirmable.
 
     See Also
@@ -256,7 +256,7 @@ class SessionLike(Protocol):
     def metadata(self) -> dict[str, Any]:
         """Return Session-level state describing workflow progress.
 
-        Read to determine which stages have completed — whether the data has
+        Read to determine which stages have completed: whether the data has
         been split, whether a model has been fitted.
 
         Returns
@@ -282,7 +282,7 @@ class StateDigest:
     row_count, column_count:
         Shape. ``None`` when no dataset is loaded.
     columns:
-        Column names in order. **Names can themselves be sensitive** — a column
+        Column names in order. **Names can themselves be sensitive**: a column
         called ``patient_hiv_status`` discloses something before any value is
         sent.
     roles:
@@ -296,7 +296,7 @@ class StateDigest:
         Recent operation names, so advice follows from what you have already
         done rather than restarting.
     warnings:
-        Problems found while building the digest — typically state that could
+        Problems found while building the digest: typically state that could
         not be read.
 
     Notes
@@ -365,7 +365,7 @@ class Message:
     tool_calls:
         Actions the model wants taken. Assistant messages only.
     tool_call_id:
-        Which call this message answers. Tool messages only — without it the
+        Which call this message answers. Tool messages only: without it the
         provider cannot match a result to its request.
     name:
         The tool's name, on tool messages.

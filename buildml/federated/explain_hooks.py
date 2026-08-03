@@ -166,7 +166,7 @@ def federated_status(
                 "validation/test are evaluation-only.",
                 "Session checkpoints do not embed FederatedPlan; use "
                 "save_federated_bundle / load_federated_bundle.",
-                "Honesty: local FedAvg-style simulation — not a networked "
+                "Honesty: local FedAvg-style simulation: not a networked "
                 "FL deployment unless you operate Flower separately; not "
                 "cryptographic secure aggregation.",
             ]

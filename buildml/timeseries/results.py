@@ -33,7 +33,7 @@ class TSDecomposeResult:
         -------
         dict[str, Any]
             Method, column names, point count, seasonal period, and disclosure
-            strings — not the full component vectors.
+            strings: not the full component vectors.
         """
         return {
             "method": self.method,
@@ -209,7 +209,7 @@ class TSAnalysisResult:
         -------
         dict[str, Any]
             Scope, column names, point count, flags for which blocks ran, and
-            top-level disclosures — not nested component vectors.
+            top-level disclosures: not nested component vectors.
         """
         return {
             "target_column": self.target_column,

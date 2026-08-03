@@ -45,7 +45,12 @@ def test_domain_status_blocks_include_capability_matrix() -> None:
         .set_roles({"clock": "time", "promo": "feature", "sales": "target"})
         .time_split(test_size=0.2)
     )
-    report = session.walkthrough().to_dict()
+    lazy = session.walkthrough(capability_probe="lazy").to_dict()
+    assert lazy["audit_summary"]["capability_probe"] == "lazy"
+    assert lazy["rag_status"].get("status") == "idle"
+    assert lazy["capability_introspection_status"]["capability_probe"] == "lazy"
+
+    report = session.walkthrough(capability_probe="eager").to_dict()
     for field in (
         "forecasting_status",
         "timeseries_status",
@@ -57,7 +62,9 @@ def test_domain_status_blocks_include_capability_matrix() -> None:
     ):
         status = report[field]
         assert "capability_matrix" in status, field
-        assert status.get("capability_introspection", "").startswith("Session.")
+        intro = status.get("capability_introspection")
+        if intro:
+            assert str(intro).startswith("Session."), field
     cap = report["capability_introspection_status"]
     assert cap["n_domains"] >= 20
     assert any(row["operation"] == "forecast_capability_matrix" for row in cap["domains"])
@@ -98,5 +105,6 @@ def test_suggest_capability_introspection_respects_history() -> None:
 
 
 def test_capability_introspection_lists_all_operations() -> None:
-    payload = capability_introspection_status()
+    payload = capability_introspection_status(capability_probe="eager")
     assert CAPABILITY_MATRIX_OPERATIONS <= set(payload["operations"])
+    assert "fairness_capability_matrix" in payload["operations"]

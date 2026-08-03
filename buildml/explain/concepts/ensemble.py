@@ -83,7 +83,7 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
             ),
             interpretation_rules=(
                 "Report stacking cv beside test metrics.",
-                "Passthrough concatenates raw features with meta features — watch dimensionality.",
+                "Passthrough concatenates raw features with meta features: watch dimensionality.",
             ),
             assumptions=(
                 "Train is large enough for the chosen cv.",
@@ -108,7 +108,7 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
         _note(
             key="ensemble-blending-holdout",
             title="Blending holdout is carved from train",
-            summary="Holdout blending fits the meta-learner on an inner train holdout — never Session validation/test.",
+            summary="Holdout blending fits the meta-learner on an inner train holdout: never Session validation/test.",
             definition=(
                 "Blending reserves a fraction of the training partition to generate base "
                 "predictions for the meta-learner. Session validation/test partitions remain "

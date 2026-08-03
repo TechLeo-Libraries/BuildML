@@ -1,6 +1,6 @@
 """Turn free text into numeric columns a classical model can use.
 
-A review, a description, a support ticket — none of it means anything to a
+A review, a description, a support ticket: none of it means anything to a
 gradient booster. Vectorising converts each document into a row of numbers, one
 per term, so text can sit alongside your other features in the same frame.
 
@@ -8,8 +8,8 @@ All three methods here are "bag of words": they count what appears and discard
 the order it appeared in. "The film was good, not bad" and "the film was bad,
 not good" produce identical features. That is a real limitation, and it is the
 reason these methods lose to transformer models on tasks where nuance matters.
-What they offer instead is speed, transparency — you can read which word drove
-a prediction — and the fact that they work on a few thousand rows, where a
+What they offer instead is speed, transparency: you can read which word drove
+a prediction: and the fact that they work on a few thousand rows, where a
 fine-tuned transformer would not.
 
 **Count** records how many times each term occurs. Simple, and the raw numbers
@@ -25,7 +25,7 @@ size and handles unseen words without any special case, but two different words
 can collide into the same bucket, and you cannot recover which word a feature
 came from.
 
-Count and TF-IDF learn their vocabulary from training documents only — a term
+Count and TF-IDF learn their vocabulary from training documents only: a term
 that appears only in test documents has no column, which is correct, since the
 model could not have learned anything about it. For dense embeddings and
 transformer models, see :mod:`buildml.nlp`.
@@ -92,7 +92,7 @@ class TextFeaturePlan:
         checkpoint and pipeline replay; a hashing vectorizer is stateless and
         needs nothing stored.
     n_features_per_column_:
-        How many features each source column produced. Worth checking — this is
+        How many features each source column produced. Worth checking: this is
         where a frame unexpectedly grows by thousands of columns.
     drop_input_columns:
         Whether the original text columns were removed after vectorising.
@@ -111,7 +111,7 @@ class TextFeaturePlan:
         """Return the plan's settings and output layout as JSON-safe values.
 
         The fitted vectorizers are omitted, since they do not serialise to
-        JSON — save a pipeline to round-trip those.
+        JSON: save a pipeline to round-trip those.
 
         Returns
         -------
@@ -143,7 +143,7 @@ def fit_text_features(
 ) -> TextFeaturePlan:
     """Learn a term vocabulary from the training documents.
 
-    Nothing is transformed here — pass the plan to
+    Nothing is transformed here: pass the plan to
     :func:`transform_text_features` to apply it.
 
     Parameters
@@ -158,7 +158,7 @@ def fit_text_features(
         Which text columns to vectorise. Defaults to the text-typed
         ``feature`` columns. Each column gets its own independent vocabulary,
         so a term means something different depending on which field it came
-        from — which is usually right, since "urgent" in a subject line is not
+        from: which is usually right, since "urgent" in a subject line is not
         "urgent" in a signature.
     method:
         ``'tfidf'`` (the default), ``'count'``, or ``'hashing'``. See the
@@ -167,14 +167,14 @@ def fit_text_features(
         Keep only this many terms per column, chosen by frequency. This is the
         main defence against a frame that explodes: real text easily yields
         tens of thousands of distinct terms, most appearing once. The default
-        of 128 is deliberately conservative — raise it into the low thousands
+        of 128 is deliberately conservative: raise it into the low thousands
         when text is your primary signal. ``None`` keeps everything, which is
         rarely wise. Ignored by hashing, which is bounded by construction.
     ngram_range:
         The term lengths to extract, as ``(min_n, max_n)``. ``(1, 1)`` takes
         single words. ``(1, 2)`` adds adjacent pairs, which recovers a little
-        of the word order that bag-of-words discards — "not good" becomes its
-        own term — at a large cost in vocabulary size. Going beyond pairs
+        of the word order that bag-of-words discards: "not good" becomes its
+        own term: at a large cost in vocabulary size. Going beyond pairs
         rarely pays for itself.
     drop_input_columns:
         Remove the source text after vectorising. Usually correct, since the
@@ -201,8 +201,8 @@ def fit_text_features(
     quickly. ``n_features_per_column_`` on the returned plan tells you exactly
     what you are about to add.
 
-    **The output is dense.** Text features are naturally sparse — most
-    documents contain almost none of the vocabulary — but they are materialised
+    **The output is dense.** Text features are naturally sparse: most
+    documents contain almost none of the vocabulary: but they are materialised
     as ordinary columns here so they can join the rest of the frame. Budget
     memory accordingly, and consider dimensionality reduction afterwards via
     :mod:`buildml.preprocess.reduce`.
@@ -263,7 +263,7 @@ def transform_text_features(
     """Convert text to numeric columns using an already-learned vocabulary.
 
     Runs across all partitions. Terms absent from the training vocabulary are
-    simply not counted, which is the honest behaviour — the model has no
+    simply not counted, which is the honest behaviour: the model has no
     parameter for a word it never saw.
 
     Parameters

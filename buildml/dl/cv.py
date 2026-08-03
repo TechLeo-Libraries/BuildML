@@ -9,7 +9,7 @@ The word "fold-local" carries the important part. Normalisation statistics, the
 class-label vocabulary, and the model itself are all rebuilt from scratch inside
 each fold, using only that fold's training rows. Fitting any of them once
 outside the loop would leak information from every fold's holdout into every
-fold's training — inflating all the scores by an amount the output gives no way
+fold's training: inflating all the scores by an amount the output gives no way
 to detect.
 
 This is plain cross-validation, not nested. There is no inner loop selecting
@@ -55,7 +55,7 @@ class TorchFoldScore:
         Zero-based fold index.
     train_size, val_size:
         Row counts on each side of the split. Worth checking when a fold's
-        metrics look unusual — an unexpectedly small fold explains a lot.
+        metrics look unusual: an unexpectedly small fold explains a lot.
     metrics:
         Loss, plus accuracy for classification or MSE for regression.
     n_epochs_ran:
@@ -117,7 +117,7 @@ class TorchCVResult:
     mean_metrics:
         The average of each metric across folds. The headline number.
     std_metrics:
-        The spread of each metric across folds — the more informative half.
+        The spread of each metric across folds: the more informative half.
     disclosures:
         The conditions the run happened under.
     limitations:
@@ -152,7 +152,7 @@ class TorchCVResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the whole cross-validation as JSON-safe values.
 
-        Includes every fold's record, not just the aggregates — the spread
+        Includes every fold's record, not just the aggregates: the spread
         across folds is part of the finding, and a summary that discards it
         overstates what the run established.
 
@@ -298,14 +298,14 @@ def cross_validate_torch(
         same folds.
     stratify:
         Keep class proportions roughly equal across folds. Applies to
-        classification only, and matters most when a class is rare — without
+        classification only, and matters most when a class is rare: without
         it, a fold can end up with none of that class at all.
     task:
         ``'auto'`` to infer, or an explicit choice.
     module_factory:
         Called as ``factory(in_features, task, n_classes)`` to build each
         fold's module. Defaults to a small tabular MLP. **Must return a fresh
-        module every call** — returning the same object would carry the
+        module every call**: returning the same object would carry the
         previous fold's learned weights into the next fold's training, which is
         leakage that looks like unusually good scores.
     train_config:
@@ -334,8 +334,8 @@ def cross_validate_torch(
     -----
     **The standard deviation is the part worth reading.** It says how much the
     score depends on which rows the model happened to train on, and a large
-    spread is a warning that the single number from any one split — including
-    the one you would otherwise have reported — is not reliable.
+    spread is a warning that the single number from any one split: including
+    the one you would otherwise have reported: is not reliable.
 
     **Classical Session preprocessing is not re-fitted per fold by default.**
     If you imputed or encoded before calling this, those transforms were fitted

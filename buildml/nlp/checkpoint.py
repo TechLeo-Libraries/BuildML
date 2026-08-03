@@ -1,7 +1,7 @@
 """Save and reload trained text models, so they can score documents later.
 
-An NLP bundle is a directory holding the fitted text plan — the normalisation
-recipe, the train-fitted representation, and the classifier head — plus an
+An NLP bundle is a directory holding the fitted text plan: the normalisation
+recipe, the train-fitted representation, and the classifier head: plus an
 optional topic plan and a readable ``meta.json`` describing what is inside.
 
 All three parts must travel together, and that is the entire reason this exists
@@ -12,7 +12,7 @@ mismatch raises; both silently produce wrong predictions.
 
 BuildML has several persistence formats, and they are complementary rather than
 alternatives. A **Session checkpoint** stores data, roles, splits, and history so
-you can resume working — it does not embed the NLP vectorizer or head. An **NLP
+you can resume working: it does not embed the NLP vectorizer or head. An **NLP
 bundle** stores the text model so it can score documents, and knows nothing about
 your session. Use both if you need both; neither substitutes for the other.
 """
@@ -45,7 +45,7 @@ CHECKPOINT_BOUNDARY = (
     "history, and optional classical preprocess plans; it does not embed the NLP "
     "vectorizer or head. Reload the tabular workflow via checkpoint_load; reload "
     "the text model via load_nlp_bundle. Honesty: document-level text modelling "
-    "and analysis — not document retrieval for generation (buildml.rag), not "
+    "and analysis: not document retrieval for generation (buildml.rag), not "
     "transformer fine-tuning (buildml.dl text path)."
 )
 
@@ -64,8 +64,8 @@ def save_nlp_bundle(
     """Save a trained text model so it can score documents in another process.
 
     Writes a directory containing the fitted plans and a readable manifest.
-    The manifest is plain JSON, so what a bundle contains — which columns,
-    which classes, which normalisation, and any warnings from the fit — can be
+    The manifest is plain JSON, so what a bundle contains: which columns,
+    which classes, which normalisation, and any warnings from the fit: can be
     inspected without loading the model or even having BuildML installed.
 
     Parameters
@@ -85,7 +85,7 @@ def save_nlp_bundle(
         lets someone later see the class balance and vocabulary size the model
         was built on.
     eval_result:
-        The holdout evaluation, recorded in the manifest — the record of how
+        The holdout evaluation, recorded in the manifest: the record of how
         well this model performed when it was made, which is what you compare
         against when it starts behaving differently in production.
 
@@ -149,7 +149,7 @@ def load_nlp_bundle(path: str | Path, *, trusted: bool = False) -> tuple[NlpText
     """Restore a saved text model, ready to score documents.
 
     Reads the manifest, checks the format, and loads whichever plans the bundle
-    contains. The returned plans are immediately usable — no dataset, no split,
+    contains. The returned plans are immediately usable: no dataset, no split,
     and no refitting required.
 
     Parameters
@@ -181,7 +181,7 @@ def load_nlp_bundle(path: str | Path, *, trusted: bool = False) -> tuple[NlpText
     surfaces as an attribute error somewhere less obvious.
 
     **Loading executes pickled objects.** Only load bundles you trust or
-    produced yourself — this is a property of the pickle format, not of
+    produced yourself: this is a property of the pickle format, not of
     BuildML.
 
     Examples

@@ -24,7 +24,7 @@ TEACHING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Pass `level='beginner'` (the default), `'intermediate'`, or `'advanced'`.",
             "At beginner level you also get an analogy, a glossary of the terms used, and a worked mini example.",
             "Every concept is tagged foundation, core, or advanced, and links to what to read first.",
-            "`session.learn()` with no argument returns the foundation concepts — the sensible place to start.",
+            "`session.learn()` with no argument returns the foundation concepts: the sensible place to start.",
         ),
         use=(
             "Whenever you are about to run something you have not run before.",

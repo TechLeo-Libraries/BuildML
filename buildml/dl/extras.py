@@ -5,14 +5,14 @@ module is the boundary, so that installing BuildML does not drag in a
 multi-gigabyte dependency that most users of the classical path will never touch.
 
 Two shapes of check, used in different places. ``torch_available`` answers a
-question and returns a boolean — right for a capability matrix or a test skip.
-``require_torch`` returns the module or raises with an install hint — right at
+question and returns a boolean: right for a capability matrix or a test skip.
+``require_torch`` returns the module or raises with an install hint: right at
 the point where the work genuinely cannot proceed.
 
 The checks are deliberately more careful than a plain import. Torch is
 unusually prone to being installed but broken: a CUDA wheel on a machine with
 mismatched drivers, or a Windows install whose DLL load fails. Both raise
-``OSError`` rather than ``ImportError``, and both are treated as unavailable —
+``OSError`` rather than ``ImportError``, and both are treated as unavailable :
 because from the caller's point of view an unusable install and a missing one
 are the same situation.
 
@@ -31,12 +31,24 @@ from typing import Any
 from buildml.core.errors import MissingExtraError
 
 
-def _subprocess_import_ok(module: str, *, timeout: float = 45.0) -> bool:
+_SUBPROCESS_IMPORT_CACHE: dict[str, bool] = {}
+
+
+def clear_subprocess_import_cache() -> None:
+    """Clear cached subprocess import probes (tests / rare reinstalls)."""
+    _SUBPROCESS_IMPORT_CACHE.clear()
+
+
+def _subprocess_import_ok(module: str, *, timeout: float = 12.0) -> bool:
     """Import ``module`` in a child process so a hard crash cannot kill us.
 
     Used on Windows where broken Torch DLL loads can raise a fatal access
-    violation instead of a catchable Python exception.
+    violation instead of a catchable Python exception. Results are cached
+    process-wide so walkthrough / capability matrices do not re-spawn probes.
     """
+    cached = _SUBPROCESS_IMPORT_CACHE.get(module)
+    if cached is not None:
+        return cached
     try:
         completed = subprocess.run(
             [sys.executable, "-c", f"import {module}"],
@@ -44,16 +56,18 @@ def _subprocess_import_ok(module: str, *, timeout: float = 45.0) -> bool:
             capture_output=True,
             timeout=timeout,
         )
+        ok = completed.returncode == 0
     except (OSError, subprocess.SubprocessError):
-        return False
-    return completed.returncode == 0
+        ok = False
+    _SUBPROCESS_IMPORT_CACHE[module] = ok
+    return ok
 
 
 def require_torch(*, feature: str = "Deep learning (Torch)") -> Any:
     """Import PyTorch, or explain how to install it.
 
     Call this at the point where the work actually needs Torch, not at module
-    import time — keeping the import lazy is what lets the rest of BuildML load
+    import time: keeping the import lazy is what lets the rest of BuildML load
     on a machine without it.
 
     Parameters
@@ -98,7 +112,7 @@ def require_torch(*, feature: str = "Deep learning (Torch)") -> Any:
 def torch_available() -> bool:
     """Report whether PyTorch is present and actually usable.
 
-    Checks for the distribution first, then attempts a real import — being
+    Checks for the distribution first, then attempts a real import: being
     installed and being importable are different things for Torch, and only the
     second one matters.
 
@@ -113,8 +127,8 @@ def torch_available() -> bool:
     unavailable, since a Torch that cannot import is not a Torch you can train
     with.
 
-    **One failure mode escapes this check.** A few environments — notably
-    Windows machines where antivirus scans the CUDA DLLs — kill the process
+    **One failure mode escapes this check.** A few environments: notably
+    Windows machines where antivirus scans the CUDA DLLs: kill the process
     during import rather than raising. Nothing in Python can catch that. Tests
     that need to be robust should skip on ``MissingExtraError`` from
     :func:`require_torch` at the point of use rather than gating on this.
@@ -140,7 +154,7 @@ def torch_available() -> bool:
 def torch_spec_available() -> bool:
     """Report whether a Torch distribution exists, without importing it.
 
-    Consults package metadata only. Cheap and safe — importing Torch takes
+    Consults package metadata only. Cheap and safe: importing Torch takes
     seconds and initialises CUDA, which is too much for a capability listing
     that may never use the answer.
 

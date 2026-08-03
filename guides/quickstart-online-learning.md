@@ -2,13 +2,13 @@
 
 > **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
 > install Session 2.x. Install 2.x from GitHub (or an editable checkout).
-> Online learning uses core sklearn `partial_fit` estimators — no optional extra.
+> Online learning uses core sklearn `partial_fit` estimators: no optional extra.
 > See [installation](../docs/installation.rst).
 
 Incremental updates on **train chunks**: `fit_online` warm-starts on an initial
 chunk, `partial_fit_online` updates on subsequent chunks, `evaluate_online`
 scores held-out validation/test (never used for updates), then save a distinct
-bundle. Honesty: this is batch/stream-chunk Session updating — **not** a
+bundle. Honesty: this is batch/stream-chunk Session updating: **not** a
 distributed streaming platform or lifelong-learning research suite.
 
 **Go deeper:** [Online learning deep](online-learning-deep.md) ·

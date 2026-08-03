@@ -54,4 +54,4 @@ session.save_probabilistic_bundle("artifacts/probabilistic_bundle")
 | Train-only split conformal | Conformal calibration on Session test |
 | Distinct `buildml.probabilistic_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item after this: **Causal ML** — see [quickstart-causal](quickstart-causal.md).
+Next Phase 2 item after this: **Causal ML**: see [quickstart-causal](quickstart-causal.md).

@@ -12,6 +12,7 @@ from buildml.session.mixins.decision import DecisionSessionMixin
 from buildml.session.mixins.dl import DlSessionMixin
 from buildml.session.mixins.eda import EdaSessionMixin
 from buildml.session.mixins.ensemble import EnsembleSessionMixin
+from buildml.session.mixins.fairness import FairnessSessionMixin
 from buildml.session.mixins.federated import FederatedSessionMixin
 from buildml.session.mixins.forecast import ForecastSessionMixin
 from buildml.session.mixins.graph import GraphSessionMixin
@@ -48,6 +49,7 @@ __all__ = [
     "DlSessionMixin",
     "EdaSessionMixin",
     "EnsembleSessionMixin",
+    "FairnessSessionMixin",
     "FederatedSessionMixin",
     "ForecastSessionMixin",
     "GraphSessionMixin",

@@ -12,7 +12,7 @@ from buildml.dashboard.serialize import flagged_column_names
 
 ThemeName = Literal["light", "dark"]
 
-# Cool technical palette — not default Plotly blue/orange candy.
+# Cool technical palette: not default Plotly blue/orange candy.
 _PALETTE_LIGHT: dict[str, Any] = {
     "accent": "#0B6E4F",
     "accent_soft": "#3FAE7F",
@@ -295,7 +295,7 @@ def build_chart_figures(
 
     Renders the full catalogue in a single pass, all under one palette, so the
     set is visually consistent. Each chart reads only the report sections it
-    needs and produces an empty-state figure when they are absent — a chart that
+    needs and produces an empty-state figure when they are absent: a chart that
     says "no drift analysis was run" rather than a hole in the layout.
 
     Parameters
@@ -325,7 +325,7 @@ def build_chart_figures(
     round trip, and wasteful if you want one chart. There is no per-chart entry
     point today.
 
-    **Figure objects are live and mutable** — adjust a title or an axis before
+    **Figure objects are live and mutable**: adjust a title or an axis before
     display if you need to.
 
     See Also
@@ -369,7 +369,7 @@ def build_chart_catalog(
 
     Plotly renders in the browser from a JSON description, so the server's job
     is to produce that description rather than an image. The charts stay
-    interactive — hover, zoom, legend toggling — and no rasterisation happens
+    interactive: hover, zoom, legend toggling: and no rasterisation happens
     server-side.
 
     Parameters
@@ -393,7 +393,7 @@ def build_chart_catalog(
     Notes
     -----
     **This is not small.** A heatmap over 50 columns carries 2,500 values, and
-    the whole catalogue can run to several megabytes — which is what makes the
+    the whole catalogue can run to several megabytes: which is what makes the
     offline export a large file.
 
     See Also
@@ -412,7 +412,7 @@ def render_chart_png(
 ) -> bytes | None:
     """Turn a figure into PNG bytes, or return ``None`` and let the caller cope.
 
-    PDF export needs raster images, which means Kaleido — a headless browser
+    PDF export needs raster images, which means Kaleido: a headless browser
     that renders Plotly figures server-side. It is a heavy optional dependency
     and it fails in ways that are hard to predict: missing system libraries,
     sandboxed environments, containers without the right shared objects.
@@ -444,7 +444,7 @@ def render_chart_png(
     but crashed" look identical here. If figures are silently missing from a
     PDF, test Kaleido directly.
 
-    **Rasterising is slow** — a browser process per figure. A full catalogue
+    **Rasterising is slow**: a browser process per figure. A full catalogue
     takes seconds to tens of seconds.
 
     See Also

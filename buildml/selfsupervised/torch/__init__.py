@@ -1,4 +1,4 @@
-"""Torch SSL subpackage (lazy — requires buildml[torch] / buildml[ssl])."""
+"""Torch SSL subpackage (lazy: requires buildml[torch] / buildml[ssl])."""
 
 from __future__ import annotations
 

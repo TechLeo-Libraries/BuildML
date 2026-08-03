@@ -7,13 +7,13 @@ differently from what was asked for.
 
 Two of them deserve attention beyond their fields.
 :class:`TrainingCurveReport` carries not just the loss curves but an
-interpretation of their shape and a statement of the limits of that reading —
+interpretation of their shape and a statement of the limits of that reading :
 because a curve invites confident conclusions it often cannot support.
 :class:`EarlyStopInfo` records the partition the stopping decision was made on,
 so a stopping claim can always be traced to the data behind it.
 
 ``to_dict`` on each returns JSON-safe values for bundles and history. Live
-objects — the module, optimiser state — are described rather than embedded.
+objects: the module, optimiser state: are described rather than embedded.
 
 See Also
 --------
@@ -35,8 +35,8 @@ class EarlyStopInfo:
 
     "Training stopped at epoch 12" is ambiguous: it could mean the budget ran
     out, or that validation loss had not improved for three epochs. Those are
-    very different situations — the first suggests training longer, the second
-    suggests the model had already peaked — so the distinction is recorded
+    very different situations: the first suggests training longer, the second
+    suggests the model had already peaked: so the distinction is recorded
     rather than left to be inferred.
 
     Attributes
@@ -56,13 +56,13 @@ class EarlyStopInfo:
     best_epoch, best_value:
         Where the monitored metric was at its best. When
         ``restore_best_weights`` is set, these describe the weights you are
-        holding — not the last epoch trained.
+        holding: not the last epoch trained.
     stopped_epoch:
         The last epoch run.
     restore_best_weights:
         Whether the best epoch's weights were reloaded at the end.
     partition:
-        Which data the decision was made on. Always ``'validation'`` — recorded
+        Which data the decision was made on. Always ``'validation'``: recorded
         so the claim can be traced rather than trusted.
     reason:
         A readable explanation of why the loop ended.
@@ -169,7 +169,7 @@ class TrainingCurveReport:
     over-read. Falling training loss with rising validation loss looks like
     overfitting and usually is; a flat curve looks like a learning rate problem
     and often is not. This report carries the numbers, a plain reading of their
-    shape, and — deliberately — the limits of that reading.
+    shape, and: deliberately: the limits of that reading.
 
     Attributes
     ----------
@@ -274,7 +274,7 @@ class LoaderReport:
     class_labels:
         The original labels behind the class indices.
     warnings:
-        Anything noticed while building — tiny partitions, degenerate classes,
+        Anything noticed while building: tiny partitions, degenerate classes,
         constant features.
     split_kind:
         How the data was split: random, grouped, or time-based.
@@ -407,7 +407,7 @@ class TorchLoaderBundle:
     def to_dict(self) -> dict[str, Any]:
         """Describe the bundle as JSON-safe values.
 
-        The loaders themselves are named rather than embedded — they hold data
+        The loaders themselves are named rather than embedded: they hold data
         and worker processes, neither of which belongs in a record.
 
         Returns
@@ -434,7 +434,7 @@ class TrainResult:
 
     The module is what you use; the rest is what makes it trustworthy and
     resumable. Optimiser and scheduler state are here because resuming without
-    them makes a run stumble for several epochs — Adam's momentum estimates are
+    them makes a run stumble for several epochs: Adam's momentum estimates are
     part of where training had got to, not incidental.
 
     Attributes
@@ -459,7 +459,7 @@ class TrainResult:
     n_epochs_ran:
         The last epoch reached, cumulative across resumes.
     warnings:
-        Everything that quietly differed from what was asked for — a device
+        Everything that quietly differed from what was asked for: a device
         fallback, mixed precision disabled, a scheduler that could not be
         restored.
     early_stop:
@@ -605,7 +605,7 @@ class DLEvaluateResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the evaluation as JSON-safe values.
 
-        Complete, including the confusion matrix and residual summary — a
+        Complete, including the confusion matrix and residual summary: a
         recorded evaluation should support the same reading later that it
         supported when it was produced.
 
@@ -631,7 +631,7 @@ class DLEvaluateResult:
         """Print the metrics and top recommendations to the console.
 
         A quick look for interactive work. Prints the task, partition, and row
-        count, then each metric, then up to ten recommendations — the confusion
+        count, then each metric, then up to ten recommendations: the confusion
         matrix and residual summary stay on the object, since neither reads
         well as console output.
         """

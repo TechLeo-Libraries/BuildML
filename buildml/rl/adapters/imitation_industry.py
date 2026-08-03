@@ -13,7 +13,7 @@ data, the boosted-tree default is usually competitive and far cheaper.
 **``gail_lite``** is a different thing entirely. Rather than matching actions
 row by row, generative adversarial imitation learning trains a discriminator to
 tell the demonstrator's behaviour from the policy's, and trains the policy to
-fool it. It needs a live environment, because the policy must act to be judged —
+fool it. It needs a live environment, because the policy must act to be judged :
 and that is what lets it address the compounding-error problem that plain
 cloning cannot: the policy is evaluated in the states it actually reaches, not
 only in the states the demonstrator visited.
@@ -128,7 +128,7 @@ def fit_tabular_bc_mlp(
     """Clone demonstrations with a neural policy instead of a linear one.
 
     Wraps the demonstrations as single-step transitions and trains a
-    multi-layer policy on them. Supervised learning throughout — there is no
+    multi-layer policy on them. Supervised learning throughout: there is no
     environment and no reward, just states paired with the actions taken in
     them.
 
@@ -170,7 +170,7 @@ def fit_tabular_bc_mlp(
     -----
     **The demonstrations are presented as one-step episodes**, each marked
     ``done``. That is accurate for tabular data, where rows are independent
-    situations rather than a trajectory — but it also means no sequential
+    situations rather than a trajectory: but it also means no sequential
     structure is available to learn from, even if your rows happen to have some.
 
     **The returned score is in-sample and will be high.** A network with enough
@@ -219,7 +219,7 @@ def fit_tabular_bc_mlp(
     disclosures = [
         "Industry imitation BC trains an MLP policy via imitation+SB3 on train demos.",
         "Requires buildml[rl-industry] (imitation + stable-baselines3 + gymnasium).",
-        "Honesty: tabular BC from tables — not inverse RL, not DAgger, not robotics.",
+        "Honesty: tabular BC from tables: not inverse RL, not DAgger, not robotics.",
         "Offline RL / batch RL are out of scope; this is supervised cloning depth.",
         f"method=bc_mlp; n_epochs={n_epochs}; obs_dim={obs_dim}; n_actions={n_actions}.",
     ]
@@ -246,7 +246,7 @@ def fit_tabular_gail_lite(
 
     Trains a discriminator to separate demonstrated behaviour from the policy's,
     and a PPO policy to fool it. Because the policy must act in an environment
-    to be judged, it is evaluated in the states it actually reaches — which is
+    to be judged, it is evaluated in the states it actually reaches: which is
     what lets adversarial imitation address the compounding-error problem that
     plain cloning cannot.
 
@@ -262,7 +262,7 @@ def fit_tabular_gail_lite(
     y_codes:
         Integer action codes, aligned with the rows.
     env_id:
-        The Gymnasium environment the policy will act in. Required — without
+        The Gymnasium environment the policy will act in. Required: without
         one there is nothing for the discriminator to judge.
     n_actions:
         How many distinct actions exist. Must match the environment's action
@@ -303,7 +303,7 @@ def fit_tabular_gail_lite(
     **The score measures action agreement, which is not what GAIL optimises.**
     GAIL matches the *distribution* of behaviour, so a policy that reaches
     demonstrator-like states by a different route is a success by its own
-    objective and scores poorly here. A low score is not necessarily a failure —
+    objective and scores poorly here. A low score is not necessarily a failure :
     but it does mean this number is the wrong one to judge it by.
 
     See Also
@@ -384,7 +384,7 @@ def fit_tabular_gail_lite(
         disclosures = [
             "GAIL-lite runs a small-budget adversarial imitation loop (honest lite).",
             "Requires buildml[rl-industry] and env-compatible demonstration rows.",
-            "Honesty: teaching-depth GAIL — not robotics / AV / multi-agent sims.",
+            "Honesty: teaching-depth GAIL: not robotics / AV / multi-agent sims.",
             "Offline RL disclosures: imitation from demos, not batch offline RL.",
             f"method=gail_lite; env_id={env_id!r}; total_timesteps={total_timesteps}.",
         ]

@@ -22,6 +22,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` estimates AIPW with sklearn nuisance models + placebo refute on the same split (`results/comparison.json`).
+Filled: `baseline_industry.py` estimates AIPW with sklearn nuisance models + placebo refute on the same split (`results/comparison.json`).
 ## Limitations
 Assumptions are caller-declared; EDA is non-causal.

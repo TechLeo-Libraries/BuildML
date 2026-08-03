@@ -1,4 +1,4 @@
-"""BuildML Session — public facade composed from domain mixins.
+"""BuildML Session: public facade composed from domain mixins.
 
 Implementation lives in ``buildml.session.mixins`` (signatures/docstrings) and
 ``buildml.session.*_ops`` (orchestration logic). ``Session`` remains the sole
@@ -29,6 +29,7 @@ from buildml.session.mixins import (
     DlSessionMixin,
     EdaSessionMixin,
     EnsembleSessionMixin,
+    FairnessSessionMixin,
     FederatedSessionMixin,
     ForecastSessionMixin,
     GraphSessionMixin,
@@ -409,6 +410,7 @@ class Session(
     DlSessionMixin,
     EdaSessionMixin,
     EnsembleSessionMixin,
+    FairnessSessionMixin,
     FederatedSessionMixin,
     ForecastSessionMixin,
     GraphSessionMixin,
@@ -448,7 +450,7 @@ class Session(
     **Which rows may be learned from.** A split (:meth:`split`,
     :meth:`group_split`, :meth:`time_split`, :meth:`inject_split`) records
     train/validation/test membership once. Preprocessing steps then fit their
-    statistics on the train rows alone and apply them everywhere — the single
+    statistics on the train rows alone and apply them everywhere: the single
     most common source of silently optimistic scores, handled for you.
 
     **A record of every decision.** Each call appends to :attr:`history` with
@@ -462,7 +464,7 @@ class Session(
     exactly what training did.
 
     Most methods return ``self``, so steps chain. Methods that produce
-    something you inspect — frames, reports, fitted results — return that
+    something you inspect: frames, reports, fitted results: return that
     instead.
 
     The classical path is ingest, roles, split, preprocess, fit, evaluate. The
@@ -533,7 +535,7 @@ class Session(
         ----------
         dataset:
             Data handle to attach. ``None`` creates an empty session, which is
-            what :meth:`ingest` produces for a dry run — every data-dependent
+            what :meth:`ingest` produces for a dry run: every data-dependent
             method then raises until a dataset arrives.
         ingest_report:
             Findings from the automated ingest scan (detected format, chosen
@@ -729,6 +731,7 @@ class Session(
         self._synthetic_fit_result: SynthesizerFitResult | None = None
         self._synthetic_eval_result: SyntheticEvalResult | None = None
         self._synthetic_sample_result: SyntheticSampleResult | None = None
+        self._fairness_report: Any | None = None
         self._ai_provider: ProviderProtocol | ProviderConfig | None = None
         self._ai_egress_config: EgressConfig | None = None
         self._ai_transcript: TranscriptStore | None = None
@@ -792,7 +795,7 @@ class Session(
         Returns
         -------
         ~buildml.data.dataset.Dataset
-            The attached data handle. Never ``None`` — the accessor raises
+            The attached data handle. Never ``None``: the accessor raises
             rather than handing back an empty value, so downstream code does
             not have to guard.
 

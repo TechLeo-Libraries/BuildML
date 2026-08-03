@@ -31,7 +31,7 @@ class NlpSessionMixin:
     def nlp_capability_matrix() -> dict[str, Any]:
         """Honest capability matrix for NLP backends and task surfaces.
 
-        Session facade over :func:`buildml.session.nlp_ops.nlp_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.nlp_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -56,7 +56,7 @@ class NlpSessionMixin:
     ) -> NlpCorpusProfile:
         """Profile corpus health and screen the split for text contamination.
 
-        Session facade over :func:`buildml.session.nlp_ops.profile_text_corpus_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.profile_text_corpus_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -87,7 +87,7 @@ class NlpSessionMixin:
     ) -> NlpLanguageResult:
         """Identify the language of every document in a partition.
 
-        Session facade over :func:`buildml.session.nlp_ops.detect_language_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.detect_language_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -139,7 +139,7 @@ class NlpSessionMixin:
     ) -> NlpFitResult:
         """Fit a single-label document classifier on Session train.
 
-        Session facade over :func:`buildml.session.nlp_ops.fit_text_classifier_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.fit_text_classifier_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -189,7 +189,7 @@ class NlpSessionMixin:
     ) -> NlpPredictResult:
         """Score a partition with the train-fitted text plan.
 
-        Session facade over :func:`buildml.session.nlp_ops.predict_text_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.predict_text_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -214,7 +214,7 @@ class NlpSessionMixin:
     ) -> NlpEvalResult:
         """Evaluate the text classifier on a holdout partition.
 
-        Session facade over :func:`buildml.session.nlp_ops.evaluate_text_classifier_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.evaluate_text_classifier_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -239,7 +239,7 @@ class NlpSessionMixin:
     ) -> NlpInterpretResult:
         """Explain document decisions with per-token contributions.
 
-        Session facade over :func:`buildml.session.nlp_ops.interpret_text_prediction_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.interpret_text_prediction_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -280,7 +280,7 @@ class NlpSessionMixin:
     ) -> NlpTopicResult:
         """Fit an unsupervised topic model on Session train documents.
 
-        Session facade over :func:`buildml.session.nlp_ops.fit_topics_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.fit_topics_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -317,7 +317,7 @@ class NlpSessionMixin:
     ) -> NlpTopicAssignResult:
         """Transform a partition into per-document topic weights.
 
-        Session facade over :func:`buildml.session.nlp_ops.assign_topics_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.assign_topics_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -350,7 +350,7 @@ class NlpSessionMixin:
     ) -> NlpKeyphraseResult:
         """Rank keyphrases for a partition with an unsupervised scorer.
 
-        Session facade over :func:`buildml.session.nlp_ops.extract_keyphrases_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.extract_keyphrases_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -392,7 +392,7 @@ class NlpSessionMixin:
     ) -> NlpSentimentResult:
         """Score a partition's documents for sentiment.
 
-        Session facade over :func:`buildml.session.nlp_ops.analyze_sentiment_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.analyze_sentiment_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -429,7 +429,7 @@ class NlpSessionMixin:
     ) -> NlpEntityResult:
         """Extract entity mentions from a partition's documents.
 
-        Session facade over :func:`buildml.session.nlp_ops.extract_entities_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.extract_entities_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -467,7 +467,7 @@ class NlpSessionMixin:
     ) -> NlpSummaryResult:
         """Build extractive summaries for a partition's documents.
 
-        Session facade over :func:`buildml.session.nlp_ops.summarize_text_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.summarize_text_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -545,7 +545,7 @@ class NlpSessionMixin:
         Returns
         -------
         :class:`~buildml.nlp.results.NlpInterpretResult` or None
-            ``None`` until ``interpret_text_prediction`` has run — which it
+            ``None`` until ``interpret_text_prediction`` has run: which it
             cannot for hashing or dense representations.
         """
         return cast("NlpInterpretResult | None", self._nlp_interpret_result)
@@ -639,7 +639,7 @@ class NlpSessionMixin:
     def save_nlp_bundle(self, path: str | Path) -> Path:
         """Persist the active NLP plan(s) as ``buildml.nlp_bundle.v1``.
 
-        Session facade over :func:`buildml.session.nlp_ops.save_nlp_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.save_nlp_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -656,7 +656,7 @@ class NlpSessionMixin:
     def load_nlp_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Restore a saved text plan, and topic plan, into this Session.
 
-        Session facade over :func:`buildml.session.nlp_ops.load_nlp_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.nlp_ops.load_nlp_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

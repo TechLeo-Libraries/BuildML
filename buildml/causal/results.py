@@ -14,8 +14,8 @@ class CausalPlan:
 
     Persist via ``buildml.causal_bundle.v1``. Distinct from Session checkpoints
     and from classical / probabilistic plans. Honesty: backdoor ATE under
-    caller-declared assumptions — native sklearn nuisances, optional DoWhy /
-    EconML when ``buildml[causal-industry]`` is installed — not causal
+    caller-declared assumptions: native sklearn nuisances, optional DoWhy /
+    EconML when ``buildml[causal-industry]`` is installed: not causal
     discovery.
     """
 

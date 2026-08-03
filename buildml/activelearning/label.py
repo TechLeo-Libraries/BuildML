@@ -30,7 +30,7 @@ def label_rows(
 ) -> tuple[Dataset, ActiveLearningPlan, ActiveLearningLabelResult, Any | None]:
     """Write user labels onto train-pool rows and optionally refit.
 
-    Labels must come from the user — BuildML core never invents an oracle.
+    Labels must come from the user: BuildML core never invents an oracle.
     Only train-pool rows that are currently unlabeled (or overwrite with
     disclosure) may be labeled.
 

@@ -3,7 +3,7 @@
 ## Business purpose
 
 Jointly predict SKU purchase (`buy`) and margin quality (`high_margin`) from
-retail assortment features — multi-target underwriting for merchandising.
+retail assortment features: multi-target underwriting for merchandising.
 
 ## Data source
 
@@ -27,7 +27,7 @@ See `results/results.json` (mean accuracy / f1 across targets).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` uses sklearn `MultiOutputClassifier`
+Filled: `baseline_industry.py` uses sklearn `MultiOutputClassifier`
 (`results/comparison.json`).
 
 ## Limitations

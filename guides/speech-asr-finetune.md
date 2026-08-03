@@ -30,7 +30,7 @@ stacks, and months of compute. BuildML’s job here is:
 
 ---
 
-## Use case A — Stub ASR (CI-safe) + WER/CER
+## Use case A: Stub ASR (CI-safe) + WER/CER
 
 ```python
 import pandas as pd
@@ -55,7 +55,7 @@ speech = (
 asr = speech.transcribe_speech(audio_column="audio", backend="stub")
 print(asr)
 
-# Score hypotheses vs gold references (string edit distance — not a MOS product).
+# Score hypotheses vs gold references (string edit distance: not a MOS product).
 # Session path reuses last transcribe_speech texts when hypotheses= is omitted:
 scored = speech.evaluate_asr(
     references=["hello world", "good morning", "approved", "denied"],
@@ -77,7 +77,7 @@ per-utterance rows. It does not download ASR models.
 
 ---
 
-## Use case B — Transformers Whisper-class transcription
+## Use case B: Transformers Whisper-class transcription
 
 ```python
 # Requires network + model download the first time; not used in default CI.
@@ -93,7 +93,7 @@ Treat downloaded weights as an operator concern (license, cache, GPU).
 
 ---
 
-## Use case C — Speech classify finetune-lite + `SpeechContract`
+## Use case C: Speech classify finetune-lite + `SpeechContract`
 
 ```python
 from buildml.dl.speech import SpeechContract
@@ -127,7 +127,7 @@ across save/load paths.
 
 ---
 
-## Use case D — Domain adapt helper
+## Use case D: Domain adapt helper
 
 ```python
 speech.domain_adapt_speech_torch(
@@ -142,7 +142,7 @@ This is explicit **domain adapt**, not continued foundation pretrain.
 
 ---
 
-## Use case E — Honest refuse for FM-from-scratch asks
+## Use case E: Honest refuse for FM-from-scratch asks
 
 ```python
 try:
@@ -175,11 +175,11 @@ See [pretrained-backbones](pretrained-backbones.md). `weights="mock"` is CI-safe
 | Limit | Honesty |
 | --- | --- |
 | FM pretrain from scratch | Refused |
-| Audio multimodal fusion vs speech path | Different APIs — fusion is not ASR |
-| Missing files in path cells | Loader/transcribe errors — validate paths |
+| Audio multimodal fusion vs speech path | Different APIs: fusion is not ASR |
+| Missing files in path cells | Loader/transcribe errors: validate paths |
 | Transformers backend | Needs `buildml[speech]` + download |
 | Bundle load | Torch speech loaders are not rebuilt by `load_torch_bundle` |
-| `evaluate_asr` | String WER/CER only — not speech quality / MOS |
+| `evaluate_asr` | String WER/CER only: not speech quality / MOS |
 
 ---
 

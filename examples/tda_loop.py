@@ -59,7 +59,7 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    other.load_tda_bundle(out)
+    other.load_tda_bundle(out, trusted=True)
     print("reloaded eval", other.evaluate_tda(partition="test").metrics)
 
 

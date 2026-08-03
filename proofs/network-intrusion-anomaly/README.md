@@ -7,7 +7,7 @@ analysts can investigate high-score alerts under a controlled alert rate.
 
 ## Data source
 
-Synthetic KDD-inspired flow table (`load_intrusion_anomaly_synthetic`) —
+Synthetic KDD-inspired flow table (`load_intrusion_anomaly_synthetic`) :
 license-clear. Not the full KDD Cup 1999 corpus.
 
 ## Leakage controls
@@ -32,7 +32,7 @@ details in `results/results.json`.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs sklearn `IsolationForest` on the **same SplitPlan**, tunes the decision threshold on validation F1, and writes `results/comparison.json`. BuildML path typically uses PyOD HBOS when installed. Deltas are descriptive on one synthetic draw (competitive qualitative bar 5-B).
+Filled: `baseline_industry.py` runs sklearn `IsolationForest` on the **same SplitPlan**, tunes the decision threshold on validation F1, and writes `results/comparison.json`. BuildML path typically uses PyOD HBOS when installed. Deltas are descriptive on one synthetic draw (competitive qualitative bar 5-B).
 ## Limitations
 
 Synthetic attacks; labeled eval overstates production unlabeled deployment.

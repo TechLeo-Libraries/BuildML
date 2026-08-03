@@ -26,7 +26,7 @@ CHECKPOINT_BOUNDARY = (
     "A Session checkpoint stores data, roles, splits, history, and optional "
     "classical preprocess plans; it does not embed the TDA transformer. "
     "Reload tabular workflow via checkpoint_load; reload TDA via load_tda_bundle. "
-    "Honesty: persistent homology + vectorization → sklearn — not a Mapper "
+    "Honesty: persistent homology + vectorization → sklearn: not a Mapper "
     "research suite or every TDA paper."
 )
 

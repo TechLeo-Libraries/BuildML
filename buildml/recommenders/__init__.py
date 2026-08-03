@@ -1,15 +1,15 @@
 """Recommendation systems (Session-shaped collaborative filtering path).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly …
 Phase 2 (**complete** through TDA).
 
-Phase 3 — Application systems:
-  **Recommendation systems (this module)** — PASS (industry depth R5.3).
-  Search / LTR — **PASS**. Knowledge graphs — **PASS**.
-  Optimisation / decision helpers — **PASS** (``buildml.optimize``).
-  Synthetic-data systems — **PASS** (``buildml.synthetic``).
+Phase 3: Application systems:
+  **Recommendation systems (this module)**: PASS (industry depth R5.3).
+  Search / LTR: **PASS**. Knowledge graphs: **PASS**.
+  Optimisation / decision helpers: **PASS** (``buildml.optimize``).
+  Synthetic-data systems: **PASS** (``buildml.synthetic``).
 
 Honesty (this package):
   - User/item/interaction tables with explicit ``user_column`` / ``item_column``.
@@ -24,7 +24,7 @@ Honesty (this package):
 Dependency policy: core stays numpy/pandas/sklearn. Industry backends are
 optional via ``recommenders-industry`` extra (implicit, LightFM).
 
-Lazy imports — keep the core import graph light.
+Lazy imports: keep the core import graph light.
 """
 
 from __future__ import annotations

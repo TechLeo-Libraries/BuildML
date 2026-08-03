@@ -6,7 +6,7 @@ column: `fit_federated` runs train-only local updates, aggregates
 holdout. Persist via `buildml.federated_bundle.v1`.
 
 **Backends:** `native` (core) or `flower` with `pip install 'buildml[federated-industry]'`.
-Both are honest in-process simulations — not production FL networking; **not**
+Both are honest in-process simulations: not production FL networking; **not**
 cryptographic secure aggregation.
 
 **Proof:** [federated-hospital-sim](../proofs/federated-hospital-sim/) (+ Tier C pooled SGD twin). Cross-domain: [nexus-federated-clinical](../proofs/nexus-federated-clinical/).

@@ -1,7 +1,7 @@
 """The plumbing every NLP operation shares: column resolution, partitions, metrics.
 
-Each surface in this package — classification, topics, sentiment, summarisation
-— needs the same four things before it can start: find the text column, pull the
+Each surface in this package: classification, topics, sentiment, summarisation
+: needs the same four things before it can start: find the text column, pull the
 right partition, extract the documents, and refuse clearly when any of that is
 ambiguous. Centralising it here is what makes the whole package behave
 consistently, so ``text_column=None`` resolves the same way and an empty
@@ -36,7 +36,7 @@ def candidate_text_columns(frame: pd.DataFrame) -> list[str]:
     """List the string-like columns of a frame, ignoring roles entirely.
 
     The role-blind counterpart to :func:`resolve_text_column`, for code that
-    runs before a session has roles or a split — chiefly the explain resolver,
+    runs before a session has roles or a split: chiefly the explain resolver,
     which needs to say "this dataset looks like it has text in it" while the
     user is still deciding what to do.
 
@@ -73,7 +73,7 @@ def resolve_text_column(dataset: Dataset, text_column: str | None) -> str:
 
     When several candidates remain it does *not* pick one arbitrarily. A column
     only wins automatically if its documents average at least 20 characters and
-    are at least twice as long as the runner-up — the signature of real prose
+    are at least twice as long as the runner-up: the signature of real prose
     sitting beside a short categorical column. Anything less clear-cut raises,
     listing the candidates with their mean lengths, because silently modelling
     the wrong column produces a plausible model of nothing.
@@ -198,7 +198,7 @@ def frame_for(
     -----
     An empty partition raises rather than returning nothing. Downstream, an
     empty frame produces a metric of zero or ``NaN`` that looks like a result,
-    and the real cause — a split that put no rows on one side — would be
+    and the real cause: a split that put no rows on one side: would be
     several steps removed by the time anyone noticed.
     """
     if partition == "all":
@@ -227,7 +227,7 @@ def documents_for(
     """Pull a partition's documents, and the frame they came from.
 
     The frame comes back alongside the documents because callers almost always
-    need both — the text to model, and the other columns to read targets or
+    need both: the text to model, and the other columns to read targets or
     identifiers from, positionally aligned with it.
 
     Parameters
@@ -299,7 +299,7 @@ def targets_for(frame: pd.DataFrame, target_column: str, *, operation: str) -> p
     -----
     Nulls raise rather than being dropped, and the strictness is deliberate.
     Dropping rows here would silently break alignment between documents and
-    labels, and it would quietly change what the metric denominator means —
+    labels, and it would quietly change what the metric denominator means :
     a model evaluated on the subset of rows that happened to have labels is
     not a model evaluated on your holdout. Impute or filter explicitly instead.
     """
@@ -320,7 +320,7 @@ def empty_document_rate(documents: list[str]) -> float:
     """Measure how much of a corpus has no text in it at all.
 
     A blank document produces no features, so the model can only fall back on
-    its class priors — it returns a confident-looking prediction derived from
+    its class priors: it returns a confident-looking prediction derived from
     nothing about that row. This rate is reported on fit and predict results
     for exactly that reason.
 
@@ -388,7 +388,7 @@ def classification_metrics(
     The six are chosen to be hard to misread together. Accuracy alone hides an
     ignored minority class; balanced accuracy averages recall across classes,
     so it collapses when one is never predicted. Macro F1 weights every class
-    equally while weighted F1 weights by frequency — a large gap between them
+    equally while weighted F1 weights by frequency: a large gap between them
     is itself the finding, telling you performance is concentrated in the
     common classes.
 
@@ -417,7 +417,7 @@ def classification_metrics(
     **The probability metrics are added opportunistically, never forced.** They
     are skipped silently when the matrix shape does not match the class list,
     when the true labels include something outside it, or when a class is
-    missing from this partition — all situations where scikit-learn would
+    missing from this partition: all situations where scikit-learn would
     either raise or return a number that means something other than what the
     name suggests. Their absence from the returned dict is the signal that they
     could not be computed honestly.
@@ -469,7 +469,7 @@ def classification_metrics(
     try:
         metrics["log_loss"] = float(log_loss(true_list, matrix, labels=labels))
     except ValueError:
-        # Optional metric — omit when probabilities are degenerate or labels mismatch.
+        # Optional metric: omit when probabilities are degenerate or labels mismatch.
         logger.debug(
             "nlp: log_loss unavailable for this prediction matrix",
             exc_info=True,
@@ -481,7 +481,7 @@ def classification_metrics(
                 roc_auc_score([1 if item == labels[1] else 0 for item in true_list], positive)
             )
         except ValueError:
-            # Optional binary AUC — omit when a class is absent or scores are invalid.
+            # Optional binary AUC: omit when a class is absent or scores are invalid.
             logger.debug(
                 "nlp: binary roc_auc unavailable for this prediction matrix",
                 exc_info=True,
@@ -498,7 +498,7 @@ def classification_metrics(
                 )
             )
         except ValueError:
-            # Optional multiclass AUC — omit when OvR cannot be computed.
+            # Optional multiclass AUC: omit when OvR cannot be computed.
             logger.debug(
                 "nlp: multiclass roc_auc unavailable for this prediction matrix",
                 exc_info=True,
@@ -518,7 +518,7 @@ def per_class_report(
     only the per-class view shows that.
 
     Read precision and recall as a pair. Low recall with high precision means
-    the model rarely predicts this class but is right when it does — it is too
+    the model rarely predicts this class but is right when it does: it is too
     cautious. The reverse means it over-predicts the class. And always check
     support: precision of 1.0 on a class with three documents is noise, not
     performance.
@@ -531,7 +531,7 @@ def per_class_report(
         The predicted labels, aligned with ``y_true``.
     classes:
         Which classes to report, and in what order. Include classes absent from
-        the predictions — they score zero, and their absence is exactly the
+        the predictions: they score zero, and their absence is exactly the
         finding.
 
     Returns
@@ -570,7 +570,7 @@ def confusion_rows(
     y_pred: Any,
     classes: tuple[Any, ...],
 ) -> tuple[tuple[int, ...], ...]:
-    """Build the confusion matrix — what got predicted as what.
+    """Build the confusion matrix: what got predicted as what.
 
     Row ``i``, column ``j`` counts documents whose true class is ``classes[i]``
     and whose predicted class is ``classes[j]``. The diagonal is correct
@@ -579,7 +579,7 @@ def confusion_rows(
     This matters more for text than for most tabular problems, because text
     classifiers fail in structured ways. Two categories that share vocabulary
     get conflated with each other and with nothing else, which shows up as a
-    single hot off-diagonal cell — and points directly at either a labelling
+    single hot off-diagonal cell: and points directly at either a labelling
     boundary that is genuinely fuzzy or two categories that should be merged.
 
     Parameters
@@ -668,7 +668,7 @@ def token_stats(documents: list[str], normalize_plan: Any) -> dict[str, float]:
         The documents to measure.
     normalize_plan:
         The plan used to tokenise. Counts are of surviving tokens, so stopword
-        removal and length filters are reflected — this measures what the model
+        removal and length filters are reflected: this measures what the model
         will actually see, not what the raw text contains.
 
     Returns
@@ -706,7 +706,7 @@ def char_stats(documents: list[str]) -> dict[str, float]:
 
     The cheap sibling of :func:`token_stats`: no tokenisation, no plan, and
     therefore usable during profiling before any normalisation has been
-    decided. It also sees what tokenising hides — a document that is entirely
+    decided. It also sees what tokenising hides: a document that is entirely
     punctuation or markup has characters but no tokens.
 
     Parameters

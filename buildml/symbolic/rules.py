@@ -88,11 +88,11 @@ class Rule:
     """If-then rule: AND(antecedents) → consequent.
 
     ``hardness``:
-      - ``hard`` — override / repair predictions when fired
-      - ``soft`` — blend / prefer with ``strength`` in neuro-symbolic modes
+      - ``hard``: override / repair predictions when fired
+      - ``soft``: blend / prefer with ``strength`` in neuro-symbolic modes
     ``kind``:
-      - ``classification`` / ``regression`` — prediction rules
-      - ``constraint`` — constraint overlay / repair (neuro-symbolic)
+      - ``classification`` / ``regression``: prediction rules
+      - ``constraint``: constraint overlay / repair (neuro-symbolic)
     """
 
     rule_id: str

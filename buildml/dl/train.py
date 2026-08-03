@@ -7,7 +7,7 @@ care is.
 
 **Validation is measured, never learned from.** The validation pass runs with no
 optimiser, so no gradient reaches the weights. Early stopping reads that loss
-and it alone — stopping on training loss would only detect that the model
+and it alone: stopping on training loss would only detect that the model
 stopped memorising, which tells you nothing about generalisation, and it is the
 reason a validation partition is required rather than optional.
 
@@ -20,7 +20,7 @@ monitored epoch is snapshotted and restored.
 columns, a different target, or a different task would produce a model that
 trains without complaint and means nothing. All three are compared against the
 saved contract and refused on mismatch. Optimiser and scheduler state are
-restored too — Adam's momentum estimates are part of where training had reached,
+restored too: Adam's momentum estimates are part of where training had reached,
 and discarding them makes a resumed run stumble for several epochs.
 
 Anything that changes silently is recorded as a warning rather than left
@@ -237,8 +237,8 @@ def train_supervised_module(
     """Train a module for a number of epochs, watching validation as it goes.
 
     Moves the module to the resolved device, builds an optimiser and any
-    scheduler, then runs the epoch loop — training pass, optional validation
-    pass, early-stopping check, scheduler step — until the epochs are exhausted
+    scheduler, then runs the epoch loop: training pass, optional validation
+    pass, early-stopping check, scheduler step: until the epochs are exhausted
     or patience runs out.
 
     Parameters
@@ -255,7 +255,7 @@ def train_supervised_module(
     loss_fn:
         A callable ``(module, inputs, targets) -> loss``. Defaults to cross
         entropy for classification and mean squared error for regression. Pass
-        your own for a custom objective — the signature takes the module rather
+        your own for a custom objective: the signature takes the module rather
         than its output so that multi-output or auxiliary-loss models are
         expressible.
     optimizer_factory:
@@ -298,7 +298,7 @@ def train_supervised_module(
     while meaning nothing. Each is refused with a message naming the mismatch.
 
     **``mixed_precision=True`` off CUDA is a no-op with a warning.** It is not
-    an error — the same configuration should run on a laptop and a GPU box — but
+    an error: the same configuration should run on a laptop and a GPU box: but
     the speedup will not be there, and silence about that would be misleading.
 
     Examples
@@ -349,7 +349,7 @@ def train_supervised_module(
     if prior is not None and prior.optimizer_state is not None:
         try:
             optimizer.load_state_dict(prior.optimizer_state)
-        except Exception as exc:  # noqa: BLE001 — surface as ValidationError
+        except Exception as exc:  # noqa: BLE001: surface as ValidationError
             raise ValidationError(
                 f"Could not restore optimizer state for resume: {exc}"
             ) from exc

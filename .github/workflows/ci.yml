@@ -63,7 +63,7 @@ jobs:
         run: python scripts/domain_maturity_index.py --check --report
 
       # Coverage fail_under comes from pyproject.toml [tool.coverage.report]
-      # (currently 25 — ratchet measured against classical+checkpoint smoke ~26.5%).
+      # and scripts/coverage_ratchet.json (active 60; next 70).
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 
@@ -376,7 +376,7 @@ jobs:
       - name: Extra-focused tests (skip-friendly)
         run: pytest ${{ matrix.tests }} -q
 
-  # Benchmark smokes (25 scripts via scripts/run_benchmark_smokes.py): core install
+  # Benchmark smokes (26 scripts via scripts/run_benchmark_smokes.py): core install
   # only — each script skips optional industry backends when extras are missing.
   # Covers R1–R6 domains (SSL through RL). Linux-only: Torch / PyG / some industry
   # wheels are flaky or unavailable on Windows CI; do not add windows-latest here.
@@ -402,3 +402,29 @@ jobs:
 
       - name: Benchmark smoke scripts
         run: python scripts/run_benchmark_smokes.py --verbose
+
+  # Proof smoke gate: Tier A CI subset, always re-run (no --skip-existing).
+  # Core install only; scripts honest-skip missing extras. Linux-only for the
+  # same wheel reasons as benchmarks.
+  proofs-smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package (core + pytest tooling)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Tier A proof smoke (no skip-existing)
+        run: python -m proofs._lib.run_all --smoke --timeout 600

@@ -1,4 +1,4 @@
-# Knowledge graphs — deep guide
+# Knowledge graphs: deep guide
 
 Session-shaped knowledge graphs: triples, embeddings, filtered link
 prediction, and symbolic structure queries. This is a **learning/query
@@ -6,31 +6,31 @@ path**, not a graph database product.
 
 ## What BuildML ships
 
-1. **Triple store from columns** — `head_column`, `relation_column`,
+1. **Triple store from columns**: `head_column`, `relation_column`,
    `tail_column` on Session rows. Unique train triples only.
 2. **Embedding backends**
    - **native** (core): pure-numpy **TransE** and **DistMult** with margin
      ranking loss and uniform negative sampling.
    - **pykeen** (`buildml[kg-industry]`): PyKEEN pipeline for **TransE**,
      **DistMult**, **RotatE**, and **ComplEx** on train-only triples.
-3. **Link prediction** — `score_triples`, `predict_links(mode='tail'|'head'|'relation')`.
-4. **Evaluation** — filtered **MRR**, **Hits@1/3/K** (head+tail average).
-5. **Symbolic query** — `query_kg(mode='neighbors'|'typed'|'path')` on
+3. **Link prediction**: `score_triples`, `predict_links(mode='tail'|'head'|'relation')`.
+4. **Evaluation**: filtered **MRR**, **Hits@1/3/K** (head+tail average).
+5. **Symbolic query**: `query_kg(mode='neighbors'|'typed'|'path')` on
    train adjacency (BFS, not LLM / Cypher).
-6. **Bundle** — `buildml.kg_bundle.v1` (`meta.json` + `kg_plan.joblib`).
-7. **Capability matrix** — `kg_capability_matrix()` reports honest backend
+6. **Bundle**: `buildml.kg_bundle.v1` (`meta.json` + `kg_plan.joblib`).
+7. **Capability matrix**: `kg_capability_matrix()` reports honest backend
    availability and install hints.
 
 ## Honesty boundaries
 
 | Claim | Reality |
 |-------|---------|
-| Neo4j / Cypher product | **No** — in-memory train adjacency + embeddings |
-| Graph ML node classify | **Separate** — `set_graph` / `fit_graph` |
-| RAG | **Separate** — chunk embed/retrieve/generate |
-| Torch / PyG required (core) | **No** — numpy SGD native fallback |
-| PyKEEN industry models | **Optional** — `pip install 'buildml[kg-industry]'` |
-| Production KG platform | **No** — Session-scale complete path |
+| Neo4j / Cypher product | **No**: in-memory train adjacency + embeddings |
+| Graph ML node classify | **Separate**: `set_graph` / `fit_graph` |
+| RAG | **Separate**: chunk embed/retrieve/generate |
+| Torch / PyG required (core) | **No**: numpy SGD native fallback |
+| PyKEEN industry models | **Optional**: `pip install 'buildml[kg-industry]'` |
+| Production KG platform | **No**: Session-scale complete path |
 
 ## Backend selection
 
@@ -98,7 +98,7 @@ OOV entities/relations are skipped and counted in `n_skipped_unknown`.
 - [ ] Triple id columns marked `id` / `ignore` so classical `fit()` ignores them
 - [ ] Read fit disclosures for backend and negative sampling
 - [ ] Evaluate with `evaluate_kg`, not training loss alone
-- [ ] Reload via `load_kg_bundle` — Session checkpoints do not embed `KgPlan`
+- [ ] Reload via `load_kg_bundle`: Session checkpoints do not embed `KgPlan`
 
 ## API surface
 
@@ -123,9 +123,9 @@ and PyKEEN runs when installed.
 
 ## Tracker
 
-Phase 3 application systems — depth-first:
+Phase 3 application systems: depth-first:
 
-1. Recommendation systems — **PASS**
-2. Search / LTR — **PASS**
-3. Knowledge graphs (this guide) — **PASS** (R5.6 industry depth)
+1. Recommendation systems: **PASS**
+2. Search / LTR: **PASS**
+3. Knowledge graphs (this guide): **PASS** (R5.6 industry depth)
 4. Next: **probabilistic** (R5.7)

@@ -59,7 +59,7 @@ class CbrSessionMixin:
     ) -> CbrFitResult:
         """Build a case base from Session train.
 
-        Session facade over :func:`buildml.session.cbr_ops.fit_cbr_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.cbr_ops.fit_cbr_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -100,7 +100,7 @@ class CbrSessionMixin:
     ) -> CbrRetrieveResult:
         """Retrieve k nearest cases for a partition (no reuse).
 
-        Session facade over :func:`buildml.session.cbr_ops.retrieve_cases_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.cbr_ops.retrieve_cases_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -126,7 +126,7 @@ class CbrSessionMixin:
     ) -> CbrPredictResult:
         """Predict via retrieve + reuse (no case-base update).
 
-        Session facade over :func:`buildml.session.cbr_ops.predict_cbr_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.cbr_ops.predict_cbr_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -154,7 +154,7 @@ class CbrSessionMixin:
     ) -> CbrEvalResult:
         """Evaluate CBR on a holdout partition.
 
-        Session facade over :func:`buildml.session.cbr_ops.evaluate_cbr_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.cbr_ops.evaluate_cbr_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -179,7 +179,7 @@ class CbrSessionMixin:
     ) -> CbrRetainResult:
         """Retain new labeled cases (refuses Session validation/test indices).
 
-        Session facade over :func:`buildml.session.cbr_ops.retain_cbr_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.cbr_ops.retain_cbr_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -262,7 +262,7 @@ class CbrSessionMixin:
     def save_cbr_bundle(self, path: str | Path) -> Path:
         """Persist the active CbrPlan.
 
-        Session facade over :func:`buildml.session.cbr_ops.save_cbr_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.cbr_ops.save_cbr_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -279,7 +279,7 @@ class CbrSessionMixin:
     def load_cbr_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a CBR bundle into this Session.
 
-        Session facade over :func:`buildml.session.cbr_ops.load_cbr_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.cbr_ops.load_cbr_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

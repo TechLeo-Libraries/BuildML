@@ -2,7 +2,7 @@
 
 A DataLoader is the thing a Torch training loop iterates: it batches rows,
 optionally shuffles them, and hands tensors to the model. Building one from a
-BuildML Dataset is mostly mechanical, and this module does that work — but it
+BuildML Dataset is mostly mechanical, and this module does that work: but it
 also verifies the split before creating anything, which is the part worth
 knowing about.
 
@@ -15,7 +15,7 @@ count is compared against the split plan's index count, since a mismatch means
 rows moved somewhere between the plan and the tensors.
 
 Each of these raises rather than warns. They are all forms of leakage, and
-leakage produces a good score and a bad model — the failure mode most worth
+leakage produces a good score and a bad model: the failure mode most worth
 stopping early.
 
 See Also
@@ -83,7 +83,7 @@ def _verify_group_disjoint(
             overlaps.append(f"{left}/{right}: {len(shared)} shared group(s)")
     if overlaps:
         raise ValidationError(
-            "Group split leakage: the same group appears in multiple partitions — "
+            "Group split leakage: the same group appears in multiple partitions: "
             + "; ".join(overlaps)
         )
     return True, warnings
@@ -179,7 +179,7 @@ def make_loaders(
     Notes
     -----
     **Only the train loader shuffles.** Shuffling changes the order gradients
-    arrive in, which matters for learning and not at all for scoring — so
+    arrive in, which matters for learning and not at all for scoring: so
     validation and test iterate in a fixed order, keeping their metrics
     reproducible.
 
@@ -274,7 +274,7 @@ def make_loaders(
         if len(x) != expected:
             raise ValidationError(
                 f"Loader partition '{name}' has {len(x)} rows but SplitPlan lists "
-                f"{expected} indices — refusing to proceed (possible leakage)."
+                f"{expected} indices: refusing to proceed (possible leakage)."
             )
         dataset_t = arrays_to_tensor_dataset(x, y, task=contract.task)
         shuffle = bool(cfg.shuffle_train and name == "train")

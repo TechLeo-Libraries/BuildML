@@ -79,7 +79,7 @@ class TextNormalizeConfig:
         """Return the normalisation settings as plain JSON-safe values.
 
         Recorded on the plan and in model cards, because normalisation decides
-        what a "token" is — two models with different settings are not
+        what a "token" is: two models with different settings are not
         comparable even on identical text.
 
         Returns
@@ -102,7 +102,7 @@ class TextNormalizeConfig:
 
 @dataclass(slots=True)
 class NlpVectorizeConfig:
-    """How documents become numbers — the settings, not the fitted vocabulary.
+    """How documents become numbers: the settings, not the fitted vocabulary.
 
     Unlike :class:`TextNormalizeConfig`, everything here feeds a step that
     *learns* from the corpus: which terms exist, how often each appears, how
@@ -115,7 +115,7 @@ class NlpVectorizeConfig:
     kind:
         ``'tfidf'``, ``'count'``, or ``'hashing'``. TF-IDF down-weights terms
         that appear everywhere and is the usual choice; hashing trades away an
-        invertible vocabulary — and therefore token attributions — for bounded
+        invertible vocabulary: and therefore token attributions: for bounded
         memory.
     analyzer:
         ``'word'`` or ``'char'``. Character n-grams survive typos and work on
@@ -127,7 +127,7 @@ class NlpVectorizeConfig:
         Vocabulary cap, keeping the most frequent terms. The main memory
         control.
     min_df:
-        Discard terms appearing in fewer than this many documents — an integer
+        Discard terms appearing in fewer than this many documents: an integer
         counts documents, a float is a proportion. The cheapest way to remove
         typos.
     max_df:
@@ -156,8 +156,8 @@ class NlpVectorizeConfig:
     def to_dict(self) -> dict[str, Any]:
         """Return the vectorizer settings as plain JSON-safe values.
 
-        Stored on the fitted plan so the representation can be described — and
-        judged — without unpickling it.
+        Stored on the fitted plan so the representation can be described: and
+        judged: without unpickling it.
 
         Returns
         -------

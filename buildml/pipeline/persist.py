@@ -7,7 +7,7 @@ That makes it the wrong choice most of the time. A model trained on preprocessed
 data needs those transforms to predict correctly, and saving it alone is how a
 deployed model ends up scoring raw rows against training-time assumptions.
 Reach for :mod:`buildml.pipeline.bundle` unless the preprocessing genuinely
-lives outside BuildML — an upstream feature store, an ETL job — in which case
+lives outside BuildML: an upstream feature store, an ETL job: in which case
 this is exactly right and a bundle would only add empty files.
 
 See Also
@@ -87,7 +87,7 @@ def load_fit_result(path: str | Path, *, trusted: bool = False) -> FitResult:
 
     Both files must be present. An estimator without its metadata gives no way
     to know which columns it expects or in what order, and guessing would
-    produce predictions from misaligned features — so a partial artifact is
+    produce predictions from misaligned features: so a partial artifact is
     rejected rather than half-loaded.
 
     Parameters

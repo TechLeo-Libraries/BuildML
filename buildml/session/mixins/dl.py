@@ -56,7 +56,7 @@ class DlSessionMixin:
     ) -> TorchLoaderBundle:
         """Build Torch DataLoaders from current roles and split partitions.
 
-        Session facade over :func:`buildml.session.dl_ops.make_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.make_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -94,7 +94,7 @@ class DlSessionMixin:
     ) -> TorchLoaderBundle:
         """Build token-id DataLoaders for text classification (non-tabular modality).
 
-        Session facade over :func:`buildml.session.dl_ops.make_text_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.make_text_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -139,7 +139,7 @@ class DlSessionMixin:
     ) -> Session:
         """Train an ``nn.Module`` on the train Torch loader.
 
-        Session facade over :func:`buildml.session.dl_ops.fit_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.fit_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -198,7 +198,7 @@ class DlSessionMixin:
     ) -> TorchLoaderBundle:
         """Build fused multimodal DataLoaders (tabular/text/image/audio mixes).
 
-        Session facade over :func:`buildml.session.dl_ops.make_multimodal_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.make_multimodal_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -260,7 +260,7 @@ class DlSessionMixin:
     ) -> TorchLoaderBundle:
         """Build image multimodal loaders (image ⊕ tabular and/or text and/or audio).
 
-        Session facade over :func:`buildml.session.dl_ops.make_image_multimodal_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.make_image_multimodal_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -320,7 +320,7 @@ class DlSessionMixin:
     ) -> TorchLoaderBundle:
         """Build audio multimodal loaders (audio ⊕ tabular and/or text and/or image).
 
-        Session facade over :func:`buildml.session.dl_ops.make_audio_multimodal_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.make_audio_multimodal_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -371,7 +371,7 @@ class DlSessionMixin:
     ) -> TorchCVResult:
         """Fold-local Torch CV on the attached numeric tabular dataset.
 
-        Session facade over :func:`buildml.session.dl_ops.cross_validate_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.cross_validate_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -418,7 +418,7 @@ class DlSessionMixin:
     ) -> Any:
         """Inner-fold Torch hyperparameter search on the Session train universe.
 
-        Session facade over :func:`buildml.session.dl_ops.search_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.search_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -471,7 +471,7 @@ class DlSessionMixin:
     ) -> Any:
         """Nested Torch CV: outer evaluation after fold-local inner hyperparameter search.
 
-        Session facade over :func:`buildml.session.dl_ops.nested_cv_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.nested_cv_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -514,7 +514,7 @@ class DlSessionMixin:
     ) -> Any:
         """Export the last Torch trainer to TorchScript or ONNX.
 
-        Session facade over :func:`buildml.session.dl_ops.export_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.export_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -549,7 +549,7 @@ class DlSessionMixin:
     ) -> Any:
         """DDP training via a fresh ``module_factory`` per process.
 
-        Session facade over :func:`buildml.session.dl_ops.fit_torch_ddp`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.fit_torch_ddp`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -588,7 +588,7 @@ class DlSessionMixin:
     ) -> TorchLoaderBundle:
         """Build speech classification loaders (finetune-lite encoder path).
 
-        Session facade over :func:`buildml.session.dl_ops.make_speech_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.make_speech_torch_loaders`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -631,7 +631,7 @@ class DlSessionMixin:
     ) -> Session:
         """Fine-tune a tiny speech encoder + classifier head (finetune-lite).
 
-        Session facade over :func:`buildml.session.dl_ops.fit_speech_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.fit_speech_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -672,7 +672,7 @@ class DlSessionMixin:
     ) -> Any:
         """ASR transcription for an audio feature column.
 
-        Session facade over :func:`buildml.session.dl_ops.transcribe_speech`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.transcribe_speech`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -712,7 +712,7 @@ class DlSessionMixin:
     ) -> Any:
         """Launch BuildML managed serving for a pipeline or TorchScript artifact.
 
-        Session facade over :func:`buildml.session.dl_ops.serve_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.serve_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -751,7 +751,7 @@ class DlSessionMixin:
     ) -> Any:
         """Load a curated pretrained vision/audio/speech backbone (integration hook).
 
-        Session facade over :func:`buildml.session.dl_ops.load_pretrained_backbone`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.load_pretrained_backbone`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -781,7 +781,7 @@ class DlSessionMixin:
     ) -> Any:
         """Attach a classification head to the Session pretrained backbone.
 
-        Session facade over :func:`buildml.session.dl_ops.attach_backbone_head`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.attach_backbone_head`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -808,7 +808,7 @@ class DlSessionMixin:
     ) -> Any:
         """Score ASR hypotheses vs references (WER/CER); reuse last transcription texts.
 
-        Session facade over :func:`buildml.session.dl_ops.evaluate_asr`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.evaluate_asr`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -836,7 +836,7 @@ class DlSessionMixin:
     ) -> Any:
         """Pack a TorchScript artifact into a TorchServe-ready directory layout.
 
-        Session facade over :func:`buildml.session.dl_ops.pack_torchserve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.pack_torchserve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -865,7 +865,7 @@ class DlSessionMixin:
     ) -> Any:
         """Write a TensorRT ``trtexec`` plan next to a validated ONNX artifact.
 
-        Session facade over :func:`buildml.session.dl_ops.prepare_tensorrt_export`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.prepare_tensorrt_export`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -904,7 +904,7 @@ class DlSessionMixin:
     ) -> Any:
         """Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only).
 
-        Session facade over :func:`buildml.session.dl_ops.emit_k8s_ddp_job`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.emit_k8s_ddp_job`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -949,7 +949,7 @@ class DlSessionMixin:
     ) -> Any:
         """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
 
-        Session facade over :func:`buildml.session.dl_ops.emit_k8s_serve_deployment`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.emit_k8s_serve_deployment`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -993,7 +993,7 @@ class DlSessionMixin:
     ) -> Session:
         """Domain-adapt / finetune-lite speech classify (not FM continued pretrain).
 
-        Session facade over :func:`buildml.session.dl_ops.domain_adapt_speech_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.domain_adapt_speech_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -1024,7 +1024,7 @@ class DlSessionMixin:
     def refuse_speech_foundation_pretrain(self) -> None:
         """Refuse FM-from-scratch / large continued-pretrain with an explicit error.
 
-        Session facade over :func:`buildml.session.dl_ops.refuse_speech_foundation_pretrain`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.refuse_speech_foundation_pretrain`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         See Also
         --------
@@ -1155,7 +1155,7 @@ class DlSessionMixin:
     def torch_training_curve(self) -> TrainingCurveReport:
         """Return structured training-curve teaching data for the last Torch run.
 
-        Session facade over :func:`buildml.session.dl_ops.torch_training_curve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.torch_training_curve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -1177,7 +1177,7 @@ class DlSessionMixin:
     ) -> DLEvaluateResult:
         """Evaluate the last Torch trainer on a named partition.
 
-        Session facade over :func:`buildml.session.dl_ops.evaluate_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.evaluate_torch`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -1194,7 +1194,7 @@ class DlSessionMixin:
     def save_torch_bundle(self, path: str | Path) -> Path:
         """Persist the last Torch trainer as ``buildml.torch_bundle.v1``.
 
-        Session facade over :func:`buildml.session.dl_ops.save_torch_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.save_torch_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -1218,7 +1218,7 @@ class DlSessionMixin:
     ) -> Session:
         """Load a Torch trainer bundle into this Session.
 
-        Session facade over :func:`buildml.session.dl_ops.load_torch_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.dl_ops.load_torch_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

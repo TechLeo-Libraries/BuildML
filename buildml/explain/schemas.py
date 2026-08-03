@@ -142,7 +142,7 @@ class LearningLevel(str, Enum):
 
         Public methods accept plain strings so users never have to import an
         enum to ask for a level. Every entry point routes through here, which is
-        also where an unrecognised level is rejected — quietly falling back to a
+        also where an unrecognised level is rejected: quietly falling back to a
         default would leave someone believing they had asked for more depth than
         they received.
 
@@ -371,12 +371,12 @@ class ConceptNote(SerializableSchema):
 
     A note is written in three layers so one artifact serves every reader:
 
-    * **Beginner layer** — ``plain_summary``, ``analogy``, ``beginner_steps``,
+    * **Beginner layer**: ``plain_summary``, ``analogy``, ``beginner_steps``,
       ``when_to_use`` / ``when_not_to_use``, ``misconceptions``, ``glossary``,
       ``mini_example``, ``check_yourself``. No prior ML vocabulary assumed.
-    * **Intermediate layer** — ``definition``, ``why_it_matters``,
+    * **Intermediate layer**: ``definition``, ``why_it_matters``,
       ``how_buildml_uses``, ``interpretation_rules``, ``buildml_tools``.
-    * **Advanced layer** — ``formal_idea``, ``assumptions``, ``failure_modes``,
+    * **Advanced layer**: ``formal_idea``, ``assumptions``, ``failure_modes``,
       ``anti_patterns``, ``worked_example_pattern``.
 
     ``details`` remains the searchable flat paragraph list and is rebuilt to
@@ -592,9 +592,9 @@ _OPERATION_SPEC_SEQUENCES = frozenset(
 class OperationPrimer(SerializableSchema):
     """Beginner-first briefing attached to every operation explanation.
 
-    The primer answers the questions a newcomer actually asks — *what is this,
+    The primer answers the questions a newcomer actually asks: *what is this,
     why would I run it, what has to be true first, what will change, what words
-    am I looking at* — before any expert prose appears.
+    am I looking at*: before any expert prose appears.
     """
 
     operation: str

@@ -21,7 +21,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Write rules as conditions over column values, each with an outcome.",
             "Order matters: the list is evaluated top to bottom and the first match wins.",
             "Provide a default outcome for rows no rule covers.",
-            "Predict — you get the outcome plus the identity of the rule that produced it.",
+            "Predict: you get the outcome plus the identity of the rule that produced it.",
             "Evaluate on held-out rows exactly as you would any other model.",
         ),
         use=(
@@ -30,7 +30,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use rules for problems with many subtle interacting factors; you will write hundreds of clauses and still lose to a model.",
-            "Do not use them when the pattern shifts frequently — every change means a human editing the list.",
+            "Do not use them when the pattern shifts frequently: every change means a human editing the list.",
         ),
         myths=(
             (
@@ -61,7 +61,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "symbolic-induction",
         plain=(
-            "There are two ways to get a rule list. You can write it yourself from domain knowledge — "
+            "There are two ways to get a rule list. You can write it yourself from domain knowledge: "
             "nothing is learned, so nothing can leak. Or you can induce it from data with a decision tree "
             "or a decision-list algorithm, in which case it is a fitted model bound by the usual train-only "
             "discipline."
@@ -83,7 +83,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not induce rules on the full dataset and then evaluate on part of it; induction is fitting.",
-            "Do not accept an induced rule list without reading it — induction produces clauses that are statistically valid and occasionally absurd.",
+            "Do not accept an induced rule list without reading it: induction produces clauses that are statistically valid and occasionally absurd.",
         ),
         myths=(
             (
@@ -112,7 +112,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         "symbolic-traces",
         plain=(
             "Every symbolic prediction comes with its receipt: which rules matched the row, and which one "
-            "actually produced the answer. That is the whole reason to use rules — you can point at the "
+            "actually produced the answer. That is the whole reason to use rules: you can point at the "
             "clause and defend or change it."
         ),
         analogy=(
@@ -121,7 +121,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Predict as usual with `predict_symbolic`.",
             "The result carries the fired rule identifiers per row.",
-            "It also identifies the deciding rule — the first match in the ordered list.",
+            "It also identifies the deciding rule: the first match in the ordered list.",
             "Rows that matched nothing are marked as falling through to the default.",
             "Aggregate across rows to see which rules carry the workload and which never fire.",
         ),
@@ -131,7 +131,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not treat the trace as a causal explanation; it explains the decision procedure, not the world.",
-            "Do not ignore fall-through rows — a high default rate means your rule set does not actually cover your data.",
+            "Do not ignore fall-through rows: a high default rate means your rule set does not actually cover your data.",
         ),
         myths=(
             (
@@ -173,7 +173,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Rules-as-features mode: each rule becomes a yes/no column the model can learn to use.",
             "Constraint-repair mode: the model predicts freely and violations are corrected afterwards.",
             "Pick the mode that matches whether the rules are hints or hard requirements.",
-            "Evaluate the combination end to end — a well-intended override can make things worse.",
+            "Evaluate the combination end to end: a well-intended override can make things worse.",
         ),
         use=(
             "When some cases have non-negotiable answers regardless of what the data suggests.",
@@ -181,7 +181,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use overlay mode with soft, heuristic rules; you are overriding a fitted model with a guess.",
-            "Do not layer many interacting rules on top of a model without measuring — the combination becomes as hard to reason about as either part alone.",
+            "Do not layer many interacting rules on top of a model without measuring: the combination becomes as hard to reason about as either part alone.",
         ),
         myths=(
             (
@@ -220,7 +220,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a symbolic or neuro-symbolic plan.",
-            "Call `save_symbolic_bundle(path)` — rule text, order, and default all travel together.",
+            "Call `save_symbolic_bundle(path)`: rule text, order, and default all travel together.",
             "Reload with `load_symbolic_bundle(path)`.",
             "Predict with traces intact.",
             "Keep checkpoints separately for the data.",
@@ -231,7 +231,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not maintain the rules in a spreadsheet and the bundle separately; they will diverge and the bundle is what actually runs.",
-            "Do not reorder rules at load time — order is semantics, not presentation.",
+            "Do not reorder rules at load time: order is semantics, not presentation.",
         ),
         myths=(
             (

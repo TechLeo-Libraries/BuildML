@@ -3,7 +3,7 @@
 The last stage, and the one that determines whether the whole pipeline was worth
 building. A language model asked a question from its own memory will produce
 something plausible whether or not it knows the answer. Given a set of retrieved
-passages and told to answer from those alone, it can be checked — every claim
+passages and told to answer from those alone, it can be checked: every claim
 either traces to a passage the caller can read or it does not.
 
 Three things make that checkable in practice. The prompt labels each passage
@@ -13,7 +13,7 @@ to a chunk, a document, and its text. And a cheap faithfulness pass measures
 whether the answer actually used them.
 
 Failures here are loud on purpose. Zero retrieved passages, a provider error, or
-an empty completion all raise rather than falling back to an ungrounded answer —
+an empty completion all raise rather than falling back to an ungrounded answer :
 a wrong answer that looks grounded is worse than no answer.
 
 No provider is bundled. Core BuildML never imports an LLM SDK; pass any object
@@ -74,7 +74,7 @@ class ChatProvider(Protocol):
     -----
     **Deliberately narrower than a full provider interface.** Streaming, tool
     execution, and multi-turn management are out of scope here, so a wider range
-    of objects — including a five-line test double — can stand in.
+    of objects: including a five-line test double: can stand in.
 
     See Also
     --------
@@ -281,7 +281,7 @@ def assemble_grounded_messages(
     Returns
     -------
     tuple
-        ``(messages, context)`` — the system and user messages, and the context
+        ``(messages, context)``: the system and user messages, and the context
         string, returned separately so faithfulness scoring can measure against
         exactly what the model saw.
 
@@ -365,8 +365,8 @@ def score_faithfulness(
     not.
 
     Neither measures truth, and it is important to be clear about that. This
-    catches the common failure — a model ignoring its context and answering from
-    memory — not subtle misstatement. A fluent, well-cited, entirely wrong
+    catches the common failure: a model ignoring its context and answering from
+    memory: not subtle misstatement. A fluent, well-cited, entirely wrong
     answer scores well here.
 
     Parameters
@@ -381,7 +381,7 @@ def score_faithfulness(
         truncated.
     min_overlap:
         Overlap fraction required for ``grounded`` to be true. The default of
-        0.05 is deliberately permissive — it flags answers with essentially no
+        0.05 is deliberately permissive: it flags answers with essentially no
         relationship to the context rather than judging quality.
 
     Returns
@@ -431,7 +431,7 @@ def score_faithfulness(
         grounded=bool(cited) and overlap >= float(min_overlap),
         disclosures=(
             "Faithfulness uses citation-marker coverage + lexical token overlap.",
-            "Cheap heuristic — not a learned NLI / LLM-as-judge product.",
+            "Cheap heuristic: not a learned NLI / LLM-as-judge product.",
         ),
         limitations=("High overlap does not prove factual correctness.",),
     )
@@ -446,7 +446,7 @@ def generate_from_retrieve(
 ) -> GenerateResult:
     """Answer from passages that have already been retrieved.
 
-    The generation half on its own, for when retrieval already happened — you
+    The generation half on its own, for when retrieval already happened: you
     inspected the hits, reused them across several prompts, or filtered them by
     hand. :func:`generate_grounded` is the same thing with retrieval attached.
 
@@ -481,7 +481,7 @@ def generate_from_retrieve(
     plausible answer with no basis is the failure mode this whole pipeline
     exists to avoid.
 
-    **The provider is called exactly once.** No retries, no fallback model — add
+    **The provider is called exactly once.** No retries, no fallback model: add
     those in the provider if you want them, where the policy is visible.
 
     **Citations record what was supplied, not what was used.** Read
@@ -616,7 +616,7 @@ def generate_grounded(
     of a long prompt. Raise ``k`` with ``rerank=True`` rather than alone.
 
     **The answer is only as good as the retrieval.** When answers are wrong,
-    inspect ``result.retrieve_result.hits`` before changing the prompt — usually
+    inspect ``result.retrieve_result.hits`` before changing the prompt: usually
     the passage needed was never retrieved.
 
     **Determinism depends on the provider.** BuildML's own steps are
@@ -672,9 +672,9 @@ class EchoGroundedProvider:
     """A fake model that cites its sources without needing a network.
 
     Reads the source markers out of the prompt and echoes the first few back in
-    a sentence. That is enough to exercise the full grounded-generation path —
+    a sentence. That is enough to exercise the full grounded-generation path :
     prompt assembly, citation numbering, faithfulness scoring, result
-    construction — with no API key, no network, and identical output every run.
+    construction: with no API key, no network, and identical output every run.
 
     Use it in tests and examples. The answers are structurally correct and
     semantically empty, which is exactly what makes them useful for checking

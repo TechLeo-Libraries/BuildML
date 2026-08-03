@@ -10,7 +10,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         "graph-data-model",
         plain=(
             "Graph machine learning needs two things: a table where each row is an entity (a node) and a "
-            "separate list of connections between them (edges). BuildML keeps them separate — your Session "
+            "separate list of connections between them (edges). BuildML keeps them separate: your Session "
             "frame holds the node features, and you attach the edge list with `set_graph`."
         ),
         analogy=(
@@ -18,19 +18,19 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             "reports to whom. You need both to reason about the organization."
         ),
         steps=(
-            "Make sure each row has a stable identifier column — that is the node ID.",
+            "Make sure each row has a stable identifier column: that is the node ID.",
             "Prepare an edge list: two columns naming the source and target node IDs.",
             "Call `set_graph(edges, node_id_col=...)` to attach it.",
             "BuildML checks that edge endpoints refer to real nodes.",
             "Now graph operations can combine each node's own features with information from its neighbours.",
         ),
         use=(
-            "When relationships genuinely carry signal — fraud rings, citation networks, social influence, supply chains.",
+            "When relationships genuinely carry signal: fraud rings, citation networks, social influence, supply chains.",
             "When a node's neighbours tell you something its own attributes do not.",
         ),
         avoid=(
             "Do not reach for graph methods when your rows are independent; you add substantial complexity for nothing.",
-            "Do not use this as a graph database — BuildML does machine learning on graphs, it does not store or query them at scale.",
+            "Do not use this as a graph database: BuildML does machine learning on graphs, it does not store or query them at scale.",
         ),
         myths=(
             (
@@ -39,7 +39,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "Any dataset with relationships needs graph methods.",
-                "If the relationship can be summarized into a column — 'number of connections', 'household size' — an ordinary model with that column is simpler and often just as good.",
+                "If the relationship can be summarized into a column: 'number of connections', 'household size': an ordinary model with that column is simpler and often just as good.",
             ),
         ),
         example=(
@@ -59,12 +59,12 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         "graph-inductive-transductive",
         plain=(
             "Two ways to split a graph, and they mean different things. Inductive hides the evaluation "
-            "nodes entirely during training — the model never sees them or their connections. Transductive "
+            "nodes entirely during training: the model never sees them or their connections. Transductive "
             "lets the model see the whole structure but hides the evaluation nodes' labels."
         ),
         analogy=(
             "Inductive: training on one office and being tested on a branch you have never visited. "
-            "Transductive: you have walked the whole building and know the layout — you just have not been "
+            "Transductive: you have walked the whole building and know the layout: you just have not been "
             "told what happens in certain rooms."
         ),
         steps=(
@@ -75,7 +75,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             "State which mode you used, because the two are not comparable.",
         ),
         use=(
-            "Inductive when new nodes will arrive after deployment — new users, new accounts, new products.",
+            "Inductive when new nodes will arrive after deployment: new users, new accounts, new products.",
             "Transductive when the graph is fixed and you are filling in missing labels within it.",
         ),
         avoid=(
@@ -109,8 +109,8 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         "graph-classical-features",
         plain=(
             "You do not need a neural network to use a graph. Compute a handful of classical structural "
-            "measures for each node — how many connections it has, how tightly its neighbours interconnect, "
-            "how central it is — append them as columns, and feed the result to any ordinary model."
+            "measures for each node: how many connections it has, how tightly its neighbours interconnect, "
+            "how central it is: append them as columns, and feed the result to any ordinary model."
         ),
         analogy=(
             "Describing someone by how many colleagues they have, whether their colleagues know each other, "
@@ -124,12 +124,12 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Compute the metrics under your split discipline so evaluation nodes do not shape training features.",
         ),
         use=(
-            "As your first graph attempt — it is fast, interpretable, and often captures most of the available signal.",
+            "As your first graph attempt: it is fast, interpretable, and often captures most of the available signal.",
             "When your graph is small enough for exact centrality computation.",
         ),
         avoid=(
             "Do not use it when the signal lies in multi-hop patterns that summary statistics cannot express; that is where graph neural networks earn their cost.",
-            "Do not compute betweenness on a very large graph — it is expensive and will dominate your runtime.",
+            "Do not compute betweenness on a very large graph: it is expensive and will dominate your runtime.",
         ),
         myths=(
             (
@@ -162,7 +162,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         "graph-pyg",
         plain=(
             "PyTorch Geometric is the standard library for graph neural networks. With the optional extra "
-            "installed, BuildML can build GCN, GraphSAGE, or GAT models through it — architectures that let "
+            "installed, BuildML can build GCN, GraphSAGE, or GAT models through it: architectures that let "
             "each node's prediction depend on a learned combination of its neighbours."
         ),
         analogy=(
@@ -172,7 +172,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Install `pip install buildml[graph-pyg]`.",
             "Choose an architecture: GCN averages neighbours uniformly, GraphSAGE samples them, GAT learns attention weights over them.",
-            "Set the number of layers — this is how many hops of influence the model can see. Two is typical.",
+            "Set the number of layers: this is how many hops of influence the model can see. Two is typical.",
             "Train with a mask so only training-node labels contribute to the loss.",
             "Evaluate on the held-out node mask.",
         ),
@@ -181,7 +181,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             "On large graphs where GraphSAGE's neighbour sampling makes training feasible.",
         ),
         avoid=(
-            "Do not stack many layers — beyond three or four, every node's representation converges to the same thing, a failure called over-smoothing.",
+            "Do not stack many layers: beyond three or four, every node's representation converges to the same thing, a failure called over-smoothing.",
             "Do not use it on a graph with very few labelled nodes; graph neural networks are data-hungry like any neural network.",
         ),
         myths=(
@@ -215,7 +215,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "BuildML also ships a compact graph convolutional network written directly in PyTorch, with no "
             "PyTorch Geometric required. It is a one- or two-layer GCN using a normalized adjacency matrix "
-            "— enough for many node-classification problems and far lighter to install."
+            ": enough for many node-classification problems and far lighter to install."
         ),
         analogy=(
             "A simple recipe with three ingredients that gets you most of the way, rather than the "
@@ -234,7 +234,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it on very large graphs; the dense normalized adjacency does not scale the way sampled approaches do.",
-            "Do not expect the architectural variety of PyG — this is GCN, not a menu of designs.",
+            "Do not expect the architectural variety of PyG: this is GCN, not a menu of designs.",
         ),
         myths=(
             (

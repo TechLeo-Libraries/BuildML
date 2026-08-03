@@ -12,7 +12,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
         _note(
             key="metalearning-episodic",
             title="Episodic few-shot meta-learning on Session tasks",
-            summary="Carve tasks via a task/group column; meta-train on train; evaluate with support/query episodes — not foundation-model MAML-at-scale.",
+            summary="Carve tasks via a task/group column; meta-train on train; evaluate with support/query episodes: not foundation-model MAML-at-scale.",
             definition=(
                 "Meta-learning in BuildML treats rows sharing a task/group id as "
                 "one episodic task. Meta-train runs few-shot support/query "
@@ -62,7 +62,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
         _note(
             key="metalearning-prototypical",
             title="Tabular prototypical (nearest-centroid) few-shot",
-            summary="Class prototypes = mean support features; query classified by nearest prototype — no learned neural embedding.",
+            summary="Class prototypes = mean support features; query classified by nearest prototype: no learned neural embedding.",
             definition=(
                 "method='prototypical' builds a mean feature vector per class from "
                 "the support set and assigns query rows by euclidean nearest "
@@ -162,7 +162,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
         _note(
             key="metalearning-maml",
             title="Industry tabular MAML/Reptile (first-order)",
-            summary="Inner-loop support adapt + outer episodic meta-update — small-scale, not MAML-at-scale.",
+            summary="Inner-loop support adapt + outer episodic meta-update: small-scale, not MAML-at-scale.",
             definition=(
                 "backend='industry' with method='maml' or 'reptile' runs first-order "
                 "tabular meta-learning with optional learn2learn MAML wrapper."
@@ -202,7 +202,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "A meta-learning bundle persists the episodic protocol, feature/task "
                 "contract, label encoder, and optional warm-start init estimator. "
-                "Session checkpoints persist data/roles/splits/history — not "
+                "Session checkpoints persist data/roles/splits/history: not "
                 "MetaLearningPlan."
             ),
             intuition=(

@@ -29,7 +29,7 @@ engine ops where implemented.
 
 ---
 
-## Use case — DuckDB ingest, filter, then classical fit
+## Use case: DuckDB ingest, filter, then classical fit
 
 ```python
 from pathlib import Path
@@ -51,7 +51,7 @@ pd.DataFrame(
 ).to_csv(path, index=False)
 
 with Session.ingest(str(path), engine="duckdb") as session:
-    # Context manager calls close_native() — release owned DuckDB connections.
+    # Context manager calls close_native(): release owned DuckDB connections.
     pred = portable_filter_expr("amount", ">", 20)
     narrowed = session.dataset.filter_expr(pred)
     # Continue on the Session after syncing / working with the frame:
@@ -71,7 +71,7 @@ Complex SQL remains engine-specific.
 
 ---
 
-## Use case — Polars lazy ingest and projection
+## Use case: Polars lazy ingest and projection
 
 ```python
 # pip install "buildml[polars]"  # after GitHub 2.x
@@ -92,7 +92,7 @@ boundaries. That is not zero-copy Torch loading and not out-of-core `fit`.
 
 ---
 
-## Use case — prepare_design_matrix before sklearn
+## Use case: prepare_design_matrix before sklearn
 
 ```python
 from buildml import Session
@@ -144,10 +144,10 @@ print(report_session.ingest_report)
 
 | Limit | Honest statement |
 | --- | --- |
-| Out-of-core sklearn | **Not supported** — engines help prep, not lazy `fit` |
-| Torch loaders | Materialize via Pandas/NumPy bridge — no Polars zero-copy into DataLoaders |
+| Out-of-core sklearn | **Not supported**: engines help prep, not lazy `fit` |
+| Torch loaders | Materialize via Pandas/NumPy bridge: no Polars zero-copy into DataLoaders |
 | DuckDB leaks | Always `close_native()` or `with session:` |
-| Complex SQL | Not portable — keep engine-specific logic outside `portable_filter_expr` |
+| Complex SQL | Not portable: keep engine-specific logic outside `portable_filter_expr` |
 | After preprocess | Native handles rebuild; verify with `sync_native` if you edited frames externally |
 
 ---

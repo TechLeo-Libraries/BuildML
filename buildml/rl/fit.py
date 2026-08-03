@@ -3,7 +3,7 @@
 Supervised learning is told the right answer. Reinforcement learning is not: it
 chooses an action, sees a reward, and has to work out which action was
 responsible. That gap is what makes it hard, and it is why this module offers
-four modes rather than one algorithm — they differ in what the world lets you
+four modes rather than one algorithm: they differ in what the world lets you
 do.
 
 **Contextual bandits** are the mode most tabular work needs, and the only one
@@ -12,7 +12,7 @@ action taken, and the reward observed. There is no sequence: the action does not
 change what happens next, so credit assignment is one step deep. Recommendation
 slots, offer selection, and treatment choice usually fit this shape. Learning is
 offline, from a fixed log, and holdout scoring is therefore an *estimate* of how
-an alternative policy would have performed — see :mod:`buildml.rl.evaluate` for
+an alternative policy would have performed: see :mod:`buildml.rl.evaluate` for
 what that estimate can and cannot support.
 
 The other three modes need an environment to interact with, because they handle
@@ -20,7 +20,7 @@ sequential problems where an action changes the next situation.
 ``'gym_reinforce'`` runs a linear-softmax policy gradient, ``'tabular_q'`` runs
 TD control over a discretised state table, and ``'gym_sb3'`` hands off to
 Stable-Baselines3. All three need ``buildml[rl]`` or ``buildml[rl-industry]``,
-and none of them read the Session's tabular partitions — they learn in the
+and none of them read the Session's tabular partitions: they learn in the
 environment, and the Session merely holds the resulting policy so it can be
 checkpointed and resumed alongside the rest of your work.
 
@@ -98,7 +98,7 @@ def fit_rl(
     ----------
     dataset:
         The logged table for ``'contextual_bandit'``. Ignored by the
-        environment modes, which learn from the environment instead — pass
+        environment modes, which learn from the environment instead: pass
         ``None`` there.
     split_plan:
         Required for ``'contextual_bandit'``, so the policy is fitted on train
@@ -120,7 +120,7 @@ def fit_rl(
         Within tabular control: ``'q_learning'`` and ``'double_q_learning'``
         learn the greedy policy's value while behaving exploratorily, whereas
         ``'sarsa'`` and ``'expected_sarsa'`` learn the value of the policy they
-        actually follow — the latter matter when exploration itself is costly.
+        actually follow: the latter matter when exploration itself is costly.
         Within Stable-Baselines3: ``'ppo'``, ``'dqn'``, or ``'a2c'``.
     columns:
         Bandit context features. Defaults to the usable columns with the action
@@ -130,7 +130,7 @@ def fit_rl(
     reward_column:
         The reward observed. Falls back to a column literally named ``reward``,
         or to a numeric target when the action came from elsewhere. When the
-        target *is* the action, this must be passed explicitly — quietly reusing
+        target *is* the action, this must be passed explicitly: quietly reusing
         the target as its own reward would produce a meaningless policy.
     alpha:
         LinUCB exploration width. Higher values try under-explored arms more
@@ -192,7 +192,7 @@ def fit_rl(
     -----
     **A bandit's training metrics are not a score.** ``mean_logged_reward`` is
     what the *logging* policy earned, which is the baseline the new policy has
-    to beat — not evidence that it does. Use
+    to beat: not evidence that it does. Use
     :func:`~buildml.rl.evaluate.evaluate_rl` for that.
 
     **A propensity model is fitted alongside the bandit** to estimate how likely
@@ -357,8 +357,8 @@ def _fit_contextual_bandit(
         [
             "Contextual bandit fits on logged train (context, action, reward) only.",
             "Validation/test are never used to update the bandit policy.",
-            "Holdout evaluation uses offline estimators (DM / IPS) — not online A/B.",
-            "Honesty: Session tabular bandits — not a multi-agent / robotics platform.",
+            "Holdout evaluation uses offline estimators (DM / IPS): not online A/B.",
+            "Honesty: Session tabular bandits: not a multi-agent / robotics platform.",
             f"algorithm={algorithm}; n_arms={n_arms}; action={action_col!r}; "
             f"reward={reward_col!r}.",
         ]
@@ -543,7 +543,7 @@ def _fit_tabular_q(
     disclosures = list(disclosures) + [
         "tabular_q does not fit on Session tabular partitions; "
         "the Session hosts the checkpointed Q-table policy for workflow continuity.",
-        "Off-policy TD control here is still an ONLINE env loop — it is not "
+        "Off-policy TD control here is still an ONLINE env loop: it is not "
         "batch offline RL (CQL / IQL / Decision Transformer remain out of scope).",
     ]
     config = RlConfig(

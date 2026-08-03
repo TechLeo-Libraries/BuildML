@@ -1,6 +1,6 @@
 """Condense policy results into the small records history and reports show.
 
-A history entry cannot hold a full result — an acting result contains a score
+A history entry cannot hold a full result: an acting result contains a score
 per arm per row. Each summary function reduces one result to the fields that
 belong in a timeline: what was done, on what, and the numbers a reader would
 want at a glance.
@@ -9,7 +9,7 @@ The ``*_status`` functions do something broader: they describe where a domain
 stands, for a walkthrough or an audit trail. What is attached, what the history
 shows, and the caveats that apply.
 
-Two rules run throughout. They never raise — a missing or malformed result
+Two rules run throughout. They never raise: a missing or malformed result
 becomes an empty dict, because a failed history entry is worse than a thin one.
 And they report facts, never advice; the teaching prose lives in
 :mod:`buildml.explain`, and mixing the two would put opinions in the audit
@@ -129,7 +129,7 @@ def rl_fit_summary(fit_result: Any) -> dict[str, Any]:
     """Condense an RL fit into a history entry.
 
     Keeps mode, backend, and algorithm together, because none of the three
-    identifies a run on its own — the same algorithm name means different things
+    identifies a run on its own: the same algorithm name means different things
     under different modes.
 
     Parameters
@@ -234,7 +234,7 @@ def imitation_status(
 ) -> dict[str, Any]:
     """Describe where the imitation side of a session currently stands.
 
-    Answers "what cloning has happened here and what should I know about it" —
+    Answers "what cloning has happened here and what should I know about it" :
     for a walkthrough, a status display, or an audit record. It reports what is
     attached, what the history shows, and the caveats that apply, all as
     statements of fact rather than advice.
@@ -260,7 +260,7 @@ def imitation_status(
 
     Notes
     -----
-    **A session can show imitation activity with no policy attached** — most
+    **A session can show imitation activity with no policy attached**: most
     often because a checkpoint was reloaded. Checkpoints do not embed policies;
     bundles do. The disclosures say so, so an absent policy is not mistaken for
     lost work.
@@ -296,7 +296,7 @@ def imitation_status(
                 "Behavioral cloning fits on Session train demonstrations only.",
                 "Session checkpoints do not embed ImitationPlan; use "
                 "save_imitation_bundle / load_imitation_bundle.",
-                "Honesty: BC from tables — not inverse RL / DAgger / robotics.",
+                "Honesty: BC from tables: not inverse RL / DAgger / robotics.",
             ]
         )
         for note in getattr(imitation_plan, "disclosures", ()) or ():
@@ -382,7 +382,7 @@ def rl_status(
     """Describe where the RL side of a session currently stands.
 
     Answers "what policy learning has happened here and what should I know
-    about it" — for a walkthrough, a status display, or an audit record.
+    about it": for a walkthrough, a status display, or an audit record.
 
     Parameters
     ----------
@@ -411,7 +411,7 @@ def rl_status(
     true of a bandit.
 
     **A session can show RL activity with no policy attached**, most often after
-    reloading a checkpoint — checkpoints do not embed policies, bundles do.
+    reloading a checkpoint: checkpoints do not embed policies, bundles do.
 
     See Also
     --------
@@ -449,7 +449,7 @@ def rl_status(
                 "(q_learning / sarsa / expected_sarsa / double_q_learning).",
                 "gym_sb3 requires buildml[rl-industry] (SB3 PPO/DQN/A2C).",
                 "Session checkpoints do not embed RlPlan; use save_rl_bundle / load_rl_bundle.",
-                "Honesty: Session bandit / small-env RL — not MuJoCo/robotics/multi-agent.",
+                "Honesty: Session bandit / small-env RL: not MuJoCo/robotics/multi-agent.",
             ]
         )
         for note in getattr(rl_plan, "disclosures", ()) or ():

@@ -14,7 +14,7 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "natural way: leave the target blank. There is no special mystery role to learn."
         ),
         analogy=(
-            "A stack of exam papers where only some have been marked. The unmarked ones are still papers — "
+            "A stack of exam papers where only some have been marked. The unmarked ones are still papers: "
             "you do not put them in a different building, you just note that they have no grade yet."
         ),
         steps=(
@@ -22,14 +22,14 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Leave the target blank (NaN) for the unlabelled ones.",
             "Assign roles as usual; the target column is still the target.",
             "BuildML maps blanks to scikit-learn's internal -1 convention behind the scenes.",
-            "Split as usual — the unlabelled rows live in train, and evaluation still uses labelled holdout rows.",
+            "Split as usual: the unlabelled rows live in train, and evaluation still uses labelled holdout rows.",
         ),
         use=(
-            "When labelling is expensive but raw data is plentiful — medical imaging, moderation, industrial inspection.",
+            "When labelling is expensive but raw data is plentiful: medical imaging, moderation, industrial inspection.",
             "When you already have a big unlabelled backlog sitting in the same system as your labelled sample.",
         ),
         avoid=(
-            "Do not use it when a blank target means something other than 'not yet labelled' — for example, 'this event has not happened yet'.",
+            "Do not use it when a blank target means something other than 'not yet labelled': for example, 'this event has not happened yet'.",
             "Do not mix truly-missing targets and deliberately-unlabelled targets in the same column without a way to tell them apart.",
         ),
         myths=(
@@ -62,7 +62,7 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Semi-supervised methods spread label information from labelled rows to similar unlabelled ones. "
             "All of that happens inside the training partition. The plan is then frozen and evaluated on "
-            "labelled holdout rows — you never invent labels for the rows you are scoring against."
+            "labelled holdout rows: you never invent labels for the rows you are scoring against."
         ),
         analogy=(
             "A study group where a few members know the answers and explain them to the others. That is "
@@ -77,11 +77,11 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "When your labelled sample alone is too small to train a stable model.",
-            "When you have reason to believe similar feature values imply similar labels — which is the core assumption.",
+            "When you have reason to believe similar feature values imply similar labels: which is the core assumption.",
         ),
         avoid=(
             "Do not use it when your unlabelled pool comes from a different population than your labelled sample; propagation will spread the wrong labels confidently.",
-            "Do not let unlabelled rows from validation or test into the fit, even though they carry no labels — their feature values still shape the propagation.",
+            "Do not let unlabelled rows from validation or test into the fit, even though they carry no labels: their feature values still shape the propagation.",
         ),
         myths=(
             (
@@ -112,8 +112,8 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         "semisupervised-vs-novelty",
         plain=(
             "Two BuildML paths both work with partly-unlabelled data and they solve different problems. "
-            "Semi-supervised learning is classification with scarce labels — you want a category. Novelty "
-            "detection is anomaly detection fitted on known-clean rows — you want a strangeness score."
+            "Semi-supervised learning is classification with scarce labels: you want a category. Novelty "
+            "detection is anomaly detection fitted on known-clean rows: you want a strangeness score."
         ),
         analogy=(
             "Sorting mail into departments when only some envelopes are pre-sorted, versus spotting the one "
@@ -124,7 +124,7 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "If you need class labels and have some, use `fit_semisupervised`.",
             "If you need to flag the unfamiliar and can identify clean rows, use `fit_anomaly(mode='novelty')`.",
             "Note that they take different inputs: one needs a partly-labelled target, the other needs a certified-clean subset.",
-            "Do not chain them casually — pseudo-labels from one are not clean training rows for the other.",
+            "Do not chain them casually: pseudo-labels from one are not clean training rows for the other.",
         ),
         use=(
             "Semi-supervised when the categories exist and you are short on examples of them.",
@@ -218,7 +218,7 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "far easier once you have a good sense of similarity."
         ),
         steps=(
-            "Call `fit_ssl_pretext` to learn an encoder from training features — labels are ignored entirely here.",
+            "Call `fit_ssl_pretext` to learn an encoder from training features: labels are ignored entirely here.",
             "Call `transform_ssl` to turn rows into embeddings.",
             "Run `fit_semisupervised` on those embeddings, where similar rows are now genuinely close together.",
             "Freeze both stages and evaluate on labelled holdout rows.",
@@ -230,7 +230,7 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not add the pretraining stage on a small, clean, low-dimensional table; it adds complexity for little gain.",
-            "Do not pretrain on rows from validation or test — the encoder is fitted information like any other.",
+            "Do not pretrain on rows from validation or test: the encoder is fitted information like any other.",
         ),
         myths=(
             (

@@ -29,7 +29,7 @@ Primary holdout: regression metrics plus interval coverage / width (see `results
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `BayesianRidge` + validation residual quantile twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `BayesianRidge` + validation residual quantile twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

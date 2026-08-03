@@ -162,7 +162,7 @@ def is_unlabeled_mask(series: pd.Series, unlabeled_marker: Any = None) -> np.nda
     Returns
     -------
     np.ndarray
-        Boolean mask aligned with ``series`` index — ``True`` for unlabeled rows.
+        Boolean mask aligned with ``series`` index: ``True`` for unlabeled rows.
     """
     missing = series.isna().to_numpy(dtype=bool)
     if unlabeled_marker is None:

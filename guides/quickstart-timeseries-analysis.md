@@ -6,7 +6,7 @@
 
 Descriptive time-series analysis on the same `Session`: `time` role +
 `time_split`, train-only scope by default, decomposition, diagnostics,
-changepoints, and spectral features — distinct from `fit_forecast`.
+changepoints, and spectral features: distinct from `fit_forecast`.
 
 **Go deeper:** [Time-series analysis deep](timeseries-analysis-deep.md) ·
 
@@ -50,7 +50,7 @@ session.ts_diagnostics(acf_lags=30)
 
 ## Honesty bounds
 
-- Descriptive EDA only — not forecast fit (`fit_forecast`) and not a digital twin.
+- Descriptive EDA only: not forecast fit (`fit_forecast`) and not a digital twin.
 - `scope='all'` includes holdout rows; use for exploration, not silent tuning.
 - ADF/KPSS require `buildml[timeseries]`; core fallback exposes ACF/PACF only.
 - Changepoints: PELT/binseg via ruptures when installed; CUSUM fallback otherwise.

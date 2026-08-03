@@ -32,18 +32,18 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Look at each column and ask: at the moment I would make this prediction in real life, would I actually know this value?",
-            "Pick exactly one column as the target — the answer you want the model to produce.",
+            "Pick exactly one column as the target: the answer you want the model to produce.",
             "Mark the columns you genuinely have at prediction time as features.",
             "Mark row identifiers (customer_id, order_id) as `id` and anything you must not learn from as `ignore`.",
             "Mark special columns: `time` for the timestamp, `group` for the entity rows repeat over, `weight` for row importance.",
             "Call `set_roles(...)` so BuildML enforces the plan for every later operation.",
         ),
         use=(
-            "Always, before any operation that needs to know which column is the answer — fitting, evaluating, encoding, or target-aware EDA.",
+            "Always, before any operation that needs to know which column is the answer: fitting, evaluating, encoding, or target-aware EDA.",
             "Whenever you load a new dataset or change its columns, because roles do not survive a schema change automatically.",
         ),
         avoid=(
-            "Do not lean on roles to decide *meaning* — BuildML will happily accept a role you assigned wrongly.",
+            "Do not lean on roles to decide *meaning*: BuildML will happily accept a role you assigned wrongly.",
             "Do not mark a column as a feature just because it is numeric and correlates well; that is exactly how leakage starts.",
         ),
         myths=(
@@ -87,7 +87,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Split your rows first, before you compute anything at all from the data.",
-            "Learn every number you need — medians for filling blanks, category lists, scaling factors, model weights — using training rows only.",
+            "Learn every number you need: medians for filling blanks, category lists, scaling factors, model weights: using training rows only.",
             "Freeze those numbers into a stored plan.",
             "Apply the frozen plan to validation and test rows without recomputing anything.",
             "When a score looks suspiciously good, retrace this list before celebrating.",
@@ -98,7 +98,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "There is no situation where you want leakage. What varies is the *boundary*: for forecasting it is time, for repeat customers it is the customer, not the row.",
-            "Do not treat BuildML's enforcement as proof of safety — it can stop you refitting on test, but it cannot know that `discount_after_complaint` is a leaked column.",
+            "Do not treat BuildML's enforcement as proof of safety: it can stop you refitting on test, but it cannot know that `discount_after_complaint` is a leaked column.",
         ),
         myths=(
             (
@@ -139,7 +139,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Decide what a single independent unit really is: one row? one customer? one week?",
-            "Choose the split style that respects that unit — random for independent rows, `group_split` for repeated entities, `time_split` when the future must stay in the future.",
+            "Choose the split style that respects that unit: random for independent rows, `group_split` for repeated entities, `time_split` when the future must stay in the future.",
             "For classification with a rare class, use stratification so each partition keeps the same class mix.",
             "Run the split before any transform, and record the seed so the same rows land in the same places next time.",
             "If your boundary is too subtle for a built-in rule, design it yourself and hand it over with `inject_split`.",
@@ -149,13 +149,13 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Again from scratch whenever you change what a row represents, such as after aggregating to one row per customer.",
         ),
         avoid=(
-            "Do not use a plain random split when the same person, household, device, or store appears in many rows — near-duplicates will straddle the boundary and inflate your score.",
+            "Do not use a plain random split when the same person, household, device, or store appears in many rows: near-duplicates will straddle the boundary and inflate your score.",
             "Do not use a random split when you are predicting the future; sort by time instead.",
         ),
         myths=(
             (
                 "80/20 is the correct split.",
-                "It is a convention, not a rule. What matters is whether the evaluation partition has enough rows — especially enough *positive* rows — to give a stable number.",
+                "It is a convention, not a rule. What matters is whether the evaluation partition has enough rows: especially enough *positive* rows: to give a stable number.",
             ),
             (
                 "Any split is fine as long as the model never sees the test rows.",
@@ -181,7 +181,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "evaluation-partitions",
         plain=(
             "Validation and test look the same but have different jobs. Validation is the partition you "
-            "are allowed to look at repeatedly while you decide things — which model, which settings, "
+            "are allowed to look at repeatedly while you decide things: which model, which settings, "
             "which cutoff. Test is looked at once, after every decision is locked, to estimate how the "
             "chosen system will actually behave."
         ),
@@ -196,7 +196,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "If the test result makes you change something, be honest: test has become another validation set and you need fresh held-out data for the real claim.",
         ),
         use=(
-            "Whenever you will make more than one modeling decision — which is essentially always.",
+            "Whenever you will make more than one modeling decision: which is essentially always.",
             "When a stakeholder needs a number that stands for future performance rather than for your search process.",
         ),
         avoid=(
@@ -239,7 +239,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "After every transform that adds or removes columns, look at the resulting column list.",
-            "Note which columns were generated (one-hot expansions, date parts, bins) — those are now part of the contract.",
+            "Note which columns were generated (one-hot expansions, date parts, bins): those are now part of the contract.",
             "Save the preprocessing plans together with the model so scoring rebuilds the identical columns.",
             "At scoring time, apply the stored plans rather than re-deriving the transforms by hand.",
             "Decide in advance what should happen when a brand-new category shows up in production.",
@@ -250,7 +250,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not rely on column *order* as the contract; rely on names and stored plans.",
-            "Do not hand-write the scoring transforms in a separate script — that is where the two paths drift apart.",
+            "Do not hand-write the scoring transforms in a separate script: that is where the two paths drift apart.",
         ),
         myths=(
             (
@@ -279,8 +279,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "missing-data",
         plain=(
-            "Imputation fills blank cells with a stand-in value — often the median or the most common "
-            "category — computed from the training rows. It makes the table usable by estimators that "
+            "Imputation fills blank cells with a stand-in value: often the median or the most common "
+            "category: computed from the training rows. It makes the table usable by estimators that "
             "refuse blanks. It does not recover the missing information, and it never tells you *why* "
             "the value was missing."
         ),
@@ -291,17 +291,17 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Count the blanks per column and ask what a blank means in that specific column.",
-            "Separate 'not measured' from 'not applicable' from 'genuinely zero' — they need different treatments.",
+            "Separate 'not measured' from 'not applicable' from 'genuinely zero': they need different treatments.",
             "Choose a strategy: median for skewed numbers, mean for symmetric ones, most-frequent or a literal 'Missing' category for text.",
             "Consider adding a was-missing indicator column when the missingness itself might be informative.",
             "Fit the strategy on train only, then apply the same frozen values to validation and test.",
         ),
         use=(
-            "Whenever the estimator you chose cannot handle blanks — which includes most linear models, SVMs, and distance-based methods.",
+            "Whenever the estimator you chose cannot handle blanks: which includes most linear models, SVMs, and distance-based methods.",
             "When blanks are scattered and few, and dropping the rows would waste useful data.",
         ),
         avoid=(
-            "Skip it when your estimator handles missing values natively and does so meaningfully — HistGradientBoosting learns a direction for blanks, which is often better than a guess.",
+            "Skip it when your estimator handles missing values natively and does so meaningfully: HistGradientBoosting learns a direction for blanks, which is often better than a guess.",
             "Do not impute a column that is 80% blank and expect the result to mean anything; consider dropping it or turning it into a yes/no 'was present' flag.",
         ),
         myths=(
@@ -333,12 +333,12 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Most estimators only read numbers, so text categories such as `region` or `plan_tier` have to "
             "be converted. Encoding is that conversion. The important part is choosing a conversion that "
-            "does not invent facts — turning `red`, `green`, `blue` into 1, 2, 3 tells the model that green "
+            "does not invent facts: turning `red`, `green`, `blue` into 1, 2, 3 tells the model that green "
             "sits between red and blue, which is nonsense."
         ),
         analogy=(
             "Translating a menu into another language. One-hot encoding is giving each dish its own line. "
-            "Ordinal encoding is numbering the dishes 1-2-3 — fine for a tasting sequence, absurd for flavours."
+            "Ordinal encoding is numbering the dishes 1-2-3: fine for a tasting sequence, absurd for flavours."
         ),
         steps=(
             "List your category columns and count how many distinct values each one has.",
@@ -348,12 +348,12 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Fit the category vocabulary on train only, and decide what an unseen category does at scoring time.",
         ),
         use=(
-            "Before fitting any estimator that cannot consume strings — which is nearly all of scikit-learn.",
+            "Before fitting any estimator that cannot consume strings: which is nearly all of scikit-learn.",
             "When you want a linear model to treat each category independently rather than as a magnitude.",
         ),
         avoid=(
             "Skip one-hot for a column with thousands of distinct values; you will create thousands of nearly-empty columns and slow everything down.",
-            "Do not use ordinal encoding on unordered categories with a linear or distance-based model — the fake ordering becomes a real (wrong) signal.",
+            "Do not use ordinal encoding on unordered categories with a linear or distance-based model: the fake ordering becomes a real (wrong) signal.",
         ),
         myths=(
             (
@@ -382,7 +382,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "feature-scaling",
         plain=(
-            "Scaling rewrites numeric columns so they share a comparable range — for example subtracting "
+            "Scaling rewrites numeric columns so they share a comparable range: for example subtracting "
             "the mean and dividing by the spread. It adds zero new information. It exists because some "
             "algorithms measure distances or penalize coefficients, and those algorithms would otherwise "
             "let a column measured in millions drown out one measured in units."
@@ -393,7 +393,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Check whether your estimator cares: distance-based (kNN, SVM, k-means), gradient-based (neural nets), and regularized linear models do; plain trees do not.",
-            "Pick a scaler — standard (mean 0, spread 1) for roughly symmetric data, robust (median and quartiles) when outliers are present, min-max when you need a bounded range.",
+            "Pick a scaler: standard (mean 0, spread 1) for roughly symmetric data, robust (median and quartiles) when outliers are present, min-max when you need a bounded range.",
             "Fit it on the training rows so it learns training's centre and spread.",
             "Apply the frozen scaler to validation and test.",
             "Remember the model's coefficients are now in scaled units when you interpret them.",
@@ -403,7 +403,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Before ridge or lasso, since the penalty size depends directly on the units of each coefficient.",
         ),
         avoid=(
-            "Skip it for decision trees, random forests, and gradient boosting — they split on order, and order does not change under scaling.",
+            "Skip it for decision trees, random forests, and gradient boosting: they split on order, and order does not change under scaling.",
             "Do not scale one-hot columns or identifiers by reflex; scaling a 0/1 column rarely helps and makes the output harder to read.",
         ),
         myths=(
@@ -433,7 +433,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "class-imbalance",
         plain=(
-            "Imbalance means one outcome is much rarer than the other — 2% fraud, 1% churn, 0.1% defects. "
+            "Imbalance means one outcome is much rarer than the other: 2% fraud, 1% churn, 0.1% defects. "
             "It breaks the habits that work on balanced data: accuracy becomes meaningless, the default "
             "0.5 cutoff predicts 'no' for everything, and a model can look excellent while catching nothing."
         ),
@@ -443,7 +443,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Measure the actual prevalence: what fraction of rows are positive, and how many positives exist in each partition?",
-            "Switch your primary metric to precision, recall, F1, or PR-AUC — anything that looks at the rare class specifically.",
+            "Switch your primary metric to precision, recall, F1, or PR-AUC: anything that looks at the rare class specifically.",
             "Compare against the trivial baseline of always predicting the majority class.",
             "Choose the cutoff deliberately using a validation sweep, instead of accepting 0.5.",
             "Only then consider resampling or class weights, and only on training rows.",
@@ -453,7 +453,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Whenever the cost of a miss and the cost of a false alarm are very different.",
         ),
         avoid=(
-            "Do not resample validation or test — they must keep the real-world prevalence or your estimates become fiction.",
+            "Do not resample validation or test: they must keep the real-world prevalence or your estimates become fiction.",
             "Do not reach for SMOTE first. Class weights and threshold tuning are simpler, cheaper, and often as good or better.",
         ),
         myths=(
@@ -474,7 +474,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         check=(
             "What score would 'always predict the majority class' get on your metric?",
-            "How many positive rows are in your test partition — 500, or 7?",
+            "How many positive rows are in your test partition: 500, or 7?",
         ),
         tools=("resample", "resample_strategies", "tune_threshold", "evaluate"),
         terms=("class imbalance", "precision", "recall", "PR-AUC", "resampling", "threshold"),
@@ -485,7 +485,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Model selection is choosing between candidates by comparing them under identical conditions: "
             "same rows, same preparation, same metric, same partition. The winner is the best under that "
-            "one setup — not the best model in general, and often not the best for your decision."
+            "one setup: not the best model in general, and often not the best for your decision."
         ),
         analogy=(
             "A bake-off only means something if every entrant used the same oven, the same time, and was "
@@ -494,7 +494,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Fix your preparation and split before comparing anything.",
             "Choose one primary metric that reflects the decision you actually care about.",
-            "Score every candidate on validation — never on test.",
+            "Score every candidate on validation: never on test.",
             "Look at the size of the gap, not just the ordering; a 0.003 difference is usually noise.",
             "Weigh the non-score factors: training cost, latency, interpretability, and how the model fails.",
         ),
@@ -503,7 +503,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "After a baseline, to check whether extra complexity is buying anything.",
         ),
         avoid=(
-            "Do not compare on test — the moment you rank on test, that partition is a selection set.",
+            "Do not compare on test: the moment you rank on test, that partition is a selection set.",
             "Do not compare models trained under different preprocessing and call it a model comparison; you compared pipelines.",
         ),
         myths=(
@@ -534,7 +534,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "cross-validation",
         plain=(
-            "Cross-validation splits your training rows into a few equal folds, then trains several times — "
+            "Cross-validation splits your training rows into a few equal folds, then trains several times: "
             "each time holding out one fold to score on. You end up with several scores instead of one, "
             "which tells you not just how good the model is but how much that number wobbles."
         ),
@@ -543,7 +543,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "revising. The average tells you your level; the spread tells you how much luck was involved."
         ),
         steps=(
-            "Keep your final test partition completely out of this — cross-validation happens inside train.",
+            "Keep your final test partition completely out of this: cross-validation happens inside train.",
             "Choose the number of folds; 5 is the common default, more folds means more compute and less data held out each time.",
             "Use stratified folds for classification so each fold keeps the class mix.",
             "Use grouped or time-ordered folds when rows repeat over entities or time.",
@@ -554,13 +554,13 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When tuning hyperparameters, so the settings are not chosen to fit one lucky split.",
         ),
         avoid=(
-            "Skip it when a single fit is expensive and you have plenty of data — one large validation partition may be enough.",
+            "Skip it when a single fit is expensive and you have plenty of data: one large validation partition may be enough.",
             "Do not use plain k-fold on time series; it trains on the future to predict the past.",
         ),
         myths=(
             (
                 "Cross-validation prevents overfitting.",
-                "It measures overfitting more reliably. It does not stop it — regularization, simpler models, and more data do that.",
+                "It measures overfitting more reliably. It does not stop it: regularization, simpler models, and more data do that.",
             ),
             (
                 "The cross-validation score is an unbiased estimate of final performance.",
@@ -583,7 +583,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "diagnostic-uncertainty",
         plain=(
-            "Every number a model report shows you — accuracy, an importance ranking, a curve — was "
+            "Every number a model report shows you: accuracy, an importance ranking, a curve: was "
             "computed from a limited sample of rows. Draw a different sample and you would get a slightly "
             "different number. Treating those numbers as exact facts is the most common way to over-read a report."
         ),
@@ -592,7 +592,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "decimal places and acting on a one-point change would be foolish."
         ),
         steps=(
-            "For every headline number, note how many rows it was computed from — and how many of the rare class.",
+            "For every headline number, note how many rows it was computed from: and how many of the rare class.",
             "Prefer a range or a fold-spread over a single point estimate.",
             "Before acting on a difference, ask whether it is larger than the noise you would see from reshuffling.",
             "Re-run key comparisons with a different random seed and see whether the conclusion survives.",
@@ -603,7 +603,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Especially when a partition is small, a class is rare, or a slice has only a handful of rows.",
         ),
         avoid=(
-            "Do not use uncertainty as an excuse to avoid deciding — the point is to size the evidence, not to refuse it.",
+            "Do not use uncertainty as an excuse to avoid deciding: the point is to size the evidence, not to refuse it.",
             "Do not compute an interval and then quote only the midpoint.",
         ),
         myths=(
@@ -643,7 +643,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Ask whether you need the probability itself or only the ordering. Ranking-only use cases do not need calibration.",
-            "Plot or tabulate predicted probability against observed frequency in bins — a reliability curve.",
+            "Plot or tabulate predicted probability against observed frequency in bins: a reliability curve.",
             "If the curve bends away from the diagonal, fit a calibrator: Platt scaling (sigmoid) for small data, isotonic for larger data.",
             "Fit the calibrator on validation or via cross-validation, never on the rows used to train the base model.",
             "Re-check calibration on a partition the calibrator never saw.",
@@ -654,7 +654,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Skip it if you only ever threshold the score into yes/no and tune that threshold directly.",
-            "Do not calibrate on the training rows — the base model already fits them, so the curve will look perfect and mean nothing.",
+            "Do not calibrate on the training rows: the base model already fits them, so the curve will look perfect and mean nothing.",
         ),
         myths=(
             (
@@ -684,7 +684,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "A classifier gives you a score between 0 and 1. A threshold is the line where you decide to "
             "act. Moving it trades two kinds of mistake against each other: lower the line and you catch "
-            "more real cases but raise more false alarms. There is no universally correct line — it depends "
+            "more real cases but raise more false alarms. There is no universally correct line: it depends "
             "on what each mistake costs you."
         ),
         analogy=(
@@ -704,7 +704,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Especially under imbalance, where the default 0.5 is almost always wrong.",
         ),
         avoid=(
-            "Do not tune the threshold on test — that converts your final estimate into another tuning set.",
+            "Do not tune the threshold on test: that converts your final estimate into another tuning set.",
             "Do not keep one fixed threshold across segments with very different base rates without checking each one.",
         ),
         myths=(
@@ -740,11 +740,11 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "lets you stop and resume without silently changing the experiment. It is not a saved model."
         ),
         analogy=(
-            "Saving your progress in a game. You come back to the same room with the same inventory — but "
+            "Saving your progress in a game. You come back to the same room with the same inventory: but "
             "the save file is not the character sheet you would hand to someone else to play with."
         ),
         steps=(
-            "Reach a state worth returning to — usually after ingest, roles, and split are settled.",
+            "Reach a state worth returning to: usually after ingest, roles, and split are settled.",
             "Call `checkpoint_save` with a directory path.",
             "BuildML writes the data, roles, split membership, history, and a manifest of hashes.",
             "Later, `Session.checkpoint_load` verifies those hashes before restoring, so a corrupted or edited bundle fails loudly.",
@@ -755,7 +755,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When handing a workflow to a colleague, or resuming after days away.",
         ),
         avoid=(
-            "Do not use a checkpoint to deploy a model — use `save_model` or `save_pipeline`, which store the fitted estimator and its feature contract.",
+            "Do not use a checkpoint to deploy a model: use `save_model` or `save_pipeline`, which store the fitted estimator and its feature contract.",
             "Do not load a checkpoint from an untrusted source; the format is serialization-based and executing it is a code-execution risk.",
         ),
         myths=(
@@ -774,7 +774,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "print(restored.metadata()['n_rows'], restored.split_plan is not None)",
         ),
         check=(
-            "If your machine died right now, which artifact would you reload — and does it contain the model or the data state?",
+            "If your machine died right now, which artifact would you reload: and does it contain the model or the data state?",
             "Do you know who produced every bundle you load?",
         ),
         tools=("checkpoint_save", "checkpoint_load", "save_model", "save_pipeline"),
@@ -784,7 +784,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "reproducibility",
         plain=(
-            "Reproducibility means someone else — including future you — can run the same thing and get "
+            "Reproducibility means someone else: including future you: can run the same thing and get "
             "the same answer. That needs more than the code: it needs the random seeds, the library "
             "versions, the exact input data, and a record of the choices you made along the way."
         ),
@@ -793,7 +793,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "oven type are all part of the recipe even though none of them is an ingredient."
         ),
         steps=(
-            "Pass an explicit `random_state` to every operation that involves randomness — splitting, resampling, model fitting, and search.",
+            "Pass an explicit `random_state` to every operation that involves randomness: splitting, resampling, model fitting, and search.",
             "Record library versions alongside results; a scikit-learn upgrade can change defaults.",
             "Keep the exact input file, or a hash of it, rather than 'the export from last Tuesday'.",
             "Let BuildML's history record the operation sequence, and export it with your results.",
@@ -801,7 +801,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "On anything that will be reviewed, audited, handed over, or compared against a future run.",
-            "Whenever you are debugging a result you cannot explain — reproducibility is the prerequisite for isolating a cause.",
+            "Whenever you are debugging a result you cannot explain: reproducibility is the prerequisite for isolating a cause.",
         ),
         avoid=(
             "Do not fix a seed and then treat the resulting single number as the truth; run several seeds when you need to know the spread.",
@@ -834,7 +834,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "engine-choice",
         plain=(
-            "The engine is the library that actually holds and moves your rows — pandas by default, with "
+            "The engine is the library that actually holds and moves your rows: pandas by default, with "
             "Polars and DuckDB available for bigger files. Switching engines changes speed and memory "
             "behaviour. It does not change what a model means or what a metric measures."
         ),
@@ -843,10 +843,10 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "identical; what changes is how much you can carry and how fast you get there."
         ),
         steps=(
-            "Start on pandas — it is the default, the simplest mental model, and fine for small and medium data.",
+            "Start on pandas: it is the default, the simplest mental model, and fine for small and medium data.",
             "If loading or filtering a large file is the bottleneck, ingest with `engine='polars'` or `engine='duckdb'`.",
             "Do the heavy filtering, projecting, and aggregating in the native engine before materializing.",
-            "Accept that scikit-learn steps still materialize through pandas — this is not out-of-core training.",
+            "Accept that scikit-learn steps still materialize through pandas: this is not out-of-core training.",
             "Close DuckDB connections with `with session:` or `session.close_native()`.",
         ),
         use=(
@@ -855,7 +855,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not switch engines hoping for better model scores; the estimator sees the same numbers either way.",
-            "Do not reach for DuckDB or Polars on a 50,000-row CSV — the extra dependency buys you nothing there.",
+            "Do not reach for DuckDB or Polars on a 50,000-row CSV: the extra dependency buys you nothing there.",
         ),
         myths=(
             (
@@ -897,7 +897,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Compute the trivial prediction: majority class for classification, mean or median for regression.",
             "Score it on exactly the same partition and metric you will use for your model.",
             "Write the number down before you start modeling, so you cannot rationalize afterwards.",
-            "Add a simple-but-real baseline too — a single-feature rule or a plain logistic regression.",
+            "Add a simple-but-real baseline too: a single-feature rule or a plain logistic regression.",
             "Report every model score as a gap over the baseline, not as an absolute.",
         ),
         use=(
@@ -905,7 +905,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Whenever a stakeholder asks whether a score is good.",
         ),
         avoid=(
-            "Do not skip it because the task is obviously hard — that is exactly when a baseline recalibrates expectations.",
+            "Do not skip it because the task is obviously hard: that is exactly when a baseline recalibrates expectations.",
             "Do not compare your model to a baseline computed on a different partition or metric; the comparison has to be like for like.",
         ),
         myths=(
@@ -936,8 +936,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "overfitting",
         plain=(
-            "Overfitting is when a model memorizes the particular rows it was trained on — including their "
-            "noise and coincidences — instead of learning the underlying pattern. You spot it as a large "
+            "Overfitting is when a model memorizes the particular rows it was trained on: including their "
+            "noise and coincidences: instead of learning the underlying pattern. You spot it as a large "
             "gap: excellent on training rows, mediocre on rows it has not seen."
         ),
         analogy=(
@@ -952,12 +952,12 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Use a learning curve to tell 'need more data' apart from 'need a different model'.",
         ),
         use=(
-            "As a diagnostic every time you fit something flexible — deep trees, boosting with many rounds, neural networks, or any model with more parameters than you have rows.",
+            "As a diagnostic every time you fit something flexible: deep trees, boosting with many rounds, neural networks, or any model with more parameters than you have rows.",
             "Before assuming a disappointing holdout score means the problem is unsolvable.",
         ),
         avoid=(
             "Do not treat any train-vs-holdout gap as a problem; some gap is normal and expected.",
-            "Do not fix overfitting by simplifying a model that is already underfitting — check which direction you are in first.",
+            "Do not fix overfitting by simplifying a model that is already underfitting: check which direction you are in first.",
         ),
         myths=(
             (
@@ -987,7 +987,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "feature-importance",
         plain=(
             "Feature importance ranks which columns the fitted model leaned on. It is a description of the "
-            "model's behaviour on this dataset with this score — not a statement about which factors cause "
+            "model's behaviour on this dataset with this score: not a statement about which factors cause "
             "the outcome, and not a stable ranking you can quote as a fact about the world."
         ),
         analogy=(
@@ -995,14 +995,14 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "that chef, that dish, that kitchen. It does not tell you what makes food taste good in general."
         ),
         steps=(
-            "Fit the model first — importance describes a fitted model, so there is nothing to describe before that.",
+            "Fit the model first: importance describes a fitted model, so there is nothing to describe before that.",
             "Choose a method: permutation importance (shuffle a column, see how much the score drops) works for any model.",
             "Compute it on a held-out partition, not on training rows, or you measure memorization.",
-            "Read the ranking with correlated features in mind — two near-duplicate columns split the credit and both look weak.",
+            "Read the ranking with correlated features in mind: two near-duplicate columns split the credit and both look weak.",
             "Re-run with a different seed to see how stable the ordering actually is.",
         ),
         use=(
-            "To debug a model — an implausible top feature is often the fastest way to spot leakage.",
+            "To debug a model: an implausible top feature is often the fastest way to spot leakage.",
             "To decide which columns are worth the cost of collecting and maintaining.",
         ),
         avoid=(
@@ -1037,7 +1037,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "dataset-drift",
         plain=(
-            "Drift is a measured difference between two groups of data — training versus production, or "
+            "Drift is a measured difference between two groups of data: training versus production, or "
             "January versus June. It tells you the inputs have changed. It does not by itself tell you the "
             "model got worse, because some changes do not matter and some matter enormously."
         ),
@@ -1046,11 +1046,11 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "changed. Whether your product still suits them is a separate question you have to answer."
         ),
         steps=(
-            "Define the two populations precisely — which rows, which window, which filter.",
+            "Define the two populations precisely: which rows, which window, which filter.",
             "Compare distributions column by column, and note the effect size, not just whether a test fired.",
             "Check sample sizes; a 'significant' shift over 40 rows is usually noise.",
             "Rule out mechanical causes first: a schema change, a unit change, a new collection process, a renamed category.",
-            "If labels are available for the new window, measure actual performance — that is the question you really care about.",
+            "If labels are available for the new window, measure actual performance: that is the question you really care about.",
         ),
         use=(
             "Before reusing a model on a new time period or a new population.",
@@ -1058,7 +1058,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not conclude the model degraded from feature drift alone; without labels you have measured the inputs, not the outputs.",
-            "Do not compare populations whose schemas, units, or category meanings differ — the comparison is meaningless before you reconcile them.",
+            "Do not compare populations whose schemas, units, or category meanings differ: the comparison is meaningless before you reconcile them.",
         ),
         myths=(
             (
@@ -1093,14 +1093,14 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Correlation asks 'do these two move up and down together?'. Mutual information asks the broader "
-            "question 'if I tell you this one, how much better can you guess the other?' — no particular "
+            "question 'if I tell you this one, how much better can you guess the other?': no particular "
             "shape required."
         ),
         steps=(
             "Pick the feature and the target you want to compare.",
             "BuildML estimates how much the target's uncertainty drops once the feature is known.",
             "Read the value as a ranking device: higher means more shared information, zero means none detected.",
-            "Compare features against each other rather than against an absolute standard — the units are not intuitive.",
+            "Compare features against each other rather than against an absolute standard: the units are not intuitive.",
             "Follow up on high scorers with a plot, because the score does not tell you the shape of the relationship.",
         ),
         use=(
@@ -1109,7 +1109,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it to select features for a specific model without also checking with that model; it is model-agnostic and therefore ignores what your estimator can actually exploit.",
-            "Do not trust small values on small samples — the estimator is noisy and slightly biased upward.",
+            "Do not trust small values on small samples: the estimator is noisy and slightly biased upward.",
         ),
         myths=(
             (
@@ -1144,12 +1144,12 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Three witnesses who all repeat the same rumour. The story is well supported, but you cannot "
-            "work out which witness actually knows anything — and asking them separately gives unstable answers."
+            "work out which witness actually knows anything: and asking them separately gives unstable answers."
         ),
         steps=(
             "Restrict attention to numeric features; VIF is defined by regressing each one on the others.",
             "A VIF near 1 means independent. Values above roughly 5-10 are the usual warning band.",
-            "Look at which columns cluster together — often it is a derived column sitting beside its source.",
+            "Look at which columns cluster together: often it is a derived column sitting beside its source.",
             "Decide: drop one, combine them, or move to a regularized model that tolerates the redundancy.",
             "Re-check after the change, because removing one column changes everyone else's VIF.",
         ),
@@ -1158,7 +1158,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When coefficient signs flip between runs or between folds for no obvious reason.",
         ),
         avoid=(
-            "Skip it for tree ensembles — they handle redundant columns without unstable coefficients, though importance still gets split between them.",
+            "Skip it for tree ensembles: they handle redundant columns without unstable coefficients, though importance still gets split between them.",
             "Do not delete columns purely because VIF is high if prediction quality is all you need; redundancy hurts interpretation far more than accuracy.",
         ),
         myths=(
@@ -1197,10 +1197,10 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "You lose something, but the one good angle beats three bad ones."
         ),
         steps=(
-            "Scale your numeric columns first — PCA follows variance, and unscaled units decide the answer for you.",
+            "Scale your numeric columns first: PCA follows variance, and unscaled units decide the answer for you.",
             "Fit PCA on the training rows and choose how many components to keep, often via cumulative explained variance.",
             "Transform every partition with the frozen components.",
-            "Inspect the loadings — how much each original column contributes — before naming a component anything.",
+            "Inspect the loadings: how much each original column contributes: before naming a component anything.",
             "Feed the components to the model, remembering that they are blends, not original measurements.",
         ),
         use=(
@@ -1209,7 +1209,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it when interpretability matters; 'component 3 went up' is not something you can act on.",
-            "Do not use it to select predictive features — PCA never looks at the target, so the biggest component can be entirely irrelevant to it.",
+            "Do not use it to select predictive features: PCA never looks at the target, so the biggest component can be entirely irrelevant to it.",
         ),
         myths=(
             (
@@ -1238,7 +1238,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "normality-screens",
         plain=(
             "A normality test asks whether a column's values look like they came from the classic bell "
-            "curve. It is a description of shape. It is not a permission check — machine learning does not "
+            "curve. It is a description of shape. It is not a permission check: machine learning does not "
             "require normally distributed features."
         ),
         analogy=(
@@ -1247,7 +1247,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Run the screen and read both the test result and the shape summary (skew, kurtosis, a histogram).",
-            "Note the sample size — with tens of thousands of rows almost everything fails a normality test on a trivially small deviation.",
+            "Note the sample size: with tens of thousands of rows almost everything fails a normality test on a trivially small deviation.",
             "Ask what actually depends on normality in your plan: some statistical tests and confidence intervals do, most estimators do not.",
             "If a transform would help (log for a long right tail), apply it as a deliberate modeling choice with train-only parameters.",
             "Record the decision rather than silently transforming.",
@@ -1258,7 +1258,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not transform every skewed column reflexively; tree models do not care and you lose interpretability.",
-            "Do not read a failed normality test on 100,000 rows as a serious finding — read the effect size instead.",
+            "Do not read a failed normality test on 100,000 rows as a serious finding: read the effect size instead.",
         ),
         myths=(
             (
@@ -1298,16 +1298,16 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Detect first: use the interquartile-range fence or a z-score threshold to list candidates.",
             "Look at the actual rows. Genuine extremes and data errors need opposite treatments.",
-            "If it is an error you cannot fix, dropping the row is defensible — record how many you dropped.",
+            "If it is an error you cannot fix, dropping the row is defensible: record how many you dropped.",
             "If it is real but destabilizing, capping (winsorizing) keeps the row while limiting its pull.",
             "Learn the fences on training rows only, then apply the same boundaries elsewhere.",
         ),
         use=(
-            "Before fitting models sensitive to extremes — linear regression, k-means, anything using squared error.",
+            "Before fitting models sensitive to extremes: linear regression, k-means, anything using squared error.",
             "During EDA, as a data-quality check on columns you do not know well.",
         ),
         avoid=(
-            "Do not remove outliers when they *are* the thing you want to predict — fraud, failures, and rare events live in the tail.",
+            "Do not remove outliers when they *are* the thing you want to predict: fraud, failures, and rare events live in the tail.",
             "Do not apply fences to categorical or one-hot columns; the concept does not transfer.",
         ),
         myths=(
@@ -1336,7 +1336,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "feature-binning",
         plain=(
-            "Binning replaces a precise number with the range it falls into — age 34 becomes '30-39'. You "
+            "Binning replaces a precise number with the range it falls into: age 34 becomes '30-39'. You "
             "trade resolution for robustness and for the ability to express step changes that a straight "
             "line cannot."
         ),
@@ -1348,16 +1348,16 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Decide why you are binning: to tame outliers, to express a genuine step effect, or to match an existing business definition.",
             "Choose the boundaries: equal-width, equal-frequency (quantile), or explicit domain cut points.",
             "Fit the boundaries on training rows so the same edges apply everywhere.",
-            "Check bin occupancy — a bin with four rows will produce an unstable estimate.",
+            "Check bin occupancy: a bin with four rows will produce an unstable estimate.",
             "Treat the result as a category from that point on, including how you encode it.",
         ),
         use=(
-            "When the relationship really is stepwise — a policy that changes at age 65, a fee that applies above a threshold.",
+            "When the relationship really is stepwise: a policy that changes at age 65, a fee that applies above a threshold.",
             "When you need a compact, explainable feature for a rules-based or regulatory context.",
         ),
         avoid=(
             "Do not bin before a gradient-boosting model as a matter of routine; it finds its own split points and you are only discarding resolution.",
-            "Do not choose bin edges by looking at the target across all rows — that is leakage dressed up as feature engineering.",
+            "Do not choose bin edges by looking at the target across all rows: that is leakage dressed up as feature engineering.",
         ),
         myths=(
             (
@@ -1386,11 +1386,11 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "target-encoding",
         plain=(
             "Target encoding replaces each category with the average target value observed for that "
-            "category. It is compact and often very effective for high-cardinality columns — and it is the "
+            "category. It is compact and often very effective for high-cardinality columns: and it is the "
             "single easiest way to leak, because you are literally putting the answer into a feature."
         ),
         analogy=(
-            "Grading a student by the average grade of their class. Informative — unless the student's own "
+            "Grading a student by the average grade of their class. Informative: unless the student's own "
             "grade is one of the ones being averaged, in which case you have handed them the answer."
         ),
         steps=(
@@ -1401,12 +1401,12 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Decide the fallback value for categories that never appeared in training.",
         ),
         use=(
-            "For high-cardinality categorical columns — postcodes, product SKUs, merchant IDs — where one-hot would explode.",
+            "For high-cardinality categorical columns: postcodes, product SKUs, merchant IDs: where one-hot would explode.",
             "With gradient-boosting models, where it often outperforms alternatives by a wide margin.",
         ),
         avoid=(
             "Do not use it without out-of-fold computation. In-fold target encoding will look spectacular in training and collapse in production.",
-            "Do not use it on tiny datasets or on categories with only a handful of rows each — the smoothing has nothing to fall back on.",
+            "Do not use it on tiny datasets or on categories with only a handful of rows each: the smoothing has nothing to fall back on.",
         ),
         myths=(
             (
@@ -1442,11 +1442,11 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "Packing for a trip. Taking everything you own is heavy and slows you down; the skill is "
-            "deciding what you will actually use — and deciding it before you leave, not at the destination."
+            "deciding what you will actually use: and deciding it before you leave, not at the destination."
         ),
         steps=(
             "Decide the goal: accuracy, speed, cost, or explainability. They favour different subsets.",
-            "Choose a method — univariate scores for a cheap screen, model-based importance for something closer to your estimator.",
+            "Choose a method: univariate scores for a cheap screen, model-based importance for something closer to your estimator.",
             "Run the selection using training rows only.",
             "Freeze the chosen column list before evaluating.",
             "Compare against keeping everything; selection does not automatically help.",
@@ -1456,7 +1456,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When each column has a real collection or maintenance cost in production.",
         ),
         avoid=(
-            "Do not select using scores computed on validation or test — that quietly overfits your selection to the evaluation rows.",
+            "Do not select using scores computed on validation or test: that quietly overfits your selection to the evaluation rows.",
             "Do not drop columns a domain expert insists matter without checking why the score disagrees; it is often a data problem, not an irrelevance.",
         ),
         myths=(
@@ -1485,8 +1485,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "encoding-imputation-scaling",
         plain=(
-            "These three transforms — filling blanks, converting categories to numbers, and putting numbers "
-            "on a common range — are the standard preparation trio. They share one rule: each learns "
+            "These three transforms: filling blanks, converting categories to numbers, and putting numbers "
+            "on a common range: are the standard preparation trio. They share one rule: each learns "
             "something from the data, so each must learn it from training rows and then be replayed "
             "unchanged everywhere else."
         ),
@@ -1506,7 +1506,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Whenever you are about to save a pipeline, since the plans are what make the pipeline replayable.",
         ),
         avoid=(
-            "The order is a default, not a law — skip imputation when your estimator handles blanks meaningfully, and skip scaling for trees.",
+            "The order is a default, not a law: skip imputation when your estimator handles blanks meaningfully, and skip scaling for trees.",
             "Do not run any of them before splitting, even 'just to look'. Fitting a scaler on all rows is leakage regardless of intent.",
         ),
         myths=(
@@ -1538,7 +1538,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "text-features",
         plain=(
             "Text feature extraction turns free-text columns into numeric columns by counting words or "
-            "short word sequences. The model never sees language — it sees how often each term appears. "
+            "short word sequences. The model never sees language: it sees how often each term appears. "
             "That is often enough for classification, and never enough for understanding."
         ),
         analogy=(
@@ -1549,15 +1549,15 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Pick the text column and decide the unit: single words, or short sequences of two or three words.",
             "Choose a weighting: raw counts, or TF-IDF, which down-weights terms that appear in nearly every document.",
             "Cap the vocabulary size, or use hashing, so a huge corpus does not produce a million columns.",
-            "Fit the vocabulary on training rows only — the term list is learned information.",
+            "Fit the vocabulary on training rows only: the term list is learned information.",
             "Apply the frozen vocabulary to other partitions; terms that only appear later are simply dropped.",
         ),
         use=(
-            "For classification and clustering over short texts — support tickets, product titles, review snippets.",
+            "For classification and clustering over short texts: support tickets, product titles, review snippets.",
             "As a strong, cheap, interpretable baseline before reaching for transformer embeddings.",
         ),
         avoid=(
-            "Do not expect it to capture meaning, negation, or word order — 'not good' and 'good' share most of their features.",
+            "Do not expect it to capture meaning, negation, or word order: 'not good' and 'good' share most of their features.",
             "Do not one-hot a free-text column as if it were a category; near-every value is unique and you get nothing.",
         ),
         myths=(
@@ -1589,7 +1589,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "custom-transforms",
         plain=(
             "A custom transform is your own function registered with BuildML so it runs as a first-class "
-            "step — recorded in history, replayed at scoring time, and bound by the same train-only rule as "
+            "step: recorded in history, replayed at scoring time, and bound by the same train-only rule as "
             "every built-in transform."
         ),
         analogy=(
@@ -1598,23 +1598,23 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Write a function that takes the frame and returns a transformed frame with a stable set of column names.",
-            "If it learns anything from the data — a mapping, a threshold, an average — learn it from training rows and store it.",
+            "If it learns anything from the data: a mapping, a threshold, an average: learn it from training rows and store it.",
             "Register it with `register_transform` under a clear name.",
             "Apply it with `apply_custom_transform` so the call lands in history.",
             "Confirm the output schema is identical for every partition.",
         ),
         use=(
-            "For domain logic no generic transform can express — a business rule, a unit conversion, a bespoke parse.",
+            "For domain logic no generic transform can express: a business rule, a unit conversion, a bespoke parse.",
             "When you want a one-off step to be reproducible and auditable instead of a stray notebook cell.",
         ),
         avoid=(
             "Do not use one to reach across partitions or compute a global statistic; you would be building leakage into a recorded step.",
-            "Do not let it produce a different set of columns depending on the input data — downstream operations rely on a stable schema.",
+            "Do not let it produce a different set of columns depending on the input data: downstream operations rely on a stable schema.",
         ),
         myths=(
             (
                 "Anything in a registered transform is automatically safe.",
-                "Registration gives you lineage and replay. It cannot inspect your function for leakage — that responsibility stays with you.",
+                "Registration gives you lineage and replay. It cannot inspect your function for leakage: that responsibility stays with you.",
             ),
             (
                 "Custom transforms are for advanced users only.",
@@ -1639,8 +1639,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "dry-run-plans",
         plain=(
-            "A dry run tells you what an operation would do — what it needs, what would block it, what it "
-            "would change, and what could go wrong — without actually doing it or recording anything."
+            "A dry run tells you what an operation would do: what it needs, what would block it, what it "
+            "would change, and what could go wrong: without actually doing it or recording anything."
         ),
         analogy=(
             "Reading the recipe all the way through before turning the oven on. You find out you are missing "
@@ -1658,7 +1658,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you are unsure why something is blocked and want the prerequisite chain spelled out.",
         ),
         avoid=(
-            "Do not treat a clean dry run as approval — it checks API prerequisites, not whether the operation makes sense for your data.",
+            "Do not treat a clean dry run as approval: it checks API prerequisites, not whether the operation makes sense for your data.",
             "Do not use it as documentation; `explain` and the concept notes are the teaching surfaces.",
         ),
         myths=(
@@ -1697,7 +1697,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "where your samples came from or whether your method was sound."
         ),
         steps=(
-            "Every public operation appends a record automatically — you do not have to do anything.",
+            "Every public operation appends a record automatically: you do not have to do anything.",
             "Each record carries a sequence number, the parameters, a result summary, and the state transition.",
             "`summarize_history` counts operations and surfaces unresolved risks.",
             "`walkthrough` combines history with workflow resolution into a review document you can export.",
@@ -1708,7 +1708,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When debugging: the order of operations frequently explains a surprising result.",
         ),
         avoid=(
-            "Do not present history as data provenance — it starts at ingest and knows nothing about the pipeline that produced your file.",
+            "Do not present history as data provenance: it starts at ingest and knows nothing about the pipeline that produced your file.",
             "Do not treat a complete history as evidence of a valid method; it records choices, it does not grade them.",
         ),
         myths=(

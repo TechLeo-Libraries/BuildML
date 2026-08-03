@@ -31,7 +31,7 @@ no multi-label binary-relevance zoo, no causal multi-task).
 2. Validation / test are evaluation-only (`evaluate_multitask` /
    `predict_multitask` never refit).
 3. Classical `Session.fit` still calls `require_target()` and expects **exactly
-   one** target — multi-task is a distinct Session path.
+   one** target: multi-task is a distinct Session path.
 4. `split(stratify=True)` also uses `require_target()` (single target). With
    multiple target roles, split without stratification (or stratify on a
    temporary single-target setup).

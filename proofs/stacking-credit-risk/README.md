@@ -6,7 +6,7 @@ Stack logistic and random-forest base learners with a logistic meta-learner for 
 
 ## Data source
 
-In-repo synthetic mortgage table (`load_mortgage_default_synthetic`) — license-clear, deterministic. **Not** a real credit bureau extract.
+In-repo synthetic mortgage table (`load_mortgage_default_synthetic`): license-clear, deterministic. **Not** a real credit bureau extract.
 
 ## Leakage controls
 
@@ -30,7 +30,7 @@ Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `StackingClassifier(cv=3)` twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `StackingClassifier(cv=3)` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

@@ -47,7 +47,7 @@ class RagSessionMixin:
     ) -> Session:
         """Load a text corpus for the RAG path (requires ``buildml[rag]``).
 
-        Session facade over :func:`buildml.session.rag_ops.rag_ingest_corpus`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.rag_ingest_corpus`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -78,7 +78,7 @@ class RagSessionMixin:
     ) -> Session:
         """Chunk the active RAG corpus (fixed or recursive strategy).
 
-        Session facade over :func:`buildml.session.rag_ops.rag_chunk`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.rag_chunk`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -103,7 +103,7 @@ class RagSessionMixin:
     ) -> Session:
         """Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
 
-        Session facade over :func:`buildml.session.rag_ops.rag_embed_and_index`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.rag_embed_and_index`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -137,7 +137,7 @@ class RagSessionMixin:
     ) -> Any:
         """Retrieve ranked chunks (dense / BM25 / hybrid) against the active RAG index.
 
-        Session facade over :func:`buildml.session.rag_ops.rag_retrieve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.rag_retrieve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -171,7 +171,7 @@ class RagSessionMixin:
     ) -> Any:
         """Score retrieval with gold qrels (recall@k, MRR, nDCG@k, hit-rate@k).
 
-        Session facade over :func:`buildml.session.rag_ops.rag_evaluate`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.rag_evaluate`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -208,7 +208,7 @@ class RagSessionMixin:
     ) -> GenerateResult:
         """Retrieve (unless reusing the last retrieve) and generate a grounded answer.
 
-        Session facade over :func:`buildml.session.rag_ops.rag_generate`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.rag_generate`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -243,7 +243,7 @@ class RagSessionMixin:
     ) -> Session:
         """Upsert documents or chunks into the active RAG index without a full rebuild.
 
-        Session facade over :func:`buildml.session.rag_ops.rag_upsert`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.rag_upsert`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -265,7 +265,7 @@ class RagSessionMixin:
     ) -> Session:
         """Delete chunks by id and/or parent document id from the active RAG index.
 
-        Session facade over :func:`buildml.session.rag_ops.rag_delete`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.rag_delete`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -330,7 +330,7 @@ class RagSessionMixin:
     def save_rag_bundle(self, path: str | Path) -> Path:
         """Persist the active RAG index as ``buildml.rag_bundle.v1``.
 
-        Session facade over :func:`buildml.session.rag_ops.save_rag_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.save_rag_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -347,7 +347,7 @@ class RagSessionMixin:
     def load_rag_bundle(self, path: str | Path) -> Session:
         """Load a RAG bundle into this Session (requires ``buildml[rag]``).
 
-        Session facade over :func:`buildml.session.rag_ops.load_rag_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rag_ops.load_rag_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

@@ -1,14 +1,14 @@
 """Case-based reasoning (tabular case memory → retrieve → reuse/adapt).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
 
 Phase 2:
-  1–10. Semi-supervised → … → symbolic / neuro-symbolic — prior items.
+  1–10. Semi-supervised → … → symbolic / neuro-symbolic: prior items.
   **This module:** Case-based reasoning (Session retrieval/memory path).
   Next: Imitation learning + Reinforcement learning (coherent delivery or
-  RL with IL as mode — both to full bar), then TDA, then app systems.
+  RL with IL as mode: both to full bar), then TDA, then app systems.
 
 Explicit non-goals (no product surfaces): RAG-as-CBR (document retrieval for
 generation), vector DB products, full cognitive CBR research suites, Prolog/Z3,
@@ -23,7 +23,7 @@ Honesty (this package):
   - **Not** RAG. Sharing "nearest neighbors" does not make CBR a RAG submodule.
   - Core stays light: numpy/pandas/sklearn distances only.
 
-Lazy imports — core never grows heavy IR / vector-DB stacks.
+Lazy imports: core never grows heavy IR / vector-DB stacks.
 """
 
 from __future__ import annotations

@@ -23,6 +23,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` fits pointwise Ridge on the same `group_split` and reports query-averaged nDCG@5 (`results/comparison.json`).
+Filled: `baseline_industry.py` fits pointwise Ridge on the same `group_split` and reports query-averaged nDCG@5 (`results/comparison.json`).
 ## Limitations
 Synthetic judgments.

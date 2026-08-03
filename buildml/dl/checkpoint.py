@@ -2,9 +2,9 @@
 
 BuildML has two kinds of persistence and confusing them wastes an afternoon. A
 **Session checkpoint** stores data, roles, splits, history, and classical
-preprocessing plans — the state of your analysis. A **trainer bundle**, which is
+preprocessing plans: the state of your analysis. A **trainer bundle**, which is
 what this module writes, stores module weights, optimiser state, the training
-configuration, the epoch history, and the feature contract — the state of your
+configuration, the epoch history, and the feature contract: the state of your
 model. Neither contains the other, and a full restore usually needs both.
 
 A bundle is a directory with two files. ``meta.json`` is human-readable and
@@ -12,7 +12,7 @@ holds everything that serialises to JSON, so you can inspect what a bundle
 contains without loading Torch at all. ``trainer.pt`` holds the tensors.
 
 Loading requires you to supply the module instance. The bundle stores weights,
-not architecture — reconstructing a class from a file would mean executing code
+not architecture: reconstructing a class from a file would mean executing code
 from that file, and a model bundle is exactly the sort of artifact that gets
 passed around. You build the module; the bundle fills it in.
 
@@ -49,7 +49,7 @@ CHECKPOINT_BOUNDARY = (
     "the feature/label contract, and optional multimodal_preprocess meta "
     "(image/audio stats, sample rates, layout) under buildml.torch_bundle.v1. "
     "Load restores that meta for inspection but does not rebuild DataLoaders or "
-    "auto-apply media preprocess — remake multimodal/text loaders explicitly. "
+    "auto-apply media preprocess: remake multimodal/text loaders explicitly. "
     "A Session checkpoint stores data, roles, splits, history, and optional classical plans; "
     "it does not embed Torch weights. Reload data via checkpoint_load; reload weights via "
     "load_torch_bundle. Resume training with fit_torch(..., resume=True) after load_torch_bundle."
@@ -74,7 +74,7 @@ class TorchBundle:
         The reconstructed run, with weights already loaded into the module you
         supplied.
     meta:
-        The parsed ``meta.json`` — format version, BuildML version, module
+        The parsed ``meta.json``: format version, BuildML version, module
         class name, and the JSON-safe view of everything the bundle holds.
 
     Notes
@@ -141,7 +141,7 @@ def save_torch_bundle(path: str | Path, train_result: TrainResult) -> Path:
 
     Notes
     -----
-    **The architecture is not saved — only its weights.** Reloading needs the
+    **The architecture is not saved: only its weights.** Reloading needs the
     same module class, constructed the same way. Keep the code that builds it
     alongside the bundle, or the weights are a directory of numbers with no
     shape to fit.
@@ -208,7 +208,7 @@ def load_torch_bundle(
     """Restore a saved run into a module you construct.
 
     Reads the bundle, loads the weights into your module, and rebuilds the
-    surrounding :class:`~buildml.dl.results.TrainResult` — configuration,
+    surrounding :class:`~buildml.dl.results.TrainResult`: configuration,
     device record, contract, history, early-stop record, and optimiser and
     scheduler state, so training can resume where it left off.
 
@@ -219,7 +219,7 @@ def load_torch_bundle(
     module:
         A freshly constructed module of the same architecture. Its weights are
         replaced by the saved ones, so however it was initialised does not
-        matter — but its shape must match.
+        matter: but its shape must match.
     map_location:
         Where to deserialise tensors. Defaults to CPU, which loads correctly
         regardless of what the run trained on; move the module afterwards if
@@ -239,7 +239,7 @@ def load_torch_bundle(
         If PyTorch is not installed.
     ValidationError
         If either file is missing, or if the format marker is not
-        ``buildml.torch_bundle.v1`` — which normally means the path points at a
+        ``buildml.torch_bundle.v1``: which normally means the path points at a
         Session checkpoint or a classical pipeline bundle instead.
 
     Notes
@@ -251,7 +251,7 @@ def load_torch_bundle(
     **Multimodal preprocessing metadata is restored for inspection only.**
     Frozen image and audio statistics, sample rates, and layout come back on the
     result, but no DataLoaders are rebuilt and no media transforms are applied.
-    Rebuild loaders explicitly before fitting, evaluating, or exporting — and
+    Rebuild loaders explicitly before fitting, evaluating, or exporting: and
     note that doing so re-fits train-only statistics from the current frame,
     which is why the difference is disclosed in ``warnings`` rather than left
     implicit.

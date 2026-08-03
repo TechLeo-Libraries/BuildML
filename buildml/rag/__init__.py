@@ -1,4 +1,4 @@
-"""Retrieval-augmented generation domain. Lazy imports — core never requires RAG extras."""
+"""Retrieval-augmented generation domain. Lazy imports: core never requires RAG extras."""
 
 from __future__ import annotations
 

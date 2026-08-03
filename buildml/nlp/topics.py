@@ -2,7 +2,7 @@
 
 Topic modelling is what you reach for when you have thousands of documents and
 no labels. It finds groups of words that tend to appear together, and each group
-is a "topic" — not because anyone defined it, but because the arithmetic says
+is a "topic": not because anyone defined it, but because the arithmetic says
 those words travel as a set.
 
 The crucial thing to understand is that topics are found, not verified. Nothing
@@ -19,7 +19,7 @@ which gives calibrated proportions rather than scores.
 
 Both are fitted on training documents only, so assigning topics to a holdout is
 a pure transform. That is what makes topic proportions safe to feed into a
-downstream supervised model — a topic basis fitted across the whole corpus would
+downstream supervised model: a topic basis fitted across the whole corpus would
 have seen the holdout text, and the model built on it would score too well.
 
 Topic quality is reported through NPMI coherence, which measures whether a
@@ -95,7 +95,7 @@ def npmi_coherence(
     worth finding.
 
     It is a proxy, not a verdict. A coherent topic is one whose words really do
-    travel together — which is necessary for the topic to mean something, and
+    travel together: which is necessary for the topic to mean something, and
     not sufficient. Boilerplate is extremely coherent.
     """
     usable = [index for index in term_indices if index < document_term.shape[1]]
@@ -179,7 +179,7 @@ def fit_topics(
         documents as probabilistic mixtures, which suits genuinely blended
         documents and yields proportions you can interpret as such.
     n_topics:
-        How many topics to find. Your decision, not a discovery — there is no
+        How many topics to find. Your decision, not a discovery: there is no
         true number, and different counts give different valid views of the
         same corpus. Fit a range and compare ``mean_coherence``.
     text_column:
@@ -204,7 +204,7 @@ def fit_topics(
     normalize_steps:
         Which normalisation steps to apply.
     stopwords:
-        Extra terms to discard. Worth using for domain boilerplate — a product
+        Extra terms to discard. Worth using for domain boilerplate: a product
         name in every document will otherwise anchor its own meaningless topic.
     stopword_language:
         Built-in stopword list to apply. Defaults to English, unlike the
@@ -449,7 +449,7 @@ def assign_topics(
 
     Each document gets a weight for every topic, not a single assignment,
     because documents genuinely mix subjects. The dominant topic is provided
-    for when you need one answer, but read it alongside the weights — a
+    for when you need one answer, but read it alongside the weights: a
     document spread evenly across three topics has a dominant one that means
     very little.
 
@@ -481,7 +481,7 @@ def assign_topics(
     -----
     **Nothing is refitted.** New documents are projected onto the topics found
     during the fit, so a genuinely new theme in the incoming text has nowhere
-    to go — it gets distributed across whichever existing topics fit least
+    to go: it gets distributed across whichever existing topics fit least
     badly.
 
     **Compare the returned ``topic_share`` against the plan's ``train_mass``.**

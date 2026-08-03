@@ -3,13 +3,13 @@
 The built-in steps cover the common ground, but domain work always needs
 something specific: a currency conversion using rates from your training
 period, a geographic clustering, a bespoke text cleaner. This is where those
-go — registered once, then usable anywhere the built-in steps are, and subject
+go: registered once, then usable anywhere the built-in steps are, and subject
 to the same discipline.
 
 That discipline is a contract in three parts.
 
 First, your ``fit`` function sees the training rows and nothing else. It
-receives only the columns you nominated, and it returns an *artifact* — a plain
+receives only the columns you nominated, and it returns an *artifact*: a plain
 object holding everything the step learned. Whatever your step needs to know
 must end up in there.
 
@@ -138,7 +138,7 @@ class CustomTransformPlan:
         transform producing different columns is an error rather than a silent
         change of shape.
     artifact_:
-        Whatever your ``fit`` function returned — the learned state.
+        Whatever your ``fit`` function returned: the learned state.
     drop_input_columns:
         Whether the source columns are removed after transforming.
     serializable:
@@ -160,7 +160,7 @@ class CustomTransformPlan:
     def to_dict(self) -> dict[str, Any]:
         """Return the plan's metadata as plain JSON-safe values.
 
-        The artifact itself is omitted — it can be any object — and replaced by
+        The artifact itself is omitted: it can be any object: and replaced by
         its type name, which is enough for a reader to understand what was
         stored.
 
@@ -205,7 +205,7 @@ def register_transform(
     ----------
     name:
         The key to register under. This is stored in every plan the transform
-        produces, so treat it as a stable identifier — renaming it breaks
+        produces, so treat it as a stable identifier: renaming it breaks
         replay of previously saved plans.
     fit:
         ``fit(train_frame, params) -> artifact``. Receives a copy of the
@@ -216,7 +216,7 @@ def register_transform(
     transform:
         ``transform(frame, artifact) -> DataFrame``. Must return a DataFrame
         carrying the same row index as its input, and must depend on nothing
-        beyond its two arguments — no globals that change, no statistics
+        beyond its two arguments: no globals that change, no statistics
         recomputed from the incoming frame.
     description:
         A sentence explaining what the transform does, shown by
@@ -373,7 +373,7 @@ def list_transforms() -> tuple[CustomTransformSpec, ...]:
     -------
     tuple of CustomTransformSpec
         All registrations, sorted by name. Empty before anything is
-        registered — there are no built-in entries here.
+        registered: there are no built-in entries here.
 
     See Also
     --------
@@ -394,8 +394,8 @@ def fit_custom_transform(
 
     Your ``fit`` function runs against the training rows, and the returned
     artifact is captured. The transform is then run once on those same rows as
-    a probe, which both verifies the contract — a DataFrame back, with the row
-    index intact — and records the output column names, so a later replay
+    a probe, which both verifies the contract: a DataFrame back, with the row
+    index intact: and records the output column names, so a later replay
     producing a different shape is caught rather than quietly reshaping the
     frame.
 
@@ -410,7 +410,7 @@ def fit_custom_transform(
     name:
         The registered transform to fit.
     columns:
-        Which columns your transform operates on. Required and non-empty —
+        Which columns your transform operates on. Required and non-empty :
         unlike the built-in steps there is no sensible default, since only you
         know what the transform expects.
     params:

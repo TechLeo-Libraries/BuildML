@@ -8,14 +8,14 @@ The value it adds over calling scikit-learn directly is that the boundaries are
 enforced rather than remembered. :func:`fit_estimator` refuses to run on
 anything but the train partition, so the holdout cannot be trained on by
 accident. Feature columns come from the dataset's roles, so an ID or a group key
-cannot drift into the model as a feature — a leak that produces excellent scores
+cannot drift into the model as a feature: a leak that produces excellent scores
 and a worthless model. A weight column that the estimator cannot accept raises
 instead of being silently dropped.
 
 Evaluation is deliberately broad. A single number hides the failure that matters:
 accuracy looks fine on imbalanced data while the model predicts the majority
 class throughout, and R² looks respectable while the residuals fan out at the
-top of the range. :func:`evaluate_estimator` therefore returns a card — several
+top of the range. :func:`evaluate_estimator` therefore returns a card: several
 metrics, per-class or residual diagnostics, and recommendations pointing at what
 the numbers suggest is wrong.
 
@@ -92,7 +92,7 @@ class FitResult:
     target_column:
         The column that was predicted.
     n_train_rows:
-        How many rows the fit actually saw — after any sampling, so this is the
+        How many rows the fit actually saw: after any sampling, so this is the
         real training size rather than the partition size.
     weight_column:
         The weight-role column, or ``None``. Kept so evaluation can weight its
@@ -166,7 +166,7 @@ class EvaluateResult:
         The headline numbers. For regression: MAE, MSE, RMSE, median absolute
         error, R², and MAPE where the target allows it. For classification:
         accuracy, balanced accuracy, weighted precision, recall and F1, macro
-        F1, and — when the estimator gives probabilities — log loss, ROC AUC,
+        F1, and: when the estimator gives probabilities: log loss, ROC AUC,
         and average precision.
     diagnostics:
         The detail behind the metrics: a confusion matrix, per-class scores and
@@ -175,7 +175,7 @@ class EvaluateResult:
         How many rows were scored. Small partitions produce noisy metrics, and
         per-class figures on a rare class can rest on a handful of rows.
     recommendations:
-        Plain-language observations drawn from the numbers — a negative R², an
+        Plain-language observations drawn from the numbers: a negative R², an
         accuracy far above balanced accuracy, metrics that could not be
         computed. Prompts to investigate, not conclusions.
 
@@ -190,7 +190,7 @@ class EvaluateResult:
 
     **RMSE much larger than MAE means the errors are lopsided.** Squaring
     magnifies large misses, so the gap says a minority of predictions are badly
-    wrong — worth finding individually rather than averaging away.
+    wrong: worth finding individually rather than averaging away.
 
     See Also
     --------
@@ -257,7 +257,7 @@ class EvaluateResult:
 def weight_column(dataset: Dataset) -> str | None:
     """Find the column marked as sample weights, if there is one.
 
-    Sample weights let some rows count for more than others during fitting —
+    Sample weights let some rows count for more than others during fitting :
     useful when rows represent different numbers of underlying events, when a
     rare class needs amplifying, or when recent observations should dominate
     older ones.
@@ -302,7 +302,7 @@ def resolve_feature_columns(dataset: Dataset) -> list[str]:
     weights, and anything explicitly ignored.
 
     Those exclusions are the point. A customer ID is often the strongest
-    "predictor" in a dataset and predicts nothing at all — it memorises which
+    "predictor" in a dataset and predicts nothing at all: it memorises which
     row is which, scoring beautifully in training and collapsing on new
     customers. A group key leaks the same way. Time columns invite the model to
     learn "later rows are positive", which holds until the day you deploy.
@@ -390,7 +390,7 @@ def validate_sample_weights(weights: pd.Series, *, column: str) -> pd.Series:
     Notes
     -----
     **Weights are not normalised.** Only their ratios matter to most estimators,
-    so doubling every weight generally changes nothing — but weighted metrics
+    so doubling every weight generally changes nothing: but weighted metrics
     and any absolute-scale interpretation do shift.
 
     **A zero weight excludes a row rather than erroring**, which is a legitimate
@@ -440,7 +440,7 @@ def fit_kwargs_for_sample_weight(estimator: Any, sample_weight: pd.Series | None
     ValidationError
         If weights were supplied but the estimator's ``fit`` does not accept
         ``sample_weight``. Choose an estimator that does, or clear the weight
-        role — the error should not be worked around.
+        role: the error should not be worked around.
 
     Notes
     -----
@@ -536,7 +536,7 @@ def _feature_target_frames(
     Notes
     -----
     **Sampling changes what the numbers describe.** A sampled fit is trained on
-    a subset, and a sampled evaluation scores one — neither is wrong, but both
+    a subset, and a sampled evaluation scores one: neither is wrong, but both
     describe the sample rather than the partition.
     """
     target = dataset.require_target()
@@ -694,8 +694,8 @@ def _infer_task(
     -----
     **The value-count heuristic can be wrong, and quietly.** The threshold is
     more than ten distinct values or more than 20% of rows distinct. An integer
-    target with many levels that is genuinely categorical — a product code, a
-    postcode — reads as regression, and the metrics that follow are meaningless
+    target with many levels that is genuinely categorical: a product code, a
+    postcode: reads as regression, and the metrics that follow are meaningless
     for it. Pass ``task`` explicitly when the target is not obviously one or the
     other.
 
@@ -711,7 +711,7 @@ def _infer_task(
     >>> _infer_task(pd.Series([1.5, 2.5, 3.5]), "auto", LogisticRegression())
     'classification'
 
-    With no mixin to consult, the target's shape decides — and here it decides
+    With no mixin to consult, the target's shape decides: and here it decides
     wrongly, which is why ``task`` exists:
 
     >>> codes = pd.Series(range(50))
@@ -757,7 +757,7 @@ def fit_estimator(
     dataset:
         The data, with a target role set.
     split_plan:
-        The split. Required — fitting without one would mean training on
+        The split. Required: fitting without one would mean training on
         everything, leaving nothing to score honestly against.
     estimator:
         Any scikit-learn-compatible estimator: anything with ``fit`` and
@@ -893,7 +893,7 @@ def predict_estimator(
     type rather than assuming probabilities arrived.
 
     **Predicted probabilities are usually not calibrated.** A model's 0.8 rarely
-    means "correct 80% of the time" — tree ensembles in particular tend to be
+    means "correct 80% of the time": tree ensembles in particular tend to be
     over-confident. Calibrate before using probabilities as probabilities rather
     than as a ranking.
 
@@ -967,7 +967,7 @@ def evaluate_estimator(
     **Which partition you score decides what the number means.** Train tells you
     how well the model memorised. Validation is what you may tune against, and
     it stops being an unbiased estimate the moment you do. Test estimates future
-    performance, and only while it stays untouched — score it once, at the end.
+    performance, and only while it stays untouched: score it once, at the end.
 
     **Metrics are weighted when a weight role is set.** A weighted metric answers
     a different question from an unweighted one, so weighted and unweighted runs
@@ -1034,7 +1034,7 @@ def evaluate_estimator(
             "q95": float(np.quantile(residuals, 0.95)),
         }
         if metrics["r2"] < 0:
-            tips.append("Negative R² — model underperforms a mean baseline on this partition.")
+            tips.append("Negative R²: model underperforms a mean baseline on this partition.")
     else:
         metrics["accuracy"] = float(accuracy_score(y_true, y_pred, sample_weight=sw))
         metrics["balanced_accuracy"] = float(
@@ -1121,11 +1121,11 @@ def evaluate_estimator(
             except ValueError as exc:
                 tips.append(f"Probability metrics unavailable: {exc}")
         if metrics.get("balanced_accuracy", 1) + 1e-9 < metrics.get("accuracy", 0):
-            tips.append("Accuracy ≫ balanced accuracy — inspect class imbalance / majority bias.")
+            tips.append("Accuracy ≫ balanced accuracy: inspect class imbalance / majority bias.")
 
     if not tips:
         tips.append(
-            "No urgent evaluation warnings — compare against baselines and other estimators."
+            "No urgent evaluation warnings: compare against baselines and other estimators."
         )
 
     return EvaluateResult(

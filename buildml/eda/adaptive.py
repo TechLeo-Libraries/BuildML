@@ -6,7 +6,7 @@ Worse, it produces charts that actively mislead: a bar chart of a column with
 
 So the plan is computed first, as data, and rendering happens afterwards.
 Separating the two means the decisions can be inspected and tested without
-importing Matplotlib or generating a single image — and a caller who wants
+importing Matplotlib or generating a single image: and a caller who wants
 different charts can edit the plan rather than the renderer.
 
 The choices follow from what each column is. A numeric column with a long tail
@@ -41,7 +41,7 @@ def build_adaptive_plan(
 
     Filters to columns worth plotting, then matches each to a chart type that
     suits it. Columns are excluded when their role makes them meaningless as
-    features — target, identifier, ignored, group, time, weight — or when they
+    features: target, identifier, ignored, group, time, weight: or when they
     hold a single distinct value, since a chart of a constant is a rectangle.
 
     The cap is what keeps a report readable. Beyond a couple of dozen charts,
@@ -54,7 +54,7 @@ def build_adaptive_plan(
         The data, with roles assigned. Roles drive most of the exclusions, so a
         dataset without them will plan charts for identifiers.
     frame:
-        The frame to plan against — usually a sample. Dtypes and cardinality are
+        The frame to plan against: usually a sample. Dtypes and cardinality are
         read from here.
     feature_columns:
         Restrict to these columns. Defaults to everything, filtered by role.

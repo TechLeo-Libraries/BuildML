@@ -22,7 +22,7 @@ for inference).
 
 ---
 
-## Use case — mixed numeric + categorical + dates + text
+## Use case: mixed numeric + categorical + dates + text
 
 ```python
 import pandas as pd
@@ -207,11 +207,11 @@ Or one-shot: `predict_from_pipeline(path, data)`
 
 | Issue | Guidance |
 | --- | --- |
-| Prep before split | Refused — split first |
-| CV after Session prep | Hard-refuse — see leakage guide |
+| Prep before split | Refused: split first |
+| CV after Session prep | Hard-refuse: see leakage guide |
 | Text columns explode width | Cap `max_features`; prefer hashing for huge vocab |
 | Target encode + small n | High variance; prefer nested CV / smoothing |
-| Custom transform in CV | Not fold-local — redesign protocol |
+| Custom transform in CV | Not fold-local: redesign protocol |
 
 ---
 

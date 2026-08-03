@@ -1,6 +1,6 @@
 """Turn analyzer numbers into claims, each carrying the evidence behind it.
 
-The analyzers produce measurements. This produces statements about them — "12%
+The analyzers produce measurements. This produces statements about them: "12%
 of rows are incomplete" becomes a finding with a severity, an affected-column
 list, and a pointer back to the number it came from.
 
@@ -12,7 +12,7 @@ only honest way to present automated interpretation.
 
 Two deliberate constraints. Findings are conservative: a threshold is crossed or
 it is not, and nothing is inferred beyond what was measured. And recommendations
-derive from finding *keys*, not from the raw numbers — so the condition for a
+derive from finding *keys*, not from the raw numbers: so the condition for a
 recommendation is written once, in the finding, and cannot drift out of sync
 with the advice it produces.
 
@@ -43,7 +43,7 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
     Walks the sections an EDA pass produced and emits a finding wherever a
     threshold was crossed or a fact is worth stating outright. Each finding
     carries a stable key, a title, a detail sentence, a severity, the columns
-    affected, and the evidence — the actual value, its source section, and what
+    affected, and the evidence: the actual value, its source section, and what
     that measurement cannot tell you.
 
     Every finding is generated from a measurement that was taken. Nothing is
@@ -53,7 +53,7 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
     Parameters
     ----------
     sections:
-        The analyzer outputs, keyed by section name — ``overview``,
+        The analyzer outputs, keyed by section name: ``overview``,
         ``quality``, ``bivariate``, ``multivariate``, ``target``, ``outliers``,
         ``drift``. Missing sections are skipped, so a partial pass works.
 
@@ -62,7 +62,7 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
     list of Finding
         In the order the sections were examined, not by severity. Always
         includes ``eda.scope``, which records how many rows were examined out of
-        how many exist — the first thing to check before believing anything
+        how many exist: the first thing to check before believing anything
         else.
 
     Notes
@@ -74,7 +74,7 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
     ``FindingSeverity.INFO`` means measured and unremarkable, not unmeasured.
 
     **Read ``evidence.limitations``.** It is where a finding says what it cannot
-    support — that an association is not causation, that a p-value is
+    support: that an association is not causation, that a p-value is
     unadjusted, that a screen was run on a sample.
 
     See Also
@@ -325,7 +325,7 @@ def build_recommendations(findings: list[Finding]) -> list[Recommendation]:
     its finding does, and ``based_on`` records the link.
 
     Recommendations carry a priority. ``BEFORE_MODELING`` marks things that
-    change what the data means — imputation, dropping constants, keeping
+    change what the data means: imputation, dropping constants, keeping
     identifiers out of the feature matrix, investigating drift. ``NEXT`` marks
     improvements that can wait.
 

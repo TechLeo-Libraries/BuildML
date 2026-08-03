@@ -1,6 +1,6 @@
 # Helix Knowledge Mesh
 
-**Tier B** cross-domain product proof — knowledge-graph link prediction + RAG
+**Tier B** cross-domain product proof: knowledge-graph link prediction + RAG
 retrieval/generate + symbolic answer guardrails.
 
 ## Product narrative
@@ -15,7 +15,7 @@ responses. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -26,7 +26,7 @@ responses. The platform:
 ## Leakage controls
 
 - KG triple split before TransE fit
-- RAG corpus contains policy articles only — judgments never indexed
+- RAG corpus contains policy articles only: judgments never indexed
 - Symbolic guardrails fit on train; test after lock
 
 ## What fails if leakage is ignored

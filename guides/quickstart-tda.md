@@ -1,4 +1,4 @@
-# Quickstart — Topological Data Analysis (TDA)
+# Quickstart: Topological Data Analysis (TDA)
 
 **Proof:** [credit-tda-shape](../proofs/credit-tda-shape/) (+ Tier C logistic twin on raw features).
 
@@ -82,7 +82,7 @@ Session.tda_capability_matrix()  # honest backend / vectorization matrix
 | Fit | Train-only NN index, vectorizer ranges, optional head |
 | Transform / eval | Frozen pipeline; no refit on holdout |
 | Extra | `buildml[tda]` native; `buildml[tda-industry]` giotto |
-| Scope | PH + vectorization → sklearn — not Mapper-at-scale |
+| Scope | PH + vectorization → sklearn: not Mapper-at-scale |
 
 ---
 
@@ -90,5 +90,5 @@ Session.tda_capability_matrix()  # honest backend / vectorization matrix
 
 TDA **PASS (R5.9 industry depth)**. Phase 3 application systems start at
 [recommendation systems](quickstart-recommenders.md); after that PASS:
-search/LTR, knowledge graphs, optimisation helpers, synthetic-data — one at a
+search/LTR, knowledge graphs, optimisation helpers, synthetic-data: one at a
 time.

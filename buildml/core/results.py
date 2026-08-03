@@ -1,7 +1,7 @@
 """Result objects shared across packages, rather than owned by one.
 
 Most result types live with the operation that produces them. The ones here are
-the exceptions — structures several packages need, which would otherwise create
+the exceptions: structures several packages need, which would otherwise create
 an import cycle if they lived in any one of them.
 
 See Also
@@ -60,7 +60,7 @@ class IngestReport:
     cannot use. The warning is where the better option gets mentioned.
 
     **``row_estimate`` may be an estimate.** For CSV it is inferred rather than
-    counted, since counting means reading the file — which is the cost ingest is
+    counted, since counting means reading the file: which is the cost ingest is
     trying to help you avoid.
 
     See Also

@@ -149,7 +149,7 @@ def multitask_status(
                 "Classical Session.fit remains single-target.",
                 "Session checkpoints do not embed MultiTaskPlan; use "
                 "save_multitask_bundle / load_multitask_bundle.",
-                "Honesty: shared-feature multi-target — not a deep MTL "
+                "Honesty: shared-feature multi-target: not a deep MTL "
                 "research platform.",
             ]
         )

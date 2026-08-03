@@ -14,7 +14,7 @@ Cost is why not everything is computed for everything. Pearson and Spearman are
 cheap and run over all numeric pairs. Kendall is quadratic in rows and runs only
 on the strongest dozen. Cramér's V runs on the first few low-cardinality
 categoricals. Mutual information runs only against the target. The caps are
-arbitrary in their exact values and deliberate in their existence — an EDA pass
+arbitrary in their exact values and deliberate in their existence: an EDA pass
 that takes an hour is one nobody runs.
 
 See Also
@@ -61,17 +61,17 @@ def analyze_bivariate(
         analysis and used for the mutual-information ranking.
     feature_columns:
         Which columns count as features. Defaults to everything except the
-        target, which is rarely what you want — pass the role-valid set.
+        target, which is rarely what you want: pass the role-valid set.
 
     Returns
     -------
     dict
-        ``pearson`` and ``spearman`` — full correlation matrices as nested
-        dicts, ``None`` where undefined. ``top_abs_pearson_pairs`` — the 30
+        ``pearson`` and ``spearman``: full correlation matrices as nested
+        dicts, ``None`` where undefined. ``top_abs_pearson_pairs``: the 30
         strongest, sorted by absolute value, which is where multicollinearity
-        shows up. ``kendall_top_pairs`` — up to 20, computed only on the
-        strongest candidates. ``categorical_pairs`` — Cramér's V for a few
-        low-cardinality pairs. ``mutual_information_vs_target`` — the top 40
+        shows up. ``kendall_top_pairs``: up to 20, computed only on the
+        strongest candidates. ``categorical_pairs``: Cramér's V for a few
+        low-cardinality pairs. ``mutual_information_vs_target``: the top 40
         features by mutual information. ``feature_columns_analyzed`` and
         ``n_rows`` for provenance.
 
@@ -89,7 +89,7 @@ def analyze_bivariate(
 
     **Mutual information here has no cross-validation and no significance
     test.** It is a screening tool for deciding what to look at, not evidence
-    for a feature-selection decision — see :mod:`buildml.model.selection` for
+    for a feature-selection decision: see :mod:`buildml.model.selection` for
     that.
 
     **Categoricals are label-encoded before mutual information**, which imposes

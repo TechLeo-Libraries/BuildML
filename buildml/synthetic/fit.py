@@ -171,13 +171,13 @@ ValidationError
         )
         disclosures.append(
             f"SDV {resolved_method.upper()} synthesizer (buildml[synthetic-industry]); "
-            f"epochs={epochs}, batch_size={batch_size}. Deep generative model — "
+            f"epochs={epochs}, batch_size={batch_size}. Deep generative model: "
             "not differential privacy."
         )
         if len(train_sub) < 100:
             warnings.append(
                 "SDV deep synthesizers are data-hungry; small train sets may "
-                "underfit or overfit — prefer native gaussian_copula for n<100."
+                "underfit or overfit: prefer native gaussian_copula for n<100."
             )
     elif resolved_method == "bootstrap":
         if smooth_sigma < 0:
@@ -206,7 +206,7 @@ ValidationError
         )
         disclosures.append(
             "Gaussian copula models rank correlations via a multivariate normal "
-            "latent; marginals use empirical CDFs (native fallback — not SDV CTGAN)."
+            "latent; marginals use empirical CDFs (native fallback: not SDV CTGAN)."
         )
     else:
         generator = SmoteGenerator.fit(
@@ -225,7 +225,7 @@ ValidationError
             "prefer Session.resample when the only goal is class rebalancing."
         )
         warnings.append(
-            "SMOTE interpolates in feature space — poor fit for pure categoricals "
+            "SMOTE interpolates in feature space: poor fit for pure categoricals "
             "or non-metric encodings."
         )
 

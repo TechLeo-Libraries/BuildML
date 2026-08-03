@@ -1,6 +1,6 @@
 ﻿# Aegis Fraud Platform
 
-**Tier B** cross-domain product proof — graph rings + anomaly + supervised scoring
+**Tier B** cross-domain product proof: graph rings + anomaly + supervised scoring
 + online stream updates + validation-tuned decision thresholds + optional
 symbolic guardrails.
 
@@ -19,7 +19,7 @@ community graphs; rare fraud is denser in one community. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -48,5 +48,5 @@ community graphs; rare fraud is denser in one community. The platform:
 
 ## Limitations
 
-Synthetic portfolio — not a real card network. Classical graph path is primary.
+Synthetic portfolio: not a real card network. Classical graph path is primary.
 Missing extras are skipped with JSON disclosures (`MissingExtraError`).

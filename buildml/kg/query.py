@@ -29,7 +29,7 @@ def query_kg(
 ) -> KgQueryResult:
     """Run a symbolic query against the train triple graph.
 
-    Traverses fit-time adjacency only — not an LLM, Neo4j, or RAG retrieve path.
+    Traverses fit-time adjacency only: not an LLM, Neo4j, or RAG retrieve path.
 
     Parameters
     ----------

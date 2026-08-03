@@ -3,7 +3,7 @@
 
 These operations share one contract exactly: they are zero-argument static
 introspection helpers that report what a domain can actually do on *this*
-machine — which backends are installed, which methods each backend supports,
+machine: which backends are installed, which methods each backend supports,
 and which extra to install for anything missing. They are grouped here rather
 than scattered across the domain overlays because the teaching content differs
 only in the domain name and the honest limits of that domain.
@@ -39,7 +39,7 @@ def _matrix(
             *extra_mechanism,
         ),
         parameters=(),
-        inputs=("Nothing — this is a static method and reads no dataset.",),
+        inputs=("Nothing: this is a static method and reads no dataset.",),
         outputs=("A plain dict describing backends, methods, availability, and install hints.",),
         prerequisites=(),
         ordering=(f"Before the {domain} fit call, especially when choosing a backend.",),
@@ -58,7 +58,7 @@ def _matrix(
             "Hard-coding a backend name in shared code without checking availability first.",
             "Treating the matrix as a benchmark: it reports availability, not quality.",
         ),
-        state_changes=("None — no Session state and no history record.",),
+        state_changes=("None: no Session state and no history record.",),
         result_reading=(
             "An entry marked unavailable names the extra to install; the default backend is the best available one.",
             honesty,
@@ -184,7 +184,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "imitation backends, RL modes, and tabular/deep algorithms",
         honesty=(
             "tabular_q being listed does not mean your env observation space fits "
-            "in the discretized table — read n_bins and MAX_TABULAR_STATES."
+            "in the discretized table: read n_bins and MAX_TABULAR_STATES."
         ),
         next_steps=(
             "fit_imitation; fit_rl(mode='tabular_q', algorithm='q_learning'); act_rl.",
@@ -242,7 +242,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "multitask_capability_matrix",
         "multi-task learning",
         "shared-trunk / multi-head backends",
-        honesty="Shared representation helps only when tasks are related — the matrix cannot judge that.",
+        honesty="Shared representation helps only when tasks are related: the matrix cannot judge that.",
         next_steps=("fit_multitask; evaluate_multitask.",),
         concepts=("multitask-multi-output", "multitask-chain"),
     ),
@@ -274,7 +274,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "semisupervised_capability_matrix",
         "semi-supervised learning",
         "pseudo-label and self-training backends",
-        honesty="Pseudo-label quality is bounded by the seed model — monitor holdout drift.",
+        honesty="Pseudo-label quality is bounded by the seed model: monitor holdout drift.",
         next_steps=("fit_semisupervised; evaluate_semisupervised.",),
         concepts=("semisupervised-label-missingness", "semisupervised-train-only-fit"),
     ),
@@ -290,7 +290,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "automl_capability_matrix",
         "AutoML search",
         "search backends and estimator spaces",
-        honesty="Search finds strong configs on the given split — not proof of production readiness.",
+        honesty="Search finds strong configs on the given split: not proof of production readiness.",
         next_steps=("run_automl; evaluate_automl.",),
         concepts=("automl-beyond-hpo", "automl-selection-honesty"),
     ),
@@ -299,7 +299,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "ensemble learning",
         "voting / stacking / blending strategies",
         honesty=(
-            "Ensembles are core sklearn plus in-tree blending — availability is always "
+            "Ensembles are core sklearn plus in-tree blending: availability is always "
             "True with core deps; quality still depends on base learners and the split."
         ),
         next_steps=("fit_voting; fit_stacking; fit_blending; evaluate_ensemble.",),

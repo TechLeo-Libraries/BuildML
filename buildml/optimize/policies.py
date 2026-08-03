@@ -109,7 +109,7 @@ def fit_threshold_policy(
         f"Operating point selected on partition={partition} "
         f"(basis={basis}, threshold={threshold:.4f}).",
         "Prefer validation for selection; confirm once on untouched test.",
-        "Not a general OR solver — binary score→decision operating-point helper.",
+        "Not a general OR solver: binary score→decision operating-point helper.",
     ]
     warnings: list[str] = []
     if partition == "test" and allow_test_tuning:
@@ -319,7 +319,7 @@ def fit_cost_matrix_policy(
 
     For each row, chooses action ``a`` minimizing expected cost
     ``Σ_y P(y|x) C[y, a]`` using ``predict_proba``. The matrix is
-    user-supplied — not estimated from evaluation labels.
+    user-supplied: not estimated from evaluation labels.
 
     Parameters
     ----------
@@ -389,8 +389,8 @@ def fit_cost_matrix_policy(
 
     disclosures = [
         "method='cost_matrix' chooses argmin_a Σ_y P(y|x) C[y,a] (Bayes decision).",
-        "Cost matrix is user-supplied — not estimated from the evaluation partition.",
-        "Multi-class expected-cost helper for ML scores — not a general OR platform.",
+        "Cost matrix is user-supplied: not estimated from the evaluation partition.",
+        "Multi-class expected-cost helper for ML scores: not a general OR platform.",
     ]
     warnings: list[str] = []
     if partition == "test" and allow_test_tuning:

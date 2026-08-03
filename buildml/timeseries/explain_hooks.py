@@ -112,7 +112,7 @@ def timeseries_status(
             },
             "disclosures": disclosures,
             "boundary": (
-                "Time-series analysis is descriptive EDA on temporal data — "
+                "Time-series analysis is descriptive EDA on temporal data: "
                 "distinct from fit_forecast and from supervised shuffled-row fit."
             ),
         },

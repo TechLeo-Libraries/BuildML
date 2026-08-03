@@ -12,7 +12,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
         _note(
             key="graph-data-model",
             title="Session rows are nodes; edges are attached separately",
-            summary="Graph ML uses a node feature table plus an edge list keyed by node_id — not a Neo4j product.",
+            summary="Graph ML uses a node feature table plus an edge list keyed by node_id: not a Neo4j product.",
             definition=(
                 "Each Session dataset row is a node. set_graph attaches an edge "
                 "list whose endpoints match a unique node_id column. "
@@ -110,7 +110,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Hand-engineered topology stats plus node attributes, then a "
-                "normal classifier — no neural message passing."
+                "normal classifier: no neural message passing."
             ),
             formal_idea="x_v = [x_tab_v || φ(G)_v]; predict with sklearn.",
             why_it_matters=(
@@ -139,7 +139,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             title="PyTorch Geometric GCN / GraphSAGE / GAT",
             summary=(
                 "Industry GNN path via torch_geometric.nn with train-mask "
-                "cross-entropy — requires buildml[graph-pyg]."
+                "cross-entropy: requires buildml[graph-pyg]."
             ),
             definition=(
                 "PyG path requires buildml[graph-pyg] (torch-geometric + torch). "
@@ -182,7 +182,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
         _note(
             key="graph-gcn",
             title="Pure-Torch GCN (no PyTorch Geometric)",
-            summary="A 1–2 layer GCN with symmetric normalized adjacency implemented in Torch — PyG is optional via method='pyg'.",
+            summary="A 1–2 layer GCN with symmetric normalized adjacency implemented in Torch: PyG is optional via method='pyg'.",
             definition=(
                 "GCN path requires buildml[torch]. Uses D^{-1/2}(A+I)D^{-1/2} "
                 "and train-mask cross-entropy. Dense adjacency is limited to "
@@ -190,7 +190,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Each layer mixes a node's features with its neighbors, then a "
-                "linear map — Kipf & Welling style, small and honest."
+                "linear map: Kipf & Welling style, small and honest."
             ),
             formal_idea="H' = Â H W with Â = D^{-1/2}(A+I)D^{-1/2}.",
             why_it_matters=(

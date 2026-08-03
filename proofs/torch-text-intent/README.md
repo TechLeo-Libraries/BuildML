@@ -6,7 +6,7 @@ Route free-text support tickets to a queue using BuildML's Torch text path (`mak
 
 ## Data source
 
-In-repo synthetic support tickets (`load_support_tickets_synthetic`) — license-clear, deterministic. **Not** a real ticketing corpus.
+In-repo synthetic support tickets (`load_support_tickets_synthetic`): license-clear, deterministic. **Not** a real ticketing corpus.
 
 ## Leakage controls
 
@@ -28,7 +28,7 @@ Primary holdout: accuracy / F1 (weighted) on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — sklearn `TfidfVectorizer` + `LogisticRegression` twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: sklearn `TfidfVectorizer` + `LogisticRegression` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

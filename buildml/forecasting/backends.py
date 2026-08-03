@@ -190,7 +190,7 @@ def _fit_statsmodels(
             f"auto_arima: selected ARIMA{ord_} via AIC grid search on low orders."
         )
         warnings.append(
-            "auto_arima is a lightweight AIC search — not pmdarima; "
+            "auto_arima is a lightweight AIC search: not pmdarima; "
             "pass explicit order= for production control."
         )
         return IndustryFitOutcome(
@@ -274,7 +274,7 @@ def _fit_prophet(
         "For production, ensure time_column maps to meaningful calendar ds.",
     ]
     warnings = [
-        "Prophet uses internal calendar ds — multi-series / irregular timestamps "
+        "Prophet uses internal calendar ds: multi-series / irregular timestamps "
         "need explicit ds alignment (disclosed limitation)."
     ]
     return IndustryFitOutcome(
@@ -326,7 +326,7 @@ def _fit_nbeats(
         "Neural forecast uses synthetic daily ds; irregular timestamps need alignment.",
     ]
     warnings = [
-        "N-BEATS is a lightweight default — tune input_size/h/max_steps for production."
+        "N-BEATS is a lightweight default: tune input_size/h/max_steps for production."
     ]
     return IndustryFitOutcome(
         estimator={

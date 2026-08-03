@@ -49,8 +49,8 @@ _SQL_AGG = {
 def canonicalize_agg_func(func: str) -> str:
     """Reduce a function name to the one spelling the engines are given.
 
-    Accepts the several ways people write the same thing — case and whitespace
-    variation, ``quantile_0.25`` alongside ``q25`` — and returns a single
+    Accepts the several ways people write the same thing: case and whitespace
+    variation, ``quantile_0.25`` alongside ``q25``: and returns a single
     canonical form, so downstream code has one name per operation to handle.
 
     Parameters
@@ -128,7 +128,7 @@ def quantile_level(func: str) -> float | None:
 
     Every engine's quantile call takes a number in ``[0, 1]``. This converts
     ``'median'`` and ``'qN'`` into that number, and returns ``None`` for
-    anything else — which is how callers branch between quantile and non-
+    anything else: which is how callers branch between quantile and non-
     quantile handling.
 
     Parameters
@@ -173,8 +173,8 @@ def normalize_aggregations(
 ) -> list[tuple[str, str]]:
     """Flatten an aggregation request into ordered pairs.
 
-    The convenient way to write a request — a mapping, with either one function
-    or a list per column — is not the convenient way to consume it. This flattens
+    The convenient way to write a request: a mapping, with either one function
+    or a list per column: is not the convenient way to consume it. This flattens
     it to ``(column, func)`` pairs in a fixed order, canonicalising each name on
     the way, so every engine builds its output columns identically.
 
@@ -429,8 +429,8 @@ def sql_aggregate_select(
 ) -> str:
     """Render the aggregations as a SQL select list.
 
-    Translates canonical function names into SQL — ``std`` to ``STDDEV_SAMP``,
-    ``n_unique`` to ``COUNT(DISTINCT ...)``, quantiles to ``quantile_cont`` —
+    Translates canonical function names into SQL: ``std`` to ``STDDEV_SAMP``,
+    ``n_unique`` to ``COUNT(DISTINCT ...)``, quantiles to ``quantile_cont`` :
     and aliases each result to the shared output name, so DuckDB produces the
     same column names as the other engines.
 
@@ -449,7 +449,7 @@ def sql_aggregate_select(
     Notes
     -----
     **Identifiers are quoted, so unusual column names work.** Values are not
-    involved — nothing user-supplied beyond column names reaches the SQL.
+    involved: nothing user-supplied beyond column names reaches the SQL.
 
     **``quantile_cont`` can differ from pandas on ties.** Pass
     ``materialize=True`` at the Dataset level when the pandas value is the one

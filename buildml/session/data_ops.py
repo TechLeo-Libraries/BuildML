@@ -37,7 +37,7 @@ def close_native(session) -> None:
 
     :meth:`with_engine` with ``'duckdb'`` opens a connection that stays
     alive so later queries can reuse it. That connection holds an operating
-    system handle, so it should be released when you are finished — on
+    system handle, so it should be released when you are finished: on
     Windows especially, an open handle can block deleting or overwriting
     the underlying file.
 
@@ -54,7 +54,7 @@ def close_native(session) -> None:
 
     Notes
     -----
-    You rarely need to call this by hand — prefer ``with session:``, which
+    You rarely need to call this by hand: prefer ``with session:``, which
     calls it for you on exit.
     """
     dataset = session._dataset
@@ -84,7 +84,7 @@ def ingest_session(
     the detected file format, the column schema, row and byte estimates,
     which compute engines are installed, and any warnings worth reading.
 
-    Ingest does not just read the file — it decides *how* to read it. A
+    Ingest does not just read the file: it decides *how* to read it. A
     small CSV loads straight into Pandas. A large one does not, because
     quietly pulling a multi-gigabyte file into memory is how notebooks die.
     Instead BuildML refuses and tells you the four ways forward: force it
@@ -103,7 +103,7 @@ def ingest_session(
         ``.arrow``/``.feather`` file. Format is detected from the file, not
         assumed from the extension alone.
     mode:
-        How the data should live in memory — ``'memory'`` for a fully
+        How the data should live in memory: ``'memory'`` for a fully
         materialised frame, ``'lazy'`` to keep an engine handle and defer
         work until something forces materialisation. Leave as ``None`` to
         let the size heuristic decide, and pass ``'memory'`` explicitly to
@@ -125,7 +125,7 @@ def ingest_session(
         large-file path without producing a large file.
     read_nrows:
         Read at most this many rows from a CSV. A quick way to work on a
-        representative slice of something too big to load whole — but note
+        representative slice of something too big to load whole: but note
         that statistics from a truncated read describe the slice, not the
         file.
 
@@ -158,7 +158,7 @@ def ingest_session(
 
     Examples
     --------
-    The ordinary case — a DataFrame already in hand:
+    The ordinary case: a DataFrame already in hand:
 
     >>> import pandas as pd
     >>> from buildml import Session
@@ -182,7 +182,7 @@ def ingest_session(
 
     See Also
     --------
-    Session.set_roles : The next step — tell BuildML what the columns mean.
+    Session.set_roles : The next step: tell BuildML what the columns mean.
     Session.with_engine : Switch engines after ingest.
     Session.checkpoint_load : Resume a saved session instead of re-reading.
     """
@@ -214,7 +214,7 @@ def set_roles(session, mapping: dict[str, str | ColumnRole]) -> "Session":
 
     A role is BuildML's answer to "which column is the answer, and which
     ones are allowed to help predict it?". Assigning roles once removes the
-    need to pass column lists into every later call — :meth:`scale` knows
+    need to pass column lists into every later call: :meth:`scale` knows
     to leave your identifier alone, :meth:`split` knows what to stratify
     on, and :meth:`fit` knows what it is predicting.
 
@@ -228,7 +228,7 @@ def set_roles(session, mapping: dict[str, str | ColumnRole]) -> "Session":
         A row identifier. Carried through but never used as a predictor,
         and never modified by preprocessing.
     ``group``
-        An entity that owns several rows — a customer, a patient, a
+        An entity that owns several rows: a customer, a patient, a
         document. :meth:`group_split` keeps all of a group's rows on the
         same side of the split.
     ``time``
@@ -309,8 +309,8 @@ def split(
 
     Rows are shuffled and cut into a train partition (the model learns
     here), an optional validation partition (you tune here), and a test
-    partition (you measure here, once, at the end). Nothing is copied —
-    only row positions are stored — so the split costs almost nothing and
+    partition (you measure here, once, at the end). Nothing is copied :
+    only row positions are stored: so the split costs almost nothing and
     stays consistent no matter how the data is transformed afterwards.
 
     Use this when rows are independent. If several rows describe the same
@@ -328,7 +328,7 @@ def split(
         row count. Larger test sets give a more stable estimate of
         performance but leave less to learn from.
     validation_size:
-        How much to carve out of the remaining rows for tuning — again a
+        How much to carve out of the remaining rows for tuning: again a
         proportion or a count. Set this when you plan to compare models or
         search hyperparameters, so the test set stays untouched until the
         end. ``None`` produces just train and test.
@@ -339,7 +339,7 @@ def split(
     stratify:
         When True, preserve the target's class proportions in every
         partition. Turn this on for classification, particularly when one
-        class is rare — an unstratified split can leave a rare class almost
+        class is rare: an unstratified split can leave a rare class almost
         absent from test, making the score meaningless.
 
     Returns
@@ -361,7 +361,7 @@ def split(
 
     Splitting before preprocessing is deliberate. BuildML's transforms fit
     their statistics on train rows alone, which is only possible if the
-    split already exists — so ordering the calls this way is what makes the
+    split already exists: so ordering the calls this way is what makes the
     leakage guarantee real rather than aspirational.
 
     Examples
@@ -416,7 +416,7 @@ def inject_split(
     reproduced exactly, or the boundary follows domain logic no generic
     splitter encodes (everything before the regulation changed is train,
     everything after is test). Pass the row positions directly and BuildML
-    treats them exactly as it would treat a split it generated — the
+    treats them exactly as it would treat a split it generated: the
     leakage guards, partition accessors, and history record all apply.
 
     The plan is recorded with kind ``'injected'``, so :meth:`walkthrough`
@@ -492,16 +492,16 @@ def group_split(
 ) -> "Session":
     """Split by entity, so no customer appears on both sides.
 
-    When several rows describe the same thing — twelve monthly records for
+    When several rows describe the same thing: twelve monthly records for
     one customer, forty sensor readings from one machine, every sentence of
-    one document — a random row split scatters that entity across train and
+    one document: a random row split scatters that entity across train and
     test. The model then sees eleven of the customer's months in training
     and is asked to predict the twelfth. It does well, and the score is a
     lie: in production the customer is entirely new.
 
     This method splits whole groups instead of individual rows. Every row
     belonging to a group lands in exactly one partition, so a test score
-    answers the question you actually care about — how well does this work
+    answers the question you actually care about: how well does this work
     on someone we have never seen?
 
     Because groups are the unit, ``test_size`` counts groups rather than
@@ -601,7 +601,7 @@ def time_split(
 
     Shuffling a time series lets the model learn from Thursday to predict
     Wednesday. Nothing in the mathematics objects, and the score comes out
-    excellent, but the arrangement is impossible in production — you never
+    excellent, but the arrangement is impossible in production: you never
     have next month's data when making this month's prediction. Models
     validated that way routinely collapse on release.
 
@@ -618,7 +618,7 @@ def time_split(
     test_size:
         Proportion (float) or number of rows (int) at the end of the
         timeline to hold back. Make this long enough to span the seasonal
-        cycle you care about — a two-week test set says little about a
+        cycle you care about: a two-week test set says little about a
         model with yearly seasonality.
     validation_size:
         Optional proportion or row count for tuning, taken from the end of
@@ -694,7 +694,7 @@ def partition(
     """Pull out the rows belonging to one partition, as a DataFrame.
 
     The split stores row positions, not data. This materialises one of
-    those partitions so you can look at it — check class balance, sanity
+    those partitions so you can look at it: check class balance, sanity
     check a transform, or hand the frame to code outside BuildML.
 
     Parameters
@@ -831,7 +831,7 @@ def to_engine(session, engine: EngineName | str | None = None) -> Any:
     Notes
     -----
     The returned object is detached from the session. Changes you make to
-    it do not flow back — call :meth:`sync_native` if you have mutated the
+    it do not flow back: call :meth:`sync_native` if you have mutated the
     session's own frame and need the engine table rebuilt.
 
     See Also
@@ -859,7 +859,7 @@ def checkpoint_save(
 ) -> Path:
     """Save the whole session so you can stop and pick up where you left off.
 
-    Long workflows get interrupted — a laptop closes, a job hits its time
+    Long workflows get interrupted: a laptop closes, a job hits its time
     limit, a notebook kernel dies three hours into feature engineering.
     A checkpoint writes the current data, the split membership, the fitted
     preprocessing plans, and the full operation history to disk so
@@ -971,7 +971,7 @@ def checkpoint_load_session(session_cls, path: str | Path, *, data_only: bool = 
 
     Restoration is verified, not assumed. The data is re-checked against
     the fingerprint recorded when the checkpoint was written, and the
-    outcome lands on :attr:`reattach_result`. Read it before continuing —
+    outcome lands on :attr:`reattach_result`. Read it before continuing :
     plans fitted against data that has since changed are no longer the
     right plans.
 
@@ -983,7 +983,7 @@ def checkpoint_load_session(session_cls, path: str | Path, *, data_only: bool = 
     path:
         The checkpoint directory to restore from.
     data_only:
-        Load only the rows and discard the rest — no split, no plans, no
+        Load only the rows and discard the rest: no split, no plans, no
         history. Use this when you want the stored data as a starting point
         for something new, and the previous session's decisions would only
         get in the way. When ``True``, ``plans.joblib`` is skipped and
@@ -1167,7 +1167,7 @@ def to_parquet(session, path: str | Path) -> Path:
     """Write the current data to a Parquet file.
 
     Parquet stores columns rather than rows, which makes it much smaller
-    than CSV and much faster to read back — and unlike CSV it preserves
+    than CSV and much faster to read back: and unlike CSV it preserves
     dtypes, so a datetime column returns as a datetime rather than as text
     you have to re-parse.
 
@@ -1194,7 +1194,7 @@ def to_parquet(session, path: str | Path) -> Path:
     Notes
     -----
     This writes the data only. Roles, split membership, and fitted plans
-    are not included — :meth:`checkpoint_save` is the option that preserves
+    are not included: :meth:`checkpoint_save` is the option that preserves
     those.
 
     See Also
@@ -1213,7 +1213,7 @@ def head(session, n: int = 5) -> pd.DataFrame:
     """Look at the first few rows.
 
     The quickest way to see what you are working with, and worth doing
-    after every transform — a column that has become all zeros or all
+    after every transform: a column that has become all zeros or all
     ``NaN`` shows up immediately here and can otherwise go unnoticed until
     the model underperforms for no visible reason.
 
@@ -1240,7 +1240,7 @@ def head(session, n: int = 5) -> pd.DataFrame:
     engine-backed data where :meth:`to_pandas` would not be.
 
     These are the first rows in storage order, not a random sample. If the
-    file is sorted, they are not representative — use :meth:`eda` for a
+    file is sorted, they are not representative: use :meth:`eda` for a
     picture of the whole table.
 
     Examples
@@ -1267,7 +1267,7 @@ def with_mode(session, mode: DataMode | str) -> "Session":
 
     ``'memory'`` means the rows are fully materialised and every operation
     works on them directly. ``'lazy'`` means the dataset keeps an engine
-    handle and defers materialising until something genuinely requires it —
+    handle and defers materialising until something genuinely requires it :
     which is how a table larger than memory stays workable.
 
     This records the intent on the dataset. Whether laziness actually
@@ -1426,8 +1426,8 @@ def sync_native(session) -> "Session":
 def metadata(session) -> dict[str, Any]:
     """Take a serialisable snapshot of everything the session knows.
 
-    Returns the session's state as plain dictionaries and lists — no
-    BuildML objects — so it can be written to JSON, logged, compared
+    Returns the session's state as plain dictionaries and lists: no
+    BuildML objects: so it can be written to JSON, logged, compared
     between runs, or attached to an experiment tracker.
 
     Parameters

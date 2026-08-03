@@ -167,7 +167,7 @@ def metalearning_status(
                 "evaluation-only.",
                 "Session checkpoints do not embed MetaLearningPlan; use "
                 "save_metalearning_bundle / load_metalearning_bundle.",
-                "Honesty: tabular few-shot / episodic protocol — not "
+                "Honesty: tabular few-shot / episodic protocol: not "
                 "foundation-model meta-learning or MAML-at-scale.",
             ]
         )

@@ -387,7 +387,7 @@ def pool_masks_from_plan(
     x_pool:
         Feature matrix for unlabeled pool rows (may be empty).
     unlabeled:
-        Boolean mask over train rows — ``True`` for pool rows.
+        Boolean mask over train rows: ``True`` for pool rows.
     pool_indices:
         Dataset-level indices for unlabeled train rows.
     x_labeled:

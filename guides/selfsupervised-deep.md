@@ -1,4 +1,4 @@
-# Self-supervised deep guide (Phase R1 — Torch industry depth)
+# Self-supervised deep guide (Phase R1: Torch industry depth)
 
 > **Install:**
 > `pip install "buildml[torch]"` for tabular contrastive/generative SSL defaults.
@@ -28,7 +28,7 @@ evaluate_ssl (labeled holdout only)
 | `vae_tabular` | tabular | Torch | Variational AE |
 | `hf_text_ssl` | text | sentence-transformers | Pass `text_column=` |
 | `vision_ssl` | vision | torchvision + projector | Pass `image_column=` |
-| `masked_tabular` | tabular | sklearn | **Deprecated** — use Torch methods |
+| `masked_tabular` | tabular | sklearn | **Deprecated**: use Torch methods |
 
 ## Contract
 

@@ -2,8 +2,8 @@
 
 A bundle is a directory holding two files: ``cbr_plan.joblib`` with the plan
 itself, and ``meta.json`` describing it in plain text. The description exists so
-a bundle can be identified — format, version, configuration, case counts, and
-any recorded scores — without loading the plan, which matters both for tooling
+a bundle can be identified: format, version, configuration, case counts, and
+any recorded scores: without loading the plan, which matters both for tooling
 and for deciding whether you trust the file before executing it.
 
 **A CBR bundle contains your training data.** Case memory is the training rows,
@@ -44,7 +44,7 @@ CHECKPOINT_BOUNDARY = (
     "data, roles, splits, history, and optional classical preprocess plans; it "
     "does not embed the case memory. Reload tabular workflow via checkpoint_load; "
     "reload the learner via load_cbr_bundle. Honesty: tabular case→solution CBR "
-    "— not RAG document retrieval, not a vector DB product."
+    ": not RAG document retrieval, not a vector DB product."
 )
 
 
@@ -72,7 +72,7 @@ def save_cbr_bundle(
     fit_result:
         The fit report, recorded in the metadata.
     eval_result:
-        The holdout evaluation, recorded in the metadata. Worth including —
+        The holdout evaluation, recorded in the metadata. Worth including :
         without it, a loaded bundle gives no indication of whether it works.
 
     Returns

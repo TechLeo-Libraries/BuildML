@@ -1,7 +1,7 @@
 """Find the redundancy that only shows up when you look at columns together.
 
 Pairwise correlation misses a whole class of problem. Three columns can each be
-weakly correlated with the others and still be perfectly redundant — if
+weakly correlated with the others and still be perfectly redundant: if
 ``total = subtotal + tax``, no single pair looks alarming, and the three
 together are linearly dependent. Coefficients in a linear model on such data are
 arbitrary, unstable, and uninterpretable.
@@ -10,7 +10,7 @@ Three views of that redundancy. Correlation clusters group columns that are
 transitively linked above a threshold, which is the quick answer to "which of
 these are measuring the same thing". VIF quantifies how well each column is
 predicted by *all* the others, catching the multi-column case that pairs miss.
-PCA describes how much genuinely independent variation exists — if five
+PCA describes how much genuinely independent variation exists: if five
 components explain 99% of twenty columns, there are effectively five things
 being measured.
 
@@ -46,7 +46,7 @@ def analyze_multivariate(
     cluster is a set of columns measuring roughly one thing, and usually a
     candidate for keeping one.
 
-    *VIF* — variance inflation factor — regresses each column on all the others
+    *VIF*: variance inflation factor: regresses each column on all the others
     and reports ``1 / (1 - R²)``. Above 5 is worth a look, above 10 is severe.
     This is the measure that catches the ``total = subtotal + tax`` case, where
     no pair is alarming.
@@ -70,9 +70,9 @@ def analyze_multivariate(
     Returns
     -------
     dict
-        ``correlation_clusters`` — groups of two or more linked columns.
-        ``vif`` — per column, worst first, with the underlying
-        ``r2_other_features``. ``pca`` — explained variance ratios, the
+        ``correlation_clusters``: groups of two or more linked columns.
+        ``vif``: per column, worst first, with the underlying
+        ``r2_other_features``. ``pca``: explained variance ratios, the
         cumulative curve, and the top loadings per component; ``None`` when
         there was not enough data. ``numeric_column_count``,
         ``complete_case_rows``, and ``feature_columns_analyzed`` for provenance.

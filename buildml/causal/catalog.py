@@ -83,7 +83,7 @@ def causal_capability_matrix() -> dict[str, Any]:
                 "policy_learning": True,
                 "notes": (
                     "DML / CausalForestDML estimate ATE with optional CATE std; "
-                    "policy_tree learns a treatment assignment rule on train — "
+                    "policy_tree learns a treatment assignment rule on train: "
                     "not a deployment-ready policy product."
                 ),
             },

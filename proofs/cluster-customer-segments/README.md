@@ -8,7 +8,7 @@ external validation metrics.
 
 ## Data source
 
-Synthetic RFM table (`load_customer_segments_synthetic`) — license-clear.
+Synthetic RFM table (`load_customer_segments_synthetic`): license-clear.
 
 ## Leakage controls
 
@@ -27,11 +27,11 @@ Synthetic RFM table (`load_customer_segments_synthetic`) — license-clear.
 
 ## Metrics
 
-Internal cluster quality + external agreement (ARI/NMI-style — see JSON).
+Internal cluster quality + external agreement (ARI/NMI-style: see JSON).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs sklearn StandardScaler→PCA→KMeans with silhouette / ARI / NMI on the same split (`results/comparison.json`).
+Filled: `baseline_industry.py` runs sklearn StandardScaler→PCA→KMeans with silhouette / ARI / NMI on the same split (`results/comparison.json`).
 ## Limitations
 
 Ground-truth segments are synthetic; real CRM clusters are unlabeled.

@@ -12,7 +12,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
         _note(
             key="anomaly-train-fit-holdout-score",
             title="Anomaly train-fit / holdout-score",
-            summary="Fit the detector on train only; score and flag holdout rows with a frozen plan — never refit on evaluation partitions.",
+            summary="Fit the detector on train only; score and flag holdout rows with a frozen plan: never refit on evaluation partitions.",
             definition=(
                 "Train-fit / holdout-score is the leakage-safe anomaly contract: "
                 "estimate a detector (and usually a threshold) on the training "
@@ -69,7 +69,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Without a disclosed cut, 'anomaly' is just a ranking. Operations need "
-                "to know how many alarms fire — and that holdout rates can drift."
+                "to know how many alarms fire: and that holdout rates can drift."
             ),
             formal_idea=(
                 "Policies include contamination (τ ≈ Q_{1-c}(s_train)), quantile, "
@@ -108,7 +108,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
         _note(
             key="anomaly-novelty-vs-unsupervised",
             title="Novelty vs unsupervised anomaly modes",
-            summary="Unsupervised fits on all train rows; novelty fits on a disclosed normal-only train subset — different assumptions, same holdout score contract.",
+            summary="Unsupervised fits on all train rows; novelty fits on a disclosed normal-only train subset: different assumptions, same holdout score contract.",
             definition=(
                 "Unsupervised anomaly detection estimates unusualness from a train "
                 "mixture that may already contain anomalies (contamination prior). "
@@ -122,7 +122,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             formal_idea=(
                 "Unsupervised: f ← fit(X_train). Novelty: f ← fit(X_train[y=normal]). "
                 "Both freeze f for holdout scoring. Novelty is semi-supervised in the "
-                "label-for-normal sense — not Phase-2 representation learning."
+                "label-for-normal sense: not Phase-2 representation learning."
             ),
             why_it_matters=(
                 "Using novelty without a honest normal-only subset leaks anomalies into the fit.",
@@ -225,7 +225,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Promoting EDA screens to production detectors hides leakage and threshold policy.",
-                "ClusterPlan labels are structure signals, not anomaly flags — keep APIs separate.",
+                "ClusterPlan labels are structure signals, not anomaly flags: keep APIs separate.",
             ),
             how_buildml_uses=(
                 "fit_anomaly / score_anomalies / evaluate_anomaly / anomaly bundles.",
@@ -254,7 +254,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
         _note(
             key="anomaly-bundle-boundary",
             title="Anomaly bundle boundary",
-            summary="Anomaly plans persist as buildml.anomaly_bundle.v1 — complementary to Session checkpoints and Torch/RAG/unsupervised bundles.",
+            summary="Anomaly plans persist as buildml.anomaly_bundle.v1: complementary to Session checkpoints and Torch/RAG/unsupervised bundles.",
             definition=(
                 "The anomaly bundle boundary is the contract that a train-fitted "
                 "AnomalyPlan (estimator, features, threshold, alert-rate disclosures) "
@@ -300,7 +300,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
         _note(
             key="anomaly-isolation-forest",
             title="Isolation Forest (sklearn backend)",
-            summary="Tree ensembles that isolate anomalies via random splits — fast, scale-friendly default in the sklearn backend.",
+            summary="Tree ensembles that isolate anomalies via random splits: fast, scale-friendly default in the sklearn backend.",
             definition=(
                 "Isolation Forest scores points by how quickly random partition trees "
                 "can isolate them; shorter paths imply higher anomaly scores. BuildML "
@@ -326,7 +326,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
         _note(
             key="anomaly-lof",
             title="Local Outlier Factor (sklearn backend)",
-            summary="Density-relative anomaly scores — flags points much sparser than their neighbours.",
+            summary="Density-relative anomaly scores: flags points much sparser than their neighbours.",
             definition=(
                 "LOF compares local reachability density of a point to that of its "
                 "k-nearest neighbours. method='lof' on backend='sklearn' fits on train "

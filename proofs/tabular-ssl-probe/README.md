@@ -3,7 +3,7 @@
 ## Business purpose
 
 Learn a masked-tabular SSL representation on IoT sensor features, then probe
-for fault classification — distinct DGP from `ssl-representation-probe`.
+for fault classification: distinct DGP from `ssl-representation-probe`.
 
 ## Data source
 
@@ -28,7 +28,7 @@ See `results/results.json` (accuracy / f1 / roc_auc).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` uses PCA embedding + logistic probe
+Filled: `baseline_industry.py` uses PCA embedding + logistic probe
 (`results/comparison.json`).
 
 ## Limitations

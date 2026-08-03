@@ -1,8 +1,8 @@
-# Quickstart — Synthetic-data systems
+# Quickstart: Synthetic-data systems
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core path — bootstrap + Gaussian copula use numpy/scipy/sklearn.
+> Core path: bootstrap + Gaussian copula use numpy/scipy/sklearn.
 > `method='smote'` needs `pip install "buildml[imbalanced]"`.
 > SDV CTGAN/TVAE/CopulaGAN needs `pip install "buildml[synthetic-industry]"`.
 > See [installation](../docs/installation.rst).
@@ -91,6 +91,6 @@ reusable sampling, fidelity/TSTR, and controlled augmentation with provenance.
 | Train-only fit | Always; never fits on validation/test |
 | Privacy | **Not** DP; bootstrap/SDV can memorize train structure |
 | Merge | Explicit `merge_mode`; default returns Frame only |
-| Industry | SDV optional — native copula always available |
+| Industry | SDV optional: native copula always available |
 
 R6.10 industry depth **PASS**. Benchmark: `benchmarks/synthetic/tstr_quality.py`.

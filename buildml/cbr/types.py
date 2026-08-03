@@ -1,7 +1,7 @@
 """The settings that decide how a case-based reasoner remembers and reuses.
 
 Case-based reasoning answers a new question by finding the most similar past
-cases and adapting what happened to them. There is no model in the usual sense —
+cases and adapting what happened to them. There is no model in the usual sense :
 nothing is compressed into coefficients or split points. The training data *is*
 the model, which is what makes every prediction explainable by pointing at the
 specific past cases behind it, and what makes the notion of similarity carry all
@@ -10,7 +10,7 @@ the weight.
 Four decisions are recorded here, and they matter roughly in this order:
 
 *Which columns count.* Every included feature contributes to distance, so an
-irrelevant column is not merely useless — it actively pulls neighbours apart.
+irrelevant column is not merely useless: it actively pulls neighbours apart.
 
 *How similarity is measured.* ``metric`` chooses between Euclidean, Manhattan,
 cosine, and a Gower-style mixed distance for data with categorical columns.
@@ -76,7 +76,7 @@ class CbrConfig:
         How neighbours are found. ``'sklearn'`` is exact brute-force search and
         always available; ``'industry'`` uses an approximate index for large
         case bases; ``'embedding'`` and ``'torch'`` learn a representation
-        first. Exact search is the honest default — approximate search trades
+        first. Exact search is the honest default: approximate search trades
         recall for speed, and at small scale there is nothing to buy.
     metric:
         ``'euclidean'`` for continuous features on a comparable scale,
@@ -112,8 +112,8 @@ class CbrConfig:
         Seed for the components that sample, keeping runs reproducible.
     prefer_reduce_components:
         Use dimensionality-reduced components when a reduce plan is present.
-        Distance degrades in high dimensions — everything becomes roughly
-        equidistant — so reducing first often improves neighbours.
+        Distance degrades in high dimensions: everything becomes roughly
+        equidistant: so reducing first often improves neighbours.
     disclosures:
         Statements about how the configuration was resolved, including any
         fallback from a requested backend.
@@ -125,7 +125,7 @@ class CbrConfig:
     relative importance. This is why ``standardize`` defaults to true.
 
     **``k`` interacts with class balance.** With a rare class and a large ``k``,
-    majority voting can never predict it — the rare class is outnumbered in
+    majority voting can never predict it: the rare class is outnumbered in
     every neighbourhood. Distance weighting helps; matching ``k`` to the rarity
     helps more.
 
@@ -154,7 +154,7 @@ class CbrConfig:
         """Return the configuration as a JSON-safe mapping.
 
         Tuples become lists and nothing is dropped, so the mapping is a complete
-        record of the settings — enough to reconstruct the configuration or to
+        record of the settings: enough to reconstruct the configuration or to
         compare two runs field by field.
 
         Returns

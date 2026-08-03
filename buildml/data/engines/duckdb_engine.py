@@ -6,13 +6,13 @@ push projections and predicates down into the scan, and return only what was
 asked for. On a wide table where a dozen columns matter, that is the difference
 between reading a gigabyte and reading forty megabytes.
 
-Everything here works on *relations* — unexecuted query plans. Projecting,
+Everything here works on *relations*: unexecuted query plans. Projecting,
 filtering, sampling, and aggregating all compose more plan; nothing runs until
 something calls for pandas or Arrow. Arrow is the bridge at that boundary,
 because it shares memory layout with DuckDB and avoids a serialisation pass.
 
 Requires the ``duckdb`` extra. Every relation carries a connection that must
-eventually be closed — see :class:`DuckDBTable`.
+eventually be closed: see :class:`DuckDBTable`.
 
 See Also
 --------
@@ -37,7 +37,7 @@ class DuckDBTable:
     A relation is only a query plan; executing it requires the connection it was
     built against. If that connection is garbage collected, the relation becomes
     unusable. Newer DuckDB relations reject arbitrary attributes, so the
-    connection cannot simply be stapled on — hence this pairing.
+    connection cannot simply be stapled on: hence this pairing.
 
     Attributes
     ----------
@@ -79,7 +79,7 @@ class DuckDBTable:
         Parameters
         ----------
         relation:
-            The DuckDB relation — an unexecuted query plan.
+            The DuckDB relation: an unexecuted query plan.
         connection:
             The connection it was built against.
 
@@ -192,7 +192,7 @@ class DuckDBEngine:
 
     Every operation composes more plan rather than computing anything. Only
     :meth:`to_pandas`, :meth:`to_arrow`, and :meth:`write_parquet` execute, and
-    by then the plan describes exactly the columns and rows that are wanted —
+    by then the plan describes exactly the columns and rows that are wanted :
     so the scan reads only those.
 
     Attributes
@@ -290,7 +290,7 @@ class DuckDBEngine:
         """Register an Arrow table as a DuckDB relation, without copying.
 
         The cheapest way in. DuckDB reads Arrow buffers directly, so this is
-        effectively free compared with going through pandas — worth using
+        effectively free compared with going through pandas: worth using
         whenever the data is already Arrow, such as after a Parquet read.
 
         Parameters
@@ -356,7 +356,7 @@ class DuckDBEngine:
         Notes
         -----
         **Directory reads assume a consistent schema.** Files that disagree
-        about column names or types fail at execution, not here — the error
+        about column names or types fail at execution, not here: the error
         surfaces on the first materialisation.
 
         **The path is interpolated into SQL for directory reads.** Directory
@@ -495,7 +495,7 @@ class DuckDBEngine:
     def to_arrow(self, table: Any) -> Any:
         """Execute the plan and return the result as Arrow.
 
-        Cheaper than :meth:`to_pandas` and better at preserving types —
+        Cheaper than :meth:`to_pandas` and better at preserving types :
         especially nulls in integer columns, which pandas has historically
         widened to float. Prefer this when handing data to another Arrow-aware
         library.
@@ -620,7 +620,7 @@ class DuckDBEngine:
 
         The most valuable operation here. On a Parquet-backed relation the
         projection is pushed into the scan, so unselected columns are never read
-        off disk — a wide table costs only the columns you named.
+        off disk: a wide table costs only the columns you named.
 
         Parameters
         ----------
@@ -665,7 +665,7 @@ class DuckDBEngine:
         Two strategies, chosen by whether reproducibility is required. Unseeded
         draws use DuckDB's ``USING SAMPLE``, which is genuinely random and fast.
         Seeded draws order rows by a hash of their leading columns combined with
-        the seed and take the first ``n`` — deterministic, and still evaluated
+        the seed and take the first ``n``: deterministic, and still evaluated
         in the engine.
 
         Parameters
@@ -734,7 +734,7 @@ class DuckDBEngine:
 
         **The most efficient way to drop rows.** On a Parquet-backed relation
         DuckDB pushes the predicate into the scan and uses row-group statistics
-        to skip whole blocks — non-matching rows are never read.
+        to skip whole blocks: non-matching rows are never read.
 
         Parameters
         ----------
@@ -784,7 +784,7 @@ class DuckDBEngine:
 
         SQL has no notion of row position, so the mask is turned into a small
         table of keep-indices, registered, and joined against ``row_number()``.
-        Only that index sidecar is materialised — the source table stays a plan.
+        Only that index sidecar is materialised: the source table stays a plan.
 
         Parameters
         ----------
@@ -816,7 +816,7 @@ class DuckDBEngine:
         SQL.** A predicate is pushed into the scan; a mask requires the rows to
         be enumerated first.
 
-        **There are two fallbacks, and both materialise the source** — an Arrow
+        **There are two fallbacks, and both materialise the source**: an Arrow
         filter, then a pandas one. They run only when the SQL path fails.
         """
         n = int(self.n_rows(table))
@@ -833,7 +833,7 @@ class DuckDBEngine:
         try:
             import pyarrow as pa
 
-            # Only the keep-index sidecar is materialized — not the source table.
+            # Only the keep-index sidecar is materialized: not the source table.
             idx_table = pa.table({"_bml_rn": pa.array(keep_rn, type=pa.int64())})
             con.register("_bml_keep_rn", idx_table)
             filtered = rel.query(
@@ -884,7 +884,7 @@ class DuckDBEngine:
         """Add a ``GROUP BY`` to the plan.
 
         Compiled to SQL and evaluated by DuckDB, which streams and spills to
-        disk as needed — so aggregating a table larger than memory works, and
+        disk as needed: so aggregating a table larger than memory works, and
         only the small result comes back.
 
         Parameters

@@ -126,7 +126,7 @@ def compute_graph_metrics(
         feats[i, 3] = float(avg_nei.get(i, 0.0))
         feats[i, 4] = float(betweenness.get(i, 0.0))
 
-    # Nodes isolated under inductive filtering get zero metrics — disclose.
+    # Nodes isolated under inductive filtering get zero metrics: disclose.
     isolated = int((feats[:, 0] == 0).sum())
     if isolated and mode == "inductive":
         disclosures.append(

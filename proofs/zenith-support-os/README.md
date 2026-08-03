@@ -1,6 +1,6 @@
 # Zenith Support OS
 
-**Tier B** cross-domain product proof — RAG retrieval + NLP ticket routing +
+**Tier B** cross-domain product proof: RAG retrieval + NLP ticket routing +
 active-learning budget for a synthetic support operating system.
 
 ## Product narrative
@@ -14,7 +14,7 @@ budget honestly:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -42,5 +42,5 @@ budget honestly:
 
 ## Limitations
 
-Synthetic KB + tickets — not a live helpdesk. Echo generate is offline
+Synthetic KB + tickets: not a live helpdesk. Echo generate is offline
 scaffolding. Active learning uses a simulated oracle.

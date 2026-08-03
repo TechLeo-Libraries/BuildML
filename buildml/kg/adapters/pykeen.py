@@ -240,7 +240,7 @@ def fit_pykeen(
     )
     disclosures.append(
         "Symbolic query_kg (neighbors/path/typed) uses the train adjacency "
-        "only — not an LLM and not a graph database."
+        "only: not an LLM and not a graph database."
     )
     if method_key == "transe":
         disclosures.append(

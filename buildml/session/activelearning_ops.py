@@ -103,7 +103,7 @@ def fit_active_learner_op(
     -----
     **Leakage:** Requires a split. Fit uses labeled train rows only. The
     unlabeled pool is train target missingness (NaN by default). Validation/test
-    are never the query pool. Labels come from the user — no oracle in core.
+    are never the query pool. Labels come from the user: no oracle in core.
     """
     session.assert_can_fit("train")
     prior = getattr(session, "_activelearning_plan", None)

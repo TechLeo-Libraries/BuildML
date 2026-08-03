@@ -8,7 +8,7 @@ the embeddings are persisted.
 A RAG bundle is a directory, deliberately not a single opaque file: ``meta.json``
 holding the configuration, ``chunks.jsonl`` holding the text and metadata, and
 ``embeddings.npy`` holding the vectors. Every part is inspectable with ordinary
-tools, and nothing is pickled — a bundle can be loaded without executing
+tools, and nothing is pickled: a bundle can be loaded without executing
 anything it contains.
 
 **This is not a Session checkpoint, and the distinction costs people their
@@ -135,7 +135,7 @@ def save_rag_bundle(
 
     Notes
     -----
-    **Embeddings dominate the size.** Roughly ``n_chunks × dim × 4`` bytes — a
+    **Embeddings dominate the size.** Roughly ``n_chunks × dim × 4`` bytes: a
     hundred thousand chunks at 384 dimensions is about 150 MB, plus the chunk
     text.
 
@@ -188,7 +188,7 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
     """Rebuild a queryable index from a saved bundle.
 
     Reads the chunks and embeddings back, rebuilds the vector store, and
-    re-attaches an embedder — that last part being the subtle one. Stored
+    re-attaches an embedder: that last part being the subtle one. Stored
     vectors are enough to *hold* an index but not to *query* it, because the
     query must be embedded into the same space. So the embedder is reconstructed
     from what the bundle recorded.
@@ -305,8 +305,8 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
 def index_result_from_bundle_meta(meta: dict[str, Any]) -> IndexResult:
     """Describe a bundle from its metadata alone, without loading it.
 
-    Lets a caller report what a bundle contains — chunk counts, embedder,
-    dimension, store backend — after reading only ``meta.json``, which is
+    Lets a caller report what a bundle contains: chunk counts, embedder,
+    dimension, store backend: after reading only ``meta.json``, which is
     cheap where loading the embeddings is not.
 
     Parameters

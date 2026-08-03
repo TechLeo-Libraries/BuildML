@@ -1,8 +1,8 @@
 """Save an ensemble with the record of how it was combined.
 
 BuildML has several artifact formats, and the reason they are separate is that
-they answer different questions. A Session checkpoint resumes your work — data,
-roles, splits, history. A pipeline bundle deploys a model — preprocessing plus
+they answer different questions. A Session checkpoint resumes your work: data,
+roles, splits, history. A pipeline bundle deploys a model: preprocessing plus
 estimator. An ensemble bundle preserves *the ensemble as an ensemble*: the
 strategy, the base model names, the meta-learner, and the disclosures about
 which rows were used where.
@@ -59,8 +59,8 @@ def save_ensemble_bundle(
 
     Two files, deliberately. ``ensemble_plan.joblib`` holds the fitted objects
     and can only be read back by Python with the same libraries installed.
-    ``meta.json`` holds the same facts as text — strategy, bases, disclosures,
-    metrics — and can be read by anything, forever.
+    ``meta.json`` holds the same facts as text: strategy, bases, disclosures,
+    metrics: and can be read by anything, forever.
 
     That second file is what makes a bundle auditable. A year from now, when
     scikit-learn has moved on and the pickle no longer loads, the JSON still
@@ -74,7 +74,7 @@ def save_ensemble_bundle(
     plan:
         The fitted plan from one of the ``fit_*_ensemble`` functions.
     fit_result:
-        The standard fit result. Worth including — its feature contract is what
+        The standard fit result. Worth including: its feature contract is what
         lets a reloaded ensemble check that incoming data matches.
     ensemble_fit_result:
         The disclosure record, written into the metadata only.
@@ -151,8 +151,8 @@ def load_ensemble_bundle(path: str | Path, *, trusted: bool = False) -> tuple[En
     unpickling error.
 
     The fit result is always returned, even for bundles written before it was
-    stored: everything it needs — estimator, task, feature columns, target, row
-    count — is already in the plan, so it can be rebuilt. That keeps the return
+    stored: everything it needs: estimator, task, feature columns, target, row
+    count: is already in the plan, so it can be rebuilt. That keeps the return
     type stable, and means downstream code never has to branch on the age of the
     bundle it was handed.
 

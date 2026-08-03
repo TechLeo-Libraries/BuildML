@@ -1,12 +1,12 @@
 """Optimisation / decision helpers (Session-shaped policies over ML scores).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
-Phase 1–2 complete. Phase 3 — Application systems:
+Phase 1–2 complete. Phase 3: Application systems:
   Recommendation systems (**PASS**).
   Search / LTR (**PASS**).
   Knowledge graphs (**PASS**).
-  Optimisation / decision helpers (**PASS** — this module; R6.9 industry depth).
+  Optimisation / decision helpers (**PASS**: this module; R6.9 industry depth).
   Synthetic-data systems (**PASS**).
 
 Honesty (this package):
@@ -17,7 +17,7 @@ Honesty (this package):
     MIP, CVXPY convex LP, XGB cost-sensitive thresholds, sklearn calibration.
   - Never tunes on Session test without ``allow_test_tuning=True`` + disclosure.
 
-Lazy imports — keep the core import graph light.
+Lazy imports: keep the core import graph light.
 """
 
 from __future__ import annotations

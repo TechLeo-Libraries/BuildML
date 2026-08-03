@@ -10,7 +10,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
         "multitask-multi-output",
         plain=(
             "Multi-task modeling predicts several targets at once from the same features. Instead of "
-            "training three separate models for three questions, you train one that answers all three — "
+            "training three separate models for three questions, you train one that answers all three: "
             "and lets what it learns for one question help with the others."
         ),
         analogy=(
@@ -21,7 +21,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Give two or more columns the target role.",
             "Choose an approach: wrap an ordinary estimator to run once per target, use a gradient-boosting model with native multi-target support, or use a neural network with a shared trunk and one head per task.",
             "Fit once on the training rows.",
-            "Predict — you get one prediction per target per row.",
+            "Predict: you get one prediction per target per row.",
             "Evaluate per target, because the model can be excellent at one task and poor at another.",
         ),
         use=(
@@ -30,12 +30,12 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not force unrelated targets into one model; they will compete for capacity and all of them get worse.",
-            "Do not use it when one target matters far more than the others — a dedicated model for that target will usually win.",
+            "Do not use it when one target matters far more than the others: a dedicated model for that target will usually win.",
         ),
         myths=(
             (
                 "Multi-task learning always beats separate models.",
-                "It helps when tasks share structure. When they do not, the shared representation is a compromise nobody wanted — a phenomenon called negative transfer.",
+                "It helps when tasks share structure. When they do not, the shared representation is a compromise nobody wanted: a phenomenon called negative transfer.",
             ),
             (
                 "This is a deep-learning-only technique.",
@@ -67,19 +67,19 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             "order you ask the questions in matters."
         ),
         steps=(
-            "Decide the order — put targets you can predict most reliably first.",
+            "Decide the order: put targets you can predict most reliably first.",
             "The first estimator uses only the original features.",
             "Each subsequent estimator gets the original features plus the earlier predictions.",
             "Fit the whole chain on training rows.",
             "Evaluate per target, and try a different order to see how sensitive the result is.",
         ),
         use=(
-            "When one target genuinely helps predict another — a diagnosis that implies a treatment, a stage that implies an outcome.",
+            "When one target genuinely helps predict another: a diagnosis that implies a treatment, a stage that implies an outcome.",
             "For multi-label problems where labels co-occur in structured ways.",
         ),
         avoid=(
             "Do not chain independent targets; you add error propagation for no benefit.",
-            "Do not use a chain when the first target is hard to predict — its errors contaminate everything downstream.",
+            "Do not use a chain when the first target is hard to predict: its errors contaminate everything downstream.",
         ),
         myths=(
             (
@@ -109,7 +109,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "multitask-target-roles",
         plain=(
-            "BuildML's classical `fit` requires exactly one target — that constraint keeps the ordinary "
+            "BuildML's classical `fit` requires exactly one target: that constraint keeps the ordinary "
             "path unambiguous. The multi-task path requires at least two. The number of target roles you "
             "assign is what selects which world you are in."
         ),
@@ -130,7 +130,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not assign several targets and then expect `fit` to pick one; the ambiguity is refused deliberately.",
-            "Do not mark a column as target just because it is an outcome you find interesting — an extra target changes which APIs are available.",
+            "Do not mark a column as target just because it is an outcome you find interesting: an extra target changes which APIs are available.",
         ),
         myths=(
             (
@@ -159,8 +159,8 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "multitask-bundle-boundary",
         plain=(
-            "The fitted multi-task plan — every per-task estimator or the shared network, plus the task "
-            "order and the feature contract — saves as its own bundle, separate from Session checkpoints."
+            "The fitted multi-task plan: every per-task estimator or the shared network, plus the task "
+            "order and the feature contract: saves as its own bundle, separate from Session checkpoints."
         ),
         analogy=(
             "A folder holding all three specialists' notes and the order they were consulted in, filed "
@@ -170,7 +170,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Fit a multi-task model so a plan exists.",
             "Call `save_multitask_bundle(path)`.",
             "Reload with `load_multitask_bundle(path)`.",
-            "Predict — you get every target back in the recorded order.",
+            "Predict: you get every target back in the recorded order.",
             "Checkpoint separately if you also need the dataset state.",
         ),
         use=(

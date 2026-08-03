@@ -3,7 +3,7 @@
 Images arrive as file paths or as arrays already in memory, at whatever size and
 orientation they were stored in. Batching needs all of them in one shape, so
 this module decodes, resizes, converts to the requested channel count, scales
-into ``[0, 1]``, and arranges as channels-first — the layout Torch convolutions
+into ``[0, 1]``, and arranges as channels-first: the layout Torch convolutions
 expect.
 
 Channel statistics are fitted on the training partition only and applied
@@ -99,7 +99,7 @@ def decode_image_cell(
     Notes
     -----
     **Values above 1.5 are assumed to be on a 0-255 scale and divided by 255.**
-    This is a heuristic, and it is the right one nearly always — a genuine
+    This is a heuristic, and it is the right one nearly always: a genuine
     ``[0, 1]`` image containing a value above 1.5 is not an image. Pillow output
     is scaled unconditionally, since its range is known.
 
@@ -156,7 +156,7 @@ def _normalize_array(
     if arr.shape[0] in {1, 3} and arr.shape[-1] not in {1, 3}:
         arr = np.transpose(arr, (1, 2, 0))  # CHW → HWC
     elif arr.shape[0] in {1, 3} and arr.shape[-1] in {1, 3} and arr.shape[0] < arr.shape[-1]:
-        # Ambiguous small squares — prefer HWC when last dim is channel-like.
+        # Ambiguous small squares: prefer HWC when last dim is channel-like.
         pass
     if arr.shape[-1] == 1 and channels == 3:
         arr = np.repeat(arr, 3, axis=-1)
@@ -205,7 +205,7 @@ def stack_image_column(
     Parameters
     ----------
     values:
-        An iterable of image cells — a pandas Series or a list.
+        An iterable of image cells: a pandas Series or a list.
     size:
         Target height and width.
     channels:
@@ -269,7 +269,7 @@ def fit_image_channel_stats(images: np.ndarray) -> tuple[np.ndarray, np.ndarray]
     Notes
     -----
     **Per channel, not per pixel.** A per-pixel mean would encode where in the
-    frame things tend to be bright — real structure in a corpus of centred
+    frame things tend to be bright: real structure in a corpus of centred
     product photos, and exactly the kind of structure the model should be
     learning rather than having subtracted away.
 
@@ -316,7 +316,7 @@ def apply_image_channel_stats(
 
     Notes
     -----
-    Output is no longer in ``[0, 1]`` and is not meant to be — values centre
+    Output is no longer in ``[0, 1]`` and is not meant to be: values centre
     near zero and extend either way. Reverse the transformation before trying to
     display a standardised image.
     """

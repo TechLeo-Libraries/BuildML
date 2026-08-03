@@ -1,6 +1,6 @@
 # Orbit Multitask Hub
 
-**Tier B** cross-domain product proof — multi-output multitask learning +
+**Tier B** cross-domain product proof: multi-output multitask learning +
 AutoML/classical search + validation-tuned decision thresholds.
 
 ## Product narrative
@@ -14,7 +14,7 @@ targets; a primary buy scorer feeds promo allocation. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

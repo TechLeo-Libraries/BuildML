@@ -97,7 +97,7 @@ def suggest_query(
     disclosures = [
         f"Query backend={resolved_backend}, strategy={resolved_strategy!r}; "
         "pool is train unlabeled rows only.",
-        "Suggested indices require human labels via label_rows — no oracle in core.",
+        "Suggested indices require human labels via label_rows: no oracle in core.",
         "Validation/test partitions are never used as the query pool.",
     ]
     if budget_remaining is not None:

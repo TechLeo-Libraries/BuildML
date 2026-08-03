@@ -3,7 +3,7 @@
 ## Business purpose
 
 Detect collusive default rings among P2P lending borrowers using graph-aware
-classical features — distinct from card/payment fraud rings in
+classical features: distinct from card/payment fraud rings in
 `graph-fraud-rings`.
 
 ## Data source
@@ -29,7 +29,7 @@ See `results/results.json` (accuracy / f1 / roc_auc).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` uses NetworkX degree/clustering + logistic
+Filled: `baseline_industry.py` uses NetworkX degree/clustering + logistic
 regression (`results/comparison.json`).
 
 ## Limitations

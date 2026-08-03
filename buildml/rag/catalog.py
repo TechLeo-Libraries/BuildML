@@ -49,7 +49,7 @@ def rag_capability_matrix() -> dict[str, Any]:
         ``generate``
             Grounded generation facts, including that no LLM is bundled.
         ``default_embedder_when_installed``
-            ``'semantic'`` or ``'hashing'`` — what ``"auto"`` picks here.
+            ``'semantic'`` or ``'hashing'``: what ``"auto"`` picks here.
         ``install_hints``
             Copy-paste pip commands per extra.
         ``non_goals``
@@ -60,7 +60,7 @@ def rag_capability_matrix() -> dict[str, Any]:
     Notes
     -----
     **Availability comes from real imports, not just spec lookups**, so an
-    installed-but-broken torch reports as unavailable — which matches what the
+    installed-but-broken torch reports as unavailable: which matches what the
     user would experience.
 
     **The probes make this slow on first call** in installs that have the
@@ -82,7 +82,7 @@ def rag_capability_matrix() -> dict[str, Any]:
                 "available": True,
                 "extra": None,
                 "embedder": "HashingEmbedder",
-                "notes": "Core numpy/sklearn hashing embeddings — always available.",
+                "notes": "Core numpy/sklearn hashing embeddings: always available.",
             },
             "semantic": {
                 "available": semantic,
@@ -108,7 +108,7 @@ def rag_capability_matrix() -> dict[str, Any]:
         },
         "generate": {
             "echo_grounded": True,
-            "external_llm": "via buildml[ai] / provider hooks — not bundled here",
+            "external_llm": "via buildml[ai] / provider hooks: not bundled here",
         },
         "default_embedder_when_installed": "semantic" if semantic else "hashing",
         "install_hints": {

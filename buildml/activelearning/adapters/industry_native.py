@@ -24,7 +24,7 @@ def score_industry_native_pool(
 ) -> np.ndarray:
     """Score pool rows with CoreSet / QBC industry query strategies.
 
-    Uses native numpy/sklearn scoring — no torch coupling. CoreSet ranks pool
+    Uses native numpy/sklearn scoring: no torch coupling. CoreSet ranks pool
     points by distance to the labeled set; QBC strategies measure committee
     disagreement.
 
@@ -76,7 +76,7 @@ def score_industry_native_pool(
 
 
 def _core_set_scores(x_labeled: np.ndarray, x_pool: np.ndarray) -> np.ndarray:
-    """k-center greedy distances — higher score = farther from labeled set."""
+    """k-center greedy distances: higher score = farther from labeled set."""
     x_labeled = np.asarray(x_labeled, dtype=float)
     x_pool = np.asarray(x_pool, dtype=float)
     if x_labeled.shape[0] == 0:

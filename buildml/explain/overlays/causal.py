@@ -85,7 +85,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=(
             "Missing treatment/outcome/confounders; acknowledgements false; instruments set.",
         ),
-        leakage=("None — declaration does not touch holdout fitting.",),
+        leakage=("None: declaration does not touch holdout fitting.",),
         anti_patterns=(
             "Treating EDA correlation / MI / importance as identification.",
             "Skipping acknowledgements.",
@@ -168,7 +168,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "No assumptions; incomplete acknowledgements; degenerate treatment arms.",
         ),
         leakage=(
-            "Fitting nuisances on validation/test — hard-refused by train-only fit.",
+            "Fitting nuisances on validation/test: hard-refused by train-only fit.",
         ),
         anti_patterns=(
             "Fitting without acknowledgements.",
@@ -310,7 +310,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Surface fragile estimates with cheap sensitivity checks.",),
         assumptions=("Train partition still available and aligned.",),
         failures=("No plan; degenerate placebo arms.",),
-        leakage=("Refutation refits on train only — never on holdout.",),
+        leakage=("Refutation refits on train only: never on holdout.",),
         anti_patterns=(
             "Calling this a complete DoWhy suite.",
             "Treating a near-zero placebo as proof of identification.",

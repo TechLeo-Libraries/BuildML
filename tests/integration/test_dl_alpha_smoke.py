@@ -95,7 +95,7 @@ def test_dl_alpha_gate_smoke(tmp_path: Path) -> None:
         Session.ingest(frame)
         .set_roles({"a": "feature", "b": "feature", "label": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=11)
-        .load_torch_bundle(bundle, TinyMLP(, trusted=True), map_location="cpu")
+        .load_torch_bundle(bundle, TinyMLP(), map_location="cpu", trusted=True)
     )
     restored.make_torch_loaders(batch_size=16, normalize=True, seed=11)
     again = restored.evaluate_torch(partition="test")

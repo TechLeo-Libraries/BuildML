@@ -34,7 +34,7 @@ class SyntheticSessionMixin:
     ) -> SynthesizerFitResult:
         """Fit a tabular synthesizer on Session train rows only.
 
-        Session facade over :func:`buildml.session.synthetic_ops.fit_synthesizer_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.synthetic_ops.fit_synthesizer_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -73,7 +73,7 @@ class SyntheticSessionMixin:
     ) -> SyntheticSampleResult:
         """Sample synthetic rows from the frozen synthesizer plan.
 
-        Session facade over :func:`buildml.session.synthetic_ops.sample_synthetic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.synthetic_ops.sample_synthetic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -107,7 +107,7 @@ class SyntheticSessionMixin:
     ) -> SyntheticEvalResult:
         """Evaluate the frozen synthesizer for fidelity or TSTR utility.
 
-        Session facade over :func:`buildml.session.synthetic_ops.evaluate_synthetic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.synthetic_ops.evaluate_synthetic_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -133,7 +133,7 @@ class SyntheticSessionMixin:
     def synthetic_capability_matrix() -> dict[str, Any]:
         """Return the synthetic-data backend/method capability matrix.
 
-        Session facade over :func:`buildml.session.synthetic_ops.synthetic_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.synthetic_ops.synthetic_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -186,7 +186,7 @@ class SyntheticSessionMixin:
     def save_synthetic_bundle(self, path: str | Path) -> Path:
         """Persist the active synthesizer plan as ``buildml.synthetic_bundle.v1``.
 
-        Session facade over :func:`buildml.session.synthetic_ops.save_synthetic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.synthetic_ops.save_synthetic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -203,7 +203,7 @@ class SyntheticSessionMixin:
     def load_synthetic_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a synthetic-data bundle into this Session.
 
-        Session facade over :func:`buildml.session.synthetic_ops.load_synthetic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.synthetic_ops.load_synthetic_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

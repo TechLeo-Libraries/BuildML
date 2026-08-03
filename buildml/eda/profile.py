@@ -78,7 +78,7 @@ def explore_dataset(
     Feature eligibility is computed once and threaded through every analyzer, so
     the target does not appear as its own best predictor, identifiers do not top
     the association rankings, and constants do not get histograms. The
-    exclusions and the reason for each are recorded in the overview — including
+    exclusions and the reason for each are recorded in the overview: including
     which were excluded by an explicit role and which by a heuristic, since the
     second kind is the one you might want to overrule.
 
@@ -93,7 +93,7 @@ def explore_dataset(
         worth having before you trust any evaluation score.
     sample_rows:
         Row cap for the expensive sections. ``None`` uses 100,000. Quality
-        checks always run on the full frame — you cannot count duplicates in a
+        checks always run on the full frame: you cannot count duplicates in a
         sample.
     max_columns:
         Column cap for the detailed analyzers. Columns beyond it are still
@@ -112,8 +112,8 @@ def explore_dataset(
     export_figures:
         Write the rendered figures to this directory. Needs ``include_plots``.
     html_format:
-        ``'studio'`` for the offline Teaching Studio snapshot — the same surface
-        as ``session.eda_app()`` — or ``'research'`` for the layered shell with
+        ``'studio'`` for the offline Teaching Studio snapshot: the same surface
+        as ``session.eda_app()``: or ``'research'`` for the layered shell with
         embedded Matplotlib figures.
 
     Returns
@@ -356,7 +356,7 @@ def summarize_dataset(dataset: Dataset) -> dict[str, Any]:
     Parameters
     ----------
     dataset:
-        The data. Defaults apply throughout — no split, so no drift analysis.
+        The data. Defaults apply throughout: no split, so no drift analysis.
 
     Returns
     -------

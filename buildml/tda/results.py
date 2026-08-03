@@ -154,7 +154,7 @@ class TdaTransformResult:
     def to_dict(self) -> dict[str, Any]:
         """Summarise transform output without embedding the full feature matrix.
 
-        History records row counts and names only — not the topological matrix.
+        History records row counts and names only: not the topological matrix.
 
         Returns
         -------

@@ -304,10 +304,14 @@ def resolve_symbolic_backend_method(
     if backend is None:
         if source_key == "declared":
             resolved_backend = "sklearn"
-        elif source_key in {"decision_tree", "decision_list"}:
-            resolved_backend = _default_symbolic_backend()  # type: ignore[assignment]
         elif method_key in {"skope_rules", "rulefit", "boosted_rules"}:
+            # Explicit industry method selects the industry backend.
             resolved_backend = "industry"
+        elif source_key in {"decision_tree", "decision_list"}:
+            # Explicit sklearn induction sources must stay on sklearn.
+            # Auto-preferring industry here silently dropped decision_tree /
+            # decision_list when symbolic-industry extras were installed.
+            resolved_backend = "sklearn"
         else:
             resolved_backend = _default_symbolic_backend()  # type: ignore[assignment]
     else:

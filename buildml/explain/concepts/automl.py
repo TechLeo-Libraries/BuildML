@@ -22,7 +22,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Tuning the dials on one radio is HPO. Trying several radios and several "
-                "antenna setups under a time budget is AutoML — still not inventing new radios (NAS)."
+                "antenna setups under a time budget is AutoML: still not inventing new radios (NAS)."
             ),
             formal_idea=(
                 "Select (f, r, θ) ∈ F × R × Θ_f maximizing selection score S on train-only "
@@ -43,7 +43,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
             ),
             assumptions=(
                 "Catalogs cover common tabular sklearn families only.",
-                "Predictive ranking — not causal identification.",
+                "Predictive ranking: not causal identification.",
             ),
             failure_modes=(
                 "Claiming NAS or fully automated science from this API.",
@@ -74,7 +74,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Instead of only asking 'how many features to keep?', also ask "
-                "'should we scale? one-hot or ordinal?' — but always fit those choices "
+                "'should we scale? one-hot or ordinal?': but always fit those choices "
                 "inside the training fold."
             ),
             formal_idea=(
@@ -173,7 +173,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "automl_bundle = (AutoMLPlan, FitResult?); checkpoint ⊄ automl_bundle."
             ),
             why_it_matters=(
-                "Operators expect checkpoint_load to restore AutoMLPlan — it does not.",
+                "Operators expect checkpoint_load to restore AutoMLPlan: it does not.",
             ),
             how_buildml_uses=(
                 "save_automl_bundle / load_automl_bundle.",

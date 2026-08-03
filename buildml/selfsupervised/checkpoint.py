@@ -204,5 +204,5 @@ def _maybe_restore_torch_state(
 
         plan.encoder_ = TorchTabularSSLEncoder.from_state_dict(state)
     elif method == "vision_ssl":
-        # Vision restore kept minimal — joblib encoder retained when pt missing
+        # Vision restore kept minimal: joblib encoder retained when pt missing
         pass

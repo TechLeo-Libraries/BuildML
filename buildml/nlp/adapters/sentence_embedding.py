@@ -40,7 +40,7 @@ class SentenceEmbeddingVectorizer:
             on first use and cached thereafter.
         batch_size:
             How many documents to encode at once. Larger is faster and uses
-            more memory — lower it if you run out on a GPU.
+            more memory: lower it if you run out on a GPU.
         normalize_embeddings:
             Scale each vector to unit length, which makes dot products equal
             cosine similarity and keeps document length from affecting
@@ -73,7 +73,7 @@ class SentenceEmbeddingVectorizer:
         """Record the embedding width by encoding the training documents.
 
         Nothing is learned here, unlike a bag-of-words fit. The encoder's
-        weights are frozen and no vocabulary is built — the only state acquired
+        weights are frozen and no vocabulary is built: the only state acquired
         is the output width, needed so an empty input can still return a
         correctly shaped array.
 
@@ -103,7 +103,7 @@ class SentenceEmbeddingVectorizer:
     def fit_transform(self, documents: list[str], y: Any = None) -> np.ndarray:
         """Encode the training documents and record the embedding width.
 
-        Genuinely equivalent to fit followed by transform here, and cheaper —
+        Genuinely equivalent to fit followed by transform here, and cheaper :
         because nothing is learned, running it as one step avoids encoding the
         same documents twice.
 
@@ -163,7 +163,7 @@ class SentenceEmbeddingVectorizer:
         calls reuse it.
 
         Long documents are truncated at the model's own sequence limit, quietly
-        — text past the cut-off does not influence the vector.
+       : text past the cut-off does not influence the vector.
         """
         model = self._ensure_model()
         texts = [("" if item is None else str(item)) for item in documents]
@@ -183,7 +183,7 @@ class SentenceEmbeddingVectorizer:
         """Return positional names for the embedding dimensions.
 
         Names like ``embed_0`` are placeholders, and honestly so. An embedding
-        dimension does not correspond to a word or to any nameable concept —
+        dimension does not correspond to a word or to any nameable concept :
         it is one axis of a learned space. This exists for scikit-learn
         compatibility, not for interpretation, which is why
         :func:`~buildml.nlp.interpret.interpret_text_prediction` refuses this

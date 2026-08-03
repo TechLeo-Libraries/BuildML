@@ -85,7 +85,7 @@ def main() -> None:
         )
         .group_split(test_size=0.25, validation_size=0.15, random_state=0)
     )
-    other.load_ranker_bundle(out)
+    other.load_ranker_bundle(out, trusted=True)
     print("reloaded eval", other.evaluate_ranker(partition="test", k=5).metrics)
 
 

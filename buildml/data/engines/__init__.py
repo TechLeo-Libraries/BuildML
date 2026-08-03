@@ -1,7 +1,7 @@
 """Choose which backend does the prep work, without changing the calling code.
 
 Three engines are supported. Pandas is always present and always in memory.
-Polars and DuckDB are optional, and both can defer work — building a plan and
+Polars and DuckDB are optional, and both can defer work: building a plan and
 executing it once at the end, which lets them read only the columns and rows
 that are actually needed.
 
@@ -112,8 +112,8 @@ def engine_roundtrip_pandas(frame: Any, name: EngineName | str) -> Any:
     """Send a frame through an engine and back, to see what survives.
 
     A diagnostic. Converting into an engine and out again exposes the type
-    changes that a switch would introduce — nullable integers, datetime
-    resolutions, categoricals — before they show up as a confusing model error.
+    changes that a switch would introduce: nullable integers, datetime
+    resolutions, categoricals: before they show up as a confusing model error.
 
     Parameters
     ----------

@@ -31,7 +31,7 @@ Exposing ML scores without auth is a common incident. Defaults:
 
 ---
 
-## Use case A — Serve a classical pipeline bundle
+## Use case A: Serve a classical pipeline bundle
 
 ```python
 import pandas as pd
@@ -102,7 +102,7 @@ curl -s -X POST http://127.0.0.1:8080/predict/batch \
 
 ---
 
-## Use case B — Serve TorchScript
+## Use case B: Serve TorchScript
 
 ```python
 # After fit_torch + export_torch("artifacts/model.ts.pt", format="torchscript"):
@@ -113,12 +113,12 @@ curl -s -X POST http://127.0.0.1:8080/predict/batch \
 # )
 ```
 
-Scoring contracts differ by `kind` — do not assume pipeline JSON equals
+Scoring contracts differ by `kind`: do not assume pipeline JSON equals
 TorchScript tensor payloads. Inspect `/metadata` and OpenAPI locally.
 
 ---
 
-## Use case C — Auth, public bind, optional local HTTPS
+## Use case C: Auth, public bind, optional local HTTPS
 
 ```python
 # Refused without keys on non-loopback (unless allow_insecure_public_bind):
@@ -135,7 +135,7 @@ TorchScript tensor payloads. Inspect `/metadata` and OpenAPI locally.
 #     allow_insecure_public_bind=True,
 # )
 
-# Optional local HTTPS — both cert and key required (ValidationError otherwise):
+# Optional local HTTPS: both cert and key required (ValidationError otherwise):
 # session.serve_bundle(
 #     "artifacts/pipeline",
 #     ssl_certfile="cert.pem",
@@ -149,7 +149,7 @@ Rotate keys; prefer a reverse proxy for production TLS.
 
 ---
 
-## Use case D — TorchServe directory pack + compose example
+## Use case D: TorchServe directory pack + compose example
 
 ```python
 # session.export_torch("artifacts/model.ts.pt", format="torchscript")
@@ -158,7 +158,7 @@ Rotate keys; prefer a reverse proxy for production TLS.
 #     torchscript_path="artifacts/model.ts.pt",
 #     model_name="buildml_model",
 # )
-# Operator runs TorchServe against the directory — BuildML does not start it.
+# Operator runs TorchServe against the directory: BuildML does not start it.
 ```
 
 Repo recipe for a local compose loop (operator-run; not a managed cloud):
@@ -172,7 +172,7 @@ Repo recipe for a local compose loop (operator-run; not a managed cloud):
 
 ---
 
-## Use case E — TensorRT trtexec plan (recipe)
+## Use case E: TensorRT trtexec plan (recipe)
 
 ```python
 # session.export_torch("artifacts/model.onnx", format="onnx")
@@ -182,12 +182,12 @@ Repo recipe for a local compose loop (operator-run; not a managed cloud):
 #     engine_name="model.engine",
 #     fp16=True,
 # )
-# Operator runs trtexec — BuildML does not build .engine files.
+# Operator runs trtexec: BuildML does not build .engine files.
 ```
 
 ---
 
-## Use case F — Kubernetes torchrun Job (ConfigMap + GPU)
+## Use case F: Kubernetes torchrun Job (ConfigMap + GPU)
 
 ```python
 session = Session()
@@ -199,17 +199,17 @@ session.emit_k8s_ddp_job(
     nnodes=2,
     nproc_per_node=2,
     script_path="/workspace/train.py",
-    include_configmap=True,  # default — emits ConfigMap + Job + Service
+    include_configmap=True,  # default: emits ConfigMap + Job + Service
     gpu_limit=1,             # nvidia.com/gpu requests/limits in the template
 )
-# Apply with kubectl yourself — not live multi-cluster orchestration.
+# Apply with kubectl yourself: not live multi-cluster orchestration.
 ```
 
 Static multi-node example: `deploy/k8s/torchrun-ddp-multinode.example.yaml`.
 
 ---
 
-## Use case G — Kubernetes serve Deployment (template)
+## Use case G: Kubernetes serve Deployment (template)
 
 ```python
 session = Session()
@@ -222,7 +222,7 @@ session.emit_k8s_serve_deployment(
     port=8080,
     # gpu_limit=1,  # optional GPU request when your cluster schedules GPUs
 )
-# Template only — wire volumes, TLS, API keys, and RBAC yourself.
+# Template only: wire volumes, TLS, API keys, and RBAC yourself.
 ```
 
 Static example: `deploy/k8s/serve-deployment.example.yaml`.
@@ -234,7 +234,7 @@ Static example: `deploy/k8s/serve-deployment.example.yaml`.
 Pack/export helpers may appear on the AI tool allowlist
 (`pack_torchserve`, `prepare_tensorrt_export`, `emit_k8s_ddp_job`,
 `emit_k8s_serve_deployment`).
-**`serve_bundle` is not an AI tool** — keep process binding under human/CLI
+**`serve_bundle` is not an AI tool**: keep process binding under human/CLI
 control ([ai-tools](ai-tools-operator-patterns.md)).
 
 ---

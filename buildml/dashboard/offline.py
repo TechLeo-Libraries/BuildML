@@ -26,7 +26,7 @@ def export_studio_html(
     """Save the whole interactive studio as one HTML file that needs no server.
 
     The dashboard, frozen. Same boards, same charts, same teaching panels, same
-    interactivity — hovering, zooming, switching boards, toggling theme — with
+    interactivity: hovering, zooming, switching boards, toggling theme: with
     the entire application inlined into a single file. No Python, no server, no
     network.
 
@@ -132,7 +132,7 @@ def build_offline_bundle(
     Returns
     -------
     dict
-        JSON-safe throughout — every value passed through
+        JSON-safe throughout: every value passed through
         :func:`~buildml.dashboard.serialize.json_safe`, since analyzer output is
         full of NumPy scalars that would otherwise fail at serialisation time,
         after the whole payload has been assembled.
@@ -292,7 +292,7 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
 
     Reads the same CSS and JavaScript the live dashboard serves and embeds them
     with the data. Using the identical assets is what guarantees the offline
-    file behaves like the served app — a separate offline template would drift,
+    file behaves like the served app: a separate offline template would drift,
     and the drift would only show up in the artifact you handed to someone else.
 
     One adjustment is needed. The application script imports its icon module by
@@ -318,7 +318,7 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
     Notes
     -----
     **The whole document is assembled in memory** before being returned, so peak
-    memory is roughly the file size — tens of megabytes.
+    memory is roughly the file size: tens of megabytes.
 
     **Plotly is embedded in full.** It is the largest single component and the
     reason these files are what they are.
@@ -348,7 +348,7 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
   <title>{_escape(title)} · Offline Teaching Studio</title>
   <style>{tokens}\n{app_css}</style>
   <script>{plotly_js}</script>
-  <!-- Inline modules via blob URLs — no network or local server required. -->
+  <!-- Inline modules via blob URLs: no network or local server required. -->
   <script type="module">
     const iconsSource = {json.dumps(icons_js)};
     const appSource = {json.dumps(app_js)};

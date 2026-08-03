@@ -97,7 +97,7 @@ def fit_symbolic_op(
     Notes
     -----
     **Leakage:** Requires a split. Induction / compile statistics use train
-    only. Honesty: structured tabular if-then rules — not Prolog/Z3/AGI.
+    only. Honesty: structured tabular if-then rules: not Prolog/Z3/AGI.
     """
     session.assert_can_fit("train")
     plan, result = fit_symbolic(
@@ -320,7 +320,7 @@ def fit_neuro_symbolic_op(
     Notes
     -----
     **Leakage:** Requires a split. Base estimator fit and any rule induction
-    use train only. This is a real Session-integrated hybrid — not a
+    use train only. This is a real Session-integrated hybrid: not a
     disconnected "fit then apply rules" pair without shared state.
     """
     session.assert_can_fit("train")

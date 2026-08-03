@@ -200,7 +200,7 @@ def _fit_native(
         warnings.append(
             "Empty confounders with allow_empty_confounders=True: "
             "ATE reduces to a simple mean difference under a no-confounding "
-            "assumption — extremely strong."
+            "assumption: extremely strong."
         )
         disclosures.append(warnings[-1])
 
@@ -421,7 +421,7 @@ def _bootstrap_ate(
                 propensity=propensity,
                 clip_propensity=clip_propensity,
             )
-        except Exception:  # noqa: BLE001 — skip degenerate bootstrap draws
+        except Exception:  # noqa: BLE001: skip degenerate bootstrap draws
             continue
         estimates.append(float(ate_b))
     if len(estimates) < max(10, n_boot // 10):

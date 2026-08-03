@@ -79,7 +79,7 @@ class ApplyPlansResult:
         a step present at training time and absent here means the model is
         being fed features in a different representation than it learned on.
     warnings:
-        Conditions that did not stop the replay but change how to read it —
+        Conditions that did not stop the replay but change how to read it :
         a resample plan ignored, a drop action rewritten as capping, an unusual
         rate of unseen categories.
     split_plan:
@@ -183,7 +183,7 @@ def apply_preprocess_plans(
         Row membership, needed only in two cases: target encoding writing
         out-of-fold values onto training rows, and an outlier plan that drops
         rows and therefore has to rebuild partitions. Omit it for a pure
-        scoring frame, where there is no training membership to respect —
+        scoring frame, where there is no training membership to respect :
         target encoding then applies the frozen full-training means to every
         row, which is the correct behaviour at inference time.
     roles:
@@ -206,7 +206,7 @@ def apply_preprocess_plans(
     -----
     **Order is fixed:** dates, impute, outliers, encode, text, binning, scale,
     reduce, feature selection, custom. It matches the order a session applies
-    them, and it is not configurable — dates expand first so the columns they
+    them, and it is not configurable: dates expand first so the columns they
     create can take part in later numeric steps, and selection comes last so it
     sees the finished matrix.
 

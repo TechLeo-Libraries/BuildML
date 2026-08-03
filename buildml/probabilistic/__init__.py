@@ -1,19 +1,19 @@
 """Bayesian / probabilistic ML domain (sklearn uncertainty + split conformal).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
 
 Phase 2:
-  1. Semi-supervised learning — done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks — done (``buildml.selfsupervised``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit) — done (``buildml.online``).
-  5. Multi-task learning — done (``buildml.multitask``).
-  6. Meta-learning — done (``buildml.metalearning``).
-  7. Federated learning — done (``buildml.federated``).
-  8. Bayesian / probabilistic — **this module** (R5.7 industry depth).
-  9. Causal ML — see ``buildml.causal`` (assumption-declared path).
+  1. Semi-supervised learning: done (``buildml.semisupervised``).
+  2. Self-supervised learning hooks: done (``buildml.selfsupervised``).
+  3. Active learning: done (``buildml.activelearning``).
+  4. Online / continual (partial_fit): done (``buildml.online``).
+  5. Multi-task learning: done (``buildml.multitask``).
+  6. Meta-learning: done (``buildml.metalearning``).
+  7. Federated learning: done (``buildml.federated``).
+  8. Bayesian / probabilistic: **this module** (R5.7 industry depth).
+  9. Causal ML: see ``buildml.causal`` (assumption-declared path).
   Later: graph, evolutionary (classical HPO), symbolic (see ``buildml.symbolic``),
   CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
   NLP-CV deepenings.
@@ -28,7 +28,7 @@ Honesty (this package):
     ``GaussianProcessClassifier`` / ``GaussianNB`` with predictive std /
     proba and optional **in-tree split conformal** intervals/sets.
   - **mapie** backend (``buildml[probabilistic-industry]``): MAPIE conformal
-    regression/classification — split, CV+, jackknife+ when installed.
+    regression/classification: split, CV+, jackknife+ when installed.
   - **ngboost** backend (``buildml[probabilistic-industry]``): natural gradient
     boosting with predictive distributions (NLL / CRPS).
   - Conformal calibration is carved from the Session **train** partition only;
@@ -41,7 +41,7 @@ Dependency policy: core stays numpy/pandas/pyarrow/sklearn. In-tree split
 conformal requires no optional extra. MAPIE / NGBoost are behind
 ``buildml[probabilistic-industry]``.
 
-Lazy imports — core never grows heavy probabilistic-programming stacks.
+Lazy imports: core never grows heavy probabilistic-programming stacks.
 """
 
 from __future__ import annotations

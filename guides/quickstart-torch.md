@@ -123,7 +123,7 @@ Layout: `<path>/meta.json` + `<path>/trainer.pt`.
 ## Built-in models and text path
 
 ```python
-# Tabular happy path — omit module to use the built-in MLP
+# Tabular happy path: omit module to use the built-in MLP
 session.make_torch_loaders()
 session.fit_torch(epochs=5, device="auto")  # builds TabularMLP from the contract
 
@@ -235,12 +235,12 @@ speech.domain_adapt_speech_torch(epochs=5, device="cpu", audio_column="audio")
 - **Tabular + text + image + audio multimodal in scope.** Built-in MLP, text
   classifier, and fusion (small CNN image branch + small 1D-CNN audio branch)
   cover the happy path; custom `nn.Module` still works. Audio multimodal fusion
-  is honest alpha — not a speech FM. For ASR / speech classify finetune-lite see
+  is honest alpha: not a speech FM. For ASR / speech classify finetune-lite see
   `transcribe_speech` / `fit_speech_torch` (`buildml[speech]`). Short clips are
   repeat-padded to `audio_max_samples` so global pooling stays informative
   without a lengths tensor in forward/export. Trainer bundles may store frozen
   multimodal preprocess meta; `load_torch_bundle` restores it for inspection but
-  does not rebuild loaders — use `use_saved_preprocess=True` or `preprocess=` on
+  does not rebuild loaders: use `use_saved_preprocess=True` or `preprocess=` on
   `make_multimodal_torch_loaders`. Gated late fusion is available via
   `build_multimodal_fusion(..., fusion="gated")`.
 - **Materialization.** Partition rows become tensors via the current Session
@@ -258,7 +258,7 @@ speech.domain_adapt_speech_torch(epochs=5, device="cpu", audio_column="audio")
   escape hatch; `pack_torchserve` / `prepare_tensorrt_export` write
   operator-owned recipes (not a cloud). Managed local serving is
   `buildml[serve]` / `Session.serve_bundle` / `buildml-serve` (localhost;
-  `/metadata` + `/predict/batch`; optional API-key + local SSL — still not
+  `/metadata` + `/predict/batch`; optional API-key + local SSL: still not
   managed IAM).
 - **Pretrained hooks vs FM pretrain.** `list_pretrained_backbones` /
   `load_pretrained_backbone` / `attach_backbone_head` cover curated

@@ -28,7 +28,7 @@ CHECKPOINT_BOUNDARY = (
     "estimator). A Session checkpoint stores data, roles, splits, history, and "
     "optional classical preprocess plans; it does not embed the ranker. Reload "
     "tabular workflow via checkpoint_load; reload the ranker via "
-    "load_ranker_bundle. Honesty: Session tabular LTR — not a search-engine "
+    "load_ranker_bundle. Honesty: Session tabular LTR: not a search-engine "
     "product; distinct from RAG retrieve/generate and from recommender CF."
 )
 

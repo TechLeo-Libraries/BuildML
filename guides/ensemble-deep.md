@@ -82,7 +82,7 @@ print(session.ensemble_plan.disclosures)
 ```
 
 sklearn `StackingClassifier` / `StackingRegressor` build meta features with
-cross-validation **on the train matrix only** — because Session fit materializes
+cross-validation **on the train matrix only**: because Session fit materializes
 train rows exclusively. Session test stays out.
 
 ### Blending
@@ -112,10 +112,10 @@ Prefer stacking when you want CV OOF meta features instead of one holdout.
 
 `fit_*` sets both `ensemble_plan` and classical `fit_result`:
 
-- `evaluate_ensemble` — supervised metrics + ensemble disclosures
-- `evaluate` / `predict` — same estimator path
-- `save_pipeline` / `save_model` — classical artifacts
-- `save_ensemble_bundle` — strategy disclosures + EnsemblePlan
+- `evaluate_ensemble`: supervised metrics + ensemble disclosures
+- `evaluate` / `predict`: same estimator path
+- `save_pipeline` / `save_model`: classical artifacts
+- `save_ensemble_bundle`: strategy disclosures + EnsemblePlan
 
 ```python
 session.save_ensemble_bundle("artifacts/ensemble_bundle")
@@ -187,7 +187,7 @@ use Ridge as the default meta-learner when unspecified.
 
 - No dedicated ensemble dashboard charts
 - No fold-local preprocess recipe inside stacking CV (same Session-global
-  preprocess caveats as classical CV — see [leakage guide](leakage-cv-recipes.md))
+  preprocess caveats as classical CV: see [leakage guide](leakage-cv-recipes.md))
 - AutoML and forecasting are separate Phase 1 Session paths (see their deep guides)
 
 Runnable mirror: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py).

@@ -11,7 +11,7 @@ Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Industry GBDT and
 Torch multi-head paths use optional extras. Sklearn remains the honest fallback
 when extras are missing.
 
-Lazy imports — core never grows heavy MTL stacks.
+Lazy imports: core never grows heavy MTL stacks.
 """
 
 from __future__ import annotations

@@ -658,7 +658,7 @@ def load_rag_bundle(session, path: str | Path) -> "Session":
 
     Delegates to :func:`buildml.rag.checkpoint.load_rag_bundle` and restores
     index, chunk, and index-result state on the Session. RAG bundles use JSONL
-    and NumPy arrays — not joblib/pickle — so no ``trusted`` gate applies.
+    and NumPy arrays: not joblib/pickle: so no ``trusted`` gate applies.
 
     Parameters
     ----------

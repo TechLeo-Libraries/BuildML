@@ -1,6 +1,6 @@
 # Quasar Meta Adapt
 
-**Tier B** cross-domain product proof — metalearning few-shot adaptation +
+**Tier B** cross-domain product proof: metalearning few-shot adaptation +
 SSL pretext/probe + classical supervised baseline for cold-start categories.
 
 ## Product narrative
@@ -15,7 +15,7 @@ baseline provide complementary views. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

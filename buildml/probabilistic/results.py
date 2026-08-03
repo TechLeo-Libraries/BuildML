@@ -12,7 +12,7 @@ class ProbabilisticPlan:
 
     Persist via ``buildml.probabilistic_bundle.v1``. Distinct from Session
     checkpoints and from classical FitResult. Honesty: sklearn Bayesian /
-    GP / Naive Bayes estimators with optional split-conformal intervals —
+    GP / Naive Bayes estimators with optional split-conformal intervals :
     not a probabilistic-programming / MCMC platform (PyMC/Stan).
     """
 

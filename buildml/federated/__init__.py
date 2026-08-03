@@ -1,18 +1,18 @@
 """Federated learning domain (local FedAvg-style Session simulation).
 
-Phase coverage (internal tracker — depth-first; do not spray stubs)
+Phase coverage (internal tracker: depth-first; do not spray stubs)
 ------------------------------------------------------------------
 Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
 
 Phase 2:
-  1. Semi-supervised learning — done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks — done (``buildml.selfsupervised``).
-  3. Active learning — done (``buildml.activelearning``).
-  4. Online / continual (partial_fit) — done (``buildml.online``).
-  5. Multi-task learning — done (``buildml.multitask``).
-  6. Meta-learning — done (``buildml.metalearning``).
-  7. Federated learning — **this module**.
-  8. Bayesian / probabilistic — done (``buildml.probabilistic``); next = Causal.
+  1. Semi-supervised learning: done (``buildml.semisupervised``).
+  2. Self-supervised learning hooks: done (``buildml.selfsupervised``).
+  3. Active learning: done (``buildml.activelearning``).
+  4. Online / continual (partial_fit): done (``buildml.online``).
+  5. Multi-task learning: done (``buildml.multitask``).
+  6. Meta-learning: done (``buildml.metalearning``).
+  7. Federated learning: **this module**.
+  8. Bayesian / probabilistic: done (``buildml.probabilistic``); next = Causal.
   Later: graph, evolutionary,
   symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
   NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
@@ -23,7 +23,7 @@ full COCO detection/segmentation suite.
 
 Honesty (this package):
   - Local FedAvg-style (and FedProx) orchestration on Session data partitioned
-    by a client/group column — **not** a production FL network stack unless you
+    by a client/group column: **not** a production FL network stack unless you
     deploy one separately.
   - ``backend='flower'`` uses Flower (flwr) NumPyClient + aggregation helpers
     but still runs in-process on Session partitions by default.
@@ -33,10 +33,10 @@ Honesty (this package):
   - Deep path: sklearn linear / SGD coefficient averaging.
 
 Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Native
-simulation uses sklearn façades — no optional extra required for
+simulation uses sklearn façades: no optional extra required for
 ``import buildml``. ``buildml[federated-industry]`` adds Flower (flwr).
 
-Lazy imports — core never grows heavy FL stacks.
+Lazy imports: core never grows heavy FL stacks.
 """
 
 from __future__ import annotations

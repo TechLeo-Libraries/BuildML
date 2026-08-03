@@ -71,7 +71,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Find neighbors, combine their solutions, optionally keep new "
-                "labeled examples — without contaminating holdout."
+                "labeled examples: without contaminating holdout."
             ),
             formal_idea=(
                 "ŷ(q) = reuse({y_i : i ∈ N_k(q)}, weights=1/(d+ε)). "
@@ -115,7 +115,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "RAG (buildml.rag) indexes a document corpus, retrieves "
                 "chunks (dense/BM25/hybrid), and optionally generates an "
                 "answer with citations. CBR indexes train rows as cases and "
-                "reuses labels/outcomes — no LLM generation path."
+                "reuses labels/outcomes: no LLM generation path."
             ),
             intuition=(
                 "Both say 'find similar things', but RAG is for documents/"

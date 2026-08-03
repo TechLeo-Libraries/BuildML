@@ -4,7 +4,7 @@ Default serving remains open on localhost. When ``api_keys`` is provided,
 ``/predict`` (and optionally all non-docs routes) require
 ``Authorization: Bearer <key>`` or ``X-API-Key: <key>``.
 
-This is a thin library middleware — **not** a managed identity / cloud IAM
+This is a thin library middleware: **not** a managed identity / cloud IAM
 product. Prefer TLS + auth at a reverse proxy for internet exposure.
 """
 
@@ -31,7 +31,7 @@ def normalize_api_keys(api_keys: str | Sequence[str] | None) -> frozenset[str]:
     """Turn one key or a list of them into a validated, immutable set.
 
     Accepting a single string is the common case and accepting a list allows key
-    rotation — issue a new key, keep both accepted for a period, then drop the
+    rotation: issue a new key, keep both accepted for a period, then drop the
     old one. Blank entries are dropped, since a whitespace-only key would
     otherwise be silently accepted and match nothing.
 

@@ -457,7 +457,7 @@ def fit_giotto(
                 f"KeplerMapper summary on train subsample: "
                 f"{mapper_summary['n_mapper_nodes']} nodes, "
                 f"{mapper_summary['n_mapper_edges']} edges "
-                f"(diagnostic only — not used as supervised features)."
+                f"(diagnostic only: not used as supervised features)."
             )
         else:
             warnings.append("mapper=True but Mapper pipeline could not be built.")

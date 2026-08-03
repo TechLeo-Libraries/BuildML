@@ -23,6 +23,6 @@ See `results/results.json` after a successful run.
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` builds item-cosine similarity (+ popularity cold-start) on train interactions only (`results/comparison.json`).
+Filled: `baseline_industry.py` builds item-cosine similarity (+ popularity cold-start) on train interactions only (`results/comparison.json`).
 ## Limitations
 Synthetic interactions; ALS via `implicit` when installed, else item_knn.

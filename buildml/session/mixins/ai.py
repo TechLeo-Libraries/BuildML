@@ -29,7 +29,7 @@ class AiSessionMixin:
     ) -> Session:
         """Configure an AI provider for LLM-assisted workflow guidance.
 
-        Session facade over :func:`buildml.session.ai_ops.ai_configure`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_configure`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -62,7 +62,7 @@ class AiSessionMixin:
     ) -> EgressManifest:
         """Preview what data will leave the machine before an LLM call.
 
-        Session facade over :func:`buildml.session.ai_ops.ai_egress_preview`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_egress_preview`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -86,7 +86,7 @@ class AiSessionMixin:
     ) -> dict[str, Any]:
         """Preview the full prompt payload without calling the provider.
 
-        Session facade over :func:`buildml.session.ai_ops.ai_dry_run`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_dry_run`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -109,7 +109,7 @@ class AiSessionMixin:
     ) -> AdvisorResult:
         """Get advisory Q&A guidance about the current workflow (read-only).
 
-        Session facade over :func:`buildml.session.ai_ops.ai_advisor`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_advisor`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -132,7 +132,7 @@ class AiSessionMixin:
     ) -> PlanResult:
         """Generate a structured workflow plan for a goal (read-only).
 
-        Session facade over :func:`buildml.session.ai_ops.ai_plan`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_plan`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -155,7 +155,7 @@ class AiSessionMixin:
     ) -> ExecutorProposal | ExecutorResult:
         """Execute a single tool with propose-confirm-execute flow.
 
-        Session facade over :func:`buildml.session.ai_ops.ai_execute`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_execute`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -181,7 +181,7 @@ class AiSessionMixin:
     ) -> PlanExecutionResult:
         """Execute a multi-step plan with confirmation gating.
 
-        Session facade over :func:`buildml.session.ai_ops.ai_run_plan`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_run_plan`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -216,7 +216,7 @@ class AiSessionMixin:
     ) -> Any:
         """Explicit autonomy mode with hard caps (see :mod:`buildml.ai.autonomous`).
 
-        Session facade over :func:`buildml.session.ai_ops.ai_run_autonomous`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_run_autonomous`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -242,7 +242,7 @@ class AiSessionMixin:
     def ai_status(self) -> dict[str, Any]:
         """Get AI operator status including provider, egress, budget, and autonomy.
 
-        Session facade over :func:`buildml.session.ai_ops.ai_status`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.ai_status`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -259,7 +259,7 @@ class AiSessionMixin:
     def save_ai_transcript(self, path: str | Path, *, redact: bool = True) -> Path:
         """Save the AI transcript to a JSON file (secrets redacted by default).
 
-        Session facade over :func:`buildml.session.ai_ops.save_ai_transcript`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.save_ai_transcript`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -275,7 +275,7 @@ class AiSessionMixin:
     def load_ai_transcript(self, path: str | Path) -> Session:
         """Load an AI transcript for resume or audit.
 
-        Session facade over :func:`buildml.session.ai_ops.load_ai_transcript`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ai_ops.load_ai_transcript`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

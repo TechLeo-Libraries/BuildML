@@ -1,6 +1,6 @@
 # Sentinel IoT Watch
 
-**Tier B** cross-domain product proof — unsupervised anomaly + online
+**Tier B** cross-domain product proof: unsupervised anomaly + online
 `partial_fit` streaming + lag forecast for factory IoT telemetry.
 
 ## Product narrative
@@ -15,7 +15,7 @@ plant-load series is forecast chronologically. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

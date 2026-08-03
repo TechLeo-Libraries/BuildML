@@ -17,7 +17,7 @@ levels, scale parameters) are computed on rows that later pretend to be
 “unseen.” BuildML makes that failure loud:
 
 1. **Roles** declare what each column *is* (feature, target, group, time,
-   weight, id, ignore) — the library will not infer deployment semantics.
+   weight, id, ignore): the library will not infer deployment semantics.
 2. **Split** creates partition membership before any fit-capable step.
 3. **Preparation** learns on train only and freezes plans for other partitions.
 4. **Fit / evaluate** respect partition purpose: validation for choices, test
@@ -31,7 +31,7 @@ Cross-links: [concepts](../docs/concepts.rst),
 
 ---
 
-## Use case A — Loan approval with missing ages
+## Use case A: Loan approval with missing ages
 
 ```python
 import pandas as pd
@@ -89,7 +89,7 @@ informs threshold / feature choices; test scores the frozen policy once.
 
 ---
 
-## Use case B — Fraud-like imbalance
+## Use case B: Fraud-like imbalance
 
 ```python
 import pandas as pd
@@ -137,7 +137,7 @@ baseline before trusting F1. Threshold tuning still belongs on validation
 
 ---
 
-## Use case C — House price regression
+## Use case C: House price regression
 
 ```python
 import pandas as pd
@@ -178,7 +178,7 @@ interpret metrics in that space or back-transform explicitly.
 
 ---
 
-## Use case D — Grouped customers (no row-ID leakage)
+## Use case D: Grouped customers (no row-ID leakage)
 
 ```python
 import pandas as pd
@@ -218,7 +218,7 @@ Random `split` would put the same customer in train and test. `group` role +
 
 ---
 
-## Use case E — Chronological holdout
+## Use case E: Chronological holdout
 
 ```python
 import pandas as pd
@@ -247,7 +247,7 @@ print(session.evaluate(partition="test").metrics)
 
 ---
 
-## Use case F — External indices via `inject_split`
+## Use case F: External indices via `inject_split`
 
 ```python
 import numpy as np
@@ -290,7 +290,7 @@ session.checkpoint_save("artifacts/ckpt")
 restored = Session.checkpoint_load("artifacts/ckpt")
 print(restored.reattach_result.status)
 
-# Deployable scoring (plans + estimator + model card) — not a checkpoint
+# Deployable scoring (plans + estimator + model card): not a checkpoint
 session.save_pipeline("artifacts/pipe", evaluate_partition="test")
 
 from buildml.pipeline import predict_from_pipeline

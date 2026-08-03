@@ -42,7 +42,7 @@ class TdaSessionMixin:
     ) -> TdaFitResult:
         """Fit TDA features and optional supervised head on Session train only.
 
-        Session facade over :func:`buildml.session.tda_ops.fit_tda_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.tda_ops.fit_tda_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -80,7 +80,7 @@ class TdaSessionMixin:
     def tda_capability_matrix() -> dict[str, Any]:
         """Return the TDA backend and vectorization capability matrix.
 
-        Session facade over :func:`buildml.session.tda_ops.tda_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.tda_ops.tda_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -102,7 +102,7 @@ class TdaSessionMixin:
     ) -> TdaTransformResult:
         """Transform a partition with the frozen train-fitted TDA pipeline.
 
-        Session facade over :func:`buildml.session.tda_ops.transform_tda_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.tda_ops.transform_tda_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -123,7 +123,7 @@ class TdaSessionMixin:
     ) -> TdaPredictResult:
         """Predict with the optional TDA supervised head on a partition.
 
-        Session facade over :func:`buildml.session.tda_ops.predict_tda_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.tda_ops.predict_tda_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -148,7 +148,7 @@ class TdaSessionMixin:
     ) -> TdaEvalResult:
         """Evaluate the TDA head on a holdout partition.
 
-        Session facade over :func:`buildml.session.tda_ops.evaluate_tda_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.tda_ops.evaluate_tda_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -222,7 +222,7 @@ class TdaSessionMixin:
     def save_tda_bundle(self, path: str | Path) -> Path:
         """Persist the active TdaPlan as ``buildml.tda_bundle.v2``.
 
-        Session facade over :func:`buildml.session.tda_ops.save_tda_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.tda_ops.save_tda_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -239,7 +239,7 @@ class TdaSessionMixin:
     def load_tda_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a TDA bundle into this Session.
 
-        Session facade over :func:`buildml.session.tda_ops.load_tda_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.tda_ops.load_tda_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

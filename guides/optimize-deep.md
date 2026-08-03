@@ -1,8 +1,8 @@
-# Optimisation / decision helpers — deep guide
+# Optimisation / decision helpers: deep guide
 
 Session path for turning model scores into **decisions** under costs and
 capacity constraints. R6.9 industry depth: PuLP/OR-Tools MIP knapsack, CVXPY
-LP, XGB/calibrated cost-sensitive thresholds — with honest native fallback.
+LP, XGB/calibrated cost-sensitive thresholds: with honest native fallback.
 
 ## What this is / is not
 
@@ -63,7 +63,7 @@ cost on the tuning partition; otherwise recommends best F1. Formula:
 `fp_cost·FP + fn_cost·FN − tp_benefit·TP − tn_benefit·TN`
 
 Industry backends train auxiliary estimators stored on the `DecisionPlan` for
-apply — Session.fit remains the primary tabular fit.
+apply: Session.fit remains the primary tabular fit.
 
 ### `cost_matrix`
 
@@ -87,7 +87,7 @@ Industry: exact 0-1 MIP via PuLP or OR-Tools (`backend='pulp'|'ortools'`).
 ### `lp_allocate`
 
 Continuous `0 ≤ x_i ≤ lp_max_fraction` budget shares. Native: HiGHS linprog.
-Industry: CVXPY convex LP (`backend='cvxpy'`). Fractional by design — not
+Industry: CVXPY convex LP (`backend='cvxpy'`). Fractional by design: not
 integer MIP.
 
 ## Leakage

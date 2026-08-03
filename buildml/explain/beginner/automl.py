@@ -18,7 +18,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             "several cars, with several tyre choices, before deciding which to buy."
         ),
         steps=(
-            "Set up your roles and split first — AutoML runs inside the training partition.",
+            "Set up your roles and split first: AutoML runs inside the training partition.",
             "Choose a time or trial budget, because the search space is large and you are buying compute.",
             "Let AutoML evaluate candidate model families, each with its own settings and preprocessing choices.",
             "Read the leaderboard: what won, by how much, and how close the runners-up were.",
@@ -29,7 +29,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             "As a strong baseline to check whether your hand-built pipeline is actually earning its keep.",
         ),
         avoid=(
-            "Do not use it when you already know the model family and only need settings — `grid_search` or `optuna_search` is cheaper and clearer.",
+            "Do not use it when you already know the model family and only need settings: `grid_search` or `optuna_search` is cheaper and clearer.",
             "Do not use it as a substitute for understanding the data; it will happily optimize a leaked feature to a spectacular score.",
         ),
         myths=(
@@ -69,7 +69,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             "And baking a fresh cake each round rather than reusing yesterday's batter."
         ),
         steps=(
-            "Start from unpoisoned data — no Session-wide impute, encode, or scale already applied.",
+            "Start from unpoisoned data: no Session-wide impute, encode, or scale already applied.",
             "Define which preprocessing strategies are candidates.",
             "For each fold, AutoML fits the recipe on that fold's training rows only.",
             "The candidate's score reflects the model *and* its preparation together.",
@@ -77,11 +77,11 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "When you genuinely do not know whether median or mean imputation, one-hot or target encoding, suits your data.",
-            "When preprocessing choices interact strongly with the model family — which they usually do.",
+            "When preprocessing choices interact strongly with the model family: which they usually do.",
         ),
         avoid=(
             "Do not run recipe search after you already applied Session-global preprocessing; the fold-local fits would sit on top of leaked transforms.",
-            "Do not expand the recipe space without expanding the budget — every extra option multiplies the search.",
+            "Do not expand the recipe space without expanding the budget: every extra option multiplies the search.",
         ),
         myths=(
             (
@@ -102,7 +102,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.run_automl(recipe=recipe, selection='cv', cv=5, random_state=0)",
         ),
         check=(
-            "Is your data unpoisoned — no Session-global transforms applied before the search?",
+            "Is your data unpoisoned: no Session-global transforms applied before the search?",
             "How many recipe combinations does your budget actually allow?",
         ),
         tools=("run_automl", "evaluate_automl", "impute", "encode", "scale"),
@@ -113,8 +113,8 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         "automl-selection-honesty",
         plain=(
             "AutoML tries many candidates, and trying many things is exactly how you accidentally find "
-            "something that only looks good. Selection mode controls how the winner is chosen — inside "
-            "cross-validation, nested cross-validation, or a validation partition — while your test "
+            "something that only looks good. Selection mode controls how the winner is chosen: inside "
+            "cross-validation, nested cross-validation, or a validation partition: while your test "
             "partition stays sealed."
         ),
         analogy=(
@@ -130,7 +130,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "Any time the search space is more than a handful of candidates.",
-            "When you need to report a number that stands for the *method*, not just the lucky winner — that is what `nested` gives you.",
+            "When you need to report a number that stands for the *method*, not just the lucky winner: that is what `nested` gives you.",
         ),
         avoid=(
             "Do not use `validation` mode and then also tune the threshold on the same validation rows without acknowledging the double use.",
@@ -162,8 +162,8 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "automl-bundle-boundary",
         plain=(
-            "The result of an AutoML run — the winning model, its recipe, the leaderboard, and the honesty "
-            "disclosures — is saved as its own bundle. A Session checkpoint does not contain it."
+            "The result of an AutoML run: the winning model, its recipe, the leaderboard, and the honesty "
+            "disclosures: is saved as its own bundle. A Session checkpoint does not contain it."
         ),
         analogy=(
             "The tournament results sheet is a separate document from the venue booking. Keeping the venue "
@@ -182,7 +182,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not rebuild the winner by hand from the leaderboard; the recipe and its fitted parameters are what make it reproducible.",
-            "Do not assume loading the bundle restores your dataset — it does not.",
+            "Do not assume loading the bundle restores your dataset: it does not.",
         ),
         myths=(
             (
@@ -216,7 +216,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "You can plan the trip yourself or hand it to a travel agent. The agent is often faster and "
-            "knows tricks you do not — but you still choose the destination and you should still read the itinerary."
+            "knows tricks you do not: but you still choose the destination and you should still read the itinerary."
         ),
         steps=(
             "Install the relevant extra, for example `pip install buildml[automl-industry]`.",
@@ -231,7 +231,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use an industry backend when you need full visibility into every fold decision; the native backend is the transparent one.",
-            "Do not install it 'just in case' — extras add weight and version constraints.",
+            "Do not install it 'just in case': extras add weight and version constraints.",
         ),
         myths=(
             (
@@ -240,7 +240,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "Delegating the search delegates the leakage responsibility.",
-                "BuildML controls what data goes in. What the adapter does internally is disclosed, not eliminated — you still own the split design.",
+                "BuildML controls what data goes in. What the adapter does internally is disclosed, not eliminated: you still own the split design.",
             ),
         ),
         example=(

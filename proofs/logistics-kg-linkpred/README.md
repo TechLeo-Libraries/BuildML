@@ -28,7 +28,7 @@ Primary holdout: hits@k, mean rank, MRR (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled — train co-occurrence PMI filtered-ranking twin via `baseline_industry.py` → `results/comparison.json`.
+Filled: train co-occurrence PMI filtered-ranking twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

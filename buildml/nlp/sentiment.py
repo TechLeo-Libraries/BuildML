@@ -7,7 +7,7 @@ shipped dictionary, and the rules adjust those scores for the things that flip
 or amplify meaning: negation ("not good"), intensifiers ("very good"), emphasis
 from capitals and exclamation marks, and contrastive clauses, where "the food
 was cold but the service was wonderful" weights the half after "but" more
-heavily — which is how people actually read such sentences. It works
+heavily: which is how people actually read such sentences. It works
 immediately on any corpus, it explains itself, and it is domain-blind: it does
 not know that "sick" is praise in some contexts, or that "unpredictable" is
 positive for a novel and negative for a car.
@@ -17,7 +17,7 @@ data. It learns your domain's vocabulary, so it will discover that "delayed" is
 the strongest negative signal in your particular corpus. It needs labels.
 
 The **transformer** route runs a pretrained sentiment model. Far more accurate
-on general prose than a lexicon and needs no labels from you — but the model was
+on general prose than a lexicon and needs no labels from you: but the model was
 trained on somebody else's data, outside your split entirely, so its quality on
 your text is an assumption rather than a measurement. That is disclosed on every
 result.
@@ -69,7 +69,7 @@ def score_document(text: Any, *, threshold: float = 0.05) -> tuple[float, str, i
     """Score a single string with the built-in lexicon rules.
 
     The unit of work behind :func:`analyze_sentiment`, exposed for scoring one
-    string at a time — a live comment, a quick check of how the rules read a
+    string at a time: a live comment, a quick check of how the rules read a
     particular phrase.
 
     Each token is looked up for valence, then adjusted: a negator within the
@@ -96,7 +96,7 @@ def score_document(text: Any, *, threshold: float = 0.05) -> tuple[float, str, i
     tuple
         ``(compound, label, n_matched_terms)``. The compound score runs from
         −1 to 1. The label is ``'positive'``, ``'negative'``, or ``'neutral'``.
-        The match count is how many tokens were found in the lexicon at all —
+        The match count is how many tokens were found in the lexicon at all :
         read it as the score's evidence base. A compound of −0.6 backed by one
         matched term is a single strong word, not a considered judgement.
 
@@ -201,8 +201,8 @@ def analyze_sentiment(
     """Score every document in a partition for sentiment, and summarise the result.
 
     Applies the chosen backend across the partition and reports per-document
-    scores alongside the distribution — how much of the corpus reads positive,
-    negative, and neutral — which is usually the number people actually want.
+    scores alongside the distribution: how much of the corpus reads positive,
+    negative, and neutral: which is usually the number people actually want.
 
     Parameters
     ----------
@@ -229,7 +229,7 @@ def analyze_sentiment(
     compare_to_target:
         Also compare the predicted sentiment against the dataset's target
         column. This is how you find out whether the lexicon actually agrees
-        with your labels — worth doing before trusting an unsupervised score,
+        with your labels: worth doing before trusting an unsupervised score,
         and only meaningful when the target really is a sentiment label.
     transformer_model:
         Which pretrained sentiment model the ``'transformer'`` backend loads.
@@ -260,7 +260,7 @@ def analyze_sentiment(
     -----
     **Check the match count before trusting a lexicon score.** A document where
     no token appeared in the lexicon scores exactly zero and is labelled
-    neutral — indistinguishable in the output from a document that genuinely
+    neutral: indistinguishable in the output from a document that genuinely
     balances. On domain-specific text this can be most of your corpus.
 
     **The transformer's training data is outside your split.** It saw text you

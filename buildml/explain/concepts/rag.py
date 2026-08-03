@@ -115,7 +115,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "hits for each evaluation query, using gold relevance labels (qrels)."
             ),
             intuition=(
-                "Ask whether the right book showed up near the top of the search results—not whether a "
+                "Ask whether the right book showed up near the top of the search results:not whether a "
                 "classifier predicted a class label."
             ),
             formal_idea=(

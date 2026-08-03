@@ -1,6 +1,6 @@
 # Scaffold Compliance AI
 
-**Tier B** cross-domain product proof — symbolic KYC/AML rules + optional
+**Tier B** cross-domain product proof: symbolic KYC/AML rules + optional
 neuro-symbolic NAM + validation-tuned escalation capacity.
 
 ## Product narrative
@@ -14,7 +14,7 @@ amount × jurisdiction and young-account × PEP patterns. The desk:
 
 ## Status
 
-`completed` / `partial` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed` / `partial`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 

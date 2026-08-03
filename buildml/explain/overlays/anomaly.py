@@ -91,7 +91,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         alternatives=(
             "Use Session.fit for general supervised classification outside the anomaly product path.",
-            "EDA IsolationForest screens remain descriptive — not this fit API.",
+            "EDA IsolationForest screens remain descriptive: not this fit API.",
             "Session.handle_outliers is a preprocess fence path, not anomaly scoring.",
         ),
         rationale=(

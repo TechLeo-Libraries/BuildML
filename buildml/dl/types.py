@@ -7,7 +7,7 @@ does, a value that can be serialised into a bundle so a run is reproducible, and
 defaults that are stated once rather than repeated at every call site.
 
 The defaults are conservative on purpose. Training runs with no scheduler, no
-gradient clipping, no early stopping, and no mixed precision — a plain loop that
+gradient clipping, no early stopping, and no mixed precision: a plain loop that
 works everywhere and does nothing surprising. Each of those is worth enabling
 when a specific problem calls for it, and the attribute documentation says which
 problem.
@@ -32,7 +32,7 @@ DeviceName = Literal["cpu", "cuda", "mps", "auto"]
 SchedulerName = Literal["none", "step", "plateau", "cosine"]
 EarlyStopMode = Literal["min", "max"]
 
-# Documented TrainConfig defaults (M2). Change with care — tests and catalog cite these.
+# Documented TrainConfig defaults (M2). Change with care: tests and catalog cite these.
 DEFAULT_EPOCHS = 5
 DEFAULT_LEARNING_RATE = 1e-3
 DEFAULT_BATCH_SIZE = 32
@@ -54,7 +54,7 @@ class DeviceSpec:
     """What device you asked for, what you got, and whether they differ.
 
     Requesting ``'cuda'`` on a machine without a GPU falls back to CPU rather
-    than failing — training slowly beats not training. But a silent fallback is
+    than failing: training slowly beats not training. But a silent fallback is
     how someone ends up waiting hours for a run they believed was on a GPU, so
     the substitution is recorded here and surfaced as a warning.
 
@@ -97,7 +97,7 @@ class TrainConfig:
     """Everything that governs how a Torch training run behaves.
 
     The defaults train: five epochs of Adam at 1e-3, no scheduler, no clipping,
-    no early stopping. That is a deliberate floor rather than a recommendation —
+    no early stopping. That is a deliberate floor rather than a recommendation :
     it runs anywhere and does nothing unexpected, and each of the disabled
     features is worth turning on for a reason given below.
 
@@ -116,7 +116,7 @@ class TrainConfig:
         generalisation and always slows throughput.
     num_workers:
         Background data-loading processes. Zero loads in the main process,
-        which is slower but avoids multiprocessing problems — a sensible
+        which is slower but avoids multiprocessing problems: a sensible
         default in notebooks and on Windows.
     pin_memory:
         Pin host memory for faster GPU transfer. Only useful with CUDA.
@@ -138,14 +138,14 @@ class TrainConfig:
         possible and fall back with a warning when not.
     grad_clip_norm:
         Cap the gradient norm before each step. ``None`` disables it. Set it
-        when loss suddenly becomes ``NaN`` or spikes — that is usually one
+        when loss suddenly becomes ``NaN`` or spikes: that is usually one
         outsized gradient destroying the weights, and clipping bounds the
         damage.
     log_every:
         Record every Nth epoch in the history. Only affects what is recorded.
     early_stopping_patience:
         Stop after this many epochs without improvement. ``None`` disables it.
-        Requires a validation partition — stopping on training loss would only
+        Requires a validation partition: stopping on training loss would only
         detect that the model stopped memorising.
     early_stopping_monitor:
         Which recorded metric to watch, normally ``'val_loss'``.
@@ -174,7 +174,7 @@ class TrainConfig:
         much change counts as improvement.
     mixed_precision:
         Use half precision where it is safe, which is faster and lighter on
-        memory. CUDA only — on CPU or MPS it is a no-op that records a warning
+        memory. CUDA only: on CPU or MPS it is a no-op that records a warning
         rather than a silent nothing.
 
     See Also
@@ -212,7 +212,7 @@ class TrainConfig:
         """Return every training setting as JSON-safe values.
 
         Written into bundles and results, so a run months old still says what
-        it was trained with — which is most of what reproducing it requires.
+        it was trained with: which is most of what reproducing it requires.
 
         Returns
         -------
@@ -228,7 +228,7 @@ class FeatureContract:
 
     A ``state_dict`` is a bag of tensors. It does not record which columns fed
     it, in what order, what the class labels were, or how the features were
-    scaled — and every one of those is needed to use the module correctly. Get
+    scaled: and every one of those is needed to use the module correctly. Get
     the column order wrong and inference produces confident nonsense rather than
     an error.
 
@@ -272,8 +272,8 @@ class FeatureContract:
         -------
         dict
             Feature columns, target, task, class labels, and normalisation
-            statistics. Class labels are converted from NumPy scalars — which
-            pandas produces and ``json`` refuses — to Python values.
+            statistics. Class labels are converted from NumPy scalars: which
+            pandas produces and ``json`` refuses: to Python values.
 
         See Also
         --------

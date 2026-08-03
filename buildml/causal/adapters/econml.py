@@ -175,13 +175,13 @@ def fit_econml(
             "Caller acknowledged unconfoundedness and positivity.",
             "EconML fit on Session train only; validation/test never used for fit.",
             "CATE heterogeneity available via causal_forest; policy_tree learns "
-            "assignment rules — not a deployment product.",
+            "assignment rules: not a deployment product.",
         ]
     )
     warnings: list[str] = []
     if not assumptions.confounders:
         warnings.append(
-            "Empty confounders with allow_empty_confounders=True — "
+            "Empty confounders with allow_empty_confounders=True: "
             "EconML still runs but unconfoundedness is extremely strong."
         )
         disclosures.append(warnings[-1])

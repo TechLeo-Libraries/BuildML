@@ -4,7 +4,7 @@ A contextual bandit faces the simplest interesting version of the
 decision-making problem. Each round it sees a context, picks one of several
 arms, and observes a reward for *that arm only*. It never learns what the other
 arms would have paid. Actions do not affect what happens next, so there is no
-sequence to reason about — just the same one-step choice, repeatedly.
+sequence to reason about: just the same one-step choice, repeatedly.
 
 The whole difficulty is the exploration–exploitation trade-off. Exploit and you
 keep pulling the arm that has looked best so far, which may only look best
@@ -20,7 +20,7 @@ random.
 
 **Epsilon-greedy** takes the best-predicted arm most of the time and a uniformly
 random arm otherwise. It explores arms it already understands as often as ones
-it does not, which is wasteful — but it is trivial to reason about and to
+it does not, which is wasteful: but it is trivial to reason about and to
 explain to a stakeholder.
 
 **Softmax** samples in proportion to predicted reward, so a clearly bad arm is
@@ -52,7 +52,7 @@ from buildml.rl.features import softmax
 class LinUCBPolicy:
     """Pick arms optimistically, favouring the ones you know least about.
 
-    Keeps one independent linear reward model per arm — "disjoint" LinUCB, so
+    Keeps one independent linear reward model per arm: "disjoint" LinUCB, so
     called because arms share no parameters and what is learned about one says
     nothing about another. Each arm is scored as its predicted reward plus a
     bonus proportional to how uncertain that prediction is for the context in
@@ -130,7 +130,7 @@ class LinUCBPolicy:
         **These are not predicted rewards.** Each is a predicted reward plus an
         uncertainty bonus, so a high score can mean "probably good" or "no idea,
         worth finding out". The two are indistinguishable from the score alone,
-        which is by design — the point is to act on both.
+        which is by design: the point is to act on both.
         """
         x = np.asarray(x, dtype=float).reshape(-1)
         out = np.zeros(self.n_arms, dtype=float)
@@ -165,7 +165,7 @@ class LinUCBPolicy:
         -----
         **LinUCB is deterministic.** Its exploration comes from the optimism in
         the bound, not from randomness, so the same context always yields the
-        same arm — until an update changes the estimates.
+        same arm: until an update changes the estimates.
         """
         del rng  # deterministic UCB
         return int(np.argmax(self.scores(x)))
@@ -222,7 +222,7 @@ class LinUCBPolicy:
         **The order of the rows does not matter here.** LinUCB's updates are
         additive, so replaying a log gives the same state whatever sequence it
         arrives in. That also means this is not a simulation of how the policy
-        would have behaved online — it is a fit to the log as a whole.
+        would have behaved online: it is a fit to the log as a whole.
         """
         for i in range(x.shape[0]):
             self.update(x[i], int(arms[i]), float(rewards[i]))
@@ -234,7 +234,7 @@ class RewardModelBandit:
 
     Splits the problem in two: a ridge regression per arm estimates what that
     arm pays in a given context, and a selection rule decides how much to trust
-    those estimates. The separation makes the policy easy to inspect — you can
+    those estimates. The separation makes the policy easy to inspect: you can
     look at predicted rewards directly, without an uncertainty bonus mixed in.
 
     ``'epsilon_greedy'`` takes the best-predicted arm with probability
@@ -265,7 +265,7 @@ class RewardModelBandit:
     **An arm with no logged pulls gets a constant-zero model.** There is nothing
     to fit, and refusing would make the policy unusable on any log where one
     action was never tried. The consequence is that such an arm is predicted to
-    pay zero — which may be optimistic or pessimistic depending on the reward
+    pay zero: which may be optimistic or pessimistic depending on the reward
     scale, and either way is a guess. Exploration is the only thing that will
     ever correct it.
 
@@ -311,7 +311,7 @@ class RewardModelBandit:
         Notes
         -----
         Each model sees only its own arm's rows, so an arm pulled rarely gets a
-        correspondingly weak model — and one never pulled gets a constant-zero
+        correspondingly weak model: and one never pulled gets a constant-zero
         stand-in rather than an error. The fit succeeds either way; the
         resulting predictions for those arms are guesses, and only exploration
         will improve them.
@@ -321,7 +321,7 @@ class RewardModelBandit:
             mask = arms == a
             model = Ridge(alpha=1.0, random_state=self.random_state)
             if int(mask.sum()) == 0:
-                # No logged pulls — constant-zero predictor via empty fit fallback.
+                # No logged pulls: constant-zero predictor via empty fit fallback.
                 model.coef_ = np.zeros(self.dim, dtype=float)
                 model.intercept_ = 0.0
                 model.n_features_in_ = self.dim
@@ -358,7 +358,7 @@ class RewardModelBandit:
 
         Notes
         -----
-        These are the counterfactual estimates the direct method relies on —
+        These are the counterfactual estimates the direct method relies on :
         what each arm *would* have paid, including the arms the log never tried
         in this context. That is also where they are least reliable.
 
@@ -401,7 +401,7 @@ class RewardModelBandit:
     def select(self, x: np.ndarray, *, rng: np.random.Generator | None = None) -> int:
         """Choose an arm, exploring according to the configured rule.
 
-        Scores every arm, then applies epsilon-greedy or softmax selection —
+        Scores every arm, then applies epsilon-greedy or softmax selection :
         so the arm returned is not always the best-predicted one.
 
         Parameters
@@ -427,7 +427,7 @@ class RewardModelBandit:
         Notes
         -----
         **This deliberately does not always pick the best arm.** For greedy
-        selection, take ``argmax`` of :meth:`scores_row` instead — that is what
+        selection, take ``argmax`` of :meth:`scores_row` instead: that is what
         :func:`~buildml.rl.act.act_rl` does when ``deterministic=True``.
         """
         scores = self.scores_row(x)
@@ -462,7 +462,7 @@ def fit_propensity_model(
     x:
         Contexts from the training log.
     arms:
-        The arm pulled in each row — the *label* this model learns to predict.
+        The arm pulled in each row: the *label* this model learns to predict.
     random_state:
         Seed for reproducibility.
 
@@ -474,15 +474,15 @@ def fit_propensity_model(
     Raises
     ------
     ValidationError
-        If the fit fails — most often because some arm appears in too few rows
+        If the fit fails: most often because some arm appears in too few rows
         to support a class. Callers treat this as non-fatal: the bandit still
         fits and IPS is reported as ``NaN``.
 
     Notes
     -----
     **An estimated propensity is not a recorded one.** If the logging policy
-    conditioned on something absent from ``x`` — a human's judgement, a feature
-    that was dropped — the estimate is systematically wrong and IPS inherits
+    conditioned on something absent from ``x``: a human's judgement, a feature
+    that was dropped: the estimate is systematically wrong and IPS inherits
     that error. This is the confounding assumption behind every
     propensity-weighted estimate, and no diagnostic here can check it.
 
@@ -551,7 +551,7 @@ def offline_bandit_metrics(
     -----
     **Read ``action_match_rate`` before either estimate.** At 0.95 the new policy
     barely differs from the log and both estimates are close to the observed
-    reward — reliable, but also uninteresting. At 0.05 IPS rests on one row in
+    reward: reliable, but also uninteresting. At 0.05 IPS rests on one row in
     twenty and the direct method extrapolates almost everywhere; neither
     supports a decision.
 
@@ -561,7 +561,7 @@ def offline_bandit_metrics(
     **Propensities are clipped at 1e-6.** Without a floor, an action the model
     thinks was near-impossible produces an astronomical weight that swamps every
     other row. Clipping bounds that at a million, which is still enough for one
-    row to dominate — a reason to distrust IPS when the match rate is low.
+    row to dominate: a reason to distrust IPS when the match rate is low.
 
     See Also
     --------

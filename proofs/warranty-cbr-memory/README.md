@@ -3,7 +3,7 @@
 ## Business purpose
 
 Approve or deny warranty claims by retrieving similar historical cases
-(case-based reasoning) — distinct from insurance claims memory proofs.
+(case-based reasoning): distinct from insurance claims memory proofs.
 
 ## Data source
 
@@ -29,7 +29,7 @@ See `results/results.json` (accuracy and retrieval metadata).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` uses sklearn `KNeighborsClassifier`
+Filled: `baseline_industry.py` uses sklearn `KNeighborsClassifier`
 (`results/comparison.json`).
 
 ## Limitations

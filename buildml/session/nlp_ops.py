@@ -996,7 +996,7 @@ def save_nlp_bundle_op(session, path: str | Path) -> Path:
     Notes
     -----
     Bundles and Session checkpoints are complementary, not
-    interchangeable — see
+    interchangeable: see
     :data:`buildml.nlp.checkpoint.CHECKPOINT_BOUNDARY`. A checkpoint stores
     data, roles, splits, and history; it does not embed the vectorizer or
     the head.
@@ -1033,7 +1033,7 @@ def load_nlp_bundle_op(session, path: str | Path, *, trusted: bool = False):
 
     Scoring resumes without refitting, because the normalization recipe
     travelled with the representation. The Session still needs its own
-    dataset, roles, and split — the bundle carries the model, not the
+    dataset, roles, and split: the bundle carries the model, not the
     workflow.
 
     Parameters

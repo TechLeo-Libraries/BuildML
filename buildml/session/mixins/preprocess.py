@@ -28,7 +28,7 @@ class PreprocessSessionMixin:
     def drop_columns(self, columns: list[str] | tuple[str, ...]) -> Session:
         """Remove columns you do not want the model to see.
 
-        Session facade over :func:`buildml.session.preprocess_ops.drop_columns`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.drop_columns`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -51,7 +51,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Fill in missing values, using only what the training rows reveal.
 
-        Session facade over :func:`buildml.session.preprocess_ops.impute`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.impute`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -88,7 +88,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Turn category labels into numbers a model can work with.
 
-        Session facade over :func:`buildml.session.preprocess_ops.encode`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.encode`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -130,7 +130,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Find extreme numeric values, and decide what to do about them.
 
-        Session facade over :func:`buildml.session.preprocess_ops.handle_outliers`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.handle_outliers`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -170,7 +170,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Group a continuous column into bands, trading detail for shape.
 
-        Session facade over :func:`buildml.session.preprocess_ops.bin`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.bin`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -207,7 +207,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Keep the columns that carry signal and drop the rest.
 
-        Session facade over :func:`buildml.session.preprocess_ops.select_features`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.select_features`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -255,7 +255,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Put numeric columns on a comparable footing.
 
-        Session facade over :func:`buildml.session.preprocess_ops.scale`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.scale`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -289,7 +289,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Turn free-text columns into numeric features.
 
-        Session facade over :func:`buildml.session.preprocess_ops.text_features`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.text_features`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -335,7 +335,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Compress many numeric columns into a few informative ones.
 
-        Session facade over :func:`buildml.session.preprocess_ops.reduce_dimensions`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.reduce_dimensions`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -385,7 +385,7 @@ class PreprocessSessionMixin:
     ) -> CustomTransformSpec:
         """Teach BuildML a preprocessing step of your own.
 
-        Session facade over :func:`buildml.session.preprocess_ops.register_transform`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.register_transform`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -413,7 +413,7 @@ class PreprocessSessionMixin:
     def list_transforms(cls) -> tuple[CustomTransformSpec, ...]:
         """List the custom transforms currently registered.
 
-        Session facade over :func:`buildml.session.preprocess_ops.list_transforms`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.list_transforms`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -436,7 +436,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Run a transform you registered, with the same leakage guarantees.
 
-        Session facade over :func:`buildml.session.preprocess_ops.apply_custom_transform`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.apply_custom_transform`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -470,7 +470,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Break timestamps apart into the calendar parts a model can use.
 
-        Session facade over :func:`buildml.session.preprocess_ops.extract_dates`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.extract_dates`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -505,7 +505,7 @@ class PreprocessSessionMixin:
     ) -> ApplyPlansResult:
         """Replay fitted preprocessing on new rows, in the original order.
 
-        Session facade over :func:`buildml.session.preprocess_ops.apply_preprocess_plans`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.apply_preprocess_plans`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -536,7 +536,7 @@ class PreprocessSessionMixin:
     ) -> Session:
         """Rebalance the training classes so the rare one is not ignored.
 
-        Session facade over :func:`buildml.session.preprocess_ops.resample`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.resample`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -555,7 +555,7 @@ class PreprocessSessionMixin:
     def resample_strategies(self) -> list[dict[str, Any]]:
         """List the available resampling methods and when each one fits.
 
-        Session facade over :func:`buildml.session.preprocess_ops.resample_strategies`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.preprocess_ops.resample_strategies`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

@@ -69,6 +69,12 @@ Models and diagnostics
   Persist via ``buildml.forecast_bundle.v1``. Not a full econometrics suite,
   not ARIMA productization, not a digital twin, and not a Torch sequence
   forecaster.
+* Analyse ordered series on train (``analyze_timeseries`` / ``ts_decompose`` /
+  ``ts_diagnostics``) with a ``time`` role: stationarity, seasonality hints,
+  change points, and decomposition reports via ``timeseries_capability_matrix``.
+  Analysis-only floor (no forecast model is fitted here). Distinct from
+  ``fit_forecast``. Optional depth behind ``buildml[timeseries]`` /
+  ``timeseries-prophet`` / ``timeseries-ml``.
 * Fit anomaly / fraud detectors on train (``fit_anomaly``): IsolationForest,
   LOF (novelty), One-Class SVM, or supervised HGB when a binary target exists.
   Score/flag holdout rows (``score_anomalies``) and evaluate with disclosed
@@ -95,18 +101,18 @@ Models and diagnostics
   ``evaluate_active_learning``). Uncertainty strategies (least confidence /
   margin / entropy), committee (bagged vote entropy), and
   ``expected_model_change_lite``. Pool = train target NaNs (never validation/test).
-  Labels come from the user — core never invents an oracle. Budget caps enforced.
+  Labels come from the user: core never invents an oracle. Budget caps enforced.
   Persist via ``buildml.activelearning_bundle.v1``. Distinct from semi-supervised
   propagation and self-supervised pretext.
 * Online / continual learning via sklearn ``partial_fit``
   (``fit_online`` → ``partial_fit_online`` → ``evaluate_online`` /
   ``predict_online``). Warm-start on a train chunk; update on subsequent train
   chunks or role-aligned frames. Classifiers require ``classes=`` on first fit
-  (explicit or discovered from the full train target vocabulary — labels only).
+  (explicit or discovered from the full train target vocabulary: labels only).
   Validation/test never used for updates. Silent full refits are refused
   (optional ``allow_refit_fallback`` is always disclosed). Optional lite
   chunk-vs-init mean-shift disclosure. Persist via ``buildml.online_bundle.v1``.
-  Honesty: batch/stream-chunk Session updates — not a distributed streaming
+  Honesty: batch/stream-chunk Session updates: not a distributed streaming
   platform.
 * Multi-task / multi-output learning via sklearn ``MultiOutput*`` /
   ``ClassifierChain`` / ``RegressorChain`` (``fit_multitask`` →
@@ -114,7 +120,7 @@ Models and diagnostics
   targets (multiple ``role='target'`` columns or explicit ``targets=``).
   Train-only fit; holdout evaluation reports per-task and unweighted aggregate
   metrics. Classical ``Session.fit`` remains single-target. Persist via
-  ``buildml.multitask_bundle.v1``. Honesty: shared-feature multi-output — not a
+  ``buildml.multitask_bundle.v1``. Honesty: shared-feature multi-output: not a
   deep multi-head MTL research platform; mixed classification+regression is
   refused.
 * Meta-learning via episodic few-shot protocols on Session task/group columns
@@ -123,14 +129,14 @@ Models and diagnostics
   (pooled sklearn init + support adapt). Meta-train uses train only; holdout
   evaluation prefers novel task ids and discloses overlaps. Persist via
   ``buildml.metalearning_bundle.v1``. Honesty: practical tabular few-shot /
-  episodic Session protocol — not foundation-model meta-learning or
+  episodic Session protocol: not foundation-model meta-learning or
   MAML-at-scale.
 * Federated learning via local FedAvg / FedProx simulation on a client/group
   column (``fit_federated`` → ``evaluate_federated`` / ``predict_federated``).
   Aggregates sklearn linear/SGD ``coef_`` / ``intercept_`` with sample-size
   weights. Local updates use train only; holdout evaluation never trains.
   Persist via ``buildml.federated_bundle.v1``. Honesty: local FL simulation for
-  research/teaching/workflows — not a Flower/OpenFL network stack; not
+  research/teaching/workflows: not a Flower/OpenFL network stack; not
   cryptographic secure aggregation.
 * Fit probabilistic models on train (``fit_probabilistic``): BayesianRidge,
   GaussianProcess, or Naive Bayes, plus train-only split conformal intervals
@@ -142,8 +148,10 @@ Models and diagnostics
   never invents causality from EDA. Persist via ``buildml.causal_bundle.v1``.
 * Fit Graph ML node classifiers (``set_graph`` → ``fit_graph`` /
   ``predict_graph`` / ``evaluate_graph``): NetworkX classical node features
-  (``buildml[graph]``) or pure-Torch GCN (``buildml[torch]``). Persist via
-  ``buildml.graph_bundle.v1``. Not Neo4j, not PyG, not a KG product.
+  (``buildml[graph]``), pure-Torch GCN (``buildml[torch]``), or optional PyG
+  GCN/SAGE/GAT via ``buildml[graph-pyg]``. Persist via
+  ``buildml.graph_bundle.v1``. Not a Neo4j product and not a knowledge-graph
+  embedding path (use ``fit_kg``).
 * Fit symbolic / neuro-symbolic rules (``fit_symbolic`` /
   ``fit_neuro_symbolic``): declared or induced if-then rules with traces;
   sklearn hybrid overlays. Persist via ``buildml.symbolic_bundle.v1``. Not
@@ -174,6 +182,11 @@ Models and diagnostics
 * Fit synthetic-data generators (``fit_synthesizer`` → ``sample_synthetic`` /
   ``evaluate_synthetic``): bootstrap / Gaussian copula / SMOTE with fidelity +
   TSTR. Persist via ``buildml.synthetic_bundle.v1``. Not DP synthesis.
+* Report observational group disparity on a holdout
+  (``evaluate_fairness``): demographic parity difference, disparate impact
+  ratio, equalized odds TPR/FPR gaps. Requires a fitted classifier and a
+  caller-declared sensitive column. Not a legal audit. Optional SHAP
+  attribution via ``explain_shap`` (``buildml[shap]``).
 * Model and analyse a text column on the Session dataset
   (``profile_text_corpus`` → ``fit_text_classifier`` → ``predict_text`` /
   ``evaluate_text_classifier`` / ``interpret_text_prediction``), plus
@@ -185,7 +198,7 @@ Models and diagnostics
   ``buildml[nlp-industry]``. Normalization is deterministic; vocabulary,
   document frequencies, topic components, and heads are train-only. Persist via
   ``buildml.nlp_bundle.v1``. Honesty: single-label document classification and
-  analysis — not multi-label, not span/sequence labelling, not generation or
+  analysis: not multi-label, not span/sequence labelling, not generation or
   abstractive summarization, not translation, not transformer fine-tuning
   (Torch text path), and not document retrieval for generation
   (``buildml.rag``).
@@ -223,7 +236,7 @@ Optional extras (same Session)
   (``transcribe_speech``, stub CI-safe or transformers Whisper-class),
   ``evaluate_asr`` WER/CER scoring, and speech classify finetune-lite
   (``make_speech_torch_loaders`` / ``fit_speech_torch`` /
-  ``domain_adapt_speech_torch``). Integration path — not training a
+  ``domain_adapt_speech_torch``). Integration path: not training a
   Whisper-scale foundation model from scratch
   (``refuse_speech_foundation_pretrain`` states that explicitly).
 * **Pretrained backbones** (``buildml[vision]`` / ``buildml[speech]`` /
@@ -237,13 +250,13 @@ Optional extras (same Session)
   ``Session.serve_bundle``) for classical pipeline bundles and TorchScript
   artifacts, with ``/health``, ``/metadata``, ``/predict``, ``/predict/batch``,
   and OpenAPI docs. Localhost bind by default; optional API-key/Bearer
-  middleware and optional local SSL cert/key pair — still not a managed cloud
+  middleware and optional local SSL cert/key pair: still not a managed cloud
   IAM / cert product. Prefer TLS at a reverse proxy for non-local exposure.
   TorchServe directory packaging (``pack_torchserve``) and TensorRT
   ``trtexec`` plans (``prepare_tensorrt_export``) are recipe helpers only.
 * **K8s templates** (``emit_k8s_ddp_job`` / ``emit_k8s_serve_deployment`` /
   ``deploy/k8s``): Indexed Job + Service (+ optional ConfigMap) torchrun DDP
-  emitters and serve Deployment templates — not live multi-cluster
+  emitters and serve Deployment templates: not live multi-cluster
   orchestration or a Helm/control-plane product.
 * **RAG** (``buildml[rag]``): corpus ingest, chunk, embed, retrieve, grounded
   ``rag_generate`` with citations and cheap faithfulness hooks, evaluate,
@@ -278,7 +291,7 @@ local managed serving (API keys, metadata/batch/OpenAPI, optional local SSL),
 TorchServe/TRT recipes, and local RAG generate/faithfulness are real library
 paths. The matching honesty lines (“not a full zoo”, “not managed cloud IAM”,
 “not live multi-cluster”, “not FM-from-scratch”, “not a hosted vector DB”) are
-product-scope boundaries around those shipped paths — not stubs for missing
+product-scope boundaries around those shipped paths: not stubs for missing
 APIs.
 
 Where to read more
@@ -294,6 +307,8 @@ Markdown under ``guides/``, also rendered here):
 * Ensembles: :doc:`quickstart-ensemble`, :doc:`ensemble-deep`
 * AutoML: :doc:`quickstart-automl`, :doc:`automl-deep`
 * Forecasting: :doc:`quickstart-forecasting`, :doc:`forecasting-deep`
+* Time-series analysis: :doc:`quickstart-timeseries-analysis`,
+  :doc:`timeseries-analysis-deep`
 * Anomaly / fraud: :doc:`quickstart-anomaly`, :doc:`anomaly-deep`
 * Semi-supervised: :doc:`quickstart-semisupervised`, :doc:`semisupervised-deep`
 * Self-supervised: :doc:`quickstart-selfsupervised`, :doc:`selfsupervised-deep`
@@ -324,12 +339,12 @@ Proof suite (Tier A/B/C)
 End-to-end evidence that Session domains work with honest splits and holdout
 metrics lives in the repository ``proofs/`` directory (not thin smoke):
 
-* **Tier A — 57/57:** one deep project per major domain (classical through NLP,
+* **Tier A: 57/57:** one deep project per major domain (classical through NLP,
   plus ensembles and Torch tabular/text)
-* **Tier B — 36/36:** baseline Aegis/Harbor/Atlas/Pulse/Ledger/Nexus plus 30
+* **Tier B: 36/36:** baseline Aegis/Harbor/Atlas/Pulse/Ledger/Nexus plus 30
   expansion products (Meridian, Helix, Citadel, Nova, Zenith, …)
-* **Tier C — 57/57:** same-split industry twins writing ``comparison.json``
-  (qualitative competitive bar 5-B — workflow parity over tiny metric gaps)
+* **Tier C: 57/57:** same-split industry twins writing ``comparison.json``
+  (qualitative competitive bar 5-B: workflow parity over tiny metric gaps)
 
 Re-run from a source checkout::
 
@@ -341,4 +356,4 @@ Domain → proof mappings are in ``guides/README.md`` (rendered here as
 Python 3.13 (environment markers skip broken upstream wheels).
 
 Install honesty stays unchanged: PyPI ``buildml`` is legacy 1.x until a 2.x
-wheel ships — use a GitHub or editable install for Session APIs above.
+wheel ships: use a GitHub or editable install for Session APIs above.

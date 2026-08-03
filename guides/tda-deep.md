@@ -1,6 +1,6 @@
 # TDA deep guide
 
-Session-shaped persistent homology for tabular workflows — native and industry backends.
+Session-shaped persistent homology for tabular workflows: native and industry backends.
 
 ## Backend catalog
 
@@ -19,7 +19,7 @@ Session.tda_capability_matrix()
 |--------|-----------|
 | **ripser + persim** (`buildml[tda]`) | Light, standard VR backend + persistence images; landscapes/silhouettes in-tree |
 | **giotto-tda** (`buildml[tda-industry]`) | Sklearn-style PH pipelines, Betti curves, gtda vectorizers, optional KeplerMapper train summary |
-| Multiple half-wired stacks | Rejected — two honest backends behind one Session API |
+| Multiple half-wired stacks | Rejected: two honest backends behind one Session API |
 
 `import buildml` never imports ripser/persim/gtda. Missing installs raise
 `MissingExtraError("tda", ...)` or `MissingExtraError("tda-industry", ...)`.

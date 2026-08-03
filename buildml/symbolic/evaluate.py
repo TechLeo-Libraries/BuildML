@@ -68,7 +68,7 @@ def evaluate_symbolic(
         rule_coverage=coverage,
         mean_rules_fired=mean_fired,
         disclosures=(
-            "Holdout evaluation only — rules were not re-induced on this partition.",
+            "Holdout evaluation only: rules were not re-induced on this partition.",
             *plan.disclosures[:2],
         ),
         warnings=(),
@@ -135,7 +135,7 @@ def evaluate_neuro_symbolic(
         mean_rules_fired=mean_fired,
         repair_rate=repair_rate,
         disclosures=(
-            "Holdout evaluation only — base estimator and rules were not "
+            "Holdout evaluation only: base estimator and rules were not "
             "refit on this partition.",
             *plan.disclosures[:2],
         ),

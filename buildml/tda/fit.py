@@ -117,7 +117,7 @@ def fit_tda(
     Notes
     -----
     **Leakage:** PH, vectorizer ranges, NN index, and head are train-fitted only.
-    Honesty: Session-shaped PH + vectorization → sklearn — not a Mapper research
+    Honesty: Session-shaped PH + vectorization → sklearn: not a Mapper research
     suite.
     """
     resolved_backend, resolved_vec = resolve_backend_vectorization(

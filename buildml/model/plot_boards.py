@@ -12,7 +12,7 @@ one partition, so everything you are looking at is comparable.
 The panels adapt to what is available. An estimator with no probabilities cannot
 support ROC, precision-recall, calibration, or threshold panels; a multiclass
 target cannot support the binary ones. Rather than failing the board or quietly
-dropping them, each omission is recorded with its reason — a board with four
+dropping them, each omission is recorded with its reason: a board with four
 panels missing and no explanation looks like a bug, and the reason is usually
 something you need to know anyway.
 
@@ -60,7 +60,7 @@ def _require_viz() -> tuple[Any, Any]:
     try:
         import matplotlib
 
-        # Non-interactive export path — avoid Tk/GUI backends in library use.
+        # Non-interactive export path: avoid Tk/GUI backends in library use.
         if str(matplotlib.get_backend()).lower() != "agg":
             matplotlib.use("Agg", force=True)
         import matplotlib.pyplot as plt
@@ -77,8 +77,8 @@ class PlotBoardReport:
 
     Keeping the skipped panels alongside the drawn ones is deliberate. A board
     showing three panels where you expected seven raises the question of what
-    went wrong, and the answer — no probabilities, multiclass target, no numeric
-    features — is usually informative in its own right.
+    went wrong, and the answer: no probabilities, multiclass target, no numeric
+    features: is usually informative in its own right.
 
     Attributes
     ----------
@@ -140,8 +140,8 @@ class PlotBoardReport:
         """Convert the board to plain data, replacing figures with placeholders.
 
         Matplotlib figures cannot be serialised, so each becomes the marker
-        ``'figure'``. Everything else — metrics, findings, skip reasons,
-        limitations — carries over intact.
+        ``'figure'``. Everything else: metrics, findings, skip reasons,
+        limitations: carries over intact.
 
         Returns
         -------
@@ -499,12 +499,12 @@ def _classification_board(
         metrics.update({"false_negatives": fn, "false_positives": fp})
         if fn > fp * 1.5:
             recommendations.append(
-                "False negatives dominate — lower the decision threshold or "
+                "False negatives dominate: lower the decision threshold or "
                 "favor recall-oriented policies."
             )
         elif fp > fn * 1.5:
             recommendations.append(
-                "False positives dominate — raise the threshold or tighten precision."
+                "False positives dominate: raise the threshold or tighten precision."
             )
 
     has_proba = hasattr(estimator, "predict_proba")
@@ -514,7 +514,7 @@ def _classification_board(
                 {"panel": panel, "reason": "estimator lacks predict_proba"}
             )
         recommendations.append(
-            "Estimator has no predict_proba — ROC/PR/calibration/threshold "
+            "Estimator has no predict_proba: ROC/PR/calibration/threshold "
             "panels skipped. Prefer probabilistic classifiers or CalibratedClassifierCV."
         )
         return
@@ -553,7 +553,7 @@ def _classification_board(
             }
         )
         recommendations.append(
-            "Multiclass probabilities available — use one-vs-rest calibration "
+            "Multiclass probabilities available: use one-vs-rest calibration "
             "and per-class threshold policies outside the binary board."
         )
         return
@@ -583,11 +583,11 @@ def _classification_board(
     )
     if roc_auc < 0.65:
         recommendations.append(
-            "ROC-AUC is weak — revisit features/model family before thresholding."
+            "ROC-AUC is weak: revisit features/model family before thresholding."
         )
     if ap + 1e-9 < (y_pos.mean() + 0.05):
         recommendations.append(
-            "PR-AUC near prevalence — ranking quality may be limited "
+            "PR-AUC near prevalence: ranking quality may be limited "
             "for the minority class."
         )
 
@@ -604,7 +604,7 @@ def _classification_board(
         metrics["ece"] = ece
         if ece > 0.1:
             recommendations.append(
-                "Reliability gap is material — apply CalibratedClassifierCV "
+                "Reliability gap is material: apply CalibratedClassifierCV "
                 "(isotonic/sigmoid) on train folds."
             )
     except Exception as exc:  # noqa: BLE001
@@ -634,7 +634,7 @@ def _classification_board(
         "f1": best[3],
     }
     recommendations.append(
-        "Pick thresholds from cost/benefit, not F1 alone — the tradeoff curve "
+        "Pick thresholds from cost/benefit, not F1 alone: the tradeoff curve "
         "shows the precision/recall frontier."
     )
 
@@ -674,7 +674,7 @@ def _regression_board(
     )
     if abs(bias) > 0.25 * (rmse + 1e-12):
         recommendations.append(
-            "Non-trivial residual bias — check target transforms or missing intercept structure."
+            "Non-trivial residual bias: check target transforms or missing intercept structure."
         )
     # Heteroscedasticity heuristic: correlate |residual| with prediction
     if len(y_p) >= 8:
@@ -682,7 +682,7 @@ def _regression_board(
         metrics["heteroscedasticity_correlation"] = corr
         if abs(corr) > 0.35:
             recommendations.append(
-                f"|residual| correlates with prediction (r≈{corr:.2f}) — "
+                f"|residual| correlates with prediction (r≈{corr:.2f}): "
                 "consider variance-stabilizing transforms or heteroscedastic models."
             )
     for panel in ("roc_curve", "pr_curve", "calibration", "threshold_tradeoff", "confusion_matrix"):
@@ -843,7 +843,7 @@ def _plot_learning_curve(
         f"at n={int(train_sizes[-1])}."
     ]
     if gap > 0.1:
-        tips.append("Large gap suggests overfitting — regularize or gather more train data.")
+        tips.append("Large gap suggests overfitting: regularize or gather more train data.")
     return fig, tips
 
 
@@ -900,8 +900,8 @@ def _plot_permutation_importance(
         )
         if len(names) > 1 and abs(float(means[0])) > 3 * max(abs(float(means[1])), 1e-12):
             tips.append(
-                "Importance is highly concentrated in one feature — "
+                "Importance is highly concentrated in one feature: "
                 "audit leakage/proxy targets."
             )
-    tips.append("Correlated features can split importance — do not drop proxies blindly.")
+    tips.append("Correlated features can split importance: do not drop proxies blindly.")
     return fig, tips

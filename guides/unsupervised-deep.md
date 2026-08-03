@@ -28,7 +28,7 @@ modes.
 | Production-shaped Session API | EDA IsolationForest / correlation-cluster screens |
 
 Causal claims stay out of this path (and out of EDA). A later causal API will
-require explicit estimand/assumption objects — clustering labels are not causal
+require explicit estimand/assumption objects: clustering labels are not causal
 effects.
 
 ---
@@ -133,13 +133,13 @@ session = (
 )
 session.fit_clusters(method="kmeans", n_clusters=2, prefer_reduce_components=True)
 assert session.cluster_fit_result.used_reduce_components
-# Explained variance is still unsupervised — not cluster quality:
+# Explained variance is still unsupervised: not cluster quality:
 print(session.reduce_plan.to_dict()["total_explained_variance"])
 ```
 
 Set `prefer_reduce_components=False` or pass explicit `columns=` to cluster raw
 scaled features instead. Fold-local PCA inside CV remains
-`PreprocessRecipe(reduce="pca")` for **supervised** selection — unsupervised
+`PreprocessRecipe(reduce="pca")` for **supervised** selection: unsupervised
 clustering is a Session-global plan path today (honest limit).
 
 ---

@@ -119,11 +119,11 @@ def fit_probabilistic(
         sklearn BayesianRidge / GaussianProcess* / GaussianNB + in-tree split
         conformal carved from train only.
     mapie (``buildml[probabilistic-industry]``):
-        MAPIE conformal regression/classification — split, CV+, jackknife+.
+        MAPIE conformal regression/classification: split, CV+, jackknife+.
     ngboost (``buildml[probabilistic-industry]``):
         NGBoost predictive distributions with optional in-tree conformal overlay.
 
-    Honesty: uncertainty quantification for tabular estimators — not PyMC/Stan
+    Honesty: uncertainty quantification for tabular estimators: not PyMC/Stan
     MCMC or Bayesian deep nets. Classical ``Session.calibration()`` unchanged.
     """
     assert_fit_partition(split_plan, "train")
@@ -440,7 +440,7 @@ def _native_disclosures(
 ) -> list[str]:
     out = [
         "Native backend: sklearn BayesianRidge / GaussianProcess* / GaussianNB "
-        "+ optional in-tree split conformal — not PyMC/Stan MCMC.",
+        "+ optional in-tree split conformal: not PyMC/Stan MCMC.",
     ]
     if supports_std:
         out.append(

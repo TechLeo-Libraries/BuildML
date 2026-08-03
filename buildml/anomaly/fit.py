@@ -73,7 +73,7 @@ def fit_detector(
 Backends
 --------
 sklearn (default):
-    IsolationForest, LOF, One-Class SVM — core dependency.
+    IsolationForest, LOF, One-Class SVM: core dependency.
 pyod (``buildml[anomaly-industry]``):
     HBOS, COPOD, ECOD, DeepSVDD industry detectors.
 torch (``buildml[torch]``):
@@ -477,12 +477,12 @@ def _score_calibration_disclosures(backend: str, method: str) -> list[str]:
     if backend == "pyod":
         return [
             "Score calibration (PyOD): decision_function scores; higher = more anomalous. "
-            "Holdout score scale may differ from sklearn detectors — compare via ranking metrics."
+            "Holdout score scale may differ from sklearn detectors: compare via ranking metrics."
         ]
     if backend == "torch" and method == "autoencoder":
         return [
             "Score calibration (torch AE): per-row MSE reconstruction error on train-fitted "
-            "autoencoder; not calibrated to probability — use validation threshold tuning."
+            "autoencoder; not calibrated to probability: use validation threshold tuning."
         ]
     if method in SUPERVISED_METHODS:
         return [
@@ -620,7 +620,7 @@ def _select_fit_rows(
             hint = ""
             if n_unique > 2:
                 hint = (
-                    f" Column '{label_col}' currently has {n_unique} unique values — "
+                    f" Column '{label_col}' currently has {n_unique} unique values: "
                     "if it was scaled/encoded, set it as a target role (excluded from "
                     "scale) or supply an untransformed normal_label_column."
                 )

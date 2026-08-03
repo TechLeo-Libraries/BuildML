@@ -90,7 +90,7 @@ ValidationError
 def load_anomaly_bundle(path: str | Path, *, trusted: bool = False) -> AnomalyPlan:
     """Load an anomaly bundle into an :class:`AnomalyPlan`.
 
-    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints: reload workflow via checkpoint_load separately.
 
     Parameters
     ----------

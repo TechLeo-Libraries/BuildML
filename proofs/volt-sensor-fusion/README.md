@@ -1,6 +1,6 @@
 # Volt Sensor Fusion
 
-**Tier B** cross-domain product proof — unsupervised anomaly + optional TDA +
+**Tier B** cross-domain product proof: unsupervised anomaly + optional TDA +
 classical fault scoring for synthetic industrial sensors.
 
 ## Product narrative
@@ -14,7 +14,7 @@ changes both matter. The stack:
 
 ## Status
 
-`completed` / `partial` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed` / `partial`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -27,7 +27,7 @@ changes both matter. The stack:
 - Stratified split before anomaly / TDA / classical
 - Anomaly threshold tuned on validation only
 - TDA + scale fit on train only when extras present
-- Classical scorer uses `inject_split` — test after lock
+- Classical scorer uses `inject_split`: test after lock
 
 ## What fails if leakage is ignored
 
@@ -42,5 +42,5 @@ changes both matter. The stack:
 
 ## Limitations
 
-Synthetic industrial sensors — not a real SCADA extract. TDA skipped without
+Synthetic industrial sensors: not a real SCADA extract. TDA skipped without
 `ripser`/`persim`.

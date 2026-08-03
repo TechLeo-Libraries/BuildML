@@ -1,6 +1,6 @@
 # Aurora Ad Ranker
 
-**Tier B** cross-domain product proof — learning-to-rank + classical CTR proxy +
+**Tier B** cross-domain product proof: learning-to-rank + classical CTR proxy +
 validation-tuned impression allocation for synthetic sponsored ads.
 
 ## Product narrative
@@ -13,7 +13,7 @@ Aurora ranks ads per query, scores a CTR proxy, and allocates scarce impressions
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -41,5 +41,5 @@ Aurora ranks ads per query, scores a CTR proxy, and allocates scarce impressions
 
 ## Limitations
 
-Synthetic graded ad judgments — not a real auction log. CTR proxy is derived
+Synthetic graded ad judgments: not a real auction log. CTR proxy is derived
 from query×ad judgment pairs.

@@ -10,6 +10,24 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- **CI proof smoke gate.** `python -m proofs._lib.run_all --smoke` runs a fixed
+  Tier A subset without `--skip-existing`; GitHub Actions job `proofs-smoke`.
+- **Coverage ratchet process.** Full-suite measure via
+  `scripts/run_full_coverage.py` (per-module isolation on Windows + combine):
+  **70.7%** (39539/55914). `fail_under` raised 25 → 60; next planned 70
+  (`scripts/coverage_ratchet.json`).
+- **Lazy/cached walkthrough capability probes.** Default
+  `walkthrough(capability_probe="lazy")` skips inactive domain industry imports;
+  process-wide matrix + subprocess import caches; `eager` / `skip` modes.
+- **Fairness disparity reporting.** `Session.evaluate_fairness` /
+  `fairness_capability_matrix` (observational DP / DI / equalized odds).
+- **Optional SHAP attribution.** `Session.explain_shap` behind `buildml[shap]`.
+- **Release workflow.** `.github/workflows/release.yml` (manual/tag build +
+  optional PyPI publish).
+- **Surface stability policy.** `docs/stability.md` for alpha churn control.
+- **Harder RAG proof corpora.** Adversarial distractors / paraphrases in
+  `support-kb-rag` and `policy-handbook-rag` so hashing cannot trivially score
+  perfect retrieval metrics.
 - **Proof suite expansion (+30 Tier A, +30 Tier B, +30 Tier C twins).** Inventory
   is now **57/57** Tier A, **36/36** Tier B, **57/57** Tier C. New Tier A covers
   ensembles (`fit_voting` / `fit_stacking` / `fit_blending`), Torch tabular/text,
@@ -32,7 +50,7 @@ with pre-release tags for alpha (`aN`) builds.
   ``predict_from_pipeline``, and managed serving (``create_serving_app`` /
   ``serve_bundle`` / ``buildml-serve --trusted``) thread the flag;
   ``data_only=True`` checkpoint loads skip plans without needing ``trusted``.
-  Residual pickle risk remains inherent — the gate makes it opt-in.
+  Residual pickle risk remains inherent: the gate makes it opt-in.
 - **Path allowlist + integrity hashes.** Loaders refuse URI-shaped paths
   (``https://``, ``s3://``, ``file://``, …). Optional ``sha256`` of joblib
   payloads is recorded in anomaly / pipeline ``meta.json`` and Session
@@ -47,7 +65,7 @@ with pre-release tags for alpha (`aN`) builds.
   base64 / atob / hex smuggle, multi-line instruction overrides), NFKC +
   zero-width / bidi strip, Latin-homoglyph fold, structured ``InjectionFinding``
   reason codes and ``refuse_injection``. ``ToolRegistry.register`` always
-  refuses — allowlist is closed at construction; confirm-on-write unchanged.
+  refuses: allowlist is closed at construction; confirm-on-write unchanged.
 
 ### Changed
 
@@ -68,7 +86,7 @@ with pre-release tags for alpha (`aN`) builds.
   ``platform_markers`` for LightFM / giotto-tda / learn2learn / skope-rules /
   neuralforecast.
 - **Session monolith split (critical maintainability fix).** Public
-  ``buildml.Session`` API unchanged (482 methods preserved). Domain method
+  ``buildml.Session`` API unchanged (474 public attributes preserved). Domain method
   signatures/docstrings moved into ``buildml/session/mixins/`` (34 domain
   mixins + ``_shared`` annotation bag); ``session.py`` is now the thin
   assembler (~840 LOC) owning ``__init__``, context manager, and state glue.
@@ -106,8 +124,8 @@ with pre-release tags for alpha (`aN`) builds.
   ``online`` (114), ``federated`` (107), ``automl`` (99), ``multitask`` (96),
   ``activelearning`` (95), ``anomaly`` (95), ``synthetic`` (93),
   ``semisupervised`` (90), ``unsupervised`` (83).
-- **Docstring mission complete.** Every audited package — including
-  ``buildml/session/session.py`` and all ``*_ops.py`` facades — is at 0
+- **Docstring mission complete.** Every audited package: including
+  ``buildml/session/session.py`` and all ``*_ops.py`` facades: is at 0
   findings. ``buildml/session/`` is now in ``ENFORCED_PREFIXES``; repo-wide
   ``scripts/audit_docstrings.py --check`` total is 0.
 - **Session ops depth pass.** All 34 ``buildml/session/*_ops.py`` modules plus
@@ -154,7 +172,7 @@ with pre-release tags for alpha (`aN`) builds.
   for decomposition, stationarity diagnostics, changepoint detection, and the
   analysis-before-forecast workflow (`buildml/explain/concepts/timeseries.py`,
   `buildml/explain/beginner/timeseries.py`).
-- **Tier A proof: tabular Q-learning** (`proofs/tabular-q-frozenlake/`) —
+- **Tier A proof: tabular Q-learning** (`proofs/tabular-q-frozenlake/`) :
   end-to-end `fit_rl(mode='tabular_q')` → `evaluate_rl` → `act_rl` → bundle,
   complementing the existing imitation-cartpole proof.
 - **AI executor generic read-only dispatch.** Registered read-only tools with a
@@ -166,7 +184,7 @@ with pre-release tags for alpha (`aN`) builds.
 
 - **The explain system now teaches beginners.** Explanations were written for
   people who already knew the material: terse, jargon-first, and silent on what
-  a term meant or why a step existed — which defeats the point of an explain
+  a term meant or why a step existed: which defeats the point of an explain
   surface. Every explanation is now layered, and the beginner layer is the
   default.
   - **Reading levels.** `Session.explain(...)` and the new `Session.learn(...)`
@@ -183,7 +201,7 @@ with pre-release tags for alpha (`aN`) builds.
     glossary of the jargon the answer itself used, a worked example, and the
     neighbouring tools. The primer is *derived* in `buildml/explain/pedagogy.py`
     from the catalog entry and its linked concept notes rather than hand-copied,
-    so it cannot drift from the expert sections it fronts — and any operation can
+    so it cannot drift from the expert sections it fronts: and any operation can
     override any section with authored prose.
   - **A beginner layer on all 188 concept notes**, across every domain:
     supervised, unsupervised, forecasting, anomaly, NLP, RAG, RL, online,
@@ -223,7 +241,7 @@ with pre-release tags for alpha (`aN`) builds.
 
 - **Single-sentence explain content no longer renders one bullet per letter.**
   497 fields across the operation catalog and the concept notes were authored as
-  a bare string where a tuple was expected — a missing trailing comma, which no
+  a bare string where a tuple was expected: a missing trailing comma, which no
   type checker catches at runtime. Anything iterating them, including the new
   beginner primer, walked the characters. `OperationSpec` and `ConceptNote` now
   normalize their prose fields on construction, and a test fails if a prose
@@ -241,7 +259,7 @@ with pre-release tags for alpha (`aN`) builds.
   complex easy, and the API docstrings were not holding up their end: most were
   a single line, parameters were listed by type without saying what they do, and
   almost nothing explained *when* to reach for one option over another. There is
-  now a written standard in [`CONTRIBUTING.md`](CONTRIBUTING.md) — NumPy style,
+  now a written standard in [`CONTRIBUTING.md`](CONTRIBUTING.md): NumPy style,
   with a beginner-readable summary, a description of the concept and its role in
   the pipeline, parameters explained by effect rather than type, returns
   explained by meaning, raises, notes covering leakage and alternatives, and
@@ -254,7 +272,7 @@ with pre-release tags for alpha (`aN`) builds.
     stay at zero findings; every other package must stay at or below its recorded
     count in `scripts/docstring_budget.json`. New shallow docstrings fail CI while
     the existing backlog does not block unrelated work, and the recorded counts
-    can only fall — `--write-budget` refuses to raise one unless `--rebaseline`
+    can only fall: `--write-budget` refuses to raise one unless `--rebaseline`
     is passed, which prints exactly what it ratified.
   - Variadic parameters documented in NumPy's `*args` / `**kwargs` spelling are
     now recognised. The parser skipped every line beginning with `*` to avoid
@@ -272,7 +290,7 @@ with pre-release tags for alpha (`aN`) builds.
   out-of-fold mechanism that makes it safe and why `transform_encoder` demands a
   split plan when the other methods do not.
 - **`buildml.nlp` rewritten to the standard and locked at zero findings.** All 26
-  modules — the supervised path, topics, keyphrases, sentiment, entities,
+  modules: the supervised path, topics, keyphrases, sentiment, entities,
   summaries, language detection, corpus profiling, normalisation, vectorisation,
   the result dataclasses, the three optional-backend adapters, and the history
   hooks. Text carries failure modes tabular data does not, so the docstrings name
@@ -305,7 +323,7 @@ with pre-release tags for alpha (`aN`) builds.
   `act_sb3_observation` documents that its one-hot scores are not probabilities
   and why Stable-Baselines3 cannot supply real ones.
 - **`buildml.dl` rewritten to the standard and locked at zero findings.** All 25
-  modules — the tabular and text Torch path, loaders, training, evaluation,
+  modules: the tabular and text Torch path, loaders, training, evaluation,
   curves, cross-validation, nested search, DDP, export, packaging, the
   Kubernetes renderers, the multimodal and modality helpers, the pretrained
   backbone hooks, and the speech path. Deep learning fails in ways classical
@@ -323,7 +341,7 @@ with pre-release tags for alpha (`aN`) builds.
   name rather than approximating it, while labelling its stub transcription
   backend as test scaffolding wherever the text appears.
 - **`buildml.ai` rewritten to the standard and locked at zero findings.** All 13
-  modules — the tool registry, egress controls, provider layer, advisor,
+  modules: the tool registry, egress controls, provider layer, advisor,
   executor, planner, autonomy mode, transcript, and security hardening. This is
   the domain where a docstring that overstates a guarantee is itself a hazard,
   so each control now says what it actually does: `detect_pii_columns` documents
@@ -334,13 +352,13 @@ with pre-release tags for alpha (`aN`) builds.
   that a minimum and maximum are literal values from your data and that an
   aggregate over few rows can still identify someone; `EgressManifest` documents
   that it accounts for the payload and not the prompt. The confirmation model is
-  documented as structural rather than procedural — `ToolRegistry` explains that
+  documented as structural rather than procedural: `ToolRegistry` explains that
   an unregistered name is refused rather than matched to the nearest tool, and
   `requires_confirmation` explains why it answers `True` for a tool it does not
   recognise. `run_autonomous` names its residual risks and recommends reviewing
   a plan before executing it unattended.
 - **`buildml.data` rewritten to the standard and locked at zero findings.** All
-  11 modules — the `Dataset` handle, split planning, the engine protocol, the
+  11 modules: the `Dataset` handle, split planning, the engine protocol, the
   pandas, Polars, and DuckDB adapters, the shared aggregation vocabulary, the
   portable filter helpers, and the design-matrix prep path. Two things decide
   whether a result is trustworthy here, and both are now stated wherever they
@@ -354,12 +372,12 @@ with pre-release tags for alpha (`aN`) builds.
   data off disk and out of memory, while `sample_rows`, `filter_rows`, and
   `to_pandas` are marked as the points where a lazy plan collects. Native
   handles are documented as narrowing what must be materialised and explicitly
-  *not* as out-of-core fitting. `DuckDBTable` explains connection ownership —
-  who closes, who shares, and what breaks when the owner closes first — and
+  *not* as out-of-core fitting. `DuckDBTable` explains connection ownership :
+  who closes, who shares, and what breaks when the owner closes first: and
   `prepare_design_frame` records that a sampled fit describes the sample rather
   than the population.
 - **`buildml.rag` rewritten to the standard and locked at zero findings.** All 18
-  modules — corpus ingest, chunking, the three embedding backends, the vector
+  modules: corpus ingest, chunking, the three embedding backends, the vector
   store, index build and incremental update, dense, BM25 and hybrid retrieval,
   fusion, cross-encoder reranking, grounded generation, retrieval and generation
   evaluation, bundle persistence, the capability matrix, the dependency gates,
@@ -370,7 +388,7 @@ with pre-release tags for alpha (`aN`) builds.
   explains why fusing by rank avoids comparing a BM25 score against a cosine
   similarity, and `weighted_fuse` explains why its per-query normalisation makes
   scores unstable across queries. Grounding claims are bounded rather than
-  implied — `score_faithfulness` states that it measures citation coverage and
+  implied: `score_faithfulness` states that it measures citation coverage and
   lexical overlap, not truth, and that a fluent, well-cited, entirely wrong
   answer scores well; `generate_from_retrieve` documents that empty retrieval and
   provider errors are hard failures precisely so no ungrounded fallback can be
@@ -378,12 +396,12 @@ with pre-release tags for alpha (`aN`) builds.
   bite: `Document.role` explains what `eval_only` holds out and why,
   `evaluate_retrieval` explains why document mode deduplicates and chunk mode does
   not, and `load_rag_bundle` documents that a bundle saved with a custom callable
-  embedder reloads with hashing substituted — queries and stored vectors then
+  embedder reloads with hashing substituted: queries and stored vectors then
   occupy unrelated spaces, and retrieval returns confident nonsense.
   `rag_status` reports the absences as plainly as the presences, including that a
   Session checkpoint does not carry the vector index.
 - **`buildml.cbr` rewritten to the standard and locked at zero findings.** All 19
-  modules — the case base and distance metrics, fit, retrieve, predict, evaluate
+  modules: the case base and distance metrics, fit, retrieve, predict, evaluate
   and retain, feature preparation, the result dataclasses, the capability matrix,
   bundle persistence, the history hooks, and the four backend adapters. Case-based
   reasoning promises an explanation alongside every prediction, so the docstrings
@@ -394,7 +412,7 @@ with pre-release tags for alpha (`aN`) builds.
   largest units decide every neighbour; and `distance_weights` explains why inverse
   distance falls off sharply enough that one very close case can decide a
   prediction on its own. Leakage discipline is stated wherever memory can absorb a
-  label it should not — `fit_cbr` documents that the case base is built from train
+  label it should not: `fit_cbr` documents that the case base is built from train
   alone and that its `train_score` is in-sample because a row is its own nearest
   neighbour, `retain_cbr` documents that holdout rows are refused outright rather
   than warned about and that identity is the frame index, so a default
@@ -406,7 +424,7 @@ with pre-release tags for alpha (`aN`) builds.
   `distance_weights`, `encode_categoricals`, `standardize_fit`,
   `standardize_apply`, and `numeric_ranges` now carry executable doctests.
 - **`buildml.model` rewritten to the standard and locked at zero findings.** The
-  classical supervised surface — fit, predict and evaluate, cross-validation and
+  classical supervised surface: fit, predict and evaluate, cross-validation and
   the four hyperparameter searches, nested CV, model comparison, the deep
   diagnostics, the evidence records, and both the HTML and plot-board exports.
   This is the package where an honest number and a flattering one look identical,
@@ -419,7 +437,7 @@ with pre-release tags for alpha (`aN`) builds.
   *procedure* rather than a model, which is why it returns no single winner; and
   `optuna_search` documents that its early trials are random, so a small budget
   buys a randomized search with extra machinery. The diagnostics state what
-  metrics hide — `calibration_report` explains that a well-ranked model can still
+  metrics hide: `calibration_report` explains that a well-ranked model can still
   be badly calibrated and that AUC will not show it, `threshold_report` explains
   that 0.5 is a convention rather than a decision, and
   `permutation_importance_report` documents that correlated features split their
@@ -427,7 +445,7 @@ with pre-release tags for alpha (`aN`) builds.
   `fit_kwargs_for_sample_weight` carry executable doctests, the latter showing
   that an estimator which cannot weight refuses rather than ignoring the weights.
 - **The persistence and deployment path rewritten to the standard and locked at
-  zero findings** — `buildml.core`, `buildml.checkpoint`, `buildml.pipeline`, and
+  zero findings**: `buildml.core`, `buildml.checkpoint`, `buildml.pipeline`, and
   `buildml.serving`. These are the modules a reader meets first and last, and the
   distinctions they turn on were previously left implicit. `ColumnRole` now
   explains what each role *causes* rather than naming it, including that a group
@@ -439,9 +457,9 @@ with pre-release tags for alpha (`aN`) builds.
   clean load with a `None` split plan is the case to handle, and
   `save_pipeline_bundle` documents that omitting a plan that was used in training
   produces a bundle which silently under-prepares its inputs. The schema contract
-  now says why it is loose — that comparing dtype *families* keeps the check
+  now says why it is loose: that comparing dtype *families* keeps the check
   meaningful across a Parquet round trip, and that a check which cries wolf gets
-  turned off — and `coerce_score_frame` documents that numeric coercion turns
+  turned off: and `coerce_score_frame` documents that numeric coercion turns
   unparseable values into nulls, so a column of mostly-numeric strings converts
   and quietly loses its `'N/A'` entries. `predict_from_pipeline` explains that a
   feature column missing *after* plan replay usually means encoding met a
@@ -477,7 +495,7 @@ with pre-release tags for alpha (`aN`) builds.
   coverage, no proof, no benchmark, and no guide. `Session.text_features` wrote
   numeric columns for tabular models and `buildml.rag` retrieved documents for
   generation, but nothing modelled or analysed a text column on its own terms.
-  The domain now ships the full standard surface — capability matrix, ops,
+  The domain now ships the full standard surface: capability matrix, ops,
   results, explain overlay and concepts, AI tools, bundle, tests, proof,
   benchmark, example, and guides.
   - **Supervised path:** `fit_text_classifier` fits a single-label document
@@ -491,7 +509,7 @@ with pre-release tags for alpha (`aN`) builds.
     margin-only heads.
   - **`interpret_text_prediction` is exact, or it refuses.** For a linear head on
     an invertible vocabulary a token's contribution is `coefficient × feature
-    value` — an identity, not an approximation — and the per-class global tokens
+    value`: an identity, not an approximation: and the per-class global tokens
     come straight from the coefficients. Naive Bayes gets centred
     log-likelihoods, and the method string says so. Hashing (no invertible
     vocabulary), dense backends (features are latent dimensions), and heads
@@ -505,7 +523,7 @@ with pre-release tags for alpha (`aN`) builds.
     (NMF on TF-IDF, LDA on counts, NPMI coherence computed on train and clamped
     to its bounds, with assignment as a pure transform), `extract_keyphrases`
     (TF-IDF / RAKE / TextRank), `summarize_text` (extractive TextRank / LexRank /
-    lead — sentences are selected, never generated), `extract_entities`
+    lead: sentences are selected, never generated), `extract_entities`
     (precision-first regex + gazetteer rules with exact character offsets, or
     spaCy), `analyze_sentiment` (lexicon with negation and intensifier handling,
     reusing a fitted classifier, or a transformer), and `detect_language`.
@@ -515,7 +533,7 @@ with pre-release tags for alpha (`aN`) builds.
     sentiment lexicon with negators and intensifiers, Unicode script ranges,
     conservative English suffix-stem rules, and the entity patterns. Because
     normalization learns nothing it cannot leak, so the plan replays it on
-    holdout freely — while vocabulary, document frequencies, IDF, topic
+    holdout freely: while vocabulary, document frequencies, IDF, topic
     components, and heads are all frozen at fit on train rows only.
   - **`buildml.nlp_bundle.v1`** (`save_nlp_bundle` / `load_nlp_bundle`) carries the
     normalization plan with the fitted representation and head, plus an optional
@@ -538,7 +556,7 @@ with pre-release tags for alpha (`aN`) builds.
     `nlp-text-column`, `nlp-extra`), the operation overlay and generated catalog,
     NLP explain concepts, and 15 AI tool specs.
   - **Honesty, stated in the capability matrix and the guides:** single-label
-    document classification and analysis — not multi-label, not span/sequence
+    document classification and analysis: not multi-label, not span/sequence
     labelling, not text generation or abstractive summarization, not machine
     translation, not transformer fine-tuning (the Torch text path owns that), and
     not document retrieval for generation (`buildml.rag` owns that). Sharing a
@@ -555,7 +573,7 @@ with pre-release tags for alpha (`aN`) builds.
     `test_nlp_industry_depth.py`, and `tests/integration/test_nlp_alpha_smoke.py`.
     The proof corpus deliberately includes an ambiguous share so the headline
     accuracy lands near its stated ceiling instead of a suspicious 1.0.
-- **Tabular TD control — the Q-learning family (`fit_rl(mode="tabular_q")`):**
+- **Tabular TD control: the Q-learning family (`fit_rl(mode="tabular_q")`):**
   closes the value-based gap in `buildml.rl`, which previously shipped
   contextual bandits, REINFORCE-lite policy gradient, and SB3 PPO/DQN/A2C but no
   foundational tabular methods. New `buildml/rl/tabular.py` implements
@@ -585,25 +603,25 @@ with pre-release tags for alpha (`aN`) builds.
     hyperparameter guards, all four algorithms on CliffWalking, FrozenLake
     learning floor, Session fit/act/evaluate/bundle round-trip).
 
-## [2.4.0a2] — proof suite / preprocess harden — 2026-08-03
+## [2.4.0a2]: proof suite / preprocess harden: 2026-08-03
 
 ### Summary
 
 Hardens Session preprocess role skipping, FLAML AutoML evaluate/bundle predict
 paths, production extras markers (Windows / Py3.13), availability probes, and
 benchmark skip discipline; ships the Tier A/B/C proof suite with docs/README
-linkage. Bumps the package line to **`2.4.0a2`**. **Not published to PyPI** —
+linkage. Bumps the package line to **`2.4.0a2`**. **Not published to PyPI** :
 GitHub prerelease / honesty banner only.
 
 ### Added
 
-- **Proof suite (Tier A/B/C complete):** 25 single-domain Tier A projects, 6 Tier B
-  cross-domain products, and 25 Tier C same-split industry twins under
+- **Proof suite (Tier A/B/C complete):** 57 single-domain Tier A projects, 36 Tier B
+  cross-domain products, and 57 Tier C same-split industry twins under
   [`proofs/`](proofs/README.md). Harness: `python -m proofs._lib.run_all --tier all`.
   Guides and Sphinx index deep-link to proofs; `buildml[production]` remains
   best-effort on Python 3.13 (environment markers skip broken upstream wheels).
 - **README rewrite:** Session 2.x install honesty, extras table, production
-  caveats, domain overview, and proof suite (25/25 A, 6/6 B, 25/25 C) with
+  caveats, domain overview, and proof suite (57/57 A, 36/36 B, 57/57 C) with
   `python -m proofs._lib.run_all`.
 
 ### Fixed
@@ -611,7 +629,7 @@ GitHub prerelease / honesty banner only.
 - **Preprocess role skip:** default `scale` / `encode` / `impute` / outliers /
   binning / text (and related resolvers) transform `feature`-role columns only;
   `ignore` / `id` / `target` / `group` / `time` / `weight` are skipped unless
-  `columns=[...]` is passed explicitly — knapsack costs and IDs stay unmutated.
+  `columns=[...]` is passed explicitly: knapsack costs and IDs stay unmutated.
 - **FLAML adapter predict path:** Session evaluate/bundle replay wraps the full
   FLAML `AutoML` object (not peeled `.model` / `.estimator`) so string
   categoricals survive modern XGBoost.
@@ -642,7 +660,7 @@ GitHub prerelease / honesty banner only.
   `rag_capability_matrix`, `unsupervised_capability_matrix`,
   `forecast_capability_matrix`, `timeseries_capability_matrix` (+ Session
   static accessors).
-- **R6 refinement sweep (Phase 2 industry depth — complete, R6.1–R6.11):** Each
+- **R6 refinement sweep (Phase 2 industry depth: complete, R6.1–R6.11):** Each
   domain ships `*_capability_matrix()`, `backend=` auto-routing (sklearn/native
   fallback when extras absent; industry/torch/ssl/rl adapters default when
   installed), per-domain benchmark smoke, guides/explain/AI allowlist updates,
@@ -712,9 +730,9 @@ GitHub prerelease / honesty banner only.
   install).
 - **Bundle format bumps (v2, v1 loadable):** `buildml.ssl_bundle.v2`,
   `buildml.unsupervised_bundle.v2`, `buildml.forecast_bundle.v2`,
-  `buildml.tda_bundle.v2` — richer plan metadata for refined domains.
+  `buildml.tda_bundle.v2`: richer plan metadata for refined domains.
 - **Pass X guides sync:** Refresh ``guides/`` (and Sphinx includes) so Pass W
-  tutorials cover Pass V surfaces without inventing APIs — gated multimodal
+  tutorials cover Pass V surfaces without inventing APIs: gated multimodal
   fusion + frozen ``multimodal_preprocess`` restore, ``evaluate_asr`` /
   ``SpeechContract``, ``list_pretrained_backbones`` / ``attach_backbone_head``,
   serve ``/metadata`` + ``/predict/batch`` + optional local HTTPS, TorchServe
@@ -755,7 +773,7 @@ GitHub prerelease / honesty banner only.
 - **Honesty limits = product scope, not stubs.** Docs “not a full zoo / not
   managed cloud IAM / not live multi-cluster / not FM-from-scratch / not hosted
   vector DB” statements describe intentional product boundaries around shipped
-  library paths — not unfinished placeholder APIs.
+  library paths: not unfinished placeholder APIs.
 
 ### Fixed
 
@@ -770,9 +788,9 @@ GitHub prerelease / honesty banner only.
 - **Post-`v2.4.0a1` hygiene + `2.4.0a2` bump:** `e142f0d` removed the private
   `maintainers/` tree and refreshed public doc hygiene. This cut bumps the
   package line to **`2.4.0a2`**. GitHub release is **prerelease**. Still not
-  published to PyPI — honesty banner only.
+  published to PyPI: honesty banner only.
 
-## [2.4.0a1] — post-depth / process closure — 2026-08-02
+## [2.4.0a1]: post-depth / process closure: 2026-08-02
 
 ### Summary
 
@@ -780,7 +798,7 @@ Closes release/process gaps after the depth loop (Passes L–R): bumps the packa
 line to **`2.4.0a1`**, documents GitHub-first install until PyPI carries 2.x,
 fixes stale org URLs, wires Pass R CI + AI allowlist parity, hardens public
 serve binds, and refreshes maintainer / contributor process docs. **Not published
-to PyPI in this cut** — honesty banner only.
+to PyPI in this cut**: honesty banner only.
 
 ### Added
 
@@ -799,7 +817,7 @@ to PyPI in this cut** — honesty banner only.
 - **Pass O speech FM path:** ASR transcription + classify finetune-lite behind
   `buildml[speech]` / Torch. Session APIs `make_speech_torch_loaders`,
   `fit_speech_torch`, `transcribe_speech` (stub CI-safe backend; optional
-  transformers Whisper-class). Honest alpha — integration/finetune, not
+  transformers Whisper-class). Honest alpha: integration/finetune, not
   training a foundation model from scratch. Teaching sync + AI tools/executor.
 - **Pass O multi-node DDP:** `fit_torch_ddp(..., multi_node=True)` joins
   torchrun env (`WORLD_SIZE` / `RANK` / `LOCAL_RANK` / `MASTER_ADDR` /
@@ -811,7 +829,7 @@ to PyPI in this cut** — honesty banner only.
   Localhost default; no auth product claim.
 - **Pass L audio multimodal:** extend multimodal fusion to audio path/waveform
   columns fused with tabular and/or text and/or image. Train-only audio
-  amplitude mean/std, built-in small 1D-CNN fusion branch (honest alpha — not a
+  amplitude mean/std, built-in small 1D-CNN fusion branch (honest alpha: not a
   speech foundation model), Session facades
   (`make_multimodal_torch_loaders(..., audio_column=)` /
   `make_audio_multimodal_torch_loaders`), `fit_torch` / `export_torch` refuse
@@ -959,12 +977,12 @@ to PyPI in this cut** — honesty banner only.
   longer the product ceiling; hashing remains the CI-safe default embedder with
   semantic path first-class behind `buildml[rag]`.
 
-## [2.3.0a1] — AI operator alpha — 2026-08-02
+## [2.3.0a1]: AI operator alpha: 2026-08-02
 
 First AI operator alpha on the BuildML 2.x `Session` API. Exit criteria and
 known limits are listed in this section. Classical alpha remains at `2.0.0a1`;
 DL alpha at `2.1.0a1`; RAG alpha at `2.2.0a1`. This line adds optional
-LLM-assisted workflow guidance — **not** autonomous agents or auto-execution.
+LLM-assisted workflow guidance: **not** autonomous agents or auto-execution.
 
 ### Added
 
@@ -1012,12 +1030,12 @@ LLM-assisted workflow guidance — **not** autonomous agents or auto-execution.
 - Confirm known limits above still match shipped behavior.
 - Tag only after remote CI is green (see `CONTRIBUTING.md`).
 
-## [2.2.0a1] — RAG alpha — 2026-08-01
+## [2.2.0a1]: RAG alpha: 2026-08-01
 
 First retrieval (RAG) alpha on the BuildML 2.x `Session` API. Exit criteria and
 known limits are listed in this section. Classical alpha remains at `2.0.0a1`;
 DL alpha remains at `2.1.0a1`. This line adds optional retrieve / evaluate /
-bundle — **not** generate or an LLM operator.
+bundle: **not** generate or an LLM operator.
 
 ### Added
 
@@ -1052,7 +1070,7 @@ bundle — **not** generate or an LLM operator.
 - Confirm known limits above still match shipped behavior.
 - Tag only after remote CI is green (see `CONTRIBUTING.md`).
 
-## [2.1.0a1] — DL alpha — 2026-08-01
+## [2.1.0a1]: DL alpha: 2026-08-01
 
 First deep-learning alpha on the BuildML 2.x `Session` API. Exit criteria and
 known limits are listed in this section. Classical alpha remains documented at
@@ -1088,7 +1106,7 @@ known limits are listed in this section. Classical alpha remains documented at
 - Confirm known limits above still match shipped behavior.
 - Tag only after remote CI is green (see `CONTRIBUTING.md`).
 
-## [2.0.0a1] — classical alpha — 2026-08-01
+## [2.0.0a1]: classical alpha: 2026-08-01
 
 First classical-ML alpha of the BuildML 2.x `Session` API. Exit criteria and
 known limits are listed in this section.

@@ -1,7 +1,7 @@
 """Split conformal prediction helpers (train-only calibration carve).
 
 Implements MAPIE-style absolute-residual split conformal for regression and
-a simple probability-based prediction-set construction for classifiers —
+a simple probability-based prediction-set construction for classifiers :
 without requiring the MAPIE package. Calibration rows are carved from the
 Session **train** partition only; validation/test are never used.
 """

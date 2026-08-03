@@ -1,4 +1,4 @@
-"""Tabular temporal-difference control (Q-learning family) — behind buildml[rl].
+"""Tabular temporal-difference control (Q-learning family): behind buildml[rl].
 
 Foundational value-based RL: the agent learns an action-value table ``Q[s, a]``
 by bootstrapping from its own estimates instead of learning a parameterised
@@ -15,7 +15,7 @@ Algorithms
     action the epsilon-greedy behaviour policy will actually take.
 ``expected_sarsa``
     On-policy TD control with the expectation over the behaviour policy,
-    ``Σ_a' π(a'|s') Q[s', a']`` — lower variance than SARSA.
+    ``Σ_a' π(a'|s') Q[s', a']``: lower variance than SARSA.
 ``double_q_learning``
     Two tables with cross-evaluated bootstrapping; removes the maximisation
     bias of vanilla Q-learning.
@@ -26,7 +26,7 @@ finite and from a seeded random-policy probe where the space is unbounded.
 
 Honesty: small discrete-control teaching loops (FrozenLake / Taxi /
 CliffWalking / discretised CartPole). Tabular methods do not scale to
-high-dimensional observations — that is exactly what function approximation
+high-dimensional observations: that is exactly what function approximation
 (``gym_reinforce``) and deep value methods (``gym_sb3`` DQN) exist for.
 """
 
@@ -346,8 +346,8 @@ def build_discretizer(
         Step cap per probe episode, so probing cannot hang on an environment
         that never terminates under random actions.
     random_state : int or None
-        Seed for the probe. Fixing it makes the bin edges — and therefore the
-        meaning of every state index — reproducible across runs.
+        Seed for the probe. Fixing it makes the bin edges: and therefore the
+        meaning of every state index: reproducible across runs.
 
     Returns
     -------
@@ -593,7 +593,7 @@ class TabularValuePolicy:
     def q_values(self, observation: Any) -> np.ndarray:
         """Return the action values for a raw observation.
 
-        Discretizes and looks up in one call — the usual entry point when you
+        Discretizes and looks up in one call: the usual entry point when you
         want to see *why* the policy prefers an action rather than only which
         one it picks.
 
@@ -882,7 +882,7 @@ def _td_update(
         if terminated:
             target = float(reward)
         else:
-            # Select with the updating table, evaluate with the other one —
+            # Select with the updating table, evaluate with the other one :
             # this decoupling is what removes maximisation bias.
             greedy = int(np.argmax(updating[next_state]))
             target = float(reward) + gamma * float(evaluating[next_state, greedy])
@@ -1041,7 +1041,7 @@ def train_tabular_control(
             else "on-policy (bootstraps from the behaviour policy)."
         ),
         "This path requires buildml[rl] (gymnasium). Core BC/bandit paths do not.",
-        "Honesty: small discrete-control teaching loop — tabular methods do not "
+        "Honesty: small discrete-control teaching loop: tabular methods do not "
         "scale to high-dimensional observations.",
         f"env_id={env_id!r}; n_episodes={n_episodes}; "
         f"learning_rate={learning_rate}; gamma={gamma}.",
@@ -1160,7 +1160,7 @@ def train_tabular_control(
     if len(returns) >= 40 and metrics["mean_return_last_20"] <= metrics["mean_return_first_20"]:
         warnings.append(
             "Mean return did not improve between the first and last 20 episodes; "
-            "try more episodes, a larger learning_rate, or slower epsilon_decay — "
+            "try more episodes, a larger learning_rate, or slower epsilon_decay: "
             "this is an honest teaching loop, not a tuned agent."
         )
     if len(returns) < 200:
@@ -1216,7 +1216,7 @@ def evaluate_tabular_policy(
     -------
     dict of str to float
         Episode-return statistics, mean episode length, and
-        ``unseen_state_rate`` — the fraction of visited states the agent never
+        ``unseen_state_rate``: the fraction of visited states the agent never
         saw in training.
 
     Raises
@@ -1329,7 +1329,7 @@ def act_tabular_observation(
     tuple of (int, tuple of float)
         The chosen action index, and the action values for that state in
         action order. Near-equal values mean the policy is close to
-        indifferent — often a sign the state was rarely visited.
+        indifferent: often a sign the state was rarely visited.
 
     Raises
     ------

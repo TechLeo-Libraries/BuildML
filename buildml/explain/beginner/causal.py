@@ -17,7 +17,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "causal-assumptions",
         plain=(
             "Causal questions ask what *would happen if* you intervened, which is a much stronger claim "
-            "than noticing that two things move together. You cannot get there from data alone — you need "
+            "than noticing that two things move together. You cannot get there from data alone: you need "
             "assumptions. BuildML makes you write them down before it will estimate anything."
         ),
         analogy=(
@@ -26,15 +26,15 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "believe that is enough."
         ),
         steps=(
-            "Name the treatment — the thing that was done, such as a discount sent or a drug given.",
-            "Name the outcome — the thing you think it affected.",
+            "Name the treatment: the thing that was done, such as a discount sent or a drug given.",
+            "Name the outcome: the thing you think it affected.",
             "List the confounders: everything that plausibly influenced both the treatment and the outcome.",
             "State the estimand: the specific quantity you want, such as the average treatment effect.",
             "Acknowledge unconfoundedness (you measured all the common causes) and positivity (every kind of row could have received either treatment).",
         ),
         use=(
             "Any time someone asks 'did this work?' rather than 'can we predict this?'.",
-            "Before running a causal estimator at all — BuildML refuses without declared assumptions on purpose.",
+            "Before running a causal estimator at all: BuildML refuses without declared assumptions on purpose.",
         ),
         avoid=(
             "Do not use this path for pure prediction; a classifier does not need confounders declared and will be simpler.",
@@ -75,7 +75,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "comparing treated and untreated rows that look alike on your declared confounders."
         ),
         analogy=(
-            "Comparing exam results between students who did and did not attend a revision class — but only "
+            "Comparing exam results between students who did and did not attend a revision class: but only "
             "comparing students with the same prior grades, same subject, and same attendance record."
         ),
         steps=(
@@ -90,7 +90,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When randomization was impossible or already happened and you are analyzing the results.",
         ),
         avoid=(
-            "Do not use it when the important confounders were not measured — the estimate will be confidently wrong.",
+            "Do not use it when the important confounders were not measured: the estimate will be confidently wrong.",
             "Do not use it for instrumental-variable, front-door, or causal-discovery questions; this surface only does backdoor adjustment and says so.",
         ),
         myths=(
@@ -133,7 +133,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Split rows into the treated arm and the control arm.",
             "Fit an outcome model separately on each arm using the confounders as features.",
             "For every row in the data, predict the outcome under both models.",
-            "Take the average of the per-row differences — that is the estimated ATE.",
+            "Take the average of the per-row differences: that is the estimated ATE.",
             "Check that both arms had enough rows; a thin arm makes its model unreliable.",
         ),
         use=(
@@ -141,7 +141,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "As a first, easily explained estimator before trying anything doubly robust.",
         ),
         avoid=(
-            "Do not use it when one arm is tiny — the model for that arm will be extrapolating far beyond its data.",
+            "Do not use it when one arm is tiny: the model for that arm will be extrapolating far beyond its data.",
             "Do not use it when the two arms barely overlap in feature space; both models will be predicting for rows unlike anything they saw.",
         ),
         myths=(
@@ -190,7 +190,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you want an estimator whose assumptions are concentrated in one clearly inspectable model.",
         ),
         avoid=(
-            "Do not use it when propensities pile up near 0 or 1 — that is a positivity violation and no amount of clipping fixes it honestly.",
+            "Do not use it when propensities pile up near 0 or 1: that is a positivity violation and no amount of clipping fixes it honestly.",
             "Do not use it alone when you can use a doubly robust method instead; AIPW gives you two chances to be right.",
         ),
         myths=(
@@ -200,7 +200,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "A well-fitting propensity model means good balance.",
-                "A propensity model that predicts treatment perfectly is a disaster — it means the groups do not overlap at all.",
+                "A propensity model that predicts treatment perfectly is a disaster: it means the groups do not overlap at all.",
             ),
         ),
         example=(
@@ -209,7 +209,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "print(estimate.ate, estimate.effective_sample_size)",
         ),
         check=(
-            "What is the distribution of your propensity scores — is anything below 0.05 or above 0.95?",
+            "What is the distribution of your propensity scores: is anything below 0.05 or above 0.95?",
             "What is your effective sample size after weighting, compared with your row count?",
         ),
         tools=("fit_causal", "estimate_causal", "refute_causal"),
@@ -220,7 +220,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "causal-aipw",
         plain=(
             "AIPW combines the two previous approaches: it models the outcome *and* the treatment, then "
-            "corrects each with the other. The payoff is called double robustness — if either of the two "
+            "corrects each with the other. The payoff is called double robustness: if either of the two "
             "models is right, the effect estimate stays honest even if the other is wrong."
         ),
         analogy=(
@@ -232,7 +232,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Fit a propensity model, as in IPW.",
             "Combine them: start from the outcome model's prediction, then add a propensity-weighted correction for its residuals.",
             "Average across rows to get the ATE.",
-            "Read the disclosures — double robustness protects against misspecification, not against unmeasured confounding.",
+            "Read the disclosures: double robustness protects against misspecification, not against unmeasured confounding.",
         ),
         use=(
             "As the default choice when you are unsure which of the two nuisance models you trust more.",
@@ -269,8 +269,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "causal-eda-boundary",
         plain=(
-            "BuildML's exploratory tools — correlations, mutual information, feature importance, the "
-            "Teaching Studio — deliberately refuse to make causal claims. They describe association. "
+            "BuildML's exploratory tools: correlations, mutual information, feature importance, the "
+            "Teaching Studio: deliberately refuse to make causal claims. They describe association. "
             "Causal statements only come from the declared-assumption path, and that separation is enforced."
         ),
         analogy=(
@@ -290,7 +290,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not present a feature importance chart as evidence that changing that feature changes the outcome.",
-            "Do not skip EDA before causal work — you still need to understand the data, you just cannot conclude from it.",
+            "Do not skip EDA before causal work: you still need to understand the data, you just cannot conclude from it.",
         ),
         myths=(
             (
@@ -329,7 +329,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Declare assumptions and fit a causal plan.",
-            "Call `save_causal_bundle(path)` — assumptions, nuisance models, and estimates travel together.",
+            "Call `save_causal_bundle(path)`: assumptions, nuisance models, and estimates travel together.",
             "Reload with `load_causal_bundle(path)`.",
             "Re-read the assumptions before quoting the estimate anywhere.",
             "Keep checkpoints separately for the data state.",
@@ -378,10 +378,10 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Install the extra: `pip install buildml[causal-industry]`.",
-            "Declare assumptions as usual — they become the graph.",
+            "Declare assumptions as usual: they become the graph.",
             "Pass `backend='dowhy'` to `fit_causal`.",
             "DoWhy performs identification: does your graph actually let this estimand be estimated?",
-            "Run refuters — placebo treatment, random common cause, data subset — and read whether the estimate holds up.",
+            "Run refuters: placebo treatment, random common cause, data subset: and read whether the estimate holds up.",
         ),
         use=(
             "When the estimate matters enough to justify formal identification and systematic refutation.",
@@ -419,7 +419,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         "causal-econml",
         plain=(
             "EconML brings machine-learning-powered causal estimators. Where the basic methods give you one "
-            "average effect, these can estimate how the effect *varies* across rows — who benefits most — "
+            "average effect, these can estimate how the effect *varies* across rows: who benefits most: "
             "and can turn that into a targeting policy."
         ),
         analogy=(
@@ -438,7 +438,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you suspect strong heterogeneity and averaging would hide it.",
         ),
         avoid=(
-            "Do not chase heterogeneity on small samples — subgroup effect estimates are noisy long before the average is.",
+            "Do not chase heterogeneity on small samples: subgroup effect estimates are noisy long before the average is.",
             "Do not use it before you trust the average effect; heterogeneity built on a biased average is heterogeneity in the bias.",
         ),
         myths=(

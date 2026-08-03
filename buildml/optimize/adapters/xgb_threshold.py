@@ -129,7 +129,7 @@ def fit_xgb_threshold_policy(
         "backend='xgb': XGBClassifier trained on train with scale_pos_weight "
         f"from fn_cost/fp_cost={scale:.4f}; threshold tuned on partition "
         f"{partition}.",
-        "Auxiliary estimator stored in DecisionPlan for apply — not Session.fit.",
+        "Auxiliary estimator stored in DecisionPlan for apply: not Session.fit.",
     )
     plan.disclosures = tuple(list(plan.disclosures) + list(extra_disclosures))
     metrics["backend"] = 1.0

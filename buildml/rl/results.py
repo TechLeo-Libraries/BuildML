@@ -12,7 +12,7 @@ note about unvisited states invites being read as a general capability. The
 numbers alone do not carry their own caveats, so the caveats travel beside them.
 
 ``to_dict`` on each type returns JSON-safe values suitable for a manifest or a
-history entry. Large payloads — chosen actions, score matrices — are summarised
+history entry. Large payloads: chosen actions, score matrices: are summarised
 by count rather than included.
 
 See Also
@@ -68,7 +68,7 @@ class ImitationPlan:
     config:
         The resolved settings.
     train_score:
-        In-sample agreement with the demonstrator. Not a quality measure — see
+        In-sample agreement with the demonstrator. Not a quality measure: see
         :func:`~buildml.rl.imitation.fit_imitation`.
 
     Notes
@@ -110,7 +110,7 @@ class ImitationPlan:
         dict
             Task, backend, estimator, columns, action vocabulary, training
             size, in-sample score, disclosures, and configuration. The model
-            objects and encoder are omitted — they are not JSON-representable,
+            objects and encoder are omitted: they are not JSON-representable,
             and a bundle is the way to persist them.
         """
         return {
@@ -188,7 +188,7 @@ class ImitationFitResult:
         """Return the fit report as JSON-safe values.
 
         Nothing is dropped, because a cloning fit report is small enough to
-        record whole — which makes two runs directly comparable field by field.
+        record whole: which makes two runs directly comparable field by field.
 
         Returns
         -------
@@ -315,7 +315,7 @@ class ImitationPredictResult:
         dict
             Partition, task, row count, how many actions were produced,
             disclosures, and warnings. The actions themselves are counted
-            rather than included — read them from ``actions``.
+            rather than included: read them from ``actions``.
         """
         return {
             "partition": self.partition,
@@ -419,7 +419,7 @@ class RlPlan:
         dict
             Mode, backend, algorithm, columns, action vocabulary, environment
             details, training metrics, disclosures, and configuration. The
-            policy, encoder, and propensity model are omitted — a bundle is how
+            policy, encoder, and propensity model are omitted: a bundle is how
             those are persisted.
         """
         return {
@@ -470,7 +470,7 @@ class RlFitResult:
     disclosures:
         What the fit did.
     warnings:
-        Anything worth a second look — a failed propensity fit shows up here,
+        Anything worth a second look: a failed propensity fit shows up here,
         and it means IPS will be unavailable at evaluation.
 
     Notes
@@ -501,8 +501,8 @@ class RlFitResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the fit report as JSON-safe values.
 
-        Complete rather than summarised, so two fits — possibly in different
-        modes — can be compared field by field afterwards.
+        Complete rather than summarised, so two fits: possibly in different
+        modes: can be compared field by field afterwards.
 
         Returns
         -------
@@ -527,7 +527,7 @@ class RlFitResult:
 
 @dataclass(slots=True)
 class RlEvalResult:
-    """What a policy is estimated — or measured — to earn.
+    """What a policy is estimated: or measured: to earn.
 
     The ``offline`` flag decides how everything else should be read, and is the
     first field to look at.
@@ -552,7 +552,7 @@ class RlEvalResult:
     disclosures:
         Including, for bandits, that these are not A/B test results.
     warnings:
-        Reasons to distrust the numbers — a missing propensity model, an empty
+        Reasons to distrust the numbers: a missing propensity model, an empty
         partition, or a high unseen-state rate.
 
     Notes
@@ -620,7 +620,7 @@ class RlActResult:
         original labels; environment actions as integer indices.
     scores:
         One score tuple per situation, aligned with ``actions``. What the
-        numbers mean depends on the mode — see
+        numbers mean depends on the mode: see
         :func:`~buildml.rl.act.act_rl`.
     disclosures:
         What produced the actions and how to read the scores.

@@ -88,7 +88,7 @@ session = (
     Session.ingest(frame)
     .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
     .split(test_size=0.25, stratify=True, random_state=0)
-    .scale(method="standard")  # Session-global — poisons fold honesty
+    .scale(method="standard")  # Session-global: poisons fold honesty
 )
 
 try:
@@ -171,7 +171,7 @@ session.save_pipeline("artifacts/automl_pipeline", evaluate_partition="test")
 
 - No dedicated AutoML dashboard charts (use classical plot boards / evaluate)
 - Industry adapters (FLAML/AutoGluon) do not support nested CV or fold-local recipes
-- Full AutoGluon multi-modal / multimodel export not wrapped — tabular TabularPredictor only
+- Full AutoGluon multi-modal / multimodel export not wrapped: tabular TabularPredictor only
 - Stacking inside AutoML uses sklearn Stacking* with fixed meta-estimators (not full native `fit_stacking` OOF path)
 - Catalog deliberately omits deep nets and arbitrary Pipeline DAGs
 - Benchmark: `python benchmarks/automl/tabular_search.py` (skips unavailable backends)

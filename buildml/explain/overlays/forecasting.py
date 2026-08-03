@@ -60,7 +60,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "After set_roles (target + time) and time_split; optional impute for null targets/exog.",
         ),
         alternatives=(
-            "Use supervised Session.fit only when rows are exchangeable — not for temporal forecasts.",
+            "Use supervised Session.fit only when rows are exchangeable: not for temporal forecasts.",
             "Compare naive / seasonal_naive baselines before claiming lag-model value.",
         ),
         rationale=(
@@ -139,7 +139,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Missing plan, short history, missing future_exog for exog plans.",
         ),
         leakage=(
-            "Supplying future target values as if they were history invents leakage — do not.",
+            "Supplying future target values as if they were history invents leakage: do not.",
         ),
         anti_patterns=(
             "Interpreting recursive multi-step accuracy as one-step skill.",
@@ -221,7 +221,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         assumptions=("Destination is writable.",),
         failures=("Missing plan; incomplete write permissions.",),
         leakage=(
-            "Persistence only — the plan is written as fitted, so a plan fitted with temporal leakage stays leaky after reload.",
+            "Persistence only: the plan is written as fitted, so a plan fitted with temporal leakage stays leaky after reload.",
         ),
         anti_patterns=(
             "Treating a forecast bundle as a Session checkpoint or digital-twin state dump.",

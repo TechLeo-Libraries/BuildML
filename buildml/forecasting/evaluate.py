@@ -92,7 +92,7 @@ def evaluate_forecast(
     origin:
         Fixed origin at the end of prior partitions; recursive multi-step
         forecast of length ``len(partition)`` compared to holdout actuals.
-        Harder and often worse than rolling — disclosed.
+        Harder and often worse than rolling: disclosed.
     rolling_origin:
         Rolling-origin backtest: walk holdout in windows of ``plan.horizon``,
         scoring each window from an expanding history (train + prior holdout
@@ -101,7 +101,7 @@ def evaluate_forecast(
     Metrics
     ^^^^^^^
     MAE, RMSE, and MAPE (MAPE undefined / NaN when all actuals are ~0).
-    MAPE is scale-sensitive and unstable near zero — disclosed limitation.
+    MAPE is scale-sensitive and unstable near zero: disclosed limitation.
     """
     if split_plan is None:
         raise ValidationError(

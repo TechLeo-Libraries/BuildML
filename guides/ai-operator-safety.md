@@ -9,7 +9,7 @@
 
 The AI operator guides classical / RAG / Torch workflows through a typed tool
 registry. Default policy is **advisor → plan → propose → confirm → execute**.
-Autonomy is opt-in automation under hard caps — not unconstrained agency.
+Autonomy is opt-in automation under hard caps: not unconstrained agency.
 
 Short on-ramp: [quickstart-ai](quickstart-ai.md). Tool catalog:
 [ai-tools-operator-patterns](ai-tools-operator-patterns.md).
@@ -21,17 +21,17 @@ Short on-ramp: [quickstart-ai](quickstart-ai.md). Tool catalog:
 LLMs invent APIs, skip splits, and exfiltrate rows when given raw data. BuildML
 binds the operator to:
 
-1. **Allowlisted tools only** — unknown tools raise `ValidationError`.
-2. **Egress manifests** — preview what leaves the machine before calls.
-3. **Confirmation** — write/destructive tools require `confirm=True`.
-4. **Budgets** — token / cost / iteration caps.
-5. **Transcripts** — audit trail without persisting API keys.
+1. **Allowlisted tools only**: unknown tools raise `ValidationError`.
+2. **Egress manifests**: preview what leaves the machine before calls.
+3. **Confirmation**: write/destructive tools require `confirm=True`.
+4. **Budgets**: token / cost / iteration caps.
+5. **Transcripts**: audit trail without persisting API keys.
 
 Advice remains fallible. Domain roles, splits, and metrics still need human review.
 
 ---
 
-## Use case A — Configure, preview egress, dry-run
+## Use case A: Configure, preview egress, dry-run
 
 ```python
 import pandas as pd
@@ -70,7 +70,7 @@ Sample egress without `confirm=True` → `ValidationError`.
 
 ---
 
-## Use case B — Advisor (read-only)
+## Use case B: Advisor (read-only)
 
 ```python
 session.set_roles({"age": "feature", "income": "feature", "approved": "target"})
@@ -82,7 +82,7 @@ The advisor cannot execute Session mutations.
 
 ---
 
-## Use case C — Plan then confirmed execute
+## Use case C: Plan then confirmed execute
 
 ```python
 plan = session.ai_plan("Split stratified and impute median for classification")
@@ -105,7 +105,7 @@ print(result.executed)
 
 ---
 
-## Use case D — Run a multi-step plan with gates
+## Use case D: Run a multi-step plan with gates
 
 ```python
 execution = session.ai_run_plan(
@@ -124,7 +124,7 @@ be silently auto-approved.
 
 ---
 
-## Use case E — Explicit autonomy (residual risk)
+## Use case E: Explicit autonomy (residual risk)
 
 ```python
 session.ai_configure(provider="mock", egress_level="stats_only")
@@ -169,8 +169,8 @@ Transcript ≠ checkpoint ≠ Torch/RAG bundle
   as untrusted. The tool registry is the trust boundary.
 - **Never put secrets in prompts** or columns you egress.
 - **Verify advice** before confirming writes.
-- **Provider sees approved egress** — BuildML cannot protect a compromised provider.
-- **Not LLM fine-tuning** — the operator guides BuildML workflows only.
+- **Provider sees approved egress**: BuildML cannot protect a compromised provider.
+- **Not LLM fine-tuning**: the operator guides BuildML workflows only.
 
 ---
 
@@ -182,7 +182,7 @@ Transcript ≠ checkpoint ≠ Torch/RAG bundle
 | Sample egress without confirm | `ValidationError` |
 | Unknown tool | Rejected by registry |
 | Autonomy without `confirm_autonomy=True` | Refused |
-| Confusing advisor with `eda_app` | Different products — studio is local/offline |
+| Confusing advisor with `eda_app` | Different products: studio is local/offline |
 
 ---
 

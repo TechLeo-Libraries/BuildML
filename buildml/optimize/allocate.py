@@ -336,7 +336,7 @@ def select_lp_allocate(
 
     Maximizes weighted value subject to total cost and per-item fraction
     caps. Zero-cost positive-value items receive the maximum fraction for
-    free. This is a fractional knapsack helper — not a general MIP platform.
+    free. This is a fractional knapsack helper: not a general MIP platform.
 
     Parameters
     ----------
@@ -493,7 +493,7 @@ def _integerize_costs(
         scaled_budget = int(np.floor(budget * scale + 1e-9))
         if np.max(np.abs(costs * scale - scaled)) <= 1e-6:
             return scale, scaled.astype(int), scaled_budget, True
-    # Not near-integral — mark inexact (caller may fall back)
+    # Not near-integral: mark inexact (caller may fall back)
     scale = 100.0
     scaled = np.maximum(np.rint(costs * scale), 0).astype(int)
     scaled_budget = int(np.floor(budget * scale + 1e-9))

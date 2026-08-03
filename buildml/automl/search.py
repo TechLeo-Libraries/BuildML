@@ -171,10 +171,10 @@ def run_automl(
         ``randomized`` (default, no extra), ``grid`` (small exhaustive catalog),
         ``optuna`` (requires ``buildml[automl]``), or ``evolutionary`` (in-tree GA).
     selection:
-        ``cv`` — rank by train-fold CV;
-        ``nested`` — outer train folds after inner selection (honest post-selection
+        ``cv``: rank by train-fold CV;
+        ``nested``: outer train folds after inner selection (honest post-selection
         estimate) then refit best globally;
-        ``validation`` — rank on Session validation (never test). Requires a
+        ``validation``: rank on Session validation (never test). Requires a
         validation partition.
     n_trials:
         Maximum number of candidate trials to evaluate under the trial budget.
@@ -243,7 +243,7 @@ def run_automl(
     -----
     **Leakage:** Session test never enters selection. Fold-local recipes refit
     on fold-train only. This is **not** NAS, not causal discovery, and not a
-    fully automated AI scientist — the search space is a disclosed finite
+    fully automated AI scientist: the search space is a disclosed finite
     catalog under a trial budget.
     """
     assert_fit_partition(split_plan, "train")
@@ -278,7 +278,7 @@ def run_automl(
         budget.max_time_seconds = float(time_budget)
     n_trials = min(int(n_trials), int(budget.max_trials))
 
-    # Industry adapters — train-only, disclosed internal preprocessing.
+    # Industry adapters: train-only, disclosed internal preprocessing.
     if backend == "flaml":
         from buildml.automl.adapters.flaml import run_flaml_adapter
 
@@ -1568,7 +1568,7 @@ def _disclosures(
     tips = [
         (
             "AutoML searches a finite disclosed catalog of model families and "
-            "fold-local preprocess strategies — not neural architecture search (NAS), "
+            "fold-local preprocess strategies: not neural architecture search (NAS), "
             "not causal discovery, and not a fully automated AI scientist."
         ),
         (
@@ -1642,7 +1642,7 @@ def _limitations(
         ),
         "Default catalogs omit deep nets and arbitrary sklearn Pipeline DAGs.",
         (
-            "Recipe strategy search covers impute/scale/encode/select combinations — "
+            "Recipe strategy search covers impute/scale/encode/select combinations: "
             "not arbitrary preprocess graphs."
         ),
         (

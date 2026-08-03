@@ -68,4 +68,4 @@ session.fit_ssl_pretext(
 )
 ```
 
-**Deprecated:** `method="masked_tabular"` (sklearn MLP) — migrate to Torch methods.
+**Deprecated:** `method="masked_tabular"` (sklearn MLP): migrate to Torch methods.

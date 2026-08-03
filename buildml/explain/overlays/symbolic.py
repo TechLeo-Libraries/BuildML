@@ -96,7 +96,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split / preprocess; before evaluate_symbolic.",),
         alternatives=("fit_neuro_symbolic for sklearn + rule hybrid.",),
         rationale=(
-            "Ship readable tabular rules with traces — not Prolog/Z3/AGI.",
+            "Ship readable tabular rules with traces: not Prolog/Z3/AGI.",
         ),
         assumptions=("Numeric features available after encode/scale when inducing.",),
         failures=("Empty declared rules; missing columns; too-small train.",),
@@ -388,7 +388,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Separate learner artifact from Session checkpoint.",),
         assumptions=("Writable path.",),
         failures=("No plan attached.",),
-        leakage=("None — persistence only.",),
+        leakage=("None: persistence only.",),
         anti_patterns=("Expecting checkpoint_load to restore the plan.",),
         state_changes=("History record only.",),
         result_reading=("Confirm meta.json format and kind.",),

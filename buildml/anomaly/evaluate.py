@@ -199,7 +199,7 @@ ValidationError
     if plan.threshold_policy != "validation_tuned":
         recommendations.append(
             "When labels exist on validation, prefer session.tune_anomaly_threshold "
-            "(partition='validation') before final test evaluation — same leakage "
+            "(partition='validation') before final test evaluation: same leakage "
             "discipline as Session.tune_threshold."
         )
     if plan.used_reduce_components:
@@ -209,7 +209,7 @@ ValidationError
         )
     recommendations.append(
         "ClusterPlan labels (fit_clusters) are complementary structure signals, not "
-        "anomaly flags — do not conflate the APIs."
+        "anomaly flags: do not conflate the APIs."
     )
 
     return AnomalyEvalResult(

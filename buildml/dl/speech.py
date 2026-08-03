@@ -2,15 +2,15 @@
 
 Two things live here, and they answer different questions.
 
-**Transcription** turns audio into text. It runs an existing pretrained model —
-a Whisper-class Hugging Face pipeline — because a model that can transcribe
+**Transcription** turns audio into text. It runs an existing pretrained model :
+a Whisper-class Hugging Face pipeline: because a model that can transcribe
 general speech was trained on hundreds of thousands of hours of audio, and
 nothing you do in a Session will reproduce that. A deterministic stub backend
 exists so tests can exercise the plumbing offline; its output is nonsense and is
 labelled as such.
 
 **Classification** trains a small encoder on your labelled audio to predict a
-category. Not what was said, but which class the clip belongs to — a speaker, a
+category. Not what was said, but which class the clip belongs to: a speaker, a
 sound type, a quality judgement. The encoder is a small 1D-CNN, trained from
 scratch on your data, and it is honest about being small.
 
@@ -117,7 +117,7 @@ def domain_adapt_speech_disclosures() -> tuple[str, ...]:
     """
     return (
         "domain_adapt_speech_torch is finetune-lite / domain adapt on a small "
-        "Session corpus — not continued pretrain of a foundation model.",
+        "Session corpus: not continued pretrain of a foundation model.",
         "For Whisper-class ASR weights use transcribe_speech(backend='transformers') "
         "or load_pretrained_backbone(modality='speech'); BuildML will not "
         "pretrain those stacks from scratch.",
@@ -147,7 +147,7 @@ class SpeechLoaderConfig:
         Target rate in Hz. Clips at other rates are resampled.
     max_samples:
         Waveform length after padding or truncation. At 16 kHz, the default is
-        one second — raise it for longer clips, at a cost in memory and time.
+        one second: raise it for longer clips, at a cost in memory and time.
     source_sample_rate:
         The rate of incoming arrays, when supplied without one.
     normalize_audio:
@@ -271,7 +271,7 @@ class SpeechContract:
     def to_dict(self) -> dict[str, Any]:
         """Return the speech contract as JSON-safe values.
 
-        Complete and round-trippable — :meth:`from_dict` reconstructs an
+        Complete and round-trippable: :meth:`from_dict` reconstructs an
         equivalent contract, which is how a saved speech model gets its audio
         geometry back.
 
@@ -356,7 +356,7 @@ class AsrEvalResult:
     n_utterances:
         How many were compared.
     wer:
-        Word error rate — word-level edits divided by reference words. 0.0 is
+        Word error rate: word-level edits divided by reference words. 0.0 is
         perfect; values above 1.0 are possible when a hypothesis inserts more
         words than the reference contains.
     cer:
@@ -449,7 +449,7 @@ def evaluate_asr(
     Compares each hypothesis to its reference using Levenshtein edit distance,
     at both word and character level. Corpus rates are computed by pooling edits
     and reference lengths, which weights long utterances more heavily than
-    averaging per-utterance rates would — and is the standard definition.
+    averaging per-utterance rates would: and is the standard definition.
 
     Pure string comparison. No models, no audio, no downloads.
 
@@ -544,7 +544,7 @@ def evaluate_asr(
         n_ref_chars=n_ref_chars,
         per_utterance=tuple(per),
         disclosures=("WER/CER via Levenshtein edit distance.",),
-        limitations=("String metrics only — not a speech quality product.",),
+        limitations=("String metrics only: not a speech quality product.",),
     )
 
 
@@ -559,7 +559,7 @@ class SpeechTranscribeResult:
         ``'[asr-error]'`` rather than shifting the alignment.
     backend:
         ``'stub'`` or ``'transformers'``. **Check this before reading the
-        text** — stub output is a deterministic fingerprint, not speech.
+        text**: stub output is a deterministic fingerprint, not speech.
     model_id:
         Which model ran.
     n_rows:
@@ -738,7 +738,7 @@ def build_tiny_speech_encoder(
     has none of the acoustic knowledge a pretrained encoder brings, so it needs
     more labelled examples to reach a given accuracy and will not match
     Wav2Vec2 or HuBERT on most tasks. It is fast, dependency-free, and a
-    reasonable baseline — see :mod:`buildml.dl.zoo` when you want more.
+    reasonable baseline: see :mod:`buildml.dl.zoo` when you want more.
 
     **Global pooling discards timing entirely.** Two clips containing the same
     sounds in different orders produce similar representations, which is fine
@@ -799,7 +799,7 @@ def build_speech_classifier(
     sample_rate:
         Recorded on the encoder for reference.
     freeze_encoder:
-        Train only the head. Rarely useful here — a randomly initialised
+        Train only the head. Rarely useful here: a randomly initialised
         encoder has learned nothing worth preserving, so freezing it leaves the
         head classifying random projections. It exists for the case where you
         have loaded encoder weights from elsewhere.
@@ -907,7 +907,7 @@ def make_speech_loaders(
     contiguous ``0..K-1`` while the contract keeps your original ids.
 
     **Clips are padded or truncated to ``max_samples``.** The default of one
-    second at 16 kHz is short for many tasks — a longer clip loses everything
+    second at 16 kHz is short for many tasks: a longer clip loses everything
     past the first second, silently. Raise it to match your audio.
 
     Examples
@@ -1067,7 +1067,7 @@ def _stub_transcribe_one(wave: np.ndarray, *, sample_rate: int) -> str:
 
 def _load_transformers_asr(model_id: str) -> Any:
     transformers = require_speech_stack(feature="Speech ASR (transformers)")
-    # Prefer pipeline API — Whisper-class and compatible seq2seq ASR models.
+    # Prefer pipeline API: Whisper-class and compatible seq2seq ASR models.
     return transformers.pipeline(
         "automatic-speech-recognition",
         model=model_id,
@@ -1094,13 +1094,13 @@ def transcribe_audio_values(
     Parameters
     ----------
     values:
-        Audio cells — paths, ``Path`` objects, or waveform arrays.
+        Audio cells: paths, ``Path`` objects, or waveform arrays.
     backend:
         ``'stub'`` for offline placeholder text, ``'transformers'`` for real
         transcription.
     model_id:
         Hugging Face model id for the transformers backend. Defaults to a tiny
-        testing model, which downloads once and transcribes badly — name a real
+        testing model, which downloads once and transcribes badly: name a real
         model such as ``'openai/whisper-base'`` for actual use.
     sample_rate:
         Target rate in Hz. Whisper-class models expect 16 kHz.
@@ -1164,7 +1164,7 @@ def transcribe_audio_values(
     texts: list[str] = []
     resolved_model = model_id
     limitations = (
-        "Integration/finetune path — not training a foundation model from scratch.",
+        "Integration/finetune path: not training a foundation model from scratch.",
         "Stub backend is for tests/smoke only; do not treat stub text as real ASR.",
         "Transformers path may download weights; keep CI on stub or tiny fixtures.",
     )
@@ -1346,7 +1346,7 @@ def resolve_audio_paths(values: list[Any]) -> list[str]:
 
     Notes
     -----
-    For diagnostics only — nothing here decodes or validates the audio. A path
+    For diagnostics only: nothing here decodes or validates the audio. A path
     that does not exist passes through unchanged.
 
     Examples

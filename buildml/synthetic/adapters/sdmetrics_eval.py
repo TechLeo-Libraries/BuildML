@@ -58,7 +58,7 @@ tuple[dict[str, float], list[str]]
                 if prop and score is not None:
                     key = f"sdmetrics_{prop.lower().replace(' ', '_')}"
                     metrics[key] = float(score)
-    except Exception as exc:  # noqa: BLE001 — SDMetrics API drift across versions
+    except Exception as exc:  # noqa: BLE001: SDMetrics API drift across versions
         warnings.append(f"SDMetrics property breakdown unavailable: {exc}")
 
     return metrics, warnings

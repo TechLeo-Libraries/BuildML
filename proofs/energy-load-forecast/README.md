@@ -6,7 +6,7 @@ Forecast hourly grid load using temperature and lag features with an honest chro
 
 ## Data source
 
-In-repo synthetic hourly energy load (`load_energy_load_synthetic`) — license-clear, deterministic. **Not** a real ISO / utility extract.
+In-repo synthetic hourly energy load (`load_energy_load_synthetic`): license-clear, deterministic. **Not** a real ISO / utility extract.
 
 ## Leakage controls
 
@@ -30,7 +30,7 @@ Primary holdout: MAE, RMSE, MAPE (rolling one-step) on test.
 
 ## Industry comparison (Tier C)
 
-Filled — seasonal naive (period=24) or Ridge lag twin selected on validation via `baseline_industry.py` → `results/comparison.json`.
+Filled: seasonal naive (period=24) or Ridge lag twin selected on validation via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

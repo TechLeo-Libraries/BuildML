@@ -9,7 +9,7 @@ classification problem, continuous ones a regression problem.
 The framing matters more than the machinery. **Cloning learns to reproduce the
 demonstrations, not to succeed.** If the demonstrator was mediocre, the clone is
 mediocre in the same way, and no amount of accuracy on holdout rows will reveal
-that — high agreement with a poor demonstrator is still a poor policy. Accuracy
+that: high agreement with a poor demonstrator is still a poor policy. Accuracy
 here answers "does it act like the demonstrator", never "does it act well".
 
 The second limit is subtler and specific to policies. A cloned policy acting in
@@ -104,8 +104,8 @@ def fit_imitation(
 ) -> tuple[ImitationPlan, ImitationFitResult]:
     """Learn to reproduce demonstrated actions from a table of examples.
 
-    Reads the training partition as demonstrations — each row a situation and
-    the action taken in it — and fits a model that predicts the action from the
+    Reads the training partition as demonstrations: each row a situation and
+    the action taken in it: and fits a model that predicts the action from the
     situation. Whether that is a classifier or a regressor follows from the
     action column: labelled or few-valued actions give classification, numeric
     ones give regression.
@@ -172,7 +172,7 @@ def fit_imitation(
     Notes
     -----
     **``train_score`` measures agreement with the demonstrator, in-sample.** It
-    is not a measure of whether the policy is any good — a clone that perfectly
+    is not a measure of whether the policy is any good: a clone that perfectly
     reproduces bad decisions scores 1.0. Judge the demonstrator separately;
     cloning can only inherit its quality.
 
@@ -254,7 +254,7 @@ def fit_imitation(
         [
             "Behavioral cloning fits a supervised policy on train demonstrations only.",
             "Validation/test are never used to fit the cloning policy.",
-            "Honesty: BC from tables — not inverse RL, not DAgger, not a robotics stack.",
+            "Honesty: BC from tables: not inverse RL, not DAgger, not a robotics stack.",
             f"Action column={action_col!r}; task={resolved_task}; "
             f"estimator={resolved_estimator}.",
         ]
@@ -442,7 +442,7 @@ def predict_imitation_action(
     """Ask the cloned policy what it would do in each row's situation.
 
     Applies the fitted policy to a partition and returns one action per row. No
-    demonstrated action is needed — this is what you call in production, where
+    demonstrated action is needed: this is what you call in production, where
     the right answer is not known.
 
     Parameters
@@ -543,7 +543,7 @@ def evaluate_imitation(
     ------
     ValidationError
         If the action column is missing from the partition, or if
-        classification actions contain nulls — there is no defensible way to
+        classification actions contain nulls: there is no defensible way to
         score a prediction against an unknown action.
 
     Notes

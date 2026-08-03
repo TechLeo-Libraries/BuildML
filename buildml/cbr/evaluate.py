@@ -2,7 +2,7 @@
 
 Evaluation matters unusually much here, and for an unusual reason. A case base
 contains its training rows, so predicting them returns each row's own solution
-at distance zero — a near-perfect score that measures storage rather than
+at distance zero: a near-perfect score that measures storage rather than
 reasoning. Only a partition held out of the case base says anything.
 
 Alongside the metrics, evaluation reports the mean distance to retrieved
@@ -88,7 +88,7 @@ def evaluate_cbr(
 
     **Read ``mean_neighbor_distance`` next to the metrics.** It is the
     difference between a score that describes interpolation and one that
-    describes extrapolation, and there is no absolute threshold — compare it
+    describes extrapolation, and there is no absolute threshold: compare it
     against the distances seen within the training data.
 
     Examples
@@ -141,7 +141,7 @@ def evaluate_cbr(
         metrics=metrics,
         mean_neighbor_distance=mean_dist,
         disclosures=(
-            "Holdout evaluation only — case memory was not updated from this "
+            "Holdout evaluation only: case memory was not updated from this "
             "partition.",
             *plan.disclosures[:2],
         ),

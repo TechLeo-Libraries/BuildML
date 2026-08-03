@@ -9,7 +9,7 @@ Industry-depth coverage:
 Dependency policy: core numpy/pandas/sklearn temporal guards. Industry defaults
 when ``buildml[timeseries]`` installed (statsmodels, scipy, ruptures).
 
-Lazy imports — core never grows heavy time-series stacks.
+Lazy imports: core never grows heavy time-series stacks.
 """
 
 from __future__ import annotations

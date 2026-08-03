@@ -3,7 +3,7 @@
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 
-Industry depth (R6.1): scarce-label classification with unlabeled train features —
+Industry depth (R6.1): scarce-label classification with unlabeled train features :
 not anomaly novelty, not self-supervised pretext, not active learning.
 
 ## Contract
@@ -78,8 +78,8 @@ session.fit_semisupervised(
 )
 ```
 
-- `finetune_ssl_head` — labeled train rows only (supervised head).
-- `fit_semisupervised` — uses unlabeled train rows via propagation/pseudo-labels.
+- `finetune_ssl_head`: labeled train rows only (supervised head).
+- `fit_semisupervised`: uses unlabeled train rows via propagation/pseudo-labels.
 
 ## Leakage discipline
 

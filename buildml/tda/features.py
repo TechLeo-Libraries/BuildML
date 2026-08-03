@@ -198,7 +198,7 @@ def standardize_fit(x: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 def standardize_apply(x: np.ndarray, mean: np.ndarray, scale: np.ndarray) -> np.ndarray:
     """Apply train-fitted standardization to a holdout design matrix.
 
-    Uses mean and scale vectors from :func:`standardize_fit` — never recomputes
+    Uses mean and scale vectors from :func:`standardize_fit`: never recomputes
     statistics on holdout rows.
 
     Parameters
@@ -206,7 +206,7 @@ def standardize_apply(x: np.ndarray, mean: np.ndarray, scale: np.ndarray) -> np.
     x:
         Holdout design matrix.
     mean, scale:
-        Vectors from :func:`standardize_fit` on train — never refit on holdout.
+        Vectors from :func:`standardize_fit` on train: never refit on holdout.
 
     Returns
     -------

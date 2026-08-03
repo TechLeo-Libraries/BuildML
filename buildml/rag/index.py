@@ -2,7 +2,7 @@
 
 Building an index is three steps: cut documents into chunks, embed the chunks,
 store the vectors. What makes it worth its own module is everything around
-those steps — the leakage refusal, the disclosures, and the incremental updates.
+those steps: the leakage refusal, the disclosures, and the incremental updates.
 
 The leakage refusal comes first. Indexing an ``eval_only`` document means every
 subsequent retrieval metric measures a system that was shown the answers, so
@@ -41,7 +41,7 @@ class RagIndex:
 
     Holding the embedder alongside the vectors is what makes the rest work.
     Queries have to be embedded the same way the passages were, and updates have
-    to encode new chunks into the same space — keeping the model here means
+    to encode new chunks into the same space: keeping the model here means
     neither can be done with the wrong one by accident.
 
     Attributes
@@ -94,7 +94,7 @@ class RagIndex:
         """Assemble an index from its parts.
 
         Normally called by :func:`build_index` rather than directly. Nothing is
-        validated here — the components are assumed to be consistent, which they
+        validated here: the components are assumed to be consistent, which they
         are when the builder produced them.
 
         Parameters
@@ -165,7 +165,7 @@ class RagIndex:
     def to_index_result(self) -> IndexResult:
         """Describe the index without exposing its contents.
 
-        Counts, identities, and settings — enough to record what was built and
+        Counts, identities, and settings: enough to record what was built and
         to check compatibility, with no vectors and no text.
 
         Returns
@@ -217,7 +217,7 @@ class RagIndex:
         """Drop chunks or whole documents from the index.
 
         Surviving vectors are kept as they are, so removing outdated content
-        costs nothing beyond the removal itself — no re-embedding, no rebuild.
+        costs nothing beyond the removal itself: no re-embedding, no rebuild.
 
         Parameters
         ----------
@@ -403,7 +403,7 @@ class RagIndex:
 
         **Adding a document does not replace an earlier version of it** unless
         the chunk IDs coincide. When a document has been edited, delete it by
-        ``doc_id`` first — otherwise both versions are searchable and retrieval
+        ``doc_id`` first: otherwise both versions are searchable and retrieval
         can cite the stale one.
 
         Examples
@@ -451,7 +451,7 @@ def build_index(
     """Chunk, embed, and index a corpus in one call.
 
     The main entry point. Check the disclosures on the returned index before
-    drawing conclusions about retrieval quality — in particular whether a real
+    drawing conclusions about retrieval quality: in particular whether a real
     embedding model was used, since the fallback is not semantic and will miss
     every paraphrase.
 
@@ -498,7 +498,7 @@ def build_index(
     from such an index says nothing about your corpus.
 
     **Every chunk is embedded now.** On a large corpus with a real model this is
-    the slow step, and it is proportional to chunk count — which chunk size
+    the slow step, and it is proportional to chunk count: which chunk size
     controls.
 
     **The recorded dimension comes from the actual matrix**, not from what was

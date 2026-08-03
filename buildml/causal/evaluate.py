@@ -98,7 +98,7 @@ def evaluate_causal(
     warnings: list[str] = []
     disclosures = [
         f"Causal evaluate on partition={resolved!r} (backend={backend}).",
-        "Holdout metrics are predictive checks — not proof of unconfoundedness.",
+        "Holdout metrics are predictive checks: not proof of unconfoundedness.",
         "Identification remains the caller-declared CausalAssumptions "
         "(EDA is associational and does not identify effects).",
     ]
@@ -136,9 +136,9 @@ def evaluate_causal(
         except ValueError:
             warnings.append("Propensity Brier undefined on this partition.")
         if metrics["propensity_min"] <= plan.clip_propensity[0] + 1e-12:
-            warnings.append("Propensity hit clip floor on holdout — overlap concern.")
+            warnings.append("Propensity hit clip floor on holdout: overlap concern.")
         if metrics["propensity_max"] >= plan.clip_propensity[1] - 1e-12:
-            warnings.append("Propensity hit clip ceiling on holdout — overlap concern.")
+            warnings.append("Propensity hit clip ceiling on holdout: overlap concern.")
 
     if backend == "econml":
         from buildml.causal.adapters.econml import score_econml_partition
@@ -166,7 +166,7 @@ def evaluate_causal(
             random_state=getattr(plan, "config", {}).get("random_state"),
         )
         disclosures.append(
-            "DoWhy holdout ATE is a fresh backdoor estimate on the partition — "
+            "DoWhy holdout ATE is a fresh backdoor estimate on the partition: "
             "not the train ATE copied forward."
         )
     else:

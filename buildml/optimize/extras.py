@@ -39,7 +39,7 @@ def ortools_available() -> bool:
 def cvxpy_available() -> bool:
     """Return whether CVXPY appears installed for convex LP allocation.
 
-    Reflects ``importlib.util.find_spec`` only — broken wheels may still fail
+    Reflects ``importlib.util.find_spec`` only: broken wheels may still fail
     at :func:`require_cvxpy` time. Prefer native linprog unless convex hooks
     are explicitly needed.
 

@@ -6,7 +6,7 @@ deviation, and pull a regression line toward itself hard enough to worsen
 predictions for every ordinary row.
 
 But "far from the rest" is a statistical judgement, not a verdict on
-correctness. Some outliers are data errors — a decimal point in the wrong
+correctness. Some outliers are data errors: a decimal point in the wrong
 place, a sentinel value nobody documented. Others are the most important rows
 you have: in fraud detection and equipment failure, the extreme *is* the
 signal, and removing it removes the thing you were trying to predict. Nothing
@@ -18,7 +18,7 @@ anything more than a multiple of the middle-50% spread beyond the quartiles; it
 makes no assumption about the shape of the distribution and is not itself
 distorted by the extremes it is looking for. The **z-score** approach marks
 anything more than a number of standard deviations from the mean, which is
-cleaner when data really is bell-shaped but has a circularity problem — the
+cleaner when data really is bell-shaped but has a circularity problem: the
 outliers inflate the standard deviation that is supposed to detect them, so
 severe ones can hide.
 
@@ -64,9 +64,9 @@ class OutlierPlan:
     columns:
         The numeric columns this plan covers.
     method:
-        ``'iqr'`` or ``'zscore'`` — how the fences were derived.
+        ``'iqr'`` or ``'zscore'``: how the fences were derived.
     action:
-        ``'detect'``, ``'cap'``, or ``'drop'`` — what happens to a flagged
+        ``'detect'``, ``'cap'``, or ``'drop'``: what happens to a flagged
         value.
     lower_:
         Lower fence per column. Anything below it is flagged.
@@ -139,7 +139,7 @@ def fit_outlier_plan(
     """Work out where "normal" ends for each column, using the training rows.
 
     Computes a lower and upper fence per column and counts how many training
-    rows fall outside them. Nothing is changed yet — pass the plan to
+    rows fall outside them. Nothing is changed yet: pass the plan to
     :func:`apply_outlier_plan` to act on it, which is deliberately a separate
     step so you can inspect the fences first.
 
@@ -153,7 +153,7 @@ def fit_outlier_plan(
         extreme.
     columns:
         Which numeric columns to examine. Defaults to numeric ``feature``
-        columns. Naming columns explicitly is often wiser here — a column of
+        columns. Naming columns explicitly is often wiser here: a column of
         counts where most values are zero will look full of outliers under any
         general rule.
     method:
@@ -170,7 +170,7 @@ def fit_outlier_plan(
         What :func:`apply_outlier_plan` will do, recorded now so the plan is
         self-describing.
 
-        ``'detect'`` changes nothing and only reports — start here.
+        ``'detect'`` changes nothing and only reports: start here.
         ``'cap'`` (the default) pulls flagged values back to the fence, which
         keeps the row and its other columns while removing the distortion.
         This is winsorising, and it is usually the right answer.
@@ -293,7 +293,7 @@ def apply_outlier_plan(
 
     What happens depends on ``plan.action``. Detecting changes nothing and just
     reports. Capping clips flagged values to their fence. Dropping removes the
-    flagged rows — and because that renumbers everything, the split plan has to
+    flagged rows: and because that renumbers everything, the split plan has to
     be rebuilt so its partitions still point at the right rows, which is why a
     new split plan comes back rather than the one you passed in.
 
@@ -310,7 +310,7 @@ def apply_outlier_plan(
     Returns
     -------
     tuple
-        ``(dataset, split_plan, outlier_plan, result)`` —
+        ``(dataset, split_plan, outlier_plan, result)`` :
         the dataset after the action; the split plan to use from now on; an
         updated copy of the plan with ``n_dropped`` filled in; and a narrated
         record of what was flagged and what was done.
@@ -326,7 +326,7 @@ def apply_outlier_plan(
     -----
     **Use the returned split plan.** After a drop, the one you passed in refers
     to row positions that no longer exist. Continuing with the old plan is a
-    silent correctness bug, so replace your reference with the returned one —
+    silent correctness bug, so replace your reference with the returned one :
     the session-level API does this for you.
 
     **Capping creates spikes.** Every clipped value lands exactly on the fence,

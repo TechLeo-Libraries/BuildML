@@ -103,7 +103,7 @@ def local_point_cloud(
 
     Each tabular row becomes a small Euclidean neighborhood in feature space;
     persistent homology runs on that cloud. Neighbors always come from the frozen
-    train matrix — holdout rows never enter the index.
+    train matrix: holdout rows never enter the index.
 
     Parameters
     ----------

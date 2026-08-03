@@ -2,7 +2,7 @@
 
 Practical Session-facing **federated learning simulation** for research,
 teaching, and workflows. Both backends are honest **local simulations** on
-Session data — not turnkey production FL networking, and **no** cryptographic
+Session data: not turnkey production FL networking, and **no** cryptographic
 secure aggregation.
 
 ## What BuildML means by “federated”
@@ -97,7 +97,7 @@ computation, or cryptographic secure aggregation from either backend.
 
 `buildml.federated_bundle.v1` stores `FederatedPlan` (global estimator +
 client contract + round history + `backend`). Session checkpoints store
-data/roles/splits/history — they do **not** embed the federated model.
+data/roles/splits/history: they do **not** embed the federated model.
 Reload tabular workflow via `checkpoint_load`; reload the learner via
 `load_federated_bundle`.
 

@@ -1,7 +1,7 @@
 """Documented Python/platform markers for fragile industry extras.
 
 Capability matrices and ``scripts/probe_industry_extras.py`` should surface the
-same skip reasons. BuildML cannot ship missing upstream wheels — these helpers
+same skip reasons. BuildML cannot ship missing upstream wheels: these helpers
 only make marker-driven skips explicit at runtime.
 """
 

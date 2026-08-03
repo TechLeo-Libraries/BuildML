@@ -13,7 +13,7 @@ Two things consume it:
 * Authors reference entries by key when a note needs a specific term surfaced
   even though the exact string never appears in the prose.
 
-Entries are intentionally short. A glossary entry is a bridge, not a lesson —
+Entries are intentionally short. A glossary entry is a bridge, not a lesson :
 when a term deserves a lesson it also has a concept note, wired through
 ``CONCEPT_FOR_TERM``.
 """
@@ -36,17 +36,17 @@ def _term(
 
 _ENTRIES: tuple[GlossaryTerm, ...] = (
     # ---- data and framing ------------------------------------------------
-    _term("row", "One record in your table — one customer, one transaction, one day, one sensor reading. Machine learning almost always learns by comparing many rows.", "observation", "sample", "instance"),
+    _term("row", "One record in your table: one customer, one transaction, one day, one sensor reading. Machine learning almost always learns by comparing many rows.", "observation", "sample", "instance"),
     _term("column", "One measured property shared by every row, such as age or price.", "field", "variable", "attribute"),
     _term("feature", "A column the model is allowed to look at when making a prediction. Features are the inputs.", "predictor", "independent variable", "covariate"),
     _term("target", "The column you want the model to predict. It is the answer key during training.", "label", "outcome", "dependent variable", "response"),
-    _term("role", "A label BuildML puts on a column saying how it may be used — feature, target, identifier, group, time, weight, or ignored. Roles matter more than the data type.", "column role"),
+    _term("role", "A label BuildML puts on a column saying how it may be used: feature, target, identifier, group, time, weight, or ignored. Roles matter more than the data type.", "column role"),
     _term("dtype", "The storage type of a column, such as integer or text. It says how the value is stored, not what it means.", "data type"),
     _term("cardinality", "How many distinct values a column has. 'High cardinality' means lots of unique values, like customer IDs.", "n_unique"),
     _term("categorical", "A column whose values are named groups rather than quantities, such as country or product type.", "nominal", "category column"),
     _term("numeric", "A column holding quantities you can meaningfully add or compare, such as price or age.", "continuous"),
     _term("ordinal", "A category with a real order, such as small / medium / large. The order carries meaning; the spacing usually does not.", "ordered category"),
-    _term("missing value", "A blank cell. It may mean 'not measured', 'not applicable', or 'lost' — and those are different problems.", "null", "NaN", "NA"),
+    _term("missing value", "A blank cell. It may mean 'not measured', 'not applicable', or 'lost': and those are different problems.", "null", "NaN", "NA"),
     _term("imputation", "Filling blank cells with a substitute value learned from the training rows, such as the median.", "impute", "fill-in"),
     _term("encoding", "Turning category names into numbers a model can consume, because most estimators only read numbers.", "encode"),
     _term("one-hot encoding", "Replacing one category column with one yes/no column per category, so no fake numeric order is invented.", "dummy variables", "one-hot"),
@@ -55,7 +55,7 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("scaling", "Rewriting numeric columns onto a common range so that a column measured in millions does not automatically dominate one measured in units.", "standardization", "normalization", "scale", "feature scaling"),
     _term("binning", "Replacing a numeric value with the named range it falls into, such as turning age into age bands.", "discretization", "bucketing"),
     _term("outlier", "A value far away from the rest. It might be an error, or it might be the most important row you have.", "extreme value"),
-    _term("skew", "A lopsided distribution — most values bunched on one side with a long tail on the other.", "skewness"),
+    _term("skew", "A lopsided distribution: most values bunched on one side with a long tail on the other.", "skewness"),
     _term("distribution", "The overall shape of the values in a column: what is common, what is rare, and how spread out they are."),
     _term("correlation", "A number between -1 and 1 saying how tightly two columns move together in a straight line. It never proves one causes the other."),
     _term("multicollinearity", "Several features carrying nearly the same information, which makes each one's individual contribution impossible to pin down.", "collinearity"),
@@ -67,9 +67,9 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("design matrix", "The final all-numeric table handed to the estimator after every transform has run."),
     _term("schema", "The agreed list of column names, types, and meanings. Training and scoring must share one."),
     # ---- splitting, leakage, evaluation ----------------------------------
-    _term("split", "Dividing rows into groups — typically train, validation, and test — so you can measure performance on rows the model never learned from.", "partition", "data split"),
+    _term("split", "Dividing rows into groups: typically train, validation, and test: so you can measure performance on rows the model never learned from.", "partition", "data split"),
     _term("train", "The rows the model is allowed to learn from. Every learned statistic must come from here.", "training set", "training partition"),
-    _term("validation", "The rows used to compare options — which model, which settings, which threshold — while you are still deciding.", "dev set", "validation partition"),
+    _term("validation", "The rows used to compare options: which model, which settings, which threshold: while you are still deciding.", "dev set", "validation partition"),
     _term("test", "The rows held back untouched until every choice is locked, used once to estimate real-world performance.", "test partition"),
     _term("holdout", "Any rows deliberately kept out of training so they can give an honest score. Validation and test rows are both holdouts; 'test' is the stricter one you only look at once."),
     _term("leakage", "When information the model could not possibly have at prediction time sneaks into training. It produces great scores and terrible reality.", "data leakage", "target leakage"),
@@ -84,7 +84,7 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("underfitting", "A model too simple to capture the real pattern, so it does poorly everywhere including on training rows.", "underfit"),
     _term("generalization", "How well a model performs on rows it has never seen. It is the only performance that matters."),
     _term("bias-variance tradeoff", "The tension between a model too rigid to fit the truth and a model so flexible it fits the noise."),
-    _term("baseline", "The dumbest reasonable prediction — always guessing the most common class, or always guessing the average. If your model cannot beat it, it is not adding value."),
+    _term("baseline", "The dumbest reasonable prediction: always guessing the most common class, or always guessing the average. If your model cannot beat it, it is not adding value."),
     _term("metric", "A single number summarizing how good predictions are. Every metric hides something, so always read it with its partition and baseline.", "score"),
     _term("accuracy", "The share of predictions that were correct. Misleading when one class is rare: predicting 'no' always can score 99%."),
     _term("precision", "Of the rows the model flagged, how many were genuinely positive. It answers 'when it says yes, can I trust it?'"),
@@ -102,7 +102,7 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("class imbalance", "One outcome being far rarer than the other, which breaks accuracy and default thresholds.", "imbalanced"),
     _term("resampling", "Changing how often each class appears in the *training* rows, by duplicating rare rows or dropping common ones.", "oversampling", "undersampling", "SMOTE"),
     _term("drift", "The data changing over time or between populations, so a model trained on yesterday no longer matches today.", "dataset drift", "distribution shift"),
-    _term("error slice", "A subgroup of rows — a region, a channel, an age band — where the model is much worse than average.", "slice"),
+    _term("error slice", "A subgroup of rows: a region, a channel, an age band: where the model is much worse than average.", "slice"),
     _term("confidence interval", "A range that plausibly contains the true value, given how much data you have. It is how you avoid over-reading a single number."),
     _term("statistical significance", "Evidence that an observed difference is unlikely to be pure chance. It does not mean the difference is large or useful."),
     _term("p-value", "How surprising your data would be if nothing were really going on. Small means surprising; it is not the probability that you are right."),
@@ -115,7 +115,7 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("hyperparameter", "A setting you choose *before* training, like tree depth or learning rate, as opposed to something the model learns.", "hyperparameters", "tuning parameter"),
     _term("parameter", "A number the model learns during training, such as a regression coefficient."),
     _term("grid search", "Trying every combination in a list of candidate settings and keeping the best-scoring one.", "GridSearchCV"),
-    _term("randomized search", "Sampling random combinations of settings instead of trying all of them — usually much cheaper for similar quality.", "RandomizedSearchCV"),
+    _term("randomized search", "Sampling random combinations of settings instead of trying all of them: usually much cheaper for similar quality.", "RandomizedSearchCV"),
     _term("Bayesian optimization", "Search that learns from earlier trials to decide which settings to try next, instead of guessing blindly.", "Optuna", "TPE"),
     _term("regularization", "Deliberately penalizing complexity so the model prefers simpler explanations and overfits less.", "L1", "L2", "penalty", "ridge", "lasso"),
     _term("linear model", "A model that adds up weighted feature values. Fast, interpretable, and blind to interactions you do not build for it.", "linear regression", "logistic regression"),
@@ -145,18 +145,18 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("backbone", "A large model pretrained on generic data, reused as a starting point for your specific task.", "pretrained model", "foundation model"),
     _term("fine-tuning", "Continuing to train a pretrained model on your own data so it adapts to your task.", "finetune"),
     _term("transfer learning", "Reusing what a model learned on one problem to get a head start on another."),
-    _term("checkpoint", "A saved snapshot of workflow state — data, roles, split membership, history — so you can resume later."),
+    _term("checkpoint", "A saved snapshot of workflow state: data, roles, split membership, history: so you can resume later."),
     _term("bundle", "A saved artifact holding a fitted plan plus the contract needed to reuse it correctly."),
     _term("serialization", "Writing an in-memory object to disk so it can be loaded back later.", "joblib", "pickle"),
-    _term("reproducibility", "Being able to recreate a result exactly, which needs seeds, versions, inputs, and recorded choices — not just the code."),
+    _term("reproducibility", "Being able to recreate a result exactly, which needs seeds, versions, inputs, and recorded choices: not just the code."),
     # ---- specialized domains ---------------------------------------------
     _term("clustering", "Grouping rows that resemble each other, without being told what the groups are.", "cluster", "k-means", "DBSCAN"),
-    _term("centroid", "The average position of a cluster — its center of mass."),
+    _term("centroid", "The average position of a cluster: its center of mass."),
     _term("silhouette", "A score from -1 to 1 saying how much better each row fits its own cluster than the nearest other one. Geometry, not truth.", "silhouette score"),
     _term("unsupervised", "Learning structure from data with no target column to check against.", "unsupervised learning"),
     _term("supervised", "Learning from examples that already carry the right answer.", "supervised learning"),
     _term("semi-supervised", "Learning from a small labeled set plus a large unlabeled one.", "semisupervised", "label propagation", "self-training"),
-    _term("self-supervised", "Creating a training signal from the data itself — hide part of the input and predict it — so no human labels are needed.", "SSL", "pretext task"),
+    _term("self-supervised", "Creating a training signal from the data itself: hide part of the input and predict it: so no human labels are needed.", "SSL", "pretext task"),
     _term("active learning", "Letting the model choose which unlabeled rows a human should label next, to spend labeling effort where it helps most."),
     _term("pseudo-label", "A model-generated label used as if it were real. Useful and dangerous in equal measure."),
     _term("online learning", "Updating a model incrementally as new data arrives, instead of retraining from scratch.", "partial_fit", "incremental learning", "continual learning"),
@@ -169,7 +169,7 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("exogenous", "An outside driver used to help a forecast, such as price or weather. Using it for the future requires knowing its future values.", "exog"),
     _term("stationarity", "A series whose statistical behavior does not drift over time. Many classical forecasting methods assume it."),
     _term("causal inference", "Estimating what *would* happen if you intervened, which is a strictly stronger claim than noticing a correlation.", "causal"),
-    _term("treatment", "The intervention whose effect you want to measure — the coupon sent, the drug given, the change shipped."),
+    _term("treatment", "The intervention whose effect you want to measure: the coupon sent, the drug given, the change shipped."),
     _term("confounder", "Something that influences both the treatment and the outcome, faking an effect if you ignore it.", "confounding"),
     _term("ATE", "Average treatment effect: how much the outcome changes on average if everyone got the treatment versus nobody.", "average treatment effect"),
     _term("propensity", "The estimated probability that a row received the treatment, given its features.", "propensity score"),
@@ -177,11 +177,11 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("doubly robust", "An estimator that stays correct if *either* the outcome model or the treatment model is right, not necessarily both.", "AIPW"),
     _term("unconfoundedness", "The assumption that you measured every common cause of treatment and outcome. It is an assumption, never a result.", "ignorability"),
     _term("positivity", "The assumption that every kind of row had some real chance of getting either treatment.", "overlap"),
-    _term("graph", "Data described as nodes joined by edges — users and friendships, papers and citations, accounts and transfers.", "network"),
-    _term("node", "One entity in a graph — a person, an account, a page. Where a table would give it a row, a graph gives it a point with connections.", "vertex"),
+    _term("graph", "Data described as nodes joined by edges: users and friendships, papers and citations, accounts and transfers.", "network"),
+    _term("node", "One entity in a graph: a person, an account, a page. Where a table would give it a row, a graph gives it a point with connections.", "vertex"),
     _term("edge", "One connection between two nodes in a graph, such as 'follows', 'paid', or 'links to'. The connections are the data, not decoration.", "link"),
     _term("GNN", "Graph neural network: a model that lets each node's prediction depend on its neighbors.", "graph neural network", "GCN", "GraphSAGE", "GAT"),
-    _term("transductive", "Training with the whole graph structure visible, including the nodes you will predict — only their labels are hidden."),
+    _term("transductive", "Training with the whole graph structure visible, including the nodes you will predict: only their labels are hidden."),
     _term("inductive", "Training on a subgraph only, so the model must generalize to nodes it never saw."),
     _term("PageRank", "A score of node importance based on how many important nodes point at it."),
     _term("knowledge graph", "Facts stored as (head, relation, tail) triples, such as (Paris, capital_of, France).", "KG", "triples"),
@@ -194,10 +194,10 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("matrix factorization", "Discovering hidden user and item traits by factoring the interaction table into two smaller ones.", "ALS", "BPR", "latent factors"),
     _term("implicit feedback", "Signals like clicks and views, where you see what happened but never see an explicit rating or a confirmed 'no'."),
     _term("reinforcement learning", "Learning by trying actions and observing rewards, rather than from labeled examples.", "RL"),
-    _term("agent", "The decision-maker in reinforcement learning — the thing choosing actions."),
-    _term("policy", "The rule mapping a situation to an action — the agent's strategy, and the thing reinforcement learning is trying to improve."),
+    _term("agent", "The decision-maker in reinforcement learning: the thing choosing actions."),
+    _term("policy", "The rule mapping a situation to an action: the agent's strategy, and the thing reinforcement learning is trying to improve."),
     _term("reward", "The numeric feedback telling the agent how good an outcome was."),
-    _term("episode", "One complete run from a starting situation to an end — a whole game, a whole session, a whole journey. Reinforcement learning measures progress in episodes."),
+    _term("episode", "One complete run from a starting situation to an end: a whole game, a whole session, a whole journey. Reinforcement learning measures progress in episodes."),
     _term("policy gradient", "A family of reinforcement-learning methods that nudge the policy directly: make the actions that led to good outcomes a bit more likely, and the rest a bit less. REINFORCE is the simplest one.", "REINFORCE", "gradient"),
     _term("bandit", "The simplest reinforcement-learning setting: pick one option, see one reward, no long-term state to track.", "contextual bandit", "LinUCB"),
     _term("exploration", "Deliberately trying options you are unsure about, so you can learn instead of repeating a possibly wrong favorite.", "exploration-exploitation", "epsilon-greedy"),
@@ -209,14 +209,14 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("prototype", "The average embedding of a class's support examples, used as that class's stand-in."),
     _term("federated learning", "Training across separate data holders by exchanging model updates instead of raw data.", "FedAvg", "FedProx"),
     _term("multi-task", "One model trained to predict several targets at once, sharing what it learns between them.", "multitask", "multi-output"),
-    _term("probabilistic model", "A model that outputs a distribution — a value plus honest uncertainty — instead of a bare number.", "Bayesian"),
+    _term("probabilistic model", "A model that outputs a distribution: a value plus honest uncertainty: instead of a bare number.", "Bayesian"),
     _term("prediction interval", "A range that should contain the true value a stated share of the time, such as 90%."),
     _term("conformal prediction", "A distribution-free way to build prediction intervals with a guaranteed coverage rate, calibrated on held-out residuals.", "conformal"),
     _term("Gaussian process", "A flexible model that predicts a mean and a spread, and gets appropriately unsure far from the data it saw.", "GP"),
     _term("symbolic AI", "Explicit human-readable if-then rules over columns, rather than learned numeric weights.", "rule-based", "rules"),
     _term("neuro-symbolic", "Combining a learned statistical model with explicit rules that constrain or correct it."),
     _term("case-based reasoning", "Solving a new case by retrieving the most similar past cases and reusing their outcomes.", "CBR"),
-    _term("topological data analysis", "Measuring the shape of data — loops, clusters, voids — in a way that survives stretching and noise.", "TDA", "persistent homology"),
+    _term("topological data analysis", "Measuring the shape of data: loops, clusters, voids: in a way that survives stretching and noise.", "TDA", "persistent homology"),
     _term("persistence diagram", "A summary of which shape features appear and disappear as you zoom out on a point cloud."),
     _term("synthetic data", "Artificial rows generated to resemble real ones, used for augmentation, sharing, or stress testing."),
     _term("TSTR", "Train on synthetic, test on real: the honest way to check whether synthetic data is actually useful.", "train-synthetic-test-real"),
@@ -227,36 +227,36 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("recall@k", "Of the passages that should have been found, the share that appeared in the top k results."),
     _term("prompt injection", "Text hidden inside your data that tries to hijack a language model's instructions."),
     _term("LLM", "Large language model: a model that generates text and can follow instructions.", "large language model"),
-    _term("token", "The chunk of text a language model actually reads — roughly a short word or word-piece."),
+    _term("token", "The chunk of text a language model actually reads: roughly a short word or word-piece."),
     _term("hallucination", "A confidently stated but fabricated answer from a language model."),
     _term("optimization", "Choosing the best action under constraints, once you already have predictions.", "decision optimization", "linear programming", "knapsack"),
     _term("cost matrix", "A table saying what each kind of mistake costs, so the model can minimize money rather than error count."),
     _term("expected value", "The average outcome, weighting each possibility by how likely it is."),
     # ---- similarity, geometry, and shared modelling vocabulary -----------
     _term("nearest neighbours", "The rows closest to yours under some distance measure. Many methods answer a question by looking at them and nothing else.", "nearest neighbors", "kNN", "k-nearest neighbours"),
-    _term("distance metric", "The rule for measuring how far apart two rows are — straight-line, block-by-block, or angle-based. Change the rule and 'similar' changes with it.", "euclidean", "cosine similarity"),
+    _term("distance metric", "The rule for measuring how far apart two rows are: straight-line, block-by-block, or angle-based. Change the rule and 'similar' changes with it.", "euclidean", "cosine similarity"),
     _term("coefficient", "The weight a linear model attaches to one feature: how much the prediction moves when that feature moves by one unit.", "weight", "coef"),
     _term("attribution", "Splitting one prediction into per-input contributions so you can say which inputs pushed it which way.", "contribution"),
     _term("curse of dimensionality", "The problem that adding columns or bins multiplies the space to be covered, so your data becomes sparse and distances stop being informative."),
     _term("privacy", "Whether a released model or dataset can reveal something about an individual who was in the training data. Separate from, and not implied by, accuracy or realism."),
-    _term("contamination", "Information from your evaluation data reaching training — often through duplicate rows or documents — which makes holdout scores optimistic.", "duplicate leakage"),
-    _term("aggregation", "Combining many partial results into one — averaging client model weights, pooling per-group scores, merging round updates.", "averaging"),
+    _term("contamination", "Information from your evaluation data reaching training: often through duplicate rows or documents: which makes holdout scores optimistic.", "duplicate leakage"),
+    _term("aggregation", "Combining many partial results into one: averaging client model weights, pooling per-group scores, merging round updates.", "averaging"),
     _term("client", "One data holder in a federated setting: a hospital, a branch, a device. Its rows stay on its own side of the boundary.", "site", "participant"),
     _term("backend", "Which underlying library or implementation BuildML routes an operation to. Same call, different engine, sometimes different available options.", "engine backend"),
     # ---- text and natural language ---------------------------------------
     _term("corpus", "A collection of documents treated as one body of text to model or search.", "document collection"),
-    _term("tokenization", "Splitting text into the individual units — usually words — a model will count or read.", "tokenize", "tokenizer"),
+    _term("tokenization", "Splitting text into the individual units: usually words: a model will count or read.", "tokenize", "tokenizer"),
     _term("stopword", "A very common word such as 'the' or 'and' that many text methods discard because it appears everywhere.", "stop word", "stopwords"),
     _term("stemming", "Chopping words back to a rough common root so 'running' and 'runs' count as the same token.", "lemmatization", "stem"),
     _term("vocabulary", "The set of words a fitted text model knows about, learned from the training documents.", "vocab"),
     _term("out-of-vocabulary", "A word in new text that the fitted vocabulary never saw, so the model simply cannot see it.", "OOV", "out of vocabulary"),
-    _term("n-gram", "A run of n adjacent units — 'credit card' is a word 2-gram; 'cred' is a character 4-gram.", "ngram", "bigram"),
+    _term("n-gram", "A run of n adjacent units: 'credit card' is a word 2-gram; 'cred' is a character 4-gram.", "ngram", "bigram"),
     _term("TF-IDF", "A way of scoring words in a document: frequent here, rare across the corpus, therefore informative.", "tfidf", "term frequency-inverse document frequency"),
     _term("topic model", "An unsupervised method that finds recurring vocabulary patterns across a corpus and reports each as a ranked word list.", "LDA", "NMF", "topic modelling"),
     _term("coherence", "A score for whether a topic's top words genuinely appear together in real documents, rather than being an artifact.", "NPMI"),
-    _term("keyphrase", "A short phrase that stands out in a document — frequent here, unusual elsewhere, or central in the document's word graph.", "key phrase", "keyword extraction"),
+    _term("keyphrase", "A short phrase that stands out in a document: frequent here, unusual elsewhere, or central in the document's word graph.", "key phrase", "keyword extraction"),
     _term("sentiment", "Whether text expresses a positive, negative, or neutral attitude.", "polarity", "valence"),
-    _term("lexicon", "A dictionary of words with attached scores — sentiment values, categories — used by rule-based text methods.", "word list"),
+    _term("lexicon", "A dictionary of words with attached scores: sentiment values, categories: used by rule-based text methods.", "word list"),
     _term("named entity recognition", "Finding and typing the spans in text that name things: dates, amounts, people, organizations.", "NER", "entity extraction"),
     _term("gazetteer", "Your own list of known names or codes, matched literally in text so domain knowledge can enter without training data.", "term list"),
     _term("summarization", "Producing a shorter version of a document. Extractive summarization selects existing sentences; abstractive summarization writes new ones.", "summarisation"),
@@ -267,10 +267,10 @@ _ENTRIES: tuple[GlossaryTerm, ...] = (
     _term("text features", "Turning a text column into ordinary numeric columns so a tabular model can use it alongside everything else.", "text feature expansion"),
     # ---- BuildML platform vocabulary -------------------------------------
     _term("Session", "The BuildML object that holds your data, roles, split, plans, and history, and exposes every operation."),
-    _term("plan", "A fitted, frozen recipe BuildML stores — the imputer's medians, the cluster centroids, the encoder's vocabulary — so evaluation reuses training's exact decisions.", "fitted plan"),
+    _term("plan", "A fitted, frozen recipe BuildML stores: the imputer's medians, the cluster centroids, the encoder's vocabulary: so evaluation reuses training's exact decisions.", "fitted plan"),
     _term("history", "BuildML's ordered record of every operation you ran, with its parameters and the resulting state change."),
     _term("operation", "One public Session method, catalogued with its purpose, prerequisites, risks, and result reading.", "catalog operation"),
-    _term("prerequisite", "Something that has to be true before an operation can run — data ingested, roles set, a split created."),
+    _term("prerequisite", "Something that has to be true before an operation can run: data ingested, roles set, a split created."),
     _term("workflow resolution", "BuildML checking every catalogued operation against current state and marking it done, available, blocked, or skipped."),
     _term("dry run", "Previewing what an operation would do without changing anything."),
     _term("extra", "An optional dependency group you install with brackets, like ``pip install buildml[torch]``.", "optional dependency", "extras"),
@@ -412,7 +412,7 @@ def lookup(term: str) -> GlossaryTerm | None:
 def require(term: str) -> GlossaryTerm:
     """Look a term up, refusing to continue when it is undefined.
 
-    Use this where a missing definition is a bug rather than a possibility —
+    Use this where a missing definition is a bug rather than a possibility :
     for instance when a concept note declares the vocabulary it teaches, since a
     term named there but never defined would leave the reader stuck.
 
@@ -491,7 +491,7 @@ def detect_terms(
 def concept_for_term(term: str) -> str | None:
     """Point a one-line definition at the concept note that teaches it properly.
 
-    A glossary entry is deliberately short — one or two sentences. When the idea
+    A glossary entry is deliberately short: one or two sentences. When the idea
     behind it has a full note, this returns that note's key so the reader can go
     deeper instead of stopping at the definition.
 

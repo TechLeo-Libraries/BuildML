@@ -9,7 +9,7 @@ The analysis branches on task, because the questions differ. For a regression
 target: how skewed, what spread, which features correlate. For a classification
 target: how many classes, how imbalanced, which features separate them.
 
-The tests used are non-parametric throughout — Kruskal-Wallis rather than ANOVA,
+The tests used are non-parametric throughout: Kruskal-Wallis rather than ANOVA,
 Mann-Whitney rather than a t-test. Real feature distributions are rarely normal,
 and a test that assumes normality on data that is not gives confident and wrong
 p-values.
@@ -39,8 +39,8 @@ def analyze_target(
 ) -> dict[str, Any]:
     """Profile the target and rank the features that appear to move with it.
 
-    Detects the task the same way the modelling code does — numeric with more
-    than 15 distinct values is regression, anything else is classification — so
+    Detects the task the same way the modelling code does: numeric with more
+    than 15 distinct values is regression, anything else is classification: so
     the EDA and the model agree about what kind of problem this is. A target
     with 12 integer levels is treated as classification, which is usually right
     and occasionally not; check the returned ``summary.type`` if the problem is
@@ -55,7 +55,7 @@ def analyze_target(
     For a classification target: class counts, rates, and the imbalance ratio
     between the most and least common class, plus Mann-Whitney tests for
     numeric features when the target is binary. The imbalance ratio decides
-    whether accuracy is a usable metric — at 99 to 1, predicting the majority
+    whether accuracy is a usable metric: at 99 to 1, predicting the majority
     class always scores 99%.
 
     Parameters
@@ -64,7 +64,7 @@ def analyze_target(
         The data, with a target role assigned. Without one, this returns an
         empty dict rather than raising, since unsupervised EDA is legitimate.
     frame:
-        The frame to analyse — usually a sample, since these tests are only
+        The frame to analyse: usually a sample, since these tests are only
         screening.
     feature_columns:
         Which columns count as features. Defaults to everything but the target,

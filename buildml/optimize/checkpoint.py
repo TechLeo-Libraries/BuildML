@@ -28,7 +28,7 @@ CHECKPOINT_BOUNDARY = (
     "Session checkpoint stores data, roles, splits, history, and optionally a "
     "classical FitResult; it does not embed the DecisionPlan. Reload tabular "
     "workflow via checkpoint_load; reload the policy via load_decision_bundle. "
-    "Honesty: ML score/cost/allocation decision helpers — not a general OR "
+    "Honesty: ML score/cost/allocation decision helpers: not a general OR "
     "platform. Cross-link: classical Session.tune_threshold remains the "
     "diagnostic explorer; fit_decision_policy(method='threshold') persists "
     "the chosen operating point."
@@ -47,7 +47,7 @@ def save_decision_bundle(
 
     Persists the fitted :class:`~buildml.optimize.results.DecisionPlan`,
     optional fit/eval/apply summaries, and auxiliary estimator objects to
-    disk. Distinct from Session checkpoints — reload policies via
+    disk. Distinct from Session checkpoints: reload policies via
     :func:`~buildml.optimize.checkpoint.load_decision_bundle`.
 
     Parameters

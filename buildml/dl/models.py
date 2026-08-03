@@ -3,8 +3,8 @@
 Writing an ``nn.Module`` from scratch is the usual first obstacle to trying deep
 learning on a dataset, and it is a distraction when what you want to know is
 whether a neural network helps at all. These builders provide a reasonable
-starting architecture for the two commonest cases — numeric tabular features and
-short token sequences — so you can get a baseline and then decide whether to
+starting architecture for the two commonest cases: numeric tabular features and
+short token sequences: so you can get a baseline and then decide whether to
 invest in something bespoke.
 
 They return plain ``nn.Module`` instances. Nothing here wraps or subclasses in a
@@ -14,7 +14,7 @@ bundle, modify them, or throw them away and write your own.
 
 They are deliberately small. A two-hidden-layer MLP and a mean-pooled embedding
 classifier are not competitive with a tuned architecture, and they are not meant
-to be — they are the baseline you compare against.
+to be: they are the baseline you compare against.
 
 See Also
 --------
@@ -42,7 +42,7 @@ def build_tabular_mlp(
 
     A stack of linear layers with ReLU activations and optional dropout, ending
     in a head sized for the task. This is the standard starting point for
-    tabular deep learning — worth knowing that gradient-boosted trees usually
+    tabular deep learning: worth knowing that gradient-boosted trees usually
     beat it on tabular problems, so treat a neural network here as something to
     justify rather than assume.
 
@@ -184,8 +184,8 @@ def build_text_classifier(
 
     Each token becomes a learned vector, the vectors for a document are
     averaged, and the average is classified by a small MLP. Averaging discards
-    word order entirely — "the dog bit the man" and "the man bit the dog" get
-    identical representations — which is a real limitation and also why the
+    word order entirely: "the dog bit the man" and "the man bit the dog" get
+    identical representations: which is a real limitation and also why the
     model is small, fast, and surprisingly hard to beat on topic-style
     classification where vocabulary carries most of the signal.
 
@@ -235,8 +235,8 @@ def build_text_classifier(
     :mod:`buildml.dl.text` handles that. A vocabulary fitted across all
     partitions leaks holdout vocabulary into the model.
 
-    **Word order is not represented.** If order carries the signal — negation,
-    sequence, syntax — this architecture cannot capture it, and a transformer
+    **Word order is not represented.** If order carries the signal: negation,
+    sequence, syntax: this architecture cannot capture it, and a transformer
     from :mod:`buildml.dl.zoo` is the alternative.
 
     Examples

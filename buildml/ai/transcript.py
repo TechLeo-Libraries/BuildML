@@ -2,13 +2,13 @@
 
 An agent that acts on your Session needs to leave an account of itself. A
 :class:`TranscriptStore` is that account: every message, every proposed call,
-every result, every confirmation, every failure, and — crucially — every
+every result, every confirmation, every failure, and: crucially: every
 :class:`~buildml.ai.privacy.EgressManifest`, so the question of what a provider
 received always has a written answer.
 
 Transcripts are redacted on the way out. Secrets have a way of ending up in
-conversation text — a key pasted into a prompt, a bearer token in an error
-message, a connection string in a stack trace — and a transcript written to
+conversation text: a key pasted into a prompt, a bearer token in an error
+message, a connection string in a stack trace: and a transcript written to
 disk is a file that gets copied, attached, and committed. Known credential
 shapes are masked before anything is persisted.
 
@@ -157,7 +157,7 @@ class TranscriptStore:
         Parameters
         ----------
         message:
-            The turn — from you, the model, the system prompt, or a tool.
+            The turn: from you, the model, the system prompt, or a tool.
 
         See Also
         --------
@@ -177,7 +177,7 @@ class TranscriptStore:
     ) -> None:
         """Record that an action was proposed, and whether it was approved.
 
-        Called for proposals, not only for executions — a rejected call is part
+        Called for proposals, not only for executions: a rejected call is part
         of the account, and a transcript that only showed what ran would be a
         partial one.
 
@@ -243,7 +243,7 @@ class TranscriptStore:
         Parameters
         ----------
         manifest:
-            The record produced alongside the payload — columns sent, columns
+            The record produced alongside the payload: columns sent, columns
             withheld, renames applied, rows sent.
 
         Notes
@@ -393,7 +393,7 @@ def save_transcript(
 
     Creates any missing parent directories, then writes indented JSON. Values
     that are not JSON-serialisable fall back to their string form rather than
-    failing the write — a transcript that saves imperfectly is more useful than
+    failing the write: a transcript that saves imperfectly is more useful than
     one that does not save.
 
     Parameters
@@ -418,7 +418,7 @@ def save_transcript(
     Notes
     -----
     **Existing files are overwritten without warning.** Use a distinct name per
-    run — the store's ``session_id`` is generated for exactly this.
+    run: the store's ``session_id`` is generated for exactly this.
 
     **Leave redaction on for anything that leaves your machine.** Transcripts
     get attached to issues and committed to repositories, which is where a key

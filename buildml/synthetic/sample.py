@@ -86,7 +86,7 @@ ValidationError
         f"(fitted on train n={plan.n_rows_fitted}).",
         "Frame returned without mutating Session roles/splits "
         "(merge_mode='none'). Pass merge_mode='extend_train' to append.",
-        "Synthetic rows are not real observations — provenance should be tracked.",
+        "Synthetic rows are not real observations: provenance should be tracked.",
     ]
     return SyntheticSampleResult(
         method=plan.method,
@@ -292,7 +292,7 @@ ValidationError
             f"Merged {result.n_rows} synthetic rows into train "
             f"(provenance column {prov!r} role=ignore).",
             "Validation/test row values unchanged; split indices rebuilt.",
-            "Synthetic train rows can bias estimators — disclose in model cards.",
+            "Synthetic train rows can bias estimators: disclose in model cards.",
         ]
     )
     return result, new_ds, new_split

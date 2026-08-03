@@ -74,7 +74,7 @@ def fit_recommender(
     via the ``implicit`` library when ``buildml[recommenders-industry]`` is
     installed; otherwise falls back to sklearn NMF on binary interactions.
 
-    Honesty: Session collaborative filtering + optional content / hybrid features —
+    Honesty: Session collaborative filtering + optional content / hybrid features :
     not a Netflix-scale recsys platform. Never trains on holdout interactions.
 
     Parameters

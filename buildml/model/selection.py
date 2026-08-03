@@ -1,7 +1,7 @@
 """Cross-validation and hyperparameter search that do not quietly lie to you.
 
-A single train/test split gives one number, and that number moves — sometimes a
-lot — depending on which rows happened to land where. Cross-validation replaces
+A single train/test split gives one number, and that number moves: sometimes a
+lot: depending on which rows happened to land where. Cross-validation replaces
 it with several: the train partition is divided into folds, each fold is scored
 by a model trained on the others, and you get a mean *and* a spread. The spread
 is the part people skip and the part that matters, because it tells you whether
@@ -11,7 +11,7 @@ Hyperparameter search then uses those scores to choose a configuration. That
 introduces its own problem: the moment you pick the best of fifty configurations
 by cross-validated score, that score is optimistically biased. You selected on
 it, so it partly measures which configuration got lucky on these folds. Nested
-cross-validation is the honest answer — an inner loop chooses, an outer loop
+cross-validation is the honest answer: an inner loop chooses, an outer loop
 scores what was chosen, and the outer score is unbiased because the rows it
 scores on took no part in the choosing.
 
@@ -109,7 +109,7 @@ class FoldScore:
 
     Folds are kept individually rather than only averaged because the spread
     across them is diagnostic. One fold far below the others usually means that
-    fold's held-out rows differ from the rest — a rare class concentrated in one
+    fold's held-out rows differ from the rest: a rare class concentrated in one
     place, a time period with different behaviour, a group that does not
     resemble its neighbours. Averaging hides that; listing the folds does not.
 
@@ -159,8 +159,8 @@ class FoldScore:
 class CVScoreResult:
     """Fold-by-fold scores, their spread, and an honest account of the limits.
 
-    The result carries three kinds of thing. The numbers — per-fold metrics and
-    their mean and standard deviation. The context needed to interpret them —
+    The result carries three kinds of thing. The numbers: per-fold metrics and
+    their mean and standard deviation. The context needed to interpret them :
     which population was used, what was held out, whether preprocessing ran
     inside the folds. And the caveats, spelled out rather than left implicit.
 
@@ -177,7 +177,7 @@ class CVScoreResult:
         The headline metric. Defaults to F1-weighted for classification and R²
         for regression.
     cv_strategy:
-        Which folding scheme ran — k-fold, stratified, group, stratified-group,
+        Which folding scheme ran: k-fold, stratified, group, stratified-group,
         or time. Worth checking: an inappropriate strategy silently inflates
         every fold, and this field is where that becomes visible.
     n_splits:
@@ -188,7 +188,7 @@ class CVScoreResult:
     mean_metrics:
         Metrics averaged across folds.
     std_metrics:
-        Standard deviation across folds — the estimate's stability.
+        Standard deviation across folds: the estimate's stability.
     population:
         Which rows the folds were drawn from. Always ``'train'``.
     held_out_partitions:
@@ -196,7 +196,7 @@ class CVScoreResult:
         genuinely independent.
     fold_preprocess:
         The fold-local recipe, if one was used. ``None`` means no preprocessing
-        ran inside the folds — which is fine if the data needed none, and a leak
+        ran inside the folds: which is fine if the data needed none, and a leak
         if it was applied globally beforehand.
     limitations:
         What this run cannot tell you, including any leakage that was explicitly
@@ -216,7 +216,7 @@ class CVScoreResult:
     held-out partition before believing it.
 
     **Fold standard deviation above about 20% of the mean is a warning.** The
-    estimate is unstable — usually too little data, too many parameters, or a
+    estimate is unstable: usually too little data, too many parameters, or a
     folding scheme that does not match the data's structure.
 
     See Also
@@ -243,7 +243,7 @@ class CVScoreResult:
     def to_frame(self) -> pd.DataFrame:
         """Lay the folds out as a table, one row per fold.
 
-        The convenient shape for looking at the spread directly — sorting by the
+        The convenient shape for looking at the spread directly: sorting by the
         metric, plotting it, or spotting the one fold that dropped.
 
         Returns
@@ -301,7 +301,7 @@ class CVScoreResult:
         Notes
         -----
         **Limitations are not printed**, only recommendations. Read
-        ``limitations`` directly before reporting a number — that is where an
+        ``limitations`` directly before reporting a number: that is where an
         acknowledged leak or an ill-fitting fold strategy is recorded.
         """
         metric = self.scoring_metric
@@ -338,7 +338,7 @@ class SearchTrial:
     params:
         The estimator parameters tried.
     mean_score:
-        Cross-validated mean of the ranking metric — the number that decided
+        Cross-validated mean of the ranking metric: the number that decided
         this trial's position.
     std_score:
         Fold spread for that metric. The scale against which any gap to the next
@@ -401,7 +401,7 @@ class SearchResult:
 
     A search returns a ranking rather than an answer. The winner is the
     configuration that scored best on these folds, which is a weaker claim than
-    "the best configuration" — and the difference matters most when the top few
+    "the best configuration": and the difference matters most when the top few
     are close together, which is the common case once a search is well specified.
 
     The result therefore keeps all the trials, not just the best, and states in
@@ -429,7 +429,7 @@ class SearchResult:
         The winner's full cross-validation result.
     refit_result:
         The winning configuration refitted on the whole train partition, when
-        ``refit=True``. This is the model to deploy — more training data than
+        ``refit=True``. This is the model to deploy: more training data than
         any single fold saw. ``None`` when refitting was skipped.
     interpretation:
         What the ranking appears to say, including whether the top gap is
@@ -439,7 +439,7 @@ class SearchResult:
     limitations:
         What this search cannot tell you.
     study:
-        Backend-specific search state — the Optuna study, or the evolutionary
+        Backend-specific search state: the Optuna study, or the evolutionary
         run's generation history. ``None`` for grid and randomized search.
 
     Notes
@@ -478,7 +478,7 @@ class SearchResult:
         """Lay the trials out as a table, one row per configuration.
 
         Parameters are flattened into ``param_``- and ``recipe_``-prefixed
-        columns, which makes the table sortable and easy to plot — score against
+        columns, which makes the table sortable and easy to plot: score against
         one parameter shows immediately whether that parameter mattered at all.
 
         Returns
@@ -540,7 +540,7 @@ class SearchResult:
         Notes
         -----
         **Only the winner is printed.** Use :meth:`to_frame` to see how close
-        the rest came — if several trials sit within a fold standard deviation
+        the rest came: if several trials sit within a fold standard deviation
         of the top, the choice among them is arbitrary.
         """
         print(f"Search · {self.method} · ranked by {self.ranking_metric}")
@@ -557,7 +557,7 @@ class OuterFoldResult:
 
     Each outer fold runs a complete search on its own training rows and then
     scores the winner on rows that search never saw. Comparing
-    ``inner_best_score`` with ``metrics`` shows the selection bias directly —
+    ``inner_best_score`` with ``metrics`` shows the selection bias directly :
     the inner score is usually the higher of the two, and the gap is roughly how
     much optimism selection introduced.
 
@@ -635,7 +635,7 @@ class NestedCVResult:
     The number most people want and few compute. An ordinary search reports the
     best score it found, which is optimistic by construction: pick the maximum
     of fifty noisy estimates and you have picked partly for noise. Nested
-    cross-validation separates the two jobs — an inner loop chooses, an outer
+    cross-validation separates the two jobs: an inner loop chooses, an outer
     loop scores what was chosen on rows the choosing never touched.
 
     What this estimates is the *procedure*, not one model: "if I tune this way on
@@ -661,7 +661,7 @@ class NestedCVResult:
     outer_folds:
         Per-fold results, each with its own chosen configuration.
     mean_metrics, std_metrics:
-        Outer-fold means and spreads. **This is the estimate** — report the mean
+        Outer-fold means and spreads. **This is the estimate**: report the mean
         with its spread, never the inner scores.
     inner_selection_summary:
         How consistently the inner searches agreed, including a
@@ -681,7 +681,7 @@ class NestedCVResult:
     Notes
     -----
     **Nested CV does not hand you a model.** It estimates a procedure. Afterward,
-    run the search once on the full train partition and use that winner —
+    run the search once on the full train partition and use that winner :
     accepting that its inner score is optimistic while the nested estimate
     describes what to expect.
 
@@ -826,7 +826,7 @@ def _refuse_session_global_cv_leakage(
     result is optimistic and completely unremarkable-looking.
 
     Passing a fold-local recipe afterwards does not fix it. The recipe operates
-    on the frame as it currently is — already transformed — so it cannot rebuild
+    on the frame as it currently is: already transformed: so it cannot rebuild
     from untouched values. The only real fix is to start from data that global
     preprocessing has not yet run on.
 
@@ -867,7 +867,7 @@ def _refuse_session_global_cv_leakage(
     if preprocess is not None and not preprocess.is_empty():
         recipe_note = (
             " A fold-local PreprocessRecipe was provided, but Session data is already "
-            "transformed with train-global statistics — the recipe cannot rebuild from "
+            "transformed with train-global statistics: the recipe cannot rebuild from "
             "raw/unpoisoned rows. Re-ingest or checkpoint_load an unpoisoned frame, then "
             "use fold-local recipes without Session-global impute/encode/scale/select/…"
             " first."
@@ -929,7 +929,7 @@ def cv_score(
     cv_strategy:
         How to fold: ``'auto'``, ``'kfold'``, ``'stratified'``, ``'group'``,
         ``'stratified_group'``, or ``'time'``. ``'auto'`` picks from the
-        dataset's roles, which is usually right — see the notes for why the
+        dataset's roles, which is usually right: see the notes for why the
         choice is not cosmetic.
     scoring_metric:
         The headline metric. Defaults to F1-weighted for classification and R²
@@ -970,7 +970,7 @@ def cv_score(
     -----
     **The folding strategy is a correctness decision, not a preference.** Plain
     k-fold on grouped data splits a patient's or a customer's rows across the
-    boundary, and the model recognises the individual rather than the pattern —
+    boundary, and the model recognises the individual rather than the pattern :
     scores come out high and do not survive contact with a new group. On time
     series, k-fold trains on the future to predict the past. Group and time
     strategies exist to prevent exactly these.
@@ -1246,7 +1246,7 @@ def grid_search(
     order is not a finding.
 
     **A grid is only as good as its edges.** If the winner sits at the boundary
-    of a range, the optimum probably lies outside it — widen and rerun.
+    of a range, the optimum probably lies outside it: widen and rerun.
 
     Examples
     --------
@@ -1375,7 +1375,7 @@ def randomized_search(
     evenly; a list of five values covers five points.
 
     **The same configuration can be drawn twice**, particularly from a small
-    discrete space. That costs budget without adding information — use
+    discrete space. That costs budget without adding information: use
     :func:`grid_search` when the space is small enough to enumerate.
 
     **A too-small ``n_iter`` finds a decent configuration, not a good one.**
@@ -1451,7 +1451,7 @@ def optuna_search(
     Random search treats every draw as independent, which means it keeps
     sampling regions it has already found to be poor. Optuna's TPE sampler
     builds a model of which regions produced good scores and concentrates
-    subsequent trials there, so a fixed budget goes further — usually
+    subsequent trials there, so a fixed budget goes further: usually
     noticeably so once the space has more than a couple of dimensions.
 
     The trade-off is that concentrating can also mean converging early on a
@@ -1731,7 +1731,7 @@ def evolutionary_search(
     estimator:
         The estimator to configure.
     param_space:
-        A declare-style dict — ``{'type': 'float', 'low': …, 'high': …, 'log':
+        A declare-style dict: ``{'type': 'float', 'low': …, 'high': …, 'log':
         bool}``, ``{'type': 'int', 'low': …, 'high': …}``, ``{'type':
         'categorical', 'choices': [...]}``, or a plain list. Callables are not
         accepted: the algorithm needs an explicit encoding to mutate and
@@ -1752,7 +1752,7 @@ def evolutionary_search(
         one.
     mutation_rate:
         Per-parameter probability of a random change. The only source of genuine
-        novelty once the population has converged — too low and the search
+        novelty once the population has converged: too low and the search
         stalls, too high and it is random search.
     tournament_size:
         How many candidates compete to be a parent. Larger favours the strong
@@ -1810,7 +1810,7 @@ def evolutionary_search(
 
     **Watch ``study['generation_best']``.** A best score that stopped improving
     several generations ago means the population has converged and further
-    generations will not help — raise the mutation rate or widen the space.
+    generations will not help: raise the mutation rate or widen the space.
 
     Examples
     --------
@@ -2066,7 +2066,7 @@ def nested_cv_score(
     """Estimate what tuning actually achieves, without the selection bias.
 
     The problem this solves is easy to miss. Run a search, take the best
-    cross-validated score, and report it — that number is too high, and not
+    cross-validated score, and report it: that number is too high, and not
     because anything went wrong. You picked the maximum of many noisy estimates,
     so you picked partly for noise. With enough trials, a configuration will
     score well on your folds through luck alone.
@@ -2074,7 +2074,7 @@ def nested_cv_score(
     Nested cross-validation separates choosing from measuring. The train
     partition is divided into outer folds. Within each, a complete search runs on
     that fold's training rows, its winner is refitted on those rows, and it is
-    scored on the outer-eval rows — which took no part in choosing it. Average
+    scored on the outer-eval rows: which took no part in choosing it. Average
     those outer scores and you have an unbiased estimate of the whole
     tune-then-fit procedure.
 
@@ -2139,7 +2139,7 @@ def nested_cv_score(
         Override the resulting leakage refusal.
     warm_start_studies:
         Share one Optuna study across outer folds so later folds inherit earlier
-        TPE priors. Cheaper, and slightly couples the folds — see the notes.
+        TPE priors. Cheaper, and slightly couples the folds: see the notes.
 
     Returns
     -------
@@ -2179,8 +2179,8 @@ def nested_cv_score(
     somewhat arbitrary.
 
     **Warm-starting couples the outer folds.** Shared study state carries only
-    inner-CV scores from earlier outer-train subsets — outer-eval rows and
-    Session holdouts never enter any objective — but later folds start from
+    inner-CV scores from earlier outer-train subsets: outer-eval rows and
+    Session holdouts never enter any objective: but later folds start from
     priors shaped by earlier ones, which makes the estimate mildly optimistic
     relative to independent studies. It is opt-in for that reason.
 
@@ -2539,7 +2539,7 @@ def nested_cv_score(
     ]
     if summary.get("param_stability") == "low":
         interpretation.append(
-            "Inner search selected different parameter sets across outer folds — "
+            "Inner search selected different parameter sets across outer folds: "
             "treat a single full-train refit as one of several plausible winners."
         )
     recommendations = [
@@ -2809,7 +2809,7 @@ def _finalize_search_result(
         )
         if gap < max(trials[0].std_score, 1e-12):
             interpretation.append(
-                "Top-2 gap is within the leading trial's fold standard deviation — "
+                "Top-2 gap is within the leading trial's fold standard deviation: "
                 "treat rank as fragile without a confirmation holdout."
             )
 
@@ -2826,7 +2826,7 @@ def _finalize_search_result(
         )
     if best.std_score > abs(best.mean_score) * 0.15 and abs(best.mean_score) > 1e-9:
         recommendations.append(
-            "Fold spread is large relative to the mean — prefer simpler params or more data."
+            "Fold spread is large relative to the mean: prefer simpler params or more data."
         )
     if method == "optuna":
         recommendations.append(
@@ -2836,7 +2836,7 @@ def _finalize_search_result(
     if method == "evolutionary":
         recommendations.append(
             "Evolutionary search used a real GA (population, selection, crossover/mutation, "
-            "elitism) under a CV budget — not random search renamed. Raise population_size / "
+            "elitism) under a CV budget: not random search renamed. Raise population_size / "
             "n_generations only while fold std still informs whether gaps are real."
         )
 
@@ -2977,7 +2977,7 @@ def _resolve_inner_search(
                 "inner_search='randomized' cannot be combined with param_space/recipe_space"
             )
         return "randomized"
-    # auto — declare/callable spaces default to Optuna (not evolutionary).
+    # auto: declare/callable spaces default to Optuna (not evolutionary).
     if has_space:
         if has_grid or has_random:
             raise ValidationError(
@@ -3401,7 +3401,7 @@ def _cv_limitations(
         if preprocess is not None and not preprocess.is_empty():
             tips.append(
                 "A fold-local PreprocessRecipe was also provided, but Session data was "
-                "already transformed with train-global statistics — the recipe does not "
+                "already transformed with train-global statistics: the recipe does not "
                 "rebuild from raw/unpoisoned rows."
             )
     if preprocess is not None and not preprocess.is_empty() and not session_preprocess_applied:
@@ -3468,7 +3468,7 @@ def _cv_interpretation(
     ]
     if mean is not None and std > 0 and abs(mean) > 1e-12 and (std / abs(mean)) > 0.2:
         lines.append(
-            "Fold coefficient of variation exceeds 0.2 — estimate instability is material."
+            "Fold coefficient of variation exceeds 0.2: estimate instability is material."
         )
     if task == "classification" and "balanced_accuracy" in mean_metrics:
         gap = mean_metrics.get("accuracy", 0.0) - mean_metrics["balanced_accuracy"]

@@ -3,7 +3,7 @@
 ## Business purpose
 
 Cluster product embedding vectors into merchandising families and validate
-against held-out synthetic family labels — distinct from RFM customer
+against held-out synthetic family labels: distinct from RFM customer
 segmentation.
 
 ## Data source
@@ -31,7 +31,7 @@ See `results/results.json` (silhouette / ARI / NMI).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs sklearn KMeans + PCA
+Filled: `baseline_industry.py` runs sklearn KMeans + PCA
 (`results/comparison.json`).
 
 ## Limitations

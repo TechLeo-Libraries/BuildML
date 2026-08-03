@@ -116,7 +116,7 @@ def fit_online_op(
     **Leakage:** Requires a split. Init and later updates use train chunks only
     (or role-aligned external frames). Validation/test are never used for
     updates. Classifiers need a ``classes`` vocabulary (explicit or discovered
-    from the full train target column — labels only).
+    from the full train target column: labels only).
     """
     session.assert_can_fit("train")
     plan, result = fit_online(
@@ -346,7 +346,7 @@ def save_online_bundle_op(session, path: str | Path) -> Path:
     """Persist the active online plan as ``buildml.online_bundle.v1``.
 
     Delegates to :func:`buildml.online.checkpoint.save_online_bundle`.
-    Distinct from Session checkpoints — reload the learner with
+    Distinct from Session checkpoints: reload the learner with
     :func:`load_online_bundle_op`.
 
     Parameters

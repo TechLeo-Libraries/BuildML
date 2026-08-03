@@ -147,7 +147,7 @@ def test_fit_evaluate_and_bundle_roundtrip(tmp_path) -> None:
     assert (path / "trainer.pt").is_file()
 
     other = _session()
-    other.load_torch_bundle(path, TinyMLP(, trusted=True), map_location="cpu")
+    other.load_torch_bundle(path, TinyMLP(), map_location="cpu", trusted=True)
     assert other.dl_train_result is not None
     again = other.evaluate_torch(partition="test")
     assert again.metrics["accuracy"] == pytest.approx(metrics.metrics["accuracy"], abs=1e-5)

@@ -38,7 +38,7 @@ def run_flaml_adapter(
     """Run FLAML AutoML on Session train only; never touch test.
 
     FLAML handles internal model selection and preprocessing. BuildML fold-local
-    PreprocessRecipe search is bypassed — disclosures state this explicitly.
+    PreprocessRecipe search is bypassed: disclosures state this explicitly.
     Session test never enters fit or selection scoring.
 
     Parameters
@@ -125,7 +125,7 @@ def run_flaml_adapter(
 
     if getattr(automl, "model", None) is None:
         raise ValidationError("FLAML AutoML finished without a fitted model")
-    # Wrap the full AutoML object — ``automl.model`` / ``.estimator`` peel away
+    # Wrap the full AutoML object: ``automl.model`` / ``.estimator`` peel away
     # FLAML's categorical handling and break string columns on Session evaluate.
     best_estimator = _FlamlSklearnWrapper(automl, feature_cols=feature_cols)
     best_config = dict(getattr(automl, "best_config", {}) or {})
@@ -183,7 +183,7 @@ def run_flaml_adapter(
     )
     disclosures = [
         "backend=flaml (buildml[automl-industry]); FLAML internal model search on train only.",
-        "Fold-local PreprocessRecipe search bypassed — FLAML handles preprocessing internally.",
+        "Fold-local PreprocessRecipe search bypassed: FLAML handles preprocessing internally.",
         "Session test never entered FLAML fit or selection scoring.",
         f"time_budget={seconds:.1f}s; metric={metric}; best_loss={best_loss}.",
     ]

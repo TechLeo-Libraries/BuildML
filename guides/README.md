@@ -27,7 +27,7 @@ and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
 | Stage | Read | Outcome |
 | --- | --- | --- |
 | 0 | [Installation](../docs/installation.rst), [concepts](../docs/concepts.rst), [workflow guide](../docs/workflow-guide.rst) | Vocabulary, install honesty, stage decisions |
-| 0b | New to machine learning? `session.learn()` then `session.explain("<step>")` — see [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough) | Plain-language concepts and operations, in reading order |
+| 0b | New to machine learning? `session.learn()` then `session.explain("<step>")`: see [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough) | Plain-language concepts and operations, in reading order |
 | 1 | [Classical quickstart](quickstart-classical.md) → [Classical end-to-end](classical-end-to-end.md) | Dirty data → roles → split → prep → fit → evaluate |
 | 2 | [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Why BuildML refuses poisoned CV; good vs bad patterns |
 | 3 | [Engines](engines-polars-duckdb.md), [EDA / Teaching Studio](eda-teaching-studio.md) | Prep at scale; explore before mutating |
@@ -37,6 +37,7 @@ and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
 | 7 | Optional: [Ensembles](quickstart-ensemble.md) → [Ensemble deep](ensemble-deep.md) | Voting, stacking, holdout blending, bundle |
 | 8 | Optional: [AutoML](quickstart-automl.md) → [AutoML deep](automl-deep.md) | Family + recipe search beyond HPO, nested/validation, bundle |
 | 9 | Optional: [Forecasting](quickstart-forecasting.md) → [Forecasting deep](forecasting-deep.md) | time_split lag/baseline forecasts, eval, bundle |
+| 9b | Optional: [TS analysis](quickstart-timeseries-analysis.md) → [TS analysis deep](timeseries-analysis-deep.md) | Stationarity / seasonality / change points / decompose (analysis-only; not `fit_forecast`) |
 | 10 | Optional: [Anomaly](quickstart-anomaly.md) → [Anomaly deep](anomaly-deep.md) | IsolationForest/LOF/OCSVM + supervised fraud path, bundle |
 | 11 | Optional: [Semi-supervised](quickstart-semisupervised.md) → [Semi-supervised deep](semisupervised-deep.md) | Scarce labels + unlabeled train; propagation / self-training |
 | 12 | Optional: [Self-supervised](quickstart-selfsupervised.md) → [Self-supervised deep](selfsupervised-deep.md) | Masked tabular pretext → embeddings → head |
@@ -93,6 +94,7 @@ cross-links.
 | Search / LTR | `fit_ranker`, `rank`, `evaluate_ranker`, ranker bundle | [LTR quickstart](quickstart-ranking.md), [LTR deep](ranking-deep.md) |
 | Knowledge graphs | `fit_kg`, `score_triples`, `predict_links`, `query_kg`, `evaluate_kg`, KG bundle | [KG quickstart](quickstart-kg.md), [KG deep](kg-deep.md) |
 | Optimisation / decisions | `fit_decision_policy`, `apply_decisions`, `evaluate_decisions`, decision bundle | [Decisions quickstart](quickstart-optimize.md), [Decisions deep](optimize-deep.md) |
+| Fairness / SHAP | `evaluate_fairness`, `fairness_capability_matrix`; `explain_shap` (`buildml[shap]`) | [features](../docs/features.rst), [stability](../docs/stability.md) |
 | Synthetic data | `fit_synthesizer`, `sample_synthetic`, `evaluate_synthetic`, `synthetic_capability_matrix`, synthetic bundle | [Synthetic quickstart](quickstart-synthetic.md), [Synthetic deep](synthetic-deep.md) |
 | NLP (text column) | `nlp_capability_matrix`, `profile_text_corpus`, `detect_language`, `fit_text_classifier`, `predict_text`, `evaluate_text_classifier`, `interpret_text_prediction`, `fit_topics`, `assign_topics`, `extract_keyphrases`, `analyze_sentiment`, `extract_entities`, `summarize_text`, NLP bundle | [NLP quickstart](quickstart-nlp.md), [NLP deep](nlp-deep.md) |
 | Torch tabular / text | `make_torch_loaders`, `make_text_torch_loaders`, `fit_torch`, `evaluate_torch` | [Torch quickstart](quickstart-torch.md), [Torch deep](torch-deep.md) |
@@ -115,6 +117,7 @@ cross-links.
 | [Ensembles](quickstart-ensemble.md) | core | Voting, stacking, holdout blending, ensemble bundle |
 | [AutoML](quickstart-automl.md) | core (`buildml[optuna]` for Optuna method) | Family + recipe search beyond HPO, automl bundle |
 | [Forecasting](quickstart-forecasting.md) | core | time_split lag/baseline forecasts, eval, forecast bundle |
+| [Time-series analysis](quickstart-timeseries-analysis.md) | core; depth via `timeseries` / `timeseries-prophet` / `timeseries-ml` | `analyze_timeseries` / decompose / diagnostics (no forecast fit) |
 | [Anomaly / fraud](quickstart-anomaly.md) | core + `anomaly-industry` + `torch` | sklearn/PyOD/torch AE + supervised HGB/XGB/LGBM; validation threshold tuning |
 | [Semi-supervised](quickstart-semisupervised.md) | core | Label propagation / spreading / self-training; scarce labels |
 | [Self-supervised](quickstart-selfsupervised.md) | core (torch optional for zoo transfer) | Masked tabular pretext → head; zoo freeze/finetune separate |
@@ -157,6 +160,7 @@ cross-links.
 | [Ensemble deep](ensemble-deep.md) | Voting / stacking / blending, train-only meta fit, ensemble bundles |
 | [AutoML deep](automl-deep.md) | Family + recipe strategy search, nested/validation selection, automl bundles |
 | [Forecasting deep](forecasting-deep.md) | time_split lag/baselines, generate vs eval protocols, exog honesty, forecast bundles |
+| [Time-series analysis deep](timeseries-analysis-deep.md) | Analysis-only floor: stationarity, seasonality, change points, decompose; distinct from forecasting |
 | [Anomaly deep](anomaly-deep.md) | unsupervised/novelty/supervised modes, thresholds/alert rates, imbalance metrics, anomaly bundles |
 | [Semi-supervised deep](semisupervised-deep.md) | Scarce labels, propagation / self-training, labeled-only eval, semisupervised bundles |
 | [Self-supervised deep](selfsupervised-deep.md) | Masked tabular pretext, embeddings, head finetune, ssl bundles |
@@ -200,9 +204,10 @@ cross-links.
 Guides cover **public Session surfaces** and common operator patterns. They do
 **not** claim:
 
-- Fairness certification or SHAP-first explainability
+- Legal fairness certification / automatic bias mitigation (observational
+  `evaluate_fairness` and optional `explain_shap` via `buildml[shap]` are shipped)
 - Causal claims from EDA / associations / feature importance (use the separate
-  assumption-declared causal path — never from EDA alone)
+  assumption-declared causal path: never from EDA alone)
 - PyMC / Stan / NumPyro MCMC or Bayesian deep nets (sklearn BayesianRidge / GP /
   NB + train-only split conformal is the shipped probabilistic surface)
 - Full Hugging Face / TorchVision zoo productization
@@ -227,7 +232,7 @@ When an API is alpha, guides say so and show the honest limit next to the exampl
 
 Industry-standard Tier A/B/C projects live under
 [`proofs/`](../proofs/README.md) (**57/57** Tier A, **36/36** Tier B, **57/57**
-Tier C — not smoke). Re-run: `python -m proofs._lib.run_all --tier all`.
+Tier C: not smoke). Re-run: `python -m proofs._lib.run_all --tier all`.
 
 | Domain | Proof project |
 | --- | --- |

@@ -15,7 +15,7 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "A claims adjuster with twenty years of files. Faced with a new claim, they do not consult a "
-            "formula — they recall the three most similar claims they have handled and what happened."
+            "formula: they recall the three most similar claims they have handled and what happened."
         ),
         steps=(
             "Each training row becomes a case: its features plus the known outcome.",
@@ -79,7 +79,7 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Retain when genuinely new labelled cases arrive from production.",
         ),
         avoid=(
-            "Do not retain rows from your own holdout partitions — BuildML refuses, and the refusal is protecting your evaluation.",
+            "Do not retain rows from your own holdout partitions: BuildML refuses, and the refusal is protecting your evaluation.",
             "Do not use a mixed metric without understanding how categorical mismatches are scored; unknown categories fall back to a sentinel.",
         ),
         myths=(
@@ -102,7 +102,7 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         check=(
             "Where did every case in your memory come from?",
-            "Does the reuse mode match your task — voting for labels, averaging for numbers?",
+            "Does the reuse mode match your task: voting for labels, averaging for numbers?",
         ),
         tools=("fit_cbr", "predict_cbr", "retain_cbr", "evaluate_cbr"),
         terms=("case-based reasoning", "nearest neighbours", "distance metric", "leakage"),
@@ -133,7 +133,7 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not route case-based reasoning through the RAG functions; they are separate surfaces and will not accept each other's state.",
-            "Do not install the RAG extras expecting to need them for case-based reasoning — it has no such dependency.",
+            "Do not install the RAG extras expecting to need them for case-based reasoning: it has no such dependency.",
         ),
         myths=(
             (
@@ -142,7 +142,7 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "One index could serve both.",
-                "The similarity notions differ completely — feature distance versus semantic text similarity — as do the leakage rules around what may enter the index.",
+                "The similarity notions differ completely: feature distance versus semantic text similarity: as do the leakage rules around what may enter the index.",
             ),
         ),
         example=(
@@ -169,7 +169,7 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a case base.",
-            "Call `save_cbr_bundle(path)` — cases, metric, `k`, and reuse mode all travel together.",
+            "Call `save_cbr_bundle(path)`: cases, metric, `k`, and reuse mode all travel together.",
             "Reload with `load_cbr_bundle(path)`.",
             "Predict and retrieve traces exactly as before.",
             "Use checkpoints separately for the data and workflow.",

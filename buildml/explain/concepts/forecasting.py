@@ -111,7 +111,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "ETS (Exponential Smoothing) captures level/trend/seasonality in the target "
                 "series alone. ARIMA/SARIMAX model autoregressive integrated moving-average "
                 "structure; SARIMAX adds seasonal orders and optional contemporaneous exog. "
-                "auto_arima here is a lightweight in-tree AIC grid — not pmdarima."
+                "auto_arima here is a lightweight in-tree AIC grid: not pmdarima."
             ),
             intuition=(
                 "ETS smooths the past forward; ARIMA learns how today relates to recent "
@@ -150,7 +150,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "(exog) forecasting adds external drivers known at prediction time."
             ),
             intuition=(
-                "Temperature next week may help predict ice-cream sales — but only if "
+                "Temperature next week may help predict ice-cream sales: but only if "
                 "you actually have a next-week temperature forecast to feed the model."
             ),
             formal_idea=(
@@ -197,7 +197,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "You leave the dock with only today's instruments and narrate the next "
-                "H days — each day your story depends on yesterday's story."
+                "H days: each day your story depends on yesterday's story."
             ),
             formal_idea=(
                 "Let ĥ0 be history at origin. For h=1..H: ŷ_h = f(ĥ_{h-1}[, x_h]); "
@@ -232,7 +232,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
         _note(
             key="forecast-eval-protocols",
             title="Rolling one-step vs origin evaluation",
-            summary="Rolling one-step uses prior actuals as history; origin scores a fixed recursive multi-step path — report which protocol you used.",
+            summary="Rolling one-step uses prior actuals as history; origin scores a fixed recursive multi-step path: report which protocol you used.",
             definition=(
                 "Rolling one-step evaluation predicts each holdout point using all prior "
                 "actuals, then appends the actual. Origin evaluation freezes history at "
@@ -271,14 +271,14 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
         _note(
             key="forecast-metric-limits",
             title="Forecast metric limitations (MAE/RMSE/MAPE)",
-            summary="MAE and RMSE are primary; MAPE is scale-sensitive and unstable near zero — disclosed, not a universal accuracy.",
+            summary="MAE and RMSE are primary; MAPE is scale-sensitive and unstable near zero: disclosed, not a universal accuracy.",
             definition=(
                 "MAE is mean absolute error, RMSE is root mean squared error, and MAPE "
                 "is mean absolute percentage error. None certify causal correctness or "
                 "business value alone."
             ),
             intuition=(
-                "MAPE blows up when actuals are near zero — like dividing by a whisper."
+                "MAPE blows up when actuals are near zero: like dividing by a whisper."
             ),
             formal_idea=(
                 "MAE = mean(|ŷ−y|), RMSE = sqrt(mean((ŷ−y)^2)), "
@@ -307,7 +307,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
         _note(
             key="forecast-bundle-boundary",
             title="Forecast bundle vs Session checkpoint",
-            summary="buildml.forecast_bundle.v1 stores ForecastPlan weights/contract; Session checkpoints store data/roles/splits/history — they are not interchangeable.",
+            summary="buildml.forecast_bundle.v1 stores ForecastPlan weights/contract; Session checkpoints store data/roles/splits/history: they are not interchangeable.",
             definition=(
                 "A forecast bundle persists a train-fitted ForecastPlan (baseline or lag "
                 "estimator + lag/exog contract + disclosures). A Session checkpoint "

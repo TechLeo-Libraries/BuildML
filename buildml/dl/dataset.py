@@ -46,7 +46,7 @@ def resolve_feature_target(
 
     Prefers the roles you assigned. When no column is explicitly marked as a
     feature, falls back to everything that is not the target and not marked as
-    an identifier, group, time, weight, or ignored column — the columns that
+    an identifier, group, time, weight, or ignored column: the columns that
     are left over are, by elimination, the ones describing each row.
 
     Parameters
@@ -66,7 +66,7 @@ def resolve_feature_target(
     ------
     ValidationError
         If no target is set, or if nothing usable remains after the exclusions
-        — which normally means every column carries a non-feature role.
+       : which normally means every column carries a non-feature role.
 
     Notes
     -----
@@ -96,7 +96,7 @@ def infer_task(y: pd.Series, task: TaskSpec) -> Literal["classification", "regre
     """Guess whether the target is a category or a quantity.
 
     The distinction decides the loss function, the output layer width, and how
-    predictions are read — so getting it wrong produces a model that trains
+    predictions are read: so getting it wrong produces a model that trains
     without complaint and means nothing.
 
     Parameters
@@ -116,7 +116,7 @@ def infer_task(y: pd.Series, task: TaskSpec) -> Literal["classification", "regre
     The rule: a numeric column is regression when it has more than
     ``max(10, 20% of rows)`` distinct values, and classification otherwise.
     Non-numeric columns are always classification. The proportional term is what
-    keeps the rule sensible across scales — twelve distinct values among fifty
+    keeps the rule sensible across scales: twelve distinct values among fifty
     rows is plausibly a quantity, but among fifty thousand rows it is plainly a
     set of categories.
 
@@ -167,8 +167,8 @@ def partition_arrays(
     Raises
     ------
     ValidationError
-        If the target column is non-numeric — class labels must be encoded to
-        integers first — or if it contains ``NaN``. A missing label is not a
+        If the target column is non-numeric: class labels must be encoded to
+        integers first: or if it contains ``NaN``. A missing label is not a
         label, and training on one teaches the model an arbitrary answer.
 
     Notes
@@ -183,7 +183,7 @@ def partition_arrays(
             np.empty((0, len(feature_columns)), dtype=np.float64),
             np.empty((0,), dtype=np.float64),
         )
-    # Index membership only — avoid frame_for_partition's empty-validation raise.
+    # Index membership only: avoid frame_for_partition's empty-validation raise.
     frame = dataset._ensure_pandas().iloc[list(indices)].copy()
     if frame.empty:
         return (
@@ -230,7 +230,7 @@ def build_feature_contract(
         ``'auto'`` to infer from the training targets, or an explicit choice.
     normalize:
         Standardise features to zero mean and unit variance using training
-        statistics. Usually worth leaving on — neural networks train poorly
+        statistics. Usually worth leaving on: neural networks train poorly
         when features differ by orders of magnitude, because a single learning
         rate cannot suit all of them.
 
@@ -251,7 +251,7 @@ def build_feature_contract(
     Notes
     -----
     **Statistics come from train and are applied to holdout.** Fitting them
-    across all partitions would let the test set influence the scaling — a
+    across all partitions would let the test set influence the scaling: a
     small effect, but one that inflates the holdout score with nothing in the
     output to reveal it.
 
@@ -333,7 +333,7 @@ def arrays_to_tensor_dataset(x: np.ndarray, y: np.ndarray, *, task: str) -> Any:
     **The target dtype and shape follow the task, and both matter.**
     Classification targets become 1-D ``long`` because ``CrossEntropyLoss``
     requires class indices, not floats. Regression targets become ``float32``
-    reshaped to ``(n, 1)`` to match a single-output layer — without the reshape,
+    reshaped to ``(n, 1)`` to match a single-output layer: without the reshape,
     broadcasting between ``(n,)`` and ``(n, 1)`` silently produces an ``(n, n)``
     loss matrix and a meaningless gradient.
 

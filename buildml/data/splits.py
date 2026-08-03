@@ -4,14 +4,14 @@ A model evaluated on data it was trained on will report a score it cannot
 reproduce on anything new. Splitting is how that is avoided, and the whole of
 this module exists to make the split correct and to keep it correct.
 
-A :class:`SplitPlan` is membership, not data — positional indices into the
+A :class:`SplitPlan` is membership, not data: positional indices into the
 frame. Nothing is copied, so a plan is cheap to carry and can be serialised
 alongside a model to record exactly which rows it was fitted on.
 
 Four strategies, because "correct" depends on the data. :func:`create_split`
 shuffles rows at random, optionally stratified so class proportions hold in each
 partition. :func:`create_group_split` keeps every row of a group together, which
-matters whenever rows are not independent — repeated measurements of one
+matters whenever rows are not independent: repeated measurements of one
 patient, several orders from one customer. :func:`create_time_split` cuts
 chronologically, because predicting the past from the future is not a problem
 anyone has. :func:`inject_partitions` accepts membership you determined
@@ -62,7 +62,7 @@ class SplitPlan:
     Attributes
     ----------
     kind:
-        How it was made — ``'random'``, ``'stratified'``, ``'group'``,
+        How it was made: ``'random'``, ``'stratified'``, ``'group'``,
         ``'time'``, or ``'injected'``. **Read this before trusting a score**: a
         random split of grouped data is the most common cause of an optimistic
         result.
@@ -75,7 +75,7 @@ class SplitPlan:
         The seed. ``None`` for time splits, which do not shuffle, and for
         injected plans.
     stratify_column:
-        The column that shaped the split — the stratification target, the group
+        The column that shaped the split: the stratification target, the group
         column, or the time column, depending on ``kind``.
     train_indices:
         Positions a model may learn from.
@@ -87,7 +87,7 @@ class SplitPlan:
     Notes
     -----
     **Indices are positional and tied to the current frame.** Reordering or
-    filtering rows after building a plan silently invalidates it — the indices
+    filtering rows after building a plan silently invalidates it: the indices
     will still resolve, and will point at different rows. Split after the frame
     is settled.
 
@@ -228,8 +228,8 @@ class SplitPlan:
         """Verify no row belongs to two partitions, and that the split is usable.
 
         Called by every constructor in this module. A row appearing in both
-        train and test is the purest form of leakage — the model has memorised
-        the answer — and it is cheap enough to check that there is no reason
+        train and test is the purest form of leakage: the model has memorised
+        the answer: and it is cheap enough to check that there is no reason
         to assume it away.
 
         Returns
@@ -274,7 +274,7 @@ def create_split(
 ) -> SplitPlan:
     """Split rows at random, optionally preserving class balance.
 
-    The default strategy, and the right one when rows are independent — each
+    The default strategy, and the right one when rows are independent: each
     row a separate observation, with no shared subject, session, or entity tying
     any two together.
 
@@ -391,8 +391,8 @@ def create_group_split(
 ) -> SplitPlan:
     """Split so that no group is ever split, keeping related rows together.
 
-    When several rows describe the same entity — visits by one patient, orders
-    by one customer, readings from one sensor — a random split puts some of that
+    When several rows describe the same entity: visits by one patient, orders
+    by one customer, readings from one sensor: a random split puts some of that
     entity's rows in train and some in test. The model then recognises the
     entity rather than learning the pattern, and reports a score it will not
     reproduce on anyone new.
@@ -502,7 +502,7 @@ def create_time_split(
     Sorts by timestamp and cuts. The earliest rows train, the latest test, and
     a validation partition sits between them. Nothing is shuffled.
 
-    This mirrors how a deployed model actually works — it will only ever see
+    This mirrors how a deployed model actually works: it will only ever see
     data from before the moment it predicts. A random split on time-ordered data
     lets the model train on Thursday and predict Tuesday, which inflates the
     score by an amount nobody can estimate afterwards.
@@ -514,7 +514,7 @@ def create_time_split(
     test_size:
         A fraction or count of rows, taken from the most recent end.
     validation_size:
-        The same, taken from the most recent end of what remains — so the
+        The same, taken from the most recent end of what remains: so the
         ordering is train, then validation, then test.
     time_column:
         Which column holds the timestamps. Defaults to the sole ``time`` role.
@@ -541,7 +541,7 @@ def create_time_split(
     of the cut without saying so.
 
     **Ties are broken stably.** Rows sharing a timestamp keep their original
-    relative order, so the split is reproducible — but rows on the boundary
+    relative order, so the split is reproducible: but rows on the boundary
     could have gone either way, and if many rows share the cut timestamp that is
     worth knowing about.
 
@@ -614,7 +614,7 @@ def inject_partitions(
 ) -> SplitPlan:
     """Adopt a split you determined elsewhere.
 
-    For membership that comes from outside BuildML — a competition's official
+    For membership that comes from outside BuildML: a competition's official
     split, a partition your team agreed on, or a scheme none of the built-in
     strategies expresses.
 
@@ -646,7 +646,7 @@ def inject_partitions(
 
     Notes
     -----
-    **Only disjointness is checked.** Group and time invariants are not — the
+    **Only disjointness is checked.** Group and time invariants are not: the
     plan does not record what scheme you intended, so there is nothing to verify
     against. An injected split that leaks groups will be accepted.
 
@@ -715,7 +715,7 @@ def frame_for_partition(
     ------
     ValidationError
         If the partition name is unrecognised, or if ``'validation'`` is
-        requested from a plan that has none — an empty frame there would look
+        requested from a plan that has none: an empty frame there would look
         like an empty split rather than an absent one.
 
     Notes
@@ -736,13 +736,13 @@ def frame_for_partition(
 def assert_fit_partition(plan: SplitPlan | None, partition: PartitionName = "train") -> None:
     """Refuse to fit on anything except a real training partition.
 
-    Called at the top of every operation that learns something — imputation
+    Called at the top of every operation that learns something: imputation
     statistics, encoder vocabularies, scaler parameters, model weights. It
     enforces two rules: a split must exist, and the fit must be on train.
 
     The first rule is the one that matters most. Fitting on full data before
     splitting is the leak that produces the most convincing wrong number,
-    because nothing about it looks unusual — the code runs, the score is good,
+    because nothing about it looks unusual: the code runs, the score is good,
     and the model fails in production for reasons nobody can reconstruct.
 
     Parameters
@@ -765,8 +765,8 @@ def assert_fit_partition(plan: SplitPlan | None, partition: PartitionName = "tra
 
     Notes
     -----
-    **The refusal is deliberate friction.** Every alternative — a warning, a
-    default, an inferred split — leaves a path to a wrong number that looks
+    **The refusal is deliberate friction.** Every alternative: a warning, a
+    default, an inferred split: leaves a path to a wrong number that looks
     right. :func:`inject_partitions` is available when you genuinely own the
     split.
 

@@ -196,7 +196,7 @@ class WorkflowState:
     def clear_plans(self) -> None:
         """Clear every Session-global preprocess plan slot on this state object.
 
-        Does not reset dataset, split, fit results, or history — only the
+        Does not reset dataset, split, fit results, or history: only the
         train-global transform plans that can poison fold-local evaluation.
         """
         self.impute_plan = None
@@ -346,7 +346,7 @@ def restore_plans(session: Any, plans: dict[str, Any] | None) -> None:
 def clear_plans(session: Any) -> None:
     """Clear every Session-global preprocess plan slot on the live Session.
 
-    Does not reset dataset, split, fit results, or history — only the
+    Does not reset dataset, split, fit results, or history: only the
     train-global transform plans that can poison fold-local evaluation.
 
     Parameters

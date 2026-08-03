@@ -3,12 +3,12 @@
 > **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
 > install Session 2.x. Use
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Randomized/grid/evolutionary AutoML is core sklearn — no optional extra.
+> Randomized/grid/evolutionary AutoML is core sklearn: no optional extra.
 > Optuna backend: `buildml[automl]`. Industry adapters (FLAML / AutoGluon) and
 > GBDT families: `buildml[automl-industry]`.
 > See [installation](../docs/installation.rst).
 
-Joint model-family + fold-local preprocess-strategy search on the Session —
+Joint model-family + fold-local preprocess-strategy search on the Session :
 beyond tuning one fixed estimator with `grid_search` / `optuna_search`.
 
 **Go deeper:** [AutoML deep](automl-deep.md) ·
@@ -119,7 +119,7 @@ export_comparison_metrics(session.automl_result, "artifacts/automl_trials.json")
 ```
 
 Native `backend='native'` remains the leakage-first path with fold-local
-recipe search. Industry adapters bypass recipe strategy search — see
+recipe search. Industry adapters bypass recipe strategy search: see
 `limitations` on `AutoMLResult`.
 
 ---

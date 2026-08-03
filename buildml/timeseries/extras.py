@@ -145,7 +145,7 @@ def statsmodels_available() -> bool:
     """Return whether ``statsmodels`` is importable in the active environment.
 
     Cheap ``find_spec`` probe used by catalog defaults and capability matrices.
-    Never raises — missing packages return ``False``.
+    Never raises: missing packages return ``False``.
 
     Returns
     -------

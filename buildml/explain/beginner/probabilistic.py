@@ -10,7 +10,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         "probabilistic-uncertainty",
         plain=(
             "Most models give you one number and no sense of how sure they are. A probabilistic model gives "
-            "you a number *and* a spread — 'about 42, give or take 6'. That extra half of the answer is "
+            "you a number *and* a spread: 'about 42, give or take 6'. That extra half of the answer is "
             "often the part a decision actually needs."
         ),
         analogy=(
@@ -20,7 +20,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Choose a model that can express uncertainty: Bayesian ridge, a Gaussian process, or a naive Bayes classifier.",
             "Fit it on training rows as usual.",
-            "Predict — you get a central value plus a standard deviation, or a full probability per class.",
+            "Predict: you get a central value plus a standard deviation, or a full probability per class.",
             "Optionally add conformal intervals for a coverage guarantee that does not depend on the model being right about its own uncertainty.",
             "Report the interval alongside the point estimate everywhere it will be used.",
         ),
@@ -30,12 +30,12 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it when a point estimate genuinely suffices and the extra complexity buys nothing.",
-            "Do not treat a model's own uncertainty as trustworthy without checking coverage — many models are overconfident.",
+            "Do not treat a model's own uncertainty as trustworthy without checking coverage: many models are overconfident.",
         ),
         myths=(
             (
                 "A model's predicted standard deviation is its true uncertainty.",
-                "It is the uncertainty implied by the model's assumptions. If those assumptions are wrong, the interval is wrong too — often too narrow.",
+                "It is the uncertainty implied by the model's assumptions. If those assumptions are wrong, the interval is wrong too: often too narrow.",
             ),
             (
                 "Uncertainty estimates require Bayesian statistics.",
@@ -69,7 +69,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Prepare numeric features and scale them, as with any linear model.",
-            "Fit — the method estimates both the coefficients and how uncertain each one is.",
+            "Fit: the method estimates both the coefficients and how uncertain each one is.",
             "Predict with `return_std` to get the mean and the predictive standard deviation per row.",
             "Notice that rows unlike the training data get wider intervals, which is the behaviour you want.",
             "Check coverage on held-out rows before relying on the widths.",
@@ -80,7 +80,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not expect it to capture non-linear relationships; it is still a linear model underneath.",
-            "Do not trust the intervals when the residuals are strongly non-Gaussian or heteroscedastic — the model assumes constant Gaussian noise.",
+            "Do not trust the intervals when the residuals are strongly non-Gaussian or heteroscedastic: the model assumes constant Gaussian noise.",
         ),
         myths=(
             (
@@ -110,7 +110,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         "probabilistic-gaussian-process",
         plain=(
             "A Gaussian process is a flexible model that fits smooth curves and, crucially, becomes "
-            "appropriately unsure wherever it has little data. Its uncertainty is not a bolt-on — it comes "
+            "appropriately unsure wherever it has little data. Its uncertainty is not a bolt-on: it comes "
             "directly from how far a point is from what it has seen."
         ),
         analogy=(
@@ -118,15 +118,15 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "there is a gap, many curves fit equally well, and the honest answer is a fan rather than a line."
         ),
         steps=(
-            "Scale your features — the kernel measures distances and is entirely at the mercy of units.",
+            "Scale your features: the kernel measures distances and is entirely at the mercy of units.",
             "Choose a kernel, which encodes what kind of smoothness you expect. The default RBF is a reasonable start.",
             "Fit; the method learns the kernel's parameters from the data.",
             "Predict with `return_std` for regression, or use the classifier variant for probabilities.",
-            "Watch the runtime — cost grows roughly with the cube of the row count.",
+            "Watch the runtime: cost grows roughly with the cube of the row count.",
         ),
         use=(
             "On small datasets, up to a few thousand rows, where the uncertainty behaviour is worth the cost.",
-            "For interpolation problems — sensor readings, spatial data, expensive experiments.",
+            "For interpolation problems: sensor readings, spatial data, expensive experiments.",
         ),
         avoid=(
             "Do not use it on large datasets; it will not finish, and the sparse approximations are a different tool.",
@@ -161,7 +161,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Conformal prediction turns any model into one with honest intervals. You set aside a slice of "
             "training rows, measure how wrong the model is on them, and use that error distribution to size "
-            "your intervals. If you ask for 90% coverage, you get about 90% — regardless of whether the "
+            "your intervals. If you ask for 90% coverage, you get about 90%: regardless of whether the "
             "underlying model's own uncertainty estimates were any good."
         ),
         analogy=(
@@ -170,7 +170,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "observed misses, not on assumptions."
         ),
         steps=(
-            "Carve a calibration slice out of the training rows — never from validation or test.",
+            "Carve a calibration slice out of the training rows: never from validation or test.",
             "Fit your model on the remaining training rows.",
             "Measure the absolute residuals on the calibration slice.",
             "Take the quantile of those residuals matching your desired coverage.",
@@ -182,7 +182,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it when the calibration slice would be tiny; you cannot estimate a 95th percentile from 40 residuals.",
-            "Do not use it when the deployment distribution differs from calibration — the guarantee assumes exchangeability and quietly breaks under drift.",
+            "Do not use it when the deployment distribution differs from calibration: the guarantee assumes exchangeability and quietly breaks under drift.",
         ),
         myths=(
             (
@@ -212,7 +212,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "probabilistic-bundle-boundary",
         plain=(
-            "The probabilistic plan — the fitted model plus any conformal calibration it needs — saves as "
+            "The probabilistic plan: the fitted model plus any conformal calibration it needs: saves as "
             "its own bundle. The calibration quantiles are part of the model: without them the intervals "
             "cannot be reproduced."
         ),
@@ -222,7 +222,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a probabilistic model, optionally with conformal calibration.",
-            "Call `save_probabilistic_bundle(path)` — the calibration state travels with the estimator.",
+            "Call `save_probabilistic_bundle(path)`: the calibration state travels with the estimator.",
             "Reload with `load_probabilistic_bundle(path)`.",
             "Call `predict_interval` on new rows and get the same widths you validated.",
             "Checkpoint separately for the data state.",
@@ -262,7 +262,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         "probabilistic-mapie",
         plain=(
             "MAPIE is a dedicated conformal-prediction library. With the optional extra installed, BuildML "
-            "can use its more sophisticated variants — cross-conformal and jackknife+ — which reuse all "
+            "can use its more sophisticated variants: cross-conformal and jackknife+: which reuse all "
             "your training rows for calibration instead of setting a slice aside."
         ),
         analogy=(
@@ -274,7 +274,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Choose a method: `split` is the simple one, `cv_plus` and `jackknife_plus` reuse all training rows through folds.",
             "Fit through the MAPIE backend.",
             "Request intervals at your target coverage.",
-            "Check the empirical coverage on held-out rows — the guarantee is asymptotic, not exact.",
+            "Check the empirical coverage on held-out rows: the guarantee is asymptotic, not exact.",
         ),
         use=(
             "When your training set is small and giving up a calibration slice hurts.",
@@ -282,7 +282,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use the cross-conformal variants when refitting is expensive; they train the model once per fold.",
-            "Do not install the extra just for basic split conformal — BuildML does that natively.",
+            "Do not install the extra just for basic split conformal: BuildML does that natively.",
         ),
         myths=(
             (
@@ -323,7 +323,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Install `pip install buildml[probabilistic-industry]`.",
             "Choose a distribution: Normal for regression, Bernoulli for binary classification.",
-            "Fit — boosting optimizes both the location and the spread parameters together.",
+            "Fit: boosting optimizes both the location and the spread parameters together.",
             "Predict to get per-row distributional parameters, not a single number.",
             "Score with a proper scoring rule such as negative log-likelihood, not only with MAE.",
         ),
@@ -333,7 +333,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it when a constant-width conformal interval is adequate; it is slower and has more knobs.",
-            "Do not assume the distributional assumption fits — a Normal predictive distribution on skewed, bounded, or count data will be wrong in a specific direction.",
+            "Do not assume the distributional assumption fits: a Normal predictive distribution on skewed, bounded, or count data will be wrong in a specific direction.",
         ),
         myths=(
             (

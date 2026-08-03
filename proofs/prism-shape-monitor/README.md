@@ -1,6 +1,6 @@
 # Prism Shape Monitor
 
-**Tier B** cross-domain product proof — TDA shape descriptors + unsupervised
+**Tier B** cross-domain product proof: TDA shape descriptors + unsupervised
 anomaly + classical supervised pass/fail for process monitoring.
 
 ## Product narrative
@@ -14,7 +14,7 @@ geometry is scored three ways:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 Core stages (anomaly + supervised) keep the product completed when TDA skips.
 
 ## How to run

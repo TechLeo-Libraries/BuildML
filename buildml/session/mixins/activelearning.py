@@ -39,7 +39,7 @@ class ActivelearningSessionMixin:
     ) -> ActiveLearningFitResult:
         """Fit or initialize the active learner on labeled train rows only.
 
-        Session facade over :func:`buildml.session.activelearning_ops.fit_active_learner_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.activelearning_ops.fit_active_learner_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -78,7 +78,7 @@ class ActivelearningSessionMixin:
     ) -> ActiveLearningQueryResult:
         """Suggest unlabeled train-pool indices for human labeling without an oracle.
 
-        Session facade over :func:`buildml.session.activelearning_ops.suggest_query_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.activelearning_ops.suggest_query_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -105,7 +105,7 @@ class ActivelearningSessionMixin:
     ) -> ActiveLearningLabelResult:
         """Incorporate user-provided labels on train-pool rows and optionally refit.
 
-        Session facade over :func:`buildml.session.activelearning_ops.label_rows_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.activelearning_ops.label_rows_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -132,7 +132,7 @@ class ActivelearningSessionMixin:
     ) -> ActiveLearningEvalResult:
         """Evaluate the active learner on labeled rows of a holdout partition.
 
-        Session facade over :func:`buildml.session.activelearning_ops.evaluate_active_learning_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.activelearning_ops.evaluate_active_learning_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -198,7 +198,7 @@ class ActivelearningSessionMixin:
     def save_active_learning_bundle(self, path: str | Path) -> Path:
         """Persist the active-learning plan as ``buildml.activelearning_bundle.v1``.
 
-        Session facade over :func:`buildml.session.activelearning_ops.save_active_learning_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.activelearning_ops.save_active_learning_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -215,7 +215,7 @@ class ActivelearningSessionMixin:
     def load_active_learning_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an active-learning bundle into this Session.
 
-        Session facade over :func:`buildml.session.activelearning_ops.load_active_learning_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.activelearning_ops.load_active_learning_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

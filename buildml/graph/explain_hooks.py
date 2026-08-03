@@ -180,7 +180,7 @@ def graph_status(
                 "Session checkpoints do not embed GraphPlan; use "
                 "save_graph_bundle / load_graph_bundle.",
                 "Honesty: classical NetworkX+sklearn, pure-Torch GCN, "
-                "and/or PyG GCN/GraphSAGE/GAT — not Neo4j/KG.",
+                "and/or PyG GCN/GraphSAGE/GAT: not Neo4j/KG.",
             ]
         )
         for note in getattr(plan, "disclosures", ()) or ():

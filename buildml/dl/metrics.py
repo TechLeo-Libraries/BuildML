@@ -10,7 +10,7 @@ The second is evaluation: running the module over a partition in inference mode
 and turning its outputs into metrics. Classification gets accuracy, balanced
 accuracy, and both weighted and macro F1, plus a confusion matrix in the caller's
 original labels rather than the internal integer codes. Regression gets MAE,
-MSE, RMSE, and R², plus a residual distribution — because a single error number
+MSE, RMSE, and R², plus a residual distribution: because a single error number
 cannot distinguish a model that is uniformly slightly wrong from one that is
 usually right and occasionally catastrophic.
 
@@ -50,7 +50,7 @@ def resolve_device(requested: str = "auto") -> DeviceSpec:
 
     Accepts a device request and returns what will actually be used. An
     unavailable accelerator falls back to CPU with a warning attached rather
-    than raising — training on CPU is slow but correct, and stopping the run
+    than raising: training on CPU is slow but correct, and stopping the run
     would be worse than continuing with a note.
 
     Parameters
@@ -230,7 +230,7 @@ def evaluate_module(
     -----
     **The confusion matrix uses your labels, not the internal codes.** Loaders
     encode classes to ``0..K-1`` for the loss function, and this maps them back
-    — a matrix indexed by integers you never chose is difficult to read and easy
+   : a matrix indexed by integers you never chose is difficult to read and easy
     to misread.
 
     **Balanced accuracy is the one to check on imbalanced data.** Plain accuracy
@@ -240,7 +240,7 @@ def evaluate_module(
 
     **The residual summary is where regression failures show up.** Percentiles
     and maximum absolute error distinguish uniformly-small errors from mostly-
-    small errors with rare large ones — two very different models that can share
+    small errors with rare large ones: two very different models that can share
     an RMSE.
 
     **Score the test partition once.** Repeatedly evaluating on test and
@@ -307,7 +307,7 @@ def evaluate_module(
             "max_abs": float(np.max(np.abs(resid))),
         }
         if metrics["r2"] < 0:
-            tips.append("Negative R² — model underperforms a mean baseline on this partition.")
+            tips.append("Negative R²: model underperforms a mean baseline on this partition.")
     else:
         metrics["accuracy"] = float(accuracy_score(y_true, y_pred))
         metrics["balanced_accuracy"] = float(balanced_accuracy_score(y_true, y_pred))

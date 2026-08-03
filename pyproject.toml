@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "buildml"
 version = "2.4.0a2"
-description = "BuildML — a flexible, depth-first toolkit for building ML workflows."
+description = "BuildML: a flexible, depth-first toolkit for building ML workflows."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [
@@ -148,6 +148,9 @@ symbolic-industry = [
 cbr-industry = [
     "hnswlib>=0.8",
 ]
+shap = [
+    "shap>=0.44",
+]
 # NLP core (bag-of-n-grams, lexicon sentiment, rule NER, graph summarization,
 # native language ID) needs nothing beyond scikit-learn. These extras add the
 # optional paths: NLTK morphology, langdetect, sentence embeddings, and
@@ -173,7 +176,7 @@ synthetic-industry = [
   "sdmetrics>=0.15",
 ]
 # One-shot install for industry-depth ML domains (R1–R6 refinement).
-# Core `import buildml` stays light — Session + numpy/pandas/sklearn only.
+# Core `import buildml` stays light: Session + numpy/pandas/sklearn only.
 # Best-effort meta-extra: Python/platform markers skip packages without wheels
 # (esp. Windows + Py3.13). Does not pull dashboard, serve, ai, or dev tooling.
 production = [
@@ -273,10 +276,10 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "--basetemp=tests/.pytest_tmp"
 
-# Coverage ratchet: measured 26.2% TOTAL on classical smoke alone (2026-08,
-# Python 3.12); full CI pytest suite sits higher. Floor is intentionally
-# conservative so industry-extra skips cannot flake the gate; raise when
-# classical/core coverage improves. Omit legacy and generated teaching artifacts.
+# Coverage ratchet schedule: scripts/coverage_ratchet.json (60 active → 70).
+# Floor is one-way: raise when classical/core coverage improves; never lower
+# to silence a regression. Measure with scripts/run_full_coverage.py (full suite).
+# Omit legacy and generated teaching artifacts.
 [tool.coverage.run]
 branch = false
 source = ["buildml"]
@@ -286,8 +289,9 @@ omit = [
 ]
 
 [tool.coverage.report]
-# Ratchet: classical+checkpoint smoke measured ~26.5% on Py3.13; leave headroom.
-fail_under = 25
+# Active floor (2.4.0a3). Full-suite measure ~70.7% (see coverage_ratchet.json);
+# Linux CI monolith is the gate. Next planned: 70 at 2.5.0.
+fail_under = 60
 precision = 1
 skip_empty = true
 show_missing = true
@@ -322,7 +326,7 @@ ignore_missing_imports = true
 exclude = ["buildml/_legacy/", "build/", "docs/"]
 
 # NumPy >=2.5 stubs use PEP 695 `type` statements; mypy refuses to parse them
-# under python_version=3.10 (our runtime floor). Skip numpy stub internals —
+# under python_version=3.10 (our runtime floor). Skip numpy stub internals :
 # we already treat third-party imports as untyped via ignore_missing_imports.
 [[tool.mypy.overrides]]
 module = ["numpy", "numpy.*"]

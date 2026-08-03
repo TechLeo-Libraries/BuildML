@@ -9,7 +9,7 @@ passage the question is about.
 
 A cross-encoder gives up the speed to recover the accuracy. It takes the query
 and one passage as a single input and produces a relevance score, which means it
-can attend to the query while reading — but it must run once per candidate, so
+can attend to the query while reading: but it must run once per candidate, so
 it cannot search a corpus. It can only re-order a shortlist.
 
 The practical shape is: retrieve fifty cheaply, rerank them, keep five. Almost
@@ -71,8 +71,8 @@ def require_cross_encoder(
 class CrossEncoderReranker:
     """A loaded cross-encoder, ready to re-score shortlists.
 
-    Wraps one sentence-transformers model. Loading is the expensive part —
-    hundreds of megabytes on first use, downloaded and cached — so build this
+    Wraps one sentence-transformers model. Loading is the expensive part :
+    hundreds of megabytes on first use, downloaded and cached: so build this
     once and reuse it rather than constructing one per query.
 
     Attributes
@@ -143,7 +143,7 @@ class CrossEncoderReranker:
         """Re-score a shortlist against the query and keep the best ``k``.
 
         Every hit is scored afresh; the incoming ranks and scores are discarded
-        entirely, which is the point — the retriever's opinion is what we are
+        entirely, which is the point: the retriever's opinion is what we are
         trying to improve on.
 
         Parameters
@@ -242,7 +242,7 @@ def resolve_reranker(
     Notes
     -----
     **The model loads here, not on first query.** Enabling rerank makes this
-    call slow the first time and can raise if the extra is missing — better to
+    call slow the first time and can raise if the extra is missing: better to
     fail at setup than mid-retrieval.
     """
     if rerank is False or rerank is None or rerank == "":

@@ -1,6 +1,6 @@
 # Rivulet Stream Risk
 
-**Tier B** cross-domain product proof — online stream scoring + unsupervised
+**Tier B** cross-domain product proof: online stream scoring + unsupervised
 anomaly + validation-tuned decision thresholds for a synthetic payment rail.
 
 ## Product narrative
@@ -15,7 +15,7 @@ arrive in a continuous feed. The platform:
 
 ## Status
 
-`completed` — run `script.py`; see `results/summary.json` and stage JSONs.
+`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
 
 ## How to run
 
@@ -43,5 +43,5 @@ arrive in a continuous feed. The platform:
 
 ## Limitations
 
-Synthetic payment rail — not a card-network extract. Missing extras are skipped
+Synthetic payment rail: not a card-network extract. Missing extras are skipped
 with JSON disclosures (`MissingExtraError`).

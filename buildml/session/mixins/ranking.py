@@ -24,7 +24,7 @@ class RankingSessionMixin:
 
         Call before :meth:`fit_ranker` to confirm LightGBM/XGBoost/CatBoost or
         sklearn fallbacks before writing a fit call that will fail on this install.
-        Read-only — no dataset required.
+        Read-only: no dataset required.
 
         Returns
         -------
@@ -60,7 +60,7 @@ class RankingSessionMixin:
     ) -> RankerFitResult:
         """Fit a tabular ranker on Session train rows only.
 
-        Session facade over :func:`buildml.session.ranking_ops.fit_ranker_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ranking_ops.fit_ranker_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -104,7 +104,7 @@ class RankingSessionMixin:
     ) -> RankResult:
         """Order items for queries in a partition or an explicit query id list.
 
-        Session facade over :func:`buildml.session.ranking_ops.rank_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ranking_ops.rank_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -133,7 +133,7 @@ class RankingSessionMixin:
     ) -> RankerEvalResult:
         """Evaluate per-query ranking metrics on a holdout partition.
 
-        Session facade over :func:`buildml.session.ranking_ops.evaluate_ranker_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ranking_ops.evaluate_ranker_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -193,7 +193,7 @@ class RankingSessionMixin:
     def save_ranker_bundle(self, path: str | Path) -> Path:
         """Persist the active RankerPlan as ``buildml.ranker_bundle.v1``.
 
-        Session facade over :func:`buildml.session.ranking_ops.save_ranker_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ranking_ops.save_ranker_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------
@@ -210,7 +210,7 @@ class RankingSessionMixin:
     def load_ranker_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a ranker bundle into this Session.
 
-        Session facade over :func:`buildml.session.ranking_ops.load_ranker_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function — keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ranking_ops.load_ranker_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
         Returns
         -------

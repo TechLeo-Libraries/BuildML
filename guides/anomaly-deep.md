@@ -2,7 +2,7 @@
 
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core sklearn only — no optional extra. Industry depth:
+> Core sklearn only: no optional extra. Industry depth:
 > `pip install 'buildml[anomaly-industry]'` (PyOD + XGB/LGBM) and/or
 > `pip install 'buildml[torch]'` (autoencoder). See [installation](../docs/installation.rst).
 

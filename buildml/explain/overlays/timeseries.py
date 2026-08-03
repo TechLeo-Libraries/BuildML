@@ -43,7 +43,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use to inspect seasonality and stationarity before choosing a forecaster.",),
         assumptions=("Chronological order; numeric target.",),
         failures=("Random split refused; null targets; series too short.",),
-        leakage=("scope=all includes holdout — do not tune on it without disclosure.",),
+        leakage=("scope=all includes holdout: do not tune on it without disclosure.",),
         anti_patterns=("Using holdout decomposition to pick forecast hyperparameters silently.",),
         state_changes=("Stores ts_analysis_result.",),
         result_reading=("Read decompose, diagnostics, changepoints, features sub-results.",),

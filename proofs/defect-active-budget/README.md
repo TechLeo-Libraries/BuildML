@@ -29,7 +29,7 @@ See `results/results.json` (test accuracy / f1 and label curve).
 
 ## Industry comparison (Tier C)
 
-Filled — `baseline_industry.py` runs margin-sampling logistic active learning
+Filled: `baseline_industry.py` runs margin-sampling logistic active learning
 on the same split (`results/comparison.json`).
 
 ## Limitations

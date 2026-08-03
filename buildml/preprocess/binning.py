@@ -1,6 +1,6 @@
 """Group a numeric column into ranges, with the range boundaries learned from train.
 
-Binning — discretisation — replaces a continuous number with the name of the
+Binning: discretisation: replaces a continuous number with the name of the
 band it falls into. Age 34 becomes "30 to 40". You are deliberately throwing
 information away, so it needs a reason.
 
@@ -9,7 +9,7 @@ learnable by a linear model: if risk rises until middle age and then falls, no
 single coefficient on age can express that, but one coefficient per band can.
 Extreme values stop dominating, since the top band absorbs everything above its
 lower edge whether that is 200 or 200,000. And the result is legible to people
-who have to act on it — "customers aged 30 to 40" is a segment a business can
+who have to act on it: "customers aged 30 to 40" is a segment a business can
 work with in a way that "0.34 standardised age" is not.
 
 The costs are real too. Two values either side of a boundary are treated as
@@ -64,7 +64,7 @@ class BinningPlan:
     columns:
         The columns this plan discretises.
     strategy:
-        ``'quantile'`` or ``'uniform'`` — how the edges were chosen.
+        ``'quantile'`` or ``'uniform'``: how the edges were chosen.
     n_bins:
         The bin count requested. The actual number can be lower for a column
         with few distinct values or heavy ties, so read ``edges_`` for the
@@ -122,7 +122,7 @@ def fit_binning(
 ) -> BinningPlan:
     """Choose band boundaries for each numeric column from the training rows.
 
-    Nothing is transformed here — pass the returned plan to
+    Nothing is transformed here: pass the returned plan to
     :func:`transform_binning` to apply it.
 
     Parameters
@@ -142,7 +142,7 @@ def fit_binning(
 
         ``'quantile'`` (the default) puts roughly equal numbers of training
         rows in each band. Every band is then well populated, which is what you
-        usually want for a skewed column like income — but the bands have
+        usually want for a skewed column like income: but the bands have
         uneven widths, so "one band up" does not mean a fixed increase.
 
         ``'uniform'`` cuts the observed range into equal-width slices. The
@@ -152,13 +152,13 @@ def fit_binning(
         How many bands to aim for. Somewhere between three and ten is usual:
         too few and you erase the pattern you were trying to expose, too many
         and each band holds too few rows to estimate anything stable. The
-        actual count can come out lower — see the notes.
+        actual count can come out lower: see the notes.
     encode_as:
         ``'ordinal'`` replaces the column with a single integer band index,
         keeping the frame narrow and preserving order, which suits tree models
         and ordinal-aware models. ``'onehot'`` produces one indicator column per
         band, which is what lets a linear model fit an independent effect per
-        band — usually the entire point of binning for a linear model.
+        band: usually the entire point of binning for a linear model.
 
     Returns
     -------
@@ -270,7 +270,7 @@ def transform_binning(dataset: Dataset, plan: BinningPlan) -> tuple[Dataset, Pre
     Returns
     -------
     tuple of (~buildml.data.dataset.Dataset, ~buildml.preprocess.result.PreprocessResult)
-        The transformed dataset, and a narrated record of what happened —
+        The transformed dataset, and a narrated record of what happened :
         which columns were binned, how full each band came out, and anything
         worth a second look, such as a band that ended up empty.
 
@@ -284,7 +284,7 @@ def transform_binning(dataset: Dataset, plan: BinningPlan) -> tuple[Dataset, Pre
     **Values beyond the training range are absorbed, not lost.** The outermost
     edges are infinite, so a test value larger than anything seen in training
     joins the top band. That is the sane default, but it also means the
-    transform will not tell you that drift has occurred — check the result's
+    transform will not tell you that drift has occurred: check the result's
     findings, or compare distributions with
     :meth:`~buildml.session.Session.eda`.
 

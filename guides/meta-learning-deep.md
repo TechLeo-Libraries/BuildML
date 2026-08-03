@@ -65,24 +65,24 @@ pip install "buildml[production]"  # includes metalearning-industry + torch
 
 ### `prototypical` (sklearn)
 
-Nearest-centroid few-shot on tabular features — no learned neural embedding.
+Nearest-centroid few-shot on tabular features: no learned neural embedding.
 
 ### `warm_start` (sklearn)
 
 Pooled `logistic_regression` / `sgd_classifier` meta-init → clone + refit on
-support. Honest warm initialization — **not** second-order MAML.
+support. Honest warm initialization: **not** second-order MAML.
 
 ### `prototypical_torch` (torch)
 
 Small MLP encoder trained with episodic prototype cross-entropy. Adapt/eval use
-embedding-space nearest prototypes. Small-scale tabular ProtoNet — not vision
+embedding-space nearest prototypes. Small-scale tabular ProtoNet: not vision
 ProtoNet claims.
 
 ### `maml` / `reptile` (industry)
 
 First-order tabular MAML/Reptile with learn2learn when installed. Inner-loop
 SGD on support, meta-update across episodic tasks. Honest small-scale task
-adaptation — not second-order MAML-at-scale.
+adaptation: not second-order MAML-at-scale.
 
 ---
 
@@ -115,9 +115,9 @@ session.evaluate_metalearning(partition="validation", prefer_novel_tasks=True)
 
 | Metric | Where |
 | --- | --- |
-| `meta_train_accuracy` | Fit result — episodic query accuracy during meta-train |
-| `mean_accuracy`, `mean_f1_macro` | Eval result — holdout episodic aggregate |
-| `held_out_task_ids` | Plan — internal train task holdout from fit |
+| `meta_train_accuracy` | Fit result: episodic query accuracy during meta-train |
+| `mean_accuracy`, `mean_f1_macro` | Eval result: holdout episodic aggregate |
+| `held_out_task_ids` | Plan: internal train task holdout from fit |
 | `novel_task_ids` / `overlapping_task_ids` | Eval disclosure |
 
 Benchmark: `python benchmarks/metalearning/few_shot_adaptation.py`
@@ -152,8 +152,8 @@ Teaching-critical tools: `fit_metalearning`, `adapt_to_task`,
 
 - Classification-focused surface (shared global label space).
 - Tabular-only; no vision/audio episodic suites.
-- Industry MAML is first-order / small-scale — not full second-order MAML.
-- Random row splits may place the same task id in train and holdout — disclosed.
+- Industry MAML is first-order / small-scale: not full second-order MAML.
+- Random row splits may place the same task id in train and holdout: disclosed.
 - Causal meta / EconML-style estimation lives in `buildml.causal`, not here.
 
 Next Phase 2 R6 item: **symbolic / neuro-symbolic** learning.
