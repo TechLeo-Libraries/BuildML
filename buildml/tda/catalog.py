@@ -21,7 +21,19 @@ VectorizationName = Literal[
 
 
 def tda_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for TDA backends and optional extras."""
+    """Report which TDA backends and vectorizations are available on this machine.
+
+    Call before :func:`fit_tda` or Session :meth:`~buildml.session.session.Session.fit_tda`
+    to confirm ripser/persim (``buildml[tda]``) or giotto-tda (``buildml[tda-industry]``)
+    imported successfully. Read-only introspection — no point cloud required.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested ``backends`` for ``native`` and ``giotto``, default backend selection,
+        subsample strategies, diagram distance metrics, ``install_hints``, and
+        ``non_goals`` separating Session TDA from Mapper research tools.
+    """
     return {
         "backends": {
             "native": {
@@ -95,7 +107,21 @@ def list_tda_vectorizations(
     *,
     backend: TdaBackendName | None = None,
 ) -> list[str]:
-    """List vectorization methods for a backend (or union when backend is None)."""
+    """List persistence-diagram vectorization methods for a TDA backend.
+
+    When ``backend`` is ``None``, returns the union of vectorizations advertised
+    by every backend in :func:`tda_capability_matrix`.
+
+    Parameters
+    ----------
+    backend:
+        ``native`` or ``giotto``. When ``None``, aggregate across backends.
+
+    Returns
+    -------
+    list[str]
+        Vectorization names such as ``persistence_image`` or ``betti_curve``.
+    """
     matrix = tda_capability_matrix()
     if backend is not None:
         entry = matrix["backends"].get(backend)
@@ -111,6 +137,22 @@ def list_tda_vectorizations(
 
 
 def backend_available(name: TdaBackendName) -> bool:
+    """Return whether a TDA backend imported successfully on this machine.
+
+    Looks up the ``available`` flag for ``native`` or ``giotto`` in
+    :func:`tda_capability_matrix`. Use before hard-coding a backend in shared
+    code.
+
+    Parameters
+    ----------
+    name:
+        ``native`` (ripser/persim) or ``giotto`` (giotto-tda).
+
+    Returns
+    -------
+    bool
+        ``True`` when the backend's optional extra imported successfully.
+    """
     entry = tda_capability_matrix()["backends"].get(name)
     if entry is None:
         return False
@@ -122,7 +164,31 @@ def resolve_backend_vectorization(
     backend: TdaBackendName | None,
     vectorization: str,
 ) -> tuple[TdaBackendName, str]:
-    """Validate backend/vectorization pairing and apply honest defaults."""
+    """Validate a backend/vectorization pair and apply honest defaults.
+
+    Normalises hyphenated names, picks a backend when ``None``, and refuses
+    pairings that are not advertised in :func:`tda_capability_matrix`.
+
+    Parameters
+    ----------
+    backend:
+        Explicit ``native`` or ``giotto``. When ``None``, inferred from the
+        vectorization (e.g. ``silhouette`` → native, ``betti_curve`` → giotto).
+    vectorization:
+        Persistence diagram vectorizer name.
+
+    Returns
+    -------
+    tuple[TdaBackendName, str]
+        Resolved backend and normalised vectorization key.
+
+    Raises
+    ------
+    ValidationError
+        When the vectorization is unknown for the resolved backend.
+    MissingExtraError
+        When the resolved backend's optional extra is not installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     key = str(vectorization).lower().replace("-", "_")

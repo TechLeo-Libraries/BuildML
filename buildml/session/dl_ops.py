@@ -108,6 +108,29 @@ def make_torch_loaders(
     re-apply fitted plans via :meth:`apply_preprocess_plans` before building
     loaders (score-time replay; does not refit).
 
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    batch_size:
+        Minibatch size for all loaders.
+    num_workers:
+        DataLoader worker processes.
+    pin_memory:
+        When True, pin CPU memory for faster GPU transfer.
+    shuffle_train:
+        When True, shuffle the train loader each epoch.
+    drop_last:
+        When True, drop the final partial train batch.
+    normalize:
+        When True, fit normalize stats on train only.
+    seed:
+        Seed for shuffling and sampling.
+    task:
+        Supervised task (``classification``, ``regression``, or ``auto``).
+    apply_plans:
+        When True, re-apply Session preprocess plans before building loaders.
+
     Returns
     -------
     TorchLoaderBundle
@@ -170,6 +193,31 @@ def make_text_torch_loaders(
     """Build token-id DataLoaders for text classification (non-tabular modality).
 
     Vocabulary is fit on the train partition only. Requires ``buildml[torch]``.
+    Delegates to :func:`buildml.dl.text.make_text_loaders`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    text_column:
+        Optional text column; auto-detected when omitted.
+    batch_size:
+        Minibatch size for all loaders.
+    max_len:
+        Maximum token sequence length.
+    max_vocab:
+        Maximum vocabulary size fit on train.
+    min_freq:
+        Minimum token frequency to enter the vocabulary.
+    shuffle_train:
+        When True, shuffle the train loader each epoch.
+    seed:
+        Seed for shuffling and vocabulary sampling.
+
+    Returns
+    -------
+    TorchLoaderBundle
+        Text loaders plus vocabulary and text contract metadata.
     """
     from buildml.dl.text import TextLoaderConfig, make_text_loaders
 
@@ -231,6 +279,55 @@ def fit_torch(
     loader contract so the happy path does not require a hand-rolled network.
 
     Does not replace classical :meth:`fit` / :attr:`fit_result`.
+    Delegates to :func:`buildml.dl.train.train_supervised_module`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with torch loaders attached or auto-built.
+    module:
+        Optional ``nn.Module`` to train; auto-built when omitted.
+    loss_fn:
+        Optional custom loss function.
+    optimizer_factory:
+        Optional factory returning a torch optimizer.
+    epochs:
+        Number of training epochs.
+    learning_rate:
+        Optimizer learning rate.
+    device:
+        Compute device (``cpu``, ``cuda``, ``mps``, or ``auto``).
+    grad_clip_norm:
+        Optional gradient clipping norm.
+    log_every:
+        Log training metrics every N epochs.
+    early_stopping_patience:
+        Optional validation patience for early stopping.
+    early_stopping_monitor:
+        Metric name monitored for early stopping.
+    scheduler:
+        Learning-rate scheduler kind.
+    resume:
+        When True, resume from the prior ``dl_train_result``.
+    config:
+        Optional full :class:`~buildml.dl.types.TrainConfig` override.
+    hidden:
+        Hidden layer sizes for auto-built tabular MLPs.
+    dropout:
+        Dropout rate for auto-built modules.
+    mixed_precision:
+        When True, enable autocast mixed precision where supported.
+
+    Returns
+    -------
+    Session
+        ``session`` with ``dl_train_result`` attached for chaining.
+
+    Raises
+    ------
+    ValidationError
+        When resume is requested without a prior trainer or multimodal
+        contracts are incomplete.
     """
     from buildml.dl.models import build_tabular_mlp, build_text_classifier
     from buildml.dl.train import train_supervised_module
@@ -380,6 +477,42 @@ def cross_validate_torch(
     Normalize stats are fit per fold. Classical Session plans are disclosed as
     a limitation unless you supply a custom factory path — this helper does not
     silently refit Session-global plans inside each fold.
+    Delegates to :func:`buildml.dl.cv.cross_validate_torch`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an attached tabular dataset.
+    n_folds:
+        Number of cross-validation folds.
+    epochs:
+        Training epochs per fold.
+    batch_size:
+        Minibatch size per fold.
+    learning_rate:
+        Optimizer learning rate per fold.
+    device:
+        Compute device for fold-local training.
+    normalize:
+        When True, fit normalize stats per fold on train only.
+    seed:
+        Seed for fold splitting and training.
+    stratify:
+        When True, stratify folds for classification tasks.
+    task:
+        Supervised task (``classification``, ``regression``, or ``auto``).
+    module_factory:
+        Optional factory returning a fresh module per fold.
+
+    Returns
+    -------
+    TorchCVResult
+        Per-fold metrics and mean summary.
+
+    Raises
+    ------
+    ValidationError
+        When no dataset is attached to the Session.
     """
     from buildml.dl.cv import cross_validate_torch as _cv
 
@@ -418,6 +551,22 @@ def torch_training_curve(session) -> Any:
 
     Requires a prior :meth:`fit_torch` / :meth:`load_torch_bundle`. Torch-free
     to read once :attr:`dl_train_result` exists.
+    Delegates to :func:`buildml.dl.curves.build_training_curve`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a prior torch training result.
+
+    Returns
+    -------
+    TrainingCurve
+        Epoch-wise loss/metric series for visualization or reporting.
+
+    Raises
+    ------
+    ValidationError
+        When no torch trainer exists on the Session.
     """
     from buildml.dl.curves import build_training_curve
 
@@ -443,6 +592,26 @@ def evaluate_torch(
 
     Requires ``pip install 'buildml[torch]'``. Uses loaders from
     :meth:`make_torch_loaders` (rebuilds them if missing).
+    Delegates to :func:`buildml.dl.metrics.evaluate_module`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a prior torch training result.
+    partition:
+        Partition to evaluate (``train``, ``validation``, or ``test``).
+    device:
+        Optional device override for evaluation.
+
+    Returns
+    -------
+    TorchEvalResult
+        Partition metrics for the trained module.
+
+    Raises
+    ------
+    ValidationError
+        When no torch trainer exists or non-tabular loaders are missing.
     """
     from buildml.dl.metrics import evaluate_module
 
@@ -473,6 +642,24 @@ def save_torch_bundle(session, path: str | Path) -> Path:
 
     Distinct from Session checkpoints and classical pipeline bundles.
     See :data:`buildml.dl.checkpoint.CHECKPOINT_BOUNDARY`.
+    Delegates to :func:`buildml.dl.checkpoint.save_torch_bundle`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a prior torch training result.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no torch trainer exists on the Session.
     """
     from buildml.dl.checkpoint import save_torch_bundle
 
@@ -491,15 +678,23 @@ def load_torch_bundle(
     Restores weights plus optional ``multimodal_preprocess`` meta (frozen
     image/audio stats and layout). Does **not** rebuild DataLoaders — remake
     multimodal/text loaders before fit/evaluate/export.
+    Delegates to :func:`buildml.dl.checkpoint.load_torch_bundle`.
 
     Parameters
     ----------
+    session:
+        Session instance to populate with the loaded trainer.
     path:
         Bundle directory with ``meta.json`` and ``trainer.pt``.
     module:
         Compatible ``nn.Module`` shell that receives ``load_state_dict``.
     map_location:
         Optional device for ``torch.load`` (default CPU).
+
+    Returns
+    -------
+    Session
+        ``session`` with ``dl_train_result`` attached for chaining.
     """
     from buildml.dl.checkpoint import load_torch_bundle
 
@@ -547,6 +742,65 @@ def make_multimodal_torch_loaders(
 
     Pass ``preprocess=`` (contract / dict) to freeze restore stats, or
     ``use_saved_preprocess=True`` to reuse ``dl_train_result.multimodal_preprocess``.
+    Delegates to :func:`buildml.dl.multimodal.make_multimodal_loaders`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    text_column:
+        Optional text column for multimodal fusion.
+    numeric_columns:
+        Optional numeric columns for tabular branch.
+    image_column:
+        Optional image column/path column.
+    audio_column:
+        Optional audio column/path column.
+    batch_size:
+        Minibatch size for all loaders.
+    max_len:
+        Maximum token sequence length for text branch.
+    max_vocab:
+        Maximum vocabulary size fit on train.
+    min_freq:
+        Minimum token frequency for vocabulary.
+    normalize:
+        When True, normalize numeric features on train only.
+    normalize_images:
+        When True, normalize image channels on train only.
+    normalize_audio:
+        When True, normalize audio amplitude on train only.
+    image_size:
+        Target image height/width for image branch.
+    image_channels:
+        Number of image channels.
+    audio_sample_rate:
+        Target audio sample rate after resampling.
+    audio_max_samples:
+        Maximum audio samples per example.
+    audio_source_sample_rate:
+        Optional source sample rate before resampling.
+    shuffle_train:
+        When True, shuffle the train loader each epoch.
+    seed:
+        Seed for shuffling and preprocessing.
+    task:
+        Supervised task (``classification``, ``regression``, or ``auto``).
+    preprocess:
+        Optional frozen preprocess contract/dict to restore stats.
+    use_saved_preprocess:
+        When True, reuse preprocess meta from ``dl_train_result``.
+
+    Returns
+    -------
+    TorchLoaderBundle
+        Multimodal loaders plus contracts and preprocess disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When both ``preprocess`` and ``use_saved_preprocess`` are supplied or
+        saved preprocess meta is missing.
     """
     from buildml.dl.multimodal import MultimodalLoaderConfig, make_multimodal_loaders
 
@@ -648,6 +902,59 @@ def make_image_multimodal_torch_loaders(
     Thin facade that requires ``image_column`` and delegates to the shared
     multimodal loader builder. Path cells need Pillow (bundled in
     ``buildml[torch]``); array/list cells work with Torch alone.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    image_column:
+        Required image column or path column.
+    text_column:
+        Optional text column for multimodal fusion.
+    numeric_columns:
+        Optional numeric columns for tabular branch.
+    audio_column:
+        Optional audio column for audio branch.
+    batch_size:
+        Minibatch size for all loaders.
+    max_len:
+        Maximum token sequence length for text branch.
+    max_vocab:
+        Maximum vocabulary size fit on train.
+    min_freq:
+        Minimum token frequency for vocabulary.
+    normalize:
+        When True, normalize numeric features on train only.
+    normalize_images:
+        When True, normalize image channels on train only.
+    normalize_audio:
+        When True, normalize audio amplitude on train only.
+    image_size:
+        Target image height/width for image branch.
+    image_channels:
+        Number of image channels.
+    audio_sample_rate:
+        Target audio sample rate after resampling.
+    audio_max_samples:
+        Maximum audio samples per example.
+    audio_source_sample_rate:
+        Optional source sample rate before resampling.
+    shuffle_train:
+        When True, shuffle the train loader each epoch.
+    seed:
+        Seed for shuffling and preprocessing.
+    task:
+        Supervised task (``classification``, ``regression``, or ``auto``).
+
+    Returns
+    -------
+    TorchLoaderBundle
+        Image-centric multimodal loaders plus contracts.
+
+    Raises
+    ------
+    ValidationError
+        When ``image_column`` is missing or empty.
     """
     if not image_column:
         raise ValidationError("make_image_multimodal_torch_loaders requires image_column")
@@ -733,6 +1040,59 @@ def make_audio_multimodal_torch_loaders(
     ``buildml[torch]`` / ``buildml[audio]``); waveform array cells work with
     Torch alone. Uses a small 1D-CNN fusion branch — not a speech foundation
     model.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    audio_column:
+        Required audio column or path column.
+    text_column:
+        Optional text column for multimodal fusion.
+    numeric_columns:
+        Optional numeric columns for tabular branch.
+    image_column:
+        Optional image column for image branch.
+    batch_size:
+        Minibatch size for all loaders.
+    max_len:
+        Maximum token sequence length for text branch.
+    max_vocab:
+        Maximum vocabulary size fit on train.
+    min_freq:
+        Minimum token frequency for vocabulary.
+    normalize:
+        When True, normalize numeric features on train only.
+    normalize_images:
+        When True, normalize image channels on train only.
+    normalize_audio:
+        When True, normalize audio amplitude on train only.
+    image_size:
+        Target image height/width for optional image branch.
+    image_channels:
+        Number of image channels.
+    audio_sample_rate:
+        Target audio sample rate after resampling.
+    audio_max_samples:
+        Maximum audio samples per example.
+    audio_source_sample_rate:
+        Optional source sample rate before resampling.
+    shuffle_train:
+        When True, shuffle the train loader each epoch.
+    seed:
+        Seed for shuffling and preprocessing.
+    task:
+        Supervised task (``classification``, ``regression``, or ``auto``).
+
+    Returns
+    -------
+    TorchLoaderBundle
+        Audio-centric multimodal loaders plus contracts.
+
+    Raises
+    ------
+    ValidationError
+        When ``audio_column`` is missing or empty.
     """
     if not audio_column:
         raise ValidationError("make_audio_multimodal_torch_loaders requires audio_column")
@@ -811,6 +1171,52 @@ def search_torch(
 
     Held-out validation/test partitions are never scored. For a nested outer
     estimate after search, use :meth:`nested_cv_torch`.
+    Delegates to :func:`buildml.dl.search.search_torch`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an attached tabular dataset.
+    param_grid:
+        Optional grid of hyperparameter lists.
+    param_distributions:
+        Optional randomized search distributions.
+    inner_search:
+        Inner search strategy (``grid``, ``randomized``, or ``auto``).
+    n_iter:
+        Randomized search iterations when applicable.
+    n_folds:
+        Number of inner CV folds.
+    epochs:
+        Training epochs per candidate per fold.
+    batch_size:
+        Minibatch size for inner CV training.
+    learning_rate:
+        Optimizer learning rate for inner CV training.
+    device:
+        Compute device for inner CV training.
+    normalize:
+        When True, fit normalize stats per fold on train only.
+    seed:
+        Seed for fold splitting and search sampling.
+    stratify:
+        When True, stratify folds for classification tasks.
+    task:
+        Supervised task (``classification``, ``regression``, or ``auto``).
+    scoring_metric:
+        Optional metric name for ranking candidates.
+    module_factory:
+        Optional factory returning a fresh module per candidate/fold.
+
+    Returns
+    -------
+    TorchSearchResult
+        Best params, inner CV scores, and search disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no dataset is attached to the Session.
     """
     from buildml.dl.search import search_torch as _search
 
@@ -874,6 +1280,54 @@ def nested_cv_torch(
 
     Outer-eval rows never enter inner ranking. Session validation/test stay
     untouched. Normalize stats are fit fold-locally.
+    Delegates to :func:`buildml.dl.search.nested_cv_torch`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an attached tabular dataset.
+    param_grid:
+        Optional grid of hyperparameter lists for inner search.
+    param_distributions:
+        Optional randomized search distributions for inner search.
+    inner_search:
+        Inner search strategy (``grid``, ``randomized``, or ``auto``).
+    n_iter:
+        Randomized search iterations when applicable.
+    outer_cv:
+        Number of outer evaluation folds.
+    inner_cv:
+        Number of inner CV folds per outer fold.
+    epochs:
+        Training epochs per candidate per inner fold.
+    batch_size:
+        Minibatch size for nested CV training.
+    learning_rate:
+        Optimizer learning rate for nested CV training.
+    device:
+        Compute device for nested CV training.
+    normalize:
+        When True, fit normalize stats per fold on train only.
+    seed:
+        Seed for fold splitting and search sampling.
+    stratify:
+        When True, stratify folds for classification tasks.
+    task:
+        Supervised task (``classification``, ``regression``, or ``auto``).
+    scoring_metric:
+        Optional metric name for inner ranking and outer reporting.
+    module_factory:
+        Optional factory returning a fresh module per candidate/fold.
+
+    Returns
+    -------
+    TorchNestedCVResult
+        Outer-fold metrics, inner search summaries, and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no dataset is attached to the Session.
     """
     from buildml.dl.search import nested_cv_torch as _nested
 
@@ -928,6 +1382,33 @@ def export_torch(
 
     Uses train-loader example inputs when ``example_input`` is omitted.
     Alpha-quality escape hatch — see export result limitations.
+    Delegates to :func:`buildml.dl.export.export_train_result`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a prior torch training result.
+    path:
+        Destination file path for the exported artifact.
+    format:
+        Export format (``torchscript`` or ``onnx``).
+    opset:
+        ONNX opset version when ``format='onnx'``.
+    dynamic_batch:
+        When True, declare dynamic batch axes where supported.
+    example_input:
+        Optional explicit example input matching module layout.
+
+    Returns
+    -------
+    TorchExportResult
+        Export path, format, and limitation disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no torch trainer exists or non-tabular loaders/example inputs
+        are missing.
     """
     from buildml.dl.export import export_train_result
 
@@ -993,6 +1474,33 @@ def fit_torch_ddp(
       (``WORLD_SIZE`` / ``RANK`` / ``LOCAL_RANK`` / ``MASTER_ADDR`` /
       ``MASTER_PORT``; ``LOCAL_RANK`` is required — global rank is not used as a
       local CUDA index). Not a Kubernetes multi-cluster orchestrator.
+    Delegates to :func:`buildml.dl.ddp.train_supervised_module_ddp`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with torch loaders attached or auto-built.
+    module_factory:
+        Callable returning a fresh ``nn.Module`` per DDP process.
+    epochs:
+        Number of training epochs.
+    learning_rate:
+        Optimizer learning rate.
+    mixed_precision:
+        When True, enable autocast mixed precision where supported.
+    world_size:
+        Optional explicit process/world size override.
+    allow_cpu_ddp:
+        When True, permit CPU gloo smoke tests with fewer GPUs.
+    multi_node:
+        When True, join an external torchrun rendezvous instead of spawning.
+    config:
+        Optional full :class:`~buildml.dl.types.TrainConfig` override.
+
+    Returns
+    -------
+    DDPTrainResult
+        DDP run summary and optional aggregated train result.
     """
     from buildml.dl.ddp import DDPConfig, train_supervised_module_ddp
     from buildml.dl.types import TrainConfig
@@ -1053,6 +1561,35 @@ def make_speech_torch_loaders(
 
     Requires ``buildml[torch]``. Amplitude stats fit on train only. This is an
     integration/finetune path — not training a foundation model from scratch.
+    Delegates to :func:`buildml.dl.speech.make_speech_loaders`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    audio_column:
+        Optional audio column; auto-detected when omitted.
+    batch_size:
+        Minibatch size for all loaders.
+    sample_rate:
+        Target audio sample rate after resampling.
+    max_samples:
+        Maximum audio samples per example.
+    source_sample_rate:
+        Optional source sample rate before resampling.
+    normalize_audio:
+        When True, normalize audio amplitude on train only.
+    encoder_dim:
+        Encoder embedding dimension for speech contract metadata.
+    shuffle_train:
+        When True, shuffle the train loader each epoch.
+    seed:
+        Seed for shuffling and preprocessing.
+
+    Returns
+    -------
+    TorchLoaderBundle
+        Speech loaders plus speech contract metadata.
     """
     from buildml.dl.speech import SpeechLoaderConfig, make_speech_loaders
 
@@ -1110,6 +1647,42 @@ def fit_speech_torch(
 
     Builds speech loaders when missing. Honest alpha: not Whisper-scale FM
     training from scratch. Requires ``buildml[torch]``.
+    Delegates to :func:`buildml.dl.train.train_supervised_module` after building
+    a speech classifier module.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    epochs:
+        Number of training epochs.
+    learning_rate:
+        Optimizer learning rate.
+    device:
+        Compute device (``cpu``, ``cuda``, ``mps``, or ``auto``).
+    freeze_encoder:
+        When True, freeze the speech encoder during finetuning.
+    audio_column:
+        Optional audio column when loaders must be built.
+    batch_size:
+        Minibatch size when loaders must be built.
+    sample_rate:
+        Target sample rate when loaders must be built.
+    max_samples:
+        Maximum samples per example when loaders must be built.
+    source_sample_rate:
+        Optional source sample rate when loaders must be built.
+    normalize_audio:
+        When True, normalize audio amplitude on train only.
+    encoder_dim:
+        Encoder embedding dimension for the speech classifier.
+    seed:
+        Seed for shuffling and training.
+
+    Returns
+    -------
+    Session
+        ``session`` with ``dl_train_result`` attached for chaining.
     """
     from buildml.dl.labels import n_classes_from_labels
     from buildml.dl.speech import build_speech_classifier
@@ -1184,6 +1757,36 @@ def transcribe_speech(
     ``backend="stub"`` is CI-safe. ``backend="transformers"`` requires
     ``buildml[speech]`` and may download Whisper-class weights. Integration
     path only — not FM training from scratch.
+    Delegates to :func:`buildml.dl.speech.transcribe_from_dataset`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an ingested dataset.
+    audio_column:
+        Audio feature column to transcribe.
+    backend:
+        ASR backend (``stub`` or ``transformers``).
+    model_id:
+        Optional Hugging Face model id for transformers backend.
+    sample_rate:
+        Target audio sample rate for decoding.
+    max_samples:
+        Maximum audio samples per row.
+    source_sample_rate:
+        Optional source sample rate before resampling.
+    partition:
+        Dataset partition to transcribe (``all`` by default).
+
+    Returns
+    -------
+    SpeechTranscribeResult
+        Transcripts, model metadata, and row counts.
+
+    Raises
+    ------
+    ValidationError
+        When no dataset is attached to the Session.
     """
     from buildml.dl.speech import transcribe_from_dataset
 
@@ -1242,6 +1845,42 @@ def serve_bundle(
     recorded on the Session if available.
 
     Not registered as an AI tool — CLI / Session-primary by design.
+    Delegates to :func:`buildml.serving.launch.serve_bundle`.
+
+    Parameters
+    ----------
+    session:
+        Active Session that may hold the last saved pipeline path.
+    path:
+        Optional artifact path; inferred for pipelines when omitted.
+    kind:
+        Artifact kind (``pipeline`` or ``torchscript``).
+    host:
+        Bind host address.
+    port:
+        Bind port number.
+    title:
+        Service title shown in OpenAPI metadata.
+    blocking:
+        When True, block until the server stops.
+    api_keys:
+        Optional API keys enabling Bearer / header auth middleware.
+    allow_insecure_public_bind:
+        When True, permit non-loopback binds without API keys.
+    ssl_certfile:
+        Optional TLS certificate file for local HTTPS.
+    ssl_keyfile:
+        Optional TLS private key file for local HTTPS.
+
+    Returns
+    -------
+    ServeHandle
+        Running server handle with URL and lifecycle controls.
+
+    Raises
+    ------
+    ValidationError
+        When no resolvable artifact path is available.
     """
     from buildml.serving.launch import serve_bundle as _serve
 
@@ -1304,7 +1943,33 @@ def load_pretrained_backbone(
     seed: int = 0,
     model_id: str | None = None,
 ) -> Any:
-    """Load a curated pretrained vision/audio/speech backbone (integration hook)."""
+    """Load a curated pretrained vision/audio/speech backbone (integration hook).
+
+    Delegates to :func:`buildml.dl.zoo.load_pretrained_backbone` and stores the
+    backbone on the Session for downstream head attachment.
+
+    Parameters
+    ----------
+    session:
+        Active Session to attach the loaded backbone to.
+    modality:
+        Backbone modality (``vision``, ``audio``, or ``speech``).
+    architecture:
+        Optional architecture identifier within the curated zoo.
+    weights:
+        Weight source (``none``, ``mock``, or ``pretrained``).
+    freeze:
+        When True, freeze backbone parameters by default.
+    seed:
+        Seed for mock-weight initialization.
+    model_id:
+        Optional Hugging Face or zoo model identifier.
+
+    Returns
+    -------
+    PretrainedBackbone
+        Loaded backbone metadata and module shell.
+    """
     from buildml.dl.zoo import load_pretrained_backbone as _load
 
     backbone = _load(
@@ -1337,7 +2002,30 @@ def attach_backbone_head(
     *,
     freeze_backbone: bool | None = None,
 ) -> Any:
-    """Attach a classification head to the Session pretrained backbone."""
+    """Attach a classification head to the Session pretrained backbone.
+
+    Delegates to :func:`buildml.dl.zoo.attach_backbone_head` using the backbone
+    stored by :func:`load_pretrained_backbone`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a loaded pretrained backbone.
+    n_classes:
+        Number of output classes for the attached head.
+    freeze_backbone:
+        Optional override for whether the backbone stays frozen.
+
+    Returns
+    -------
+    BackboneHeadBundle
+        Combined backbone+head module metadata.
+
+    Raises
+    ------
+    ValidationError
+        When no backbone is loaded or ``n_classes`` is invalid.
+    """
     from buildml.dl.zoo import attach_backbone_head as _attach
 
     backbone = getattr(session, "_dl_backbone", None)
@@ -1374,7 +2062,32 @@ def evaluate_asr(
     references: list[str],
     lowercase: bool = True,
 ) -> Any:
-    """Score ASR hypotheses vs references (WER/CER); reuse last transcription texts."""
+    """Score ASR hypotheses vs references (WER/CER); reuse last transcription texts.
+
+    Delegates to :func:`buildml.dl.speech.evaluate_asr`. When ``hypotheses`` is
+    omitted, reuses texts from the prior :func:`transcribe_speech` result.
+
+    Parameters
+    ----------
+    session:
+        Active Session that may hold a prior speech transcription result.
+    hypotheses:
+        Optional hypothesis strings; inferred from Session when omitted.
+    references:
+        Reference transcript strings aligned with hypotheses.
+    lowercase:
+        When True, lowercase strings before WER/CER scoring.
+
+    Returns
+    -------
+    AsrEvalResult
+        WER/CER metrics and scoring metadata.
+
+    Raises
+    ------
+    ValidationError
+        When hypotheses are missing and no transcription result exists.
+    """
     from buildml.dl.speech import evaluate_asr as _eval
 
     hyps = hypotheses
@@ -1410,7 +2123,32 @@ def pack_torchserve(
     torchscript_path: str | Path | None = None,
     model_name: str = "buildml_model",
 ) -> Any:
-    """Pack a TorchScript artifact into a TorchServe-ready directory layout."""
+    """Pack a TorchScript artifact into a TorchServe-ready directory layout.
+
+    Delegates to :func:`buildml.dl.packaging.pack_torchserve_model`. Uses the
+    last TorchScript export on the Session when ``torchscript_path`` is omitted.
+
+    Parameters
+    ----------
+    session:
+        Active Session that may hold a prior TorchScript export result.
+    output_dir:
+        Destination directory for the TorchServe model store layout.
+    torchscript_path:
+        Optional explicit TorchScript artifact path.
+    model_name:
+        Model name used in the TorchServe manifest.
+
+    Returns
+    -------
+    PackagingResult
+        Output paths and packaging disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no TorchScript path is available.
+    """
     from buildml.dl.packaging import pack_torchserve_model
 
     src = torchscript_path
@@ -1442,7 +2180,34 @@ def prepare_tensorrt_export(
     engine_name: str = "model.engine",
     fp16: bool = True,
 ) -> Any:
-    """Write a TensorRT ``trtexec`` plan next to a validated ONNX artifact."""
+    """Write a TensorRT ``trtexec`` plan next to a validated ONNX artifact.
+
+    Delegates to :func:`buildml.dl.packaging.prepare_tensorrt_export_plan`.
+    Uses the last ONNX export on the Session when ``onnx_path`` is omitted.
+
+    Parameters
+    ----------
+    session:
+        Active Session that may hold a prior ONNX export result.
+    output_dir:
+        Destination directory for the TensorRT export plan.
+    onnx_path:
+        Optional explicit ONNX artifact path.
+    engine_name:
+        Output TensorRT engine filename.
+    fp16:
+        When True, request FP16 optimization in the export plan.
+
+    Returns
+    -------
+    PackagingResult
+        Export plan paths and limitation disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no ONNX path is available.
+    """
     from buildml.dl.packaging import prepare_tensorrt_export_plan
 
     src = onnx_path
@@ -1490,7 +2255,47 @@ def emit_k8s_ddp_job(
     service_account: str | None = None,
     include_configmap: bool = True,
 ) -> Any:
-    """Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only)."""
+    """Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only).
+
+    Delegates to :func:`buildml.dl.k8s.write_torchrun_ddp_job`. This writes a
+    starter manifest — not a managed cluster orchestrator.
+
+    Parameters
+    ----------
+    session:
+        Active Session recording the emitted manifest metadata.
+    path:
+        Destination YAML file path.
+    job_name:
+        Kubernetes Job name.
+    namespace:
+        Kubernetes namespace.
+    image:
+        Container image for torchrun workers.
+    nnodes:
+        Number of nodes in the torchrun job.
+    nproc_per_node:
+        Processes launched per node.
+    script_path:
+        Training script path inside the container.
+    cpu_request:
+        CPU resource request per worker.
+    memory_request:
+        Memory resource request per worker.
+    gpu_limit:
+        GPU limit per worker.
+    gpu_request:
+        Optional GPU request per worker.
+    service_account:
+        Optional Kubernetes service account name.
+    include_configmap:
+        When True, include a starter ConfigMap manifest.
+
+    Returns
+    -------
+    K8sManifestResult
+        Written manifest paths and template limitations.
+    """
     from buildml.dl.k8s import write_torchrun_ddp_job
 
     result = write_torchrun_ddp_job(
@@ -1544,7 +2349,41 @@ def emit_k8s_serve_deployment(
     gpu_limit: int | None = None,
     service_account: str | None = None,
 ) -> Any:
-    """Emit a Kubernetes Deployment+Service YAML for managed serve (template only)."""
+    """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
+
+    Delegates to :func:`buildml.dl.k8s.write_serve_deployment`. This writes a
+    starter manifest — not a managed cluster orchestrator.
+
+    Parameters
+    ----------
+    session:
+        Active Session recording the emitted manifest metadata.
+    path:
+        Destination YAML file path.
+    name:
+        Deployment and Service name.
+    namespace:
+        Kubernetes namespace.
+    image:
+        Container image for the serve deployment.
+    replicas:
+        Desired replica count.
+    port:
+        Service/container port for managed serve.
+    cpu_request:
+        CPU resource request per replica.
+    memory_request:
+        Memory resource request per replica.
+    gpu_limit:
+        Optional GPU limit per replica.
+    service_account:
+        Optional Kubernetes service account name.
+
+    Returns
+    -------
+    K8sManifestResult
+        Written manifest paths and template limitations.
+    """
     from buildml.dl.k8s import write_serve_deployment
 
     result = write_serve_deployment(
@@ -1595,7 +2434,45 @@ def domain_adapt_speech_torch(
     encoder_dim: int = 64,
     seed: int = 0,
 ) -> Any:
-    """Domain-adapt / finetune-lite speech classify (not FM continued pretrain)."""
+    """Domain-adapt / finetune-lite speech classify (not FM continued pretrain).
+
+    Alias of :func:`fit_speech_torch` with stronger domain-adapt disclosures
+    recorded under the ``domain_adapt_speech_torch`` operation name.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    epochs:
+        Number of training epochs.
+    learning_rate:
+        Optimizer learning rate.
+    device:
+        Compute device (``cpu``, ``cuda``, ``mps``, or ``auto``).
+    freeze_encoder:
+        When True, freeze the speech encoder during adaptation.
+    audio_column:
+        Optional audio column when loaders must be built.
+    batch_size:
+        Minibatch size when loaders must be built.
+    sample_rate:
+        Target sample rate when loaders must be built.
+    max_samples:
+        Maximum samples per example when loaders must be built.
+    source_sample_rate:
+        Optional source sample rate when loaders must be built.
+    normalize_audio:
+        When True, normalize audio amplitude on train only.
+    encoder_dim:
+        Encoder embedding dimension for the speech classifier.
+    seed:
+        Seed for shuffling and training.
+
+    Returns
+    -------
+    Session
+        ``session`` with ``dl_train_result`` attached for chaining.
+    """
     from buildml.dl.speech import domain_adapt_speech_disclosures
 
     result = fit_speech_torch(
@@ -1636,7 +2513,17 @@ def domain_adapt_speech_torch(
 
 
 def refuse_speech_foundation_pretrain(session) -> None:
-    """Explicit refuse path for FM-from-scratch / large continued-pretrain asks."""
+    """Explicit refuse path for FM-from-scratch / large continued-pretrain asks.
+
+    Records the refusal on the Session and delegates to
+    :func:`buildml.dl.speech.refuse_foundation_model_pretrain` so callers get a
+    clear, honest boundary instead of a silent no-op.
+
+    Parameters
+    ----------
+    session:
+        Active Session recording the refusal audit entry.
+    """
     from buildml.dl.speech import refuse_foundation_model_pretrain
 
     session._record(

@@ -16,6 +16,28 @@ _RIVER_REGRESSORS = {"river_linear_regression", "river_hoeffding_regressor"}
 
 
 def resolve_river_task(estimator: str, task: OnlineTask | None) -> OnlineTask:
+    """Resolve the task type for a River streaming estimator.
+
+    Maps River classifier and regressor keys to the appropriate task and
+    validates explicit ``task`` overrides.
+
+    Parameters
+    ----------
+    estimator:
+        River estimator key (``river_logistic``, ``river_hoeffding``, etc.).
+    task:
+        Optional explicit task override.
+
+    Returns
+    -------
+    OnlineTask
+        Resolved ``classification`` or ``regression`` task.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator is unknown or incompatible with ``task``.
+    """
     if estimator in _RIVER_CLASSIFIERS:
         if task == "regression":
             raise ValidationError(
@@ -42,6 +64,28 @@ def build_river_estimator(
     drift_detector: str = "adwin",
     n_features: int = 0,
 ) -> RiverOnlineWrapper:
+    """Build a sklearn-compatible River streaming estimator wrapper.
+
+    Requires ``buildml[online-industry]``; lazy-initializes the River model on
+    first ``partial_fit``.
+
+    Parameters
+    ----------
+    name:
+        River estimator key (``river_logistic``, ``river_hoeffding``, etc.).
+    random_state:
+        Seed for stochastic River models.
+    drift_detector:
+        Drift detector for update/evaluate disclosure (``adwin``,
+        ``page_hinkley``, or ``mean_shift``).
+    n_features:
+        Feature dimensionality hint for lazy model init.
+
+    Returns
+    -------
+    RiverOnlineWrapper
+        Wrapper with ``partial_fit`` and ``predict`` sklearn interface.
+    """
     return RiverOnlineWrapper(
         estimator_name=name,
         random_state=random_state,
@@ -132,6 +176,30 @@ class RiverOnlineWrapper:
         y: np.ndarray,
         classes: Sequence[Any] | None = None,
     ) -> RiverOnlineWrapper:
+        """Incrementally fit the River model one row at a time.
+
+        Updates drift detectors on per-row prediction error without requiring
+        batch refits.
+
+        Parameters
+        ----------
+        x:
+            2-D float feature matrix.
+        y:
+            Target array aligned with ``x`` rows.
+        classes:
+            Ignored for River models (accepted for sklearn API compatibility).
+
+        Returns
+        -------
+        RiverOnlineWrapper
+            ``self`` for chaining.
+
+        Raises
+        ------
+        ValidationError
+            When ``x`` is not 2-D or the estimator name is unsupported.
+        """
         x_arr = np.asarray(x, dtype=float)
         y_arr = np.asarray(y)
         if x_arr.ndim != 2:
@@ -152,6 +220,26 @@ class RiverOnlineWrapper:
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Predict targets for a batch of rows using the River model.
+
+        Runs ``predict_one`` per row without updating drift detectors or the
+        underlying River learner.
+
+        Parameters
+        ----------
+        x:
+            2-D float feature matrix.
+
+        Returns
+        -------
+        numpy.ndarray
+            Predicted class codes or regression values.
+
+        Raises
+        ------
+        ValidationError
+            When the wrapper has not been fitted yet.
+        """
         if self.model_ is None:
             raise ValidationError("RiverOnlineWrapper is not fitted.")
         x_arr = np.asarray(x, dtype=float)
@@ -170,7 +258,23 @@ class RiverOnlineWrapper:
         x: np.ndarray,
         y: np.ndarray,
     ) -> tuple[bool, list[str]]:
-        """Score holdout rows through River drift detectors (no model update)."""
+        """Score holdout rows through River drift detectors without model update.
+
+        Feeds prediction errors into ADWIN or Page-Hinkley detectors for
+        evaluation-time drift disclosure; does not call ``learn_one``.
+
+        Parameters
+        ----------
+        x:
+            2-D float feature matrix for holdout rows.
+        y:
+            True targets aligned with ``x`` rows.
+
+        Returns
+        -------
+        tuple[bool, list[str]]
+            ``(drift_detected, disclosure_notes)``.
+        """
         if self.model_ is None:
             return False, []
         x_arr = np.asarray(x, dtype=float)

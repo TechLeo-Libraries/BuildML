@@ -6,7 +6,20 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_semisupervised`` history."""
+    """Compact result_summary for ``fit_semisupervised`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -23,7 +36,20 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``predict_semisupervised`` history."""
+    """Compact result_summary for ``predict_semisupervised`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+predict_result:
+    predict result (Any).
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -40,7 +66,20 @@ def predict_result_summary(predict_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_semisupervised`` history."""
+    """Compact result_summary for ``evaluate_semisupervised`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -61,7 +100,26 @@ def semisupervised_status(
     eval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for semi-supervised learning."""
+    """Factual walkthrough disclosure for semi-supervised learning.
+
+Combines live plan fields, latest operation results, and history evidence into a teaching-oriented status dict with capability attachment.
+
+Parameters
+----------
+plan:
+    Fitted plan object carrying model state and feature contract.
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+history:
+    Session operation history for detecting prior activity.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     from buildml.semisupervised.catalog import semisupervised_capability_matrix
 
     records = list(history or [])
@@ -140,7 +198,20 @@ def semisupervised_status(
 
 
 def semisupervised_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build semisupervised walkthrough status from a Session instance.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+session:
+    BuildML Session with optional private state attributes.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     return semisupervised_status(
         getattr(session, "_semisupervised_plan", None),
         fit_result=getattr(session, "_semisupervised_fit_result", None),

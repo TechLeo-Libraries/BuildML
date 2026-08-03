@@ -61,16 +61,54 @@ def fit_synthesizer(
 ) -> tuple[SynthesizerPlan, SynthesizerFitResult]:
     """Fit a tabular synthesizer on the Session **train** partition only.
 
-    Backends
-    --------
-    native (default when SDV absent):
-        bootstrap, gaussian_copula, smote (``buildml[imbalanced]`` for smote).
-    sdv (``buildml[synthetic-industry]`` when installed):
-        ctgan, tvae, copulagan via SDV single-table synthesizers.
+Backends
+--------
+native (default when SDV absent):
+    bootstrap, gaussian_copula, smote (``buildml[imbalanced]`` for smote).
+sdv (``buildml[synthetic-industry]`` when installed):
+    ctgan, tvae, copulagan via SDV single-table synthesizers.
+Honesty
+-------
+Never fits on validation/test. Not a differential-privacy product.
 
-    Honesty
-    -------
-    Never fits on validation/test. Not a differential-privacy product.
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+backend:
+    Optional backend override (see capability matrix for identifiers).
+method:
+    Method or strategy identifier for the resolved backend.
+columns:
+    Optional explicit feature column list; ``None`` auto-selects numerics.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+smooth_sigma:
+    smooth sigma (float).
+correlation_ridge:
+    correlation ridge (float).
+target_column:
+    Name of the supervised target column.
+k_neighbors:
+    k neighbors (int).
+sampling_strategy:
+    sampling strategy (str | float | dict[str, float]).
+epochs:
+    Training epochs for torch-backed estimators.
+batch_size:
+    Number of rows to select per query or training minibatch.
+
+Returns
+-------
+tuple[SynthesizerPlan, SynthesizerFitResult]
+    Tuple of results (tuple[SynthesizerPlan, SynthesizerFitResult]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     resolved_backend, resolved_method = resolve_backend_method(
         backend=backend,

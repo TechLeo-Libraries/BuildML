@@ -28,7 +28,31 @@ def sample_synthetic(
     random_state: int | None = None,
     condition: dict[str, Any] | None = None,
 ) -> SyntheticSampleResult:
-    """Draw ``n`` rows from a fitted synthesizer (does not mutate Session)."""
+    """Draw ``n`` rows from a fitted synthesizer (does not mutate Session).
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+plan:
+    Fitted plan object carrying model state and feature contract.
+n:
+    n (int | None).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+condition:
+    condition (dict[str, Any] | None).
+
+Returns
+-------
+SyntheticSampleResult
+    Serializable result summary (SyntheticSampleResult) for history recording.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if plan is None or plan.generator_ is None:
         raise ValidationError("No fitted synthesizer. Call fit_synthesizer(...) first.")
     n_rows = int(plan.n_rows_fitted if n is None else n)
@@ -87,9 +111,32 @@ def merge_synthetic_into_train(
 ) -> tuple[Dataset, SplitPlan, str]:
     """Append synthetic rows to **train only**; holdouts unchanged.
 
-    The provenance column is assigned role ``ignore`` so it cannot silently
-    become a modeling feature. Existing roles for real columns are preserved;
-    no roles are invented for missing columns.
+The provenance column is assigned role ``ignore`` so it cannot silently
+become a modeling feature. Existing roles for real columns are preserved;
+no roles are invented for missing columns.
+
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+sample_frame:
+    sample frame (pd.DataFrame).
+provenance_column:
+    provenance column (str).
+mark_value:
+    mark value (Any).
+
+Returns
+-------
+tuple[Dataset, SplitPlan, str]
+    Tuple of results (tuple[Dataset, SplitPlan, str]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     if sample_frame is None or sample_frame.empty:
         raise ValidationError("Cannot merge an empty synthetic frame.")
@@ -187,7 +234,39 @@ def sample_and_maybe_merge(
     merge_mode: MergeMode = "none",
     provenance_column: str = "_synthetic",
 ) -> tuple[SyntheticSampleResult, Dataset | None, SplitPlan | None]:
-    """Sample, optionally merge into train; return updated dataset/split when merged."""
+    """Sample, optionally merge into train; return updated dataset/split when merged.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+plan:
+    Fitted plan object carrying model state and feature contract.
+n:
+    n (int | None).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+condition:
+    condition (dict[str, Any] | None).
+merge_mode:
+    merge mode (MergeMode).
+provenance_column:
+    provenance column (str).
+
+Returns
+-------
+tuple[SyntheticSampleResult, Dataset | None, SplitPlan | None]
+    Tuple of results (tuple[SyntheticSampleResult, Dataset | None, SplitPlan | None]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     result = sample_synthetic(
         plan, n=n, random_state=random_state, condition=condition
     )

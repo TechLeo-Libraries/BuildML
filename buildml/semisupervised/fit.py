@@ -56,22 +56,86 @@ def fit_semisupervised(
 ) -> tuple[SemiSupervisedPlan, SemiSupervisedFitResult]:
     """Fit a semi-supervised classifier on the train partition only.
 
-    Backends
-    --------
-    sklearn (default):
-        LabelPropagation, LabelSpreading, SelfTrainingClassifier — core sklearn.
-    industry (``buildml[semisupervised-industry]``):
-        XGBoost/LightGBM iterative pseudo-labeling when installed.
-    torch (``buildml[torch]``):
-        FixMatch/MixMatch-style tabular consistency training.
-    hf (``buildml[ssl]``):
-        Sentence-transformer text embeddings + pseudo-label self-training.
+Backends
+--------
+sklearn (default):
+    LabelPropagation, LabelSpreading, SelfTrainingClassifier — core sklearn.
+industry (``buildml[semisupervised-industry]``):
+    XGBoost/LightGBM iterative pseudo-labeling when installed.
+torch (``buildml[torch]``):
+    FixMatch/MixMatch-style tabular consistency training.
+hf (``buildml[ssl]``):
+    Sentence-transformer text embeddings + pseudo-label self-training.
+Label missingness
+-----------------
+Rows with missing targets (NaN by default) are unlabeled. Sklearn's ``-1``
+convention is applied internally. Validation/test partitions are never used
+to invent labels or to select the model during this fit.
 
-    Label missingness
-    -----------------
-    Rows with missing targets (NaN by default) are unlabeled. Sklearn's ``-1``
-    convention is applied internally. Validation/test partitions are never used
-    to invent labels or to select the model during this fit.
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+backend:
+    Optional backend override (see capability matrix for identifiers).
+method:
+    Method or strategy identifier for the resolved backend.
+columns:
+    Optional explicit feature column list; ``None`` auto-selects numerics.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+kernel:
+    kernel (str).
+n_neighbors:
+    n neighbors (int).
+max_iter:
+    max iter (int).
+alpha:
+    alpha (float).
+base_estimator:
+    base estimator (str).
+threshold:
+    Decision threshold applied to anomaly scores.
+criterion:
+    criterion (str).
+k_best:
+    k best (int).
+max_self_train_iter:
+    max self train iter (int).
+epochs:
+    Training epochs for torch-backed estimators.
+batch_size:
+    Number of rows to select per query or training minibatch.
+learning_rate:
+    Optimizer learning rate for torch training.
+consistency_weight:
+    consistency weight (float).
+mixup_alpha:
+    mixup alpha (float).
+device:
+    Torch device string (``cpu`` or ``cuda``).
+text_column:
+    text column (str | None).
+text_model_name:
+    text model name (str).
+unlabeled_marker:
+    Sentinel marking unlabeled rows; ``None`` uses NaN/NA.
+prefer_reduce_components:
+    Prefer reduced component columns when a reduce plan exists.
+reduce_plan:
+    Optional preprocess reduce plan from Session.
+
+Returns
+-------
+tuple[SemiSupervisedPlan, SemiSupervisedFitResult]
+    Tuple of results (tuple[SemiSupervisedPlan, SemiSupervisedFitResult]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

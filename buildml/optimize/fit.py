@@ -87,6 +87,60 @@ def fit_decision_policy(
     Honesty: decision helpers for ML scores/costs/allocations — not a general
     operations-research platform or digital twin. Never tunes on Session test
     without ``allow_test_tuning=True``.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular dataset with features and target.
+    split_plan:
+        Train/validation/test split; required for partition-scoped tuning.
+    fit_result:
+        Session fit result for model-scored methods; optional for pure
+        column-driven allocation.
+    method:
+        Policy type: ``'threshold'``, ``'cost_matrix'``, ``'topk'``,
+        ``'knapsack'``, or ``'lp_allocate'``.
+    backend:
+        Solver/scorer backend; ``None`` picks an installed default.
+    partition:
+        Split used to select operating points or allocations.
+    allow_test_tuning:
+        Dangerous opt-in to tune on the test partition.
+    fp_cost, fn_cost, tp_benefit, tn_benefit:
+        Binary expected-cost knobs for threshold methods.
+    cost_matrix, class_labels:
+        Multiclass Bayes cost specification for ``method='cost_matrix'``.
+    capacity:
+        Top-K selection limit for ``method='topk'``.
+    budget:
+        Cost budget for knapsack/LP allocation methods.
+    score_source:
+        ``'model_proba'``, ``'model_decision_function'``, or ``'column'``.
+    score_column, cost_column, value_column, id_column:
+        Column-driven allocation inputs when not using model scores alone.
+    knapsack_solver:
+        Native knapsack fallback: ``'dp'`` or ``'greedy'``.
+    objective:
+        Allocation objective: maximize score/value or minimize cost.
+    min_score:
+        Optional score floor excluding low-scoring candidates.
+    lp_max_fraction:
+        Per-item cap on fractional LP allocations in ``(0, 1]``.
+
+    Returns
+    -------
+    tuple[DecisionPlan, DecisionFitResult, DiagnosticReport | None]
+        Frozen reusable policy, fit summary, and optional threshold diagnostic
+        report (threshold methods only).
+
+    Raises
+    ------
+    ValidationError
+        When splits, methods, backends, or required knobs are missing/invalid.
+    LeakageError
+        When tuning on test without ``allow_test_tuning=True``.
+    MissingExtraError
+        When a requested industry backend extra is not installed.
     """
     split = require_split(split_plan)
     assert_tuning_partition(partition, allow_test_tuning=allow_test_tuning)

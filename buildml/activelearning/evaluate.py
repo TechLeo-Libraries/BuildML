@@ -33,6 +33,29 @@ def evaluate_active_learning(
 
     Only labeled rows contribute to metrics. Unlabeled holdout rows are counted
     and disclosed. This does not query the pool and does not refit.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset containing evaluation features and target.
+    plan:
+        Fitted :class:`~buildml.activelearning.results.ActiveLearningPlan`.
+    split_plan:
+        Split plan required when ``partition`` is not ``all``.
+    partition:
+        Holdout partition name or ``all`` for the full frame.
+    unlabeled_marker:
+        Optional unlabeled sentinel; defaults to ``plan.config`` value.
+
+    Returns
+    -------
+    ActiveLearningEvalResult
+        Metrics on labeled rows plus labeled/unlabeled counts and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no plan exists, columns are missing, or partition needs a split plan.
     """
     if plan is None:
         raise ValidationError("No ActiveLearningPlan. Call fit_active_learner first.")

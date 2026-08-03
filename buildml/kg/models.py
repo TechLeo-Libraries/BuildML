@@ -31,7 +31,25 @@ def score_transe(
     *,
     norm: NormName = "l1",
 ) -> np.ndarray:
-    """Higher is better: negative translation distance."""
+    """Score TransE triples with higher-is-better negative translation distance.
+
+    Computes ``-||h + r - t||`` under the chosen norm for link prediction and
+    evaluation ranking paths.
+
+    Parameters
+    ----------
+    heads, relations, tails:
+        Integer-encoded triple component arrays.
+    entity_emb, relation_emb:
+        Fitted embedding matrices.
+    norm:
+        ``l1`` or ``l2`` translation norm.
+
+    Returns
+    -------
+    numpy.ndarray
+        Score vector aligned with input triple rows.
+    """
     h = entity_emb[heads]
     r = relation_emb[relations]
     t = entity_emb[tails]
@@ -50,7 +68,22 @@ def score_distmult(
     entity_emb: np.ndarray,
     relation_emb: np.ndarray,
 ) -> np.ndarray:
-    """Higher is better: trilinear product ⟨h, r, t⟩."""
+    """Score DistMult triples with higher-is-better trilinear product.
+
+    Computes ``sum(h * r * t)`` elementwise across the embedding dimension.
+
+    Parameters
+    ----------
+    heads, relations, tails:
+        Integer-encoded triple component arrays.
+    entity_emb, relation_emb:
+        Fitted embedding matrices.
+
+    Returns
+    -------
+    numpy.ndarray
+        Score vector aligned with input triple rows.
+    """
     h = entity_emb[heads]
     r = relation_emb[relations]
     t = entity_emb[tails]
@@ -64,7 +97,22 @@ def score_rotate(
     entity_emb: np.ndarray,
     relation_emb: np.ndarray,
 ) -> np.ndarray:
-    """Higher is better: negative RotatE distance in complex space."""
+    """Score RotatE triples with higher-is-better complex rotation distance.
+
+    Used when PyKEEN exports complex entity embeddings for RotatE scoring.
+
+    Parameters
+    ----------
+    heads, relations, tails:
+        Integer-encoded triple component arrays.
+    entity_emb, relation_emb:
+        Complex entity embeddings and real relation phase vectors.
+
+    Returns
+    -------
+    numpy.ndarray
+        Score vector aligned with input triple rows.
+    """
     h = entity_emb[heads]
     r_phase = relation_emb[relations]
     t = entity_emb[tails]
@@ -81,7 +129,22 @@ def score_complex(
     entity_emb: np.ndarray,
     relation_emb: np.ndarray,
 ) -> np.ndarray:
-    """Higher is better: ComplEx trilinear score Re(<h, r, conj(t)>)."""
+    """Score ComplEx triples with higher-is-better complex trilinear product.
+
+    Computes ``Re(<h, r, conj(t)>)`` for link prediction on complex embeddings.
+
+    Parameters
+    ----------
+    heads, relations, tails:
+        Integer-encoded triple component arrays.
+    entity_emb, relation_emb:
+        Complex entity and relation embedding matrices.
+
+    Returns
+    -------
+    numpy.ndarray
+        Score vector aligned with input triple rows.
+    """
     h = entity_emb[heads]
     r = relation_emb[relations]
     t = entity_emb[tails]
@@ -98,6 +161,32 @@ def score_triples_batch(
     *,
     norm: NormName = "l1",
 ) -> np.ndarray:
+    """Dispatch triple scoring to the method-specific scorer.
+
+    Central routing used by batch scoring, link prediction, and evaluation paths
+    to pick TransE, DistMult, RotatE, or ComplEx scorers.
+
+    Parameters
+    ----------
+    method:
+        ``transe``, ``distmult``, ``rotate``, or ``complex``.
+    heads, relations, tails:
+        Integer-encoded triple arrays.
+    entity_emb, relation_emb:
+        Fitted embedding matrices.
+    norm:
+        Translation norm for TransE only.
+
+    Returns
+    -------
+    numpy.ndarray
+        Score vector for the batch of triples.
+
+    Raises
+    ------
+    ValidationError
+        When ``method`` is not supported.
+    """
     if method == "transe":
         return score_transe(
             heads, relations, tails, entity_emb, relation_emb, norm=norm
@@ -120,7 +209,26 @@ def score_all_tails(
     *,
     norm: NormName = "l1",
 ) -> np.ndarray:
-    """Score (h, r, ?) against every entity as tail."""
+    """Score (h, r, ?) against every entity as a candidate tail.
+
+    Used by tail link prediction and filtered evaluation ranking.
+
+    Parameters
+    ----------
+    method:
+        Embedding method key on the plan.
+    head, relation:
+        Query head and relation integer ids.
+    entity_emb, relation_emb:
+        Fitted embedding matrices.
+    norm:
+        Translation norm for TransE scoring.
+
+    Returns
+    -------
+    numpy.ndarray
+        Score vector with one entry per entity in the vocabulary.
+    """
     n = entity_emb.shape[0]
     heads = np.full(n, head, dtype=np.int64)
     rels = np.full(n, relation, dtype=np.int64)
@@ -139,7 +247,26 @@ def score_all_heads(
     *,
     norm: NormName = "l1",
 ) -> np.ndarray:
-    """Score (?, r, t) against every entity as head."""
+    """Score (?, r, t) against every entity as a candidate head.
+
+    Used by head link prediction and filtered evaluation ranking.
+
+    Parameters
+    ----------
+    method:
+        Embedding method key on the plan.
+    relation, tail:
+        Query relation and tail integer ids.
+    entity_emb, relation_emb:
+        Fitted embedding matrices.
+    norm:
+        Translation norm for TransE scoring.
+
+    Returns
+    -------
+    numpy.ndarray
+        Score vector with one entry per entity in the vocabulary.
+    """
     n = entity_emb.shape[0]
     heads = np.arange(n, dtype=np.int64)
     rels = np.full(n, relation, dtype=np.int64)
@@ -158,7 +285,26 @@ def score_all_relations(
     *,
     norm: NormName = "l1",
 ) -> np.ndarray:
-    """Score (h, ?, t) against every relation."""
+    """Score (h, ?, t) against every relation as a candidate link.
+
+    Used by relation link prediction in :func:`buildml.kg.predict.predict_links`.
+
+    Parameters
+    ----------
+    method:
+        Embedding method key on the plan.
+    head, tail:
+        Query head and tail integer ids.
+    entity_emb, relation_emb:
+        Fitted embedding matrices.
+    norm:
+        Translation norm for TransE scoring.
+
+    Returns
+    -------
+    numpy.ndarray
+        Score vector with one entry per relation in the vocabulary.
+    """
     n_rel = relation_emb.shape[0]
     heads = np.full(n_rel, head, dtype=np.int64)
     rels = np.arange(n_rel, dtype=np.int64)
@@ -210,7 +356,37 @@ def fit_transe(
     norm: NormName = "l1",
     random_state: int | None = 0,
 ) -> tuple[np.ndarray, np.ndarray, float]:
-    """Train TransE with margin ranking loss + uniform negative sampling."""
+    """Train TransE embeddings with margin ranking loss on train triples.
+
+    Uses uniform head-or-tail negative corruption disclosed on the fit result.
+
+    Parameters
+    ----------
+    heads, relations, tails:
+        Encoded train triple arrays.
+    n_entities, n_relations:
+        Vocabulary sizes.
+    embedding_dim, epochs, batch_size, learning_rate:
+        Training hyperparameters.
+    margin:
+        Margin for the ranking loss.
+    neg_ratio:
+        Negative samples drawn per positive triple.
+    norm:
+        ``l1`` or ``l2`` translation norm.
+    random_state:
+        Seed for initialization and corruption sampling.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray, float]
+        Entity embeddings, relation embeddings, and final epoch loss.
+
+    Raises
+    ------
+    ValidationError
+        When vocabulary sizes are too small for TransE training.
+    """
     if n_entities < 2 or n_relations < 1:
         raise ValidationError("TransE needs ≥2 entities and ≥1 relation.")
     rng = np.random.default_rng(random_state)
@@ -306,7 +482,35 @@ def fit_distmult(
     neg_ratio: int = 1,
     random_state: int | None = 0,
 ) -> tuple[np.ndarray, np.ndarray, float]:
-    """Train DistMult with margin ranking loss + uniform negative sampling."""
+    """Train DistMult embeddings with margin ranking loss on train triples.
+
+    Uses uniform head-or-tail negative corruption on Session train triples only.
+
+    Parameters
+    ----------
+    heads, relations, tails:
+        Encoded train triple arrays.
+    n_entities, n_relations:
+        Vocabulary sizes.
+    embedding_dim, epochs, batch_size, learning_rate:
+        Training hyperparameters.
+    margin:
+        Margin for the ranking loss.
+    neg_ratio:
+        Negative samples drawn per positive triple.
+    random_state:
+        Seed for initialization and corruption sampling.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray, float]
+        Entity embeddings, relation embeddings, and final epoch loss.
+
+    Raises
+    ------
+    ValidationError
+        When vocabulary sizes are too small for DistMult training.
+    """
     if n_entities < 2 or n_relations < 1:
         raise ValidationError("DistMult needs ≥2 entities and ≥1 relation.")
     rng = np.random.default_rng(random_state)
@@ -380,6 +584,36 @@ def fit_embeddings(
     norm: NormName = "l1",
     random_state: int | None = 0,
 ) -> tuple[np.ndarray, np.ndarray, float]:
+    """Dispatch native KG embedding training to TransE or DistMult.
+
+    Called by the native fit path after triple materialization on Session train
+    triples only.
+
+    Parameters
+    ----------
+    method:
+        ``transe`` or ``distmult`` for the native numpy backend.
+    heads, relations, tails:
+        Encoded train triple arrays.
+    n_entities, n_relations:
+        Vocabulary sizes.
+    embedding_dim, epochs, batch_size, learning_rate, margin, neg_ratio:
+        Training hyperparameters forwarded to the method trainer.
+    norm:
+        Translation norm for TransE.
+    random_state:
+        Seed for initialization and negative sampling.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray, float]
+        Entity embeddings, relation embeddings, and final epoch loss.
+
+    Raises
+    ------
+    ValidationError
+        When ``method`` is not supported on the native backend.
+    """
     if method == "transe":
         return fit_transe(
             heads,

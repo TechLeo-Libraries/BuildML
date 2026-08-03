@@ -14,7 +14,7 @@ from buildml.kg.features import (
     mrr_from_ranks,
     partition_frame,
 )
-from buildml.kg.models import score_all_heads, score_all_tails
+from buildml.kg.models import score_all_heads, score_all_relations, score_all_tails
 from buildml.kg.results import KgEvalResult, KgPlan
 
 
@@ -34,6 +34,8 @@ def _rank_of_true(
     for cand in order.tolist():
         if mode == "tail":
             triple = (head, relation, cand)
+        elif mode == "relation":
+            triple = (head, cand, tail)
         else:
             triple = (cand, relation, tail)
         if cand == true_id:
@@ -55,8 +57,36 @@ def evaluate_kg(
 ) -> KgEvalResult:
     """Evaluate link prediction on a holdout partition.
 
+    Ranks true tails and heads among all train-vocabulary entities using the
+    filtered protocol and reports MRR and Hits@K without refitting embeddings.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with holdout triple rows.
+    plan:
+        Train-fitted :class:`~buildml.kg.results.KgPlan`.
+    split_plan:
+        Split plan defining the evaluation partition.
+    partition:
+        ``validation``, ``test``, or ``all``.
+    k:
+        Hits@K cutoff alongside Hits@1 and Hits@3.
+
+    Returns
+    -------
+    KgEvalResult
+        Filtered ranking metrics and OOV skip counts.
+
+    Raises
+    ------
+    ValidationError
+        When no plan exists, ``k`` is invalid, or partition requires a split plan.
+
+    Notes
+    -----
     Protocol
-    --------
+    ^^^^^^^^
     - Fit never sees holdout triples (Session / assert_fit_partition gate).
     - For each holdout triple whose head, relation, and tail are in the
       **train** vocab: rank the true tail among all train entities (and
@@ -162,6 +192,26 @@ def evaluate_kg(
                 mode="head",
             )
         )
+        # Relation prediction (h, ?, t)
+        rel_scores = score_all_relations(
+            plan.method,
+            h,
+            t,
+            plan.entity_embeddings_,
+            plan.relation_embeddings_,
+            norm=norm,  # type: ignore[arg-type]
+        )
+        ranks.append(
+            _rank_of_true(
+                rel_scores,
+                r,
+                true_set=filter_set,
+                head=h,
+                relation=r,
+                tail=t,
+                mode="relation",
+            )
+        )
 
     metrics = {
         "mrr": mrr_from_ranks(ranks),
@@ -174,7 +224,7 @@ def evaluate_kg(
     disclosures = [
         "Filtered ranking: train (+ holdout) true triples removed except the "
         "target fill-in.",
-        "MRR / Hits averaged over head and tail prediction per holdout triple.",
+        "MRR / Hits averaged over head, tail, and relation prediction per holdout triple.",
         "Frozen train embeddings; holdout never used for fitting.",
         "Not Graph ML node-classify accuracy; not RAG retrieve metrics.",
     ]

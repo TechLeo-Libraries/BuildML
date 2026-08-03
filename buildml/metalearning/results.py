@@ -38,6 +38,16 @@ class MetaLearningPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the plan to a JSON-friendly dict (no private estimators).
+
+        Omits ``label_encoder_``, ``init_estimator_``, and ``meta_learner_`` so
+        bundles and history stay lightweight.
+
+        Returns
+        -------
+        dict[str, Any]
+            Episodic protocol, task ids, and disclosure fields for history/bundles.
+        """
         return {
             "backend": self.backend,
             "method": self.method,
@@ -83,6 +93,16 @@ class MetaLearningFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the fit result for history and bundle metadata.
+
+        Captures episodic protocol knobs and meta-train accuracy without model
+        weights.
+
+        Returns
+        -------
+        dict[str, Any]
+            Backend, method, episodic knobs, and meta-train accuracy summary.
+        """
         return {
             "backend": self.backend,
             "method": self.method,
@@ -117,6 +137,15 @@ class MetaAdaptResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the adapt result without embedding adapted model weights.
+
+        Prototype vectors are summarized by dimension only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, task id, support size, and adaptation summary fields.
+        """
         proto_summary = None
         if self.prototypes_ is not None:
             proto_summary = {
@@ -151,6 +180,15 @@ class MetaLearningEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize evaluation metrics and per-task episodic scores.
+
+        Includes novel vs overlapping task id lists for walkthrough honesty.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, aggregate metrics, novel/overlapping task ids, and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,

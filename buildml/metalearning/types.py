@@ -46,6 +46,15 @@ class MetaLearningConfig:
     device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize user-facing meta-learning configuration knobs.
+
+        Suitable for plan ``config`` payloads and teaching overlays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Backend, method, episodic protocol, and training hyperparameters.
+        """
         return {
             "backend": self.backend,
             "method": self.method,

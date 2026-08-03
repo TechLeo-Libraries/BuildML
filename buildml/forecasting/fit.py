@@ -14,8 +14,10 @@ from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.forecasting.backends import fit_industry_backend
 from buildml.forecasting.catalog import (
     CORE_BASELINE_METHODS,
-    resolve_default_method,
+    EXOG_COMPATIBLE_METHODS,
     method_requires_extra,
+    method_supports_exog,
+    resolve_default_method,
 )
 from buildml.forecasting.features import (
     assert_partition_time_order,
@@ -56,8 +58,15 @@ def fit_forecaster(
 ) -> tuple[ForecastPlan, ForecastFitResult]:
     """Fit a classical forecaster on the train partition only.
 
+    Resolves method defaults, enforces temporal split guards, and returns a
+    frozen :class:`ForecastPlan` ready for generate and evaluate.
+
     Parameters
     ----------
+    dataset:
+        Session dataset with time and target columns assigned.
+    split_plan:
+        Temporal split plan defining the train partition.
     method:
         ``auto`` picks ETS when statsmodels installed else ``lag_ridge``.
         Baselines (``naive``, ``seasonal_naive``, ``drift``, ``mean``) or
@@ -73,6 +82,41 @@ def fit_forecaster(
     exog_columns:
         Optional numeric exogenous columns. Univariate when empty. Horizon
         generation with exog requires future exogenous values (disclosed).
+    target_column:
+        Optional explicit target column overriding dataset role resolution.
+    time_column:
+        Optional explicit time column overriding dataset role resolution.
+    random_state:
+        Seed for stochastic lag_hgb and N-BEATS estimators.
+    alpha:
+        Ridge regularisation strength for ``lag_ridge``.
+    max_iter:
+        Maximum iterations for ``lag_hgb`` or N-BEATS training.
+    max_depth:
+        Tree depth limit for ``lag_hgb``.
+    learning_rate:
+        Learning rate for ``lag_hgb``.
+    order:
+        ARIMA ``(p, d, q)`` order for statsmodels methods.
+    seasonal_order:
+        SARIMAX seasonal ``(P, D, Q, s)`` tuple.
+    nbeats_input_size:
+        N-BEATS lookback window length.
+    nbeats_horizon:
+        N-BEATS native forecast horizon; defaults to ``horizon`` when ``None``.
+
+    Returns
+    -------
+    tuple[ForecastPlan, ForecastFitResult]
+        Train-fitted plan and fit summary for history logs.
+
+    Raises
+    ------
+    MissingExtraError
+        When the requested method requires an optional extra that is not installed.
+    ValidationError
+        When temporal guards fail, hyperparameters are invalid, or the method is
+        unsupported.
 
     Notes
     -----
@@ -114,6 +158,11 @@ def fit_forecaster(
     if univariate:
         disclosures.append("Univariate mode: target history only (no exogenous columns).")
     else:
+        if not method_supports_exog(method):
+            raise ValidationError(
+                f"method='{method}' does not accept exogenous columns. "
+                f"Use one of {sorted(EXOG_COMPATIBLE_METHODS)} or omit exog_columns."
+            )
         disclosures.append(
             "Exogenous mode: contemporaneous numeric exog columns are included in "
             "lag-model features. Horizon generate requires future exog values; "

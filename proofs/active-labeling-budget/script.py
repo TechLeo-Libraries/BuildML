@@ -77,7 +77,13 @@ def main() -> None:
             "Oracle used only to simulate humans (not library API inventing labels)",
             "Test evaluated after budget loop",
         ],
-        "industry_comparison": {"status": "stub"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: margin-sampling active-learning twin on the same "
+                "split; run script then baseline_industry.py for results/comparison.json."
+            ),
+        },
         "limitations": ["Simulated oracle; not a real annotation UI"],
     })
     print("active-labeling-budget OK", dict(test.metrics))

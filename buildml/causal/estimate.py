@@ -30,7 +30,40 @@ def estimate_ate_from_models(
     propensity: Any | None,
     clip_propensity: tuple[float, float],
 ) -> tuple[float, dict[str, float]]:
-    """Compute ATE and diagnostic summaries from fitted nuisances."""
+    """Compute ATE and diagnostic summaries from fitted nuisances.
+
+    Applies T-learner, IPW, or AIPW scoring formulas using pre-fit outcome and
+    propensity models without refitting. Propensity scores are clipped before
+    IPW/AIPW inversion to stabilise weights.
+
+    Parameters
+    ----------
+    x:
+        Confounder design matrix for the evaluation rows.
+    t:
+        Binary treatment indicators (0 = control, 1 = treated).
+    y:
+        Outcome vector aligned with ``x`` and ``t``.
+    method:
+        ``t_learner``, ``ipw``, or ``aipw``.
+    mu0, mu1:
+        Fitted outcome models for control and treated arms (T-learner/AIPW).
+    propensity:
+        Fitted propensity model with ``predict_proba`` (IPW/AIPW).
+    clip_propensity:
+        ``(low, high)`` bounds applied to propensity scores.
+
+    Returns
+    -------
+    tuple[float, dict[str, float]]
+        Point ATE estimate and optional diagnostics (e.g. ``cate_std``,
+        ``propensity_mean``).
+
+    Raises
+    ------
+    ValidationError
+        When required nuisances are missing or ``method`` is unknown.
+    """
     method_key = str(method).lower().replace("-", "_")
     low, high = propensity_clip_bounds(clip_propensity)
     extras: dict[str, float] = {}
@@ -94,6 +127,10 @@ def estimate_causal(
 ) -> CausalEstimateResult:
     """Estimate ATE on a partition with the fitted nuisance models.
 
+    Reuses train-fitted nuisances (or the EconML/DoWhy backend artifact) to
+    score the requested partition without refitting. Optional bootstrap resamples
+    partition rows while keeping nuisances fixed.
+
     Notes
     -----
     Identification assumptions apply to the data-generating process; computing
@@ -102,6 +139,32 @@ def estimate_causal(
     resamples the **evaluation partition rows** while keeping fitted train
     nuisances fixed — a cheaper influence-function-style uncertainty band,
     distinct from the full retrain bootstrap used in ``fit_causal``.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing the evaluation partition.
+    plan:
+        :class:`~buildml.causal.results.CausalPlan` from :func:`fit_causal`.
+    split_plan:
+        Split plan defining partition indices.
+    partition:
+        ``train``, ``validation``, ``test``, or ``all``.
+    bootstrap_samples:
+        Override plan bootstrap count; ``None`` uses the plan default.
+    random_state:
+        RNG seed for partition bootstrap resampling.
+
+    Returns
+    -------
+    CausalEstimateResult
+        Partition ATE, optional bootstrap CI, and teaching disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is missing, columns are absent, or treatment levels
+        disagree with the plan encoding.
     """
     if plan is None:
         raise ValidationError("No CausalPlan. Call fit_causal first.")
@@ -269,6 +332,21 @@ def _bootstrap_scores(
 
 
 def pd_unique_levels(series) -> list[Any]:
+    """Return unique treatment/outcome levels preserving pandas dtype order.
+
+    Thin helper so partition scoring can compare observed levels against the
+    plan's control/treated mapping without importing pandas at module scope.
+
+    Parameters
+    ----------
+    series:
+        pandas Series whose unique values define allowable treatment levels.
+
+    Returns
+    -------
+    list[Any]
+        Unique values in first-seen order, as returned by ``pandas.unique``.
+    """
     import pandas as pd
 
     return list(pd.unique(series))

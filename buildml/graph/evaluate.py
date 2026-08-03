@@ -27,6 +27,29 @@ def evaluate_graph(
     """Score holdout nodes and compute classification metrics.
 
     Uses the fitted plan only — never refits on the evaluation partition.
+    Falls back from validation to test when validation indices are absent.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset holding the node table.
+    plan:
+        Fitted :class:`GraphPlan` from :func:`fit_graph`.
+    split_plan:
+        Session split plan defining holdout indices.
+    partition:
+        Holdout partition to score (defaults to validation).
+
+    Returns
+    -------
+    GraphEvalResult
+        Accuracy, macro-F1, optional ROC-AUC, and honesty disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no plan exists, no holdout partition is available, or prediction
+        length disagrees with labels.
     """
     if plan is None:
         raise ValidationError("No GraphPlan. Call fit_graph(...) first.")

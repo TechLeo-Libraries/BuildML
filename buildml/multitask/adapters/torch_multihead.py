@@ -29,6 +29,30 @@ class SharedTrunkMultiHeadEstimator:
     n_features_: int = 0
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> SharedTrunkMultiHeadEstimator:
+        """Jointly train shared trunk and per-task heads on tabular features.
+
+        Runs mini-batch AdamW optimization for ``epochs`` with classification
+        cross-entropy and regression MSE losses summed across heads.
+
+        Parameters
+        ----------
+        x:
+            Float feature matrix of shape ``(n_samples, n_features)``.
+        y:
+            Encoded target matrix of shape ``(n_samples, n_tasks)``.
+
+        Returns
+        -------
+        SharedTrunkMultiHeadEstimator
+            Fitted module stored in ``module_`` (``self``).
+
+        Raises
+        ------
+        ValidationError
+            When target width mismatches ``target_columns`` or class counts are invalid.
+        MissingExtraError
+            When torch is not installed.
+        """
         torch = require_torch_multitask()
         x_arr = np.asarray(x, dtype=np.float32)
         y_arr = np.asarray(y)
@@ -104,6 +128,28 @@ class SharedTrunkMultiHeadEstimator:
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Predict encoded targets for all tasks using the fitted module.
+
+        Classification heads argmax to integer codes; regression heads return
+        float values in a single stacked matrix.
+
+        Parameters
+        ----------
+        x:
+            Float feature matrix of shape ``(n_samples, n_features)``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Predictions of shape ``(n_samples, n_tasks)``.
+
+        Raises
+        ------
+        ValidationError
+            When the module has not been fitted.
+        MissingExtraError
+            When torch is not installed.
+        """
         if self.module_ is None:
             raise ValidationError("SharedTrunkMultiHeadEstimator is not fitted.")
         torch = require_torch_multitask()
@@ -135,6 +181,35 @@ def build_torch_estimator(
     random_state: int | None,
     device: str,
 ) -> SharedTrunkMultiHeadEstimator:
+    """Construct a shared-trunk multi-head torch estimator for mixed targets.
+
+    Packages per-target kinds, class lists, and training hyperparameters into
+    :class:`SharedTrunkMultiHeadEstimator` for :func:`fit_multitask`.
+
+    Parameters
+    ----------
+    target_columns:
+        Target names defining head order.
+    task_kinds:
+        Per-target ``classification`` or ``regression`` mapping.
+    classes_per_task:
+        Class tuples for each classification target (for head output sizes).
+    epochs:
+        Number of full passes over the train set.
+    batch_size:
+        Minibatch size for joint head training.
+    learning_rate:
+        AdamW learning rate.
+    random_state:
+        Seed for batch shuffling.
+    device:
+        Torch device string (e.g. ``cpu``, ``cuda``).
+
+    Returns
+    -------
+    SharedTrunkMultiHeadEstimator
+        Unfitted estimator ready for :meth:`SharedTrunkMultiHeadEstimator.fit`.
+    """
     return SharedTrunkMultiHeadEstimator(
         task_kinds=dict(task_kinds),
         target_columns=tuple(target_columns),

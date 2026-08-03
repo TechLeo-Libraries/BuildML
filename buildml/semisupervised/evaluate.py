@@ -31,9 +31,32 @@ def evaluate_semisupervised(
 ) -> SemiSupervisedEvalResult:
     """Evaluate predictions against ground-truth labels on a partition.
 
-    Only rows with non-missing targets contribute to metrics. Unlabeled holdout
-    rows are counted and disclosed, never scored as invented truths. This does
-    not refit and does not use unlabeled holdout rows for model selection.
+Only rows with non-missing targets contribute to metrics. Unlabeled holdout
+rows are counted and disclosed, never scored as invented truths. This does
+not refit and does not use unlabeled holdout rows for model selection.
+
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+plan:
+    Fitted plan object carrying model state and feature contract.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+partition:
+    Holdout partition name or ``all`` for the full frame.
+unlabeled_marker:
+    Sentinel marking unlabeled rows; ``None`` uses NaN/NA.
+
+Returns
+-------
+SemiSupervisedEvalResult
+    Serializable result summary (SemiSupervisedEvalResult) for history recording.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     _, scored = predict_semisupervised(
         dataset,

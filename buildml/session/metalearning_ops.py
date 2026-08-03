@@ -51,6 +51,59 @@ def fit_metalearning_op(
 ) -> Any:
     """Meta-train on episodic tasks carved from the train partition only.
 
+    Delegates to :func:`buildml.metalearning.fit.fit_metalearning`, stores the
+    :class:`~buildml.metalearning.results.MetaLearningPlan` on Session, and
+    records the fit. Follow with :func:`adapt_to_task_op` or
+    :func:`evaluate_metalearning_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with task/group column and split plan.
+    backend:
+        Optional backend override (``native`` or ``torch``).
+    method:
+        Meta-learning method (``prototypical``, ``maml``, etc.).
+    task_column:
+        Column identifying tasks/episodes; inferred from roles when omitted.
+    columns:
+        Explicit feature columns for episodic sampling.
+    n_way:
+        Classes per episode; inferred from data when ``None``.
+    k_shot:
+        Support examples per class in each episode.
+    n_query:
+        Query examples per class in each episode.
+    n_episodes:
+        Number of meta-training episodes per epoch.
+    base_estimator:
+        Fallback sklearn estimator for non-torch backends.
+    random_state:
+        Seed for episode sampling and initialization.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+    task_holdout_fraction:
+        Fraction of train tasks held out during meta-training.
+    meta_epochs:
+        Number of meta-training epochs (torch backends).
+    inner_lr:
+        Inner-loop learning rate for MAML-style methods.
+    inner_steps:
+        Inner-loop gradient steps per episode.
+    meta_lr:
+        Outer/meta learning rate.
+    embed_dim:
+        Embedding dimension for torch encoders.
+    hidden_dim:
+        Hidden layer width for torch encoders.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+
+    Returns
+    -------
+    MetaLearningFitResult
+        Serializable fit summary including task counts and disclosures.
+
     Notes
     -----
     **Leakage:** Requires a split. Meta-train uses train only. Validation/test
@@ -125,7 +178,36 @@ def adapt_to_task_op(
     max_support_per_class: int | None = None,
     random_state: int | None = 0,
 ) -> Any:
-    """Fast-adapt the meta-learner to one task's labeled support set."""
+    """Fast-adapt the meta-learner to one task's labeled support set.
+
+    Delegates to :func:`buildml.metalearning.adapt.adapt_to_task` using the
+    plan from :func:`fit_metalearning_op`. No meta-training occurs here.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a MetaLearningPlan from :func:`fit_metalearning_op`.
+    task_id:
+        Task identifier to adapt to; required when multiple tasks exist.
+    partition:
+        Partition containing support labels (default ``train``).
+    support_frame:
+        Optional explicit support DataFrame instead of a partition slice.
+    max_support_per_class:
+        Cap on support rows sampled per class.
+    random_state:
+        Seed for support sampling.
+
+    Returns
+    -------
+    MetaLearningAdaptResult
+        Adapted predictions and support-set summary for the task.
+
+    Raises
+    ------
+    ValidationError
+        When no meta-learning plan exists on the Session.
+    """
     plan = getattr(session, "_metalearning_plan", None)
     if plan is None:
         raise ValidationError(
@@ -167,7 +249,38 @@ def evaluate_metalearning_op(
     prefer_novel_tasks: bool = True,
     random_state: int | None = 0,
 ) -> Any:
-    """Episodic holdout evaluation (never for meta-train)."""
+    """Run episodic holdout evaluation without meta-training on holdout.
+
+    Delegates to :func:`buildml.metalearning.evaluate.evaluate_metalearning`.
+    Falls back to ``test`` when no validation partition exists.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a MetaLearningPlan from :func:`fit_metalearning_op`.
+    partition:
+        Holdout partition for episodic evaluation (default ``validation``).
+    k_shot:
+        Support examples per class override for evaluation episodes.
+    n_query:
+        Query examples per class override for evaluation episodes.
+    n_way:
+        Classes per episode override.
+    prefer_novel_tasks:
+        When True, prefer tasks not seen during meta-training.
+    random_state:
+        Seed for episode construction.
+
+    Returns
+    -------
+    MetaLearningEvalResult
+        Episodic accuracy metrics on the holdout partition.
+
+    Raises
+    ------
+    ValidationError
+        When no meta-learning plan exists on the Session.
+    """
     plan = getattr(session, "_metalearning_plan", None)
     if plan is None:
         raise ValidationError(
@@ -210,7 +323,28 @@ def evaluate_metalearning_op(
 
 
 def save_metalearning_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active MetaLearningPlan as ``buildml.metalearning_bundle.v1``."""
+    """Persist the active MetaLearningPlan as ``buildml.metalearning_bundle.v1``.
+
+    Delegates to :func:`buildml.metalearning.checkpoint.save_metalearning_bundle`.
+    Reload with :func:`load_metalearning_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a MetaLearningPlan from :func:`fit_metalearning_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no meta-learning plan exists on the Session.
+    """
     plan = getattr(session, "_metalearning_plan", None)
     if plan is None:
         raise ValidationError(
@@ -237,7 +371,23 @@ def save_metalearning_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_metalearning_bundle_op(session, path: str | Path) -> Any:
-    """Load a meta-learning bundle into this Session."""
+    """Load a meta-learning bundle into this Session.
+
+    Delegates to :func:`buildml.metalearning.checkpoint.load_metalearning_bundle`
+    and clears prior adapt/eval results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded MetaLearningPlan.
+    path:
+        Path to a ``buildml.metalearning_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with MetaLearningPlan attached for chaining.
+    """
     plan = load_metalearning_bundle(path)
     session._metalearning_plan = plan
     session._metalearning_fit_result = None

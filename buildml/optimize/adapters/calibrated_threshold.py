@@ -27,7 +27,48 @@ def fit_calibrated_threshold_policy(
     tn_benefit: float,
     method: str = "sigmoid",
 ) -> tuple[DecisionPlan, dict[str, Any], Any]:
-    """Calibrate Session.fit estimator on train, then tune threshold."""
+    """Fit a calibrated classifier and select a cost-sensitive threshold.
+
+    Wraps :class:`~sklearn.calibration.CalibratedClassifierCV` around the
+    Session estimator on train, then delegates threshold selection to
+    :func:`~buildml.optimize.policies.fit_threshold_policy` on the tuning
+    partition. Use when raw probabilities need post-hoc calibration before
+    expected-cost threshold tuning.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular data with features and target for scoring partitions.
+    split_plan:
+        Train/validation/test split used to isolate the tuning partition.
+    fit_result:
+        Classification :class:`~buildml.model.supervised.FitResult` whose
+        estimator supplies ``predict_proba``.
+    partition:
+        Split name where the operating threshold is selected (default
+        validation in the caller).
+    allow_test_tuning:
+        When ``True``, permits tuning on the test partition (dangerous opt-in).
+    fp_cost, fn_cost:
+        False-positive and false-negative costs for expected-cost threshold
+        selection; both required for cost mode.
+    tp_benefit, tn_benefit:
+        Optional benefits subtracted from total expected cost.
+    method:
+        Calibration link: ``'sigmoid'`` (Platt) or ``'isotonic'``.
+
+    Returns
+    -------
+    tuple[DecisionPlan, dict[str, Any], DiagnosticReport]
+        Frozen policy with auxiliary calibrated estimator, fit metrics, and
+        the classical threshold diagnostic report.
+
+    Raises
+    ------
+    ValidationError
+        When the fit is not classification, the base estimator lacks
+        ``predict_proba``, or calibration/threshold steps fail validation.
+    """
     if fit_result.task != "classification":
         raise ValidationError("method='threshold' requires a classification fit.")
     if not hasattr(fit_result.estimator, "predict_proba"):

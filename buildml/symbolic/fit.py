@@ -76,19 +76,57 @@ def fit_symbolic(
 ) -> tuple[SymbolicPlan, SymbolicFitResult]:
     """Compile or induce a symbolic rule knowledge base on Session train.
 
-    Backends
-    --------
-    sklearn (default fallback):
-        ``declared``, ``decision_tree``, ``decision_list`` — core induction.
-    industry (``buildml[symbolic-industry]``):
-        ``skope_rules``, ``rulefit``, ``boosted_rules`` — interpretable models
-        exported as if-then rules when installed.
+    Produces a :class:`~buildml.symbolic.results.SymbolicPlan` with if-then rules
+    from declared expert rules, sklearn tree/list induction, or industry exporters
+    (skope-rules, imodels). Rule induction uses train only.
 
-    Honesty
+    Parameters
+    ----------
+    dataset:
+        Tabular Session dataset with target and numeric features.
+    split_plan:
+        Train/validation/test split. Fit uses train only.
+    backend:
+        ``sklearn`` or ``industry``. Defaults from capability matrix.
+    source:
+        ``declared``, ``decision_tree``, or ``decision_list``.
+    method:
+        Industry method when ``backend='industry'``.
+    task:
+        ``classification`` or ``regression``. Inferred when ``None``.
+    rules:
+        Expert-declared rules when ``source='declared'``.
+    columns:
+        Feature columns for induction. Resolved from roles when ``None``.
+    random_state:
+        Seed for sklearn/industry induction.
+    max_depth, min_samples_leaf:
+        Tree/list induction depth controls.
+    max_rules:
+        Cap on exported rules for industry backends.
+    default_consequent:
+        Fallback prediction for declared rules without consequents.
+    prefer_reduce_components, reduce_plan:
+        Column resolution helpers.
+    verify_constraints:
+        When True and Z3 is installed, run optional lite SAT check on hard rules.
+
+    Returns
     -------
-    Structured if-then rules over tabular columns. Not an AGI reasoner,
-    Prolog engine, or full Z3 SMT product. Optional Z3 lite verification when
-    ``verify_constraints=True`` and z3-solver is installed.
+    tuple[SymbolicPlan, SymbolicFitResult]
+        Frozen rule knowledge base and fit report with disclosures.
+
+    Raises
+    ------
+    ValidationError
+        On invalid source/method pairing, empty declared rules, or bad targets.
+    MissingExtraError
+        When industry backend or Z3 verification is requested but not installed.
+
+    Notes
+    -----
+    Honesty: structured if-then rules over tabular columns — not Prolog, AGI, or
+    a full Z3 SMT product.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -360,17 +398,58 @@ def fit_neuro_symbolic(
     torch_epochs: int = 60,
     device: str = "cpu",
 ) -> tuple[NeuroSymbolicPlan, NeuroSymbolicFitResult]:
-    """Fit a base model jointly with a symbolic rule component.
+    """Fit a base model jointly with a symbolic rule component on Session train.
 
-    Backends
-    --------
-    sklearn (default fallback):
-        Logistic/Ridge/RF/DT base + symbolic overlay / features / repair.
-    torch (``buildml[torch]``):
-        Lite concept-bottleneck or neural-additive base with the same modes.
+    Combines sklearn or torch tabular bases with rule overlay, rule-as-features,
+    or constraint-repair modes. Rules may be declared or train-induced via
+    ``rule_source``.
 
-    Rules may be expert-declared or train-induced (``rule_source``). Induction
-    and base-model fitting use Session **train** only.
+    Parameters
+    ----------
+    dataset, split_plan:
+        Session data; train partition used for fit.
+    backend:
+        ``sklearn`` or ``torch``. Defaults from capability matrix.
+    mode:
+        ``constraint_overlay``, ``rules_as_features``, or ``constraint_repair``.
+    base_estimator:
+        Sklearn base name or torch method alias.
+    torch_method:
+        Explicit torch method when ``backend='torch'``.
+    task:
+        ``classification`` or ``regression``. Inferred when ``None``.
+    rules:
+        Optional declared rules; otherwise induced from ``rule_source``.
+    rule_source:
+        Induction source when ``rules`` is ``None``.
+    columns:
+        Feature columns. Resolved from roles when ``None``.
+    random_state:
+        Seed for induction and sklearn bases.
+    soft_strength:
+        Weight for soft constraint overlay modes.
+    max_depth, min_samples_leaf, max_rules:
+        Induction controls for train-derived rules.
+    prefer_reduce_components, reduce_plan:
+        Column resolution helpers.
+    torch_epochs, device:
+        Training knobs for torch neuro-symbolic bases.
+
+    Returns
+    -------
+    tuple[NeuroSymbolicPlan, NeuroSymbolicFitResult]
+        Hybrid plan with base estimator and rule knowledge base.
+
+    Raises
+    ------
+    ValidationError
+        On unknown mode, invalid backend pairing, or bad targets.
+    MissingExtraError
+        When torch backend is requested but not installed.
+
+    Notes
+    -----
+    Honesty: sklearn + rule hybrid — not a deep neuro-symbolic research platform.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

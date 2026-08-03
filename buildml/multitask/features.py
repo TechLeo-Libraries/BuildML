@@ -28,7 +28,28 @@ __all__ = [
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
-    """Build a float design matrix; refuse null features (multi-task wording)."""
+    """Build a float design matrix from selected columns for multi-task fit.
+
+    Delegates to the semi-supervised helper and rewrites error messages for
+    multi-task wording. Refuses null feature values.
+
+    Parameters
+    ----------
+    frame:
+        Partition frame containing the feature columns.
+    columns:
+        Feature column names to extract in order.
+
+    Returns
+    -------
+    numpy.ndarray
+        Two-dimensional float array of shape ``(n_rows, n_features)``.
+
+    Raises
+    ------
+    ValidationError
+        When columns are missing or contain nulls.
+    """
     try:
         return _matrix_from_frame(frame, columns)
     except ValidationError as exc:
@@ -40,7 +61,29 @@ def resolve_target_columns(
     dataset: Dataset,
     targets: Sequence[str] | None,
 ) -> tuple[list[str], list[str]]:
-    """Resolve ``>= 2`` target columns from roles or an explicit list."""
+    """Resolve at least two target columns from roles or an explicit list.
+
+    Classical ``Session.fit`` still requires a single target; this helper
+    validates the multi-task contract before fit.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with role assignments.
+    targets:
+        Optional explicit target column names; when ``None``, uses all
+        ``role='target'`` columns.
+
+    Returns
+    -------
+    tuple[list[str], list[str]]
+        Target column names and disclosure strings for the fit result.
+
+    Raises
+    ------
+    ValidationError
+        When fewer than two targets are found.
+    """
     disclosures: list[str] = []
     if targets is not None:
         names = validate_column_names(list(targets), dataset.columns)
@@ -75,7 +118,36 @@ def resolve_multitask_columns(
     prefer_reduce_components: bool = True,
     target_columns: Sequence[str],
 ) -> tuple[list[str], bool, list[str]]:
-    """Resolve numeric feature columns, excluding all multi-task targets."""
+    """Resolve numeric feature columns excluding all multi-task targets.
+
+    Reuses the semi-supervised column resolver, then drops every target column
+    from the feature list so targets never leak into ``X``.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with role assignments.
+    frame:
+        Train partition frame used for column validation.
+    columns:
+        Optional explicit feature columns; ``None`` uses role-based defaults.
+    reduce_plan:
+        Optional dimensionality-reduction plan from an upstream Session step.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    target_columns:
+        All multi-task target names to exclude from features.
+
+    Returns
+    -------
+    tuple[list[str], bool, list[str]]
+        Feature column names, whether reduce components were used, and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no usable feature columns remain after exclusions.
+    """
     # Reuse semi-supervised resolver with a sentinel primary target, then
     # exclude every remaining target column explicitly.
     primary = str(target_columns[0])
@@ -109,7 +181,28 @@ def infer_task_kinds(
     frame: pd.DataFrame,
     target_columns: Sequence[str],
 ) -> dict[str, str]:
-    """Infer per-target classification vs regression kinds."""
+    """Infer per-target classification vs regression kinds from train data.
+
+    Numeric columns with many distinct values are treated as regression; sparse
+    integer-like columns are treated as classification labels.
+
+    Parameters
+    ----------
+    frame:
+        Train partition frame containing all target columns.
+    target_columns:
+        Target column names to classify.
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping from target name to ``classification`` or ``regression``.
+
+    Raises
+    ------
+    ValidationError
+        When any target column contains nulls on the train partition.
+    """
     kinds: dict[str, str] = {}
     for col in target_columns:
         series = frame[col]
@@ -129,10 +222,32 @@ def infer_task_type(
     *,
     allow_mixed: bool = False,
 ) -> tuple[str, list[str]]:
-    """Resolve classification vs regression; refuse mixed-type targets.
+    """Resolve overall task type and refuse incompatible mixed-type targets.
 
-    ``auto`` classifies a column as regression when it is numeric with many
-    distinct values; otherwise classification. All targets must agree.
+    ``auto`` classifies each column and requires agreement unless
+    ``allow_mixed=True`` for torch shared-trunk paths. Explicit
+    ``classification`` / ``regression`` validates target compatibility.
+
+    Parameters
+    ----------
+    frame:
+        Train partition frame containing all target columns.
+    target_columns:
+        Target column names to validate.
+    task:
+        ``classification``, ``regression``, ``auto``, or ``mixed``.
+    allow_mixed:
+        When True, permit mixed cls+reg targets (torch backend only).
+
+    Returns
+    -------
+    tuple[str, list[str]]
+        Resolved task type and disclosure strings.
+
+    Raises
+    ------
+    ValidationError
+        When task is unknown, targets contain nulls, or mixed types are disallowed.
     """
     disclosures: list[str] = []
     if task in {"classification", "regression"}:
@@ -205,7 +320,34 @@ def encode_multitask_y(
     task_kinds: dict[str, str] | None = None,
     label_encoders: dict[str, Any] | None = None,
 ) -> tuple[np.ndarray, dict[str, Any], dict[str, tuple[Any, ...]]]:
-    """Build a 2D target matrix; LabelEncode per classification task."""
+    """Build a two-dimensional target matrix with per-task label encoding.
+
+    Classification targets are label-encoded per column; regression targets are
+    cast to float. Reuses fitted encoders when provided for predict/eval paths.
+
+    Parameters
+    ----------
+    frame:
+        Partition frame containing target columns.
+    target_columns:
+        Target column names in matrix column order.
+    task:
+        Overall task type: ``classification``, ``regression``, or ``mixed``.
+    task_kinds:
+        Per-target kinds required when ``task='mixed'``.
+    label_encoders:
+        Optional pre-fitted encoders keyed by target column name.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, dict[str, Any], dict[str, tuple[Any, ...]]]
+        Target matrix, label encoders, and class lists per classification task.
+
+    Raises
+    ------
+    ValidationError
+        When targets contain nulls, unseen labels, or insufficient classes.
+    """
     from sklearn.preprocessing import LabelEncoder
 
     if task == "mixed":
@@ -309,7 +451,34 @@ def decode_multitask_predictions(
     label_encoders: dict[str, Any],
     task_kinds: dict[str, str] | None = None,
 ) -> dict[str, tuple[Any, ...]]:
-    """Decode a (n, n_tasks) prediction matrix into per-task tuples."""
+    """Decode a (n_rows, n_tasks) prediction matrix into per-task tuples.
+
+    Rounds and inverse-transforms classification heads; casts regression heads
+    to float tuples for Session attach and evaluation.
+
+    Parameters
+    ----------
+    raw:
+        Raw model predictions of shape ``(n_rows, n_tasks)`` or ``(n_rows,)``.
+    target_columns:
+        Target names in column order matching ``raw``.
+    task:
+        Overall task type: ``classification``, ``regression``, or ``mixed``.
+    label_encoders:
+        Fitted encoders keyed by classification target column name.
+    task_kinds:
+        Per-target kinds required when ``task='mixed'``.
+
+    Returns
+    -------
+    dict[str, tuple[Any, ...]]
+        Mapping from target column name to decoded prediction tuples.
+
+    Raises
+    ------
+    ValidationError
+        When prediction width does not match the number of targets.
+    """
     arr = np.asarray(raw)
     if arr.ndim == 1:
         arr = arr.reshape(-1, 1)

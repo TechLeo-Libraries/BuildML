@@ -116,6 +116,16 @@ class WorkflowState:
     ai_plan_result: Any | None = None
 
     def plan_objects(self) -> dict[str, Any]:
+        """Return Session-global preprocess plan slots keyed by attribute name.
+
+        Used by restore/clear helpers and leakage checks that need a single
+        mapping of fit-capable plans without touching private ``_`` attributes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Mapping from plan attribute names to live plan objects or ``None``.
+        """
         return {
             "impute_plan": self.impute_plan,
             "encode_plan": self.encode_plan,
@@ -131,6 +141,17 @@ class WorkflowState:
         }
 
     def preprocess_summary(self) -> dict[str, Any]:
+        """Return JSON-safe summaries of attached preprocess plans.
+
+        Each plan's :meth:`~object.to_dict` output is included when present so
+        walkthrough and checkpoint surfaces can show what was fitted on the
+        Session train partition.
+
+        Returns
+        -------
+        dict[str, Any]
+            Mapping from preprocess step names to plan dicts or ``None``.
+        """
         return {
             "impute": None if self.impute_plan is None else self.impute_plan.to_dict(),
             "encode": None if self.encode_plan is None else self.encode_plan.to_dict(),
@@ -148,6 +169,17 @@ class WorkflowState:
         }
 
     def restore_plans(self, plans: dict[str, Any] | None) -> None:
+        """Restore preprocess plan slots from a checkpoint or bundle payload.
+
+        Missing keys leave the corresponding slot unchanged; ``None`` values
+        clear individual plans without touching unrelated Session state.
+
+        Parameters
+        ----------
+        plans:
+            Mapping of plan attribute names to deserialized plan objects, or
+            ``None`` to no-op.
+        """
         payload = plans or {}
         self.impute_plan = payload.get("impute_plan")
         self.encode_plan = payload.get("encode_plan")
@@ -162,6 +194,11 @@ class WorkflowState:
         self.resample_plan = payload.get("resample_plan")
 
     def clear_plans(self) -> None:
+        """Clear every Session-global preprocess plan slot on this state object.
+
+        Does not reset dataset, split, fit results, or history — only the
+        train-global transform plans that can poison fold-local evaluation.
+        """
         self.impute_plan = None
         self.encode_plan = None
         self.scale_plan = None
@@ -175,17 +212,59 @@ class WorkflowState:
         self.resample_plan = None
 
     def session_preprocess_applied(self) -> bool:
-        """True when any Session-global plan that poisons CV folds is present."""
+        """Report whether any fit-capable Session-global preprocess plan exists.
+
+        When ``True``, CV and search operations may need fold-local
+        :class:`~buildml.preprocess.fold.PreprocessRecipe` overrides or an
+        explicit opt-in before scores are trustworthy.
+
+        Returns
+        -------
+        bool
+            ``True`` when at least one plan in :data:`FIT_CAPABLE_PLAN_KEYS`
+            is attached.
+        """
         plans = self.plan_objects()
         return any(plans.get(key) is not None for key in FIT_CAPABLE_PLAN_KEYS)
 
 
 def session_preprocess_applied(session: Any) -> bool:
-    """True when Session-level train-global preprocess plans exist."""
+    """Report whether Session-level train-global preprocess plans exist.
+
+    Module-level helper for explain hooks and audit checks that read flat
+    ``session._`` plan attributes rather than a :class:`WorkflowState` instance.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose ``_*_plan``
+        attributes are inspected.
+
+    Returns
+    -------
+    bool
+        ``True`` when any fit-capable preprocess plan slot is non-``None``.
+    """
     return any(plan is not None for plan in plan_objects(session).values())
 
 
 def plan_objects(session: Any) -> dict[str, Any]:
+    """Return Session-global preprocess plan slots from flat Session attributes.
+
+    Mirrors :meth:`WorkflowState.plan_objects` for callers that operate on the
+    live Session object rather than a typed state container.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` exposing ``_*_plan``
+        attributes.
+
+    Returns
+    -------
+    dict[str, Any]
+        Mapping from plan attribute names to live plan objects or ``None``.
+    """
     return {
         "impute_plan": session._impute_plan,
         "encode_plan": session._encode_plan,
@@ -202,6 +281,22 @@ def plan_objects(session: Any) -> dict[str, Any]:
 
 
 def preprocess_summary(session: Any) -> dict[str, Any]:
+    """Return JSON-safe summaries of Session-attached preprocess plans.
+
+    Convenience wrapper around flat ``session._`` plan attributes for explain
+    hooks and reporting surfaces.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose preprocess plan
+        slots are serialized.
+
+    Returns
+    -------
+    dict[str, Any]
+        Mapping from preprocess step names to plan dicts or ``None``.
+    """
     return {
         "impute": None if session._impute_plan is None else session._impute_plan.to_dict(),
         "encode": None if session._encode_plan is None else session._encode_plan.to_dict(),
@@ -220,6 +315,20 @@ def preprocess_summary(session: Any) -> dict[str, Any]:
 
 
 def restore_plans(session: Any, plans: dict[str, Any] | None) -> None:
+    """Restore Session preprocess plan slots from a checkpoint payload.
+
+    Writes directly to ``session._*`` attributes so reattached bundles restore
+    the same train-global transform state recorded at save time.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose plan slots are
+        updated in place.
+    plans:
+        Mapping of plan attribute names to deserialized plan objects, or
+        ``None`` to no-op.
+    """
     payload = plans or {}
     session._impute_plan = payload.get("impute_plan")
     session._encode_plan = payload.get("encode_plan")
@@ -235,6 +344,17 @@ def restore_plans(session: Any, plans: dict[str, Any] | None) -> None:
 
 
 def clear_plans(session: Any) -> None:
+    """Clear every Session-global preprocess plan slot on the live Session.
+
+    Does not reset dataset, split, fit results, or history — only the
+    train-global transform plans that can poison fold-local evaluation.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose ``_*_plan``
+        attributes are set to ``None``.
+    """
     session._impute_plan = None
     session._encode_plan = None
     session._scale_plan = None
@@ -257,6 +377,30 @@ def record(
     warnings: list[str] | tuple[str, ...] = (),
     result_summary: dict[str, Any] | None = None,
 ) -> None:
+    """Append one versioned operation record to Session history.
+
+    Captures before/after workflow snapshots, decision origin, warnings, and an
+    optional result summary so explain, audit, and walkthrough surfaces can
+    replay what changed without re-executing the operation.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose ``_history`` list
+        receives the new record.
+    action:
+        Public operation identifier stored as ``operation_id``.
+    details:
+        Parameter mapping persisted with the record, or ``None`` for empty
+        parameters.
+    decision_origin:
+        Whether the call was ``explicit``, ``recommended``, or ``automatic``.
+    warnings:
+        Leakage, scope, or policy warnings to surface in audit summaries.
+    result_summary:
+        Compact result metadata when the operation produced a structured
+        outcome worth replaying offline.
+    """
     before = prior_state(session._history)
     after = session_state(session)
     session._history.append(

@@ -41,7 +41,49 @@ def evaluate_clustering(
     elbow_k_min: int = 2,
     elbow_k_max: int = 10,
 ) -> ClusterEvalResult:
-    """Score a train-fitted cluster plan on a partition without refitting."""
+    """Score a train-fitted cluster plan on a partition without refitting.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+plan:
+    Fitted plan object carrying model state and feature contract.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+partition:
+    Holdout partition name or ``all`` for the full frame.
+external_label_column:
+    external label column (str | None).
+sample_size:
+    sample size (int | None).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+compute_stability:
+    compute stability (bool).
+stability_runs:
+    stability runs (int).
+stability_sample_fraction:
+    stability sample fraction (float).
+compute_elbow:
+    compute elbow (bool).
+elbow_k_min:
+    elbow k min (int).
+elbow_k_max:
+    elbow k max (int).
+
+Returns
+-------
+ClusterEvalResult
+    Serializable result summary (ClusterEvalResult) for history recording.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     _, assign = assign_clusters(
         dataset, plan, split_plan, partition=partition, attach=False
     )

@@ -33,6 +33,24 @@ def build_tabular_encoder(
     hidden: tuple[int, ...],
     latent_dim: int,
 ) -> Any:
+    """Build a tabular MLP encoder mapping features to latent representations.
+
+    Shared building block for contrastive and generative tabular SSL modules.
+
+    Parameters
+    ----------
+    n_features:
+        Input feature dimensionality.
+    hidden:
+        Hidden layer widths before the latent output.
+    latent_dim:
+        Output representation width.
+
+    Returns
+    -------
+    torch.nn.Module
+        Encoder module whose forward returns latent vectors.
+    """
     torch = require_torch(feature="SSL models")
 
     class TabularEncoderModule(torch.nn.Module):
@@ -49,15 +67,71 @@ def build_tabular_encoder(
 
 
 def build_projector(latent_dim: int, *, hidden: tuple[int, ...], out_dim: int) -> Any:
+    """Build an MLP projector head on top of encoder latents.
+
+    Maps bottleneck activations into a projection space used by contrastive
+    losses (SimCLR/BYOL/VICReg) and vision finetune hooks.
+
+    Parameters
+    ----------
+    latent_dim:
+        Input dimension from the encoder bottleneck.
+    hidden:
+        Hidden layer widths inside the projector.
+    out_dim:
+        Projector output dimension used by contrastive losses.
+
+    Returns
+    -------
+    torch.nn.Sequential
+        Projector module mapping latents to projection space.
+    """
     return _mlp(latent_dim, hidden, out_dim)
 
 
 def build_predictor(in_dim: int, *, hidden: tuple[int, ...], out_dim: int) -> Any:
-    """BYOL online predictor (projector_dim → projector_dim)."""
+    """Build a BYOL online predictor MLP.
+
+    Maps projector outputs back to projector dimension for the BYOL target
+    matching objective.
+
+    Parameters
+    ----------
+    in_dim:
+        Input dimension (typically projector output width).
+    hidden:
+        Hidden layer widths inside the predictor.
+    out_dim:
+        Predictor output dimension matched against the target projector.
+
+    Returns
+    -------
+    torch.nn.Sequential
+        Predictor module for BYOL online branch.
+    """
     return _mlp(in_dim, hidden, out_dim)
 
 
 def build_mae_decoder(latent_dim: int, *, hidden: tuple[int, ...], n_features: int) -> Any:
+    """Build an MAE decoder mapping latents back to feature space.
+
+    Reconstructs masked tabular inputs from encoder bottlenecks during MAE
+    pretext training and diagnostics.
+
+    Parameters
+    ----------
+    latent_dim:
+        Bottleneck representation width from the encoder.
+    hidden:
+        Hidden layer widths inside the decoder MLP.
+    n_features:
+        Original tabular feature dimensionality to reconstruct.
+
+    Returns
+    -------
+    torch.nn.Module
+        Decoder module whose forward returns reconstructed features.
+    """
     torch = require_torch(feature="SSL models")
 
     class MAEDecoderModule(torch.nn.Module):
@@ -72,6 +146,25 @@ def build_mae_decoder(latent_dim: int, *, hidden: tuple[int, ...], n_features: i
 
 
 def build_vae(n_features: int, *, hidden: tuple[int, ...], latent_dim: int) -> Any:
+    """Build a Gaussian VAE module for tabular generative SSL.
+
+    Encodes features into a latent Gaussian, samples via reparameterisation,
+    and decodes reconstructions for ELBO training.
+
+    Parameters
+    ----------
+    n_features:
+        Input feature dimensionality.
+    hidden:
+        Encoder/decoder hidden layer widths.
+    latent_dim:
+        Latent Gaussian dimensionality.
+
+    Returns
+    -------
+    torch.nn.Module
+        VAE module returning ``(recon, mu, logvar, z)`` from forward.
+    """
     torch = require_torch(feature="SSL models")
     enc_hidden = hidden if hidden else (max(n_features, latent_dim * 2),)
     last = enc_hidden[-1]
@@ -114,6 +207,29 @@ def build_simclr_module(
     projector_hidden: tuple[int, ...],
     projector_dim: int,
 ) -> Any:
+    """Build a SimCLR encoder+projector module for tabular contrastive SSL.
+
+    Combines a tabular encoder with a projector head whose outputs feed the
+    NT-Xent loss during two-view training.
+
+    Parameters
+    ----------
+    n_features:
+        Input feature dimensionality.
+    hidden:
+        Encoder hidden layer widths.
+    latent_dim:
+        Encoder bottleneck width exported by transform.
+    projector_hidden:
+        Projector hidden layer widths.
+    projector_dim:
+        Projector output width used by NT-Xent loss.
+
+    Returns
+    -------
+    torch.nn.Module
+        Module whose forward returns ``(latent, projection)``.
+    """
     torch = require_torch(feature="SSL SimCLR")
     encoder = build_tabular_encoder(n_features, hidden=hidden, latent_dim=latent_dim)
     projector = build_projector(latent_dim, hidden=projector_hidden, out_dim=projector_dim)
@@ -141,7 +257,31 @@ def build_byol_module(
     projector_dim: int,
     predictor_hidden: tuple[int, ...],
 ) -> tuple[Any, Any]:
-    """Return (online_module, target_module) for BYOL."""
+    """Build online and target BYOL networks for tabular SSL.
+
+    Returns paired modules where the target network omits the predictor and
+    is initialised from online encoder/projector weights with frozen gradients.
+
+    Parameters
+    ----------
+    n_features:
+        Input feature dimensionality.
+    hidden:
+        Encoder hidden layer widths.
+    latent_dim:
+        Encoder bottleneck width.
+    projector_hidden:
+        Projector hidden layer widths.
+    projector_dim:
+        Projector output width.
+    predictor_hidden:
+        Online predictor hidden layer widths.
+
+    Returns
+    -------
+    tuple[torch.nn.Module, torch.nn.Module]
+        ``(online_module, target_module)`` ready for BYOL training.
+    """
     torch = require_torch(feature="SSL BYOL")
 
     class BYOLNet(torch.nn.Module):
@@ -203,6 +343,29 @@ def build_vicreg_module(
     projector_hidden: tuple[int, ...],
     projector_dim: int,
 ) -> Any:
+    """Build a VICReg module reusing the SimCLR encoder+projector stack.
+
+    Shares architecture with SimCLR but is trained with VICReg invariance and
+    collapse-prevention regularizers instead of NT-Xent.
+
+    Parameters
+    ----------
+    n_features:
+        Input feature dimensionality.
+    hidden:
+        Encoder hidden layer widths.
+    latent_dim:
+        Encoder bottleneck width used by VICReg regularizers.
+    projector_hidden:
+        Projector hidden layer widths.
+    projector_dim:
+        Projector output width (unused by VICReg loss but kept for parity).
+
+    Returns
+    -------
+    torch.nn.Module
+        Module whose forward returns ``(latent, projection)``.
+    """
     return build_simclr_module(
         n_features,
         hidden=hidden,
@@ -218,6 +381,25 @@ def build_mae_module(
     hidden: tuple[int, ...],
     latent_dim: int,
 ) -> Any:
+    """Build a masked autoencoder module for tabular MAE SSL.
+
+    Pairs an encoder bottleneck with a decoder that reconstructs masked tabular
+    inputs for generative pretext learning.
+
+    Parameters
+    ----------
+    n_features:
+        Input feature dimensionality.
+    hidden:
+        Shared hidden widths for encoder and decoder MLPs.
+    latent_dim:
+        Bottleneck representation width.
+
+    Returns
+    -------
+    torch.nn.Module
+        MAE module whose forward returns ``(latent, reconstruction)``.
+    """
     torch = require_torch(feature="SSL MAE")
     encoder = build_tabular_encoder(n_features, hidden=hidden, latent_dim=latent_dim)
     decoder = build_mae_decoder(latent_dim, hidden=hidden, n_features=n_features)

@@ -65,10 +65,21 @@ class WorkflowWalkthroughReport:
     kg_status: dict[str, Any] = field(default_factory=dict)
     decision_status: dict[str, Any] = field(default_factory=dict)
     synthetic_status: dict[str, Any] = field(default_factory=dict)
+    capability_introspection_status: dict[str, Any] = field(default_factory=dict)
     audit_summary: dict[str, Any] = field(default_factory=dict)
     html_path: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the walkthrough report for HTML export and checkpoints.
+
+        Flattens workflow steps, timeline rows, domain status panels, and audit
+        summary fields into JSON-safe values without live Session handles.
+
+        Returns
+        -------
+        dict[str, Any]
+            Complete walkthrough payload suitable for export_walkthrough_html.
+        """
         return {
             "workflow": [step.to_dict() for step in self.workflow],
             "timeline": list(self.timeline),
@@ -109,19 +120,50 @@ class WorkflowWalkthroughReport:
             "kg_status": dict(self.kg_status),
             "decision_status": dict(self.decision_status),
             "synthetic_status": dict(self.synthetic_status),
+            "capability_introspection_status": dict(self.capability_introspection_status),
             "audit_summary": dict(self.audit_summary),
             "html_path": self.html_path,
         }
 
     def export_html(self, path: str | Path) -> Path:
-        """Write the walkthrough with the shared offline report shell."""
+        """Write the walkthrough with the shared offline report shell.
+
+        Renders orientation, timeline, workflow, audit, and domain status
+        sections through the shared HTML report builder and records the output
+        path on this report instance.
+
+        Parameters
+        ----------
+        path:
+            Destination file path; parent directories are created when missing.
+
+        Returns
+        -------
+        Path
+            Resolved path to the written HTML document.
+        """
         destination = export_walkthrough_html(self.to_dict(), path)
         self.html_path = str(destination)
         return destination
 
 
 def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
-    """Resolve statuses and join them to the session's versioned history."""
+    """Resolve statuses and join them to the session's versioned history.
+
+    Combines live workflow resolution, normalized history, domain status panels,
+    and audit summaries into one offline report suitable for HTML export.
+
+    Parameters
+    ----------
+    session:
+        Live Session whose workflow, history, and domain artifacts are inspected
+        read-only.
+
+    Returns
+    -------
+    WorkflowWalkthroughReport
+        Serializable walkthrough with timeline, risks, and next actions.
+    """
     from buildml.session.audit import summarize_history
 
     workflow = tuple(session.workflow())
@@ -193,6 +235,9 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
         kg_status=kg_status_for_walkthrough(session),
         decision_status=decision_status_for_walkthrough(session),
         synthetic_status=synthetic_status_for_walkthrough(session),
+        capability_introspection_status=capability_introspection_status_for_walkthrough(
+            session
+        ),
         audit_summary={
             "n_operations": audit.n_operations,
             "warning_count": audit.warning_count,
@@ -206,7 +251,22 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
 
 
 def torch_training_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual Torch training-curve / early-stop / device disclosure."""
+    """Factual Torch training-curve / early-stop / device disclosure.
+
+    Delegates to the buildml.dl.curves.torch_training_status helper so walkthrough HTML can
+    surface Torch training-curve / early-stop / device facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.dl.curves import torch_training_status
 
     return torch_training_status(
@@ -216,199 +276,641 @@ def torch_training_status_for_walkthrough(session: Any) -> dict[str, Any]:
 
 
 def rag_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual RAG index / embedder / store / eval disclosure."""
+    """Factual RAG index / embedder / store / eval disclosure.
+
+    Delegates to the domain RAG explain hook helper so walkthrough HTML can
+    surface RAG index / embedder / store / eval facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.rag.explain_hooks import rag_status_for_session
 
     return rag_status_for_session(session)
 
 
 def unsupervised_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual unsupervised ClusterPlan disclosure for walkthrough."""
+    """Factual unsupervised ClusterPlan disclosure for walkthrough.
+
+    Delegates to the domain unsupervised explain hook helper so walkthrough HTML can
+    surface unsupervised ClusterPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.unsupervised.explain_hooks import unsupervised_status_for_session
 
     return unsupervised_status_for_session(session)
 
 
 def ensemble_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual native EnsemblePlan disclosure for walkthrough."""
+    """Factual native EnsemblePlan disclosure for walkthrough.
+
+    Delegates to the domain ensemble explain hook helper so walkthrough HTML can
+    surface native EnsemblePlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.ensemble.explain_hooks import ensemble_status_for_session
 
     return ensemble_status_for_session(session)
 
 
 def automl_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual AutoMLPlan disclosure for walkthrough."""
+    """Factual AutoMLPlan disclosure for walkthrough.
+
+    Delegates to the domain AutoML explain hook helper so walkthrough HTML can
+    surface AutoMLPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.automl.explain_hooks import automl_status_for_session
 
     return automl_status_for_session(session)
 
 
 def forecasting_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual ForecastPlan disclosure for walkthrough."""
+    """Factual ForecastPlan disclosure for walkthrough.
+
+    Delegates to the domain forecasting explain hook helper so walkthrough HTML can
+    surface ForecastPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.forecasting.explain_hooks import forecasting_status_for_session
 
     return forecasting_status_for_session(session)
 
 
 def timeseries_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual time-series analysis disclosure for walkthrough."""
+    """Factual time-series analysis disclosure for walkthrough.
+
+    Delegates to the domain time-series explain hook helper so walkthrough HTML can
+    surface time-series analysis facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.timeseries.explain_hooks import timeseries_status_for_session
 
     return timeseries_status_for_session(session)
 
 
 def anomaly_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual AnomalyPlan disclosure for walkthrough."""
+    """Factual AnomalyPlan disclosure for walkthrough.
+
+    Delegates to the domain anomaly explain hook helper so walkthrough HTML can
+    surface AnomalyPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.anomaly.explain_hooks import anomaly_status_for_session
 
     return anomaly_status_for_session(session)
 
 
 def semisupervised_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual SemiSupervisedPlan disclosure for walkthrough."""
+    """Factual SemiSupervisedPlan disclosure for walkthrough.
+
+    Delegates to the domain semi-supervised explain hook helper so walkthrough HTML can
+    surface SemiSupervisedPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.semisupervised.explain_hooks import semisupervised_status_for_session
 
     return semisupervised_status_for_session(session)
 
 
 def selfsupervised_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual SelfSupervisedPlan disclosure for walkthrough."""
+    """Factual SelfSupervisedPlan disclosure for walkthrough.
+
+    Delegates to the domain self-supervised explain hook helper so walkthrough HTML can
+    surface SelfSupervisedPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.selfsupervised.explain_hooks import selfsupervised_status_for_session
 
     return selfsupervised_status_for_session(session)
 
 
 def activelearning_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual ActiveLearningPlan disclosure for walkthrough."""
+    """Factual ActiveLearningPlan disclosure for walkthrough.
+
+    Delegates to the domain active-learning explain hook helper so walkthrough HTML can
+    surface ActiveLearningPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.activelearning.explain_hooks import activelearning_status_for_session
 
     return activelearning_status_for_session(session)
 
 
 def online_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual OnlinePlan disclosure for walkthrough."""
+    """Factual OnlinePlan disclosure for walkthrough.
+
+    Delegates to the domain online-learning explain hook helper so walkthrough HTML can
+    surface OnlinePlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.online.explain_hooks import online_status_for_session
 
     return online_status_for_session(session)
 
 
 def multitask_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual MultiTaskPlan disclosure for walkthrough."""
+    """Factual MultiTaskPlan disclosure for walkthrough.
+
+    Delegates to the domain multitask explain hook helper so walkthrough HTML can
+    surface MultiTaskPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.multitask.explain_hooks import multitask_status_for_session
 
     return multitask_status_for_session(session)
 
 
 def metalearning_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual MetaLearningPlan disclosure for walkthrough."""
+    """Factual MetaLearningPlan disclosure for walkthrough.
+
+    Delegates to the domain meta-learning explain hook helper so walkthrough HTML can
+    surface MetaLearningPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.metalearning.explain_hooks import metalearning_status_for_session
 
     return metalearning_status_for_session(session)
 
 
 def federated_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual FederatedPlan disclosure for walkthrough."""
+    """Factual FederatedPlan disclosure for walkthrough.
+
+    Delegates to the domain federated explain hook helper so walkthrough HTML can
+    surface FederatedPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.federated.explain_hooks import federated_status_for_session
 
     return federated_status_for_session(session)
 
 
 def probabilistic_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual ProbabilisticPlan disclosure for walkthrough."""
+    """Factual ProbabilisticPlan disclosure for walkthrough.
+
+    Delegates to the domain probabilistic explain hook helper so walkthrough HTML can
+    surface ProbabilisticPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.probabilistic.explain_hooks import probabilistic_status_for_session
 
     return probabilistic_status_for_session(session)
 
 
 def causal_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual CausalPlan / CausalAssumptions disclosure for walkthrough."""
+    """Factual CausalPlan / CausalAssumptions disclosure for walkthrough.
+
+    Delegates to the domain causal explain hook helper so walkthrough HTML can
+    surface CausalPlan / CausalAssumptions facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.causal.explain_hooks import causal_status_for_session
 
     return causal_status_for_session(session)
 
 
 def graph_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual GraphSpec / GraphPlan disclosure for walkthrough."""
+    """Factual GraphSpec / GraphPlan disclosure for walkthrough.
+
+    Delegates to the domain graph explain hook helper so walkthrough HTML can
+    surface GraphSpec / GraphPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.graph.explain_hooks import graph_status_for_session
 
     return graph_status_for_session(session)
 
 
 def symbolic_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual SymbolicPlan / NeuroSymbolicPlan disclosure for walkthrough."""
+    """Factual SymbolicPlan / NeuroSymbolicPlan disclosure for walkthrough.
+
+    Delegates to the domain symbolic explain hook helper so walkthrough HTML can
+    surface SymbolicPlan / NeuroSymbolicPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.symbolic.explain_hooks import symbolic_status_for_session
 
     return symbolic_status_for_session(session)
 
 
 def cbr_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual CbrPlan disclosure for walkthrough."""
+    """Factual CbrPlan disclosure for walkthrough.
+
+    Delegates to the domain CBR explain hook helper so walkthrough HTML can
+    surface CbrPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.cbr.explain_hooks import cbr_status_for_session
 
     return cbr_status_for_session(session)
 
 
 def nlp_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual NlpTextPlan / NlpTopicPlan disclosure for walkthrough."""
+    """Factual NlpTextPlan / NlpTopicPlan disclosure for walkthrough.
+
+    Delegates to the domain NLP explain hook helper so walkthrough HTML can
+    surface NlpTextPlan / NlpTopicPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.nlp.explain_hooks import nlp_status_for_session
 
     return nlp_status_for_session(session)
 
 
 def imitation_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual ImitationPlan disclosure for walkthrough."""
+    """Factual ImitationPlan disclosure for walkthrough.
+
+    Delegates to the domain imitation explain hook helper so walkthrough HTML can
+    surface ImitationPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.rl.explain_hooks import imitation_status_for_session
 
     return imitation_status_for_session(session)
 
 
 def rl_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual RlPlan disclosure for walkthrough."""
+    """Factual RlPlan disclosure for walkthrough.
+
+    Delegates to the domain RL explain hook helper so walkthrough HTML can
+    surface RlPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.rl.explain_hooks import rl_status_for_session
 
     return rl_status_for_session(session)
 
 
 def tda_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual TdaPlan disclosure for walkthrough."""
+    """Factual TdaPlan disclosure for walkthrough.
+
+    Delegates to the domain TDA explain hook helper so walkthrough HTML can
+    surface TdaPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.tda.explain_hooks import tda_status_for_session
 
     return tda_status_for_session(session)
 
 
 def recommender_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual RecommenderPlan disclosure for walkthrough."""
+    """Factual RecommenderPlan disclosure for walkthrough.
+
+    Delegates to the domain recommender explain hook helper so walkthrough HTML can
+    surface RecommenderPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.recommenders.explain_hooks import recommender_status_for_session
 
     return recommender_status_for_session(session)
 
 
 def ranking_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual RankerPlan disclosure for walkthrough."""
+    """Factual RankerPlan disclosure for walkthrough.
+
+    Delegates to the domain ranking explain hook helper so walkthrough HTML can
+    surface RankerPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.ranking.explain_hooks import ranking_status_for_session
 
     return ranking_status_for_session(session)
 
 
 def kg_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual KgPlan disclosure for walkthrough."""
+    """Factual KgPlan disclosure for walkthrough.
+
+    Delegates to the domain knowledge-graph explain hook helper so walkthrough HTML can
+    surface KgPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.kg.explain_hooks import kg_status_for_session
 
     return kg_status_for_session(session)
 
 
 def decision_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual DecisionPlan disclosure for walkthrough."""
+    """Factual DecisionPlan disclosure for walkthrough.
+
+    Delegates to the domain decision/optimize explain hook helper so walkthrough HTML can
+    surface DecisionPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.optimize.explain_hooks import decision_status_for_session
 
     return decision_status_for_session(session)
 
 
 def synthetic_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual SynthesizerPlan disclosure for walkthrough."""
+    """Factual SynthesizerPlan disclosure for walkthrough.
+
+    Delegates to the domain synthetic-data explain hook helper so walkthrough HTML can
+    surface SynthesizerPlan facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
     from buildml.synthetic.explain_hooks import synthetic_status_for_session
 
     return synthetic_status_for_session(session)
+
+
+def capability_introspection_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Aggregate capability-matrix routing for walkthrough orientation.
+
+    Delegates to the buildml.explain.capability_status.capability_introspection_status helper so walkthrough HTML can
+    surface capability-matrix routing facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session inspected for domain plans, results, and history cues.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and domain
+        metadata when relevant artifacts exist.
+    """
+    from buildml.explain.capability_status import capability_introspection_status
+
+    return capability_introspection_status(session)
 
 
 def warm_start_studies_status(
@@ -420,6 +922,19 @@ def warm_start_studies_status(
 
     Inspects Session history and optional ``last_nested_cv``. When the flag was
     never enabled, returns ``enabled=False`` with an empty disclosure list.
+
+    Parameters
+    ----------
+    history:
+        Normalized Session history records to scan for ``nested_cv_score`` calls.
+    last_nested_cv:
+        Optional live nested-CV result object when history alone is incomplete.
+
+    Returns
+    -------
+    dict[str, Any]
+        Warm-start disclosure with ``enabled`` flag, shared-study metadata, and
+        reviewer-facing bullet strings.
     """
     records = list(history or [])
     enabled = False
@@ -541,6 +1056,24 @@ def preprocess_scope_status(
     Surfaces ``PreprocessRecipe`` text/PCA when recorded in CV history or live
     results, and clarifies that custom transforms and resample stay
     Session-global (not fold-local).
+
+    Parameters
+    ----------
+    history:
+        Normalized Session history records to scan for CV/search recipes.
+    session:
+        Optional live Session for current text, reduce, custom, and resample
+        plan slots.
+    last_cv:
+        Optional live CV result supplying a fold-local recipe snapshot.
+    last_nested_cv:
+        Optional live nested-CV result supplying a fold-local recipe snapshot.
+
+    Returns
+    -------
+    dict[str, Any]
+        Fold-local versus Session-global preprocess disclosure for orientation
+        panels.
     """
     from buildml.preprocess.fold import SESSION_GLOBAL_ONLY_STEPS
 
@@ -690,7 +1223,23 @@ def preprocess_scope_status(
 
 
 def export_walkthrough_html(report: dict[str, Any], path: str | Path) -> Path:
-    """Export one escaped, accessible, network-free workflow walkthrough."""
+    """Export one escaped, accessible, network-free workflow walkthrough.
+
+    Builds orientation, timeline, workflow, audit, risk, concept, and next-action
+    sections from a serialized walkthrough dict and writes standalone HTML.
+
+    Parameters
+    ----------
+    report:
+        Mapping produced by WorkflowWalkthroughReport.to_dict.
+    path:
+        Destination file path; parent directories are created when missing.
+
+    Returns
+    -------
+    Path
+        Resolved path to the written HTML document.
+    """
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     sections = [
@@ -869,10 +1418,12 @@ def _orientation(report: dict[str, Any]) -> ReportSection:
     scope = report.get("preprocess_scope_status") or {}
     torch_status = report.get("torch_training_status") or {}
     rag_status = report.get("rag_status") or {}
+    capability = report.get("capability_introspection_status") or {}
     body = _frame(
         "Resolver statuses, engine/lazy-native status, nested-CV warm-start disclosure, "
         "fold-local vs Session-global preprocess scope, Torch training-curve disclosure "
         "when a trainer exists, RAG index/embedder/eval disclosure when an index exists, "
+        "capability-matrix routing for every domain that publishes one, "
         "and the complete versioned Session history.",
         ", ".join(f"{key}={value}" for key, value in sorted(counts.items())),
         "The resolver separates operations already done from valid, blocked, and intentionally skipped paths.",
@@ -977,6 +1528,23 @@ def _orientation(report: dict[str, Any]) -> ReportSection:
             body += f"<p>{escape(note)}</p>"
     elif rag_status.get("present"):
         for note in rag_status.get("disclosures") or []:
+            body += f"<p>{escape(note)}</p>"
+    cap_rows = list(capability.get("domains") or [])
+    if cap_rows:
+        body += render_table(
+            [
+                {
+                    "domain_status": row.get("domain_status_field"),
+                    "operation": row.get("operation"),
+                    "api_action": row.get("api_action"),
+                    "default_backend": row.get("default_backend"),
+                    "n_backends": row.get("n_backends"),
+                }
+                for row in cap_rows[:28]
+            ],
+            caption="Capability-matrix routing (read-only introspection)",
+        )
+        for note in capability.get("disclosures") or []:
             body += f"<p>{escape(note)}</p>"
     return ReportSection("orientation", "Workflow orientation", body)
 

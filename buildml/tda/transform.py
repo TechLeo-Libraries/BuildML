@@ -22,10 +22,36 @@ def transform_tda(
     partition: str = "test",
     backend: str | None = None,
 ) -> TdaTransformResult:
-    """Apply the train-fitted TDA transformer to a partition (no refit).
+    """Apply the train-fitted TDA transformer to a partition without refit.
 
-    Leakage discipline: NearestNeighbors index, scaler, and vectorizer ranges
-    stay frozen from train. Holdout rows never update the PH pipeline.
+    For each row, builds a local cloud from frozen train neighbors, computes
+    persistence diagrams, and vectorizes with train-fitted ranges. Holdout rows
+    never update the NN index, scaler, or vectorizer.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset.
+    plan:
+        Train-fitted :class:`~buildml.tda.results.TdaPlan`.
+    split_plan:
+        Split plan for the requested partition.
+    partition:
+        ``train``, ``validation``, ``test``, or ``all``.
+    backend:
+        Optional check that matches ``plan.backend`` when provided.
+
+    Returns
+    -------
+    TdaTransformResult
+        Topological feature matrix, names, and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When the plan is incomplete, backend mismatches, or columns are missing.
+    MissingExtraError
+        When required TDA extras for the plan backend are not installed.
     """
     if backend is not None and str(backend) != str(getattr(plan, "backend", "native")):
         raise ValidationError(

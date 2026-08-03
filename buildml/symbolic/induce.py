@@ -26,8 +26,37 @@ def induce_decision_tree_rules(
 ) -> tuple[RuleKnowledgeBase, Any]:
     """Fit a shallow sklearn DecisionTree on train and export path rules.
 
-    Each root-to-leaf path becomes one if-then rule. Provenance is disclosed
-    as ``induced_tree`` (data-induced from Session train only).
+    Each root-to-leaf path becomes one if-then rule with ``induced_tree``
+    provenance disclosed on the knowledge base.
+
+    Parameters
+    ----------
+    frame:
+        Train partition frame.
+    columns:
+        Numeric feature columns for the tree.
+    y:
+        Encoded train targets.
+    task:
+        ``classification`` or ``regression``.
+    max_depth, min_samples_leaf:
+        Tree complexity controls.
+    max_rules:
+        Cap on exported leaf rules.
+    random_state:
+        Seed for the sklearn tree.
+    class_names:
+        Class labels for classification export.
+
+    Returns
+    -------
+    tuple[RuleKnowledgeBase, sklearn tree]
+        Induced rules and the fitted tree estimator for optional inspection.
+
+    Raises
+    ------
+    ValidationError
+        When depth/leaf settings are invalid or task is unknown.
     """
     if max_depth < 1:
         raise ValidationError("max_depth must be >= 1.")
@@ -83,14 +112,39 @@ def induce_decision_list(
     random_state: int | None = 0,
     class_names: tuple[Any, ...] | None = None,
 ) -> RuleKnowledgeBase:
-    """Induce an ordered decision list via sequential covering (train-only).
+    """Induce an ordered decision list via sequential covering on train only.
 
-    For each remaining uncovered class (classification) or residual slice
-    (regression), fit a shallow tree stump / short path, take the single
-    highest-support leaf rule for the target consequent, remove covered rows,
-    and repeat. Ends with a majority / mean default rule.
+    Iteratively fits shallow stumps, extracts the best rule per class or
+    regression slice, and removes covered rows. Ends with a majority/mean default.
 
-    Honesty: RIPPER-/CN2-style covering lite — not a full ILP / Prolog inducer.
+    Parameters
+    ----------
+    frame:
+        Train partition frame.
+    columns:
+        Feature columns for covering stumps.
+    y:
+        Encoded train targets.
+    task:
+        ``classification`` or ``regression``.
+    max_depth, min_samples_leaf:
+        Stump complexity controls.
+    max_rules:
+        Maximum list length.
+    random_state:
+        Seed for sklearn stumps.
+    class_names:
+        Required for classification lists.
+
+    Returns
+    -------
+    RuleKnowledgeBase
+        Ordered rules with ``induced_list`` provenance and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When task is unknown or classification lacks ``class_names``.
     """
     if task not in {"classification", "regression"}:
         raise ValidationError(f"Unknown symbolic task {task!r}.")

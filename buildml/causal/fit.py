@@ -47,6 +47,11 @@ def fit_causal(
 ) -> tuple[CausalPlan, CausalFitResult]:
     """Fit causal models on Session train and estimate backdoor ATE.
 
+    Fits nuisance models on the train partition only and returns a
+    :class:`~buildml.causal.results.CausalPlan` plus a Session-facing
+    :class:`~buildml.causal.results.CausalFitResult`. Routes to native sklearn,
+    DoWhy, or EconML backends based on ``backend`` / ``method``.
+
     Backends
     --------
     native (default):
@@ -64,6 +69,35 @@ def fit_causal(
     positivity acknowledgements). EDA / association diagnostics never
     satisfy those acknowledgements. Nuisance models fit on **train only**;
     validation/test are never used for fitting. This is not causal discovery.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing treatment, outcome, and confounders.
+    split_plan:
+        Split plan with train indices; required for partitioned fit.
+    assumptions:
+        Caller-declared backdoor identification contract.
+    backend:
+        ``native``, ``dowhy``, or ``econml``; inferred from ``method`` when
+        ``None``.
+    method:
+        Estimation method key (e.g. ``aipw``, ``dml``, ``backdoor_linear``).
+    bootstrap_samples:
+        Number of train bootstrap resamples for ATE uncertainty (native/econml).
+    random_state:
+        RNG seed for bootstrap and sklearn first-stage models.
+    clip_propensity:
+        ``(low, high)`` IPW/AIPW propensity clipping bounds (native only).
+    outcome_model:
+        Native outcome nuisance name (``ridge`` or ``logistic_regression``).
+    propensity_model:
+        Native propensity nuisance name (``logistic_regression``).
+
+    Returns
+    -------
+    tuple[CausalPlan, CausalFitResult]
+        Persistable plan with fitted nuisances and a fit summary for history.
     """
     assumptions.validate()
     resolved_backend, resolved_method = resolve_backend_method(

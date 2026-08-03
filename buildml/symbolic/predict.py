@@ -34,7 +34,29 @@ def predict_symbolic(
     partition: PartitionOrAll = "test",
     return_traces: bool = True,
 ) -> SymbolicPredictResult:
-    """Apply the compiled rule base (no refit). Returns explanation traces."""
+    """Apply the compiled rule base to a partition without refit.
+
+    Evaluates decision-list semantics row by row and optionally attaches
+    per-row firing traces for explain hooks and evaluate coverage stats.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset.
+    plan:
+        Train-fitted symbolic plan with knowledge base.
+    split_plan:
+        Split plan for the requested partition.
+    partition:
+        ``train``, ``validation``, ``test``, or ``all``.
+    return_traces:
+        When True, include per-row rule firing traces.
+
+    Returns
+    -------
+    SymbolicPredictResult
+        Predictions and optional explanation traces.
+    """
     frame, indices = _partition_frame(dataset, split_plan, partition)
     preds, traces, _ = fire_rules(frame, plan.knowledge_base, row_indices=indices)
     if not return_traces:
@@ -59,7 +81,29 @@ def predict_neuro_symbolic(
     partition: PartitionOrAll = "test",
     return_traces: bool = True,
 ) -> SymbolicPredictResult:
-    """Hybrid predict: neural base + symbolic overlay/repair/features."""
+    """Predict with a neuro-symbolic hybrid without refit.
+
+    Applies constraint overlay, rules-as-features, or constraint-repair modes
+    on top of the train-fitted base estimator.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset.
+    plan:
+        Train-fitted neuro-symbolic plan.
+    split_plan:
+        Split plan for the requested partition.
+    partition:
+        ``train``, ``validation``, ``test``, or ``all``.
+    return_traces:
+        When True, include per-row traces with neural vs final predictions.
+
+    Returns
+    -------
+    SymbolicPredictResult
+        Final predictions, neural baseline, traces, and repair counts.
+    """
     frame, indices = _partition_frame(dataset, split_plan, partition)
     x = matrix_from_frame(frame, list(plan.columns))
     mode = plan.mode

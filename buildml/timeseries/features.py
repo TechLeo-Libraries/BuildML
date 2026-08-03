@@ -16,7 +16,35 @@ def compute_features(
     spectral_n_fft: int | None = None,
     target_column: str = "target",
 ) -> TSFeatureResult:
-    """Compute rolling mean/std and optional spectral dominant period."""
+    """Compute rolling mean/std and optional Welch spectral summary features.
+
+    Rolling statistics use a pandas-free cumsum implementation so the analysis
+    path stays lightweight. Spectral density and dominant period require scipy
+    (shipped with ``buildml[timeseries]``).
+
+    Parameters
+    ----------
+    y:
+        One-dimensional observation vector in temporal order.
+    rolling_window:
+        Window width for trailing mean and standard deviation (must be >= 2).
+    spectral_n_fft:
+        FFT segment length for Welch's method. Auto-selected from series length
+        when ``None``.
+    target_column:
+        Name recorded on the result for combined analysis reports.
+
+    Returns
+    -------
+    TSFeatureResult
+        Rolling vectors, optional frequency/power tuples, dominant period estimate,
+        disclosures, and warnings when scipy is unavailable.
+
+    Raises
+    ------
+    ValidationError
+        When ``rolling_window`` is too small or exceeds series length.
+    """
     y = np.asarray(y, dtype=float).reshape(-1)
     n = int(y.shape[0])
     window = int(rolling_window)

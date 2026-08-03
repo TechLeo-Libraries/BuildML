@@ -96,6 +96,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "# pip install \"buildml[federated-industry]\"",
             "session.fit_federated(backend='flower', method='fedavg', n_rounds=5)",
+            "session.export_round_history('artifacts/fed_rounds.json')",
             "print(session.federated_plan.backend, session.federated_plan.disclosures)",
         ),
         check=(

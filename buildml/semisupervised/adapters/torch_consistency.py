@@ -32,6 +32,27 @@ class TabularConsistencyClassifier:
     n_pseudo_labels_: int = 0
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> TabularConsistencyClassifier:
+        """Run fit on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+y:
+    Target vector or series aligned with ``x``.
+
+Returns
+-------
+TabularConsistencyClassifier
+    Return value (TabularConsistencyClassifier) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         torch = require_torch_semisupervised()
         x_arr = np.asarray(x, dtype=np.float32)
         y_arr = np.asarray(y, dtype=int)
@@ -141,6 +162,25 @@ class TabularConsistencyClassifier:
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Run predict on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         torch = require_torch_semisupervised()
         if self.module_ is None:
             raise ValidationError("TabularConsistencyClassifier is not fitted.")
@@ -152,6 +192,25 @@ class TabularConsistencyClassifier:
         return np.asarray([int(self.classes_[c]) for c in codes], dtype=int)
 
     def predict_proba(self, x: np.ndarray) -> np.ndarray:
+        """Perform predict proba for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         torch = require_torch_semisupervised()
         if self.module_ is None:
             raise ValidationError("TabularConsistencyClassifier is not fitted.")
@@ -206,6 +265,36 @@ def build_torch_estimator(
     random_state: int | None,
     device: str = "cpu",
 ) -> TabularConsistencyClassifier:
+    """Construct a torch estimator ready for fit or scoring.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+threshold:
+    Decision threshold applied to anomaly scores.
+epochs:
+    Training epochs for torch-backed estimators.
+batch_size:
+    Number of rows to select per query or training minibatch.
+learning_rate:
+    Optimizer learning rate for torch training.
+consistency_weight:
+    consistency weight (float).
+mixup_alpha:
+    mixup alpha (float).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+device:
+    Torch device string (``cpu`` or ``cuda``).
+
+Returns
+-------
+TabularConsistencyClassifier
+    Return value (TabularConsistencyClassifier) produced by this operation.
+    """
     return TabularConsistencyClassifier(
         method=method,
         threshold=float(threshold),

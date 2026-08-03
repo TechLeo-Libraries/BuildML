@@ -6,7 +6,22 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_tda`` history."""
+    """Build a compact history summary from a :class:`TdaFitResult`.
+
+    Strips diagram arrays and NN indices so Session audit logs stay small while
+    recording backend, vectorization, and head configuration.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.tda.results.TdaFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, vectorization, train row count, feature dimension, and task
+        metadata. Empty dict when ``fit_result`` is ``None``.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -23,7 +38,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def transform_result_summary(transform_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``transform_tda`` history."""
+    """Build a compact history summary from a :class:`TdaTransformResult`.
+
+    Omits transformed feature matrices so Session history stays lightweight while
+    recording partition and vectorization metadata.
+
+    Parameters
+    ----------
+    transform_result:
+        Last transform result or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, row count, feature dimension, and vectorization name.
+    """
     if transform_result is None:
         return {}
     payload = (
@@ -40,7 +69,21 @@ def transform_result_summary(transform_result: Any) -> dict[str, Any]:
 
 
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``predict_tda`` history."""
+    """Build a compact history summary from a :class:`TdaPredictResult`.
+
+    Records prediction counts and task type without embedding raw prediction
+    arrays in Session audit logs.
+
+    Parameters
+    ----------
+    predict_result:
+        Last predict result or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, task, row count, and prediction count.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -57,7 +100,21 @@ def predict_result_summary(predict_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_tda`` history."""
+    """Build a compact history summary from a :class:`TdaEvalResult`.
+
+    Preserves headline metrics and optional diagram-distance summaries without
+    full persistence diagrams in history payloads.
+
+    Parameters
+    ----------
+    eval_result:
+        Last evaluation result or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, metrics, optional diagram distances, and backend metadata.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -80,7 +137,28 @@ def tda_status(
     transform_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for TDA."""
+    """Build factual walkthrough disclosure for TDA Session state.
+
+    Combines live :class:`~buildml.tda.results.TdaPlan` facts, optional result
+    summaries, Session history detection, and :func:`tda_capability_matrix` for
+    teaching overlays and dashboard panels.
+
+    Parameters
+    ----------
+    plan:
+        Active train-fitted TDA plan, if any.
+    fit_result, eval_result, transform_result:
+        Last operation results attached to the Session.
+    history:
+        Session operation records to detect past TDA calls without a live plan.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, backend/vectorization metadata, embedded capability
+        matrix, disclosures, and boundary text separating Session TDA from
+        Mapper research tools.
+    """
     from buildml.tda.catalog import tda_capability_matrix
 
     records = list(history or [])
@@ -158,7 +236,21 @@ def tda_status(
 
 
 def tda_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Report TDA status for a Session walkthrough panel.
+
+    Reads ``_tda_plan``, result slots, and ``_history`` without mutating the
+    Session. Convenience wrapper around :func:`tda_status`.
+
+    Parameters
+    ----------
+    session:
+        :class:`~buildml.session.session.Session` instance.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`tda_status` for the Session's TDA state.
+    """
     return tda_status(
         getattr(session, "_tda_plan", None),
         fit_result=getattr(session, "_tda_fit_result", None),

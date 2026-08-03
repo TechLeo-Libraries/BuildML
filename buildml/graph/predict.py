@@ -31,7 +31,33 @@ def predict_graph(
     *,
     partition: PartitionOrAll = "validation",
 ) -> GraphPredictResult:
-    """Score nodes in ``partition`` with a fitted :class:`GraphPlan`."""
+    """Score nodes in ``partition`` with a fitted :class:`GraphPlan`.
+
+    Applies mode-aware edge filtering at score time and never refits the
+    learner. Labels on holdout nodes are not used during forward passes.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset holding the node table.
+    plan:
+        Fitted :class:`GraphPlan` from :func:`fit_graph`.
+    split_plan:
+        Session split plan defining partition indices.
+    partition:
+        Partition to score, or ``"all"`` for every node.
+
+    Returns
+    -------
+    GraphPredictResult
+        Predictions, optional probabilities, and honesty disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no plan exists, split is missing, partition is empty, or the
+        backend is unknown.
+    """
     if plan is None:
         raise ValidationError("No GraphPlan. Call fit_graph(...) first.")
     if plan.graph_spec is None:

@@ -43,6 +43,16 @@ class RankerConfig:
     device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise ranker configuration knobs for plan metadata.
+
+        Converts the dataclass into a JSON-friendly dictionary stored on
+        :class:`~buildml.ranking.results.RankerPlan`.
+
+        Returns
+        -------
+        dict[str, Any]
+            Backend, method, column names, and hyperparameter settings.
+        """
         return {
             "backend": self.backend,
             "method": self.method,

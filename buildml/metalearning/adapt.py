@@ -35,7 +35,36 @@ def adapt_to_task(
     Provide either ``support_frame`` (explicit rows) or ``task_id`` to pull
     rows for that task from ``partition``. Holdout partitions may supply
     support for novel-task adaptation; the meta-train plan itself is never
-    refit here.
+    Holdout rows are never used for meta-training.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features, target, and task columns.
+    plan:
+        Fitted :class:`~buildml.metalearning.results.MetaLearningPlan`.
+    split_plan:
+        Optional split plan; required for named partitions other than implicit train.
+    task_id:
+        Task identifier when pulling support from a partition frame.
+    partition:
+        Partition name when ``support_frame`` is omitted.
+    support_frame:
+        Explicit labeled support rows; overrides partition sampling.
+    max_support_per_class:
+        Optional cap on support rows sampled per class.
+    random_state:
+        Seed for per-class subsampling when capping support.
+
+    Returns
+    -------
+    MetaAdaptResult
+        Adaptation summary with optional prototypes or adapted estimator handle.
+
+    Raises
+    ------
+    ValidationError
+        When plan, support, columns, or method preconditions are invalid.
     """
     if plan is None:
         raise ValidationError("No MetaLearningPlan. Call fit_metalearning first.")

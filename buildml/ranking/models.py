@@ -20,7 +20,34 @@ def fit_pointwise(
     alpha: float = 1.0,
     random_state: int | None = 0,
 ) -> Any:
-    """Fit a pointwise relevance regressor on standardized features."""
+    """Fit a pointwise relevance regressor on standardized features.
+
+    Trains Ridge or HistGradientBoostingRegressor to predict graded relevance
+    labels directly from feature vectors.
+
+    Parameters
+    ----------
+    X:
+        Standardized train feature matrix.
+    y:
+        Graded relevance labels aligned with ``X``.
+    estimator:
+        ``ridge`` or ``hgb`` pointwise backend.
+    alpha:
+        Ridge regularization strength when ``estimator='ridge'``.
+    random_state:
+        Seed passed to the underlying sklearn estimator.
+
+    Returns
+    -------
+    sklearn estimator
+        Fitted pointwise regressor ready for :func:`score_pointwise`.
+
+    Raises
+    ------
+    ValidationError
+        When ``estimator`` is not ``ridge`` or ``hgb``.
+    """
     if estimator == "ridge":
         model = Ridge(alpha=float(alpha), random_state=random_state)
         model.fit(X, y)
@@ -40,6 +67,23 @@ def fit_pointwise(
 
 
 def score_pointwise(model: Any, X: np.ndarray) -> np.ndarray:
+    """Score rows with a fitted pointwise relevance regressor.
+
+    Calls ``model.predict`` and coerces the output to a float numpy vector
+    aligned with ``X``.
+
+    Parameters
+    ----------
+    model:
+        Fitted sklearn regressor from :func:`fit_pointwise`.
+    X:
+        Standardized feature matrix to score.
+
+    Returns
+    -------
+    numpy.ndarray
+        Predicted relevance scores, one per row.
+    """
     if X.size == 0:
         return np.zeros(0, dtype=float)
     return np.asarray(model.predict(X), dtype=float)
@@ -107,7 +151,31 @@ def fit_pairwise_ranksvm(
     max_pairs_per_query: int = 80,
     random_state: int | None = 0,
 ) -> tuple[LinearSVC, np.ndarray, float, int]:
-    """Fit RankSVM-lite: LinearSVC on within-query feature differences."""
+    """Fit RankSVM-lite using LinearSVC on within-query feature differences.
+
+    Builds oriented pair examples per query, caps pairs with
+    ``max_pairs_per_query``, and returns the linear scoring weights.
+
+    Parameters
+    ----------
+    X:
+        Standardized train feature matrix.
+    y:
+        Graded relevance labels aligned with ``groups``.
+    groups:
+        Query id array with one entry per row.
+    C:
+        LinearSVC regularization inverse strength.
+    max_pairs_per_query:
+        Maximum oriented pairs sampled per train query.
+    random_state:
+        Seed for pair subsampling when queries exceed the pair cap.
+
+    Returns
+    -------
+    tuple[LinearSVC, numpy.ndarray, float, int]
+        Fitted LinearSVC, linear coefficient vector, intercept, and pair count.
+    """
     X_diff, y_pair, n_pairs = _pairwise_examples(
         X,
         y,
@@ -128,6 +196,25 @@ def fit_pairwise_ranksvm(
 
 
 def score_linear(coef: np.ndarray, intercept: float, X: np.ndarray) -> np.ndarray:
+    """Score rows with a linear ranker defined by coefficients and intercept.
+
+    Used by pairwise RankSVM-lite paths that store weights on
+    :class:`~buildml.ranking.results.RankerPlan` instead of a sklearn object.
+
+    Parameters
+    ----------
+    coef:
+        Linear weight vector of length ``n_features``.
+    intercept:
+        Scalar bias added to each dot product.
+    X:
+        Standardized feature matrix to score.
+
+    Returns
+    -------
+    numpy.ndarray
+        Linear scores, one per row.
+    """
     if X.size == 0:
         return np.zeros(0, dtype=float)
     return np.asarray(X @ coef + intercept, dtype=float)

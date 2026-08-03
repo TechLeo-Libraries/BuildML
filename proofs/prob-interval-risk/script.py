@@ -61,7 +61,14 @@ def main() -> None:
             "Interval calibration uses non-test partitions when required by API",
             "Test evaluate after lock",
         ],
-        "industry_comparison": {"status": "stub", "note": "MAPIE twin when installed"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: BayesianRidge + residual quantile twin on the same "
+                "split; optional MAPIE when installed — run script then baseline_industry.py for "
+                "results/comparison.json."
+            ),
+        },
         "limitations": ["Empirical coverage ≠ guaranteed under distribution shift"],
     })
     print("prob-interval-risk OK", getattr(ev, "metrics", ev))

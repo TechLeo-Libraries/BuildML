@@ -36,9 +36,30 @@ def save_anomaly_bundle(
 ) -> Path:
     """Write an anomaly bundle directory (``buildml.anomaly_bundle.v1``).
 
-    Layout
-    ------
-    ``meta.json``, ``anomaly_plan.joblib``.
+Layout
+------
+``meta.json``, ``anomaly_plan.joblib``.
+
+Parameters
+----------
+path:
+    Filesystem path to the bundle directory.
+plan:
+    Fitted plan object carrying model state and feature contract.
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+
+Returns
+-------
+Path
+    Resolved filesystem path to the written bundle directory.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     if plan is None:
         raise ValidationError("No AnomalyPlan to save.")
@@ -59,7 +80,25 @@ def save_anomaly_bundle(
 
 
 def load_anomaly_bundle(path: str | Path) -> AnomalyPlan:
-    """Load an anomaly bundle into an :class:`AnomalyPlan`."""
+    """Load an anomaly bundle into an :class:`AnomalyPlan`.
+
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+
+Parameters
+----------
+path:
+    Filesystem path to the bundle directory.
+
+Returns
+-------
+AnomalyPlan
+    Fitted plan object (AnomalyPlan) with private estimators attached.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "anomaly_plan.joblib"

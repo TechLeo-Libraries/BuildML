@@ -51,6 +51,15 @@ class MultiTaskConfig:
     device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize user-facing multi-task knobs for history and bundle metadata.
+
+        Captures backend, method, targets, and torch training hyperparameters.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, task, columns, targets, and training configuration summary.
+        """
         return {
             "method": self.method,
             "backend": self.backend,

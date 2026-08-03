@@ -47,7 +47,48 @@ def fit_probabilistic_op(
     n_estimators: int = 100,
     learning_rate: float = 0.05,
 ) -> Any:
-    """Fit a Bayesian / probabilistic estimator on Session train.
+    """Fit a Bayesian or probabilistic estimator on Session train only.
+
+    Delegates to :func:`buildml.probabilistic.fit.fit_probabilistic`, stores
+    the :class:`~buildml.probabilistic.results.ProbabilisticPlan` on Session,
+    and records the fit. Follow with :func:`predict_probabilistic_op` or
+    :func:`predict_interval_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset, split plan, and target column.
+    backend:
+        Optional backend override (``native``, ``mapie``, ``ngboost``).
+    estimator:
+        Probabilistic estimator key (``bayesian_ridge``, etc.).
+    task:
+        Task override; inferred from target when ``None``.
+    columns:
+        Explicit feature columns; ``None`` auto-selects numerics.
+    random_state:
+        Seed for stochastic steps.
+    alpha:
+        Significance level for intervals (e.g. 0.1 for 90% intervals).
+    conformal:
+        When True, apply split-conformal calibration on train carve-out.
+    conformal_calibration_fraction:
+        Fraction of train reserved for conformal calibration.
+    interval_method:
+        Interval construction method override.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+    n_restarts_optimizer:
+        Restarts for Bayesian ridge optimizer.
+    n_estimators:
+        Tree count for NGBoost backend.
+    learning_rate:
+        Learning rate for NGBoost backend.
+
+    Returns
+    -------
+    ProbabilisticFitResult
+        Serializable fit summary including backend and conformal disclosures.
 
     Notes
     -----
@@ -112,7 +153,31 @@ def evaluate_probabilistic_op(
     partition: PartitionOrAll = "validation",
     alpha: float | None = None,
 ) -> Any:
-    """Evaluate the probabilistic plan on a holdout partition."""
+    """Evaluate the probabilistic plan on a holdout partition.
+
+    Delegates to :func:`buildml.probabilistic.evaluate.evaluate_probabilistic`
+    for calibration and interval coverage metrics. Falls back to ``test`` when
+    no validation partition exists.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a ProbabilisticPlan from :func:`fit_probabilistic_op`.
+    partition:
+        Holdout partition (default ``validation``).
+    alpha:
+        Significance level override for interval metrics.
+
+    Returns
+    -------
+    ProbabilisticEvalResult
+        Calibration, coverage, and sharpness metrics on the partition.
+
+    Raises
+    ------
+    ValidationError
+        When no probabilistic plan exists on the Session.
+    """
     plan = getattr(session, "_probabilistic_plan", None)
     if plan is None:
         raise ValidationError("No probabilistic plan. Call fit_probabilistic(...) first.")
@@ -148,7 +213,32 @@ def predict_probabilistic_op(
     return_std: bool = True,
     return_proba: bool = True,
 ) -> Any:
-    """Predict with the probabilistic estimator (no update)."""
+    """Predict with the probabilistic estimator without updating the plan.
+
+    Delegates to :func:`buildml.probabilistic.predict.predict_probabilistic`
+    and optionally returns standard deviations or class probabilities.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a ProbabilisticPlan from :func:`fit_probabilistic_op`.
+    partition:
+        Split partition to predict on (default ``test``).
+    return_std:
+        When True, include predictive standard deviations (regression).
+    return_proba:
+        When True, include class probabilities (classification).
+
+    Returns
+    -------
+    ProbabilisticPredictResult
+        Point predictions with optional uncertainty outputs.
+
+    Raises
+    ------
+    ValidationError
+        When no probabilistic plan exists on the Session.
+    """
     plan = getattr(session, "_probabilistic_plan", None)
     if plan is None:
         raise ValidationError("No probabilistic plan. Call fit_probabilistic(...) first.")
@@ -181,7 +271,32 @@ def predict_interval_op(
     alpha: float | None = None,
     method: str | None = None,
 ) -> Any:
-    """Predictive intervals (regression) or conformal prediction sets (classification)."""
+    """Predict predictive intervals or conformal prediction sets on a partition.
+
+    Delegates to :func:`buildml.probabilistic.predict.predict_interval`.
+    Regression returns lower/upper bounds; classification returns prediction sets.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a ProbabilisticPlan from :func:`fit_probabilistic_op`.
+    partition:
+        Split partition to score (default ``test``).
+    alpha:
+        Significance level override for interval width.
+    method:
+        Interval method override (conformal, native, etc.).
+
+    Returns
+    -------
+    ProbabilisticIntervalResult
+        Interval bounds or conformal sets per row.
+
+    Raises
+    ------
+    ValidationError
+        When no probabilistic plan exists on the Session.
+    """
     plan = getattr(session, "_probabilistic_plan", None)
     if plan is None:
         raise ValidationError("No probabilistic plan. Call fit_probabilistic(...) first.")
@@ -204,7 +319,28 @@ def predict_interval_op(
 
 
 def save_probabilistic_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active ProbabilisticPlan as ``buildml.probabilistic_bundle.v1``."""
+    """Persist the active ProbabilisticPlan as ``buildml.probabilistic_bundle.v1``.
+
+    Delegates to :func:`buildml.probabilistic.checkpoint.save_probabilistic_bundle`.
+    Reload with :func:`load_probabilistic_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a ProbabilisticPlan from :func:`fit_probabilistic_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no probabilistic plan exists on the Session.
+    """
     plan = getattr(session, "_probabilistic_plan", None)
     if plan is None:
         raise ValidationError("No probabilistic plan. Call fit_probabilistic(...) first.")
@@ -223,7 +359,23 @@ def save_probabilistic_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_probabilistic_bundle_op(session, path: str | Path):
-    """Load a probabilistic bundle into this Session."""
+    """Load a probabilistic bundle into this Session.
+
+    Delegates to :func:`buildml.probabilistic.checkpoint.load_probabilistic_bundle`
+    and clears prior eval/predict/interval results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded ProbabilisticPlan.
+    path:
+        Path to a ``buildml.probabilistic_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with ProbabilisticPlan attached for chaining.
+    """
     plan = load_probabilistic_bundle(path)
     session._probabilistic_plan = plan
     session._probabilistic_fit_result = None

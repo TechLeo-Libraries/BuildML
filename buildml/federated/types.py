@@ -39,6 +39,15 @@ class FederatedConfig:
     min_client_rows: int = 2
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize user-facing federated-learning configuration knobs.
+
+        Suitable for plan ``config`` payloads and teaching overlays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Backend, method, client column, rounds, and training hyperparameters.
+        """
         return {
             "backend": self.backend,
             "method": self.method,

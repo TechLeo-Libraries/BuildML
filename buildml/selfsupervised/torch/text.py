@@ -36,6 +36,30 @@ class HFTextSSLEncoder:
         device: str = "cpu",
         weight_mode: str = "pretrained",
     ) -> None:
+        """Configure an HF sentence-transformer SSL encoder.
+
+        Selects model checkpoint, device, and optional finetune settings for
+        text-column pretext in Session SSL workflows.
+
+        Parameters
+        ----------
+        model_name:
+            HuggingFace sentence-transformer checkpoint name.
+        latent_dim:
+            Exported embedding width; defaults to model native dimension.
+        epochs:
+            Finetune epochs when ``weight_mode != 'mock'``.
+        batch_size:
+            Encoding and finetune minibatch size.
+        learning_rate:
+            Optimizer learning rate for optional finetune.
+        random_state:
+            Reserved for future deterministic finetune hooks.
+        device:
+            Torch device string passed to SentenceTransformer.
+        weight_mode:
+            ``mock`` uses a small public model; otherwise ``model_name`` is used.
+        """
         self.model_name = model_name
         self.latent_dim = latent_dim
         self.epochs = int(epochs)
@@ -49,6 +73,30 @@ class HFTextSSLEncoder:
         self.reconstruction_mae_: float | None = None
 
     def fit(self, texts: list[str] | np.ndarray, y: Any = None) -> HFTextSSLEncoder:
+        """Load (and optionally finetune) a sentence-transformer on train texts.
+
+        Uses contrastive-style finetune only when ``epochs > 0`` and weights are
+        not mocked. Labels are ignored because pretext is unsupervised.
+
+        Parameters
+        ----------
+        texts:
+            Train text samples (at least two rows).
+        y:
+            Ignored; present for sklearn API compatibility.
+
+        Returns
+        -------
+        HFTextSSLEncoder
+            Fitted encoder with ``n_features_in_`` set to one text column.
+
+        Raises
+        ------
+        ValidationError
+            When fewer than two text samples are provided.
+        MissingExtraError
+            When ``buildml[ssl]`` / sentence-transformers is not installed.
+        """
         del y
         st = _require_sentence_transformers()
         require_torch(feature="Text SSL")
@@ -84,6 +132,26 @@ class HFTextSSLEncoder:
         return self
 
     def transform(self, texts: list[str] | np.ndarray) -> np.ndarray:
+        """Encode texts into fixed-width embedding vectors.
+
+        Truncates or zero-pads embeddings when ``latent_dim`` differs from the
+        model's native width so Session column contracts stay stable.
+
+        Parameters
+        ----------
+        texts:
+            Text samples to embed.
+
+        Returns
+        -------
+        numpy.ndarray
+            Embeddings with shape ``(n_samples, latent_dim)``.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder has not been fitted.
+        """
         if self._model is None:
             raise ValidationError("HFTextSSLEncoder is not fitted.")
         samples = [str(t) for t in list(texts)]
@@ -103,6 +171,21 @@ class HFTextSSLEncoder:
         return arr
 
     def state_dict(self) -> dict[str, Any]:
+        """Serialise fitted sentence-transformer weights for bundle reload.
+
+        Captures model name, latent width, and HuggingFace state for bundle v2
+        persistence alongside the sklearn-compatible encoder wrapper.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method metadata and HuggingFace model state dict.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder has not been fitted.
+        """
         if self._model is None:
             raise ValidationError("HFTextSSLEncoder is not fitted.")
         return {

@@ -24,7 +24,19 @@ DecisionMethodName = Literal[
 
 
 def decision_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for decision-policy backends and solvers."""
+    """Return an honest capability matrix for decision backends and solvers.
+
+    Summarizes which threshold, cost-matrix, and allocation methods each
+    backend supports, install extras, default routing, and non-goals. Consult
+    before choosing ``backend=`` in
+    :func:`~buildml.optimize.fit.fit_decision_policy`.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, default routing hints, leakage discipline
+        notes, and install guidance for ``buildml[optimize-industry]``.
+    """
     return {
         "backends": {
             "native": {
@@ -138,7 +150,17 @@ def decision_capability_matrix() -> dict[str, Any]:
 
 
 def optimize_capability_matrix() -> dict[str, Any]:
-    """Alias for :func:`decision_capability_matrix`."""
+    """Return the same capability matrix as :func:`decision_capability_matrix`.
+
+    Alias kept for symmetry with other BuildML domain catalogs. Prefer
+    :func:`decision_capability_matrix` in new code.
+
+    Returns
+    -------
+    dict[str, Any]
+        Identical backend/solver capability payload from
+        :func:`decision_capability_matrix`.
+    """
     return decision_capability_matrix()
 
 
@@ -175,6 +197,21 @@ def _default_threshold_backend() -> str:
 
 
 def backend_available(name: DecisionBackendName) -> bool:
+    """Return whether a named decision backend is currently usable.
+
+    Looks up the backend entry in :func:`decision_capability_matrix` and
+    returns its ``available`` flag (reflecting optional installs).
+
+    Parameters
+    ----------
+    name:
+        Backend identifier such as ``'native'``, ``'pulp'``, or ``'xgb'``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the backend is known and marked available.
+    """
     entry = decision_capability_matrix()["backends"].get(name)
     if entry is None:
         return False
@@ -186,7 +223,34 @@ def resolve_backend(
     method: str,
     backend: DecisionBackendName | None,
 ) -> DecisionBackendName:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+    When ``backend`` is ``None``, picks an installed default for knapsack,
+    LP, or threshold methods. Raises when the requested backend does not
+    support the method or required extras are missing.
+
+    Parameters
+    ----------
+    method:
+        Decision method name (``'knapsack'``, ``'lp_allocate'``,
+        ``'threshold'``, etc.).
+    backend:
+        Explicit backend override; ``None`` selects a default when installed.
+
+    Returns
+    -------
+    DecisionBackendName
+        Resolved backend name safe to pass into fit/apply routing.
+
+    Raises
+    ------
+    ValidationError
+        When the backend is unknown, incompatible with ``method``, or marked
+        unavailable without a missing-extra hint.
+    MissingExtraError
+        When an industry backend is requested but its optional extra is not
+        installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     matrix = decision_capability_matrix()

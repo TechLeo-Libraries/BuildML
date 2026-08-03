@@ -51,7 +51,68 @@ def fit_semisupervised_op(
     unlabeled_marker: Any = None,
     prefer_reduce_components: bool = True,
 ) -> Any:
-    """Fit a semi-supervised classifier on the train partition only.
+    """Fit a semi-supervised classifier on labeled and unlabeled train rows.
+
+    Delegates to :func:`buildml.semisupervised.fit.fit_semisupervised`, stores
+    the :class:`~buildml.semisupervised.results.SemiSupervisedPlan` on Session,
+    and records the fit. Follow with :func:`predict_semisupervised_op` or
+    :func:`evaluate_semisupervised_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset, split plan, and labeled/unlabeled train rows.
+    backend:
+        Optional backend override (``sklearn``, ``industry``, ``torch``, ``text``).
+    method:
+        Semi-supervised method key (``label_propagation``, ``self_training``, etc.).
+    columns:
+        Optional explicit feature columns for tabular backends.
+    random_state:
+        Seed for stochastic steps.
+    kernel:
+        Kernel or affinity type for graph-based methods.
+    n_neighbors:
+        Neighborhood size for kNN graph construction.
+    max_iter:
+        Maximum iterations for iterative label propagation methods.
+    alpha:
+        Clamping factor for label propagation (labeled vs propagated mass).
+    base_estimator:
+        Base classifier for self-training and pseudo-label methods.
+    threshold:
+        Confidence threshold for pseudo-label acceptance.
+    criterion:
+        Pseudo-label selection criterion (``threshold`` or ``k_best``).
+    k_best:
+        Top-k pseudo-labels per iteration when ``criterion='k_best'``.
+    max_self_train_iter:
+        Maximum self-training rounds for pseudo-label methods.
+    epochs:
+        Training epochs for torch consistency-regularization backend.
+    batch_size:
+        Minibatch size for torch backend.
+    learning_rate:
+        Optimizer learning rate for torch backend.
+    consistency_weight:
+        Weight on unlabeled consistency loss for torch backend.
+    mixup_alpha:
+        Mixup alpha for torch consistency backend.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+    text_column:
+        Text column for HF embedding semi-supervised backend.
+    text_model_name:
+        Sentence-transformer model name for text backend.
+    unlabeled_marker:
+        Value treated as unlabeled in the train target column.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+
+    Returns
+    -------
+    SemiSupervisedFitResult
+        Serializable fit summary including labeled/unlabeled train counts.
 
     Notes
     -----
@@ -130,7 +191,33 @@ def predict_semisupervised_op(
     attach: bool = False,
     prediction_column: str = "semisupervised_prediction",
 ) -> Any:
-    """Predict with the train-fitted semi-supervised plan (no refit)."""
+    """Predict with the train-fitted semi-supervised plan without refitting.
+
+    Delegates to :func:`buildml.semisupervised.predict.predict_semisupervised`.
+    When ``attach=True``, predictions are merged into Session dataset.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a semi-supervised plan from
+        :func:`fit_semisupervised_op`.
+    partition:
+        Partition to score (``train``, ``validation``, ``test``, or ``all``).
+    attach:
+        When True, attach prediction column to the Session dataset frame.
+    prediction_column:
+        Column name used when ``attach=True``.
+
+    Returns
+    -------
+    SemiSupervisedPredictResult
+        Predictions and optional probabilities for the requested partition.
+
+    Raises
+    ------
+    ValidationError
+        When no semi-supervised plan exists on the Session.
+    """
     plan = getattr(session, "_semisupervised_plan", None)
     if plan is None:
         raise ValidationError("No semi-supervised plan. Call fit_semisupervised(...) first.")
@@ -163,7 +250,31 @@ def evaluate_semisupervised_op(
     partition: PartitionOrAll = "validation",
     unlabeled_marker: Any = None,
 ) -> Any:
-    """Evaluate the last semi-supervised plan on labeled rows of a partition."""
+    """Evaluate the semi-supervised plan on labeled rows of a holdout partition.
+
+    Delegates to :func:`buildml.semisupervised.evaluate.evaluate_semisupervised`.
+    Unlabeled holdout rows are skipped; holdout data is never used during fit.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a semi-supervised plan from
+        :func:`fit_semisupervised_op`.
+    partition:
+        Holdout partition to score. Validation falls back to test when absent.
+    unlabeled_marker:
+        Value treated as unlabeled when scoring labeled rows only.
+
+    Returns
+    -------
+    SemiSupervisedEvalResult
+        Holdout metrics computed on labeled rows only.
+
+    Raises
+    ------
+    ValidationError
+        When no semi-supervised plan exists on the Session.
+    """
     plan = getattr(session, "_semisupervised_plan", None)
     if plan is None:
         raise ValidationError("No semi-supervised plan. Call fit_semisupervised(...) first.")
@@ -193,7 +304,29 @@ def evaluate_semisupervised_op(
 
 
 def save_semisupervised_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active SemiSupervisedPlan as ``buildml.semisupervised_bundle.v1``."""
+    """Persist the semi-supervised plan as ``buildml.semisupervised_bundle.v1``.
+
+    Delegates to :func:`buildml.semisupervised.checkpoint.save_semisupervised_bundle`.
+    Reload with :func:`load_semisupervised_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a semi-supervised plan from
+        :func:`fit_semisupervised_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no semi-supervised plan exists on the Session.
+    """
     plan = getattr(session, "_semisupervised_plan", None)
     if plan is None:
         raise ValidationError("No semi-supervised plan. Call fit_semisupervised(...) first.")
@@ -218,7 +351,23 @@ def save_semisupervised_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_semisupervised_bundle_op(session, path: str | Path) -> Any:
-    """Load a semi-supervised bundle into this Session."""
+    """Load a semi-supervised bundle into this Session.
+
+    Delegates to :func:`buildml.semisupervised.checkpoint.load_semisupervised_bundle`
+    and clears prior fit/predict/eval results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded semi-supervised plan.
+    path:
+        Path to a ``buildml.semisupervised_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with semi-supervised plan attached for chaining.
+    """
     plan = load_semisupervised_bundle(path)
     session._semisupervised_plan = plan
     session._semisupervised_fit_result = None

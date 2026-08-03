@@ -33,9 +33,40 @@ def tune_anomaly_threshold(
 ) -> AnomalyThresholdTuneResult:
     """Pick a threshold on validation labels only (never test unless explicitly allowed).
 
-    Integrates the same leakage discipline as ``Session.tune_threshold`` /
-    ``fit_decision_policy``: tune on train or validation, evaluate on untouched
-    test for final claims.
+Integrates the same leakage discipline as ``Session.tune_threshold`` /
+``fit_decision_policy``: tune on train or validation, evaluate on untouched
+test for final claims.
+
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+plan:
+    Fitted plan object carrying model state and feature contract.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+partition:
+    Holdout partition name or ``all`` for the full frame.
+label_column:
+    label column (str | None).
+positive_label:
+    positive label (Any | None).
+metric:
+    Distance or evaluation metric name.
+fbeta:
+    fbeta (float).
+allow_test_tuning:
+    allow test tuning (bool).
+
+Returns
+-------
+AnomalyThresholdTuneResult
+    Serializable result summary (AnomalyThresholdTuneResult) for history recording.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     if split_plan is None:
         raise ValidationError(
@@ -101,7 +132,17 @@ def tune_anomaly_threshold(
 
 
 def apply_threshold_tune(plan: AnomalyPlan, tuned: AnomalyThresholdTuneResult) -> None:
-    """Mutate a plan's threshold after validation tuning (in-place)."""
+    """Mutate a plan's threshold after validation tuning (in-place).
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+plan:
+    Fitted plan object carrying model state and feature contract.
+tuned:
+    tuned (AnomalyThresholdTuneResult).
+    """
     plan.threshold_ = float(tuned.threshold)
     plan.threshold_policy = "validation_tuned"
     extra = list(plan.disclosures) + list(tuned.disclosures)

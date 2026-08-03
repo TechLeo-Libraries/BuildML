@@ -23,7 +23,36 @@ def predict_federated(
     backend: FederatedBackend | None = None,
     partition: PartitionOrAll = "test",
 ) -> FederatedPredictResult:
-    """Predict with the global federated estimator (no local update / no leakage)."""
+    """Predict with the global federated estimator without local updates.
+
+    Uses the aggregated global model from ``fit_federated``; no client data is
+    used for training and no parameter updates occur during prediction.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with feature columns matching the fitted plan.
+    plan:
+        Fitted :class:`~buildml.federated.results.FederatedPlan`.
+    split_plan:
+        Split plan; required unless ``partition='all'``.
+    backend:
+        Optional backend override; must match ``plan.backend`` when set.
+    partition:
+        Partition to predict on (``validation``, ``test``, ``train``, or
+        ``all``).
+
+    Returns
+    -------
+    FederatedPredictResult
+        Decoded predictions and honesty disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When plan is missing, backend mismatches, split is required, or
+        feature columns are absent.
+    """
     if plan is None:
         raise ValidationError("No FederatedPlan. Call fit_federated first.")
 

@@ -31,11 +31,39 @@ def evaluate_tda(
 ) -> TdaEvalResult:
     """Score the train-fitted TDA head on a holdout partition.
 
-    Leakage: transform + head are frozen from train; this only scores.
+    Transform and head stay frozen from train; this only scores labeled rows.
+    Optional diagram-distance diagnostics compare train versus holdout local
+    clouds when persim is available.
 
-    When ``compare_diagram_distances=True`` and ``buildml[tda]`` (persim) is
-    available, reports mean diagram distance between train and holdout local
-    clouds for the chosen homology dimension (diagnostic stability signal).
+    Parameters
+    ----------
+    dataset:
+        Session dataset with target column present on the partition.
+    plan:
+        Train-fitted :class:`~buildml.tda.results.TdaPlan` with a supervised head.
+    split_plan:
+        Split plan defining the holdout partition.
+    partition:
+        ``validation``, ``test``, or ``all``.
+    backend:
+        Optional backend check — must match ``plan.backend`` when set.
+    compare_diagram_distances:
+        When True, report mean Wasserstein or bottleneck distance between sampled
+        train and holdout local diagrams (diagnostic stability signal).
+    diagram_distance_metric:
+        ``wasserstein`` or ``bottleneck`` (requires persim).
+    diagram_distance_dim:
+        Homology dimension for diagram-distance comparison.
+
+    Returns
+    -------
+    TdaEvalResult
+        Holdout metrics plus optional diagram-distance summaries and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no head is fitted, backend mismatches, or targets contain nulls.
     """
     if backend is not None and str(backend) != str(getattr(plan, "backend", "native")):
         raise ValidationError(

@@ -31,7 +31,27 @@ def evaluate_symbolic(
     *,
     partition: PartitionOrAll = "validation",
 ) -> SymbolicEvalResult:
-    """Score the symbolic rule base on a holdout partition (no refit)."""
+    """Score the symbolic rule base on a holdout partition without refit.
+
+    Runs predict with traces on the requested partition, then compares
+    predictions to held-out labels for accuracy or regression metrics.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with labeled holdout rows.
+    plan:
+        Train-fitted :class:`~buildml.symbolic.results.SymbolicPlan`.
+    split_plan:
+        Split plan defining the evaluation partition.
+    partition:
+        ``validation``, ``test``, or ``all``.
+
+    Returns
+    -------
+    SymbolicEvalResult
+        Accuracy or regression metrics plus rule coverage statistics.
+    """
     pred = predict_symbolic(
         dataset, plan, split_plan, partition=partition, return_traces=True
     )
@@ -62,7 +82,27 @@ def evaluate_neuro_symbolic(
     *,
     partition: PartitionOrAll = "validation",
 ) -> SymbolicEvalResult:
-    """Score the neuro-symbolic hybrid on a holdout partition (no refit)."""
+    """Score the neuro-symbolic hybrid on a holdout partition without refit.
+
+    Combines neural and rule predictions from the fitted plan, then reports
+    metrics plus rule coverage and repair rates on the holdout partition.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with labeled holdout rows.
+    plan:
+        Train-fitted :class:`~buildml.symbolic.results.NeuroSymbolicPlan`.
+    split_plan:
+        Split plan defining the evaluation partition.
+    partition:
+        ``validation``, ``test``, or ``all``.
+
+    Returns
+    -------
+    SymbolicEvalResult
+        Metrics, rule coverage, repair rate, and optional neural/final agreement.
+    """
     pred = predict_neuro_symbolic(
         dataset, plan, split_plan, partition=partition, return_traces=True
     )

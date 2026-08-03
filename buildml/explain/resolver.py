@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from buildml.explain.catalog import OPERATION_CATALOG, get_operation
+from buildml.explain.capability_status import CAPABILITY_MATRIX_OPERATIONS
 from buildml.explain.concepts import get_concept
 from buildml.explain.pedagogy import primer_for
 from buildml.explain.prerequisites import PROVIDERS, probe
@@ -302,6 +303,26 @@ def resolve_workflow(session: Any) -> tuple[WorkflowStep, ...]:
     completed_set = set(completed)
     steps: list[WorkflowStep] = []
     for operation, spec in OPERATION_CATALOG.items():
+        if operation in CAPABILITY_MATRIX_OPERATIONS:
+            steps.append(
+                WorkflowStep(
+                    operation=operation,
+                    status=WorkflowStepStatus.AVAILABLE,
+                    origin=DecisionOrigin.EXPLICIT,
+                    summary=(
+                        f"{spec.purpose} Read-only capability introspection; "
+                        "always available regardless of history."
+                    ),
+                    blockers=(),
+                    prerequisite_chain=(),
+                    reasons=(
+                        "Read-only backend/method availability matrix for this domain.",
+                        "Safe to call before choosing a fit backend or method.",
+                    ),
+                    repeatable=True,
+                )
+            )
+            continue
         failed: list[str] = []
         optional_notes: list[str] = []
         prerequisite_keys: list[str] = []

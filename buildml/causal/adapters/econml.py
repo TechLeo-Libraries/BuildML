@@ -43,7 +43,39 @@ def fit_econml(
     bootstrap_samples: int = 200,
     random_state: int | None = 0,
 ) -> tuple[CausalPlan, CausalFitResult]:
-    """Fit EconML DML / CausalForest / PolicyTree on Session train only."""
+    """Fit EconML DML / CausalForest / PolicyTree on Session train only.
+
+    Fits a declared-backdoor EconML estimator on the train partition, stores
+    the fitted object on the plan artifact, and optionally bootstrap-refits for
+    train ATE uncertainty (except ``policy_tree``).
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing treatment, outcome, and confounders.
+    split_plan:
+        Split plan with train indices.
+    assumptions:
+        Caller-declared backdoor identification contract.
+    method:
+        ``dml``, ``causal_forest``, or ``policy_tree``.
+    bootstrap_samples:
+        Number of train bootstrap refits for ATE CI (skipped for policy tree).
+    random_state:
+        RNG seed for EconML and gradient-boosting first stages.
+
+    Returns
+    -------
+    tuple[CausalPlan, CausalFitResult]
+        Persistable plan with EconML artifact and train ATE summary.
+
+    Raises
+    ------
+    ValidationError
+        When assumptions fail validation, train arms are too small,
+        ``method`` is unsupported, or bootstrap resampling fails. Also raised
+        when EconML extras are missing (via :func:`require_econml`).
+    """
     require_econml(feature="EconML causal backend")
     from econml.dml import CausalForestDML, LinearDML
     from econml.policy import PolicyTree
@@ -282,7 +314,34 @@ def score_econml_partition(
     t: np.ndarray,
     y: np.ndarray,
 ) -> tuple[float, dict[str, float]]:
-    """Score ATE on a partition with a fitted EconML estimator."""
+    """Score ATE on a partition with a fitted EconML estimator.
+
+    Applies the train-fitted EconML object from the plan artifact to holdout
+    confounders without refitting, reporting partition-level ATE and optional
+    CATE dispersion when the estimator exposes ``effect``.
+
+    Parameters
+    ----------
+    plan:
+        :class:`~buildml.causal.results.CausalPlan` fitted with
+        ``backend='econml'``.
+    x:
+        Confounder design matrix for the evaluation partition.
+    t:
+        Binary treatment indicators aligned with ``x``.
+    y:
+        Outcome vector aligned with ``x`` and ``t``.
+
+    Returns
+    -------
+    tuple[float, dict[str, float]]
+        Partition ATE and optional diagnostics (e.g. ``cate_std``).
+
+    Raises
+    ------
+    ValidationError
+        When the plan lacks an EconML artifact.
+    """
     artifact = getattr(plan, "backend_artifact_", None)
     if not isinstance(artifact, dict):
         raise ValidationError("EconML scoring requires backend='econml' plan.")

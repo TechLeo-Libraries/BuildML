@@ -36,7 +36,31 @@ def save_unsupervised_bundle(
     fit_result: ClusterFitResult | None = None,
     eval_result: ClusterEvalResult | None = None,
 ) -> Path:
-    """Write an unsupervised bundle directory (``buildml.unsupervised_bundle.v2``)."""
+    """Write an unsupervised bundle directory (``buildml.unsupervised_bundle.v2``).
+
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+
+Parameters
+----------
+path:
+    Filesystem path to the bundle directory.
+plan:
+    Fitted plan object carrying model state and feature contract.
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+
+Returns
+-------
+Path
+    Resolved filesystem path to the written bundle directory.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if plan is None:
         raise ValidationError("No ClusterPlan to save.")
     destination = Path(path)
@@ -61,7 +85,25 @@ def save_unsupervised_bundle(
 
 
 def load_unsupervised_bundle(path: str | Path) -> ClusterPlan:
-    """Load a unsupervised bundle into a :class:`ClusterPlan`."""
+    """Load a unsupervised bundle into a :class:`ClusterPlan`.
+
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+
+Parameters
+----------
+path:
+    Filesystem path to the bundle directory.
+
+Returns
+-------
+ClusterPlan
+    Fitted plan object (ClusterPlan) with private estimators attached.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "cluster_plan.joblib"

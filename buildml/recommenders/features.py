@@ -28,12 +28,53 @@ __all__ = [
 
 
 def train_partition_frame(dataset: Dataset, split_plan: SplitPlan) -> pd.DataFrame:
+    """Return the train partition frame for recommender fitting.
+
+    Thin wrapper around :func:`buildml.data.splits.frame_for_partition` that
+    keeps recommender code aligned with Session split semantics.
+
+    Parameters
+    ----------
+    dataset:
+        Full Session dataset.
+    split_plan:
+        Split definition; train rows are extracted for interaction building.
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of rows assigned to the train partition.
+    """
     return frame_for_partition(dataset, split_plan, "train")
 
 
 def partition_frame(
     dataset: Dataset, split_plan: SplitPlan | None, partition: str
 ) -> pd.DataFrame:
+    """Return a dataset frame for the requested split partition.
+
+    Use ``partition='all'`` to read the full dataset without a split plan.
+    Otherwise a :class:`~buildml.data.splits.SplitPlan` is required.
+
+    Parameters
+    ----------
+    dataset:
+        Full Session dataset.
+    split_plan:
+        Split definition; required unless ``partition='all'``.
+    partition:
+        Partition name (for example ``"train"``, ``"test"``, or ``"all"``).
+
+    Returns
+    -------
+    pd.DataFrame
+        Rows belonging to the requested partition.
+
+    Raises
+    ------
+    ValidationError
+        When ``partition`` is not ``"all"`` and ``split_plan`` is ``None``.
+    """
     if partition == "all":
         return dataset.frame.copy()
     if split_plan is None:
@@ -62,6 +103,31 @@ def resolve_interaction_columns(
       feedback; omit / set ``feedback='implicit'`` for presence-only signals.
     - This path is **not** RAG retrieval and **not** diagnostic EDA
       ``Recommendation`` Finding objects.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing interaction columns.
+    user_column:
+        Column holding user entity ids; required.
+    item_column:
+        Column holding item entity ids; required.
+    rating_column:
+        Explicit rating column; ignored when ``feedback='implicit'``.
+    feedback:
+        ``"explicit"`` for numeric ratings or ``"implicit"`` for presence-only
+        signals.
+
+    Returns
+    -------
+    tuple[str, str, str | None, list[str]]
+        Resolved ``(user_column, item_column, rating_column, disclosures)``.
+
+    Raises
+    ------
+    ValidationError
+        When required columns are missing, ids collide, or explicit feedback
+        lacks a rating source.
     """
     frame = dataset.frame
     disclosures: list[str] = []
@@ -137,7 +203,39 @@ def build_interactions(
     feedback: str,
     min_rating: float | None = None,
 ) -> pd.DataFrame:
-    """Normalize interaction rows; drop null entity ids."""
+    """Normalize interaction rows and drop null entity ids.
+
+    Produces a canonical frame with ``__rating__`` for downstream matrix
+    construction. Implicit feedback deduplicates user-item pairs and assigns
+    rating ``1.0``; explicit feedback aggregates duplicate pairs by mean
+    rating.
+
+    Parameters
+    ----------
+    frame:
+        Input interaction table.
+    user_column:
+        User id column name.
+    item_column:
+        Item id column name.
+    rating_column:
+        Explicit rating column; ignored for implicit feedback.
+    feedback:
+        ``"explicit"`` or ``"implicit"``.
+    min_rating:
+        Optional floor for explicit ratings after numeric coercion.
+
+    Returns
+    -------
+    pd.DataFrame
+        Cleaned interactions with ``__rating__`` ready for matrix build.
+
+    Raises
+    ------
+    ValidationError
+        When required columns are missing or no interactions remain after
+        filtering.
+    """
     needed = [user_column, item_column]
     if rating_column is not None:
         needed.append(rating_column)
@@ -177,7 +275,33 @@ def build_user_item_matrix(
     user_column: str,
     item_column: str,
 ) -> tuple[np.ndarray, tuple[Any, ...], tuple[Any, ...], dict[Any, int], dict[Any, int]]:
-    """Build a dense user×item rating matrix from interaction rows."""
+    """Build a dense user×item rating matrix from interaction rows.
+
+    Assigns each unique user and item a stable index and fills ``matrix[u, i]``
+    with ``__rating__`` values from the interaction frame.
+
+    Parameters
+    ----------
+    interactions:
+        Frame from :func:`build_interactions` with ``__rating__`` column.
+    user_column:
+        User id column name.
+    item_column:
+        Item id column name.
+
+    Returns
+    -------
+    matrix:
+        Dense ``(n_users, n_items)`` float matrix.
+    users:
+        Tuple of user ids in row order.
+    items:
+        Tuple of item ids in column order.
+    user_index:
+        Map from user id to row index.
+    item_index:
+        Map from item id to column index.
+    """
     users = tuple(pd.unique(interactions[user_column]))
     items = tuple(pd.unique(interactions[item_column]))
     user_index = {u: i for i, u in enumerate(users)}
@@ -198,7 +322,37 @@ def item_feature_matrix(
     item_ids: tuple[Any, ...],
     feature_columns: list[str],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """One row per train item: mean of numeric feature columns (train rows)."""
+    """Build one standardized feature row per train catalog item.
+
+    Aggregates numeric side features by mean per item on train rows, then
+    standardizes columns for content-based scoring.
+
+    Parameters
+    ----------
+    frame:
+        Train partition frame containing item features.
+    item_column:
+        Item id column name.
+    item_ids:
+        Train catalog item ids in matrix column order.
+    feature_columns:
+        Numeric columns describing items.
+
+    Returns
+    -------
+    standardized:
+        ``(n_items, n_features)`` standardized feature matrix.
+    mean:
+        Per-column train means used for standardization.
+    scale:
+        Per-column train standard deviations (floored to avoid division by
+        zero).
+
+    Raises
+    ------
+    ValidationError
+        When feature columns are missing or non-numeric.
+    """
     missing = [c for c in feature_columns if c not in frame.columns]
     if missing:
         raise ValidationError(f"item_feature_columns missing: {missing}")
@@ -224,6 +378,26 @@ def item_feature_matrix(
 
 
 def precision_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
+    """Compute Precision@K for one user's recommendation list.
+
+    Measures what fraction of the top-``k`` recommended items appear in the
+    user's relevant holdout set. Used by :func:`evaluate_recommender` for
+    micro-averaged ranking metrics.
+
+    Parameters
+    ----------
+    recommended:
+        Ordered recommended item ids (best first).
+    relevant:
+        Ground-truth relevant item ids for the user.
+    k:
+        Cutoff rank; only the first ``k`` recommendations count.
+
+    Returns
+    -------
+    float
+        Fraction of the top-``k`` recommendations that are relevant.
+    """
     if k <= 0:
         return 0.0
     top = recommended[:k]
@@ -234,6 +408,26 @@ def precision_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
 
 
 def recall_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
+    """Compute Recall@K for one user's recommendation list.
+
+    Measures what fraction of the user's relevant items appear in the top-``k``
+    recommendations. Used by :func:`evaluate_recommender` for micro-averaged
+    ranking metrics.
+
+    Parameters
+    ----------
+    recommended:
+        Ordered recommended item ids (best first).
+    relevant:
+        Ground-truth relevant item ids for the user.
+    k:
+        Cutoff rank; only the first ``k`` recommendations count.
+
+    Returns
+    -------
+    float
+        Fraction of relevant items retrieved in the top-``k`` list.
+    """
     if not relevant:
         return 0.0
     top = recommended[:k]
@@ -242,6 +436,25 @@ def recall_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
 
 
 def ndcg_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
+    """Compute normalized DCG@K for one user's recommendation list.
+
+    Uses binary relevance (1 for relevant items, 0 otherwise) and log-base-2
+    rank discounting.
+
+    Parameters
+    ----------
+    recommended:
+        Ordered recommended item ids (best first).
+    relevant:
+        Ground-truth relevant item ids for the user.
+    k:
+        Cutoff rank; only the first ``k`` recommendations count.
+
+    Returns
+    -------
+    float
+        nDCG in ``[0, 1]``; ``0.0`` when there are no relevant items.
+    """
     if not relevant or k <= 0:
         return 0.0
     top = recommended[:k]
@@ -259,6 +472,25 @@ def ndcg_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
 def average_precision_at_k(
     recommended: list[Any], relevant: set[Any], k: int
 ) -> float:
+    """Compute average precision@K for one user's recommendation list.
+
+    Integrates precision at each relevant hit rank in the top-``k`` list.
+    Feeds :func:`mean_average_precision` for MAP@K in holdout evaluation.
+
+    Parameters
+    ----------
+    recommended:
+        Ordered recommended item ids (best first).
+    relevant:
+        Ground-truth relevant item ids for the user.
+    k:
+        Cutoff rank; only the first ``k`` recommendations count.
+
+    Returns
+    -------
+    float
+        Average precision over relevant hits in the top-``k`` list.
+    """
     if not relevant or k <= 0:
         return 0.0
     top = recommended[:k]
@@ -278,6 +510,25 @@ def mean_average_precision(
     per_user_relevant: list[set[Any]],
     k: int,
 ) -> float:
+    """Compute mean average precision@K across users.
+
+    Averages :func:`average_precision_at_k` over user lists, skipping users
+    with empty relevant sets.
+
+    Parameters
+    ----------
+    per_user_recommended:
+        One recommendation list per user, aligned with ``per_user_relevant``.
+    per_user_relevant:
+        Relevant item sets per user.
+    k:
+        Cutoff rank shared across users.
+
+    Returns
+    -------
+    float
+        Mean AP@K; ``0.0`` when no users have relevant items.
+    """
     if not per_user_recommended:
         return 0.0
     scores = [

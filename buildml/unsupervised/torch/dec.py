@@ -72,6 +72,20 @@ class DECModel:
     input_dim: int
 
     def predict_latent(self, x: np.ndarray) -> np.ndarray:
+        """Perform predict latent for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+        """
         torch = require_torch()
         self.autoencoder.eval()
         with torch.no_grad():
@@ -80,6 +94,20 @@ class DECModel:
             return z.cpu().numpy()
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Run predict on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+        """
         torch = require_torch()
         self.autoencoder.eval()
         with torch.no_grad():
@@ -101,6 +129,36 @@ def fit_dec_idec(
     learning_rate: float,
     random_state: int | None,
 ) -> FitOutcome:
+    """Fit dec idec on the train partition using the recorded contract.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+method:
+    Method or strategy identifier for the resolved backend.
+n_clusters:
+    Target number of clusters for partitioning.
+latent_dim:
+    latent dim (int).
+pretrain_epochs:
+    pretrain epochs (int).
+finetune_epochs:
+    finetune epochs (int).
+batch_size:
+    Number of rows to select per query or training minibatch.
+learning_rate:
+    Optimizer learning rate for torch training.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+FitOutcome
+    Return value (FitOutcome) produced by this operation.
+    """
     torch = require_torch(feature=f"Deep clustering ({method.upper()})")
     import torch
     import torch.nn as nn
@@ -190,4 +248,20 @@ def fit_dec_idec(
 
 
 def predict_dec_idec(estimator: DECModel, x: np.ndarray) -> np.ndarray:
+    """Perform predict dec idec for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+estimator:
+    Fitted model object used for scoring or prediction.
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+    """
     return estimator.predict(x)

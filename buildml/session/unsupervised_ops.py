@@ -54,7 +54,82 @@ def fit_clusters(
     auto_k_min: int = 2,
     auto_k_max: int = 10,
 ) -> Any:
-    """Fit a clusterer on the train partition only."""
+    """Fit a clusterer on the train partition only.
+
+    Delegates to :func:`buildml.unsupervised.cluster.fit_clusterer`, stores the
+    :class:`~buildml.unsupervised.results.ClusterPlan` on Session, and records
+    the fit. Follow with :func:`assign_clusters_op` or :func:`evaluate_clusters`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    method:
+        Clustering method key (``kmeans``, ``gmm``, ``hdbscan``, etc.).
+    n_clusters:
+        Target cluster count for parametric methods; ignored for density methods.
+    columns:
+        Optional explicit feature columns; ``None`` auto-selects numerics.
+    random_state:
+        Seed for stochastic initialization and sampling.
+    n_init:
+        Number of k-means restarts (``auto`` uses sklearn default).
+    max_iter:
+        Maximum iterations for iterative clusterers.
+    linkage:
+        Linkage criterion for hierarchical clustering.
+    eps:
+        Neighborhood radius for DBSCAN.
+    min_samples:
+        Minimum samples per core point for DBSCAN/OPTICS.
+    gmm_covariance_type:
+        Covariance structure for Gaussian mixture models.
+    gmm_max_components:
+        Upper bound on components when ``auto_k`` selects GMM k.
+    gmm_select_by:
+        Model-selection score for GMM component count (``bic`` or ``aic``).
+    hdbscan_min_cluster_size:
+        Minimum cluster size for HDBSCAN.
+    hdbscan_min_samples:
+        Core distance samples for HDBSCAN; defaults to min cluster size.
+    spectral_affinity:
+        Affinity matrix type for spectral clustering.
+    spectral_n_neighbors:
+        Neighbors for spectral nearest-neighbors affinity.
+    optics_min_samples:
+        Minimum samples for OPTICS core distances.
+    optics_xi:
+        Steepness threshold for OPTICS cluster extraction.
+    optics_min_cluster_size:
+        Minimum cluster size for OPTICS extraction.
+    bandwidth:
+        Kernel bandwidth for mean-shift; ``None`` estimates from data.
+    latent_dim:
+        Embedding dimension for deep clustering backend.
+    pretrain_epochs:
+        Pretraining epochs for deep clustering autoencoder.
+    finetune_epochs:
+        Fine-tuning epochs for deep clustering head.
+    batch_size:
+        Minibatch size for deep clustering backend.
+    learning_rate:
+        Optimizer learning rate for deep clustering backend.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+    label_column:
+        Output column name for cluster assignments when attaching.
+    auto_k:
+        When True, search ``auto_k_min``..``auto_k_max`` for k-means/GMM.
+    auto_k_min:
+        Lower bound for automatic k search.
+    auto_k_max:
+        Upper bound for automatic k search.
+
+    Returns
+    -------
+    ClusterFitResult
+        Serializable fit summary including cluster count and method disclosures.
+    """
     session.assert_can_fit("train")
     plan, result = fit_clusterer(
         session.dataset,
@@ -117,7 +192,30 @@ def assign_clusters_op(
     partition: PartitionOrAll = "test",
     attach: bool = False,
 ) -> Any:
-    """Assign cluster labels with the train-fitted plan (no refit)."""
+    """Assign cluster labels with the train-fitted plan without refitting.
+
+    Delegates to :func:`buildml.unsupervised.cluster.assign_clusters`. When
+    ``attach=True``, cluster labels are merged into Session dataset.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a cluster plan from :func:`fit_clusters`.
+    partition:
+        Partition to assign (``train``, ``validation``, ``test``, or ``all``).
+    attach:
+        When True, attach cluster label column to the Session dataset frame.
+
+    Returns
+    -------
+    ClusterAssignResult
+        Cluster assignments and optional attached column metadata.
+
+    Raises
+    ------
+    ValidationError
+        When no cluster plan exists on the Session.
+    """
     plan = getattr(session, "_cluster_plan", None)
     if plan is None:
         raise ValidationError("No cluster plan. Call fit_clusters(...) first.")
@@ -153,7 +251,46 @@ def evaluate_clusters(
     elbow_k_min: int = 2,
     elbow_k_max: int = 10,
 ) -> Any:
-    """Evaluate train-fitted clusters on a partition (internal + optional external)."""
+    """Evaluate train-fitted clusters on a holdout partition.
+
+    Delegates to :func:`buildml.unsupervised.evaluate.evaluate_clustering`.
+    Computes internal metrics and optional external alignment when labels exist.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a cluster plan from :func:`fit_clusters`.
+    partition:
+        Holdout partition to score. Validation falls back to test when absent.
+    external_label_column:
+        Optional column for external cluster-quality metrics (e.g. ARI).
+    sample_size:
+        Optional subsample size for expensive metrics; ``None`` uses all rows.
+    random_state:
+        Seed for subsampling and stability bootstraps.
+    compute_stability:
+        When True, run bootstrap stability diagnostics.
+    stability_runs:
+        Number of bootstrap runs for stability analysis.
+    stability_sample_fraction:
+        Fraction of rows sampled per stability bootstrap.
+    compute_elbow:
+        When True, compute elbow curve for k-means k selection diagnostics.
+    elbow_k_min:
+        Minimum k for elbow diagnostics.
+    elbow_k_max:
+        Maximum k for elbow diagnostics.
+
+    Returns
+    -------
+    ClusterEvalResult
+        Internal and optional external clustering metrics.
+
+    Raises
+    ------
+    ValidationError
+        When no cluster plan exists on the Session.
+    """
     plan = getattr(session, "_cluster_plan", None)
     if plan is None:
         raise ValidationError("No cluster plan. Call fit_clusters(...) first.")
@@ -197,7 +334,28 @@ def evaluate_clusters(
 
 
 def save_unsupervised_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active ClusterPlan as ``buildml.unsupervised_bundle.v2``."""
+    """Persist the active cluster plan as ``buildml.unsupervised_bundle.v2``.
+
+    Delegates to :func:`buildml.unsupervised.checkpoint.save_unsupervised_bundle`.
+    Reload with :func:`load_unsupervised_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a cluster plan from :func:`fit_clusters`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no cluster plan exists on the Session.
+    """
     plan = getattr(session, "_cluster_plan", None)
     if plan is None:
         raise ValidationError("No cluster plan. Call fit_clusters(...) first.")
@@ -216,7 +374,23 @@ def save_unsupervised_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_unsupervised_bundle_op(session, path: str | Path) -> Any:
-    """Load an unsupervised bundle into this Session."""
+    """Load an unsupervised clustering bundle into this Session.
+
+    Delegates to :func:`buildml.unsupervised.checkpoint.load_unsupervised_bundle`
+    and clears prior fit/assign/eval results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded cluster plan.
+    path:
+        Path to a ``buildml.unsupervised_bundle.v2`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with cluster plan attached for chaining.
+    """
     plan = load_unsupervised_bundle(path)
     session._cluster_plan = plan
     session._cluster_fit_result = None

@@ -27,7 +27,44 @@ def fit_xgb_threshold_policy(
     tp_benefit: float,
     tn_benefit: float,
 ) -> tuple[DecisionPlan, dict[str, Any], Any]:
-    """Train XGB on train, tune threshold on the tuning partition."""
+    """Train a cost-sensitive XGBoost classifier and tune its threshold.
+
+    Fits :class:`~xgboost.XGBClassifier` on train with ``scale_pos_weight``
+    derived from ``fn_cost / fp_cost``, then selects an operating threshold
+    via :func:`~buildml.optimize.policies.fit_threshold_policy` on the tuning
+    partition. Binary classification only.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular data with features and target for scoring partitions.
+    split_plan:
+        Train/validation/test split used to isolate the tuning partition.
+    fit_result:
+        Classification :class:`~buildml.model.supervised.FitResult` defining
+        feature columns and positive-class convention.
+    partition:
+        Split name where the operating threshold is selected.
+    allow_test_tuning:
+        When ``True``, permits tuning on the test partition (dangerous opt-in).
+    fp_cost, fn_cost:
+        False-positive and false-negative costs; both required for this backend.
+    tp_benefit, tn_benefit:
+        Optional benefits subtracted from total expected cost during threshold
+        selection.
+
+    Returns
+    -------
+    tuple[DecisionPlan, dict[str, Any], DiagnosticReport]
+        Frozen policy with auxiliary XGB estimator, fit metrics, and threshold
+        diagnostic report.
+
+    Raises
+    ------
+    ValidationError
+        When the fit is not binary classification, costs are missing, or
+        training/threshold steps fail validation.
+    """
     if fit_result.task != "classification":
         raise ValidationError("method='threshold' requires a classification fit.")
     if fp_cost is None or fn_cost is None:

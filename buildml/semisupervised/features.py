@@ -23,7 +23,36 @@ def resolve_semisupervised_columns(
     prefer_reduce_components: bool = True,
     target_column: str,
 ) -> tuple[list[str], bool, list[str]]:
-    """Resolve numeric feature columns (exclude target and protected roles)."""
+    """Resolve numeric feature columns for semi-supervised fit and predict.
+
+    Excludes target and protected role columns. Prefers reduced component
+    columns from a Session reduce plan when available.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset carrying roles and schema metadata.
+    frame:
+        Partition frame whose columns are candidates for features.
+    columns:
+        Optional explicit feature column list; ``None`` auto-selects numerics.
+    reduce_plan:
+        Optional preprocess reduce plan from Session.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    target_column:
+        Target column name excluded from feature selection.
+
+    Returns
+    -------
+    tuple[list[str], bool, list[str]]
+        Selected columns, whether reduce components were used, and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no usable numeric columns remain after exclusions.
+    """
     disclosures: list[str] = []
     protected = {
         ColumnRole.TARGET,
@@ -83,7 +112,28 @@ def resolve_semisupervised_columns(
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
-    """Build a float design matrix; refuse null features."""
+    """Build a float design matrix from selected frame columns.
+
+    Refuses null features so semi-supervised adapters fail fast with an
+    actionable impute/scale message rather than silent NaN propagation.
+
+    Parameters
+    ----------
+    frame:
+        DataFrame slice containing the selected feature columns.
+    columns:
+        Column names to extract as a numeric design matrix.
+
+    Returns
+    -------
+    np.ndarray
+        Float array of shape ``(n_rows, len(columns))``.
+
+    Raises
+    ------
+    ValidationError
+        When any selected column contains missing values.
+    """
     block = frame[list(columns)]
     if block.isna().any().any():
         raise ValidationError(
@@ -94,13 +144,25 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
 
 
 def is_unlabeled_mask(series: pd.Series, unlabeled_marker: Any = None) -> np.ndarray:
-    """Return boolean mask where True means unlabeled.
+    """Return boolean mask where ``True`` means unlabeled.
 
     Convention
     ----------
     * ``unlabeled_marker is None`` (default): pandas missing (NaN / NA / None)
       marks unlabeled rows.
     * otherwise: rows equal to ``unlabeled_marker`` (plus missing) are unlabeled.
+
+    Parameters
+    ----------
+    series:
+        Target series containing labeled and unlabeled values.
+    unlabeled_marker:
+        Optional sentinel marking unlabeled rows; ``None`` uses NaN/NA missingness.
+
+    Returns
+    -------
+    np.ndarray
+        Boolean mask aligned with ``series`` index — ``True`` for unlabeled rows.
     """
     missing = series.isna().to_numpy(dtype=bool)
     if unlabeled_marker is None:
@@ -114,11 +176,37 @@ def encode_targets_for_sklearn(
     unlabeled_marker: Any = None,
     label_encoder: Any | None = None,
 ) -> tuple[np.ndarray, Any, tuple[Any, ...], int, int]:
-    """Map BuildML missingness → sklearn ``-1`` unlabeled convention.
+    """Map BuildML missingness to sklearn ``-1`` unlabeled convention.
+
+    Labeled rows receive integer class codes; unlabeled rows are filled with
+    ``SKLEARN_UNLABELED`` for sklearn semi-supervised adapters.
+
+    Parameters
+    ----------
+    y:
+        Target series containing labeled and unlabeled values.
+    unlabeled_marker:
+        Optional sentinel marking unlabeled rows; ``None`` uses NaN/NA.
+    label_encoder:
+        Optional fitted :class:`~sklearn.preprocessing.LabelEncoder` to reuse.
 
     Returns
     -------
-    y_sk, label_encoder, classes, n_labeled, n_unlabeled
+    y_sk:
+        Integer target vector with ``-1`` marking unlabeled positions.
+    label_encoder:
+        Fitted label encoder covering labeled classes.
+    classes:
+        Tuple of class labels in encoder order.
+    n_labeled:
+        Count of labeled rows.
+    n_unlabeled:
+        Count of unlabeled rows.
+
+    Raises
+    ------
+    ValidationError
+        When fewer than two labeled rows or classes are present.
     """
     from sklearn.preprocessing import LabelEncoder
 
@@ -152,7 +240,23 @@ def encode_targets_for_sklearn(
 
 
 def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
-    """Map sklearn integer codes back to original label strings/values."""
+    """Map sklearn integer codes back to original label strings or values.
+
+    Rounds floating predictions to the nearest class code before inverse
+    transform so graph-based semi-supervised outputs decode cleanly.
+
+    Parameters
+    ----------
+    pred_codes:
+        Integer or float prediction codes from a fitted label encoder.
+    label_encoder:
+        Fitted :class:`~sklearn.preprocessing.LabelEncoder` used during fit.
+
+    Returns
+    -------
+    list[Any]
+        Decoded labels in the same order as ``pred_codes``.
+    """
     codes = np.asarray(pred_codes)
     # Graph methods may emit floats; round to nearest class code.
     if np.issubdtype(codes.dtype, np.floating):

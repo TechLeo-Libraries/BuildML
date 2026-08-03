@@ -65,8 +65,11 @@ def main() -> None:
         "bundle_path": str(bundle),
         "leakage_controls": ["Stratified split", "Scale+TDA fit on train", "Test after lock"],
         "industry_comparison": {
-            "status": "see_comparison_json",
-            "note": "Run baseline_industry.py for sklearn logistic twin on same split",
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: sklearn logistic baseline (no TDA) on the same "
+                "split; run script then baseline_industry.py for results/comparison.json."
+            ),
         },
         "limitations": ["Synthetic clouds; TDA features are shape descriptors not FICO"],
     })

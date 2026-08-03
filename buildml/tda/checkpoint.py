@@ -37,7 +37,33 @@ def save_tda_bundle(
     fit_result: TdaFitResult | None = None,
     eval_result: TdaEvalResult | None = None,
 ) -> Path:
-    """Write a TDA bundle directory (``buildml.tda_bundle.v2``)."""
+    """Write a train-fitted TDA plan to a ``buildml.tda_bundle.v2`` directory.
+
+    Persists the frozen plan, vectorizer state, optional sklearn head metadata,
+    and summary JSON separate from Session checkpoints. Reload with
+    :func:`load_tda_bundle` or Session :meth:`~buildml.session.session.Session.load_tda_bundle`.
+
+    Parameters
+    ----------
+    path:
+        Destination directory (created if missing).
+    plan:
+        Train-fitted :class:`~buildml.tda.results.TdaPlan` to persist.
+    fit_result:
+        Optional fit report embedded in ``meta.json`` for audit trails.
+    eval_result:
+        Optional evaluation report embedded in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory containing ``tda_plan.joblib`` and ``meta.json``.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No TdaPlan to save.")
     destination = Path(path)
@@ -66,7 +92,28 @@ def save_tda_bundle(
 
 
 def load_tda_bundle(path: str | Path) -> TdaPlan:
-    """Load a TDA bundle into a :class:`TdaPlan` (v1 or v2)."""
+    """Load a TDA bundle from disk into a :class:`~buildml.tda.results.TdaPlan`.
+
+    Supports v1 (native ripser/persim only) and v2 bundles. Rehydrates train
+    arrays and vectorizer state from ``tda_plan.joblib`` when the plan object
+    alone is incomplete.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory written by :func:`save_tda_bundle`.
+
+    Returns
+    -------
+    TdaPlan
+        Train-fitted plan ready for transform, predict, or evaluate calls.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, the format is unsupported, or the payload is
+        not a valid :class:`TdaPlan`.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "tda_plan.joblib"

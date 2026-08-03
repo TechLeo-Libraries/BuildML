@@ -26,7 +26,36 @@ def analysis_frame(
     time_column: str | None = None,
     target_column: str | None = None,
 ) -> tuple[np.ndarray, tuple[str, ...], str, str]:
-    """Return ordered target series, timestamps, target_col, time_col."""
+    """Extract an ordered target series and timestamps for time-series analysis.
+
+    Validates that the split is temporal (not random), resolves column names,
+    and returns the numeric target vector plus string timestamps for the
+    requested scope. Used internally by :func:`analyze_timeseries`.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular frame holding time and target columns.
+    split_plan:
+        Temporal split from Session ``time_split``. ``None`` is refused.
+    scope:
+        ``train`` uses only the train partition; ``all`` uses every row in order.
+    time_column:
+        Sort key column. Defaults to the dataset's resolved time column.
+    target_column:
+        Numeric series to analyze. Defaults to the dataset target.
+
+    Returns
+    -------
+    tuple[np.ndarray, tuple[str, ...], str, str]
+        Target vector, timestamp strings, resolved target column name, and time
+        column name.
+
+    Raises
+    ------
+    ValidationError
+        When the split is missing, not temporal, or the scoped frame is empty.
+    """
     assert_temporal_split(split_plan)
     if split_plan is None:
         raise ValidationError(
@@ -50,7 +79,32 @@ def infer_seasonal_period(
     seasonal_period: int | None = None,
     default: int = 7,
 ) -> int:
-    """Resolve seasonal period with a sensible default."""
+    """Resolve the seasonal period for decomposition with sensible defaults.
+
+    When the caller passes ``seasonal_period``, it is validated and returned.
+    Otherwise picks ``default`` (7) when the series is long enough, or half the
+    series length for very short windows.
+
+    Parameters
+    ----------
+    y:
+        Target vector whose length informs the default period.
+    seasonal_period:
+        Explicit cycle length. When ``None``, inferred from ``y`` and ``default``.
+    default:
+        Preferred period when ``n >= 2 * default`` (weekly seasonality on daily
+        data, for example).
+
+    Returns
+    -------
+    int
+        Seasonal period >= 2 suitable for STL or moving-average decomposition.
+
+    Raises
+    ------
+    ValidationError
+        When an explicit period is < 2 or the series is too short to infer one.
+    """
     if seasonal_period is not None:
         period = int(seasonal_period)
         if period < 2:

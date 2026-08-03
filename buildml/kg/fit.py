@@ -38,17 +38,60 @@ def fit_kg(
     norm: KgNorm = "l1",
     random_state: int | None = 0,
 ) -> tuple[KgPlan, KgFitResult]:
-    """Fit a leakage-safe KG embedding model on the Session **train** partition.
+    """Fit a leakage-safe KG embedding model on the Session train partition.
 
+    Resolves triple columns, materializes train-only triples, builds
+    vocabularies, and trains native or PyKEEN embeddings with disclosed
+    negative sampling.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with triple columns.
+    split_plan:
+        Split plan defining the train partition.
+    backend:
+        ``native`` or ``pykeen``; inferred when ``None``.
+    method:
+        Embedding method such as ``transe`` or ``rotate``.
+    head_column, relation_column, tail_column:
+        Explicit triple column names.
+    embedding_dim:
+        Latent dimension for entity and relation embeddings.
+    epochs, batch_size, learning_rate:
+        Training schedule controls.
+    margin:
+        Margin for ranking-loss methods (TransE native path).
+    neg_ratio:
+        Negative samples per positive train triple.
+    norm:
+        ``l1`` or ``l2`` translation norm for TransE scoring.
+    random_state:
+        Seed for initialization and negative sampling.
+
+    Returns
+    -------
+    tuple[KgPlan, KgFitResult]
+        Fitted plan and fit summary for history logs.
+
+    Raises
+    ------
+    ValidationError
+        When train partition is missing or triple columns are invalid.
+    MissingExtraError
+        When pykeen backend is selected but ``kg-industry`` is not installed.
+
+    Notes
+    -----
     Backends
-    --------
+    ^^^^^^^^
     native (default):
         Pure-numpy TransE / DistMult with disclosed uniform negative sampling.
     pykeen (``buildml[kg-industry]``):
         PyKEEN pipeline for TransE, DistMult, RotatE, ComplEx on train triples.
 
     Pipeline
-    --------
+    ^^^^^^^^
     1. Resolve head / relation / tail columns.
     2. Materialize unique train triples only (never test).
     3. Build entity/relation vocabularies from train.

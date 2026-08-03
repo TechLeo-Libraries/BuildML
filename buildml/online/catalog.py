@@ -38,7 +38,17 @@ DRIFT_DETECTORS = (
 
 
 def online_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for online / continual backends and estimators."""
+    """Build the honest capability matrix for online / continual backends.
+
+    Reports sklearn, industry (River), and torch paths, chunk ingestion modes,
+    evaluation metrics, install hints, and explicit non-goals for teaching
+    overlays and Session walkthroughs.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, chunk ingestion rules, evaluation metrics, and defaults.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -135,7 +145,21 @@ def list_online_estimators(
     *,
     backend: OnlineBackendName | None = None,
 ) -> list[str]:
-    """List estimators for a backend (or all available when backend is None)."""
+    """List online estimators for one backend or all installed backends.
+
+    Filters to backends marked available in :func:`online_capability_matrix`.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend name (``sklearn``, ``industry``, ``torch``). When
+        ``None``, returns the union of estimators from all available backends.
+
+    Returns
+    -------
+    list[str]
+        Estimator keys valid for the requested backend(s).
+    """
     matrix = online_capability_matrix()
     if backend is not None:
         entry = matrix["backends"].get(backend)
@@ -155,6 +179,21 @@ def list_online_estimators(
 
 
 def backend_available(name: OnlineBackendName) -> bool:
+    """Return whether an online backend is installed and usable.
+
+    Consults :func:`online_capability_matrix` rather than probing imports
+    directly, so availability matches catalog disclosure.
+
+    Parameters
+    ----------
+    name:
+        Backend key (``sklearn``, ``industry``, or ``torch``).
+
+    Returns
+    -------
+    bool
+        ``True`` when the capability matrix marks the backend as available.
+    """
     matrix = online_capability_matrix()["backends"]
     entry = matrix.get(name)
     if entry is None:
@@ -167,7 +206,30 @@ def resolve_backend_estimator(
     backend: OnlineBackendName | None,
     estimator: str,
 ) -> tuple[OnlineBackendName, str]:
-    """Validate backend/estimator pairing and apply honest defaults."""
+    """Validate backend/estimator pairing and apply honest defaults.
+
+    Infers the backend from the estimator name when ``backend`` is ``None`` and
+    refuses pairings that require missing extras.
+
+    Parameters
+    ----------
+    backend:
+        Optional explicit backend; inferred from ``estimator`` when ``None``.
+    estimator:
+        Estimator key (normalized to lowercase with hyphens as underscores).
+
+    Returns
+    -------
+    tuple[OnlineBackendName, str]
+        Resolved ``(backend, estimator)`` pair.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator is unknown or invalid for the resolved backend.
+    MissingExtraError
+        When the resolved backend requires an optional extra that is not installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     est_key = str(estimator).lower().replace("-", "_")
@@ -205,7 +267,30 @@ def resolve_drift_detector(
     backend: OnlineBackendName,
     drift_detector: str | None,
 ) -> str:
-    """Pick a drift disclosure mode valid for the backend."""
+    """Pick a drift disclosure mode valid for the backend.
+
+    Defaults to ``adwin`` on industry backends when River is available, otherwise
+    ``mean_shift``. River-specific detectors require ``backend='industry'``.
+
+    Parameters
+    ----------
+    backend:
+        Online backend in use (``sklearn``, ``industry``, or ``torch``).
+    drift_detector:
+        Optional explicit detector key; ``None`` selects a backend-appropriate default.
+
+    Returns
+    -------
+    str
+        Normalized drift detector key from :data:`DRIFT_DETECTORS`.
+
+    Raises
+    ------
+    ValidationError
+        When the detector is unknown or incompatible with the backend.
+    MissingExtraError
+        When River drift detectors are requested but ``online-industry`` is missing.
+    """
     from buildml.core.errors import ValidationError
 
     if drift_detector is None:

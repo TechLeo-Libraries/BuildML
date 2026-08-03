@@ -10,10 +10,12 @@ import numpy as np
 
 @dataclass(slots=True)
 class RecommenderPlan:
-    """Train-fitted recommender state.
+    """Store train-fitted recommender state for top-K scoring.
 
-    Persist via ``buildml.recommender_bundle.v1``. Distinct from Session
-    checkpoints and from RAG / diagnostic EDA Recommendation objects.
+    Holds the train interaction matrix, method-specific fitted artifacts,
+    catalog indexes, and honesty disclosures. Persist via
+    ``buildml.recommender_bundle.v1``. Distinct from Session checkpoints and
+    from RAG / diagnostic EDA Recommendation objects.
     """
 
     method: str
@@ -60,6 +62,16 @@ class RecommenderPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the recommender plan for bundles and history logs.
+
+        Captures backend, method, column contract, and catalog sizes without
+        embedding full numpy arrays or backend model objects.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, feature columns, and honesty disclosures.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -104,6 +116,16 @@ class RecommenderFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the fit result for history and bundle metadata.
+
+        Keeps method, backend, and catalog sizes so Session history stays small
+        without embedding the fitted :class:`RecommenderPlan`.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, backend, catalog sizes, and disclosure strings.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -121,6 +143,7 @@ class RecommenderFitResult:
         }
 
     def show(self) -> None:
+        """Print a concise human-readable fit summary to stdout."""
         print(
             f"RecommenderFit · {self.method} · backend={self.backend} · "
             f"feedback={self.feedback} · "
@@ -148,6 +171,15 @@ class RecommendResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise recommendation output for history and bundle metadata.
+
+        Omits full per-user item lists; records counts and policy flags.
+
+        Returns
+        -------
+        dict[str, Any]
+            ``k``, user counts, cold-start statistics, and disclosures.
+        """
         return {
             "k": self.k,
             "n_users": self.n_users,
@@ -160,6 +192,7 @@ class RecommendResult:
         }
 
     def show(self) -> None:
+        """Print a concise human-readable recommendation summary to stdout."""
         print(
             f"Recommend · {self.method} · k={self.k} · users={self.n_users} · "
             f"cold_start={len(self.cold_start_users)}"
@@ -181,6 +214,16 @@ class RecommenderEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise holdout eval metrics for history and bundle metadata.
+
+        Preserves partition, cutoff, user counts, and aggregate metrics while
+        omitting per-user recommendation lists from Session history.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, cutoff, user counts, metrics, and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -194,6 +237,7 @@ class RecommenderEvalResult:
         }
 
     def show(self) -> None:
+        """Print a concise human-readable eval summary to stdout."""
         print(
             f"RecommenderEval · {self.method} · k={self.k} · "
             f"partition={self.partition} · users={self.n_users_scored}"

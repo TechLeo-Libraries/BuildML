@@ -31,6 +31,10 @@ def refute_causal(
 ) -> CausalRefuteResult:
     """Run a refutation / sensitivity check on the train partition.
 
+    Perturbs treatment labels or confounders and refits (native/EconML) or
+    invokes DoWhy refuters to surface instability relative to the original ATE.
+    Results are sensitivity disclosures — not proof of identification.
+
     Native backend
     --------------
     placebo_treatment, random_confounder — sklearn refit disclosures.
@@ -42,6 +46,30 @@ def refute_causal(
 
     Honesty: refutation is a sensitivity disclosure — not proof of
     identification. EDA never substitutes for CausalAssumptions.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing the train partition.
+    plan:
+        :class:`~buildml.causal.results.CausalPlan` from :func:`fit_causal`.
+    split_plan:
+        Split plan with train indices.
+    kind:
+        Refutation kind supported by the plan's backend.
+    random_state:
+        RNG seed for placebo shuffles and random confounder noise.
+
+    Returns
+    -------
+    CausalRefuteResult
+        Original vs refuted ATE, shift magnitude, and teaching disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is missing, ``kind`` is unsupported, or a native
+        placebo shuffle produces a degenerate treatment arm.
     """
     if plan is None:
         raise ValidationError("No CausalPlan. Call fit_causal first.")

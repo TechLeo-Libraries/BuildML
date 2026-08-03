@@ -22,14 +22,33 @@ def resolve_cluster_columns(
 ) -> tuple[list[str], bool, list[str]]:
     """Resolve numeric feature columns for clustering.
 
-    When ``prefer_reduce_components`` is True and a Session ``ReducePlan`` is
-    present with component columns still on the frame, those components are
-    preferred. This integrates with ``Session.reduce_dimensions`` rather than
-    forking a second PCA path.
+When ``prefer_reduce_components`` is True and a Session ``ReducePlan`` is
+present with component columns still on the frame, those components are
+preferred. This integrates with ``Session.reduce_dimensions`` rather than
+forking a second PCA path.
 
-    Returns
-    -------
-    columns, used_reduce_components, disclosures
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+frame:
+    Partition or full DataFrame slice used for this operation.
+columns:
+    Optional explicit feature column list; ``None`` auto-selects numerics.
+reduce_plan:
+    Optional preprocess reduce plan from Session.
+prefer_reduce_components:
+    Prefer reduced component columns when a reduce plan exists.
+
+Returns
+-------
+tuple[list[str], bool, list[str]]
+    Selected columns, whether reduce components were used, and disclosures.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     disclosures: list[str] = []
     protected = {
@@ -86,7 +105,27 @@ def resolve_cluster_columns(
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> Any:
-    """Build a float design matrix; refuse nulls with a precise message."""
+    """Build a float design matrix; refuse nulls with a precise message.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+frame:
+    Partition or full DataFrame slice used for this operation.
+columns:
+    Optional explicit feature column list; ``None`` auto-selects numerics.
+
+Returns
+-------
+Any
+    Adapter-specific estimator or model object.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     import numpy as np
 
     block = frame[list(columns)]

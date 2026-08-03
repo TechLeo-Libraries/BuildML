@@ -29,12 +29,54 @@ __all__ = [
 
 
 def train_partition_frame(dataset: Dataset, split_plan: SplitPlan) -> pd.DataFrame:
+    """Return the Session train partition as a pandas DataFrame.
+
+    Thin wrapper around :func:`buildml.data.splits.frame_for_partition` for
+    ranker fit paths that must never read holdout rows.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing ranking judgment rows.
+    split_plan:
+        Split plan defining the train index set.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of rows belonging to the train partition.
+    """
     return frame_for_partition(dataset, split_plan, "train")
 
 
 def partition_frame(
     dataset: Dataset, split_plan: SplitPlan | None, partition: str
 ) -> pd.DataFrame:
+    """Return a named data partition for ranker evaluate/rank paths.
+
+    Supports ``all`` for the full frame or train/test/validation slices from
+    a Session split plan.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing ranking judgment rows.
+    split_plan:
+        Split plan defining partition indices; required unless ``partition``
+        is ``all``.
+    partition:
+        Partition name such as ``train``, ``test``, ``validation``, or ``all``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Rows belonging to the requested partition.
+
+    Raises
+    ------
+    ValidationError
+        When a named partition is requested but ``split_plan`` is ``None``.
+    """
     if partition == "all":
         return dataset.frame.copy()
     if split_plan is None:
@@ -52,18 +94,40 @@ def resolve_ranking_columns(
     relevance_column: str | None,
     feature_columns: Sequence[str] | None,
 ) -> tuple[str, str, str, tuple[str, ...], list[str]]:
-    """Resolve query / item / relevance / feature columns for tabular LTR.
+    """Resolve query, item, relevance, and feature columns for tabular LTR.
 
-    Conventions
-    -----------
-    - ``query_column`` / ``item_column`` are explicit kwargs (entity ids).
-      Prefer ``role='group'`` on the query id so ``group_split`` can isolate
-      queries across partitions.
-    - ``relevance_column`` defaults to the Session target role (graded or
-      binary relevance labels).
-    - Feature columns default to all ``feature``-role numeric columns.
-    - This path is **tabular learning-to-rank**, not RAG retrieve/generate
-      and not Session recommenders (user–item CF).
+    Validates explicit query and item ids, defaults relevance to the Session
+    target role, and selects numeric feature-role columns when not provided.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with judgment rows and column roles.
+    query_column:
+        Query id column; required and not inferred from roles.
+    item_column:
+        Item id column; required and not inferred from roles.
+    relevance_column:
+        Graded or binary relevance labels; defaults to Session target.
+    feature_columns:
+        Numeric feature columns; defaults to numeric ``feature`` roles.
+
+    Returns
+    -------
+    tuple[str, str, str, tuple[str, ...], list[str]]
+        Query column, item column, relevance column, feature tuple, and honesty
+        disclosure strings.
+
+    Raises
+    ------
+    ValidationError
+        When required columns are missing, non-numeric, or overlap reserved ids.
+
+    Notes
+    -----
+    Prefer ``role='group'`` on the query id so ``group_split`` can isolate
+    queries across partitions. This path is tabular learning-to-rank, not RAG
+    retrieve/generate and not Session recommenders (user–item CF).
     """
     frame = dataset.frame
     disclosures: list[str] = []
@@ -176,12 +240,44 @@ def resolve_ranking_columns(
 
 
 def feature_matrix(frame: pd.DataFrame, feature_columns: Sequence[str]) -> np.ndarray:
+    """Materialize a numeric feature matrix from a judgment frame.
+
+    Returns a zero-row matrix with the correct column count when the frame is
+    empty so downstream rankers can handle edge cases uniformly.
+
+    Parameters
+    ----------
+    frame:
+        Judgment rows containing the requested feature columns.
+    feature_columns:
+        Numeric columns to extract in declaration order.
+
+    Returns
+    -------
+    numpy.ndarray
+        ``(n_rows, n_features)`` float array of feature values.
+    """
     if frame.empty:
         return np.zeros((0, len(feature_columns)), dtype=float)
     return frame.loc[:, list(feature_columns)].to_numpy(dtype=float)
 
 
 def standardize_fit(X: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Fit per-feature z-score standardization on train rows only.
+
+    Near-zero standard deviations are clamped to 1.0 so constant features do
+    not explode at apply time.
+
+    Parameters
+    ----------
+    X:
+        Train feature matrix of shape ``(n_rows, n_features)``.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]
+        Standardized matrix, per-feature means, and per-feature scales.
+    """
     if X.size == 0:
         return X.copy(), np.zeros(0), np.ones(0)
     mean = np.mean(X, axis=0)
@@ -193,6 +289,25 @@ def standardize_fit(X: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 def standardize_apply(
     X: np.ndarray, mean: np.ndarray, scale: np.ndarray
 ) -> np.ndarray:
+    """Apply train-fitted z-score standardization to new rows.
+
+    Uses the mean and scale vectors stored on a frozen
+    :class:`~buildml.ranking.results.RankerPlan`.
+
+    Parameters
+    ----------
+    X:
+        Feature matrix to transform.
+    mean:
+        Per-feature means from :func:`standardize_fit`.
+    scale:
+        Per-feature scales from :func:`standardize_fit`.
+
+    Returns
+    -------
+    numpy.ndarray
+        Standardized feature matrix with the same shape as ``X``.
+    """
     if X.size == 0:
         return X.copy()
     return (X - mean) / scale
@@ -203,7 +318,26 @@ def query_group_sizes(
     y: np.ndarray,
     groups: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[int]]:
-    """Stable-sort rows by query group and return contiguous group sizes."""
+    """Stable-sort rows by query group and return contiguous group sizes.
+
+    Industry GBDT rankers require rows grouped by query with monotonic group
+    size arrays; this helper prepares that layout from arbitrary row order.
+
+    Parameters
+    ----------
+    X:
+        Feature matrix aligned with ``y`` and ``groups``.
+    y:
+        Relevance labels aligned with ``groups``.
+    groups:
+        Query id array with one entry per row.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, list[int]]
+        Sorted features, sorted labels, sorted groups, and contiguous group
+        sizes for LightGBM/XGBoost training APIs.
+    """
     if len(groups) == 0:
         return X.copy(), y.copy(), groups.copy(), []
     order = np.argsort(groups, kind="mergesort")
@@ -222,7 +356,26 @@ def disclose_query_split(
     split_plan: SplitPlan,
     query_column: str,
 ) -> tuple[bool, list[str], list[str]]:
-    """Disclose whether queries are disjoint across partitions."""
+    """Disclose whether queries are disjoint across train and holdout partitions.
+
+    Compares query id sets across train, validation, and test indices and
+    records warnings when splits are not query-grouped or overlap exists.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing the query id column.
+    split_plan:
+        Split plan whose indices define partition membership.
+    query_column:
+        Query id column used for group-split honesty checks.
+
+    Returns
+    -------
+    tuple[bool, list[str], list[str]]
+        ``True`` when ``split_plan.kind=='group'`` with disjoint queries,
+        disclosure strings, and warning strings.
+    """
     disclosures: list[str] = []
     warnings: list[str] = []
     frame = dataset.frame
@@ -274,7 +427,23 @@ def disclose_query_split(
 
 
 def ndcg_at_k_graded(relevances_in_rank_order: Sequence[float], k: int) -> float:
-    """Graded nDCG@K (gain = 2^rel - 1)."""
+    """Compute graded nDCG@K with gain ``2^rel - 1``.
+
+    Expects relevances already sorted by descending ranker score within a
+    single query. Returns ``0.0`` when the ideal DCG is zero.
+
+    Parameters
+    ----------
+    relevances_in_rank_order:
+        Graded relevance labels in rank order (best item first).
+    k:
+        Cutoff for discounted cumulative gain.
+
+    Returns
+    -------
+    float
+        Normalized discounted cumulative gain in ``[0, 1]``.
+    """
     if k <= 0:
         return 0.0
     rels = [float(r) for r in relevances_in_rank_order[:k]]
@@ -302,7 +471,25 @@ def average_precision_at_k(
     *,
     threshold: float = 0.0,
 ) -> float:
-    """AP@K with binary relevance = grade > threshold."""
+    """Compute average precision at K with binary relevance.
+
+    Treats an item as relevant when its graded label exceeds ``threshold``.
+    Uses the standard AP formula averaged over relevant items in the top-K list.
+
+    Parameters
+    ----------
+    relevances_in_rank_order:
+        Graded relevance labels in rank order (best item first).
+    k:
+        Cutoff for precision accumulation.
+    threshold:
+        Grades strictly above this value count as relevant.
+
+    Returns
+    -------
+    float
+        Average precision at K for the ranked list.
+    """
     if k <= 0:
         return 0.0
     top = [float(r) for r in relevances_in_rank_order[:k]]
@@ -326,7 +513,25 @@ def mrr_at_k(
     *,
     threshold: float = 0.0,
 ) -> float:
-    """MRR@K: reciprocal rank of first relevant item (grade > threshold)."""
+    """Compute mean reciprocal rank at K for a single query.
+
+    Returns the reciprocal rank of the first item whose graded label exceeds
+    ``threshold``, or ``0.0`` when no relevant item appears in the top-K list.
+
+    Parameters
+    ----------
+    relevances_in_rank_order:
+        Graded relevance labels in rank order (best item first).
+    k:
+        Cutoff for the reciprocal-rank search.
+    threshold:
+        Grades strictly above this value count as relevant.
+
+    Returns
+    -------
+    float
+        Reciprocal rank of the first relevant item, or ``0.0``.
+    """
     if k <= 0:
         return 0.0
     for rank, rel in enumerate(relevances_in_rank_order[:k], start=1):
@@ -336,6 +541,21 @@ def mrr_at_k(
 
 
 def mean_metric_over_queries(values: Sequence[float]) -> float:
+    """Macro-average a per-query metric list for holdout evaluation.
+
+    Returns ``0.0`` for an empty input so callers can safely aggregate skipped
+    query lists without extra guards.
+
+    Parameters
+    ----------
+    values:
+        Per-query metric values to average.
+
+    Returns
+    -------
+    float
+        Arithmetic mean of ``values``, or ``0.0`` when empty.
+    """
     if not values:
         return 0.0
     return float(np.mean(list(values)))

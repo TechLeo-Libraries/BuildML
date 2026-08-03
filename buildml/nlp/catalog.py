@@ -136,9 +136,19 @@ def nlp_capability_matrix() -> dict[str, Any]:
                 ),
             },
         },
+        "task_availability_disclosure": (
+            "Task 'available' means at least one honest path works without optional "
+            "extras; see backends_available for per-backend gating that matches "
+            "runtime MissingExtraError refusal."
+        ),
         "tasks": {
             "text_classification": {
                 "available": True,
+                "backends_available": {
+                    "sklearn": True,
+                    "embedding": embedding_ready,
+                    "transformer": transformer_ready,
+                },
                 "kind": "single-label document classification",
                 "metrics": [
                     "accuracy",
@@ -156,6 +166,13 @@ def nlp_capability_matrix() -> dict[str, Any]:
                 "available": True,
                 "kind": "linear coefficient x feature value per token",
                 "requires_backend": "sklearn with tfidf/count (invertible vocabulary)",
+                "backends_available": {
+                    "sklearn_tfidf": True,
+                    "sklearn_count": True,
+                    "sklearn_hashing": False,
+                    "embedding": False,
+                    "transformer": False,
+                },
                 "notes": (
                     "Exact for linear heads; not a substitute for SHAP/LIME on "
                     "non-linear models."
@@ -177,6 +194,11 @@ def nlp_capability_matrix() -> dict[str, Any]:
             },
             "sentiment": {
                 "available": True,
+                "backends_available": {
+                    "lexicon": True,
+                    "supervised": True,
+                    "transformer": transformer_ready,
+                },
                 "backends": list(SENTIMENT_BACKENDS),
                 "lexicon_terms": len(SENTIMENT_LEXICON),
                 "notes": (
@@ -187,6 +209,10 @@ def nlp_capability_matrix() -> dict[str, Any]:
             },
             "entity_extraction": {
                 "available": True,
+                "backends_available": {
+                    "rules": True,
+                    "spacy": spacy_model_available(),
+                },
                 "backends": list(ENTITY_BACKENDS),
                 "rule_labels": list(RULE_ENTITY_LABELS),
                 "spacy_model_present": spacy_model_available(),
@@ -208,6 +234,10 @@ def nlp_capability_matrix() -> dict[str, Any]:
             },
             "language_detection": {
                 "available": True,
+                "backends_available": {
+                    "native": True,
+                    "langdetect": langdetect_available(),
+                },
                 "backends": list(LANGUAGE_BACKENDS),
                 "native_languages": list(SUPPORTED_STOPWORD_LANGUAGES),
                 "notes": (

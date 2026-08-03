@@ -27,7 +27,17 @@ INDUSTRY_METHODS = (
 
 
 def metalearning_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for meta-learning backends and methods."""
+    """Build the honest capability matrix for meta-learning backends and methods.
+
+    Reports sklearn, torch, and industry paths, episodic protocol fields,
+    evaluation metrics, install hints, and explicit non-goals for teaching
+    overlays and Session walkthroughs.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, episodic protocol, evaluation rules, and defaults.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -128,7 +138,21 @@ def list_metalearning_methods(
     *,
     backend: MetaLearningBackendName | None = None,
 ) -> list[str]:
-    """List meta-learning methods for a backend (or all available)."""
+    """List meta-learning method names available for one or all backends.
+
+    Filters to backends that are actually installed when ``backend`` is omitted.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend name; when set, returns methods only if that backend
+        is available.
+
+    Returns
+    -------
+    list[str]
+        Sorted unique method identifiers (e.g. ``prototypical``, ``maml``).
+    """
     matrix = metalearning_capability_matrix()
     if backend is not None:
         entry = matrix["backends"].get(backend)
@@ -146,6 +170,21 @@ def list_metalearning_methods(
 
 
 def backend_available(name: MetaLearningBackendName) -> bool:
+    """Return whether a meta-learning backend is installed and usable.
+
+    Consults :func:`metalearning_capability_matrix` rather than probing imports
+    directly so availability matches teaching disclosures.
+
+    Parameters
+    ----------
+    name:
+        Backend identifier: ``sklearn``, ``torch``, or ``industry``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the capability matrix marks the backend as available.
+    """
     entry = metalearning_capability_matrix()["backends"].get(name)
     if entry is None:
         return False
@@ -157,7 +196,30 @@ def resolve_backend_method(
     backend: MetaLearningBackendName | None,
     method: str,
 ) -> tuple[MetaLearningBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+    Normalizes method aliases, infers backend when omitted, and raises when the
+    requested pair requires a missing extra.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend override; when ``None``, inferred from ``method``.
+    method:
+        Meta-learning method name (case-insensitive, hyphens normalized).
+
+    Returns
+    -------
+    tuple[MetaLearningBackendName, str]
+        Resolved ``(backend, method)`` pair ready for fit routing.
+
+    Raises
+    ------
+    ValidationError
+        When the method is unknown or incompatible with the backend.
+    MissingExtraError
+        When the resolved backend requires an optional extra that is not installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     method_key = str(method).lower().replace("-", "_")

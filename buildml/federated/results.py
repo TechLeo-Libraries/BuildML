@@ -41,6 +41,16 @@ class FederatedPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the federated plan for bundles and history logs.
+
+        Captures backend, method, client partition contract, and round history
+        without embedding full estimator weight arrays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, and honesty disclosures.
+        """
         return {
             "backend": self.backend,
             "method": self.method,
@@ -88,6 +98,16 @@ class FederatedFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise federated fit output for history logs.
+
+        Records backend, method, client counts, and round metadata after
+        train-only federated simulation completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fit metadata, round history summary, and honesty disclosures.
+        """
         return {
             "backend": self.backend,
             "method": self.method,
@@ -115,7 +135,25 @@ def export_round_history(
     *,
     include_disclosures: bool = False,
 ) -> Path:
-    """Export ``round_history`` (and optional disclosures) to JSON."""
+    """Export ``round_history`` (and optional disclosures) to JSON.
+
+    Writes a compact audit file for teaching overlays and external analysis
+    without serialising the full estimator object.
+
+    Parameters
+    ----------
+    plan:
+        Fitted :class:`~buildml.federated.results.FederatedPlan`.
+    path:
+        Destination JSON file path (parent directories are created).
+    include_disclosures:
+        When ``True``, embed plan disclosures and warnings in the payload.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved output file path.
+    """
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     payload: dict[str, Any] = {
@@ -150,6 +188,16 @@ class FederatedEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout federated evaluation metrics.
+
+        Produced by :func:`buildml.federated.evaluate.evaluate_federated` after
+        scoring a validation or test partition.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, aggregate metrics, per-client metrics, and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -180,6 +228,15 @@ class FederatedPredictResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise federated prediction output without listing every value.
+
+        Records partition, row counts, and prediction totals for history logs.
+
+        Returns
+        -------
+        dict[str, Any]
+            Prediction metadata and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,

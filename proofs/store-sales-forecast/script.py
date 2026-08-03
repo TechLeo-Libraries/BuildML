@@ -113,8 +113,12 @@ def main() -> None:
                 "Test evaluate_forecast after model locked",
             ],
             "industry_comparison": {
-                "status": "stub",
-                "note": "Tier C: statsmodels SARIMAX / seasonal_naive on same time_split",
+                "status": "filled",
+                "note": (
+                    "Tier C baseline_industry.py: seasonal naive + optional "
+                    "statsmodels SARIMAX on the same time_split; run script then "
+                    "baseline_industry.py for results/comparison.json."
+                ),
             },
             "limitations": [
                 "Synthetic retail series; no multi-store hierarchy",

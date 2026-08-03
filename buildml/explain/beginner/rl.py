@@ -513,6 +513,129 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         terms=("reinforcement learning", "discretization", "curse of dimensionality", "policy"),
         difficulty=ADVANCED,
     ),
+    _layer(
+        "rl-monte-carlo-returns",
+        plain=(
+            "Monte Carlo methods wait until an episode ends, then credit each action with the "
+            "actual return that followed. BuildML's gym_reinforce path uses these full-episode "
+            "returns — unbiased but noisy compared with bootstrapped TD or actor-critic updates."
+        ),
+        analogy=(
+            "Judge each chess move only after you see whether the game was won or lost — no "
+            "guessing mid-game from a value table."
+        ),
+        steps=(
+            "Install buildml[rl] so Gymnasium env loops are available.",
+            "fit_rl(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=...).",
+            "Plot mean_return over episodes — expect high variance.",
+            "Compare sample efficiency against tabular_q or gym_sb3 on the same env and seed.",
+        ),
+        use=(
+            "Teaching policy gradients without introducing a value baseline first.",
+            "Small discrete envs where full episodes are cheap to roll out.",
+        ),
+        avoid=(
+            "Expecting sample efficiency matching PPO or DQN on the same timestep budget.",
+            "Calling REINFORCE actor-critic — it has no critic network by default.",
+        ),
+        myths=(
+            ("REINFORCE is actor-critic.", "It is Monte Carlo policy gradient without a critic."),
+            ("Monte Carlo removes variance.", "It is unbiased but often high-variance versus TD."),
+        ),
+        example=(
+            "session.fit_rl(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=300)",
+            "session.evaluate_rl()",
+        ),
+        check=(
+            "Is mean_return trending up over episodes?",
+            "Did you match seeds when comparing to tabular_q or gym_sb3?",
+        ),
+        tools=("fit_rl", "evaluate_rl", "rl_capability_matrix"),
+        terms=("reinforcement learning", "policy gradient", "agent"),
+        difficulty=ADVANCED,
+    ),
+    _layer(
+        "rl-n-step-td",
+        plain=(
+            "n-step TD blends several immediate rewards with a bootstrap value from your table. "
+            "Q-learning and SARSA in tabular_q are the one-step case; increasing n moves targets "
+            "toward full Monte Carlo returns while keeping some bootstrapping bias."
+        ),
+        analogy=(
+            "Look a few steps ahead with real outcomes, then estimate the rest from your current "
+            "scoreboard instead of waiting for the entire game to finish."
+        ),
+        steps=(
+            "fit_rl(mode='tabular_q', algorithm='q_learning' or 'sarsa').",
+            "Inspect state_coverage and mean_abs_td_error in fit results.",
+            "Compare mean_return against the other algorithm on CliffWalking with the same seed.",
+            "Use rl-n-step-td as the bridge when reading DQN target-network papers.",
+        ),
+        use=(
+            "Understanding bootstrapping before reading DQN or PPO implementations.",
+            "Teaching on-policy vs off-policy control with inspectable Q tables.",
+        ),
+        avoid=(
+            "Calling tabular_q offline RL — it still interacts with the env online.",
+            "Cranking n_bins until the state cap error instead of switching to function approximation.",
+        ),
+        myths=(
+            ("Q-learning and SARSA must converge to the same policy.", "On-policy vs off-policy targets differ."),
+            ("One-step TD is always lower variance than Monte Carlo.", "Bias-variance trade-off depends on n and noise."),
+        ),
+        example=(
+            "session.fit_rl(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v0')",
+            "session.evaluate_rl()",
+        ),
+        check=(
+            "Does state_coverage show enough repeated (state, action) visits?",
+            "Did SARSA and Q-learning use the same epsilon schedule for a fair compare?",
+        ),
+        tools=("fit_rl", "evaluate_rl"),
+        terms=("reinforcement learning", "policy", "reward"),
+        difficulty=ADVANCED,
+    ),
+    _layer(
+        "rl-actor-critic",
+        plain=(
+            "Actor-critic learns a policy (actor) and a value estimate (critic) together. The critic "
+            "smooths learning versus raw Monte Carlo returns — SB3 PPO and A2C expose this industry "
+            "path when buildml[rl-industry] is installed."
+        ),
+        analogy=(
+            "A player (actor) chooses moves while a coach (critic) estimates how promising the "
+            "position looks — smoother feedback than waiting for the final score alone."
+        ),
+        steps=(
+            "pip install 'buildml[rl-industry]'.",
+            "fit_rl(mode='gym_sb3', algorithm='ppo' or 'a2c', total_timesteps=...).",
+            "evaluate_rl and read mean_return with offline=False disclosures.",
+            "Contrast against gym_reinforce (MC) and tabular_q on the same env.",
+        ),
+        use=(
+            "Industry teaching depth on CartPole-class discrete envs.",
+            "Connecting REINFORCE and DQN ideas via a shared actor-critic framing.",
+        ),
+        avoid=(
+            "Claiming SB3 CartPole training equals robotics or MuJoCo deployment.",
+            "Confusing actor-critic online returns with bandit offline IPS metrics.",
+        ),
+        myths=(
+            ("Actor-critic removes exploration noise.", "It reduces variance; exploration policy remains."),
+            ("PPO is unrelated to REINFORCE.", "Both are policy-gradient families with different variance control."),
+        ),
+        example=(
+            "session.fit_rl(mode='gym_sb3', algorithm='ppo', total_timesteps=25000)",
+            "session.evaluate_rl()",
+        ),
+        check=(
+            "Did you read rl_capability_matrix() for backend defaults?",
+            "Does mean_return beat REINFORCE with matched seeds and timesteps?",
+        ),
+        tools=("fit_rl", "evaluate_rl", "rl_capability_matrix"),
+        terms=("reinforcement learning", "policy gradient", "extra"),
+        difficulty=ADVANCED,
+    ),
 )
 
 __all__ = ["RL_BEGINNER"]

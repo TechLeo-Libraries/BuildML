@@ -49,6 +49,15 @@ class TdaConfig:
     mapper: bool = False
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise TDA configuration knobs for plans and history records.
+
+        Every dataclass field is copied into a plain dict for JSON export.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plain mapping of every :class:`TdaConfig` field.
+        """
         return {
             "backend": self.backend,
             "vectorization": self.vectorization,

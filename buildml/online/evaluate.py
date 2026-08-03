@@ -37,6 +37,29 @@ def evaluate_online(
     after streaming train chunks. When ``drift_check=True``, River ADWIN /
     Page-Hinkley detectors (industry backend) or native mean-shift notes are
     surfaced without updating the model.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features and target.
+    plan:
+        Fitted :class:`~buildml.online.results.OnlinePlan`.
+    split_plan:
+        Split plan; required unless ``partition='all'``.
+    partition:
+        Holdout partition to score (``validation``, ``test``, ``train``, or ``all``).
+    drift_check:
+        When ``True``, run drift disclosure on the holdout stream.
+
+    Returns
+    -------
+    OnlineEvalResult
+        Holdout metrics, drift flags, and disclosure fields.
+
+    Raises
+    ------
+    ValidationError
+        When plan, partition, or column preconditions are invalid.
     """
     if plan is None:
         raise ValidationError("No OnlinePlan. Call fit_online first.")

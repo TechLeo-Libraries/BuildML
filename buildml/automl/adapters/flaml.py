@@ -39,6 +39,42 @@ def run_flaml_adapter(
 
     FLAML handles internal model selection and preprocessing. BuildML fold-local
     PreprocessRecipe search is bypassed — disclosures state this explicitly.
+    Session test never enters fit or selection scoring.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features and a single target column.
+    split_plan:
+        Train/validation/test split; only train rows are passed to FLAML.
+    task:
+        ``classification``, ``regression``, or ``auto`` to infer from the target.
+    selection:
+        ``cv`` (train-only internal scoring), or ``validation`` to re-rank on
+        the Session validation partition. ``nested`` is not supported.
+    ranking_metric:
+        Metric passed to FLAML; converted to FLAML loss orientation internally.
+    time_budget:
+        Wall-clock seconds for FLAML fit; overrides ``budget.max_time_seconds``.
+    budget:
+        Optional :class:`~buildml.automl.types.AutoMLBudget`; defaults when omitted.
+    random_state:
+        Seed for FLAML reproducibility.
+    refit:
+        When True, wrap the best model in a classical FitResult after search.
+
+    Returns
+    -------
+    tuple[AutoMLPlan, AutoMLResult, FitResult | None]
+        Train-selected plan, ranked trial summary, and optional FitResult.
+
+    Raises
+    ------
+    ValidationError
+        When ``selection='nested'``, validation partition is missing, or FLAML
+        finishes without a fitted model.
+    MissingExtraError
+        When flaml is not installed.
     """
     require_flaml(feature="FLAML AutoML backend")
     from flaml import AutoML as FlamlAutoML
@@ -228,6 +264,18 @@ class _FlamlSklearnWrapper:
     """
 
     def __init__(self, automl: Any, *, feature_cols: list[str]) -> None:
+        """Store the fitted FLAML AutoML object and feature column list.
+
+        Keeps the full FLAML ``AutoML`` instance (not ``automl.model`` alone)
+        so categorical transforms run on predict.
+
+        Parameters
+        ----------
+        automl:
+            Fitted FLAML ``AutoML`` instance (full object, not ``automl.model``).
+        feature_cols:
+            Feature columns used at fit time for column subsetting at predict.
+        """
         self._automl = automl
         self._feature_cols = list(feature_cols)
         classes = getattr(automl, "classes_", None)
@@ -236,14 +284,67 @@ class _FlamlSklearnWrapper:
         self.classes_ = classes
 
     def fit(self, X: pd.DataFrame, y: Any = None, **kwargs: Any) -> _FlamlSklearnWrapper:
+        """No-op fit for sklearn compatibility; FLAML is already trained.
+
+        FLAML fit happens in :func:`run_flaml_adapter`; this method exists so
+        sklearn pipelines and Session wrappers accept the object.
+
+        Parameters
+        ----------
+        X:
+            Ignored; FLAML was fit externally on train data.
+        y:
+            Ignored.
+        **kwargs:
+            Ignored.
+
+        Returns
+        -------
+        _FlamlSklearnWrapper
+            ``self`` for sklearn pipeline compatibility.
+        """
         del X, y, kwargs
         return self
 
     def predict(self, X: pd.DataFrame) -> Any:
+        """Predict labels using FLAML's full predict path.
+
+        Uses ``AutoML.predict`` so internal categorical transforms are applied.
+
+        Parameters
+        ----------
+        X:
+            Feature frame; subset to ``feature_cols`` when all are present.
+
+        Returns
+        -------
+        array-like
+            Predictions from ``AutoML.predict``.
+        """
         frame = X[self._feature_cols] if all(c in X.columns for c in self._feature_cols) else X
         return self._automl.predict(frame)
 
     def predict_proba(self, X: pd.DataFrame) -> Any:
+        """Predict class probabilities when FLAML exposes predict_proba.
+
+        Uses FLAML's full predict path with optional column subsetting so
+        string categoricals survive modern XGBoost backends.
+
+        Parameters
+        ----------
+        X:
+            Feature frame; subset to ``feature_cols`` when all are present.
+
+        Returns
+        -------
+        array-like
+            Probability matrix from ``AutoML.predict_proba``.
+
+        Raises
+        ------
+        AttributeError
+            When the FLAML model does not expose ``predict_proba``.
+        """
         frame = X[self._feature_cols] if all(c in X.columns for c in self._feature_cols) else X
         if hasattr(self._automl, "predict_proba"):
             return self._automl.predict_proba(frame)

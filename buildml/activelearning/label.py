@@ -30,18 +30,42 @@ def label_rows(
 ) -> tuple[Dataset, ActiveLearningPlan, ActiveLearningLabelResult, Any | None]:
     """Write user labels onto train-pool rows and optionally refit.
 
+    Labels must come from the user — BuildML core never invents an oracle.
+    Only train-pool rows that are currently unlabeled (or overwrite with
+    disclosure) may be labeled.
+
     Parameters
     ----------
+    dataset:
+        BuildML dataset whose target column will be updated in-place logically.
+    plan:
+        Fitted :class:`~buildml.activelearning.results.ActiveLearningPlan`.
+    split_plan:
+        Split plan restricting labeling to the train partition.
     indices:
         Dataset-level indices previously suggested (must be in the train pool).
     labels:
         Human-provided labels aligned 1:1 with ``indices``.
     refit:
-        When None, uses ``plan.config['auto_refit']`` (default True).
+        When ``None``, uses ``plan.config['auto_refit']`` (default ``True``).
+    reduce_plan:
+        Optional preprocess reduce plan forwarded to refit.
 
     Returns
     -------
-    new_dataset, updated_plan, label_result, fit_result_or_none
+    new_dataset:
+        Dataset copy with updated target values on labeled indices.
+    updated_plan:
+        Plan with refreshed pool bookkeeping and optional refit.
+    label_result:
+        Serializable summary of the labeling round.
+    fit_result_or_none:
+        Fit result when ``refit=True``; otherwise ``None``.
+
+    Raises
+    ------
+    ValidationError
+        When indices are outside train, budget is exceeded, or labels are null.
     """
     if plan is None:
         raise ValidationError("No ActiveLearningPlan. Call fit_active_learner first.")

@@ -53,8 +53,38 @@ def evaluate_forecast(
 ) -> ForecastEvalResult:
     """Score a train-fitted ForecastPlan on a holdout partition.
 
-    Strategies
+    Applies leakage-safe rolling one-step, fixed-origin, or rolling-origin
+    strategies and reports MAE, RMSE, and MAPE with honesty disclosures.
+
+    Parameters
     ----------
+    dataset:
+        Session dataset containing the scored partition rows.
+    plan:
+        Train-fitted :class:`ForecastPlan` to evaluate without refit.
+    split_plan:
+        Temporal split defining validation or test membership.
+    partition:
+        Holdout partition name, ``validation`` or ``test``.
+    strategy:
+        Evaluation protocol: ``rolling_one_step``, ``origin``, or
+        ``rolling_origin``.
+
+    Returns
+    -------
+    ForecastEvalResult
+        Metrics, aligned predictions/actuals, and strategy disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When ``split_plan`` is missing, the partition is empty or invalid,
+        holdout exog contains nulls, or the strategy is unsupported.
+
+    Notes
+    -----
+    Strategies
+    ^^^^^^^^^
     rolling_one_step:
         Chronological walk: at each holdout step, predict one step using all
         prior *actual* targets (train + earlier holdout). Never uses future
@@ -69,7 +99,7 @@ def evaluate_forecast(
         actuals). Reports pooled MAE/RMSE/MAPE across windows.
 
     Metrics
-    -------
+    ^^^^^^^
     MAE, RMSE, and MAPE (MAPE undefined / NaN when all actuals are ~0).
     MAPE is scale-sensitive and unstable near zero — disclosed limitation.
     """

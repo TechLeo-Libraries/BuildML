@@ -50,6 +50,46 @@ def fit_recommender_op(
 ):
     """Fit a recommender on Session train interactions only.
 
+    Delegates to :func:`buildml.recommenders.fit.fit_recommender`, stores the
+    :class:`~buildml.recommenders.results.RecommenderPlan` on Session, and
+    records the fit. Follow with :func:`recommend_op` or
+    :func:`evaluate_recommender_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    method:
+        Optional recommender method override.
+    backend:
+        Optional backend override (sklearn, implicit, lightfm).
+    user_column:
+        User identifier column.
+    item_column:
+        Item identifier column.
+    rating_column:
+        Rating or interaction strength column.
+    feedback:
+        Feedback mode (``explicit`` or ``implicit``).
+    n_neighbors:
+        Neighborhood size for kNN-style recommenders.
+    n_factors:
+        Latent factor dimension for matrix-factorization methods.
+    min_rating:
+        Optional minimum rating threshold for explicit feedback.
+    item_feature_columns:
+        Optional item-side content feature columns.
+    user_feature_columns:
+        Optional user-side content feature columns.
+    cold_start:
+        Cold-start policy for unseen users/items.
+    random_state:
+        Seed for stochastic training steps.
+    n_iterations:
+        Iteration count for ALS-style trainers.
+    lightfm_epochs:
+        Epoch count for LightFM backend.
+
     Notes
     -----
     **Leakage:** Requires a split. Similarities / factors / content profiles
@@ -121,7 +161,30 @@ def recommend_op(
     k: int = 10,
     exclude_train_items: bool = True,
 ):
-    """Top-K recommendations for partition users or an explicit user id list."""
+    """Top-K recommendations for partition users or an explicit user id list.
+
+    Delegates to :func:`buildml.recommenders.recommend.recommend` using the
+    fitted plan. Defaults to the ``test`` partition when neither ``partition``
+    nor ``user_ids`` is supplied.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a recommender plan from :func:`fit_recommender_op`.
+    partition:
+        Optional partition whose users receive recommendations.
+    user_ids:
+        Optional explicit user identifiers to recommend for.
+    k:
+        Number of items to recommend per user.
+    exclude_train_items:
+        When True, exclude items seen in train interactions.
+
+    Raises
+    ------
+    ValidationError
+        When no recommender plan exists on the Session.
+    """
     plan = getattr(session, "_recommender_plan", None)
     if plan is None:
         raise ValidationError("No RecommenderPlan. Call fit_recommender(...) first.")
@@ -157,7 +220,25 @@ def evaluate_recommender_op(
     partition: PartitionOrAll = "test",
     k: int = 10,
 ):
-    """Evaluate ranking metrics on a holdout partition (frozen train plan)."""
+    """Evaluate ranking metrics on a holdout partition (frozen train plan).
+
+    Delegates to :func:`buildml.recommenders.evaluate.evaluate_recommender`
+    without refitting the recommender on holdout interactions.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a recommender plan from :func:`fit_recommender_op`.
+    partition:
+        Holdout partition for evaluation (``test`` by default).
+    k:
+        Cutoff k for ranking metrics.
+
+    Raises
+    ------
+    ValidationError
+        When no recommender plan exists on the Session.
+    """
     plan = getattr(session, "_recommender_plan", None)
     if plan is None:
         raise ValidationError("No RecommenderPlan. Call fit_recommender(...) first.")
@@ -179,6 +260,28 @@ def evaluate_recommender_op(
 
 
 def save_recommender_bundle_op(session, path: str | Path) -> Path:
+    """Persist the active RecommenderPlan as ``buildml.recommender_bundle.v1``.
+
+    Delegates to :func:`buildml.recommenders.checkpoint.save_recommender_bundle`.
+    Reload with :func:`load_recommender_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a recommender plan from :func:`fit_recommender_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no recommender plan exists on the Session.
+    """
     plan = getattr(session, "_recommender_plan", None)
     if plan is None:
         raise ValidationError("No RecommenderPlan. Call fit_recommender(...) first.")
@@ -198,6 +301,23 @@ def save_recommender_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_recommender_bundle_op(session, path: str | Path):
+    """Load a recommender bundle into this Session.
+
+    Delegates to :func:`buildml.recommenders.checkpoint.load_recommender_bundle`
+    and clears prior fit/eval/recommend results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded recommender plan.
+    path:
+        Path to a ``buildml.recommender_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with recommender plan attached for chaining.
+    """
     plan = load_recommender_bundle(path)
     session._recommender_plan = plan
     session._recommender_fit_result = None

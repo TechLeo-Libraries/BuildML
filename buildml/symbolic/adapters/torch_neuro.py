@@ -29,6 +29,28 @@ class TabularConceptBottleneck:
     n_features_: int = 0
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> TabularConceptBottleneck:
+        """Train the concept-bottleneck MLP on numeric tabular features.
+
+        Learns sigmoid concept activations and a linear head for classification
+        or regression on Session train only.
+
+        Parameters
+        ----------
+        x:
+            Feature matrix shaped ``(n_samples, n_features)``.
+        y:
+            Target vector or class labels aligned with ``x``.
+
+        Returns
+        -------
+        TabularConceptBottleneck
+            Fitted estimator with ``module_`` and ``concept_module_`` populated.
+
+        Raises
+        ------
+        ValidationError
+            When classification has fewer than two classes.
+        """
         torch = require_torch_symbolic()
         x_arr = np.asarray(x, dtype=np.float32)
         y_arr = np.asarray(y)
@@ -78,6 +100,22 @@ class TabularConceptBottleneck:
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Return class labels or regression values for ``x``.
+
+        Runs the fitted concept-bottleneck module in eval mode and decodes
+        logits back to original class labels when needed.
+
+        Parameters
+        ----------
+        x:
+            Feature matrix shaped ``(n_samples, n_features)``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Decoded class labels for classification or float predictions for
+            regression.
+        """
         torch = require_torch_symbolic()
         self.module_.eval()
         with torch.no_grad():
@@ -89,6 +127,23 @@ class TabularConceptBottleneck:
             return out.squeeze(-1).cpu().numpy()
 
     def score(self, x: np.ndarray, y: np.ndarray) -> float:
+        """Return accuracy for classification or R² for regression on ``x``, ``y``.
+
+        Convenience metric for train reporting and neuro-symbolic fit
+        disclosures on the concept-bottleneck base.
+
+        Parameters
+        ----------
+        x:
+            Feature matrix.
+        y:
+            Ground-truth targets aligned with ``x``.
+
+        Returns
+        -------
+        float
+            Accuracy (classification) or R² (regression).
+        """
         pred = self.predict(x)
         if self.task == "classification":
             return float(np.mean(pred == y))
@@ -114,6 +169,23 @@ class TabularNeuralAdditive:
     n_features_: int = 0
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> TabularNeuralAdditive:
+        """Train the neural-additive model with one subnetwork per feature.
+
+        Sums per-feature contributions into a classification or regression head
+        on Session train only.
+
+        Parameters
+        ----------
+        x:
+            Feature matrix shaped ``(n_samples, n_features)``.
+        y:
+            Target vector or class labels aligned with ``x``.
+
+        Returns
+        -------
+        TabularNeuralAdditive
+            Fitted estimator with ``module_`` populated.
+        """
         torch = require_torch_symbolic()
         x_arr = np.asarray(x, dtype=np.float32)
         y_arr = np.asarray(y)
@@ -157,6 +229,22 @@ class TabularNeuralAdditive:
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Return class labels or regression values for ``x``.
+
+        Runs the fitted neural-additive module in eval mode and maps argmax
+        indices back to ``classes_`` for classification tasks.
+
+        Parameters
+        ----------
+        x:
+            Feature matrix shaped ``(n_samples, n_features)``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Decoded class labels for classification or float predictions for
+            regression.
+        """
         torch = require_torch_symbolic()
         self.module_.eval()
         device = next(self.module_.parameters()).device
@@ -168,6 +256,23 @@ class TabularNeuralAdditive:
             return out.squeeze(-1).cpu().numpy()
 
     def score(self, x: np.ndarray, y: np.ndarray) -> float:
+        """Return accuracy for classification or R² for regression on ``x``, ``y``.
+
+        Convenience metric for train reporting on the neural-additive base
+        estimator inside neuro-symbolic fit.
+
+        Parameters
+        ----------
+        x:
+            Feature matrix.
+        y:
+            Ground-truth targets aligned with ``x``.
+
+        Returns
+        -------
+        float
+            Accuracy (classification) or R² (regression).
+        """
         pred = self.predict(x)
         if self.task == "classification":
             return float(np.mean(pred == y))
@@ -185,6 +290,34 @@ def build_torch_neuro_estimator(
     epochs: int = 60,
     device: str = "cpu",
 ) -> Any:
+    """Construct a torch neuro-symbolic tabular estimator for fit routing.
+
+    Dispatches ``concept_bottleneck_lite`` and ``neural_additive_lite`` method
+    names from the neuro-symbolic catalog to concrete dataclass estimators.
+
+    Parameters
+    ----------
+    method:
+        Torch method key from :func:`buildml.symbolic.catalog.list_neuro_symbolic_methods`.
+    task:
+        ``classification`` or ``regression``.
+    random_state:
+        Seed forwarded to the estimator.
+    epochs:
+        Training epochs for the lite torch models.
+    device:
+        Torch device string such as ``cpu`` or ``cuda``.
+
+    Returns
+    -------
+    TabularConceptBottleneck or TabularNeuralAdditive
+        Unfitted estimator ready for ``fit`` on train features.
+
+    Raises
+    ------
+    ValidationError
+        When ``method`` is not a supported torch neuro-symbolic key.
+    """
     key = str(method).lower().replace("-", "_")
     if key == "concept_bottleneck_lite":
         return TabularConceptBottleneck(

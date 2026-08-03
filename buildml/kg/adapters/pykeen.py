@@ -86,7 +86,46 @@ def fit_pykeen(
     norm: KgNorm = "l1",
     random_state: int | None = 0,
 ) -> tuple[KgPlan, KgFitResult]:
-    """Fit a PyKEEN embedding model on Session train triples only."""
+    """Fit a PyKEEN embedding model on Session train triples only.
+
+    Materializes train triples into a PyKEEN factory, runs the pipeline with
+    disclosed negative sampling, and exports embeddings back into a :class:`KgPlan`.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with triple columns.
+    split_plan:
+        Split plan defining the train partition.
+    method:
+        ``transe``, ``distmult``, ``rotate``, or ``complex``.
+    head_column, relation_column, tail_column:
+        Explicit triple column names.
+    embedding_dim:
+        Latent dimension forwarded to PyKEEN.
+    epochs, batch_size, learning_rate:
+        PyKEEN training schedule controls.
+    margin:
+        Margin hyperparameter when supported by the model.
+    neg_ratio:
+        Negative sampling ratio disclosed on the fit result.
+    norm:
+        Translation norm label recorded on the plan (TransE-related).
+    random_state:
+        Seed forwarded to PyKEEN training.
+
+    Returns
+    -------
+    tuple[KgPlan, KgFitResult]
+        Fitted plan with exported numpy/complex embeddings and fit summary.
+
+    Raises
+    ------
+    ValidationError
+        When method is unknown, train partition is missing, or embedding export fails.
+    MissingExtraError
+        When pykeen or torch is not installed.
+    """
     require_pykeen(feature="PyKEEN KG backend")
     from pykeen.pipeline import pipeline
     from pykeen.triples import TriplesFactory

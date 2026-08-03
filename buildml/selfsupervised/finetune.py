@@ -41,6 +41,32 @@ def finetune_ssl_head(
 
     Unlabeled train targets (NaN by default) are skipped — not used as invented
     labels. Holdout partitions are not used during head fit.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with target column and SSL feature/text/image columns.
+    split_plan:
+        Split plan defining the train partition.
+    ssl_plan:
+        Train-fitted :class:`~buildml.selfsupervised.results.SelfSupervisedPlan`.
+    estimator:
+        Head classifier key (``logistic_regression`` or ``hist_gradient_boosting``).
+    random_state:
+        Seed forwarded to the sklearn head estimator.
+    unlabeled_marker:
+        Target value treated as unlabeled (default NaN).
+
+    Returns
+    -------
+    tuple[SSLHeadPlan, SSLHeadFitResult]
+        Fitted head plan and compact fit report.
+
+    Raises
+    ------
+    ValidationError
+        When the SSL plan is missing, labeled train rows are insufficient, or
+        required columns are absent.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

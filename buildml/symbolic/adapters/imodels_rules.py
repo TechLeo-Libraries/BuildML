@@ -25,7 +25,44 @@ def induce_imodels_rules(
     class_names: tuple[Any, ...] | None = None,
     max_depth: int = 3,
 ) -> tuple[RuleKnowledgeBase, Any]:
-    """Fit imodels interpretable model and export rules."""
+    """Fit imodels interpretable model and export rules into BuildML objects.
+
+    Trains RuleFit or BoostedRules on Session train, parses exported rule
+    strings into predicates, and wraps them in a :class:`RuleKnowledgeBase`
+    with ``induced_*`` provenance disclosures.
+
+    Parameters
+    ----------
+    frame:
+        Train partition frame.
+    columns:
+        Numeric feature columns passed to imodels.
+    y:
+        Encoded train targets.
+    task:
+        ``classification`` or ``regression``.
+    method:
+        ``rulefit`` or ``boosted_rules`` (classification only).
+    max_rules:
+        Cap on exported rules.
+    random_state:
+        Seed for imodels estimators.
+    class_names:
+        Class labels for classification consequents.
+    max_depth:
+        Tree depth passed to imodels rule generators.
+
+    Returns
+    -------
+    tuple[RuleKnowledgeBase, imodels estimator]
+        Induced rules and the fitted imodels model for optional inspection.
+
+    Raises
+    ------
+    ValidationError
+        When method is unknown, boosted_rules is used for regression, or no
+        rules could be parsed from the imodels export.
+    """
     imodels = require_imodels()
     x = frame[columns].to_numpy(dtype=float)
     y_arr = np.asarray(y)

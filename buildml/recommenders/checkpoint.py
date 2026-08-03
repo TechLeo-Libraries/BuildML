@@ -41,7 +41,36 @@ def save_recommender_bundle(
     eval_result: RecommenderEvalResult | None = None,
     recommend_result: RecommendResult | None = None,
 ) -> Path:
-    """Write a recommender bundle directory (``buildml.recommender_bundle.v1``)."""
+    """Write a recommender bundle directory (``buildml.recommender_bundle.v1``).
+
+    Persists the fitted :class:`~buildml.recommenders.results.RecommenderPlan`
+    and optional fit/eval/recommend summaries. Distinct from Session
+    checkpoints — reload via :func:`load_recommender_bundle`.
+
+    Parameters
+    ----------
+    path:
+        Destination directory; created if missing.
+    plan:
+        Train-fitted plan containing matrix, factors, and backend state.
+    fit_result:
+        Optional fit summary written into ``meta.json``.
+    eval_result:
+        Optional holdout eval summary written into ``meta.json``.
+    recommend_result:
+        Optional recommendation summary written into ``meta.json``.
+
+    Returns
+    -------
+    Path
+        The bundle directory containing ``meta.json`` and
+        ``recommender_plan.joblib``.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No RecommenderPlan to save.")
     destination = Path(path)
@@ -92,7 +121,29 @@ def save_recommender_bundle(
 
 
 def load_recommender_bundle(path: str | Path) -> RecommenderPlan:
-    """Load a recommender bundle into a :class:`RecommenderPlan`."""
+    """Load a recommender bundle into a :class:`RecommenderPlan`.
+
+    Reads ``meta.json`` for format validation and ``recommender_plan.joblib``
+    for the plan payload. Rehydrates numpy arrays and backend objects when
+    stored separately in the joblib dict.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory written by :func:`save_recommender_bundle`.
+
+    Returns
+    -------
+    RecommenderPlan
+        Train-fitted plan ready for :func:`recommend_for_users` or
+        :func:`evaluate_recommender`.
+
+    Raises
+    ------
+    ValidationError
+        When the bundle is incomplete, the format is unsupported, or the
+        loaded object is not a valid plan.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "recommender_plan.joblib"

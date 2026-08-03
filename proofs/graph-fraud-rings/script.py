@@ -84,7 +84,13 @@ def main() -> None:
         "torch": TORCH_STATUS,
         "bundle_path": str(bundle),
         "leakage_controls": ["Node split before fit", "Classical features from train graph view", "Test after lock"],
-        "industry_comparison": {"status": "stub"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: NetworkX degree/clustering + sklearn LR on the "
+                "same split; run script then baseline_industry.py for results/comparison.json."
+            ),
+        },
         "limitations": ["Synthetic communities; classical primary path"],
     })
     print("graph-fraud-rings OK", getattr(ev, "metrics", ev))

@@ -36,6 +36,31 @@ class PyGNodeClassifier:
         epochs: int = 80,
         random_state: int | None = 0,
     ) -> None:
+        """Configure a PyG node classifier for train-mask cross-entropy.
+
+        Validates architecture knobs and defers module construction until
+        :meth:`fit` when PyTorch Geometric is available.
+
+        Parameters
+        ----------
+        pyg_model:
+            Convolution type: ``gcn``, ``graphsage``, or ``gat``.
+        in_dim:
+            Number of tabular node features.
+        n_classes:
+            Number of target classes (must be >= 2).
+        hidden_dim, n_layers, heads, dropout:
+            Architecture and regularisation knobs.
+        learning_rate, weight_decay, epochs:
+            Optimiser settings for Adam training.
+        random_state:
+            Optional seed for reproducible weight init.
+
+        Raises
+        ------
+        ValidationError
+            When dimensions, layer count, or model name are invalid.
+        """
         if in_dim < 1:
             raise ValidationError("PyG in_dim must be >= 1.")
         if n_classes < 2:
@@ -73,6 +98,36 @@ class PyGNodeClassifier:
         train_mask: np.ndarray,
         class_to_index: dict[Any, int],
     ) -> PyGNodeClassifier:
+        """Train the PyG module on train-masked node labels.
+
+        Builds a sparse ``edge_index`` from endpoint arrays and minimises
+        cross-entropy only on nodes marked True in ``train_mask``.
+
+        Parameters
+        ----------
+        x:
+            Node feature matrix of shape ``(n_nodes, in_dim)``.
+        y:
+            Raw target labels aligned to rows of ``x``.
+        src, dst:
+            Edge endpoint row indices.
+        directed:
+            When False, edges are symmetrised for message passing.
+        train_mask:
+            Boolean mask selecting supervised nodes.
+        class_to_index:
+            Mapping from raw label values to class indices.
+
+        Returns
+        -------
+        PyGNodeClassifier
+            Fitted classifier (``self``).
+
+        Raises
+        ------
+        ValidationError
+            When fewer than two train nodes are labeled.
+        """
         torch = require_pyg(feature="Graph PyG node classification")
         self._torch = torch
         if self.random_state is not None:
@@ -128,6 +183,30 @@ class PyGNodeClassifier:
         *,
         directed: bool,
     ) -> np.ndarray:
+        """Return per-node class probabilities from a fitted PyG module.
+
+        Runs a forward pass with the stored ``edge_index`` and applies softmax
+        over logits for each node row.
+
+        Parameters
+        ----------
+        x:
+            Node feature matrix of shape ``(n_nodes, in_dim)``.
+        src, dst:
+            Edge endpoint row indices for message passing.
+        directed:
+            When False, edges are symmetrised before building ``edge_index``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape ``(n_nodes, n_classes)`` with softmax probabilities.
+
+        Raises
+        ------
+        ValidationError
+            When the classifier has not been fitted.
+        """
         torch = self._torch or require_pyg(feature="Graph PyG node classification")
         if self._module is None:
             raise ValidationError("PyGNodeClassifier is not fitted.")
@@ -152,10 +231,45 @@ class PyGNodeClassifier:
         *,
         directed: bool,
     ) -> np.ndarray:
+        """Return the argmax class index for each node.
+
+        Delegates to :meth:`predict_proba` and selects the highest-probability
+        class per row.
+
+        Parameters
+        ----------
+        x:
+            Node feature matrix of shape ``(n_nodes, in_dim)``.
+        src, dst:
+            Edge endpoint row indices for message passing.
+        directed:
+            When False, edges are symmetrised before building ``edge_index``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Integer class indices of shape ``(n_nodes,)``.
+        """
         proba = self.predict_proba(x, src, dst, directed=directed)
         return proba.argmax(axis=1)
 
     def to_state(self) -> dict[str, Any]:
+        """Serialise hyperparameters and PyG module weights for bundle reload.
+
+        Captures enough state to rebuild the same architecture and restore
+        trained convolution weights via :meth:`from_state`.
+
+        Returns
+        -------
+        dict[str, Any]
+            Architecture knobs, optimiser settings, ``state_dict``, and
+            per-epoch train losses.
+
+        Raises
+        ------
+        ValidationError
+            When the classifier has not been fitted.
+        """
         torch = self._torch or require_pyg(feature="Graph PyG node classification")
         if self._module is None:
             raise ValidationError("PyGNodeClassifier is not fitted.")
@@ -179,6 +293,21 @@ class PyGNodeClassifier:
 
     @classmethod
     def from_state(cls, state: dict[str, Any]) -> PyGNodeClassifier:
+        """Reconstruct a fitted classifier from :meth:`to_state` output.
+
+        Instantiates the same architecture, loads stored weights, and sets the
+        module to evaluation mode for scoring.
+
+        Parameters
+        ----------
+        state:
+            Payload produced by :meth:`to_state` or loaded from a graph bundle.
+
+        Returns
+        -------
+        PyGNodeClassifier
+            Classifier with weights restored and set to eval mode.
+        """
         require_pyg(feature="Graph PyG node classification")
         obj = cls(
             pyg_model=state["pyg_model"],  # type: ignore[arg-type]
@@ -294,7 +423,40 @@ def fit_pyg(
     dropout: float,
     random_state: int | None,
 ) -> PyGNodeClassifier:
-    """Fit a PyG node classifier on mode-filtered edges."""
+    """Fit a PyG node classifier on mode-filtered edges.
+
+    Convenience wrapper around :class:`PyGNodeClassifier` that wires
+    hyperparameters and calls :meth:`PyGNodeClassifier.fit` on the
+    train-induced subgraph.
+
+    Parameters
+    ----------
+    x:
+        Node feature matrix of shape ``(n_nodes, in_dim)``.
+    y_all:
+        Raw target labels for all nodes.
+    src_fit, dst_fit:
+        Edge endpoints retained after inductive/transductive fit filtering.
+    directed:
+        When False, edges are symmetrised for message passing.
+    train_mask:
+        Boolean mask selecting supervised nodes.
+    class_to_index:
+        Mapping from raw label values to class indices.
+    pyg_model:
+        Convolution type: ``gcn``, ``graphsage``, or ``gat``.
+    hidden_dim, n_layers, heads:
+        Architecture knobs passed to the classifier.
+    epochs, learning_rate, weight_decay, dropout:
+        Training hyperparameters.
+    random_state:
+        Optional seed for reproducible weight init.
+
+    Returns
+    -------
+    PyGNodeClassifier
+        Fitted classifier ready for :func:`predict_pyg_logits`.
+    """
     clf = PyGNodeClassifier(
         pyg_model=pyg_model,
         in_dim=x.shape[1],
@@ -328,5 +490,25 @@ def predict_pyg_logits(
     dst: np.ndarray,
     directed: bool,
 ) -> np.ndarray:
-    """Return class probabilities from a fitted PyG classifier."""
+    """Return class probabilities from a fitted PyG classifier.
+
+    Thin wrapper around :meth:`PyGNodeClassifier.predict_proba` for scoring
+    pipelines that already hold a fitted classifier.
+
+    Parameters
+    ----------
+    clf:
+        Fitted :class:`PyGNodeClassifier`.
+    x:
+        Node feature matrix of shape ``(n_nodes, in_dim)``.
+    src, dst:
+        Edge endpoint row indices for message passing.
+    directed:
+        When False, edges are symmetrised before building ``edge_index``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of shape ``(n_nodes, n_classes)`` with softmax probabilities.
+    """
     return clf.predict_proba(x, src, dst, directed=directed)

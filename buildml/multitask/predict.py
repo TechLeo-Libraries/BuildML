@@ -24,7 +24,38 @@ def predict_multitask(
     attach: bool = False,
     prediction_prefix: str | None = None,
 ) -> tuple[Dataset | None, MultiTaskPredictResult]:
-    """Score a frozen multi-task plan on a partition (no refit)."""
+    """Score a frozen multi-task plan on a holdout partition without refit.
+
+    Runs ``plan.estimator_.predict`` on the chosen partition and optionally
+    attaches prefixed prediction columns to a new Dataset copy.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with feature columns matching the plan.
+    plan:
+        Fitted :class:`~buildml.multitask.results.MultiTaskPlan` from
+        :func:`fit_multitask`.
+    split_plan:
+        Session split plan; required unless ``partition='all'``.
+    partition:
+        Which split to score: ``train``, ``validation``, ``test``, or ``all``.
+    attach:
+        When True, return a new Dataset with ``{prefix}_{target}`` columns added.
+    prediction_prefix:
+        Override for attached column prefix; defaults to plan config value.
+
+    Returns
+    -------
+    tuple[Dataset | None, MultiTaskPredictResult]
+        New dataset when ``attach=True``, otherwise ``None``, plus predict metadata.
+
+    Raises
+    ------
+    ValidationError
+        When plan is missing, partition requires splits, columns are missing, or
+        attach conflicts with existing column names.
+    """
     if plan is None:
         raise ValidationError("No MultiTaskPlan. Call fit_multitask first.")
 

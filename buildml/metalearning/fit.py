@@ -85,6 +85,66 @@ def fit_metalearning(
     Practical tabular few-shot / episodic protocols — not foundation-model
     meta-learning, not MAML-at-scale, not EconML-style causal meta.
     Validation/test partitions are never used for meta-training.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features, target, and task columns.
+    split_plan:
+        Train/validation/test split; train partition is used for meta-train.
+    backend:
+        Optional backend override (``sklearn``, ``torch``, ``industry``).
+    method:
+        Meta-learning method (``prototypical``, ``warm_start``, etc.).
+    task_column:
+        Optional explicit episodic task column.
+    columns:
+        Optional explicit feature columns.
+    n_way:
+        Classes sampled per episode; ``None`` uses all present classes.
+    k_shot:
+        Support examples per class per episode.
+    n_query:
+        Query examples per class per episode.
+    n_episodes:
+        Episodes per meta-train epoch (backend-specific interpretation).
+    base_estimator:
+        Sklearn base estimator for ``warm_start`` (``logistic_regression`` or
+        ``sgd_classifier``).
+    random_state:
+        Seed for task holdout and episodic sampling.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    task_holdout_fraction:
+        Fraction of train task ids held out for internal episodic validation.
+    meta_epochs:
+        Outer meta-training epochs for torch/industry backends.
+    inner_lr:
+        Inner-loop learning rate for MAML/Reptile adaptation.
+    inner_steps:
+        Inner-loop SGD steps per adaptation episode.
+    meta_lr:
+        Outer meta-optimizer learning rate.
+    embed_dim:
+        ProtoNet embedding dimension (torch backend).
+    hidden_dim:
+        MLP hidden width for torch/industry backends.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+    reduce_plan:
+        Optional preprocess reduce plan from Session.
+
+    Returns
+    -------
+    tuple[MetaLearningPlan, MetaLearningFitResult]
+        Fitted plan with private estimators and a serializable fit summary.
+
+    Raises
+    ------
+    ValidationError
+        When split, column, episodic, or backend preconditions fail.
+    MissingExtraError
+        When the resolved backend requires an optional extra.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

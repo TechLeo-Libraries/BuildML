@@ -35,6 +35,15 @@ class SymbolicPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise the symbolic plan for bundles and history logs.
+
+        Includes serialised knowledge base metadata without heavy estimator objects.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-safe plan summary for ``meta.json`` and Session history.
+        """
         return {
             "kind": "symbolic",
             "backend": self.backend,
@@ -84,6 +93,16 @@ class NeuroSymbolicPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise the neuro-symbolic plan for bundles and history logs.
+
+        Captures hybrid mode, base estimator, and rule counts without serialising
+        full sklearn or torch model weights.
+
+        Returns
+        -------
+        dict[str, Any]
+            Hybrid plan summary including mode, base estimator, and rule counts.
+        """
         return {
             "kind": "neuro_symbolic",
             "backend": self.backend,
@@ -125,6 +144,16 @@ class SymbolicFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise symbolic fit output for history logs.
+
+        Records backend, source, rule counts, and train accuracy after fit
+        completes and before evaluate or predict on holdout partitions.
+
+        Returns
+        -------
+        dict[str, Any]
+            Source, rule counts, train accuracy, and disclosures.
+        """
         return {
             "source": self.source,
             "backend": self.backend,
@@ -162,6 +191,16 @@ class NeuroSymbolicFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise neuro-symbolic fit output for history logs.
+
+        Records hybrid mode, base estimator, rule provenance, and train score
+        after the combined fit step on Session train only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Mode, base estimator, rule provenance, train score, and disclosures.
+        """
         return {
             "mode": self.mode,
             "backend": self.backend,
@@ -196,6 +235,16 @@ class SymbolicEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout evaluation metrics and rule firing statistics.
+
+        Produced by :func:`buildml.symbolic.evaluate.evaluate_symbolic` after
+        scoring a validation or test partition without refitting rules.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition metrics, rule coverage, repair rate, and disclosures.
+        """
         return {
             "partition": self.partition,
             "path": self.path,
@@ -226,6 +275,16 @@ class SymbolicPredictResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise predict output without listing every prediction or trace.
+
+        Keeps history payloads compact while recording counts needed for
+        walkthrough panels and repair-rate summaries.
+
+        Returns
+        -------
+        dict[str, Any]
+            Prediction and trace counts, repair count, and disclosures.
+        """
         return {
             "partition": self.partition,
             "path": self.path,

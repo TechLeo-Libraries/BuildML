@@ -21,6 +21,16 @@ class ConstraintVerificationResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise Z3 constraint verification outcome for fit disclosures.
+
+        Attached to fit results when ``verify_constraints`` is enabled so
+        walkthrough panels can show satisfiability without rerunning Z3.
+
+        Returns
+        -------
+        dict[str, Any]
+            Status, satisfiability flag, counts, disclosures, and warnings.
+        """
         return {
             "status": self.status,
             "satisfiable": self.satisfiable,
@@ -37,6 +47,24 @@ def verify_rule_constraints(
 ) -> ConstraintVerificationResult:
     """Check whether hard constraint rule antecedents are jointly satisfiable.
 
+    Encodes numeric predicates from hard rules into a lightweight Z3 solver.
+    Skips when Z3 is missing, no hard constraints exist, or predicates are
+    non-numeric.
+
+    Parameters
+    ----------
+    knowledge_base:
+        Compiled rules including constraint or hard rules to verify.
+    columns:
+        Train frame columns available as real-valued Z3 variables.
+
+    Returns
+    -------
+    ConstraintVerificationResult
+        SAT/unsat outcome, counts, disclosures, and optional warnings.
+
+    Notes
+    -----
     Honesty: lightweight SAT check on numeric column bounds — not a full SMT
     product or complete rule-set consistency prover.
     """

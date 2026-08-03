@@ -50,6 +50,20 @@ class TorchAnomalyAutoencoder:
     train_mse_: float
 
     def reconstruction_error(self, x: np.ndarray) -> np.ndarray:
+        """Perform reconstruction error for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+        """
         torch = require_torch_anomaly()
         self.model.eval()
         with torch.no_grad():
@@ -67,7 +81,33 @@ def build_torch_autoencoder(
     batch_size: int = 64,
     random_state: int | None = 0,
 ) -> TorchAnomalyAutoencoder:
-    """Fit a train-only autoencoder; scores are per-row MSE reconstruction error."""
+    """Fit a train-only autoencoder; scores are per-row MSE reconstruction error.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x_fit:
+    x fit (np.ndarray).
+latent_dim:
+    latent dim (int).
+epochs:
+    Training epochs for torch-backed estimators.
+batch_size:
+    Number of rows to select per query or training minibatch.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+TorchAnomalyAutoencoder
+    Return value (TorchAnomalyAutoencoder) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     torch = require_torch_anomaly(feature="Torch autoencoder anomaly detector")
     import torch.nn as nn
 
@@ -106,6 +146,22 @@ def build_torch_autoencoder(
 
 
 def build_torch_autoencoder_score_helper(model: Any, x: np.ndarray) -> np.ndarray:
+    """Construct a torch autoencoder score helper ready for fit or scoring.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+model:
+    model (Any).
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+    """
     torch = require_torch_anomaly()
     model.eval()
     with torch.no_grad():
@@ -116,4 +172,20 @@ def build_torch_autoencoder_score_helper(model: Any, x: np.ndarray) -> np.ndarra
 
 
 def torch_ae_anomaly_scores(estimator: TorchAnomalyAutoencoder, *, x: np.ndarray) -> np.ndarray:
+    """Perform torch ae anomaly scores for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+estimator:
+    Fitted model object used for scoring or prediction.
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+    """
     return estimator.reconstruction_error(x)

@@ -82,10 +82,15 @@ def generate_forecast(
     future_exog: np.ndarray | pd.DataFrame | None = None,
     origin: str = "train_end",
 ) -> ForecastGenerateResult:
-    """Generate an H-step forecast from a frozen plan (no refit).
+    """Generate an H-step forecast from a frozen plan without refit.
+
+    Supports baseline, lag-tabular, and industry backends with optional future
+    exogenous rows and recursive multi-step composition for lag models.
 
     Parameters
     ----------
+    plan:
+        Train-fitted :class:`ForecastPlan` to generate from.
     horizon:
         Steps ahead. Defaults to ``plan.horizon``.
     history:
@@ -95,6 +100,17 @@ def generate_forecast(
         Required when the plan has exogenous columns: shape ``(horizon, n_exog)``.
     origin:
         Label recorded in the result (e.g. ``train_end``, ``validation_end``).
+
+    Returns
+    -------
+    ForecastGenerateResult
+        Horizon predictions with method, origin, and disclosure strings.
+
+    Raises
+    ------
+    ValidationError
+        When horizon or history is invalid, exogenous inputs are missing or
+        malformed, or the plan method is unsupported.
     """
     h = int(plan.horizon if horizon is None else horizon)
     if h < 1:
@@ -217,9 +233,29 @@ def history_through_partition(
 ) -> list[float]:
     """Collect chronologically ordered target history through a partition.
 
-    ``through='train'`` → train only.
-    ``through='validation'`` → train + validation (when present).
-    ``through='test'`` → train + validation (if any) + test.
+    Concatenates train, validation, and/or test targets in clock order for
+    evaluation origins and rolling one-step protocols.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing all split partitions.
+    plan:
+        Train-fitted plan defining target and time columns.
+    split_plan:
+        Temporal split plan defining partition membership.
+    through:
+        Last partition to include: ``train``, ``validation``, or ``test``.
+
+    Returns
+    -------
+    list[float]
+        Chronologically ordered target values through the requested partition.
+
+    Raises
+    ------
+    ValidationError
+        When ``through`` is not ``train``, ``validation``, or ``test``.
     """
     if through == "train":
         parts = ["train"]
@@ -253,11 +289,34 @@ def rolling_one_step_predictions(
     *,
     exog: np.ndarray | None = None,
 ) -> tuple[tuple[float, ...], tuple[float, ...]]:
-    """Walk holdout actuals with one-step predictions (uses prior actuals).
+    """Walk holdout actuals with one-step predictions using prior actuals.
 
-    At step *i*, predict using ``history + actuals[:i]`` (never future holdout
-    targets). After scoring, append the *actual* value so the next step's lags
-    stay honest.
+    At step *i*, predicts using ``history + actuals[:i]`` and never future
+    holdout targets. Appends each actual after scoring so later lags stay honest.
+
+    Parameters
+    ----------
+    plan:
+        Train-fitted :class:`ForecastPlan` to score without refit.
+    history:
+        Target history ending immediately before the holdout partition.
+    actuals:
+        Holdout actual target values in chronological order.
+    exog:
+        Optional holdout exogenous matrix with one row per actual.
+
+    Returns
+    -------
+    predictions : tuple[float, ...]
+        One-step forecasts aligned with ``actuals``.
+    actuals_out : tuple[float, ...]
+        Holdout actual values used for scoring.
+
+    Raises
+    ------
+    ValidationError
+        When holdout actuals are empty, exog row count mismatches, or plan
+        state required by the method is missing.
     """
     actuals = np.asarray(actuals, dtype=float).reshape(-1)
     if actuals.size == 0:
@@ -311,7 +370,34 @@ def origin_predictions(
     *,
     future_exog: np.ndarray | None = None,
 ) -> tuple[tuple[float, ...], Any]:
-    """Fixed-origin multi-step forecast covering ``n_points`` holdout steps."""
+    """Generate a fixed-origin multi-step forecast over holdout steps.
+
+    Delegates to :func:`generate_forecast` with origin label ``eval_origin``
+    so origin-strategy evaluation shares the same recursive path as generate.
+
+    Parameters
+    ----------
+    plan:
+        Train-fitted :class:`ForecastPlan` to score without refit.
+    history:
+        Target history ending at the evaluation origin.
+    n_points:
+        Number of holdout steps to forecast in one recursive pass.
+    future_exog:
+        Optional future exogenous rows for exog-aware plans.
+
+    Returns
+    -------
+    predictions : tuple[float, ...]
+        Multi-step forecasts covering ``n_points`` steps.
+    generated :
+        Full :class:`ForecastGenerateResult` from the underlying generate call.
+
+    Raises
+    ------
+    ValidationError
+        Propagated from :func:`generate_forecast` when inputs are invalid.
+    """
     generated = generate_forecast(
         plan,
         horizon=n_points,

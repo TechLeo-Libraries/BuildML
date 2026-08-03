@@ -46,6 +46,49 @@ def fit_multitask_op(
 ) -> Any:
     """Fit a multi-target estimator on the train partition only.
 
+    Delegates to :func:`buildml.multitask.fit.fit_multitask`, stores the
+    :class:`~buildml.multitask.results.MultiTaskPlan` on Session, and records
+    the fit. Follow with :func:`predict_multitask_op` or
+    :func:`evaluate_multitask_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset, split plan, and at least two targets.
+    backend:
+        Optional backend override (``sklearn``, ``industry``, ``torch``).
+    method:
+        Multi-task strategy (``multi_output``, ``chain``, ``torch_multihead``).
+    task:
+        Task mix (``auto``, ``classification``, ``regression``, ``mixed``).
+    targets:
+        Optional explicit target column names (roles or list).
+    columns:
+        Optional explicit feature columns.
+    base_estimator:
+        Base estimator key for sklearn/industry backends.
+    random_state:
+        Seed for stochastic steps.
+    order:
+        Optional target column order for chained strategies.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+    prediction_prefix:
+        Prefix for attached prediction column names.
+    epochs:
+        Training epochs for torch multi-head backend.
+    batch_size:
+        Minibatch size for torch backend.
+    learning_rate:
+        Optimizer learning rate for torch backend.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+
+    Returns
+    -------
+    MultiTaskFitResult
+        Serializable fit summary per target and backend disclosures.
+
     Notes
     -----
     **Leakage:** Requires a split. Fit uses train only. Validation/test are
@@ -108,7 +151,32 @@ def predict_multitask_op(
     attach: bool = False,
     prediction_prefix: str | None = None,
 ) -> Any:
-    """Predict with the frozen multi-task plan (no refit)."""
+    """Predict all targets with the frozen multi-task plan without refitting.
+
+    Delegates to :func:`buildml.multitask.predict.predict_multitask`. When
+    ``attach=True``, prediction columns are merged into Session dataset.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a multi-task plan from :func:`fit_multitask_op`.
+    partition:
+        Partition to score (``train``, ``validation``, ``test``, or ``all``).
+    attach:
+        When True, attach prediction columns to the Session dataset frame.
+    prediction_prefix:
+        Optional override for attached column name prefix.
+
+    Returns
+    -------
+    MultiTaskPredictResult
+        Per-target predictions and optional attached column metadata.
+
+    Raises
+    ------
+    ValidationError
+        When no multi-task plan exists on the Session.
+    """
     plan = getattr(session, "_multitask_plan", None)
     if plan is None:
         raise ValidationError("No multi-task plan. Call fit_multitask(...) first.")
@@ -141,7 +209,28 @@ def evaluate_multitask_op(
     *,
     partition: PartitionOrAll = "validation",
 ) -> Any:
-    """Evaluate the multi-task plan on a holdout partition (never for fit)."""
+    """Evaluate the multi-task plan on a holdout partition without refitting.
+
+    Delegates to :func:`buildml.multitask.evaluate.evaluate_multitask`.
+    Holdout partitions are never used during fit.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a multi-task plan from :func:`fit_multitask_op`.
+    partition:
+        Holdout partition to score. Validation falls back to test when absent.
+
+    Returns
+    -------
+    MultiTaskEvalResult
+        Per-target and aggregated holdout metrics.
+
+    Raises
+    ------
+    ValidationError
+        When no multi-task plan exists on the Session.
+    """
     plan = getattr(session, "_multitask_plan", None)
     if plan is None:
         raise ValidationError("No multi-task plan. Call fit_multitask(...) first.")
@@ -170,7 +259,28 @@ def evaluate_multitask_op(
 
 
 def save_multitask_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active MultiTaskPlan as ``buildml.multitask_bundle.v1``."""
+    """Persist the active multi-task plan as ``buildml.multitask_bundle.v1``.
+
+    Delegates to :func:`buildml.multitask.checkpoint.save_multitask_bundle`.
+    Reload with :func:`load_multitask_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a multi-task plan from :func:`fit_multitask_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no multi-task plan exists on the Session.
+    """
     plan = getattr(session, "_multitask_plan", None)
     if plan is None:
         raise ValidationError("No multi-task plan. Call fit_multitask(...) first.")
@@ -196,7 +306,23 @@ def save_multitask_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_multitask_bundle_op(session, path: str | Path) -> Any:
-    """Load a multi-task bundle into this Session."""
+    """Load a multi-task bundle into this Session.
+
+    Delegates to :func:`buildml.multitask.checkpoint.load_multitask_bundle`
+    and clears prior fit/eval/predict results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded multi-task plan.
+    path:
+        Path to a ``buildml.multitask_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with multi-task plan attached for chaining.
+    """
     plan = load_multitask_bundle(path)
     session._multitask_plan = plan
     session._multitask_fit_result = None

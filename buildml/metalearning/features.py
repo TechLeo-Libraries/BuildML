@@ -32,7 +32,28 @@ __all__ = [
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
-    """Build a float design matrix; refuse null features (meta-learning wording)."""
+    """Build a float design matrix from selected columns.
+
+    Delegates to semi-supervised matrix building with meta-learning error
+    wording when null features are detected.
+
+    Parameters
+    ----------
+    frame:
+        Source DataFrame.
+    columns:
+        Feature column names to extract.
+
+    Returns
+    -------
+    numpy.ndarray
+        2-D float feature matrix.
+
+    Raises
+    ------
+    ValidationError
+        When columns are missing or contain null values.
+    """
     try:
         return _matrix_from_frame(frame, columns)
     except ValidationError as exc:
@@ -44,7 +65,29 @@ def resolve_task_column(
     dataset: Dataset,
     task_column: str | None,
 ) -> tuple[str, list[str]]:
-    """Resolve the episodic task / group column from roles or an explicit name."""
+    """Resolve the episodic task / group column from roles or an explicit name.
+
+    Episodic meta-learning requires a stable task identifier separate from the
+    classification target.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with column roles.
+    task_column:
+        Optional explicit task column; when ``None``, requires exactly one
+        ``role='group'`` column.
+
+    Returns
+    -------
+    tuple[str, list[str]]
+        Resolved task column name and disclosure notes.
+
+    Raises
+    ------
+    ValidationError
+        When no task column is defined or multiple group columns exist.
+    """
     disclosures: list[str] = []
     if task_column is not None:
         name = validate_column_names([task_column], dataset.columns)[0]
@@ -72,7 +115,26 @@ def resolve_task_column(
 
 
 def resolve_target_column(dataset: Dataset) -> tuple[str, list[str]]:
-    """Resolve exactly one classification target (classical require_target style)."""
+    """Resolve exactly one classification target column.
+
+    Multi-target joint fitting belongs on ``fit_multitask``; meta-learning
+    carves episodic tasks via a separate task/group column.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with column roles.
+
+    Returns
+    -------
+    tuple[str, list[str]]
+        Target column name and disclosure notes.
+
+    Raises
+    ------
+    ValidationError
+        When zero or multiple ``role='target'`` columns are present.
+    """
     targets = list(dataset.role_columns(ColumnRole.TARGET))
     if len(targets) != 1:
         raise ValidationError(
@@ -96,7 +158,38 @@ def resolve_metalearning_columns(
     target_column: str,
     task_column: str,
 ) -> tuple[list[str], bool, list[str]]:
-    """Resolve numeric feature columns, excluding target and task columns."""
+    """Resolve numeric feature columns, excluding target and task columns.
+
+    Reuses semi-supervised column resolution then removes the episodic task
+    identifier from the feature set.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with roles and optional reduce plan.
+    frame:
+        Training partition frame used for column validation.
+    columns:
+        Optional explicit feature list; ``None`` uses role-based resolution.
+    reduce_plan:
+        Optional dimensionality-reduction plan from preprocess.
+    prefer_reduce_components:
+        When ``True``, prefer reduced component columns when available.
+    target_column:
+        Label column to exclude from features.
+    task_column:
+        Episodic task column to exclude from features.
+
+    Returns
+    -------
+    tuple[list[str], bool, list[str]]
+        Feature column names, whether reduce components were used, disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no usable feature columns remain after exclusions.
+    """
     cols, used_reduce, disclosures = resolve_semisupervised_columns(
         dataset,
         frame,
@@ -128,7 +221,28 @@ def encode_labels(
     *,
     label_encoder: Any | None = None,
 ) -> tuple[np.ndarray, Any, tuple[Any, ...]]:
-    """LabelEncode classification targets; refuse nulls and single-class sets."""
+    """Label-encode classification targets for episodic meta-learning.
+
+    Refuses null labels and single-class sets; reuses a fitted encoder when
+    provided for consistent class codes across support/query splits.
+
+    Parameters
+    ----------
+    series:
+        Target labels for one support or query set.
+    label_encoder:
+        Optional fitted :class:`sklearn.preprocessing.LabelEncoder`.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, Any, tuple[Any, ...]]
+        Integer codes, encoder instance, and original class tuple.
+
+    Raises
+    ------
+    ValidationError
+        When labels contain nulls, unseen classes, or fewer than two classes.
+    """
     from sklearn.preprocessing import LabelEncoder
 
     if series.isna().any():
@@ -156,13 +270,48 @@ def encode_labels(
 
 
 def decode_labels(codes: np.ndarray, label_encoder: Any) -> tuple[Any, ...]:
-    """Inverse-transform integer codes to original labels."""
+    """Inverse-transform integer class codes to original label values.
+
+    Used when reporting sampled episode classes and decoding prototype keys.
+
+    Parameters
+    ----------
+    codes:
+        Integer prediction or prototype class codes.
+    label_encoder:
+        Fitted label encoder from :func:`encode_labels`.
+
+    Returns
+    -------
+    tuple[Any, ...]
+        Original label values in code order.
+    """
     decoded = label_encoder.inverse_transform(np.asarray(codes).astype(int))
     return tuple(_coerce_label(v) for v in decoded)
 
 
 def task_ids_in_frame(frame: pd.DataFrame, task_column: str) -> list[Any]:
-    """Stable unique task ids present in a frame."""
+    """List stable unique task ids present in a frame (first-seen order).
+
+    Preserves first-seen ordering for reproducible evaluation disclosures.
+
+    Parameters
+    ----------
+    frame:
+        Partition or task subset DataFrame.
+    task_column:
+        Episodic task identifier column.
+
+    Returns
+    -------
+    list[Any]
+        Unique task ids in first-seen order.
+
+    Raises
+    ------
+    ValidationError
+        When the task column is missing or contains nulls.
+    """
     if task_column not in frame.columns:
         raise ValidationError(f"Task column {task_column!r} missing from frame.")
     series = frame[task_column]
@@ -180,7 +329,24 @@ def task_ids_in_frame(frame: pd.DataFrame, task_column: str) -> list[Any]:
 
 
 def frame_for_task(frame: pd.DataFrame, task_column: str, task_id: Any) -> pd.DataFrame:
-    """Rows belonging to one episodic task."""
+    """Return rows belonging to one episodic task.
+
+    Returns a copy so callers can mutate support/query subsets safely.
+
+    Parameters
+    ----------
+    frame:
+        Source DataFrame.
+    task_column:
+        Episodic task identifier column.
+    task_id:
+        Task value to filter on.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of rows where ``task_column == task_id``.
+    """
     return frame.loc[frame[task_column] == task_id].copy()
 
 
@@ -195,7 +361,36 @@ def sample_support_query(
     n_way: int | None,
     rng: np.random.Generator,
 ) -> tuple[pd.DataFrame, pd.DataFrame, list[Any]] | None:
-    """Draw a balanced support/query split for one task; None if infeasible."""
+    """Draw a balanced support/query split for one episodic task.
+
+    Returns ``None`` when per-class row counts are insufficient for the
+    requested ``k_shot``, ``n_query``, and ``n_way`` settings.
+
+    Parameters
+    ----------
+    frame:
+        Rows for a single task.
+    target_column:
+        Classification label column.
+    columns:
+        Feature columns (validated for downstream matrix build).
+    label_encoder:
+        Fitted label encoder for consistent class codes.
+    k_shot:
+        Support examples per class.
+    n_query:
+        Query examples per class (may be relaxed when rows are scarce).
+    n_way:
+        Optional cap on classes sampled per episode; ``None`` uses all present.
+    rng:
+        NumPy random generator for reproducible splits.
+
+    Returns
+    -------
+    tuple[pandas.DataFrame, pandas.DataFrame, list[Any]] or None
+        Support frame, query frame, and sampled class labels; ``None`` if
+        infeasible.
+    """
     y_codes, _, classes = encode_labels(frame[target_column], label_encoder=label_encoder)
     work = frame.copy()
     work["__y_code__"] = y_codes
@@ -238,7 +433,23 @@ def compute_prototypes(
     x: np.ndarray,
     y_codes: np.ndarray,
 ) -> dict[int, np.ndarray]:
-    """Mean embedding (raw features) per class code — tabular prototypical."""
+    """Compute mean embedding (raw features) per class code for prototypical prediction.
+
+    Prototypes are class centroids used by nearest-prototype classifiers in
+    sklearn and torch episodic paths.
+
+    Parameters
+    ----------
+    x:
+        Feature matrix ``(n_samples, n_features)``.
+    y_codes:
+        Integer class codes aligned with ``x`` rows.
+
+    Returns
+    -------
+    dict[int, numpy.ndarray]
+        Class code to prototype vector mapping.
+    """
     protos: dict[int, np.ndarray] = {}
     for code in np.unique(y_codes):
         mask = y_codes == code
@@ -252,7 +463,27 @@ def nearest_prototype_predict(
     x: np.ndarray,
     prototypes: dict[int, np.ndarray],
 ) -> np.ndarray:
-    """Assign each row to the nearest class prototype (euclidean)."""
+    """Assign each row to the nearest class prototype using squared Euclidean distance.
+
+    Uses an efficient expanded distance formula for batch query assignment.
+
+    Parameters
+    ----------
+    x:
+        Query feature matrix ``(n_samples, n_features)``.
+    prototypes:
+        Class code to prototype vector mapping from :func:`compute_prototypes`.
+
+    Returns
+    -------
+    numpy.ndarray
+        Predicted integer class codes per row.
+
+    Raises
+    ------
+    ValidationError
+        When ``prototypes`` is empty.
+    """
     if not prototypes:
         raise ValidationError("No prototypes available for prediction.")
     codes = sorted(prototypes)

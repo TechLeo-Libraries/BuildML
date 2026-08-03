@@ -43,6 +43,15 @@ class SynthesizerConfig:
     batch_size: int = 500
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -71,6 +80,15 @@ class ColumnSchemaSpec:
     extras: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "name": self.name,
             "kind": self.kind,

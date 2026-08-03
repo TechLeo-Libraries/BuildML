@@ -35,7 +35,32 @@ def save_multitask_bundle(
     fit_result: MultiTaskFitResult | None = None,
     eval_result: MultiTaskEvalResult | None = None,
 ) -> Path:
-    """Write a multi-task bundle directory (``buildml.multitask_bundle.v1``)."""
+    """Write a multi-task bundle directory (``buildml.multitask_bundle.v1``).
+
+    Persists the plan and optional fit/eval summaries as joblib + JSON metadata.
+    Distinct from Session checkpoints.
+
+    Parameters
+    ----------
+    path:
+        Destination directory (created if missing).
+    plan:
+        Fitted :class:`~buildml.multitask.results.MultiTaskPlan`.
+    fit_result:
+        Optional fit summary to embed in ``meta.json``.
+    eval_result:
+        Optional evaluation summary to embed in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No MultiTaskPlan to save.")
     destination = Path(path)
@@ -55,7 +80,25 @@ def save_multitask_bundle(
 
 
 def load_multitask_bundle(path: str | Path) -> MultiTaskPlan:
-    """Load a multi-task bundle into a :class:`MultiTaskPlan`."""
+    """Load a multi-task bundle into a :class:`MultiTaskPlan`.
+
+    Validates bundle format version and plan object type before returning.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``multitask_plan.joblib``.
+
+    Returns
+    -------
+    MultiTaskPlan
+        Deserialized plan with estimator and label encoders attached.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or plan type is wrong.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "multitask_plan.joblib"

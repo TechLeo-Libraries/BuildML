@@ -18,9 +18,48 @@ IndustryRankerMethod = Literal["lambdarank_lgbm", "rank_ndcg_xgb", "yetirank_cat
 TorchRankerMethod = Literal["listwise_lite"]
 RankerMethodName = SklearnRankerMethod | IndustryRankerMethod | TorchRankerMethod
 
+# Legacy / shorthand names accepted at resolve time (proofs, explain layers).
+METHOD_ALIASES: dict[str, str] = {
+    "lambdarank": "lambdarank_lgbm",
+    "rank_ndcg": "rank_ndcg_xgb",
+    "yetirank": "yetirank_catboost",
+}
+
+
+def normalize_ranker_method(method: str) -> str:
+    """Map legacy ranker aliases to canonical catalog method keys.
+
+    Proofs and explain layers historically used shorthand names such as
+    ``lambdarank``; the fit path expects ``lambdarank_lgbm``. Normalizing here
+    keeps one resolver boundary so callers, AI tools, and tests agree.
+
+    Parameters
+    ----------
+    method:
+        Caller-provided ranker method (may be shorthand such as ``lambdarank``).
+
+    Returns
+    -------
+    str
+        Canonical method key used by fit/evaluate paths.
+    """
+    key = str(method).lower().replace("-", "_")
+    return METHOD_ALIASES.get(key, key)
+
 
 def ranking_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for tabular LTR backends and methods."""
+    """Build the honest capability matrix for tabular LTR backends.
+
+    Reports sklearn, industry GBDT, and torch listwise methods, evaluation
+    metrics, split discipline, install hints, and explicit non-goals for
+    teaching overlays and Session walkthroughs.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, LTR vs RAG vs recommender boundaries, and
+        default backend/method when extras are installed.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -133,7 +172,23 @@ def list_ranking_methods(
     *,
     backend: RankingBackendName | None = None,
 ) -> list[str]:
-    """List LTR methods for a backend (or all available when backend is None)."""
+    """List LTR methods for a tabular ranking backend.
+
+    Reads :func:`ranking_capability_matrix` so callers only offer methods
+    installed for the requested backend.
+
+    Parameters
+    ----------
+    backend:
+        ``sklearn``, ``industry``, ``torch``, or ``None`` for the combined
+        deduplicated list.
+
+    Returns
+    -------
+    list[str]
+        Method keys such as ``pointwise``, ``lambdarank_lgbm``, or
+        ``listwise_lite`` that are available on this machine.
+    """
     matrix = ranking_capability_matrix()
     if backend is not None:
         entry = matrix["backends"].get(backend)
@@ -151,6 +206,21 @@ def list_ranking_methods(
 
 
 def backend_available(name: RankingBackendName) -> bool:
+    """Return whether a tabular LTR backend is installed and usable.
+
+    Probes the capability matrix without importing optional industry or torch
+    backends beyond what the matrix already recorded.
+
+    Parameters
+    ----------
+    name:
+        Backend key: ``sklearn``, ``industry``, or ``torch``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the backend entry exists and reports ``available``.
+    """
     entry = ranking_capability_matrix()["backends"].get(name)
     if entry is None:
         return False
@@ -162,9 +232,34 @@ def resolve_backend_method(
     backend: RankingBackendName | None,
     method: str,
 ) -> tuple[RankingBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+    Infers the backend from the method when ``backend`` is ``None``, then
+    checks the pair against :func:`list_ranking_methods` and install probes.
+
+    Parameters
+    ----------
+    backend:
+        Explicit backend or ``None`` to infer from ``method``.
+    method:
+        Ranker method key such as ``pointwise`` or ``lambdarank_lgbm``.
+
+    Returns
+    -------
+    tuple[RankingBackendName, str]
+        Resolved backend name and validated method key.
+
+    Raises
+    ------
+    ValidationError
+        When ``method`` is not valid for the resolved backend.
+    MissingExtraError
+        When the resolved backend requires an optional extra that is not
+        installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
+    method = normalize_ranker_method(method)
     resolved_backend: RankingBackendName
     if backend is None:
         if method in {"pointwise", "pairwise"}:

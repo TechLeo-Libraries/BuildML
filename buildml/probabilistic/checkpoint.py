@@ -38,7 +38,33 @@ def save_probabilistic_bundle(
     fit_result: ProbabilisticFitResult | None = None,
     eval_result: ProbabilisticEvalResult | None = None,
 ) -> Path:
-    """Write a probabilistic bundle directory (``buildml.probabilistic_bundle.v1``)."""
+    """Write a probabilistic bundle directory (``buildml.probabilistic_bundle.v1``).
+
+    Persists the fitted :class:`~buildml.probabilistic.results.ProbabilisticPlan`
+    separately from Session checkpoints so tabular workflow and learner state
+    can be reloaded independently.
+
+    Parameters
+    ----------
+    path:
+        Destination directory for ``meta.json`` and ``probabilistic_plan.joblib``.
+    plan:
+        Train-fitted probabilistic plan to persist.
+    fit_result:
+        Optional last fit report for bundle metadata.
+    eval_result:
+        Optional last evaluation report for bundle metadata.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory that was written.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No ProbabilisticPlan to save.")
     destination = Path(path)
@@ -58,7 +84,26 @@ def save_probabilistic_bundle(
 
 
 def load_probabilistic_bundle(path: str | Path) -> ProbabilisticPlan:
-    """Load a probabilistic bundle into a :class:`ProbabilisticPlan`."""
+    """Load a probabilistic bundle into a :class:`~buildml.probabilistic.results.ProbabilisticPlan`.
+
+    Validates bundle format and restores the plan object for predict and
+    evaluate without reloading Session tabular state.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``probabilistic_plan.joblib``.
+
+    Returns
+    -------
+    ProbabilisticPlan
+        Deserialised plan ready for scoring and interval prediction.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or payload is malformed.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "probabilistic_plan.joblib"

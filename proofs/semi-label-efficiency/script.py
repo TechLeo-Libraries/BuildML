@@ -71,7 +71,13 @@ def main() -> None:
             "Masking applied to train indices only",
             "Test never used for label propagation graph fitting claims beyond eval",
         ],
-        "industry_comparison": {"status": "stub"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: sklearn LabelPropagation twin on the same split; "
+                "run script then baseline_industry.py for results/comparison.json."
+            ),
+        },
         "limitations": ["Synthetic blobs; masking is proof harness, not production labeling"],
     })
     print("semi-label-efficiency OK", dict(test.metrics))

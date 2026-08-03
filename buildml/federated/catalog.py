@@ -14,7 +14,16 @@ _FLOWER_METHODS = ("fedavg", "fedprox")
 
 
 def federated_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for federated backends and optional extras."""
+    """Build the honest capability matrix for federated backends and methods.
+
+    Reports native and Flower paths, aggregation semantics, install hints,
+    and explicit non-goals for teaching overlays and Session walkthroughs.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, default backend selection, and honesty notes.
+    """
     return {
         "backends": {
             "native": {
@@ -95,7 +104,21 @@ def _default_backend_when_installed() -> str:
 
 
 def list_federated_methods(*, backend: FederatedBackendName | None = None) -> list[str]:
-    """List federation methods for a backend (or all when backend is None)."""
+    """List federated method names available for one or all backends.
+
+    When ``backend`` is omitted, returns the union of methods across all
+    backends defined in :func:`federated_capability_matrix`.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend name; when set, returns methods only for that backend.
+
+    Returns
+    -------
+    list[str]
+        Sorted unique method identifiers (e.g. ``fedavg``, ``fedprox``).
+    """
     matrix = federated_capability_matrix()["backends"]
     if backend is not None:
         entry = matrix.get(backend)
@@ -111,6 +134,21 @@ def list_federated_methods(*, backend: FederatedBackendName | None = None) -> li
 
 
 def backend_available(name: FederatedBackendName) -> bool:
+    """Return whether a federated backend is available on this machine.
+
+    Checks the ``available`` flag in :func:`federated_capability_matrix` for
+    native or Flower entries.
+
+    Parameters
+    ----------
+    name:
+        Backend key such as ``native`` or ``flower``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the backend can be used for fit without missing extras.
+    """
     matrix = federated_capability_matrix()["backends"]
     entry = matrix.get(name)
     if entry is None:
@@ -123,7 +161,33 @@ def resolve_backend(
     *,
     method: str | None = None,
 ) -> FederatedBackendName:
-    """Validate backend availability and apply honest defaults."""
+    """Validate backend availability and apply honest defaults.
+
+    Normalizes method aliases, selects the default backend when omitted, and
+    raises when the requested backend requires a missing optional extra.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend override; when ``None``, uses the default from the
+        capability matrix (Flower when ``flwr`` is installed, else native).
+    method:
+        Optional federated method name used to validate against supported
+        methods before backend resolution.
+
+    Returns
+    -------
+    FederatedBackendName
+        Resolved backend identifier ready for fit routing.
+
+    Raises
+    ------
+    ValidationError
+        When ``method`` or ``backend`` is unknown or unsupported.
+    MissingExtraError
+        When the resolved backend requires ``federated-industry`` and it is
+        missing.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     method_key = None if method is None else str(method).lower().replace("-", "_")

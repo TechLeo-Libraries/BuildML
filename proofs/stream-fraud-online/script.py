@@ -67,7 +67,14 @@ def main() -> None:
             "partial_fit consumes train cursor only",
             "Validation/test never enter online updates",
         ],
-        "industry_comparison": {"status": "stub", "note": "River twin when installed"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: sklearn SGDClassifier partial_fit twin on the same "
+                "split; optional River when installed — run script then baseline_industry.py for "
+                "results/comparison.json."
+            ),
+        },
         "limitations": ["Batch chunks, not Kafka/Flink"],
     })
     print("stream-fraud-online OK", dict(test.metrics))

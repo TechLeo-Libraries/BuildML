@@ -40,7 +40,31 @@ def save_ranker_bundle(
     eval_result: RankerEvalResult | None = None,
     rank_result: RankResult | None = None,
 ) -> Path:
-    """Write a ranker bundle directory (``buildml.ranker_bundle.v1``)."""
+    """Write a ranker bundle directory (``buildml.ranker_bundle.v1``).
+
+    Persists the fitted :class:`~buildml.ranking.results.RankerPlan` separately
+    from Session checkpoints so tabular workflow and ranker state reload
+    independently.
+
+    Parameters
+    ----------
+    path:
+        Destination directory for ``meta.json`` and ``ranker_plan.joblib``.
+    plan:
+        Train-fitted ranker plan to persist.
+    fit_result, eval_result, rank_result:
+        Optional last operation reports for bundle metadata.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory that was written.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No RankerPlan to save.")
     destination = Path(path)
@@ -68,7 +92,27 @@ def save_ranker_bundle(
 
 
 def load_ranker_bundle(path: str | Path) -> RankerPlan:
-    """Load a ranker bundle into a :class:`RankerPlan`."""
+    """Load a ranker bundle into a :class:`~buildml.ranking.results.RankerPlan`.
+
+    Reads ``meta.json`` for format validation and ``ranker_plan.joblib`` for
+    the fitted estimator, standardization vectors, and plan metadata.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory written by :func:`save_ranker_bundle`.
+
+    Returns
+    -------
+    RankerPlan
+        Rehydrated train-fitted ranker plan ready for score and evaluate.
+
+    Raises
+    ------
+    ValidationError
+        When required bundle files are missing, the format is unsupported, or
+        the payload does not contain a valid :class:`RankerPlan`.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "ranker_plan.joblib"

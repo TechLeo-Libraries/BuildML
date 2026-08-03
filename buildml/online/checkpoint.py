@@ -34,7 +34,32 @@ def save_online_bundle(
     fit_result: OnlineFitResult | None = None,
     eval_result: OnlineEvalResult | None = None,
 ) -> Path:
-    """Write an online-learning bundle directory (``buildml.online_bundle.v1``)."""
+    """Write an online-learning bundle directory (``buildml.online_bundle.v1``).
+
+    Persists the plan and optional fit/eval summaries as joblib + JSON metadata.
+    Distinct from Session checkpoints.
+
+    Parameters
+    ----------
+    path:
+        Destination directory (created if missing).
+    plan:
+        Fitted :class:`~buildml.online.results.OnlinePlan`.
+    fit_result:
+        Optional fit summary to embed in ``meta.json``.
+    eval_result:
+        Optional evaluation summary to embed in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No OnlinePlan to save.")
     destination = Path(path)
@@ -54,7 +79,25 @@ def save_online_bundle(
 
 
 def load_online_bundle(path: str | Path) -> OnlinePlan:
-    """Load an online-learning bundle into an :class:`OnlinePlan`."""
+    """Load an online-learning bundle into an :class:`OnlinePlan`.
+
+    Validates bundle format version and plan object type before returning.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``online_plan.joblib``.
+
+    Returns
+    -------
+    OnlinePlan
+        Deserialized plan with estimator and label encoder attached.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or plan type is wrong.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "online_plan.joblib"

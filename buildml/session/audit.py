@@ -26,6 +26,17 @@ class RankedRisk:
     rationale: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the ranked risk for history logs and walkthrough overlays.
+
+        Preserves severity, source, and suggested follow-up so audit panels can
+        render risks without reconstructing heuristics from raw Session state.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-friendly mapping of rank, severity, message, source, and
+            optional suggested operation metadata.
+        """
         return {
             "rank": self.rank,
             "severity": self.severity,
@@ -45,6 +56,17 @@ class PrerequisiteGraphSummary:
     missing_required: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the prerequisite graph for dry-run and history summaries.
+
+        Copies nodes and edges defensively and adds aggregate counts so HTML
+        and JSON exports can size the graph without re-walking prerequisites.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-friendly mapping of nodes, edges, missing requirements, and
+            summary counts.
+        """
         return {
             "nodes": [dict(item) for item in self.nodes],
             "edges": [dict(item) for item in self.edges],
@@ -70,6 +92,17 @@ class DryRunStep:
     anti_patterns: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize one dry-run step for reports and API payloads.
+
+        Captures availability, blockers, and catalog-derived risks so a stored
+        preview remains interpretable outside the interactive Session.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-friendly mapping of operation metadata, parameters, and
+            preview diagnostics.
+        """
         return {
             "operation": self.operation,
             "available": self.available,
@@ -96,6 +129,18 @@ class DryRunReport:
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the full dry-run report for checkpoints and walkthroughs.
+
+        Nested steps, ranked risks, and prerequisite graphs are flattened to
+        plain dicts so the preview can travel with model bundles and HTML
+        exports without live Session handles.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-friendly mapping of steps, risks, suggestions, and aggregate
+            availability counts.
+        """
         return {
             "steps": [step.to_dict() for step in self.steps],
             "unresolved_risks": list(self.unresolved_risks),
@@ -109,6 +154,12 @@ class DryRunReport:
         }
 
     def show(self) -> None:
+        """Print a concise dry-run summary to stdout for interactive review.
+
+        Lists each previewed step with availability, blockers, estimated
+        effects, ranked risks, suggested next operations, and missing
+        prerequisites without mutating Session state.
+        """
         print("Dry-run preview (Session state is unchanged)")
         for step in self.steps:
             mark = "ok" if step.available else "blocked"
@@ -152,6 +203,17 @@ class HistorySummary:
     has_fit: bool = False
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the history summary for walkthrough audit panels.
+
+        Includes operation counts, ranked risks, prerequisite gaps, and split or
+        fit flags so offline reports mirror the interactive summarize view.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-friendly mapping of history tallies, risks, and follow-up
+            suggestions.
+        """
         return {
             "n_operations": self.n_operations,
             "operation_counts": dict(self.operation_counts),
@@ -167,6 +229,11 @@ class HistorySummary:
         }
 
     def show(self) -> None:
+        """Print a concise history summary to stdout for interactive review.
+
+        Shows operation and warning counts, recent calls, ranked unresolved
+        risks, and suggested next operations derived from workflow resolution.
+        """
         print(
             f"History summary · {self.n_operations} operation(s), {self.warning_count} warning(s)"
         )
@@ -191,7 +258,30 @@ def dry_run_session(
     *,
     parameters: Mapping[str, Any] | None = None,
 ) -> DryRunReport:
-    """Preview operations against current Session state without mutation."""
+    """Preview operations against current Session state without mutation.
+
+    Resolves workflow availability, catalog blockers, prerequisite graphs, and
+    ranked risks so you can review intended calls before executing them. The
+    preview never fits, transforms, or appends history.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose dataset, split,
+        plans, and history inform availability checks.
+    operation:
+        One operation name, a sequence of names, or ``None`` to auto-select
+        prep, split, and fit-adjacent steps that matter next.
+    parameters:
+        Optional parameter mapping applied when ``operation`` is a single
+        string; ignored for multi-operation previews.
+
+    Returns
+    -------
+    DryRunReport
+        Non-mutating preview with per-step availability, ranked risks, and
+        suggested follow-ups.
+    """
     workflow = {step.operation: step for step in resolve_workflow(session)}
     if operation is None:
         # Default: available + blocked prep/fit-adjacent steps that matter next.
@@ -248,7 +338,24 @@ def dry_run_session(
 
 
 def summarize_history(session: Any) -> HistorySummary:
-    """Summarize Session history and surface unresolved risks."""
+    """Summarize Session history and surface unresolved risks.
+
+    Aggregates operation counts, decision origins, warnings, and workflow cues
+    so audit and walkthrough surfaces can orient reviewers without re-parsing
+    raw history records.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose ``history`` or
+        ``_history`` slot supplies versioned operation records.
+
+    Returns
+    -------
+    HistorySummary
+        Compact history view with ranked risks, prerequisite gaps, and
+        suggested next operations.
+    """
     raw_history = getattr(session, "history", None) or getattr(session, "_history", None)
     history = normalize_history(raw_history)
     counts: dict[str, int] = {}
@@ -284,12 +391,44 @@ def summarize_history(session: Any) -> HistorySummary:
 
 
 def collect_unresolved_risks(session: Any) -> list[str]:
-    """Heuristic open risks from state, history warnings, and catalog notes."""
+    """Collect heuristic open-risk messages from Session state and history.
+
+    Convenience wrapper around :func:`rank_unresolved_risks` when callers only
+    need human-readable strings rather than ranked metadata.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` inspected for split,
+        fit, preprocess, and history-warning conditions.
+
+    Returns
+    -------
+    list[str]
+        De-duplicated risk messages ordered by severity and workflow impact.
+    """
     return [item.message for item in rank_unresolved_risks(session)]
 
 
 def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
-    """Rank open risks by likely workflow impact with suggested follow-ups."""
+    """Rank open risks by likely workflow impact with suggested follow-ups.
+
+    Combines structural state checks (missing split after fit-capable ops,
+    session-global preprocess with CV history), history warnings, preprocess
+    findings, and threshold-policy gaps into ordered review cues.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose dataset, split,
+        fit result, preprocess plans, and history are inspected.
+
+    Returns
+    -------
+    list[RankedRisk]
+        De-duplicated risks with severity, source, rationale, and optional
+        suggested Session operation.
+    """
     raw: list[tuple[int, RiskSeverity, str, str, str | None, str]] = []
     dataset = getattr(session, "_dataset", None)
     split = getattr(session, "_split_plan", None)
@@ -480,11 +619,41 @@ def rank_unresolved_risks(session: Any) -> list[RankedRisk]:
 
 
 def suggest_next_operations(session: Any, *, limit: int = 8) -> list[dict[str, Any]]:
-    """Suggest concrete next Session operations from the workflow resolver."""
+    """Suggest concrete next Session operations from the workflow resolver.
+
+    Merges resolver-available steps with capability-introspection hints, then
+    orders suggestions by workflow priority so dry-run and history summaries
+    surface actionable follow-ups rather than meta operations.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose workflow graph
+        and history inform availability.
+    limit:
+        Maximum number of suggestions to return after priority ordering.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        Mappings with ``operation``, ``status``, ``reason``, ``api_action``,
+        and ``evidence`` keys for each suggestion.
+    """
+    from buildml.explain.capability_status import suggest_capability_introspection
+    from buildml.explain.history import normalize_history
+
     workflow = resolve_workflow(session)
     suggestions: list[dict[str, Any]] = []
+    available_ops: set[str] = set()
     for step in workflow:
         status = step.status.value if hasattr(step.status, "value") else str(step.status)
+        if status in {
+            WorkflowStepStatus.AVAILABLE.value,
+            WorkflowStepStatus.READY.value,
+            "available",
+            "ready",
+        }:
+            available_ops.add(step.operation)
         if status not in {
             WorkflowStepStatus.AVAILABLE.value,
             WorkflowStepStatus.READY.value,
@@ -514,6 +683,11 @@ def suggest_next_operations(session: Any, *, limit: int = 8) -> list[dict[str, A
                 "evidence": f"workflow-{step.operation}",
             }
         )
+    cap_suggestions = suggest_capability_introspection(
+        normalize_history(getattr(session, "_history", None)),
+        available_fit_ops=available_ops,
+    )
+    suggestions.extend(cap_suggestions)
     ordered = _priority_order([str(item["operation"]) for item in suggestions])
     by_name = {str(item["operation"]): item for item in suggestions}
     return [by_name[name] for name in ordered if name in by_name][:limit]
@@ -523,7 +697,24 @@ def build_prerequisite_graph_summary(
     session: Any,
     operations: Sequence[str],
 ) -> PrerequisiteGraphSummary:
-    """Summarize prerequisite nodes/edges for the given operations."""
+    """Summarize prerequisite nodes/edges for the given operations.
+
+    Walks catalog prerequisites and provider edges so dry-run and history views
+    can show which capabilities block execution without running the operations.
+
+    Parameters
+    ----------
+    session:
+        Live :class:`~buildml.session.session.Session` whose workflow state
+        determines prerequisite satisfaction.
+    operations:
+        Operation names to include as graph roots; unknown names are skipped.
+
+    Returns
+    -------
+    PrerequisiteGraphSummary
+        Nodes, edges, and missing required prerequisites for the focus set.
+    """
     workflow = {step.operation: step for step in resolve_workflow(session)}
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, str]] = []
@@ -723,71 +914,90 @@ def _priority_order(names: Sequence[str]) -> list[str]:
         "select_features",
         "apply_custom_transform",
         "resample",
+        "unsupervised_capability_matrix",
         "fit_clusters",
         "evaluate_clusters",
         "fit_voting",
         "fit_stacking",
         "fit_blending",
         "evaluate_ensemble",
+        "unsupervised_capability_matrix",
         "run_automl",
+        "automl_capability_matrix",
         "evaluate_automl",
-        "fit_forecast",
-        "generate_forecast",
-        "evaluate_forecast",
+        "timeseries_capability_matrix",
         "analyze_timeseries",
         "ts_decompose",
         "ts_diagnostics",
+        "forecast_capability_matrix",
+        "fit_forecast",
+        "generate_forecast",
+        "evaluate_forecast",
+        "anomaly_capability_matrix",
         "fit_anomaly",
         "score_anomalies",
         "evaluate_anomaly",
+        "semisupervised_capability_matrix",
         "fit_semisupervised",
         "predict_semisupervised",
         "evaluate_semisupervised",
+        "ssl_capability_matrix",
         "fit_ssl_pretext",
         "transform_ssl",
         "finetune_ssl_head",
         "evaluate_ssl",
+        "activelearning_capability_matrix",
         "fit_active_learner",
         "suggest_query",
         "label_rows",
         "evaluate_active_learning",
+        "online_capability_matrix",
         "fit_online",
         "partial_fit_online",
         "predict_online",
         "evaluate_online",
+        "multitask_capability_matrix",
         "fit_multitask",
         "predict_multitask",
         "evaluate_multitask",
+        "metalearning_capability_matrix",
         "fit_metalearning",
         "adapt_to_task",
         "evaluate_metalearning",
+        "federated_capability_matrix",
         "fit_federated",
         "predict_federated",
         "evaluate_federated",
+        "probabilistic_capability_matrix",
         "fit_probabilistic",
         "predict_probabilistic",
         "predict_interval",
         "evaluate_probabilistic",
+        "causal_capability_matrix",
         "declare_causal_assumptions",
         "fit_causal",
         "estimate_causal",
         "evaluate_causal",
         "refute_causal",
+        "graph_capability_matrix",
         "set_graph",
         "fit_graph",
         "predict_graph",
         "evaluate_graph",
+        "symbolic_capability_matrix",
         "fit_symbolic",
         "predict_symbolic",
         "evaluate_symbolic",
         "fit_neuro_symbolic",
         "predict_neuro_symbolic",
         "evaluate_neuro_symbolic",
+        "cbr_capability_matrix",
         "fit_cbr",
         "retrieve_cases",
         "predict_cbr",
         "evaluate_cbr",
         "retain_cbr",
+        "nlp_capability_matrix",
         "profile_text_corpus",
         "detect_language",
         "fit_text_classifier",
@@ -800,33 +1010,42 @@ def _priority_order(names: Sequence[str]) -> list[str]:
         "analyze_sentiment",
         "extract_entities",
         "summarize_text",
+        "rl_capability_matrix",
         "fit_imitation",
         "predict_imitation_action",
         "evaluate_imitation",
         "fit_rl",
         "act_rl",
         "evaluate_rl",
+        "tda_capability_matrix",
         "fit_tda",
         "transform_tda",
         "predict_tda",
         "evaluate_tda",
+        "recommender_capability_matrix",
         "fit_recommender",
         "recommend",
         "evaluate_recommender",
+        "ranking_capability_matrix",
         "fit_ranker",
         "rank",
         "evaluate_ranker",
+        "kg_capability_matrix",
         "fit_kg",
         "score_triples",
         "predict_links",
         "query_kg",
         "evaluate_kg",
+        "decision_capability_matrix",
+        "optimize_capability_matrix",
         "fit_decision_policy",
         "apply_decisions",
         "evaluate_decisions",
+        "synthetic_capability_matrix",
         "fit_synthesizer",
         "sample_synthetic",
         "evaluate_synthetic",
+        "rag_capability_matrix",
         "fit",
         "evaluate",
         "calibration",

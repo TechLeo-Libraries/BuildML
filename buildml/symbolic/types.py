@@ -73,6 +73,16 @@ class SymbolicConfig:
     prefer_reduce_components: bool = True
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise symbolic configuration knobs for plans and history records.
+
+        Snapshots fit-time settings so bundles and Session history can replay
+        which backend, source, and rule limits were used.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plain mapping of every :class:`SymbolicConfig` field.
+        """
         return {
             "backend": self.backend,
             "source": self.source,
@@ -111,6 +121,16 @@ class NeuroSymbolicConfig:
     disclosures: tuple[str, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise neuro-symbolic configuration knobs for plans and history.
+
+        Snapshots hybrid mode, base estimator, and rule-source settings used
+        when :func:`buildml.symbolic.fit.fit_neuro_symbolic` runs on train.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plain mapping of every :class:`NeuroSymbolicConfig` field.
+        """
         return {
             "backend": self.backend,
             "mode": self.mode,

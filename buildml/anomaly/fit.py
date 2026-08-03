@@ -70,21 +70,86 @@ def fit_detector(
 ) -> tuple[AnomalyPlan, AnomalyFitResult]:
     """Fit an anomaly detector on the train partition only.
 
-    Backends
-    --------
-    sklearn (default):
-        IsolationForest, LOF, One-Class SVM — core dependency.
-    pyod (``buildml[anomaly-industry]``):
-        HBOS, COPOD, ECOD, DeepSVDD industry detectors.
-    torch (``buildml[torch]``):
-        Tabular autoencoder reconstruction-error scoring.
+Backends
+--------
+sklearn (default):
+    IsolationForest, LOF, One-Class SVM — core dependency.
+pyod (``buildml[anomaly-industry]``):
+    HBOS, COPOD, ECOD, DeepSVDD industry detectors.
+torch (``buildml[torch]``):
+    Tabular autoencoder reconstruction-error scoring.
+Supervised fraud scorers (``mode='supervised'``):
+    ``supervised_hgb`` (core), ``supervised_xgb`` / ``supervised_lgbm``
+    when ``buildml[anomaly-industry]`` is installed.
+Score convention: higher ``anomaly_score`` = more anomalous. Thresholds and
+train alert rates are always disclosed on the plan.
 
-    Supervised fraud scorers (``mode='supervised'``):
-        ``supervised_hgb`` (core), ``supervised_xgb`` / ``supervised_lgbm``
-        when ``buildml[anomaly-industry]`` is installed.
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+backend:
+    Optional backend override (see capability matrix for identifiers).
+method:
+    Method or strategy identifier for the resolved backend.
+mode:
+    Anomaly detection mode (``unsupervised`` or ``supervised``).
+columns:
+    Optional explicit feature column list; ``None`` auto-selects numerics.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+contamination:
+    Expected outlier fraction for sklearn-style detectors.
+threshold_policy:
+    How the decision threshold is chosen from train scores.
+score_threshold:
+    Fixed score cutoff when threshold policy is ``fixed``.
+quantile:
+    Quantile for score threshold when policy is ``quantile``.
+n_estimators:
+    n estimators (int).
+max_samples:
+    max samples (str | int | float).
+n_neighbors:
+    n neighbors (int).
+nu:
+    nu (float).
+kernel:
+    kernel (str).
+gamma:
+    gamma (str | float).
+latent_dim:
+    latent dim (int).
+ae_epochs:
+    ae epochs (int).
+ae_batch_size:
+    ae batch size (int).
+normal_label_column:
+    normal label column (str | None).
+normal_label_value:
+    normal label value (Any).
+positive_label:
+    positive label (Any).
+prefer_reduce_components:
+    Prefer reduced component columns when a reduce plan exists.
+reduce_plan:
+    Optional preprocess reduce plan from Session.
+flag_column:
+    flag column (str).
+score_column:
+    score column (str).
 
-    Score convention: higher ``anomaly_score`` = more anomalous. Thresholds and
-    train alert rates are always disclosed on the plan.
+Returns
+-------
+tuple[AnomalyPlan, AnomalyFitResult]
+    Tuple of results (tuple[AnomalyPlan, AnomalyFitResult]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -289,7 +354,31 @@ def anomaly_scores(
     backend: str | None = None,
     method: str | None = None,
 ) -> np.ndarray:
-    """Compute higher-is-more-anomalous scores from a frozen plan or raw estimator."""
+    """Compute higher-is-more-anomalous scores from a frozen plan or raw estimator.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+plan_or_estimator:
+    plan or estimator (AnomalyPlan | Any).
+x:
+    Feature matrix input rows.
+backend:
+    Optional backend override (see capability matrix for identifiers).
+method:
+    Method or strategy identifier for the resolved backend.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if isinstance(plan_or_estimator, AnomalyPlan):
         plan = plan_or_estimator
         if x is None:

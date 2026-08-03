@@ -17,7 +17,15 @@ AnomalyBackendName = Literal["sklearn", "pyod", "torch"]
 
 
 def anomaly_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for anomaly backends and optional extras."""
+    """Honest capability matrix for anomaly backends and optional extras.
+
+Reports installed backends, supported methods, evaluation rules, install hints, and explicit non-goals for teaching overlays.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -124,7 +132,22 @@ def list_anomaly_methods(
     backend: AnomalyBackendName | None = None,
     mode: str | None = None,
 ) -> list[str]:
-    """List detector methods for a backend (or all when backend is None)."""
+    """List detector methods for a backend (or all when backend is None).
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+backend:
+    Optional backend override (see capability matrix for identifiers).
+mode:
+    Anomaly detection mode (``unsupervised`` or ``supervised``).
+
+Returns
+-------
+list[str]
+    List of string identifiers from the catalog.
+    """
     matrix = anomaly_capability_matrix()
     if mode == "supervised":
         out: list[str] = []
@@ -146,6 +169,20 @@ def list_anomaly_methods(
 
 
 def backend_available(name: AnomalyBackendName) -> bool:
+    """Return whether backend optional dependencies are installed and usable.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+name:
+    Backend or catalog identifier to look up.
+
+Returns
+-------
+bool
+    ``True`` when the capability or dependency check succeeds.
+    """
     matrix = anomaly_capability_matrix()["backends"]
     entry = matrix.get(name)
     if entry is None:
@@ -159,7 +196,29 @@ def resolve_backend_method(
     method: str,
     mode: str,
 ) -> tuple[AnomalyBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+backend:
+    Optional backend override (see capability matrix for identifiers).
+method:
+    Method or strategy identifier for the resolved backend.
+mode:
+    Anomaly detection mode (``unsupervised`` or ``supervised``).
+
+Returns
+-------
+tuple[AnomalyBackendName, str]
+    Tuple of results (tuple[AnomalyBackendName, str]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     if mode == "supervised":

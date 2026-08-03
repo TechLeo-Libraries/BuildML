@@ -57,6 +57,15 @@ class ActiveLearningConfig:
     device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize user-facing active-learning configuration knobs.
+
+        Suitable for plan ``config`` payloads and teaching overlays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Strategy, backend, estimator, pool, and torch query hyperparameters.
+        """
         return {
             "strategy": self.strategy,
             "backend": self.backend,

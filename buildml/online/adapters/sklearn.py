@@ -30,6 +30,28 @@ _REGRESSORS = {
 
 
 def resolve_sklearn_task(estimator: str, task: OnlineTask | None) -> OnlineTask:
+    """Resolve the task type for a sklearn partial_fit estimator.
+
+    Maps sklearn classifier and regressor keys to the appropriate task and
+    validates explicit ``task`` overrides.
+
+    Parameters
+    ----------
+    estimator:
+        Sklearn online estimator key (``sgd_classifier``, ``sgd_regressor``, etc.).
+    task:
+        Optional explicit task override.
+
+    Returns
+    -------
+    OnlineTask
+        Resolved ``classification`` or ``regression`` task.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator is unknown or incompatible with ``task``.
+    """
     if estimator in _CLASSIFIERS:
         if task == "regression":
             raise ValidationError(
@@ -50,6 +72,28 @@ def resolve_sklearn_task(estimator: str, task: OnlineTask | None) -> OnlineTask:
 
 
 def build_sklearn_estimator(name: str, random_state: int | None) -> Any:
+    """Build a sklearn estimator from the online partial_fit family.
+
+    Instantiates SGD, PassiveAggressive, Perceptron, or naive Bayes variants
+    configured for incremental ``partial_fit`` updates.
+
+    Parameters
+    ----------
+    name:
+        Sklearn online estimator key.
+    random_state:
+        Seed for stochastic estimators (ignored for naive Bayes variants).
+
+    Returns
+    -------
+    Any
+        Instantiated sklearn estimator supporting ``partial_fit``.
+
+    Raises
+    ------
+    ValidationError
+        When ``name`` is not a supported sklearn online estimator.
+    """
     if name == "sgd_classifier":
         return SGDClassifier(loss="log_loss", random_state=random_state)
     if name == "sgd_regressor":

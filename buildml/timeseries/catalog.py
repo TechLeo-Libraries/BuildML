@@ -19,6 +19,18 @@ DEFAULT_CHANGEPOINT = "pelt" if ruptures_available() else "cusum"
 
 
 def list_decompose_methods() -> tuple[dict[str, Any], ...]:
+    """List every decomposition method with backend and install requirements.
+
+    Each row names the method, which backend implements it, whether it is the
+    current default on this install, and which extra (if any) must be installed.
+
+    Returns
+    -------
+    tuple[dict[str, Any], ...]
+        One dict per method with keys ``method``, ``backend``, ``default``, and
+        ``requires_extra``. Use before calling :func:`decompose_series` when
+        building UI or teaching surfaces.
+    """
     rows: list[dict[str, Any]] = []
     for name in sorted(DECOMPOSE_METHODS):
         extra = None
@@ -36,6 +48,18 @@ def list_decompose_methods() -> tuple[dict[str, Any], ...]:
 
 
 def list_changepoint_methods() -> tuple[dict[str, Any], ...]:
+    """List every changepoint method with backend and install requirements.
+
+    Core CUSUM is always available; PELT and binary segmentation need ruptures
+    when ``buildml[timeseries]`` is installed.
+
+    Returns
+    -------
+    tuple[dict[str, Any], ...]
+        One dict per method with keys ``method``, ``backend``, ``default``, and
+        ``requires_extra``. Pair with :func:`timeseries_capability_matrix` for
+        pre-flight checks.
+    """
     rows: list[dict[str, Any]] = []
     for name in sorted(ALL_CHANGEPOINT_METHODS):
         extra = "timeseries" if name in CHANGEPOINT_METHODS_EXTRA else None
@@ -53,7 +77,19 @@ def list_changepoint_methods() -> tuple[dict[str, Any], ...]:
 
 
 def timeseries_status_payload() -> dict[str, Any]:
-    """Install / backend disclosure for walkthrough and guides."""
+    """Build install and backend disclosure for walkthroughs and teaching overlays.
+
+    Summarizes which optional stacks imported successfully and which defaults
+    :func:`analyze_timeseries` will pick on this machine. Safe to call without a
+    dataset.
+
+    Returns
+    -------
+    dict[str, Any]
+        Keys include ``statsmodels_available``, ``ruptures_available``,
+        ``default_decompose``, ``default_changepoint``, ``recommended_extra``, and
+        human-readable ``disclosures``.
+    """
     return {
         "statsmodels_available": statsmodels_available(),
         "ruptures_available": ruptures_available(),
@@ -71,7 +107,21 @@ def timeseries_status_payload() -> dict[str, Any]:
 
 
 def timeseries_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for time-series analysis backends."""
+    """Report which time-series analysis backends are available on this machine.
+
+    Call before :func:`analyze_timeseries` or Session
+    :meth:`~buildml.session.session.Session.analyze_timeseries` to choose
+    decomposition and changepoint methods that will actually run here. Read-only
+    introspection — no dataset required.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested ``backends`` with ``core``, ``statsmodels``, and ``ruptures``
+        entries, plus ``default_decompose``, ``default_changepoint``, method
+        lists, ``install_hints``, and ``non_goals`` separating analysis from
+        forecasting products.
+    """
     return {
         "backends": {
             "core": {

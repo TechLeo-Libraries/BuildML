@@ -17,15 +17,17 @@ def eda(
     export_figures: str | Path | None = None,
     html_format: Literal['studio', 'research'] = "studio",
 ) -> EDAReport:
-    """Run exploratory analysis.
+    """Run exploratory data analysis on the attached dataset.
 
-    Includes quality/pattern screens, distributional tests, correlations,
-    mutual information, VIF/PCA, target-aware tests, outlier screens,
-    train/test drift (if split exists), adaptive visualization planning,
-    narrative generation, and optional HTML/figure export.
+    Delegates to :func:`buildml.eda.explore.explore_dataset`, enriches the
+    report with Session workflow status, stores it on Session, and records
+    the operation. Follow with :func:`eda_app` for the Teaching Studio UI or
+    export paths for offline artifacts.
 
     Parameters
     ----------
+    session:
+        Active Session with an ingested dataset (optional split plan for drift).
     include_plots:
         Render adaptive plots (requires ``pip install 'buildml[viz]'``).
     show:
@@ -45,6 +47,12 @@ def eda(
     html_format:
         ``"studio"`` (default) writes the offline Teaching Studio; ``"research"``
         writes the layered research HTML shell with matplotlib embeds.
+
+    Returns
+    -------
+    EDAReport
+        Structured EDA report with overview, recommendations, narrative, and
+        optional plots. Use :func:`eda_app` to explore interactively.
     """
     report = explore_dataset(
         session.dataset,
@@ -122,6 +130,9 @@ def eda_app(
 
     Parameters
     ----------
+    session:
+        Active Session; uses ``session._last_eda`` or runs :func:`eda` when
+        ``report`` is omitted.
     report:
         Optional existing :class:`~buildml.eda.report.EDAReport`. When omitted,
         uses the last ``eda()`` result or runs a fresh analysis.
@@ -189,7 +200,35 @@ def open_eda_dashboard(
     max_columns: int = 100,
     blocking: bool = False,
 ) -> Any:
-    """Alias for :meth:`eda_app`."""
+    """Launch the EDA Teaching Studio (alias for :func:`eda_app`).
+
+    Identical to :func:`eda_app`; kept for notebooks that expect a
+    ``open_eda_dashboard`` entry point. Delegates all arguments to
+    :func:`eda_app`.
+
+    Parameters
+    ----------
+    session:
+        Active Session passed through to :func:`eda_app`.
+    report:
+        Optional existing EDA report; forwarded unchanged.
+    host, port:
+        Local bind address for the ASGI server.
+    open_browser:
+        Open the system browser when the server is ready.
+    title:
+        App header title shown in the Teaching Studio.
+    sample_rows, max_columns:
+        Forwarded to :func:`eda` when a fresh report must be computed.
+    blocking:
+        When True, serve on the current thread until interrupted.
+
+    Returns
+    -------
+    EDAAppHandle
+        Handle with ``url``, ``stop()``, and ``is_running`` — same as
+        :func:`eda_app`.
+    """
     return session.eda_app(
         report=report,
         host=host,

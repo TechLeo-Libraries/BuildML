@@ -38,7 +38,26 @@ def compute_giotto_diagrams(
     homology_dims: Sequence[int],
     maxdim: int,
 ) -> list[np.ndarray]:
-    """Compute VR persistence diagrams for one point cloud via giotto-tda."""
+    """Compute Vietoris–Rips persistence diagrams via giotto-tda for one cloud.
+
+    Uses ``gtda.homology.VietorisRipsPersistence`` on a single local neighborhood.
+    Returns finite ``(birth, death)`` pairs per homology dimension.
+
+    Parameters
+    ----------
+    point_cloud:
+        Local cloud shaped ``(n_points, n_features)``.
+    homology_dims:
+        Homology dimensions to compute (subset of ``0..maxdim``).
+    maxdim:
+        Maximum dimension index in the returned list.
+
+    Returns
+    -------
+    list[numpy.ndarray]
+        Diagrams indexed by dimension; empty arrays when a dimension has no
+        finite pairs.
+    """
     gtda = _require_gtda()
     from gtda.homology import VietorisRipsPersistence
 
@@ -72,7 +91,38 @@ def fit_giotto_vectorizer_state(
     n_bins: int,
     n_layers: int,
 ) -> dict[str, Any]:
-    """Fit giotto vectorizer parameters on train diagrams."""
+    """Fit a giotto-tda diagram vectorizer on train diagrams only.
+
+    Supports Betti curves, persistence images, and persistence landscapes from
+    giotto. The fitted sklearn-style object is stored in state for holdout
+    transform.
+
+    Parameters
+    ----------
+    train_diagrams:
+        One diagram list per train row.
+    vectorization:
+        ``betti_curve``, ``persistence_image``, ``persistence_landscape``, or
+        ``landscape`` (alias for persistence landscape).
+    homology_dims:
+        Homology dimensions included in the stacked giotto batch.
+    n_bins:
+        Filtration grid resolution for giotto vectorizers.
+    n_layers:
+        Landscape layer count (persistence landscape only).
+
+    Returns
+    -------
+    dict[str, Any]
+        State including ``giotto_obj``, ``feature_dim``, and ``kind``.
+
+    Raises
+    ------
+    ValidationError
+        When ``vectorization`` is unsupported on the giotto backend.
+    MissingExtraError
+        When ``buildml[tda-industry]`` is not installed.
+    """
     gtda = _require_gtda()
     key = str(vectorization).lower().replace("-", "_")
     dims = tuple(int(d) for d in homology_dims)
@@ -129,7 +179,28 @@ def vectorize_giotto_diagrams(
     diagrams: Sequence[np.ndarray],
     state: dict[str, Any],
 ) -> np.ndarray:
-    """Vectorize one sample's diagrams using a fitted giotto vectorizer."""
+    """Vectorize one sample's diagrams with a fitted giotto vectorizer.
+
+    Applies the sklearn-style giotto object stored at fit time. Output length is
+    padded to match the train-fitted ``feature_dim``.
+
+    Parameters
+    ----------
+    diagrams:
+        Diagram list indexed by homology dimension for one row.
+    state:
+        State from :func:`fit_giotto_vectorizer_state` containing ``giotto_obj``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Fixed-length feature vector padded/truncated to ``state['feature_dim']``.
+
+    Raises
+    ------
+    ValidationError
+        When ``giotto_obj`` is missing from state.
+    """
     dims = tuple(int(d) for d in state["homology_dims"])
     batch = _diagrams_to_giotto_batch([diagrams], dims)
     obj = state.get("giotto_obj")
@@ -243,7 +314,54 @@ def fit_giotto(
     subsample_disclosures: Sequence[str] = (),
     subsample_warnings: Sequence[str] = (),
 ) -> tuple[TdaPlan, TdaFitResult]:
-    """Fit TDA via giotto-tda (buildml[tda-industry])."""
+    """Fit a TDA pipeline via giotto-tda (``buildml[tda-industry]``).
+
+    Mirrors the native fit path but uses giotto PH and vectorizers. Optional
+    KeplerMapper summary on train when ``mapper=True`` (diagnostic only).
+
+    Parameters
+    ----------
+    dataset, split_plan:
+        Session data and split (train used for fit).
+    vectorization:
+        Giotto-supported vectorizer name.
+    homology_dims, knn, maxdim:
+        Local cloud and PH settings (see :func:`fit_tda`).
+    thresh, pixel_size:
+        Reserved for API parity; giotto VR uses its own filtration defaults.
+    n_bins, n_layers:
+        Giotto vectorizer grid settings.
+    standardize:
+        Train z-score before building local clouds.
+    head, task:
+        Optional sklearn head and task override.
+    columns:
+        Feature columns for clouds.
+    random_state:
+        Seed for subsampling and sklearn heads.
+    prefer_reduce_components, reduce_plan:
+        Column resolution helpers.
+    max_points_guard, subsample_strategy:
+        Train row cap before PH (see :func:`apply_train_subsample`).
+    mapper:
+        Attach optional KeplerMapper train summary when True.
+    train_frame, split_plan_eff:
+        Pre-subsampled train context from :func:`fit_tda` dispatch.
+    subsample_disclosures, subsample_warnings:
+        Subsample audit strings forwarded from the caller.
+
+    Returns
+    -------
+    tuple[TdaPlan, TdaFitResult]
+        Giotto-backed plan and fit report.
+
+    Raises
+    ------
+    ValidationError
+        On invalid task, missing train split, or unknown vectorization.
+    MissingExtraError
+        When giotto-tda is not installed.
+    """
     _ = pixel_size, thresh  # giotto VR uses its own filtration; thresh unused here
     require_giotto(feature="fit_tda backend='giotto'")
     assert_fit_partition(split_plan, "train")
@@ -441,7 +559,23 @@ def transform_diagrams_giotto(
     *,
     plan: Any,
 ) -> list[np.ndarray]:
-    """Compute giotto diagrams for one local cloud using plan settings."""
+    """Compute giotto persistence diagrams for one local cloud using plan settings.
+
+    Convenience wrapper used by :func:`transform_tda` on giotto-backed plans.
+
+    Parameters
+    ----------
+    cloud:
+        Local point cloud for one row.
+    plan:
+        Train-fitted :class:`~buildml.tda.results.TdaPlan` with ``homology_dims``
+        and ``maxdim``.
+
+    Returns
+    -------
+    list[numpy.ndarray]
+        Diagram list indexed by homology dimension.
+    """
     return compute_giotto_diagrams(
         cloud,
         homology_dims=plan.homology_dims,

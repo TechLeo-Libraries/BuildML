@@ -23,7 +23,25 @@ def build_tabular_classifier(
     *,
     hidden_dim: int = 64,
 ) -> Any:
-    """Small tabular MLP classifier for MAML/Reptile meta-learning."""
+    """Build a small tabular MLP classifier for MAML/Reptile meta-learning.
+
+    Requires ``buildml[torch]``; used as the base network for industry
+    first-order meta-training loops.
+
+    Parameters
+    ----------
+    n_features:
+        Input feature dimensionality.
+    n_classes:
+        Number of classification classes.
+    hidden_dim:
+        Width of hidden ReLU layers.
+
+    Returns
+    -------
+    torch.nn.Sequential
+        Three-layer MLP classifier moved to the active torch device by callers.
+    """
     torch = require_torch_metalearning(feature="Industry MAML/Reptile meta-learning")
     return torch.nn.Sequential(
         torch.nn.Linear(n_features, hidden_dim),
@@ -57,7 +75,30 @@ class TabularMetaLearner:
         y_support: np.ndarray,
         x_query: np.ndarray,
     ) -> np.ndarray:
-        """Inner-loop adapt on support; predict query class codes."""
+        """Run inner-loop adaptation on support and predict query class codes.
+
+        Uses learn2learn MAML cloning when available; otherwise applies native
+        first-order SGD steps on a cloned module (Reptile-style path).
+
+        Parameters
+        ----------
+        x_support:
+            Support feature matrix.
+        y_support:
+            Support integer class codes.
+        x_query:
+            Query feature matrix.
+
+        Returns
+        -------
+        numpy.ndarray
+            Predicted integer class codes for query rows.
+
+        Raises
+        ------
+        ValidationError
+            When the meta-learned module is not initialized.
+        """
         torch = require_torch_metalearning()
         if self.module_ is None:
             raise ValidationError("TabularMetaLearner module is not initialized.")
@@ -152,7 +193,66 @@ def meta_train_maml(
     matrix_from_frame: Any,
     encode_labels: Any,
 ) -> tuple[TabularMetaLearner, float | None, list[str], list[str]]:
-    """Meta-train tabular MAML (learn2learn first-order when available)."""
+    """Meta-train tabular MAML on episodic support/query tasks.
+
+    Uses learn2learn first-order MAML when installed; otherwise an honest native
+    SGD meta-loop. Small-scale tabular protocol — not second-order MAML-at-scale.
+
+    Parameters
+    ----------
+    train:
+        Train-partition DataFrame with task and target columns.
+    task_column:
+        Episodic task identifier column.
+    target_column:
+        Classification target column.
+    columns:
+        Feature columns for matrix extraction.
+    label_encoder:
+        Fitted sklearn label encoder for consistent class codes.
+    meta_train_ids:
+        Task ids used for meta-training episodes.
+    n_way:
+        Classes sampled per episode.
+    k_shot:
+        Support examples per class.
+    n_query:
+        Query examples per class.
+    n_episodes:
+        Episodes per meta-epoch.
+    rng:
+        NumPy generator for task/episode sampling (reserved for callers).
+    n_classes:
+        Total number of classes in the label encoder.
+    meta_epochs:
+        Number of outer meta-training epochs.
+    inner_lr:
+        Inner-loop adaptation learning rate.
+    inner_steps:
+        Inner-loop SGD steps per episode.
+    meta_lr:
+        Outer meta-optimizer learning rate.
+    hidden_dim:
+        MLP hidden width.
+    random_state:
+        Seed for episodic sampling.
+    device:
+        Torch device string.
+    frame_for_task:
+        Callable to slice rows for one task id.
+    sample_support_query:
+        Callable to draw support/query splits for one task.
+    matrix_from_frame:
+        Callable to build float feature matrices.
+    encode_labels:
+        Callable to encode target labels.
+
+    Returns
+    -------
+    tuple[TabularMetaLearner, float | None, list[str], list[str]]
+        Meta-trained learner, mean episodic query accuracy (or ``None``), notes,
+        and warnings.
+    """
     from sklearn.metrics import accuracy_score
 
     torch = require_torch_metalearning(feature="Industry MAML meta-learning")
@@ -299,7 +399,66 @@ def meta_train_reptile(
     matrix_from_frame: Any,
     encode_labels: Any,
 ) -> tuple[TabularMetaLearner, float | None, list[str], list[str]]:
-    """Meta-train tabular Reptile (weight interpolation toward task-adapted net)."""
+    """Meta-train tabular Reptile by interpolating toward task-adapted weights.
+
+    Performs inner-loop SGD on support then moves base weights toward the adapted
+    network each episode. First-order, small-scale tabular protocol.
+
+    Parameters
+    ----------
+    train:
+        Train-partition DataFrame with task and target columns.
+    task_column:
+        Episodic task identifier column.
+    target_column:
+        Classification target column.
+    columns:
+        Feature columns for matrix extraction.
+    label_encoder:
+        Fitted sklearn label encoder for consistent class codes.
+    meta_train_ids:
+        Task ids used for meta-training episodes.
+    n_way:
+        Classes sampled per episode.
+    k_shot:
+        Support examples per class.
+    n_query:
+        Query examples per class.
+    n_episodes:
+        Episodes per meta-epoch.
+    rng:
+        NumPy generator for task/episode sampling (reserved for callers).
+    n_classes:
+        Total number of classes in the label encoder.
+    meta_epochs:
+        Number of outer meta-training epochs.
+    inner_lr:
+        Inner-loop adaptation learning rate.
+    inner_steps:
+        Inner-loop SGD steps per episode.
+    meta_lr:
+        Reptile interpolation coefficient toward task-adapted weights.
+    hidden_dim:
+        MLP hidden width.
+    random_state:
+        Seed for episodic sampling.
+    device:
+        Torch device string.
+    frame_for_task:
+        Callable to slice rows for one task id.
+    sample_support_query:
+        Callable to draw support/query splits for one task.
+    matrix_from_frame:
+        Callable to build float feature matrices.
+    encode_labels:
+        Callable to encode target labels.
+
+    Returns
+    -------
+    tuple[TabularMetaLearner, float | None, list[str], list[str]]
+        Meta-trained learner, mean episodic query accuracy (or ``None``), notes,
+        and warnings.
+    """
     from sklearn.metrics import accuracy_score
 
     torch = require_torch_metalearning(feature="Industry Reptile meta-learning")

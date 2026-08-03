@@ -54,7 +54,34 @@ def fit_lightfm_model(
     item_features: csr_matrix | None = None,
     epochs: int = 10,
 ) -> Any:
-    """Fit a LightFM hybrid model on sparse interactions (+ optional features)."""
+    """Fit a LightFM hybrid model on sparse interactions and side features.
+
+    Trains a WARP-loss factorization that can incorporate optional user and
+    item side features. The fitted model is scored via
+    :func:`score_lightfm_model`.
+
+    Parameters
+    ----------
+    interactions_csr:
+        Sparse CSR user×item interaction matrix from train data.
+    n_factors:
+        Latent embedding width for users and items.
+    random_state:
+        Seed for reproducible initialization; ``None`` uses library defaults.
+    feedback:
+        ``"implicit"`` or ``"explicit"``; selects the LightFM loss configuration.
+    user_features:
+        Optional CSR user side-feature matrix aligned to train user order.
+    item_features:
+        Optional CSR item side-feature matrix aligned to train item order.
+    epochs:
+        Number of full passes over the interaction matrix during training.
+
+    Returns
+    -------
+    model
+        Fitted ``lightfm.LightFM`` instance ready for ``predict``.
+    """
     require_lightfm(feature="LightFM hybrid recommender")
     from lightfm import LightFM
 
@@ -85,7 +112,31 @@ def score_lightfm_model(
     user_features: csr_matrix | None = None,
     item_features: csr_matrix | None = None,
 ) -> np.ndarray:
-    """Score all catalog items for one user via LightFM predict."""
+    """Score all catalog items for one user via LightFM predict.
+
+    Calls ``model.predict`` for every item id with the same user index and
+    masks excluded items with ``-inf``.
+
+    Parameters
+    ----------
+    model:
+        Fitted LightFM model from :func:`fit_lightfm_model`.
+    user_idx:
+        Row index of the user in the train interaction matrix.
+    n_items:
+        Catalog width; one score is produced per item index ``0 .. n_items-1``.
+    exclude_mask:
+        Boolean mask over items to suppress (typically train history).
+    user_features:
+        Optional CSR user side features stored on the plan.
+    item_features:
+        Optional CSR item side features stored on the plan.
+
+    Returns
+    -------
+    np.ndarray
+        Per-item scores of length ``n_items``; excluded items are ``-inf``.
+    """
     require_lightfm(feature="LightFM scoring")
     item_ids = np.arange(n_items, dtype=np.int32)
     user_ids = np.full(n_items, int(user_idx), dtype=np.int32)

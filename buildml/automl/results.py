@@ -28,6 +28,16 @@ class AutoMLTrial:
     ensemble_bases: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize one trial for history and comparison exports.
+
+        Captures family, recipe strategy, hyperparameters, and fold CV scores
+        without embedding fitted estimators.
+
+        Returns
+        -------
+        dict[str, Any]
+            Family, recipe strategy, params, and fold CV score summary.
+        """
         return {
             "trial": self.trial,
             "kind": self.kind,
@@ -79,6 +89,16 @@ class AutoMLPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the plan to a JSON-friendly dict (no private estimator).
+
+        Omits ``estimator_`` so bundles and history stay lightweight; stores
+        only the estimator class name.
+
+        Returns
+        -------
+        dict[str, Any]
+            Best family/recipe, feature contract, and disclosure fields.
+        """
         return {
             "task": self.task,
             "method": self.method,
@@ -137,6 +157,16 @@ class AutoMLResult:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_frame(self) -> pd.DataFrame:
+        """Return ranked trials as a pandas DataFrame for inspection.
+
+        One row per trial with family, recipe strategy, scores, and flattened
+        hyperparameter columns prefixed with ``param_``.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Tabular trial comparison suitable for sorting and export.
+        """
         rows = [
             {
                 "trial": t.trial,
@@ -152,6 +182,15 @@ class AutoMLResult:
         return pd.DataFrame(rows)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the full search outcome for history and bundle metadata.
+
+        Includes ranked trials, best candidate summary, and teaching disclosures.
+
+        Returns
+        -------
+        dict[str, Any]
+            Task, method, trials, best family/recipe, and limitation notes.
+        """
         return {
             "task": self.task,
             "method": self.method,
@@ -180,6 +219,11 @@ class AutoMLResult:
         }
 
     def show(self) -> None:
+        """Print a human-readable summary of the search to stdout.
+
+        Shows method, selection mode, best trial score, optional outer CV
+        estimate, and the first few disclosure lines.
+        """
         print(
             f"AutoML · {self.method}/{self.selection} · {self.task} · "
             f"ranked by {self.ranking_metric} · trials={len(self.trials)}"
@@ -202,7 +246,21 @@ class AutoMLResult:
 
 
 def fit_result_from_plan(plan: AutoMLPlan) -> FitResult:
-    """Build a classical FitResult from an AutoMLPlan estimator."""
+    """Build a classical FitResult from an AutoMLPlan estimator.
+
+    Bridges AutoML search output to Session evaluate/predict/save_pipeline by
+    wrapping the train-refit estimator and feature contract from the plan.
+
+    Parameters
+    ----------
+    plan:
+        Fitted :class:`AutoMLPlan` with ``estimator_`` attached.
+
+    Returns
+    -------
+    FitResult
+        Classical fit result ready for :func:`buildml.model.supervised.evaluate_estimator`.
+    """
     return FitResult(
         estimator=plan.estimator_,
         task=plan.task,

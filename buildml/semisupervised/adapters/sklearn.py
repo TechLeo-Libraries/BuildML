@@ -36,6 +36,45 @@ def build_sklearn_estimator(
     k_best: int,
     max_self_train_iter: int,
 ) -> Any:
+    """Construct a sklearn estimator ready for fit or scoring.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+kernel:
+    kernel (str).
+n_neighbors:
+    n neighbors (int).
+max_iter:
+    max iter (int).
+alpha:
+    alpha (float).
+base_estimator:
+    base estimator (str).
+threshold:
+    Decision threshold applied to anomaly scores.
+criterion:
+    criterion (str).
+k_best:
+    k best (int).
+max_self_train_iter:
+    max self train iter (int).
+
+Returns
+-------
+Any
+    Adapter-specific estimator or model object.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if method == "label_propagation":
         return LabelPropagation(
             kernel=kernel,

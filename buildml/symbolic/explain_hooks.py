@@ -6,7 +6,22 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for fit_symbolic / fit_neuro_symbolic history."""
+    """Build a compact history summary from a symbolic fit result.
+
+    Strips full rule bodies while recording backend, source, rule counts, and
+    train scores for Session audit logs.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.symbolic.results.SymbolicFitResult`,
+        :class:`~buildml.symbolic.results.NeuroSymbolicFitResult`, or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, method, task, rule count, and score metadata.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -28,7 +43,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for evaluate_*_symbolic history."""
+    """Build a compact history summary from a symbolic evaluation result.
+
+    Strips full metric payloads down to partition, coverage, and repair stats
+    for Session audit logs after evaluate completes.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.symbolic.results.SymbolicEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, metrics, rule coverage, and repair-rate summaries.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -45,7 +74,21 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
 
 
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
-    """Compact result_summary for predict_*_symbolic history."""
+    """Build a compact history summary from a symbolic predict result.
+
+    Records prediction and trace counts without embedding full per-row traces
+    in Session history entries.
+
+    Parameters
+    ----------
+    predict_result:
+        :class:`~buildml.symbolic.results.SymbolicPredictResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, prediction counts, trace counts, and repair counts.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -73,7 +116,30 @@ def symbolic_status(
     eval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for symbolic / neuro-symbolic ML."""
+    """Build factual walkthrough disclosure for symbolic Session state.
+
+    Combines live plan metadata, optional evaluation summaries, history
+    detection, and :func:`symbolic_capability_matrix` for teaching overlays.
+
+    Parameters
+    ----------
+    symbolic_plan:
+        Active :class:`~buildml.symbolic.results.SymbolicPlan`, if any.
+    neuro_plan:
+        Active :class:`~buildml.symbolic.results.NeuroSymbolicPlan`, if any.
+    fit_result, neuro_fit_result:
+        Last fit reports attached to the Session.
+    eval_result:
+        Last evaluation result.
+    history:
+        Session operation records.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, backend metadata, embedded capability matrix, disclosures,
+        and boundary text separating tabular rules from logic-programming products.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -192,7 +258,20 @@ def symbolic_status(
 
 
 def symbolic_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Report symbolic status for a Session walkthrough panel.
+
+    Reads symbolic and neuro-symbolic plan slots without mutating the Session.
+
+    Parameters
+    ----------
+    session:
+        :class:`~buildml.session.session.Session` instance.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`symbolic_status` for the Session's symbolic state.
+    """
     return symbolic_status(
         getattr(session, "_symbolic_plan", None),
         getattr(session, "_neuro_symbolic_plan", None),

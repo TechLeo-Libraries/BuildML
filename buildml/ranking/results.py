@@ -10,7 +10,7 @@ import numpy as np
 
 @dataclass(slots=True)
 class RankerPlan:
-    """Train-fitted LTR state.
+    """Stores train-fitted tabular learning-to-rank state.
 
     Persist via ``buildml.ranker_bundle.v1``. Distinct from Session checkpoints,
     RAG retrieve/index bundles, and recommender CF bundles.
@@ -53,6 +53,16 @@ class RankerPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the ranker plan for bundles and history logs.
+
+        Captures backend, method, column contract, and training metadata
+        without embedding full estimator objects or weight arrays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, feature contract, and honesty disclosures.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -103,6 +113,16 @@ class RankerFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise ranker fit output for history logs.
+
+        Records backend, method, train query/row counts, and estimator choices
+        after fit on Session train rows completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fit metadata, column contract, and honesty disclosures.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -121,6 +141,7 @@ class RankerFitResult:
         }
 
     def show(self) -> None:
+        """Print a compact human-readable summary of the ranker fit result."""
         print(
             f"RankerFit · {self.backend}/{self.method} · queries={self.n_train_queries} · "
             f"rows={self.n_train_rows} · features={self.n_features}"
@@ -144,6 +165,16 @@ class RankResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise rank output without listing every ranked item.
+
+        Keeps history payloads compact while recording k, query counts, and
+        total ranked items.
+
+        Returns
+        -------
+        dict[str, Any]
+            Rank metadata and honesty disclosures.
+        """
         return {
             "k": self.k,
             "n_queries": self.n_queries,
@@ -154,6 +185,7 @@ class RankResult:
         }
 
     def show(self) -> None:
+        """Print a compact summary of per-query rank output."""
         print(
             f"Rank · {self.method} · k={self.k} · queries={self.n_queries}"
         )
@@ -173,6 +205,16 @@ class RankerEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout ranking evaluation metrics.
+
+        Produced by :func:`buildml.ranking.evaluate.evaluate_ranker` after
+        macro-averaging nDCG, MAP, and MRR over holdout queries.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, metric dictionary, query counts, and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -185,6 +227,7 @@ class RankerEvalResult:
         }
 
     def show(self) -> None:
+        """Print a compact summary of holdout ranking evaluation metrics."""
         print(
             f"RankerEval · {self.method} · k={self.k} · "
             f"partition={self.partition} · queries={self.n_queries_scored}"

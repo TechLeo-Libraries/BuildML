@@ -27,6 +27,11 @@ from typing import Any
 from buildml.dl.curves import build_training_curve, torch_training_status
 from buildml.dl.results import DLEvaluateResult, LoaderReport, TrainResult
 
+try:
+    from buildml.dl.catalog import dl_capability_matrix
+except ImportError:  # pragma: no cover
+    dl_capability_matrix = None  # type: ignore[assignment,misc]
+
 
 def loader_summary(report: LoaderReport) -> dict[str, Any]:
     """Summarise loader construction for Session history.
@@ -156,7 +161,10 @@ def training_status_for_session(session: Any) -> dict[str, Any]:
     --------
     buildml.dl.curves.torch_training_status : Where the logic lives.
     """
-    return torch_training_status(
+    status = torch_training_status(
         train_result=getattr(session, "dl_train_result", None),
         history=list(getattr(session, "history", []) or []),
     )
+    if dl_capability_matrix is not None:
+        status = {**status, "capability_matrix": dl_capability_matrix()}
+    return status

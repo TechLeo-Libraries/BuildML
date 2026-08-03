@@ -29,7 +29,6 @@ CHECKPOINT_BOUNDARY = (
     "AutoMLPlan matter."
 )
 
-
 def save_automl_bundle(
     path: str | Path,
     plan: AutoMLPlan,
@@ -39,9 +38,30 @@ def save_automl_bundle(
 ) -> Path:
     """Write an AutoML bundle directory (``buildml.automl_bundle.v1``).
 
-    Layout
+    Persists the plan and optional classical fit / search summaries as joblib +
+    JSON metadata. Distinct from Session checkpoints.
+
+    Parameters
+    ----------
+    path:
+        Destination directory (created if missing).
+    plan:
+        Fitted :class:`~buildml.automl.results.AutoMLPlan`.
+    fit_result:
+        Optional classical :class:`~buildml.model.supervised.FitResult` to
+        embed alongside the plan.
+    automl_result:
+        Optional search summary to embed in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
     ------
-    ``meta.json``, ``automl_plan.joblib``.
+    ValidationError
+        When ``plan`` is ``None``.
     """
     if plan is None:
         raise ValidationError("No AutoMLPlan to save.")
@@ -63,9 +83,28 @@ def save_automl_bundle(
     (destination / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return destination
 
-
 def load_automl_bundle(path: str | Path) -> tuple[AutoMLPlan, FitResult | None]:
-    """Load an AutoML bundle into an :class:`AutoMLPlan` (+ optional FitResult)."""
+    """Load an AutoML bundle into an :class:`AutoMLPlan` and optional FitResult.
+
+    Validates bundle format version and plan object type before returning.
+    Reconstructs a classical FitResult from the plan when none was stored.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``automl_plan.joblib``.
+
+    Returns
+    -------
+    tuple[AutoMLPlan, FitResult | None]
+        Deserialized plan with estimator attached, plus optional FitResult for
+        classical evaluate/predict paths.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or plan type is wrong.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "automl_plan.joblib"

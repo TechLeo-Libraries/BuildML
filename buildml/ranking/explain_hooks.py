@@ -6,7 +6,21 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_ranker`` history."""
+    """Build a compact history summary from an LTR fit result.
+
+    Strips estimator weights while recording backend, method, train query/row
+    counts, and feature dimension for Session audit logs.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.ranking.results.RankerFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, method, train counts, and estimator metadata.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -23,7 +37,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def rank_result_summary(rank_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``rank`` history."""
+    """Build a compact history summary from a rank operation result.
+
+    Records top-k setting, query counts, and ranked item totals without
+    embedding full per-query item lists in Session history.
+
+    Parameters
+    ----------
+    rank_result:
+        :class:`~buildml.ranking.results.RankResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Method, k, query count, and ranked item metadata.
+    """
     if rank_result is None:
         return {}
     payload = (
@@ -38,7 +66,21 @@ def rank_result_summary(rank_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_ranker`` history."""
+    """Build a compact history summary from a ranker evaluation result.
+
+    Records partition, k, scored query counts, and macro metrics for
+    walkthrough panels without repeating full disclosure text.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.ranking.results.RankerEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, method, k, query counts, and metric dictionary.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -59,7 +101,31 @@ def ranking_status(
     rank_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for tabular LTR."""
+    """Build factual walkthrough disclosure for tabular LTR.
+
+    Combines live :class:`~buildml.ranking.results.RankerPlan` state, optional
+    fit/eval/rank results, and Session history to produce an honest capability
+    status payload for teaching overlays.
+
+    Parameters
+    ----------
+    plan:
+        Current train-fitted ranker plan attached to the Session, if any.
+    fit_result:
+        Last :class:`~buildml.ranking.results.RankerFitResult`, if recorded.
+    eval_result:
+        Last :class:`~buildml.ranking.results.RankerEvalResult`, if recorded.
+    rank_result:
+        Last :class:`~buildml.ranking.results.RankResult`, if recorded.
+    history:
+        Session operation history used to detect prior LTR operations.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, plan metadata, eval snapshot, disclosures, and the
+        attached ranking capability matrix.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -105,7 +171,10 @@ def ranking_status(
             f"metrics={eval_payload.get('metrics')}."
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_ranker_plan": enabled,
@@ -127,11 +196,28 @@ def ranking_status(
             "with relevance labels → pointwise or pairwise ranking metrics. "
             "Not RAG, not recommender CF, not a search-engine product."
         ),
-    }
+    },
+        "ranking_capability_matrix",
+    )
 
 
 def ranking_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build LTR walkthrough status from a Session object.
+
+    Reads private ranker plan and result slots on the Session and delegates to
+    :func:`ranking_status` with the Session history log.
+
+    Parameters
+    ----------
+    session:
+        Active BuildML Session carrying optional ranker state attributes.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`ranking_status` for the Session's current LTR
+        state.
+    """
     return ranking_status(
         getattr(session, "_ranker_plan", None),
         fit_result=getattr(session, "_ranker_fit_result", None),

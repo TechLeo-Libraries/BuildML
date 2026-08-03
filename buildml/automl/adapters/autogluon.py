@@ -36,7 +36,48 @@ def run_autogluon_adapter(
     refit: bool = True,
     presets: str | None = "medium_quality",
 ) -> tuple[AutoMLPlan, AutoMLResult, FitResult | None]:
-    """Run AutoGluon TabularPredictor on Session train only; never touch test."""
+    """Run AutoGluon TabularPredictor on Session train only; never touch test.
+
+    AutoGluon performs internal model selection and featurization on train-only
+    data. BuildML fold-local PreprocessRecipe search is bypassed — disclosures
+    state this explicitly. Session test never enters fit or selection scoring.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features and a single target column.
+    split_plan:
+        Train/validation/test split; only train rows are passed to AutoGluon.
+    task:
+        ``classification``, ``regression``, or ``auto`` to infer from the target.
+    selection:
+        ``cv`` (train-only internal scoring), or ``validation`` to re-rank on
+        the Session validation partition. ``nested`` is not supported.
+    ranking_metric:
+        Metric for leaderboard display; mapped to AutoGluon eval_metric names.
+    time_budget:
+        Wall-clock seconds for AutoGluon fit; overrides ``budget.max_time_seconds``.
+    budget:
+        Optional :class:`~buildml.automl.types.AutoMLBudget`; defaults when omitted.
+    random_state:
+        Seed hint passed where AutoGluon exposes reproducibility knobs.
+    refit:
+        When True, wrap the best model in a classical FitResult after search.
+    presets:
+        AutoGluon preset string (e.g. ``medium_quality``).
+
+    Returns
+    -------
+    tuple[AutoMLPlan, AutoMLResult, FitResult | None]
+        Train-selected plan, ranked leaderboard trials, and optional FitResult.
+
+    Raises
+    ------
+    ValidationError
+        When ``selection='nested'`` or validation partition is missing.
+    MissingExtraError
+        When autogluon is not installed.
+    """
     TabularPredictor = require_autogluon(feature="AutoGluon AutoML backend")
 
     assert_fit_partition(split_plan, "train")
@@ -261,19 +302,87 @@ class _AutoGluonSklearnWrapper:
         target: str,
         feature_cols: list[str],
     ) -> None:
+        """Store the fitted TabularPredictor and feature contract.
+
+        Retains column names and the underlying predictor so Session
+        evaluate/predict can call AutoGluon through a sklearn-compatible API.
+
+        Parameters
+        ----------
+        predictor:
+            Fitted AutoGluon ``TabularPredictor`` instance.
+        target:
+            Target column name excluded from feature predictions.
+        feature_cols:
+            Feature column names passed to AutoGluon at fit time.
+        """
         self._predictor = predictor
         self._target = target
         self._feature_cols = list(feature_cols)
 
     def fit(self, X: pd.DataFrame, y: pd.Series, **kwargs: Any) -> _AutoGluonSklearnWrapper:
+        """No-op fit for sklearn compatibility; predictor is already trained.
+
+        AutoGluon fit happens in :func:`run_autogluon_adapter`; this method
+        exists so sklearn pipelines and Session wrappers accept the object.
+
+        Parameters
+        ----------
+        X:
+            Ignored; AutoGluon was fit externally on train data.
+        y:
+            Ignored.
+        **kwargs:
+            Ignored.
+
+        Returns
+        -------
+        _AutoGluonSklearnWrapper
+            ``self`` for sklearn pipeline compatibility.
+        """
         del kwargs
         return self
 
     def predict(self, X: pd.DataFrame) -> Any:
+        """Predict labels using the wrapped TabularPredictor.
+
+        Subsets ``X`` to ``feature_cols`` before delegating to AutoGluon so
+        Session frames with extra columns still score correctly.
+
+        Parameters
+        ----------
+        X:
+            Feature frame; only ``feature_cols`` are forwarded to AutoGluon.
+
+        Returns
+        -------
+        array-like
+            Predictions from ``TabularPredictor.predict``.
+        """
         frame = X[self._feature_cols].copy()
         return self._predictor.predict(frame)
 
     def predict_proba(self, X: pd.DataFrame) -> Any:
+        """Predict class probabilities when the underlying model supports them.
+
+        Forwards only ``feature_cols`` to AutoGluon; classification models
+        must expose ``predict_proba`` on the TabularPredictor.
+
+        Parameters
+        ----------
+        X:
+            Feature frame; only ``feature_cols`` are forwarded to AutoGluon.
+
+        Returns
+        -------
+        array-like
+            Probability matrix from ``TabularPredictor.predict_proba``.
+
+        Raises
+        ------
+        AttributeError
+            When the underlying TabularPredictor has no ``predict_proba``.
+        """
         frame = X[self._feature_cols].copy()
         if hasattr(self._predictor, "predict_proba"):
             return self._predictor.predict_proba(frame)

@@ -43,7 +43,30 @@ def save_kg_bundle(
     predict_result: PredictLinksResult | None = None,
     query_result: KgQueryResult | None = None,
 ) -> Path:
-    """Write a knowledge-graph bundle directory (``buildml.kg_bundle.v1``)."""
+    """Write a knowledge-graph bundle directory (``buildml.kg_bundle.v1``).
+
+    Persists the fitted :class:`~buildml.kg.results.KgPlan` separately from
+    Session checkpoints so tabular workflow and KG state reload independently.
+
+    Parameters
+    ----------
+    path:
+        Destination directory for ``meta.json`` and ``kg_plan.joblib``.
+    plan:
+        Train-fitted knowledge-graph plan to persist.
+    fit_result, eval_result, score_result, predict_result, query_result:
+        Optional last operation reports for bundle metadata.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory that was written.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No KgPlan to save.")
     destination = Path(path)
@@ -78,7 +101,26 @@ def save_kg_bundle(
 
 
 def load_kg_bundle(path: str | Path) -> KgPlan:
-    """Load a knowledge-graph bundle into a :class:`KgPlan`."""
+    """Load a knowledge-graph bundle into a :class:`~buildml.kg.results.KgPlan`.
+
+    Validates bundle format and restores embeddings, vocabularies, and train
+    adjacency for score, predict, query, and evaluate without reloading Session.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``kg_plan.joblib``.
+
+    Returns
+    -------
+    KgPlan
+        Deserialised plan ready for link prediction and symbolic query.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or payload is malformed.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "kg_plan.joblib"

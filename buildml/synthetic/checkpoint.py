@@ -40,7 +40,33 @@ def save_synthetic_bundle(
     eval_result: SyntheticEvalResult | None = None,
     sample_result: SyntheticSampleResult | None = None,
 ) -> Path:
-    """Write a synthesizer bundle directory (``buildml.synthetic_bundle.v1``)."""
+    """Write a synthesizer bundle directory (``buildml.synthetic_bundle.v1``).
+
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+
+Parameters
+----------
+path:
+    Filesystem path to the bundle directory.
+plan:
+    Fitted plan object carrying model state and feature contract.
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+sample_result:
+    sample result (SyntheticSampleResult | None).
+
+Returns
+-------
+Path
+    Resolved filesystem path to the written bundle directory.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if plan is None:
         raise ValidationError("No SynthesizerPlan to save.")
     destination = Path(path)
@@ -61,7 +87,25 @@ def save_synthetic_bundle(
 
 
 def load_synthetic_bundle(path: str | Path) -> SynthesizerPlan:
-    """Load a synthesizer bundle into a :class:`SynthesizerPlan`."""
+    """Load a synthesizer bundle into a :class:`SynthesizerPlan`.
+
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+
+Parameters
+----------
+path:
+    Filesystem path to the bundle directory.
+
+Returns
+-------
+SynthesizerPlan
+    Fitted plan object (SynthesizerPlan) with private estimators attached.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "synthetic_plan.joblib"

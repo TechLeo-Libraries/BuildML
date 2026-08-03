@@ -42,6 +42,31 @@ def evaluate_recommender(
       Precision@K, Recall@K, nDCG@K, MAP@K.
 
     Metrics are micro-averaged over scored users.
+
+    Parameters
+    ----------
+    dataset:
+        Full Session dataset containing holdout interactions.
+    plan:
+        Train-fitted :class:`~buildml.recommenders.results.RecommenderPlan`;
+        must not be refit on holdout data.
+    split_plan:
+        Split definition used to extract the holdout partition.
+    partition:
+        Split partition name to score (default ``"test"``).
+    k:
+        Cutoff for Precision@K, Recall@K, nDCG@K, and MAP@K.
+
+    Returns
+    -------
+    RecommenderEvalResult
+        Micro-averaged ranking metrics, cold-start counts, and protocol
+        disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When ``k`` is less than 1.
     """
     if int(k) < 1:
         raise ValidationError("k must be >= 1.")

@@ -19,7 +19,18 @@ _LIGHTFM_METHODS = ("lightfm",)
 
 
 def recommender_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for recommender backends and optional extras."""
+    """Return an honest capability matrix for recommender backends.
+
+    Summarises which sklearn, implicit, and LightFM methods are available,
+    default routing per feedback mode, install hints, and non-goals. Used by
+    walkthrough status and catalog helpers.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend availability, methods, ranking metrics, and install
+        guidance suitable for Session disclosure.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -99,6 +110,22 @@ def _default_backend_when_installed() -> str:
 
 
 def default_method_for_feedback(feedback: FeedbackMode) -> RecommenderMethod:
+    """Return the default recommender method for a feedback mode.
+
+    Explicit feedback defaults to item-item kNN; implicit feedback prefers ALS
+    when the industry extra is installed, otherwise sklearn NMF.
+
+    Parameters
+    ----------
+    feedback:
+        ``"explicit"`` for rated interactions or ``"implicit"`` for presence-only
+        signals.
+
+    Returns
+    -------
+    RecommenderMethod
+        Method name suitable for :func:`resolve_backend_method`.
+    """
     if feedback == "implicit":
         return _default_implicit_method()  # type: ignore[return-value]
     return _default_explicit_method()  # type: ignore[return-value]
@@ -108,6 +135,22 @@ def list_recommender_methods(
     *,
     backend: RecommenderBackendName | None = None,
 ) -> list[str]:
+    """List recommender method names, optionally filtered by backend.
+
+    When ``backend`` is omitted, returns the union of methods across all
+    registered backends without duplicates.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend name (``"sklearn"``, ``"implicit"``, or ``"lightfm"``).
+        When ``None``, all known methods are returned.
+
+    Returns
+    -------
+    list[str]
+        Method identifiers valid for the requested backend, or all methods.
+    """
     matrix = recommender_capability_matrix()
     if backend is not None:
         entry = matrix["backends"].get(backend)
@@ -123,6 +166,21 @@ def list_recommender_methods(
 
 
 def backend_available(name: RecommenderBackendName) -> bool:
+    """Return whether a recommender backend is currently importable.
+
+    Consults :func:`recommender_capability_matrix` so catalog probes stay
+    consistent with walkthrough status and fit-time routing.
+
+    Parameters
+    ----------
+    name:
+        Backend identifier from the capability matrix.
+
+    Returns
+    -------
+    bool
+        ``True`` when the backend's optional dependencies are satisfied.
+    """
     entry = recommender_capability_matrix()["backends"].get(name)
     if entry is None:
         return False
@@ -135,7 +193,36 @@ def resolve_backend_method(
     method: RecommenderMethod | None,
     feedback: FeedbackMode,
 ) -> tuple[RecommenderBackendName, RecommenderMethod]:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+    Fills in ``None`` backend or method from feedback-aware defaults, checks
+    that the method is allowed for the backend, and verifies optional extras
+    are installed before returning the resolved pair.
+
+    Parameters
+    ----------
+    backend:
+        Explicit backend override; inferred from ``method`` when ``None``.
+    method:
+        Recommender algorithm name; defaults via
+        :func:`default_method_for_feedback` when ``None``.
+    feedback:
+        ``"explicit"`` or ``"implicit"``; constrains implicit-only backends.
+
+    Returns
+    -------
+    tuple[RecommenderBackendName, RecommenderMethod]
+        Resolved ``(backend, method)`` ready for :func:`fit_recommender`.
+
+    Raises
+    ------
+    ValidationError
+        When the method is invalid for the backend or implicit backend is
+        paired with explicit feedback.
+    MissingExtraError
+        When the resolved backend requires an optional extra that is not
+        installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     resolved_method: RecommenderMethod

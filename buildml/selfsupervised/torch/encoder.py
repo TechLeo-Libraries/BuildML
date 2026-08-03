@@ -31,6 +31,28 @@ class TorchTabularSSLEncoder:
         random_state: int | None = 0,
         device: str = "cpu",
     ) -> None:
+        """Configure a tabular Torch SSL encoder for sklearn-style fit/transform.
+
+        Stores method choice and training hyperparameters forwarded to the
+        internal Torch trainer during :meth:`fit`.
+
+        Parameters
+        ----------
+        method:
+            Tabular SSL method key (SimCLR, BYOL, VICReg, MAE, or VAE).
+        latent_dim:
+            Representation width exported by :meth:`transform`.
+        hidden:
+            Encoder hidden layer widths.
+        projector_hidden, projector_dim, predictor_hidden:
+            Contrastive head widths for SimCLR/BYOL/VICReg methods.
+        epochs, batch_size, learning_rate, temperature, mask_ratio:
+            Training hyperparameters forwarded to the Torch trainer.
+        random_state:
+            Seed for augmentations and minibatch shuffling.
+        device:
+            Torch device string (for example ``cpu`` or ``cuda``).
+        """
         self.method = method
         self.latent_dim = int(latent_dim)
         self.hidden = tuple(int(h) for h in hidden)
@@ -48,17 +70,47 @@ class TorchTabularSSLEncoder:
 
     @property
     def pretext_loss_(self) -> float | None:
+        """Return the final epoch pretext loss from training.
+
+        Returns ``None`` when the encoder has not been fitted yet.
+        """
         if self._train_result is None:
             return None
         return float(self._train_result.pretext_loss)
 
     @property
     def reconstruction_mae_(self) -> float | None:
+        """Return masked reconstruction MAE for generative methods.
+
+        Returns ``None`` for contrastive methods or when the encoder is unfitted.
+        """
         if self._train_result is None:
             return None
         return self._train_result.reconstruction_mae
 
     def fit(self, X: Any, y: Any = None) -> TorchTabularSSLEncoder:
+        """Train the tabular Torch SSL module on feature matrix ``X``.
+
+        Labels are ignored because pretext learning is unsupervised. Training
+        uses the method-specific loss configured at construction time.
+
+        Parameters
+        ----------
+        X:
+            2D float feature matrix with at least four rows.
+        y:
+            Ignored; present for sklearn API compatibility.
+
+        Returns
+        -------
+        TorchTabularSSLEncoder
+            Fitted encoder with ``n_features_in_`` and training diagnostics set.
+
+        Raises
+        ------
+        ValidationError
+            When ``X`` shape does not meet minimum training requirements.
+        """
         del y
         x = np.asarray(X, dtype=np.float32)
         if x.ndim != 2 or x.shape[0] < 4:
@@ -89,6 +141,26 @@ class TorchTabularSSLEncoder:
         return self
 
     def transform(self, X: Any) -> np.ndarray:
+        """Export latent representations from the fitted Torch SSL module.
+
+        Runs the encoder forward pass in eval mode and returns CPU numpy
+        embeddings suitable for head fine-tune and Session attach.
+
+        Parameters
+        ----------
+        X:
+            2D float matrix with ``n_features_in_`` columns.
+
+        Returns
+        -------
+        numpy.ndarray
+            Latent embeddings with shape ``(n_samples, latent_dim)``.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder is not fitted or column count mismatches.
+        """
         self._check_fitted()
         torch = require_torch(feature="SSL transform")
         x = np.asarray(X, dtype=np.float32)
@@ -105,7 +177,26 @@ class TorchTabularSSLEncoder:
             return z.cpu().numpy()
 
     def reconstruct(self, X: Any) -> np.ndarray:
-        """Reconstruction diagnostic for generative methods."""
+        """Return feature reconstructions for MAE/VAE diagnostics.
+
+        Only defined for generative tabular methods; contrastive methods raise
+        because they do not expose a reconstruction head.
+
+        Parameters
+        ----------
+        X:
+            2D float feature matrix matching ``n_features_in_``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Reconstructed features with the same shape as ``X``.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder is unfitted or the method is not generative.
+        """
         self._check_fitted()
         if self.method not in {"mae_tabular", "vae_tabular"}:
             raise ValidationError(
@@ -125,7 +216,16 @@ class TorchTabularSSLEncoder:
             return recon.cpu().numpy()
 
     def state_dict(self) -> dict[str, Any]:
-        """Serializable Torch state for bundle v2."""
+        """Serialise fitted Torch weights for bundle v2 persistence.
+
+        Includes architecture hyperparameters and module state dicts needed by
+        :meth:`from_state_dict` for reload.
+
+        Returns
+        -------
+        dict[str, Any]
+            Serializable payload with method metadata and weight tensors.
+        """
         self._check_fitted()
         torch = require_torch(feature="SSL state_dict")
         payload: dict[str, Any] = {
@@ -144,7 +244,26 @@ class TorchTabularSSLEncoder:
 
     @classmethod
     def from_state_dict(cls, payload: dict[str, Any]) -> TorchTabularSSLEncoder:
-        """Restore encoder from bundle v2 payload."""
+        """Restore a fitted encoder from a bundle v2 payload.
+
+        Rebuilds the method-specific module graph, loads weights, and attaches a
+        placeholder training result so transform/reconstruct work immediately.
+
+        Parameters
+        ----------
+        payload:
+            Dictionary produced by :meth:`state_dict`.
+
+        Returns
+        -------
+        TorchTabularSSLEncoder
+            Encoder ready for transform without refitting.
+
+        Raises
+        ------
+        ValidationError
+            When the payload method is unknown or weights cannot be loaded.
+        """
         from buildml.selfsupervised.torch import models
 
         method = str(payload["method"])

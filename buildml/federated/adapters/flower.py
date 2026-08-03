@@ -61,6 +61,36 @@ class _BuildMLSklearnClient(NumPyClient):
         classes: tuple[Any, ...] | None,
         random_state: int | None,
     ) -> None:
+        """Configure a Flower NumPyClient for one Session client partition.
+
+        Stores partition data and training hyperparameters so Flower can invoke
+        local fit and evaluate callbacks against a single client slice.
+
+        Parameters
+        ----------
+        partition:
+            Client slice with frame and row count metadata.
+        global_template:
+            Global sklearn estimator template for parameter shape.
+        columns:
+            Feature column names for local updates.
+        target_column:
+            Target column name on the client frame.
+        task:
+            ``classification`` or ``regression`` task mode.
+        estimator_key:
+            Sklearn estimator factory key.
+        local_epochs:
+            Local training epochs per fit call.
+        mu:
+            FedProx proximal strength applied after local epochs.
+        label_encoder:
+            Optional fitted label encoder for classification.
+        classes:
+            Optional class tuple for partial_fit classifiers.
+        random_state:
+            Seed forwarded to sklearn estimators.
+        """
         self.partition = partition
         self.global_template = global_template
         self.columns = columns
@@ -75,6 +105,21 @@ class _BuildMLSklearnClient(NumPyClient):
         self.last_metric: float | None = None
 
     def get_parameters(self, config: dict[str, Any]) -> list[np.ndarray]:
+        """Return global linear parameters as Flower ndarray payloads.
+
+        Serialises the current global template coefficients for Flower server
+        round initialization and client synchronization.
+
+        Parameters
+        ----------
+        config:
+            Flower server config dict (ignored).
+
+        Returns
+        -------
+        list[numpy.ndarray]
+            Flattened ``coef_`` and ``intercept_`` arrays for aggregation.
+        """
         _ = config
         return _linear_ndarrays(self.global_template)
 
@@ -83,6 +128,23 @@ class _BuildMLSklearnClient(NumPyClient):
         parameters: list[np.ndarray],
         config: dict[str, Any],
     ) -> tuple[list[np.ndarray], int, dict[str, float]]:
+        """Run a local client update and return Flower fit results.
+
+        Applies local SGD or full fit starting from server parameters, optionally
+        with FedProx proximal pull, and reports sample-weighted metrics.
+
+        Parameters
+        ----------
+        parameters:
+            Global model parameters from the Flower server.
+        config:
+            Flower server config dict (ignored).
+
+        Returns
+        -------
+        tuple[list[numpy.ndarray], int, dict[str, float]]
+            Updated parameters, example count, and optional train metrics.
+        """
         from buildml.federated.fit import _local_update
 
         _ = config
@@ -116,6 +178,23 @@ class _BuildMLSklearnClient(NumPyClient):
         parameters: list[np.ndarray],
         config: dict[str, Any],
     ) -> tuple[float, int, dict[str, float]]:
+        """Evaluate the global model on the client holdout slice.
+
+        Returns Flower loss as ``1 - local_score`` so higher accuracy yields
+        lower reported loss.
+
+        Parameters
+        ----------
+        parameters:
+            Global model parameters from the Flower server.
+        config:
+            Flower server config dict (ignored).
+
+        Returns
+        -------
+        tuple[float, int, dict[str, float]]
+            Loss value, example count, and an empty metrics dict.
+        """
         from buildml.federated.fit import _make_estimator
         from buildml.federated.features import encode_labels
 
@@ -163,6 +242,51 @@ def fit_flower(
     Flower's weighted ``aggregate`` helper. This still executes in-process on
     Session data — not a networked Flower deployment unless you operate one
     separately. No cryptographic secure aggregation.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features, target, and client columns.
+    split_plan:
+        Train/validation/test split; train partition is used for local updates.
+    method:
+        Federated aggregation method (``fedavg`` or ``fedprox``).
+    estimator:
+        Sklearn linear/SGD estimator key for local and global models.
+    task:
+        Optional task override; inferred from ``estimator`` when ``None``.
+    client_column:
+        Optional explicit client/group column.
+    columns:
+        Optional explicit feature columns.
+    n_rounds:
+        Number of federated communication rounds.
+    local_epochs:
+        Local training epochs per selected client per round.
+    client_fraction:
+        Fraction of eligible clients sampled each round.
+    mu:
+        FedProx proximal strength (required when ``method='fedprox'``).
+    random_state:
+        Seed for client sampling and estimator initialization.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    min_client_rows:
+        Minimum train rows required for a client to participate.
+    reduce_plan:
+        Optional preprocess reduce plan from Session.
+
+    Returns
+    -------
+    tuple[FederatedPlan, FederatedFitResult]
+        Fitted plan with global estimator and a serializable fit summary.
+
+    Raises
+    ------
+    ValidationError
+        When split, column, client, or hyperparameter preconditions fail.
+    MissingExtraError
+        When ``flwr`` is not installed (``federated-industry`` extra).
     """
     require_flwr(feature="Flower federated backend")
     ctx = _prepare_federated_context(

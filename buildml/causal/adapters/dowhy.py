@@ -11,6 +11,7 @@ from buildml.causal.extras import require_dowhy
 from buildml.causal.features import (
     encode_binary_treatment,
     infer_outcome_kind,
+    partition_frame,
     train_partition_frame,
     validate_columns_present,
 )
@@ -58,7 +59,37 @@ def fit_dowhy(
     method: str = "backdoor_linear",
     random_state: int | None = 0,
 ) -> tuple[CausalPlan, CausalFitResult]:
-    """Fit DoWhy backdoor ATE on Session train only."""
+    """Fit DoWhy backdoor ATE on Session train only.
+
+    Builds a causal graph from declared confounders (not discovered), runs
+    DoWhy identification and backdoor estimation, and stores the model artifact
+    on the returned :class:`~buildml.causal.results.CausalPlan` for refutation.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing treatment, outcome, and confounders.
+    split_plan:
+        Split plan with train indices.
+    assumptions:
+        Caller-declared backdoor identification contract.
+    method:
+        DoWhy backdoor method key (e.g. ``backdoor_linear``).
+    random_state:
+        RNG seed forwarded to DoWhy estimation when supported.
+
+    Returns
+    -------
+    tuple[CausalPlan, CausalFitResult]
+        Persistable plan with DoWhy artifact and train ATE summary.
+
+    Raises
+    ------
+    ValidationError
+        When assumptions fail validation, train arms are too small, or
+        ``method`` is unsupported. Also raised when DoWhy extras are missing
+        (via :func:`require_dowhy`).
+    """
     require_dowhy(feature="DoWhy causal backend")
     from dowhy import CausalModel
 
@@ -202,13 +233,125 @@ def fit_dowhy(
     return plan, result
 
 
+def estimate_dowhy_partition(
+    plan: CausalPlan,
+    dataset: Dataset,
+    split_plan: SplitPlan | None,
+    *,
+    partition: str,
+    random_state: int | None = 0,
+) -> tuple[float, dict[str, float]]:
+    """Re-estimate DoWhy ATE on a holdout partition (honest partition effect).
+
+    Rebuilds the declared causal graph and runs DoWhy identification plus
+    backdoor estimation on the requested partition rows only. Train-fitted
+    nuisances are **not** reused — this is a fresh estimate on holdout data.
+
+    Parameters
+    ----------
+    plan:
+        Train-fitted :class:`~buildml.causal.results.CausalPlan` with
+        ``backend='dowhy'``.
+    dataset:
+        Session dataset containing the evaluation partition.
+    split_plan:
+        Split plan defining partition indices.
+    partition:
+        Holdout partition name such as ``validation`` or ``test``.
+    random_state:
+        RNG seed forwarded to DoWhy when supported.
+
+    Returns
+    -------
+    float
+        Partition-level average treatment effect from DoWhy.
+    dict[str, float]
+        Extra scalar metrics (empty when none are produced).
+
+    Raises
+    ------
+    ValidationError
+        When the plan lacks DoWhy metadata or the partition is too small.
+    """
+    require_dowhy(feature="DoWhy holdout evaluation")
+    from dowhy import CausalModel
+
+    method_key = str(plan.method).lower().replace("-", "_")
+    if method_key not in DOWHY_METHOD_MAP:
+        raise ValidationError(
+            f"Unknown DoWhy method={plan.method!r} on plan; cannot evaluate holdout."
+        )
+
+    assumptions = plan.assumptions
+    frame = partition_frame(dataset, split_plan, partition)
+    validate_columns_present(frame, assumptions)
+    t_codes, _, _ = encode_binary_treatment(frame[assumptions.treatment])
+    cols = [assumptions.treatment, assumptions.outcome, *assumptions.confounders]
+    df = frame[cols].copy()
+    df[assumptions.treatment] = t_codes.astype(int)
+    n = int(len(df))
+    n_treated = int(t_codes.sum())
+    n_control = n - n_treated
+    if n_treated < 5 or n_control < 5:
+        raise ValidationError(
+            f"DoWhy holdout evaluate needs ≥5 treated and ≥5 control rows on "
+            f"partition={partition!r}; found treated={n_treated}, control={n_control}."
+        )
+
+    graph = _build_graph(
+        assumptions.treatment,
+        assumptions.outcome,
+        assumptions.confounders,
+    )
+    model = CausalModel(
+        data=df,
+        treatment=assumptions.treatment,
+        outcome=assumptions.outcome,
+        common_causes=list(assumptions.confounders) or None,
+        graph=graph,
+    )
+    identified = model.identify_effect(proceed_when_unidentifiable=True)
+    estimate = model.estimate_effect(
+        identified,
+        method_name=DOWHY_METHOD_MAP[method_key],
+        method_params={"random_state": random_state} if random_state is not None else None,
+    )
+    return float(estimate.value), {}
+
+
 def refute_dowhy(
     plan: CausalPlan,
     *,
     kind: str,
     random_state: int | None = 0,
 ) -> CausalRefuteResult:
-    """Run a DoWhy refutation on the stored train estimate."""
+    """Run a DoWhy refutation on the stored train estimate.
+
+    Reuses the DoWhy model, identified estimand, and point estimate captured
+    during :func:`fit_dowhy` to execute an industry refutation method and
+    report the perturbed ATE relative to the original train estimate.
+
+    Parameters
+    ----------
+    plan:
+        :class:`~buildml.causal.results.CausalPlan` fitted with
+        ``backend='dowhy'``.
+    kind:
+        Refutation kind mapped to a DoWhy refuter name.
+    random_state:
+        RNG seed forwarded to the DoWhy refuter when supported.
+
+    Returns
+    -------
+    CausalRefuteResult
+        Original vs refuted ATE, optional p-value, and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When the plan lacks a DoWhy artifact, ``kind`` is unknown, or DoWhy
+        extras are missing.
+    """
     require_dowhy(feature="DoWhy refutation suite")
     artifact = getattr(plan, "backend_artifact_", None)
     if not isinstance(artifact, dict):

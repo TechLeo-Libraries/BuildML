@@ -37,6 +37,16 @@ class ActiveLearningPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the plan to a JSON-friendly dict (no private estimators).
+
+        Omits ``estimator_``, ``label_encoder_``, and ``committee_`` so bundles
+        and history stay lightweight.
+
+        Returns
+        -------
+        dict[str, Any]
+            Pool contract, query history, budget, and disclosure fields.
+        """
         return {
             "strategy": self.strategy,
             "backend": self.backend,
@@ -80,6 +90,16 @@ class ActiveLearningFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the fit result for history and bundle metadata.
+
+        Captures pool sizes, query budget usage, and strategy summary without
+        model weights.
+
+        Returns
+        -------
+        dict[str, Any]
+            Strategy, backend, pool counts, and disclosure fields.
+        """
         return {
             "strategy": self.strategy,
             "backend": self.backend,
@@ -114,6 +134,15 @@ class ActiveLearningQueryResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the query result for history and walkthrough overlays.
+
+        Includes suggested indices and scores for the latest query round.
+
+        Returns
+        -------
+        dict[str, Any]
+            Batch size, indices, scores, pool size, and budget remaining.
+        """
         return {
             "strategy": self.strategy,
             "batch_size_requested": self.batch_size_requested,
@@ -144,6 +173,15 @@ class ActiveLearningLabelResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the label result without embedding updated target values.
+
+        Records how many rows were labeled and whether a refit occurred.
+
+        Returns
+        -------
+        dict[str, Any]
+            Newly labeled count, budget state, refit flag, and indices.
+        """
         return {
             "n_labeled_now": self.n_labeled_now,
             "n_newly_labeled": self.n_newly_labeled,
@@ -173,6 +211,16 @@ class ActiveLearningEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize evaluation metrics and labeled/unlabeled mix on a partition.
+
+        Metrics reflect labeled rows only; unlabeled holdout rows are counted
+        separately for walkthrough honesty.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, metrics, query usage, and disclosure fields.
+        """
         return {
             "partition": self.partition,
             "strategy": self.strategy,

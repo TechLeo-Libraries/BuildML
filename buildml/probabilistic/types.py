@@ -57,6 +57,16 @@ class ProbabilisticConfig:
     mapie_method: MapieConformalMethod | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise probabilistic configuration knobs for plans and history.
+
+        Snapshots backend, estimator, conformal, and interval settings used
+        when :func:`buildml.probabilistic.fit.fit_probabilistic` runs.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plain mapping of every :class:`ProbabilisticConfig` field.
+        """
         return {
             "backend": self.backend,
             "estimator": self.estimator,

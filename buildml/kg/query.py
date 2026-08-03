@@ -29,8 +29,39 @@ def query_kg(
 ) -> KgQueryResult:
     """Run a symbolic query against the train triple graph.
 
-    Modes
+    Traverses fit-time adjacency only — not an LLM, Neo4j, or RAG retrieve path.
+
+    Parameters
+    ----------
+    plan:
+        Train-fitted plan with ``out_edges_`` and ``in_edges_`` adjacency.
+    mode:
+        ``neighbors``, ``path``, or ``typed`` query mode.
+    entity:
+        Anchor entity for neighbor or typed queries.
+    source, target:
+        Endpoints for ``path`` mode BFS.
+    relation:
+        Optional relation filter for neighbor/typed modes.
+    direction:
+        ``out``, ``in``, or ``both`` for neighbor traversal.
+    max_hops:
+        Maximum BFS depth for ``path`` mode.
+
+    Returns
+    -------
+    KgQueryResult
+        Neighbor lists, typed matches, or shortest path steps.
+
+    Raises
+    ------
+    ValidationError
+        When mode/direction is invalid, required entities are missing, or hops < 1.
+
+    Notes
     -----
+    Modes
+    ^^^^^
     - ``neighbors``: 1-hop neighbors of ``entity`` (optional relation filter).
     - ``typed``: tails of ``(entity, relation, ?)`` (out) or heads of
       ``(?, relation, entity)`` (in).

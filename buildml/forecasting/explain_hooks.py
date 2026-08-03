@@ -6,7 +6,21 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_forecast`` history."""
+    """Build a compact history summary from a forecast fit result.
+
+    Records method, column contract, train row counts, and horizon metadata
+    for Session audit logs without embedding fitted estimators.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.forecasting.results.ForecastFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Method, columns, row counts, lags, and univariate flag summaries.
+    """
     if fit_result is None:
         return {}
     if hasattr(fit_result, "to_dict"):
@@ -26,7 +40,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def generate_result_summary(generate_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``generate_forecast`` history."""
+    """Build a compact history summary from a forecast generate result.
+
+    Extracts method, horizon, origin label, and prediction count for Session
+    walkthrough panels without serialising full prediction arrays.
+
+    Parameters
+    ----------
+    generate_result:
+        :class:`~buildml.forecasting.results.ForecastGenerateResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Method, horizon, origin, and prediction-count summaries.
+    """
     if generate_result is None:
         return {}
     if hasattr(generate_result, "to_dict"):
@@ -42,7 +70,21 @@ def generate_result_summary(generate_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_forecast`` history."""
+    """Build a compact history summary from a forecast evaluation result.
+
+    Captures partition, strategy, point counts, and headline metrics for
+    history logs while omitting full prediction vectors when the input is ``None``.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.forecasting.results.ForecastEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, strategy, scored-point count, and metrics summaries.
+    """
     if eval_result is None:
         return {}
     if hasattr(eval_result, "to_dict"):
@@ -66,7 +108,31 @@ def forecasting_status(
     generate_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for classical forecasting."""
+    """Build factual walkthrough disclosure for classical forecasting.
+
+    Merges optional-backend availability, live plan metadata, and recent eval or
+    generate summaries for capability-matrix teaching overlays.
+
+    Parameters
+    ----------
+    plan:
+        Active :class:`~buildml.forecasting.results.ForecastPlan`, if any.
+    fit_result:
+        Optional last fit summary attached to the Session.
+    eval_result:
+        Optional last holdout evaluation summary.
+    generate_result:
+        Optional last horizon generation summary.
+    history:
+        Session operation history used to detect forecasting activity without a
+        live plan.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, backend availability, disclosures, and eval/generate
+        payloads for walkthrough UI.
+    """
     from buildml.forecasting.catalog import forecast_status_payload
 
     records = list(history or [])
@@ -125,7 +191,10 @@ def forecasting_status(
             else dict(generate_result)
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_forecast_plan": enabled,
@@ -150,11 +219,27 @@ def forecasting_status(
             "Classical forecasting is a Session domain path distinct from "
             "supervised Session.fit on shuffled rows and from digital-twin claims."
         ),
-    }
+    },
+        "forecast_capability_matrix",
+    )
 
 
 def forecasting_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build forecasting walkthrough status from a Session instance.
+
+    Reads attached forecast plan, fit/eval/generate results, and operation
+    history from standard Session private attributes.
+
+    Parameters
+    ----------
+    session:
+        BuildML Session object with optional forecasting state attached.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`forecasting_status` for the given Session.
+    """
     return forecasting_status(
         getattr(session, "_forecast_plan", None),
         fit_result=getattr(session, "_forecast_fit_result", None),

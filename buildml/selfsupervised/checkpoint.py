@@ -45,7 +45,31 @@ def save_ssl_bundle(
     head_fit_result: SSLHeadFitResult | None = None,
     eval_result: SelfSupervisedEvalResult | None = None,
 ) -> Path:
-    """Write a self-supervised bundle directory."""
+    """Write a self-supervised bundle directory (``buildml.ssl_bundle.v2``).
+
+    Persists the fitted :class:`~buildml.selfsupervised.results.SelfSupervisedPlan`
+    separately from Session checkpoints so tabular workflow and SSL state reload
+    independently.
+
+    Parameters
+    ----------
+    path:
+        Destination directory for ``meta.json`` and ``ssl_plan.joblib``.
+    plan:
+        Train-fitted self-supervised pretext plan to persist.
+    fit_result, head_plan, head_fit_result, eval_result:
+        Optional last operation reports for bundle metadata.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory that was written.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No SelfSupervisedPlan to save.")
     destination = Path(path)
@@ -69,7 +93,27 @@ def save_ssl_bundle(
 
 
 def load_ssl_bundle(path: str | Path) -> tuple[SelfSupervisedPlan, SSLHeadPlan | None]:
-    """Load a self-supervised bundle into plan (+ optional head)."""
+    """Load a self-supervised bundle into plan (+ optional head).
+
+    Restores v1 and v2 bundle formats, optionally rehydrating Torch encoder
+    weights from ``encoder_torch.pt`` when present.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``ssl_plan.joblib``.
+
+    Returns
+    -------
+    tuple[SelfSupervisedPlan, SSLHeadPlan | None]
+        Restored pretext plan and optional supervised head plan.
+
+    Raises
+    ------
+    ValidationError
+        When the bundle is incomplete, uses an unsupported format, or payload
+        types do not match expected plan objects.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "ssl_plan.joblib"

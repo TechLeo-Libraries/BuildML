@@ -38,7 +38,36 @@ def predict_probabilistic(
     return_std: bool = True,
     return_proba: bool = True,
 ) -> ProbabilisticPredictResult:
-    """Predict with the fitted probabilistic estimator (no refit / no leakage)."""
+    """Predict with the fitted probabilistic estimator without refit or leakage.
+
+    Returns point predictions and optionally posterior std or class
+    probabilities depending on backend capabilities and flags.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset.
+    plan:
+        Train-fitted probabilistic plan.
+    split_plan:
+        Split plan for the requested partition.
+    partition:
+        ``train``, ``validation``, ``test``, or ``all``.
+    return_std:
+        When True, attach std when the backend supports it.
+    return_proba:
+        When True, attach class probabilities when supported.
+
+    Returns
+    -------
+    ProbabilisticPredictResult
+        Predictions and optional uncertainty summaries.
+
+    Raises
+    ------
+    ValidationError
+        When no plan exists or required columns are missing.
+    """
     if plan is None:
         raise ValidationError("No ProbabilisticPlan. Call fit_probabilistic first.")
 
@@ -131,10 +160,40 @@ def predict_interval(
     alpha: float | None = None,
     method: str | None = None,
 ) -> ProbabilisticIntervalResult:
-    """Build predictive intervals (regression) or prediction sets (classification).
+    """Build predictive intervals or classification prediction sets.
 
-    Methods
+    Dispatches to posterior std, split conformal, MAPIE, or combined methods
+    recorded on the plan without using holdout rows for calibration.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset.
+    plan:
+        Train-fitted probabilistic plan.
+    split_plan:
+        Split plan for the requested partition.
+    partition:
+        ``train``, ``validation``, ``test``, or ``all``.
+    alpha:
+        Miscoverage rate override; defaults to plan alpha.
+    method:
+        Interval method override; defaults to plan ``interval_method``.
+
+    Returns
     -------
+    ProbabilisticIntervalResult
+        Lower/upper bounds or prediction sets for the partition.
+
+    Raises
+    ------
+    ValidationError
+        When no plan exists, alpha is invalid, or columns are missing.
+
+    Notes
+    -----
+    Methods
+    ^^^^^^^
     ``posterior_std``
         Gaussian intervals from ``return_std`` (BayesianRidge / GPR / NGBoost).
     ``split_conformal``

@@ -11,7 +11,18 @@ GraphBackendName = Literal["classical", "gcn", "pyg"]
 
 
 def graph_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for graph backends and optional extras."""
+    """Build the honest capability matrix for graph backends and optional extras.
+
+    Reports install availability, supported methods/modes, message-passing
+    semantics, and non-goals so walkthrough panels disclose Graph ML limits
+    without overstating PyG or classical coverage.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend availability, install hints, default backend selection, and
+        honesty notes separating Graph ML from KG / Neo4j products.
+    """
     return {
         "backends": {
             "classical": {

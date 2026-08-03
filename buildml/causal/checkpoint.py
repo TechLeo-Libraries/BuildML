@@ -40,7 +40,32 @@ def save_causal_bundle(
     fit_result: CausalFitResult | None = None,
     eval_result: CausalEvalResult | None = None,
 ) -> Path:
-    """Write a causal bundle directory (``buildml.causal_bundle.v1``)."""
+    """Write a causal bundle directory (``buildml.causal_bundle.v1``).
+
+    Persists the fitted :class:`~buildml.causal.results.CausalPlan` separately
+    from Session checkpoints.
+
+    Parameters
+    ----------
+    path:
+        Destination directory for ``meta.json`` and ``causal_plan.joblib``.
+    plan:
+        Train-fitted causal plan to persist.
+    fit_result:
+        Optional last fit report for bundle metadata.
+    eval_result:
+        Optional last evaluation report for bundle metadata.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory that was written.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No CausalPlan to save.")
     destination = Path(path)
@@ -60,7 +85,26 @@ def save_causal_bundle(
 
 
 def load_causal_bundle(path: str | Path) -> CausalPlan:
-    """Load a causal bundle into a :class:`CausalPlan`."""
+    """Load a causal bundle into a :class:`~buildml.causal.results.CausalPlan`.
+
+    Validates bundle format and restores the plan for estimate, evaluate, and
+    refute without reloading Session tabular state.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``causal_plan.joblib``.
+
+    Returns
+    -------
+    CausalPlan
+        Deserialised plan ready for scoring and refutation.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or payload is malformed.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "causal_plan.joblib"

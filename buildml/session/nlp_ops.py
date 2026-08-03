@@ -38,7 +38,15 @@ PartitionOrAll = PartitionName | Literal["all"]
 
 
 def nlp_capability_matrix_op() -> dict[str, Any]:
-    """Honest capability matrix for NLP backends and task surfaces."""
+    """Honest capability matrix for NLP backends and task surfaces.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Returns
+    -------
+    dict[str, Any]
+        Domain result object from the underlying ``buildml`` module.
+    """
     from buildml.nlp.catalog import nlp_capability_matrix
 
     return nlp_capability_matrix()
@@ -72,7 +80,30 @@ def profile_text_corpus_op(
     detect_languages: bool = True,
     stopword_language: str | None = None,
 ) -> Any:
-    """Profile corpus health and screen the split for text contamination."""
+    """Profile corpus health and screen the split for text contamination.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    text_column:
+        Text column name; defaults to the sole text-role column.
+    top_tokens:
+        Controls ``top_tokens``; see the function signature for type and default.
+    near_duplicate_threshold:
+        Controls ``near_duplicate_threshold``; see the function signature for type and default.
+    detect_languages:
+        Controls ``detect_languages``; see the function signature for type and default.
+    stopword_language:
+        Controls ``stopword_language``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     result = profile_text_corpus(
         session.dataset,
         session._split_plan,
@@ -106,7 +137,28 @@ def detect_language_op(
     text_column: str | None = None,
     min_characters: int = 12,
 ) -> Any:
-    """Identify the language of every document in a partition."""
+    """Identify the language of every document in a partition.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    backend:
+        Backend identifier; see capability matrix for valid values.
+    text_column:
+        Text column name; defaults to the sole text-role column.
+    min_characters:
+        Controls ``min_characters``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     result = detect_language(
         session.dataset,
         session._split_plan,
@@ -161,6 +213,70 @@ def fit_text_classifier_op(
     random_state: int | None = 0,
 ) -> Any:
     """Fit a single-label document classifier on Session train.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    backend:
+        Backend identifier; see capability matrix for valid values.
+    estimator:
+        Unfitted sklearn-compatible estimator instance.
+    text_column:
+        Text column name; defaults to the sole text-role column.
+    vectorizer:
+        Controls ``vectorizer``; see the function signature for type and default.
+    analyzer:
+        Controls ``analyzer``; see the function signature for type and default.
+    ngram_range:
+        Controls ``ngram_range``; see the function signature for type and default.
+    max_features:
+        Controls ``max_features``; see the function signature for type and default.
+    min_df:
+        Controls ``min_df``; see the function signature for type and default.
+    max_df:
+        Controls ``max_df``; see the function signature for type and default.
+    sublinear_tf:
+        Controls ``sublinear_tf``; see the function signature for type and default.
+    binary:
+        Controls ``binary``; see the function signature for type and default.
+    n_hash_features:
+        Controls ``n_hash_features``; see the function signature for type and default.
+    normalize_steps:
+        Controls ``normalize_steps``; see the function signature for type and default.
+    stopwords:
+        Controls ``stopwords``; see the function signature for type and default.
+    stopword_language:
+        Controls ``stopword_language``; see the function signature for type and default.
+    min_token_length:
+        Controls ``min_token_length``; see the function signature for type and default.
+    max_token_length:
+        Controls ``max_token_length``; see the function signature for type and default.
+    stem:
+        Controls ``stem``; see the function signature for type and default.
+    lemmatize:
+        Controls ``lemmatize``; see the function signature for type and default.
+    class_weight:
+        Controls ``class_weight``; see the function signature for type and default.
+    C:
+        Controls ``C``; see the function signature for type and default.
+    alpha:
+        Controls ``alpha``; see the function signature for type and default.
+    embedding_model_name:
+        Controls ``embedding_model_name``; see the function signature for type and default.
+    max_seq_tokens:
+        Controls ``max_seq_tokens``; see the function signature for type and default.
+    device:
+        Controls ``device``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
 
     Notes
     -----
@@ -246,7 +362,24 @@ def predict_text_op(
     partition: PartitionOrAll = "test",
     return_probabilities: bool = True,
 ) -> Any:
-    """Score a partition with the train-fitted text plan."""
+    """Score a partition with the train-fitted text plan.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    return_probabilities:
+        Controls ``return_probabilities``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     plan = _require_text_plan(session)
     result = predict_text(
         session.dataset,
@@ -270,7 +403,22 @@ def evaluate_text_classifier_op(
     *,
     partition: PartitionOrAll = "validation",
 ) -> Any:
-    """Evaluate the text classifier on a holdout partition."""
+    """Evaluate the text classifier on a holdout partition.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     plan = _require_text_plan(session)
     from buildml.nlp.features import resolve_holdout_partition
 
@@ -300,7 +448,30 @@ def interpret_text_prediction_op(
     max_documents: int = 10,
     include_global: bool = True,
 ) -> Any:
-    """Explain document decisions with per-token contributions."""
+    """Explain document decisions with per-token contributions.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    target_class:
+        Controls ``target_class``; see the function signature for type and default.
+    top_k:
+        Controls ``top_k``; see the function signature for type and default.
+    max_documents:
+        Controls ``max_documents``; see the function signature for type and default.
+    include_global:
+        Controls ``include_global``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     plan = _require_text_plan(session)
     result = interpret_text_prediction(
         session.dataset,
@@ -347,6 +518,46 @@ def fit_topics_op(
     random_state: int | None = 0,
 ) -> Any:
     """Fit an unsupervised topic model on Session train documents.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    method:
+        Algorithm or method identifier for the resolved backend.
+    n_topics:
+        Controls ``n_topics``; see the function signature for type and default.
+    text_column:
+        Text column name; defaults to the sole text-role column.
+    top_terms:
+        Controls ``top_terms``; see the function signature for type and default.
+    max_features:
+        Controls ``max_features``; see the function signature for type and default.
+    min_df:
+        Controls ``min_df``; see the function signature for type and default.
+    max_df:
+        Controls ``max_df``; see the function signature for type and default.
+    ngram_range:
+        Controls ``ngram_range``; see the function signature for type and default.
+    normalize_steps:
+        Controls ``normalize_steps``; see the function signature for type and default.
+    stopwords:
+        Controls ``stopwords``; see the function signature for type and default.
+    stopword_language:
+        Controls ``stopword_language``; see the function signature for type and default.
+    stem:
+        Controls ``stem``; see the function signature for type and default.
+    max_iter:
+        Controls ``max_iter``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
 
     Notes
     -----
@@ -404,7 +615,22 @@ def assign_topics_op(
     *,
     partition: PartitionOrAll = "test",
 ) -> Any:
-    """Transform a partition into per-document topic weights."""
+    """Transform a partition into per-document topic weights.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     plan = _require_topic_plan(session)
     result = assign_topics(
         session.dataset,
@@ -439,7 +665,46 @@ def extract_keyphrases_op(
     window: int = 4,
     random_state: int | None = 0,
 ) -> Any:
-    """Rank keyphrases for a partition with an unsupervised scorer."""
+    """Rank keyphrases for a partition with an unsupervised scorer.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    method:
+        Algorithm or method identifier for the resolved backend.
+    text_column:
+        Text column name; defaults to the sole text-role column.
+    top_n:
+        Controls ``top_n``; see the function signature for type and default.
+    max_phrase_words:
+        Controls ``max_phrase_words``; see the function signature for type and default.
+    per_document:
+        Controls ``per_document``; see the function signature for type and default.
+    max_documents:
+        Controls ``max_documents``; see the function signature for type and default.
+    stopword_language:
+        Controls ``stopword_language``; see the function signature for type and default.
+    stopwords:
+        Controls ``stopwords``; see the function signature for type and default.
+    min_df:
+        Controls ``min_df``; see the function signature for type and default.
+    max_df:
+        Controls ``max_df``; see the function signature for type and default.
+    window:
+        Controls ``window``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     result = extract_keyphrases(
         session.dataset,
         session._split_plan,
@@ -492,7 +757,34 @@ def analyze_sentiment_op(
     transformer_model: str = "distilbert-base-uncased-finetuned-sst-2-english",
     device: str = "cpu",
 ) -> Any:
-    """Score a partition's documents for sentiment."""
+    """Score a partition's documents for sentiment.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    backend:
+        Backend identifier; see capability matrix for valid values.
+    text_column:
+        Text column name; defaults to the sole text-role column.
+    threshold:
+        Controls ``threshold``; see the function signature for type and default.
+    compare_to_target:
+        Controls ``compare_to_target``; see the function signature for type and default.
+    transformer_model:
+        Controls ``transformer_model``; see the function signature for type and default.
+    device:
+        Controls ``device``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     text_plan = getattr(session, "_nlp_text_plan", None)
     result = analyze_sentiment(
         session.dataset,
@@ -536,7 +828,36 @@ def extract_entities_op(
     max_documents: int = 25,
     batch_size: int = 32,
 ) -> Any:
-    """Extract entity mentions from a partition's documents."""
+    """Extract entity mentions from a partition's documents.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    backend:
+        Backend identifier; see capability matrix for valid values.
+    text_column:
+        Text column name; defaults to the sole text-role column.
+    labels:
+        Controls ``labels``; see the function signature for type and default.
+    gazetteers:
+        Controls ``gazetteers``; see the function signature for type and default.
+    spacy_model:
+        Controls ``spacy_model``; see the function signature for type and default.
+    max_documents:
+        Controls ``max_documents``; see the function signature for type and default.
+    batch_size:
+        Controls ``batch_size``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     result = extract_entities(
         session.dataset,
         session._split_plan,
@@ -580,7 +901,36 @@ def summarize_text_op(
     stopword_language: str | None = "en",
     stopwords: list[str] | None = None,
 ) -> Any:
-    """Build extractive summaries for a partition's documents."""
+    """Build extractive summaries for a partition's documents.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    method:
+        Algorithm or method identifier for the resolved backend.
+    text_column:
+        Text column name; defaults to the sole text-role column.
+    n_sentences:
+        Controls ``n_sentences``; see the function signature for type and default.
+    max_documents:
+        Controls ``max_documents``; see the function signature for type and default.
+    max_input_sentences:
+        Controls ``max_input_sentences``; see the function signature for type and default.
+    stopword_language:
+        Controls ``stopword_language``; see the function signature for type and default.
+    stopwords:
+        Controls ``stopwords``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     result = summarize_text(
         session.dataset,
         session._split_plan,
@@ -613,7 +963,27 @@ def summarize_text_op(
 
 
 def save_nlp_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active NLP plan(s) as ``buildml.nlp_bundle.v1``."""
+    """Persist the active NLP plan(s) as ``buildml.nlp_bundle.v1``.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
+
+    Returns
+    -------
+    Path
+        Resolved filesystem path written or loaded.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
+    """
     text_plan = getattr(session, "_nlp_text_plan", None)
     topic_plan = getattr(session, "_nlp_topic_plan", None)
     if text_plan is None and topic_plan is None:
@@ -642,7 +1012,17 @@ def save_nlp_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_nlp_bundle_op(session, path: str | Path):
-    """Load an NLP bundle into this Session."""
+    """Load an NLP bundle into this Session.
+
+    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
+    """
     text_plan, topic_plan = load_nlp_bundle(path)
     session._nlp_text_plan = text_plan
     session._nlp_topic_plan = topic_plan

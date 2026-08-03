@@ -58,6 +58,41 @@ def fit_imitation_op(
 ) -> Any:
     """Fit behavioral cloning on Session train demonstrations.
 
+    Delegates to :func:`buildml.rl.imitation.fit_imitation`, stores the
+    :class:`~buildml.rl.results.ImitationPlan` on Session, and records the
+    fit. Follow with :func:`predict_imitation_action_op` or
+    :func:`evaluate_imitation_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    backend:
+        Optional backend override (sklearn, torch).
+    task:
+        Optional task override (classification/regression).
+    estimator:
+        Optional BC estimator identifier.
+    method:
+        Optional method alias for the resolved backend.
+    columns:
+        Optional explicit state feature columns.
+    action_column:
+        Optional action column override.
+    env_id:
+        Optional Gymnasium environment id for env-backed demos.
+    n_epochs:
+        Training epochs for torch BC backend.
+    random_state:
+        Seed for stochastic training steps.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+
+    Returns
+    -------
+    ImitationFitResult
+        Serializable fit summary including action-space disclosures.
+
     Notes
     -----
     **Leakage:** Requires a split. Policy uses train only. Honesty: BC from
@@ -108,7 +143,28 @@ def predict_imitation_action_op(
     *,
     partition: PartitionOrAll = "test",
 ) -> Any:
-    """Predict actions under the fitted BC policy."""
+    """Predict actions under the fitted BC policy.
+
+    Delegates to :func:`buildml.rl.imitation.predict_imitation_action` on a
+    named partition without refitting the policy.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an imitation plan from :func:`fit_imitation_op`.
+    partition:
+        Partition to predict on (``test`` by default).
+
+    Returns
+    -------
+    ImitationPredictResult
+        Predicted actions and optional quality disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no imitation plan exists on the Session.
+    """
     plan = getattr(session, "_imitation_plan", None)
     if plan is None:
         raise ValidationError("No ImitationPlan. Call fit_imitation(...) first.")
@@ -133,7 +189,28 @@ def evaluate_imitation_op(
     *,
     partition: PartitionOrAll = "validation",
 ) -> Any:
-    """Evaluate BC against held-out demonstration actions."""
+    """Evaluate BC against held-out demonstration actions.
+
+    Delegates to :func:`buildml.rl.imitation.evaluate_imitation` on a holdout
+    partition. Falls back to ``test`` when validation is empty.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an imitation plan from :func:`fit_imitation_op`.
+    partition:
+        Holdout partition for evaluation (``validation`` by default).
+
+    Returns
+    -------
+    ImitationEvalResult
+        Held-out action prediction metrics and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no imitation plan exists on the Session.
+    """
     plan = getattr(session, "_imitation_plan", None)
     if plan is None:
         raise ValidationError("No ImitationPlan. Call fit_imitation(...) first.")
@@ -162,6 +239,28 @@ def evaluate_imitation_op(
 
 
 def save_imitation_bundle_op(session, path: str | Path) -> Path:
+    """Persist the active ImitationPlan as ``buildml.imitation_bundle.v1``.
+
+    Delegates to :func:`buildml.rl.checkpoint.save_imitation_bundle`.
+    Reload with :func:`load_imitation_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an imitation plan from :func:`fit_imitation_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no imitation plan exists on the Session.
+    """
     plan = getattr(session, "_imitation_plan", None)
     if plan is None:
         raise ValidationError("No ImitationPlan. Call fit_imitation(...) first.")
@@ -180,6 +279,23 @@ def save_imitation_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_imitation_bundle_op(session, path: str | Path):
+    """Load an imitation bundle into this Session.
+
+    Delegates to :func:`buildml.rl.checkpoint.load_imitation_bundle` and
+    clears prior eval/predict results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded imitation plan.
+    path:
+        Path to a ``buildml.imitation_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with imitation plan attached for chaining.
+    """
     plan = load_imitation_bundle(path)
     session._imitation_plan = plan
     session._imitation_fit_result = None
@@ -223,6 +339,60 @@ def fit_rl_op(
     epsilon_decay: float = 0.995,
 ) -> Any:
     """Fit a contextual bandit (core) or a Gymnasium env policy (``buildml[rl]``).
+
+    Delegates to :func:`buildml.rl.fit.fit_rl`, stores the
+    :class:`~buildml.rl.results.RlPlan` on Session, and records the fit.
+    Follow with :func:`act_rl_op` or :func:`evaluate_rl_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset attached (bandit mode) or env config.
+    backend:
+        Optional backend override.
+    mode:
+        RL mode (``contextual_bandit`` or gym-style modes).
+    algorithm:
+        Bandit or policy algorithm identifier.
+    columns:
+        Optional state feature columns for bandit mode.
+    action_column:
+        Logged action column for bandit mode.
+    reward_column:
+        Logged reward column for bandit mode.
+    alpha:
+        Exploration/strength parameter for LinUCB-style bandits.
+    epsilon:
+        Epsilon for epsilon-greedy exploration.
+    temperature:
+        Softmax temperature for stochastic action selection.
+    random_state:
+        Seed for stochastic training and exploration.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    env_id:
+        Gymnasium environment id for env-loop modes.
+    n_episodes:
+        Number of training episodes for tabular/env modes.
+    max_steps:
+        Maximum steps per episode.
+    learning_rate:
+        Optimizer learning rate for policy updates.
+    gamma:
+        Discount factor for temporal-difference methods.
+    total_timesteps:
+        Total timesteps for SB3-style trainers.
+    n_bins:
+        Discretization bins for tabular Q-learning.
+    epsilon_min:
+        Minimum epsilon for decay schedules.
+    epsilon_decay:
+        Per-episode epsilon decay multiplier.
+
+    Returns
+    -------
+    RlFitResult
+        Serializable fit summary including mode and algorithm disclosures.
 
     Notes
     -----
@@ -316,7 +486,34 @@ def act_rl_op(
     deterministic: bool = True,
     random_state: int | None = 0,
 ) -> Any:
-    """Choose actions under the fitted RL policy."""
+    """Choose actions under the fitted RL policy.
+
+    Delegates to :func:`buildml.rl.act.act_rl` for bandit rows or env
+    observations without refitting the policy.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an RL plan from :func:`fit_rl_op`.
+    partition:
+        Partition for bandit action selection (``test`` by default).
+    observations:
+        Optional explicit observation batch for env/bandit modes.
+    deterministic:
+        When True, disable exploratory sampling where supported.
+    random_state:
+        Seed for stochastic action selection.
+
+    Returns
+    -------
+    RlActResult
+        Selected actions and policy disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no RL plan exists on the Session.
+    """
     plan = getattr(session, "_rl_plan", None)
     if plan is None:
         raise ValidationError("No RlPlan. Call fit_rl(...) first.")
@@ -353,7 +550,37 @@ def evaluate_rl_op(
     random_state: int | None = 0,
     deterministic: bool = True,
 ) -> Any:
-    """Evaluate RL (offline bandit metrics or Gymnasium rollouts)."""
+    """Evaluate RL (offline bandit metrics or Gymnasium rollouts).
+
+    Delegates to :func:`buildml.rl.evaluate.evaluate_rl` on a holdout
+    partition or env rollouts. Falls back to ``test`` for bandits when
+    validation is empty.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an RL plan from :func:`fit_rl_op`.
+    partition:
+        Holdout partition for bandit evaluation (``validation`` by default).
+    n_episodes:
+        Optional episode override for env evaluation.
+    max_steps:
+        Optional per-episode step cap for env evaluation.
+    random_state:
+        Seed for stochastic rollouts.
+    deterministic:
+        When True, disable exploratory sampling during evaluation.
+
+    Returns
+    -------
+    RlEvalResult
+        Offline or env evaluation metrics and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no RL plan exists on the Session.
+    """
     plan = getattr(session, "_rl_plan", None)
     if plan is None:
         raise ValidationError("No RlPlan. Call fit_rl(...) first.")
@@ -393,6 +620,28 @@ def evaluate_rl_op(
 
 
 def save_rl_bundle_op(session, path: str | Path) -> Path:
+    """Persist the active RlPlan as ``buildml.rl_bundle.v1``.
+
+    Delegates to :func:`buildml.rl.checkpoint.save_rl_bundle`.
+    Reload with :func:`load_rl_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an RL plan from :func:`fit_rl_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no RL plan exists on the Session.
+    """
     plan = getattr(session, "_rl_plan", None)
     if plan is None:
         raise ValidationError("No RlPlan. Call fit_rl(...) first.")
@@ -411,6 +660,23 @@ def save_rl_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_rl_bundle_op(session, path: str | Path):
+    """Load an RL bundle into this Session.
+
+    Delegates to :func:`buildml.rl.checkpoint.load_rl_bundle` and clears
+    prior eval/act results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded RL plan.
+    path:
+        Path to a ``buildml.rl_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with RL plan attached for chaining.
+    """
     plan = load_rl_bundle(path)
     session._rl_plan = plan
     session._rl_fit_result = None
@@ -430,5 +696,15 @@ def load_rl_bundle_op(session, path: str | Path):
 
 
 def rl_capability_matrix_op() -> dict[str, Any]:
-    """Return the RL / imitation capability matrix for this installation."""
+    """Return the RL / imitation capability matrix for this installation.
+
+    Delegates to :func:`buildml.rl.catalog.rl_capability_matrix`. Use before
+    :func:`fit_rl_op` or :func:`fit_imitation_op` to confirm available
+    backends, modes, and algorithms for the current extras install.
+
+    Returns
+    -------
+    dict
+        Nested map of backend identifiers to supported modes and methods.
+    """
     return rl_capability_matrix()

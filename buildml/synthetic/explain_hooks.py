@@ -4,8 +4,24 @@ from __future__ import annotations
 
 from typing import Any
 
+from buildml.synthetic.catalog import synthetic_capability_matrix
+
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
+    """Build a compact history payload from a fit result result.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -20,6 +36,20 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def sample_result_summary(sample_result: Any) -> dict[str, Any]:
+    """Build a compact history payload from a sample result result.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+sample_result:
+    sample result (Any).
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if sample_result is None:
         return {}
     payload = (
@@ -35,6 +65,20 @@ def sample_result_summary(sample_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
+    """Build a compact history payload from a eval result result.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -56,7 +100,28 @@ def synthetic_status(
     sample_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for synthetic-data systems."""
+    """Factual walkthrough disclosure for synthetic-data systems.
+
+Combines live plan fields, latest operation results, and history evidence into a teaching-oriented status dict with capability attachment.
+
+Parameters
+----------
+plan:
+    Fitted plan object carrying model state and feature contract.
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+sample_result:
+    sample result (Any).
+history:
+    Session operation history for detecting prior activity.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -118,6 +183,7 @@ def synthetic_status(
         "has_eval_result": eval_result is not None,
         "has_sample_result": sample_result is not None,
         "eval": eval_payload,
+        "capability_matrix": synthetic_capability_matrix(),
         "disclosures": disclosures,
         "boundary": (
             "Synthetic-data systems are a Session domain path: train-fitted "
@@ -132,7 +198,20 @@ def synthetic_status(
 
 
 def synthetic_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build synthetic walkthrough status from a Session instance.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+session:
+    BuildML Session with optional private state attributes.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     return synthetic_status(
         getattr(session, "_synthesizer_plan", None),
         fit_result=getattr(session, "_synthetic_fit_result", None),

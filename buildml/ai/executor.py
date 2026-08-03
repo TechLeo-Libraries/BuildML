@@ -543,6 +543,22 @@ def _dispatch_tool(
             state_changes.append(f"Created validation split (validation_size={validation_size})")
         return {"split_created": True}, tuple(state_changes)
 
+    elif call.tool_name == "time_split":
+        test_size = call.arguments.get("test_size", 0.2)
+        validation_size = call.arguments.get("validation_size")
+        time_column = call.arguments.get("time_column")
+        session.time_split(
+            test_size=test_size,
+            validation_size=validation_size,
+            time_column=time_column,
+        )
+        state_changes.append(f"Created temporal split (test_size={test_size})")
+        if validation_size is not None and validation_size > 0:
+            state_changes.append(
+                f"Created temporal validation split (validation_size={validation_size})"
+            )
+        return {"time_split_created": True}, tuple(state_changes)
+
     elif call.tool_name == "impute":
         strategy = call.arguments.get("strategy", "median")
         columns = call.arguments.get("columns")

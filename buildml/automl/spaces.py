@@ -38,6 +38,23 @@ class ModelFamily:
     param_distributions: dict[str, Any]
 
     def build(self, random_state: int | None = 0, **params: Any) -> Any:
+        """Instantiate this family with optional hyperparameters applied.
+
+        Calls the family factory, then merges ``params`` via ``set_params`` so
+        AutoML trials can materialize concrete estimators.
+
+        Parameters
+        ----------
+        random_state:
+            Seed passed to the family factory when supported.
+        **params:
+            Hyperparameter overrides merged via ``estimator.set_params``.
+
+        Returns
+        -------
+        estimator
+            Fresh sklearn-compatible estimator ready for fold-local fitting.
+        """
         est = self.factory(random_state)
         if params:
             est.set_params(**params)
@@ -290,6 +307,32 @@ def families_for_task(
     max_families: int | None = None,
     include_industry: bool = True,
 ) -> list[ModelFamily]:
+    """Return searchable model families for a classification or regression task.
+
+    Optionally filters to named families, caps the catalog size, and extends
+    with industry GBDT families when installed.
+
+    Parameters
+    ----------
+    task:
+        ``classification`` or ``regression``.
+    names:
+        Optional subset of family names to include; ``None`` uses the full catalog.
+    max_families:
+        Optional cap on the number of families returned (preserves catalog order).
+    include_industry:
+        When True, append LightGBM/XGBoost/CatBoost families when discoverable.
+
+    Returns
+    -------
+    list[ModelFamily]
+        Resolved family objects ready for AutoML candidate generation.
+
+    Raises
+    ------
+    ValidationError
+        When ``names`` contains unknown families or ``max_families`` is invalid.
+    """
     catalog = list(
         CLASSIFICATION_FAMILIES if task == "classification" else REGRESSION_FAMILIES
     )
@@ -327,11 +370,30 @@ def recipe_strategies(
     fixed: PreprocessRecipe | None = None,
     max_strategies: int | None = None,
 ) -> list[RecipeStrategy]:
-    """Resolve the recipe catalog for a search run.
+    """Resolve the fold-local recipe catalog for one AutoML search run.
 
     When ``include_recipe_search`` is False, returns a single strategy from
     ``fixed`` (or passthrough). When True, returns the default discrete catalog
     (optionally capped), ignoring Session-global plans — fold-local only.
+
+    Parameters
+    ----------
+    include_recipe_search:
+        When False, skip strategy search and use ``fixed`` or passthrough.
+    fixed:
+        Caller-provided base recipe included when recipe search is enabled.
+    max_strategies:
+        Optional cap on the number of strategies returned.
+
+    Returns
+    -------
+    list[RecipeStrategy]
+        Named recipe strategies for joint family+recipe AutoML search.
+
+    Raises
+    ------
+    ValidationError
+        When ``max_strategies`` is less than one.
     """
     if not include_recipe_search:
         recipe = (
@@ -365,6 +427,28 @@ def recipe_strategies(
 
 
 def family_by_name(task: TaskName, name: str) -> ModelFamily:
+    """Look up one model family by name for a task.
+
+    Scans the full catalog from :func:`families_for_task` including industry
+    GBDT families when installed.
+
+    Parameters
+    ----------
+    task:
+        ``classification`` or ``regression``.
+    name:
+        Family identifier (e.g. ``logistic``, ``lightgbm``).
+
+    Returns
+    -------
+    ModelFamily
+        Matching family from :func:`families_for_task`.
+
+    Raises
+    ------
+    ValidationError
+        When no family with ``name`` exists for ``task``.
+    """
     for fam in families_for_task(task, include_industry=True):
         if fam.name == name:
             return fam

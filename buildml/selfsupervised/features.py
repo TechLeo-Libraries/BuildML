@@ -21,7 +21,34 @@ def resolve_ssl_columns(
     reduce_plan: Any | None = None,
     prefer_reduce_components: bool = True,
 ) -> tuple[list[str], bool, list[str]]:
-    """Resolve numeric feature columns for SSL pretext (exclude protected roles)."""
+    """Resolve numeric feature columns for SSL pretext training.
+
+    Excludes protected roles (target, id, group, time, weight) and prefers
+    reduce-plan component columns when available.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset supplying column roles.
+    frame:
+        Partition frame used to validate column presence and dtype.
+    columns:
+        Explicit feature columns; when ``None``, roles and reduce plan are used.
+    reduce_plan:
+        Optional PCA/reduce plan whose component columns may be preferred.
+    prefer_reduce_components:
+        When True, use reduce-plan components before role-based resolution.
+
+    Returns
+    -------
+    tuple[list[str], bool, list[str]]
+        Resolved column names, whether reduce components were used, and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no usable numeric columns remain after filtering.
+    """
     disclosures: list[str] = []
     protected = {
         ColumnRole.TARGET,
@@ -70,7 +97,27 @@ def resolve_ssl_columns(
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
-    """Build a float design matrix; refuse null features."""
+    """Build a float design matrix from selected frame columns.
+
+    Refuses null values because SSL pretext expects complete numeric features.
+
+    Parameters
+    ----------
+    frame:
+        Source dataframe containing the requested columns.
+    columns:
+        Column names to stack into a 2D float array.
+
+    Returns
+    -------
+    numpy.ndarray
+        Float feature matrix with shape ``(n_rows, len(columns))``.
+
+    Raises
+    ------
+    ValidationError
+        When any selected column contains null values.
+    """
     block = frame[list(columns)]
     if block.isna().any().any():
         raise ValidationError(
@@ -81,7 +128,27 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
 
 
 def representation_column_names(prefix: str, latent_dim: int) -> tuple[str, ...]:
-    """Stable embedding column names for attach/export."""
+    """Generate stable embedding column names for attach/export.
+
+    Names follow ``{prefix}_{i}`` so Session attach and bundle reload stay aligned.
+
+    Parameters
+    ----------
+    prefix:
+        Alphanumeric token prepended to each embedding index.
+    latent_dim:
+        Number of representation columns to name.
+
+    Returns
+    -------
+    tuple[str, ...]
+        Column names such as ``ssl_emb_0``, ``ssl_emb_1``, ...
+
+    Raises
+    ------
+    ValidationError
+        When ``prefix`` is empty or contains invalid characters.
+    """
     token = str(prefix).strip() or "ssl_emb"
     if not token.replace("_", "").isalnum():
         raise ValidationError(

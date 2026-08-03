@@ -103,8 +103,11 @@ def main() -> None:
                 "EchoGroundedProvider for offline generate (no live LLM required)",
             ],
             "industry_comparison": {
-                "status": "stub",
-                "note": "Tier C: BM25 / sentence-transformers standalone recall@k",
+                "status": "filled",
+                "note": (
+                    "Tier C baseline_industry.py: sklearn TF-IDF / BM25-style retrieval twin on "
+                    "the same corpus; run script then baseline_industry.py for results/comparison.json."
+                ),
             },
             "limitations": [
                 "Tiny corpus; hashing embeddings are lexical, not semantic SOTA",

@@ -9,7 +9,21 @@ from buildml.kg.extras import pykeen_available
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_kg`` history."""
+    """Build a compact history summary from a KG fit result.
+
+    Strips embedding weights while recording backend, method, vocabulary sizes,
+    and training loss for Session audit logs.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.kg.results.KgFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, method, triple/entity/relation counts, and loss metadata.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -27,7 +41,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def score_result_summary(score_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``score_triples`` history."""
+    """Build a compact history summary from a triple-scoring result.
+
+    Records score counts and out-of-vocabulary entity/relation tallies without
+    embedding full score arrays in Session history.
+
+    Parameters
+    ----------
+    score_result:
+        :class:`~buildml.kg.results.ScoreTriplesResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Method, triple count, and unknown vocabulary counts.
+    """
     if score_result is None:
         return {}
     payload = (
@@ -42,7 +70,21 @@ def score_result_summary(score_result: Any) -> dict[str, Any]:
 
 
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``predict_links`` history."""
+    """Build a compact history summary from a link-prediction result.
+
+    Records query mode, top-k setting, and prediction counts for walkthrough
+    panels without listing every ranked candidate.
+
+    Parameters
+    ----------
+    predict_result:
+        :class:`~buildml.kg.results.PredictLinksResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Mode, method, k, query count, and filtered-ranking flag.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -61,7 +103,20 @@ def predict_result_summary(predict_result: Any) -> dict[str, Any]:
 
 
 def query_result_summary(query_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``query_kg`` history."""
+    """Build a compact history summary from a symbolic KG query result.
+
+    Records query mode, result count, and hop limit for Session history entries.
+
+    Parameters
+    ----------
+    query_result:
+        :class:`~buildml.kg.results.KgQueryResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Mode, result count, and max-hops metadata.
+    """
     if query_result is None:
         return {}
     payload = (
@@ -75,7 +130,21 @@ def query_result_summary(query_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_kg`` history."""
+    """Build a compact history summary from a KG evaluation result.
+
+    Records partition, filtered-ranking metrics, and triple counts without
+    embedding full rank arrays in Session history.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.kg.results.KgEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, method, k, metrics, and scored triple count.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -98,7 +167,26 @@ def kg_status(
     query_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for knowledge graphs."""
+    """Build factual walkthrough disclosure for knowledge-graph Session state.
+
+    Combines live plan metadata, optional result summaries, history detection,
+    and :func:`kg_capability_matrix` for teaching overlays.
+
+    Parameters
+    ----------
+    plan:
+        Active :class:`~buildml.kg.results.KgPlan`, if any.
+    fit_result, eval_result, score_result, predict_result, query_result:
+        Last operation reports attached to the Session.
+    history:
+        Session operation records.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, backend metadata, embedded capability matrix, disclosures,
+        and boundary text separating KG link prediction from Graph ML and RAG.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -176,7 +264,20 @@ def kg_status(
 
 
 def kg_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Report knowledge-graph status for a Session walkthrough panel.
+
+    Reads KG plan and result slots without mutating the Session.
+
+    Parameters
+    ----------
+    session:
+        :class:`~buildml.session.session.Session` instance.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`kg_status` for the Session's KG state.
+    """
     return kg_status(
         getattr(session, "_kg_plan", None),
         fit_result=getattr(session, "_kg_fit_result", None),

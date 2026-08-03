@@ -6,6 +6,21 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
+    """Build a compact history summary from a graph fit result.
+
+    Strips estimator weights while recording method, mode, train counts, and
+    train accuracy for Session audit logs.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.graph.results.GraphFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Method, mode, task, train node/edge counts, and train accuracy.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -21,6 +36,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
+    """Build a compact history summary from a graph prediction result.
+
+    Records partition, method, mode, and node count without listing every
+    predicted label in Session history.
+
+    Parameters
+    ----------
+    predict_result:
+        :class:`~buildml.graph.results.GraphPredictResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, method, mode, and scored node count.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -37,6 +67,21 @@ def predict_result_summary(predict_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
+    """Build a compact history summary from a graph evaluation result.
+
+    Records partition, method, mode, node count, and holdout metrics for
+    walkthrough panels without embedding full prediction arrays.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.graph.results.GraphEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, method, mode, node count, and metrics dict.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -50,6 +95,21 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
 
 
 def graph_spec_summary(spec: Any) -> dict[str, Any]:
+    """Build a compact history summary from a :class:`GraphSpec`.
+
+    Records node-id column, edge/node counts, and directed flag for Session
+    history without serialising the full edge table.
+
+    Parameters
+    ----------
+    spec:
+        :class:`~buildml.graph.types.GraphSpec` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Node-id column, edge/node counts, and directed flag.
+    """
     if spec is None:
         return {}
     payload = spec.to_dict() if hasattr(spec, "to_dict") else dict(spec)
@@ -70,7 +130,28 @@ def graph_status(
     eval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for Graph ML."""
+    """Build factual walkthrough disclosure for Graph ML Session state.
+
+    Combines live plan metadata, optional result summaries, history detection,
+    and the graph capability matrix for teaching overlays.
+
+    Parameters
+    ----------
+    plan:
+        Active :class:`~buildml.graph.results.GraphPlan`, if any.
+    graph_spec:
+        Attached :class:`~buildml.graph.types.GraphSpec`, if any.
+    fit_result, predict_result, eval_result:
+        Last operation reports attached to the Session.
+    history:
+        Session operation records.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, backend metadata, embedded capability matrix,
+        disclosures, and boundary text separating Graph ML from KG / Neo4j.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -126,7 +207,10 @@ def graph_status(
             f"metrics={eval_payload.get('metrics')}."
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw or has_spec,
         "has_graph_plan": enabled,
@@ -144,10 +228,26 @@ def graph_status(
             "transductive uses full topology with train-label-only supervision. "
             "Not a knowledge-graph / Neo4j product; PyG path is GCN/SAGE/GAT only."
         ),
-    }
+    },
+        "graph_capability_matrix",
+    )
 
 
 def graph_status_for_session(session: Any) -> dict[str, Any]:
+    """Report graph-ML status for a Session walkthrough panel.
+
+    Reads graph plan, spec, and result slots without mutating the Session.
+
+    Parameters
+    ----------
+    session:
+        :class:`~buildml.session.session.Session` instance.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`graph_status` for the Session's graph state.
+    """
     return graph_status(
         getattr(session, "_graph_plan", None),
         graph_spec=getattr(session, "_graph_spec", None),

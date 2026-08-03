@@ -67,7 +67,13 @@ def main() -> None:
         },
         "bundle_path": str(bundle),
         "leakage_controls": ["Assumptions declared before fit", "Train-only nuisance models", "Holdout eval disclosed"],
-        "industry_comparison": {"status": "stub", "note": "DoWhy/EconML twin when installed"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: sklearn AIPW-style twin on the same split; "
+                "run script then baseline_industry.py for results/comparison.json."
+            ),
+        },
         "limitations": ["Synthetic DGP; assumptions are declared not proven", "EDA remains non-causal"],
     })
     print("causal-treatment-effect OK", float(fit.ate))

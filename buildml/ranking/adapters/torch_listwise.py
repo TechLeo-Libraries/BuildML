@@ -24,6 +24,26 @@ class ListwiseLiteRanker:
     model_: Any = field(default=None, repr=False)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
+        """Score rows with the fitted listwise-lite torch MLP.
+
+        Runs the MLP in eval mode and returns CPU numpy scores aligned with
+        ``X``.
+
+        Parameters
+        ----------
+        X:
+            Standardized feature matrix to score.
+
+        Returns
+        -------
+        numpy.ndarray
+            Predicted ranking scores, one per row.
+
+        Raises
+        ------
+        ValidationError
+            When the ranker has not been fitted yet.
+        """
         torch = require_torch_ranking()
         if self.model_ is None:
             raise ValidationError("ListwiseLiteRanker is not fitted.")
@@ -62,7 +82,41 @@ def fit_listwise_lite(
     random_state: int | None = 0,
     device: str = "cpu",
 ) -> ListwiseLiteRanker:
-    """Fit a listwise-lite MLP with per-query softmax loss on graded relevance."""
+    """Fit a listwise-lite MLP with per-query softmax loss on graded relevance.
+
+    Trains a small MLP with ListNet-style cross-entropy over normalized
+    relevance grades within each query group.
+
+    Parameters
+    ----------
+    X:
+        Standardized train feature matrix.
+    y:
+        Graded relevance labels aligned with ``groups``.
+    groups:
+        Query id array with one entry per row.
+    hidden_dim:
+        Hidden layer width for the MLP.
+    epochs:
+        Number of full passes over query groups.
+    learning_rate:
+        Adam learning rate.
+    random_state:
+        Seed for weight initialization and torch RNG.
+    device:
+        Torch device string such as ``cpu`` or ``cuda``.
+
+    Returns
+    -------
+    ListwiseLiteRanker
+        Fitted listwise-lite ranker ready for :func:`score_listwise_lite`.
+
+    Raises
+    ------
+    ValidationError
+        When train data are insufficient or no query groups have positive
+        relevance for listwise training.
+    """
     torch = require_torch_ranking()
     nn = torch.nn
     F = torch.nn.functional
@@ -126,4 +180,21 @@ def fit_listwise_lite(
 
 
 def score_listwise_lite(ranker: ListwiseLiteRanker, X: np.ndarray) -> np.ndarray:
+    """Score rows with a fitted listwise-lite torch ranker.
+
+    Delegates to :meth:`ListwiseLiteRanker.predict` for a float score vector
+    aligned with ``X``.
+
+    Parameters
+    ----------
+    ranker:
+        Fitted ranker from :func:`fit_listwise_lite`.
+    X:
+        Standardized feature matrix to score.
+
+    Returns
+    -------
+    numpy.ndarray
+        Predicted ranking scores, one per row.
+    """
     return ranker.predict(X)

@@ -30,11 +30,43 @@ def apply_decisions(
     partition: str | None = "test",
     candidates: pd.DataFrame | None = None,
 ) -> ApplyDecisionsResult:
-    """Apply a frozen decision policy.
+    """Apply a frozen decision policy to a partition or candidate frame.
 
-    For threshold / cost_matrix: scores the Session partition with the fitted
-    estimator. For allocation methods: uses the partition frame or an explicit
-    ``candidates`` DataFrame (column-driven or model-scored).
+    For threshold and cost-matrix methods, scores the Session partition with
+    the fitted estimator and applies the stored operating rule. For allocation
+    methods, ranks candidates from model scores or explicit columns and runs
+    top-K, knapsack, or LP selection. Follow
+    :func:`~buildml.optimize.fit.fit_decision_policy` and precede
+    :func:`~buildml.optimize.evaluate.evaluate_decisions` on holdout data.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular data containing features (and target when evaluating labels).
+    split_plan:
+        Split plan for partition scoring; required unless ``candidates`` is
+        supplied for column-driven allocation.
+    fit_result:
+        Session fit result for model-scored threshold/cost/allocation paths.
+    plan:
+        Frozen :class:`~buildml.optimize.results.DecisionPlan` from fit.
+    partition:
+        Split name to score; defaults to ``'test'``. Ignored when
+        ``candidates`` is provided.
+    candidates:
+        Optional explicit candidate frame for column-driven allocation.
+
+    Returns
+    -------
+    ApplyDecisionsResult
+        Per-row decisions or selected ids with scores, counts, and honesty
+        disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no plan is attached, required fit/split inputs are missing, or
+        plan fields needed for the method are absent.
     """
     if plan is None:
         raise ValidationError("No DecisionPlan. Call fit_decision_policy(...) first.")

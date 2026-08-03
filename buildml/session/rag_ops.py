@@ -19,9 +19,35 @@ def rag_ingest_corpus(
 
     Provide a file/directory ``source``, an in-memory document sequence, or
     ``text_column`` to bridge the current Session frame. Never silently
-    indexes every column.
+    indexes every column. Delegates to :mod:`buildml.rag.corpus`. Distinct
+    from classical ingest.
 
-    Delegates to :mod:`buildml.rag.corpus`. Distinct from classical ingest.
+    Parameters
+    ----------
+    session:
+        Active Session to attach the corpus to.
+    source:
+        Optional path, directory, or in-memory document sequence.
+    text_column:
+        Optional Session frame column to ingest as documents.
+    id_column:
+        Optional document id column when using ``text_column``.
+    glob:
+        Glob pattern when ``source`` is a directory (``*.txt`` by default).
+    encoding:
+        Text encoding for file-based sources.
+    role:
+        Corpus role (``index`` or ``eval_only``).
+
+    Returns
+    -------
+    Session
+        ``session`` with RAG corpus attached for chaining.
+
+    Raises
+    ------
+    ValidationError
+        When inputs are missing or ``text_column`` is used without a dataset.
     """
     from buildml.rag.corpus import corpus_from_documents, corpus_from_frame, load_text_corpus
     from buildml.rag.extras import require_rag_stack
@@ -73,6 +99,28 @@ def rag_chunk(
 
     ``strategy="recursive"`` splits on paragraph/line/sentence boundaries before
     applying size/overlap (LangChain/LlamaIndex parity). Requires ``buildml[rag]``.
+    Delegates to :func:`buildml.rag.chunk.chunk_documents`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a corpus from :func:`rag_ingest_corpus`.
+    size:
+        Target chunk size in characters or tokens.
+    overlap:
+        Overlap between consecutive chunks.
+    strategy:
+        Chunking strategy (``fixed`` or ``recursive``).
+
+    Returns
+    -------
+    Session
+        ``session`` with chunk result attached for chaining.
+
+    Raises
+    ------
+    ValidationError
+        When no RAG corpus exists on the Session.
     """
     from buildml.rag.chunk import chunk_documents
     from buildml.rag.extras import require_rag_stack
@@ -110,6 +158,32 @@ def rag_embed_and_index(
     installed, else explicit hashing fallback with disclosure.
     Pass ``embedder="hashing"`` for deterministic CI / lexical-only paths.
     ``device`` applies to sentence-transformer backends; hashing stays CPU-only.
+    Delegates to :func:`buildml.rag.index.build_index`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a corpus from :func:`rag_ingest_corpus`.
+    embedder:
+        Embedder id or ``auto`` / ``hashing`` sentinel.
+    chunk_size:
+        Optional chunk size override before indexing.
+    chunk_overlap:
+        Optional chunk overlap override before indexing.
+    chunk_strategy:
+        Optional chunk strategy override before indexing.
+    device:
+        Optional device for sentence-transformer embedders.
+
+    Returns
+    -------
+    Session
+        ``session`` with RAG index attached for chaining.
+
+    Raises
+    ------
+    ValidationError
+        When no RAG corpus exists on the Session.
     """
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.index import build_index
@@ -170,6 +244,36 @@ def rag_retrieve(
 
     Defaults: ``mode="hybrid"`` (BM25 + dense RRF) when ``buildml[rag]`` is installed,
     else ``mode="dense"``. Metadata filters and cross-encoder rerank are opt-in.
+    Delegates to :func:`buildml.rag.retrieve.retrieve`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a RAG index from :func:`rag_embed_and_index`.
+    query:
+        Natural-language query string.
+    k:
+        Number of chunks to retrieve.
+    mode:
+        Optional retrieve mode override (``dense``, ``bm25``, ``hybrid``).
+    fusion:
+        Optional fusion strategy for hybrid retrieval.
+    filters:
+        Optional metadata filters applied before ranking.
+    rerank:
+        Optional reranker toggle or model identifier.
+    config:
+        Optional full :class:`~buildml.rag.types.RetrieveConfig` override.
+
+    Returns
+    -------
+    RetrieveResult
+        Ranked chunks, scores, and retrieve provenance.
+
+    Raises
+    ------
+    ValidationError
+        When no RAG index exists on the Session.
     """
     from buildml.rag.defaults import default_retrieve_config
     from buildml.rag.extras import require_rag_stack
@@ -240,12 +344,44 @@ def rag_generate(
     Requires an active RAG index and a chat provider. When ``provider`` is
     omitted, reuses ``Session.ai_configure``'s provider. For offline CI, pass
     :class:`buildml.rag.generate.EchoGroundedProvider` or a
-    :class:`buildml.ai.provider.MockProvider`.
+    :class:`buildml.ai.provider.MockProvider`. Delegates to
+    :func:`buildml.rag.generate.generate_grounded`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a RAG index from :func:`rag_embed_and_index`.
+    query:
+        Natural-language question to answer.
+    k:
+        Number of chunks to retrieve for grounding.
+    provider:
+        Optional chat provider; uses Session AI provider when omitted.
+    mode:
+        Optional retrieve mode passed through to retrieval.
+    fusion:
+        Optional fusion strategy for hybrid retrieval.
+    filters:
+        Optional metadata filters for retrieval.
+    rerank:
+        Optional reranker toggle or model identifier.
+    retrieve_config:
+        Optional retrieve configuration override.
+    config:
+        Optional :class:`~buildml.rag.types.GenerateConfig` override.
+    use_last_retrieve:
+        When True, reuse the prior :func:`rag_retrieve` result.
 
     Returns
     -------
     GenerateResult
         Answer text, citations (source ids / chunk / doc), and retrieve provenance.
+
+    Raises
+    ------
+    ValidationError
+        When no RAG index or provider is available, or reuse is requested
+        without a prior retrieve result.
     """
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.generate import generate_grounded
@@ -314,6 +450,32 @@ def rag_evaluate(
 
     ``relevance_mode="document"`` (default) scores parent ``doc_id`` hits;
     ``"chunk"`` scores ``chunk_id`` labels. Requires ``buildml[rag]``.
+    Delegates to :func:`buildml.rag.evaluate.evaluate_retrieval`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a RAG index from :func:`rag_embed_and_index`.
+    qrels:
+        Gold relevance judgments mapping queries to relevant ids.
+    k:
+        Cutoff k for retrieval metrics.
+    relevance_mode:
+        Whether qrels label documents or chunks.
+    mode:
+        Optional retrieve mode override for evaluation queries.
+    retrieve_config:
+        Optional retrieve configuration override.
+
+    Returns
+    -------
+    RagEvalResult
+        Aggregate retrieval metrics and per-query summaries.
+
+    Raises
+    ------
+    ValidationError
+        When no RAG index exists on the Session.
     """
     from buildml.rag.evaluate import evaluate_retrieval
     from buildml.rag.extras import require_rag_stack
@@ -354,6 +516,30 @@ def rag_upsert(
     """Upsert documents or chunks into the active RAG index without a full rebuild.
 
     Replaces existing ``chunk_id`` rows and re-embeds only new/changed text.
+    Delegates to the active index object's upsert methods.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a RAG index from :func:`rag_embed_and_index`.
+    documents:
+        Optional new or updated documents to upsert.
+    chunks:
+        Optional pre-chunked rows to upsert (mutually exclusive with
+        ``documents``).
+    chunk:
+        When True and ``documents`` is supplied, chunk before upserting.
+
+    Returns
+    -------
+    Session
+        ``session`` with updated index and chunk state attached.
+
+    Raises
+    ------
+    ValidationError
+        When no RAG index exists or neither ``documents`` nor ``chunks`` is
+        supplied.
     """
     from buildml.rag.extras import require_rag_stack
 
@@ -386,7 +572,30 @@ def rag_upsert(
 def rag_delete(
     session, *, chunk_ids: Sequence[str] | None = None, doc_ids: Sequence[str] | None = None
 ) -> Session:
-    """Delete chunks by id and/or parent document id from the active RAG index."""
+    """Delete chunks by id and/or parent document id from the active RAG index.
+
+    Removes matching rows from the in-memory index and refreshes Session chunk
+    state without requiring a full rebuild.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a RAG index from :func:`rag_embed_and_index`.
+    chunk_ids:
+        Optional chunk identifiers to delete.
+    doc_ids:
+        Optional parent document identifiers whose chunks should be deleted.
+
+    Returns
+    -------
+    Session
+        ``session`` with updated index and chunk state attached.
+
+    Raises
+    ------
+    ValidationError
+        When no RAG index exists on the Session.
+    """
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.results import ChunkResult
 
@@ -417,6 +626,24 @@ def save_rag_bundle(session, path: str | Path) -> Path:
 
     Distinct from Session checkpoints and Torch trainer bundles.
     See :data:`buildml.rag.checkpoint.CHECKPOINT_BOUNDARY`.
+    Delegates to :func:`buildml.rag.checkpoint.save_rag_bundle`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a RAG index from :func:`rag_embed_and_index`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no RAG index exists on the Session.
     """
     from buildml.rag.checkpoint import save_rag_bundle
     from buildml.rag.extras import require_rag_stack
@@ -430,7 +657,23 @@ def save_rag_bundle(session, path: str | Path) -> Path:
 
 
 def load_rag_bundle(session, path: str | Path) -> Session:
-    """Load a RAG bundle into this Session (requires ``buildml[rag]``)."""
+    """Load a RAG bundle into this Session (requires ``buildml[rag]``).
+
+    Delegates to :func:`buildml.rag.checkpoint.load_rag_bundle` and restores
+    index, chunk, and index-result state on the Session.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded RAG index.
+    path:
+        Path to a ``buildml.rag_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with RAG index attached for chaining.
+    """
     from buildml.rag.checkpoint import load_rag_bundle
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.results import ChunkResult

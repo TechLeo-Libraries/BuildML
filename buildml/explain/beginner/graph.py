@@ -93,9 +93,9 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_graph(method='gcn', split_mode='inductive', random_state=0)",
+            "session.fit_graph(method='gcn', mode='inductive', random_state=0)",
             "session.evaluate_graph(partition='test')",
-            "print(session.graph_plan.split_mode, session.graph_plan.disclosures)",
+            "print(session.graph_plan.mode, session.graph_plan.disclosures)",
         ),
         check=(
             "Will new nodes appear after deployment?",
@@ -144,8 +144,9 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.fit_graph(",
             "    method='classical',",
-            "    metrics=['degree', 'clustering', 'pagerank'],",
-            "    estimator=HistGradientBoostingClassifier(random_state=0),",
+            "    include_graph_metrics=True,",
+            "    classical_estimator='random_forest',",
+            "    random_state=0,",
             ")",
             "session.evaluate_graph(partition='validation')",
         ),
@@ -196,7 +197,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "# pip install \"buildml[graph-pyg]\"",
             "session.fit_graph(",
-            "    method='pyg', architecture='graphsage',",
+            "    method='pyg', pyg_model='graphsage',",
             "    n_layers=2, hidden_dim=64, epochs=200, random_state=0,",
             ")",
             "session.evaluate_graph(partition='test')",

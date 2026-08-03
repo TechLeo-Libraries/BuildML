@@ -9,8 +9,15 @@ def close_native(session) -> None:
     """Close an owned DuckDB connection on the session dataset, if any.
 
     Safe to call when no dataset is attached or the engine is not DuckDB.
+
     Derived Datasets that share a connection are not owners; only the root
+
     handle closes the connection.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
     """
     dataset = session._dataset
     if dataset is None:
@@ -32,6 +39,8 @@ def ingest_session(
 ) -> Session:
     """Create a session by ingesting a tabular source.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     source:
@@ -47,18 +56,19 @@ def ingest_session(
         Optional scale override for tests/heuristics.
     read_nrows:
         Optional CSV row cap.
+    session_cls:
+        Session class constructor used by module-level factory helpers.
 
     Returns
     -------
     Session
-        Session containing dataset and/or ingest report.
+    Session containing dataset and/or ingest report.
 
     Notes
     -----
     **Scale:** Large paths are not silently loaded into Pandas. Use
     ``dry_run=True``, ``read_nrows``, ``mode='memory'`` (force), or engine
     extras.
-
     **Leakage:** Call :meth:`split` before fit-capable operations. Use
     :meth:`assert_can_fit` to enforce train-only fit scope.
     """
@@ -90,15 +100,19 @@ def ingest_session(
 def set_roles(session, mapping: dict[str, str | ColumnRole]) -> Session:
     """Assign column roles on the current dataset.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     mapping:
         Column → role mapping.
+    session:
+        Active Session with dataset and optional split plan attached.
 
     Returns
     -------
     Session
-        ``self`` for fluent chaining.
+    ``self`` for fluent chaining.
     """
     session.dataset.set_roles(mapping)
     session._record(
@@ -123,6 +137,8 @@ def split(
 ) -> Session:
     """Create a train/test (optional validation) split.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     test_size:
@@ -133,6 +149,13 @@ def split(
         RNG seed.
     stratify:
         If True, stratify on the target role column.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -167,10 +190,19 @@ def inject_split(
 ) -> Session:
     """Inject externally defined partition indices.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
-    train_indices / test_indices / validation_indices:
+        train_indices / test_indices / validation_indices:
         Positional indices into the current dataset.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
     """
     session._split_plan = inject_partitions(
         session.dataset,
@@ -201,16 +233,24 @@ def group_split(
     """Create a group-aware train/test(/validation) split.
 
     No group identifier appears in more than one partition. Sizes are
+
     interpreted over groups, not rows.
 
     Parameters
     ----------
-    test_size / validation_size:
+        test_size / validation_size:
         Fraction or count of groups.
     random_state:
         RNG seed.
     group_column:
         Optional override; defaults to the sole ``group`` role column.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -246,14 +286,22 @@ def time_split(
     """Create a chronological train/test(/validation) split.
 
     Rows are ordered by the time-role column. The latest rows form test;
+
     optional validation is carved from the end of the remaining pool.
 
     Parameters
     ----------
-    test_size / validation_size:
+        test_size / validation_size:
         Fraction or absolute row count after time ordering.
     time_column:
         Optional override; defaults to the sole ``time`` role column.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -283,10 +331,24 @@ def partition(
 ) -> pd.DataFrame:
     """Return a copy of rows for a named partition.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    name:
+        Registered transform or bundle identifier.
+
+    Returns
+    -------
+    pd.DataFrame
+        Materialized tabular result as a Pandas DataFrame.
+
     Raises
     ------
     ValidationError
-        If no split exists.
+    If no split exists.
     """
     if session._split_plan is None:
         raise ValidationError("No split defined. Call split(...) or inject_split(...) first.")
@@ -302,15 +364,24 @@ def partition(
 def assert_can_fit(session, partition: PartitionName = "train") -> Session:
     """Enforce leakage-safe fit scope.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     partition:
         Partition the caller intends to fit on (must be ``train``).
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Raises
     ------
     LeakageError
-        If no split exists or partition is not train.
+    If no split exists or partition is not train.
     """
     assert_fit_partition(session._split_plan, partition)
     return session
@@ -319,10 +390,19 @@ def assert_can_fit(session, partition: PartitionName = "train") -> Session:
 def to_engine(session, engine: EngineName | str | None = None) -> Any:
     """Materialize the current dataset in a selected engine's native type.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     engine:
         Target engine. Defaults to the dataset's current engine setting.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
     """
     native = session.dataset.to_engine(engine)
     selected = session.dataset.engine if engine is None else EngineName(engine)
@@ -344,6 +424,8 @@ def checkpoint_save(
 ) -> Path:
     """Save a resumable checkpoint bundle for mid-loop exit.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     path:
@@ -356,6 +438,13 @@ def checkpoint_save(
     sidecar_layout:
         ``'auto'`` (default; partition at ≥50_000 rows), ``'single'``, or
         ``'partitioned'``.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Path
+        Resolved filesystem path written or loaded.
     """
     before = prior_state(session._history)
     sidecar_params = {
@@ -397,12 +486,21 @@ def checkpoint_save(
 def checkpoint_load_session(session_cls, path: str | Path, *, data_only: bool = False) -> Session:
     """Load a checkpoint bundle and validate reattach conditions.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     path:
         Checkpoint directory.
     data_only:
         If True, ignore metadata and treat data as a fresh ingest.
+    session_cls:
+        Session class constructor used by module-level factory helpers.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -434,7 +532,24 @@ def checkpoint_load_session(session_cls, path: str | Path, *, data_only: bool = 
 
 
 def reattach(session, path: str | Path, *, data_only: bool = False) -> Session:
-    """Replace this session state from a checkpoint path (instance helper)."""
+    """Replace this session state from a checkpoint path (instance helper).
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
+    data_only:
+        Controls ``data_only``; see the function signature for type and default.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
+    """
     loaded = load_checkpoint(path, data_only=data_only)
     session.close_native()
     session._dataset = loaded.dataset
@@ -461,7 +576,20 @@ def reattach(session, path: str | Path, *, data_only: bool = False) -> Session:
 
 
 def to_pandas(session) -> pd.DataFrame:
-    """Escape hatch: copy the current dataset as a Pandas DataFrame."""
+    """Escape hatch: copy the current dataset as a Pandas DataFrame.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    pd.DataFrame
+        Materialized tabular result as a Pandas DataFrame.
+    """
     frame = session.dataset.to_pandas()
     session._record(
         "to_pandas", result_summary={"rows": int(len(frame)), "columns": int(frame.shape[1])}
@@ -470,7 +598,22 @@ def to_pandas(session) -> pd.DataFrame:
 
 
 def to_parquet(session, path: str | Path) -> Path:
-    """Write the current dataset to Parquet."""
+    """Write the current dataset to Parquet.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
+
+    Returns
+    -------
+    Path
+        Resolved filesystem path written or loaded.
+    """
     destination = session.dataset.to_parquet(path)
     session._record(
         "to_parquet", {"path": str(destination)}, result_summary={"path": str(destination)}
@@ -479,7 +622,22 @@ def to_parquet(session, path: str | Path) -> Path:
 
 
 def head(session, n: int = 5) -> pd.DataFrame:
-    """Preview the first rows."""
+    """Preview the first rows.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    n:
+        Number of preview rows to return.
+
+    Returns
+    -------
+    pd.DataFrame
+        Materialized tabular result as a Pandas DataFrame.
+    """
     frame = session.dataset.head(n)
     session._record(
         "head", {"n": n}, result_summary={"rows": int(len(frame)), "columns": int(frame.shape[1])}
@@ -491,7 +649,20 @@ def with_mode(session, mode: DataMode | str) -> Session:
     """Record a mode override on the dataset metadata.
 
     Accepted values are ``memory`` and ``lazy``. Legacy ``out_of_core`` is
+
     coerced to ``lazy`` (there is no separate out-of-core fit mode).
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    mode:
+        Data handling mode override.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
     """
     session.dataset.mode = coerce_data_mode(mode)
     session._record("with_mode", {"mode": session.dataset.mode.value})
@@ -501,10 +672,19 @@ def with_mode(session, mode: DataMode | str) -> Session:
 def with_engine(session, engine: EngineName | str) -> Session:
     """Select a compute engine and attach a native handle when applicable.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     engine:
         ``pandas``, ``polars``, or ``duckdb``.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -533,10 +713,24 @@ def sync_native(session) -> Session:
     """Rebuild ``Dataset.native`` from the current Pandas frame (eager).
 
     Session preprocess transforms already sync when ``engine`` is Polars or
+
     DuckDB. Call this after external Pandas mutation of ``dataset.frame``,
+
     or after a transform that opted out of sync. This is not a lazy plan
+
     of prior steps — it converts the full current frame into the engine
+
     table.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
     """
     has_native = False
     if session.dataset.engine != EngineName.PANDAS:
@@ -549,7 +743,20 @@ def sync_native(session) -> Session:
 
 
 def metadata(session) -> dict[str, Any]:
-    """Session/dataset metadata snapshot."""
+    """Return a JSON-serializable snapshot of Session and dataset state.
+
+    Collects ingest report, split plan, operation history, reattach status, and dataset metadata without mutating the Session.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    dict[str, Any]
+        Domain result object from the underlying ``buildml`` module.
+    """
     payload: dict[str, Any] = {
         "has_dataset": session._dataset is not None,
         "ingest_report": None

@@ -25,6 +25,41 @@ def build_sklearn_unsupervised_estimator(
     kernel: str,
     gamma: str | float,
 ) -> Any:
+    """Construct a sklearn unsupervised estimator ready for fit or scoring.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+contamination:
+    Expected outlier fraction for sklearn-style detectors.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+n_estimators:
+    n estimators (int).
+max_samples:
+    max samples (str | int | float).
+n_neighbors:
+    n neighbors (int).
+nu:
+    nu (float).
+kernel:
+    kernel (str).
+gamma:
+    gamma (str | float).
+
+Returns
+-------
+Any
+    Adapter-specific estimator or model object.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if method == "isolation_forest":
         return IsolationForest(
             n_estimators=int(n_estimators),
@@ -48,6 +83,29 @@ def build_sklearn_unsupervised_estimator(
 
 
 def sklearn_anomaly_scores(estimator: Any, *, method: str, x: np.ndarray) -> np.ndarray:
+    """Perform sklearn anomaly scores for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+estimator:
+    Fitted model object used for scoring or prediction.
+method:
+    Method or strategy identifier for the resolved backend.
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if method in {"isolation_forest", "lof"}:
         return -np.asarray(estimator.score_samples(x), dtype=float)
     if method == "one_class_svm":

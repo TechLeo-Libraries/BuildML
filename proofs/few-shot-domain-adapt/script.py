@@ -46,10 +46,10 @@ def main() -> None:
     except (MissingExtraError, TypeError, ValueError) as exc:
         try:
             fit = session.fit_metalearning(
-                method="finetune", task_column="task_id",
+                method="warm_start", task_column="task_id",
                 n_way=2, k_shot=5, n_query=5, random_state=ctx.seed,
             )
-            backend_note = f"finetune_fallback({type(exc).__name__})"
+            backend_note = f"warm_start_fallback({type(exc).__name__})"
         except Exception as exc2:  # noqa: BLE001
             write_results(ctx, {
                 "status": "skipped_error",

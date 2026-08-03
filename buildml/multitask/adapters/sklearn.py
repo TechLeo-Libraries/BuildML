@@ -42,7 +42,34 @@ def build_sklearn_estimator(
     random_state: int | None,
     order_indices: list[int] | None = None,
 ) -> Any:
-    """Build a sklearn MultiOutput / Chain estimator."""
+    """Build a sklearn MultiOutput or Chain estimator for multi-task learning.
+
+    Selects ``MultiOutputClassifier``/``Regressor`` or chain variants based on
+    ``method`` and wraps the requested ``base_estimator`` factory.
+
+    Parameters
+    ----------
+    method:
+        ``multi_output``, ``classifier_chain``, or ``regressor_chain``.
+    task:
+        ``classification`` or ``regression`` (not ``mixed``).
+    base_estimator:
+        Base learner name (e.g. ``logistic_regression``, ``ridge``).
+    random_state:
+        Seed for base estimators and chain shuffling.
+    order_indices:
+        Optional target order indices for chain methods.
+
+    Returns
+    -------
+    estimator
+        Sklearn multi-output or chain wrapper ready for fitting.
+
+    Raises
+    ------
+    ValidationError
+        When ``method``, ``task``, or ``base_estimator`` pairing is invalid.
+    """
     base_key = str(base_estimator).lower().replace("-", "_")
     if task == "classification":
         if base_key not in _CLS_BASES:

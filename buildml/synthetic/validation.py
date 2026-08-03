@@ -38,8 +38,33 @@ def validate_synthetic(
 ) -> SyntheticValidationResult:
     """Validate a synthetic sample against the fitted plan schema.
 
-    Always runs built-in checks. When ``great_expectations`` is importable and
-    ``run_great_expectations=True``, adds lite GE column-presence expectations.
+Always runs built-in checks. When ``great_expectations`` is importable and
+``run_great_expectations=True``, adds lite GE column-presence expectations.
+
+Parameters
+----------
+plan:
+    Fitted plan object carrying model state and feature contract.
+frame:
+    Partition or full DataFrame slice used for this operation.
+null_rate_tolerance:
+    null rate tolerance (float).
+numeric_range_slack:
+    numeric range slack (float).
+categorical_oov_tolerance:
+    categorical oov tolerance (float).
+run_great_expectations:
+    run great expectations (bool).
+
+Returns
+-------
+SyntheticValidationResult
+    Serializable result summary (SyntheticValidationResult) for history recording.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     if plan is None:
         raise ValidationError("No SynthesizerPlan for validate_synthetic.")
@@ -167,7 +192,22 @@ def _run_ge_lite(
 
 
 def enrich_specs_with_train_stats(train: pd.DataFrame, specs: tuple[Any, ...]) -> tuple[Any, ...]:
-    """Attach train min/max to numeric specs for validation range checks."""
+    """Attach train min/max to numeric specs for validation range checks.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+train:
+    train (pd.DataFrame).
+specs:
+    specs (tuple[Any, ...]).
+
+Returns
+-------
+tuple[Any, ...]
+    Tuple of results (tuple[Any, ...]) for downstream Session steps.
+    """
     from buildml.synthetic.types import ColumnSchemaSpec
 
     enriched: list[ColumnSchemaSpec] = []

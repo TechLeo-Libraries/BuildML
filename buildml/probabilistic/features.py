@@ -29,7 +29,28 @@ __all__ = [
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
-    """Build a float design matrix; refuse null features."""
+    """Build a float design matrix from selected columns.
+
+    Delegates to the semi-supervised helper with probabilistic-specific error
+    text when null features are detected.
+
+    Parameters
+    ----------
+    frame:
+        Partition frame containing ``columns``.
+    columns:
+        Numeric feature column names.
+
+    Returns
+    -------
+    numpy.ndarray
+        Float matrix shaped ``(n_rows, n_columns)``.
+
+    Raises
+    ------
+    ValidationError
+        When any selected column contains null values.
+    """
     try:
         return _matrix_from_frame(frame, columns)
     except ValidationError as exc:
@@ -46,7 +67,31 @@ def resolve_probabilistic_columns(
     prefer_reduce_components: bool = True,
     target_column: str,
 ) -> tuple[list[str], bool, list[str]]:
-    """Resolve numeric feature columns (same contract as semi-supervised)."""
+    """Resolve numeric feature columns for probabilistic fit.
+
+    Reuses the semi-supervised column contract so reduce-plan components and
+    explicit column lists behave consistently across Session paths.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset.
+    frame:
+        Train partition frame.
+    columns:
+        Explicit feature columns or ``None`` to auto-resolve.
+    reduce_plan:
+        Optional PCA reduce plan for component columns.
+    prefer_reduce_components:
+        Prefer reduce components when a reduce plan is active.
+    target_column:
+        Target column excluded from features.
+
+    Returns
+    -------
+    tuple[list[str], bool, list[str]]
+        Resolved columns, whether reduce components were used, and disclosures.
+    """
     cols, used_reduce, disclosures = resolve_semisupervised_columns(
         dataset,
         frame,
@@ -66,7 +111,28 @@ def encode_classification_targets(
     *,
     classes: Sequence[Any] | None = None,
 ) -> tuple[np.ndarray, Any, tuple[Any, ...]]:
-    """Encode classification targets; refuse missing labels."""
+    """Encode classification targets as integer codes for sklearn fit.
+
+    Fits or applies a label encoder and refuses null labels on the train
+    partition.
+
+    Parameters
+    ----------
+    y:
+        Target series from the train partition.
+    classes:
+        Optional fixed class ordering for encoding.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, LabelEncoder, tuple]
+        Encoded codes, fitted encoder, and class tuple.
+
+    Raises
+    ------
+    ValidationError
+        When train targets contain null values.
+    """
     from sklearn.preprocessing import LabelEncoder
 
     if y.isna().any():
@@ -84,7 +150,22 @@ def encode_classification_targets(
 
 
 def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
-    """Map integer class codes back toward original label values."""
+    """Map integer class codes back toward original label values.
+
+    Used after predict paths that emit encoded sklearn class indices.
+
+    Parameters
+    ----------
+    pred_codes:
+        Integer prediction codes from the estimator.
+    label_encoder:
+        Fitted label encoder from train encoding.
+
+    Returns
+    -------
+    list
+        Decoded labels with numeric strings coerced when safe.
+    """
     codes = np.asarray(pred_codes).astype(int)
     decoded = label_encoder.inverse_transform(codes)
     out: list[Any] = []
@@ -101,7 +182,26 @@ def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
 
 
 def regression_targets(y: pd.Series) -> np.ndarray:
-    """Numeric regression targets; refuse nulls."""
+    """Extract numeric regression targets and refuse null or non-numeric values.
+
+    Called during fit on the train partition before passing targets to
+    regression estimators and conformal calibration.
+
+    Parameters
+    ----------
+    y:
+        Target series from the train partition.
+
+    Returns
+    -------
+    numpy.ndarray
+        Float target vector.
+
+    Raises
+    ------
+    ValidationError
+        When targets are null or non-numeric.
+    """
     if y.isna().any():
         raise ValidationError(
             "Probabilistic regression requires non-null numeric targets."
@@ -116,7 +216,22 @@ def regression_targets(y: pd.Series) -> np.ndarray:
 def train_partition_frame(
     dataset: Dataset, split_plan: SplitPlan
 ) -> pd.DataFrame:
-    """Train frame helper."""
+    """Return the Session train partition as a pandas DataFrame.
+
+    Convenience wrapper used by fit paths before column resolution and carving.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset.
+    split_plan:
+        Split plan with train indices.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Rows indexed by ``split_plan.train_indices``.
+    """
     return frame_for_partition(dataset, split_plan, "train")
 
 
@@ -131,9 +246,31 @@ def split_train_for_conformal(
 ) -> tuple[list[Any], list[Any]]:
     """Carve a conformal calibration subset from the Session train partition.
 
-    Never uses validation/test indices. Returns (fit_indices, calib_indices).
-    When ``stratify_labels`` is provided (classification), the carve keeps
-    every label in both the fit and calibration subsets when feasible.
+    Never uses validation or test indices. Returns fit and calibration index
+    lists suitable for split conformal calibration on train only.
+
+    Parameters
+    ----------
+    train_indices:
+        Train partition row indices from the split plan.
+    calibration_fraction:
+        Fraction of train rows reserved for conformal calibration.
+    random_state:
+        Seed for random carving when stratification is not used.
+    min_fit, min_calib:
+        Minimum rows required in each carved subset.
+    stratify_labels:
+        Optional per-row class labels for stratified carving.
+
+    Returns
+    -------
+    tuple[list, list]
+        ``(fit_indices, calib_indices)`` disjoint subsets of ``train_indices``.
+
+    Raises
+    ------
+    ValidationError
+        When train is too small, fraction is invalid, or stratified carve fails.
     """
     indices = list(train_indices)
     n = len(indices)
@@ -204,7 +341,6 @@ def _stratified_conformal_split(
 
     calib: list[Any] = []
     fit: list[Any] = []
-    # First place one row per class into each subset.
     for label, rows in by_label.items():
         order = list(rng.permutation(len(rows)))
         ordered = [rows[i] for i in order]
@@ -226,7 +362,6 @@ def _stratified_conformal_split(
             "Stratified conformal carve could not satisfy min_fit/min_calib "
             f"(n_fit={len(fit)}, n_calib={len(calib)})."
         )
-    # Preserve original train order for readability.
     index_pos = {idx: pos for pos, idx in enumerate(indices)}
     fit_sorted = sorted(fit, key=lambda i: index_pos[i])
     calib_sorted = sorted(calib, key=lambda i: index_pos[i])
@@ -234,7 +369,26 @@ def _stratified_conformal_split(
 
 
 def norm_ppf(p: float) -> float:
-    """Inverse CDF of the standard normal (via ``scipy.stats.norm``)."""
+    """Return the inverse CDF of the standard normal at probability ``p``.
+
+    Used when constructing Gaussian posterior-std intervals from miscoverage
+    rates during predict and evaluate.
+
+    Parameters
+    ----------
+    p:
+        Probability in ``(0, 1)``.
+
+    Returns
+    -------
+    float
+        Standard normal quantile ``Phi^{-1}(p)``.
+
+    Raises
+    ------
+    ValidationError
+        When ``p`` is outside ``(0, 1)``.
+    """
     if not 0.0 < p < 1.0:
         raise ValidationError(f"norm_ppf probability must be in (0, 1); got {p}.")
     return float(norm.ppf(p))

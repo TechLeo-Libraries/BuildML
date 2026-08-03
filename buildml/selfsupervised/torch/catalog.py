@@ -49,6 +49,26 @@ LEGACY_FALLBACK_METHOD = "masked_tabular"
 
 
 def method_modality(method: str) -> Modality:
+    """Map an SSL method key to its input modality.
+
+    Used by fit routing to select tabular, text, or vision column contracts
+    and install hints for the requested method.
+
+    Parameters
+    ----------
+    method:
+        Catalog method name such as ``simclr_tabular`` or ``hf_text_ssl``.
+
+    Returns
+    -------
+    Modality
+        ``tabular``, ``text``, or ``vision``.
+
+    Raises
+    ------
+    ValueError
+        When ``method`` is not registered in the SSL catalog.
+    """
     if method in TABULAR_TORCH_METHODS or method in LEGACY_SKLEARN_METHODS:
         return "tabular"
     if method in TEXT_TORCH_METHODS:
@@ -59,7 +79,16 @@ def method_modality(method: str) -> Modality:
 
 
 def resolve_default_tabular_method() -> str:
-    """Pick industry-default tabular SSL when Torch is installed."""
+    """Pick the industry-default tabular SSL method when Torch is installed.
+
+    Returns ``simclr_tabular`` when PyTorch imports cleanly; otherwise falls
+    back to deprecated ``masked_tabular``.
+
+    Returns
+    -------
+    str
+        Default tabular SSL method key for Session fit.
+    """
     if importlib.util.find_spec("torch") is None:
         return LEGACY_FALLBACK_METHOD
     try:
@@ -73,7 +102,21 @@ def resolve_default_tabular_method() -> str:
 
 
 def list_ssl_methods(*, include_legacy: bool = True) -> tuple[dict[str, Any], ...]:
-    """Return catalog rows for explain/docs surfaces."""
+    """Return catalog rows for explain surfaces and documentation.
+
+    Each row records method name, modality, backend, optional extra install
+    hint, and deprecation status for legacy sklearn paths.
+
+    Parameters
+    ----------
+    include_legacy:
+        When True, append the deprecated ``masked_tabular`` sklearn method.
+
+    Returns
+    -------
+    tuple[dict[str, Any], ...]
+        Sorted catalog entries suitable for walkthrough matrices.
+    """
     rows: list[dict[str, Any]] = []
     for name in sorted(TORCH_METHODS):
         mod = method_modality(name)
@@ -105,7 +148,16 @@ def list_ssl_methods(*, include_legacy: bool = True) -> tuple[dict[str, Any], ..
 
 
 def ssl_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for self-supervised backends and methods."""
+    """Build an honest capability matrix for self-supervised backends.
+
+    Reports which Torch, HF text, and vision methods are importable in the
+    current environment together with install hints and non-goals.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend availability, default method, catalog rows, and install hints.
+    """
     torch_ok = torch_available()
     st_ok = importlib.util.find_spec("sentence_transformers") is not None
     tv_ok = importlib.util.find_spec("torchvision") is not None

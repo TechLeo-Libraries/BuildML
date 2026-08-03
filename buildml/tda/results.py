@@ -46,6 +46,16 @@ class TdaPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise the frozen TDA plan for bundles and history logs.
+
+        Omits heavy arrays (train_x, NN object, estimators) while preserving
+        configuration, feature metadata, and disclosure strings.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-safe plan summary suitable for ``meta.json`` and Session history.
+        """
         return {
             "backend": self.backend,
             "vectorization": self.vectorization,
@@ -91,6 +101,16 @@ class TdaFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise the TDA fit report for history and walkthrough panels.
+
+        Captures backend, vectorization, and train score without embedding the
+        full feature matrix.
+
+        Returns
+        -------
+        dict[str, Any]
+            Backend, vectorization, dimensions, train score, and disclosures.
+        """
         return {
             "backend": self.backend,
             "vectorization": self.vectorization,
@@ -108,6 +128,7 @@ class TdaFitResult:
         }
 
     def show(self) -> None:
+        """Print a one-line fit summary, train score, and key disclosures."""
         print(
             f"TdaFit · {self.backend} · {self.vectorization} · knn={self.knn} · "
             f"dim={self.feature_dim} · n_train={self.n_train_rows} · head={self.head}"
@@ -131,6 +152,15 @@ class TdaTransformResult:
     disclosures: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise transform output without embedding the full feature matrix.
+
+        History records row counts and names only — not the topological matrix.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, row count, feature dimension, names, and disclosures.
+        """
         return {
             "partition": self.partition,
             "n_rows": self.n_rows,
@@ -152,6 +182,15 @@ class TdaPredictResult:
     disclosures: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise predict output for history logs without listing every prediction.
+
+        Records counts and task metadata for audit trails.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, task, row count, prediction count, and disclosures.
+        """
         return {
             "partition": self.partition,
             "n_rows": self.n_rows,
@@ -176,6 +215,16 @@ class TdaEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise evaluation metrics and diagram-distance diagnostics.
+
+        Includes optional Wasserstein/bottleneck summaries when requested at
+        evaluate time.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, task, metrics, optional diagram distances, and disclosures.
+        """
         return {
             "partition": self.partition,
             "task": self.task,
@@ -189,6 +238,7 @@ class TdaEvalResult:
         }
 
     def show(self) -> None:
+        """Print evaluation header and formatted metric values."""
         print(
             f"TdaEval · {self.vectorization} · task={self.task} · "
             f"partition={self.partition} · n={self.n_rows}"

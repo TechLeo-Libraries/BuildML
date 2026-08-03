@@ -1,14 +1,22 @@
 """History / catalog / walkthrough helpers for multi-task operations."""
-
 from __future__ import annotations
-
 from typing import Any
-
 from buildml.multitask.catalog import multitask_capability_matrix
 
-
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_multitask`` history."""
+    """Build a compact history payload from a multi-task fit result.
+    Strips heavy estimator objects so Session history records only the fields
+    needed for walkthrough overlays and audit replay.
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.multitask.results.MultiTaskFitResult` or compatible
+        mapping; ``None`` yields an empty dict.
+    Returns
+    -------
+    dict[str, Any]
+        Backend, method, target columns, and train row counts.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -22,9 +30,20 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
         "used_reduce_components": payload.get("used_reduce_components"),
     }
 
-
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_multitask`` history."""
+    """Build a compact history payload from a multi-task evaluation result.
+    Captures partition-level metrics and per-task scores for explain overlays
+    without serializing full prediction blobs.
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.multitask.results.MultiTaskEvalResult` or compatible
+        mapping; ``None`` yields an empty dict.
+    Returns
+    -------
+    dict[str, Any]
+        Partition, row counts, aggregate metrics, and per-task metrics summary.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -37,9 +56,20 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
         "per_task_metrics": payload.get("per_task_metrics"),
     }
 
-
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``predict_multitask`` history."""
+    """Build a compact history payload from a multi-task predict result.
+    Records partition, task count, and attach metadata without embedding raw
+    prediction vectors in history.
+    Parameters
+    ----------
+    predict_result:
+        :class:`~buildml.multitask.results.MultiTaskPredictResult` or compatible
+        mapping; ``None`` yields an empty dict.
+    Returns
+    -------
+    dict[str, Any]
+        Partition, row counts, attach flag, and prediction prefix.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -57,7 +87,6 @@ def predict_result_summary(predict_result: Any) -> dict[str, Any]:
         "prediction_prefix": payload.get("prediction_prefix"),
     }
 
-
 def multitask_status(
     plan: Any = None,
     *,
@@ -66,7 +95,30 @@ def multitask_status(
     predict_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for multi-task learning."""
+    """Build factual walkthrough disclosure for multi-task learning state.
+    Combines live plan fields, latest fit/eval/predict payloads, and history
+    evidence into a teaching-oriented status dict with capability matrix
+    attachment.
+    Parameters
+    ----------
+    plan:
+        Optional :class:`~buildml.multitask.results.MultiTaskPlan`.
+    fit_result:
+        Optional latest fit result for ``has_fit_result``.
+    eval_result:
+        Optional latest eval result; metrics are summarized in disclosures.
+    predict_result:
+        Optional latest predict result for attach/partition disclosures.
+    history:
+        Session operation history used to detect multi-task activity when no
+        plan is attached.
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, target column summary, disclosures, boundary text, and
+        nested capability matrix from
+        :func:`buildml.multitask.catalog.multitask_capability_matrix`.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -108,7 +160,6 @@ def multitask_status(
             "Multi-task operations appear in history, but no live "
             "MultiTaskPlan is attached."
         )
-
     eval_payload = None
     if eval_result is not None:
         eval_payload = (
@@ -120,7 +171,6 @@ def multitask_status(
             f"n_rows={eval_payload.get('n_rows')}, "
             f"metrics={eval_payload.get('metrics')}."
         )
-
     return {
         "enabled": enabled,
         "present": enabled or saw,
@@ -151,9 +201,20 @@ def multitask_status(
         ),
     }
 
-
 def multitask_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build multi-task walkthrough status from a Session instance.
+    Reads private Session attributes set by multi-task operations and delegates
+    to :func:`multitask_status`.
+    Parameters
+    ----------
+    session:
+        BuildML Session with optional ``_multitask_*`` state attributes.
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`multitask_status` for the session's plan and
+        results.
+    """
     return multitask_status(
         getattr(session, "_multitask_plan", None),
         fit_result=getattr(session, "_multitask_fit_result", None),

@@ -27,6 +27,16 @@ class AutoMLBudget:
     secondary_metric: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize compute caps for history and bundle metadata.
+
+        Records trial, family, recipe, ensemble, and wall-clock limits chosen
+        for one AutoML search run.
+
+        Returns
+        -------
+        dict[str, Any]
+            Trial, family, recipe, ensemble, and time budget fields.
+        """
         return {
             "max_trials": self.max_trials,
             "max_families": self.max_families,
@@ -61,6 +71,16 @@ class AutoMLConfig:
     extras: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize user-facing AutoML knobs for history and bundle metadata.
+
+        Captures backend, method, selection mode, CV settings, and nested budget
+        fields for reproducibility disclosures.
+
+        Returns
+        -------
+        dict[str, Any]
+            Backend, method, selection, CV, and nested budget summary.
+        """
         return {
             "backend": self.backend,
             "method": self.method,

@@ -22,6 +22,15 @@ class AnomalyThresholdTuneResult:
     disclosures: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "partition": self.partition,
             "metric": self.metric,
@@ -74,6 +83,15 @@ class AnomalyPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -118,6 +136,15 @@ class AnomalyFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -136,6 +163,10 @@ class AnomalyFitResult:
         }
 
     def show(self) -> None:
+        """Perform show for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+        """
         print(
             f"AnomalyFit · {self.backend}/{self.method} · mode={self.mode} · "
             f"n_fit={self.n_fit_rows}/{self.n_train_rows} · "
@@ -165,6 +196,15 @@ class AnomalyScoreResult:
     disclosures: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -201,6 +241,15 @@ class AnomalyEvalResult:
     recommendations: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -220,6 +269,10 @@ class AnomalyEvalResult:
         }
 
     def show(self) -> None:
+        """Perform show for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+        """
         print(
             f"AnomalyEval · {self.method} · mode={self.mode} · "
             f"partition={self.partition} · n={self.n_rows} · "

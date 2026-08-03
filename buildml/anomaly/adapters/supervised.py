@@ -17,6 +17,27 @@ def build_supervised_estimator(
     method: SupervisedAnomalyMethod,
     random_state: int | None,
 ) -> Any:
+    """Construct a supervised estimator ready for fit or scoring.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+Any
+    Adapter-specific estimator or model object.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if method == "supervised_hgb":
         return HistGradientBoostingClassifier(random_state=random_state)
     if method == "supervised_xgb":
@@ -49,6 +70,24 @@ def supervised_anomaly_scores(
     method: str,
     x: np.ndarray,
 ) -> np.ndarray:
+    """Perform supervised anomaly scores for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+estimator:
+    Fitted model object used for scoring or prediction.
+method:
+    Method or strategy identifier for the resolved backend.
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+    """
     proba = np.asarray(estimator.predict_proba(x), dtype=float)
     classes = list(getattr(estimator, "classes_", [0, 1]))
     if len(classes) == 1:

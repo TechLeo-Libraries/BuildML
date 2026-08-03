@@ -26,7 +26,44 @@ def induce_skope_rules(
     recall_min: float = 0.05,
     n_estimators: int = 30,
 ) -> tuple[RuleKnowledgeBase, Any]:
-    """Fit SkopeRules on train and export rules into BuildML rule objects."""
+    """Fit SkopeRules on train and export rules into BuildML rule objects.
+
+    Runs one-vs-rest SkopeRules mining per class on Session train, parses rule
+    strings into predicates, and returns a :class:`RuleKnowledgeBase` with
+    ``induced_skope`` provenance.
+
+    Parameters
+    ----------
+    frame:
+        Train partition frame.
+    columns:
+        Numeric feature columns for SkopeRules.
+    y:
+        Encoded train targets.
+    task:
+        Must be ``classification`` (SkopeRules is binary per class).
+    max_rules:
+        Cap on exported rules across all classes.
+    random_state:
+        Seed for SkopeRules.
+    class_names:
+        Class labels for consequents.
+    precision_min, recall_min:
+        SkopeRules quality thresholds.
+    n_estimators:
+        Number of SkopeRules base estimators.
+
+    Returns
+    -------
+    tuple[RuleKnowledgeBase, SkopeRules estimator]
+        Induced rules and the last fitted SkopeRules instance.
+
+    Raises
+    ------
+    ValidationError
+        When task is not classification, fewer than two classes exist, or no
+        rules pass the precision/recall thresholds.
+    """
     if task != "classification":
         raise ValidationError(
             "SkopeRules backend supports classification only; "

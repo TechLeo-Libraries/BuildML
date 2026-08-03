@@ -41,7 +41,28 @@ def fit_voting(
     weights: Sequence[float] | None = None,
     task: TaskType = "auto",
 ) -> Any:
-    """Fit a VotingClassifier / VotingRegressor on the train partition only.
+    """Fit a voting ensemble on the train partition only.
+
+    Delegates to :func:`buildml.ensemble.fit.fit_voting_ensemble`, stores the
+    plan on Session, and sets ``fit_result`` so classical evaluate/predict work.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan.
+    estimators:
+        Base estimators as a mapping or ``(name, estimator)`` sequence.
+    voting:
+        Voting strategy (``hard`` or ``soft`` for classifiers).
+    weights:
+        Optional per-estimator vote weights.
+    task:
+        Task type override (``classification``, ``regression``, or ``auto``).
+
+    Returns
+    -------
+    EnsembleFitResult
+        Serializable fit summary including base estimator names.
 
     Notes
     -----
@@ -83,7 +104,32 @@ def fit_stacking(
     stack_method: str = "auto",
     task: TaskType = "auto",
 ) -> Any:
-    """Fit a StackingClassifier / StackingRegressor on the train partition only.
+    """Fit a stacking ensemble on the train partition only.
+
+    Delegates to :func:`buildml.ensemble.fit.fit_stacking_ensemble` with
+    out-of-fold meta features computed inside train only.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan.
+    estimators:
+        Base estimators as a mapping or ``(name, estimator)`` sequence.
+    final_estimator:
+        Meta-learner fitted on out-of-fold base predictions.
+    cv:
+        Number of cross-validation folds inside train for OOF features.
+    passthrough:
+        When True, include original features in meta-learner input.
+    stack_method:
+        Base prediction method (``auto``, ``predict_proba``, etc.).
+    task:
+        Task type override (``classification``, ``regression``, or ``auto``).
+
+    Returns
+    -------
+    EnsembleFitResult
+        Serializable fit summary including CV fold count and base names.
 
     Notes
     -----
@@ -135,6 +181,35 @@ def fit_blending(
 ) -> Any:
     """Fit a holdout-blend ensemble on the train partition only.
 
+    Delegates to :func:`buildml.ensemble.fit.fit_blending_ensemble` with a
+    holdout carved from train for meta-learner fitting.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan.
+    estimators:
+        Base estimators as a mapping or ``(name, estimator)`` sequence.
+    final_estimator:
+        Meta-learner fitted on holdout base predictions.
+    holdout_fraction:
+        Fraction of train rows reserved for blend holdout.
+    blend_method:
+        Base prediction method for blending (``predict_proba``, etc.).
+    random_state:
+        Seed for holdout split and base estimator initialization.
+    refit_bases_on_full_train:
+        When True, refit base estimators on all train rows after blending.
+    passthrough:
+        When True, include original features in meta-learner input.
+    task:
+        Task type override (``classification``, ``regression``, or ``auto``).
+
+    Returns
+    -------
+    EnsembleFitResult
+        Serializable fit summary including holdout fraction disclosures.
+
     Notes
     -----
     **Leakage:** The blend holdout is carved from train. Session validation/test
@@ -183,8 +258,25 @@ def evaluate_ensemble(
 ) -> EvaluateResult:
     """Evaluate the last native ensemble with classical supervised metrics.
 
-    Requires ``fit_voting`` / ``fit_stacking`` / ``fit_blending`` (or a loaded
-    ensemble bundle). Delegates to the same metric path as ``Session.evaluate``.
+    Delegates to the same metric path as ``Session.evaluate``. Requires a
+    prior :func:`fit_voting`, :func:`fit_stacking`, or :func:`fit_blending`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with ``fit_result`` from an ensemble fit.
+    partition:
+        Partition to evaluate (``train``, ``validation``, or ``test``).
+
+    Returns
+    -------
+    EvaluateResult
+        Classical metrics plus ensemble strategy disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no fitted ensemble exists on the Session.
     """
     if session._fit_result is None:
         raise ValidationError(
@@ -213,7 +305,28 @@ def evaluate_ensemble(
 
 
 def save_ensemble_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active EnsemblePlan as ``buildml.ensemble_bundle.v1``."""
+    """Persist the active EnsemblePlan as ``buildml.ensemble_bundle.v1``.
+
+    Delegates to :func:`buildml.ensemble.checkpoint.save_ensemble_bundle`.
+    Reload with :func:`load_ensemble_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an ensemble plan from a prior fit.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no ensemble plan exists on the Session.
+    """
     plan = getattr(session, "_ensemble_plan", None)
     if plan is None:
         raise ValidationError(
@@ -238,7 +351,23 @@ def save_ensemble_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_ensemble_bundle_op(session, path: str | Path) -> Any:
-    """Load an ensemble bundle into this Session."""
+    """Load an ensemble bundle into this Session.
+
+    Delegates to :func:`buildml.ensemble.checkpoint.load_ensemble_bundle`
+    and restores ``fit_result`` for classical evaluate/predict.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded EnsemblePlan.
+    path:
+        Path to a ``buildml.ensemble_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with EnsemblePlan and ``fit_result`` attached.
+    """
     plan, fit_result = load_ensemble_bundle(path)
     session._ensemble_plan = plan
     session._ensemble_fit_result = None

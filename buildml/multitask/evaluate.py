@@ -32,7 +32,29 @@ def evaluate_multitask(
     """Score per-task and aggregate metrics on a holdout partition.
 
     Holdout rows are never used for fitting. Aggregates are unweighted means
-    across tasks.
+    across tasks; mixed torch plans report cls/reg aggregates separately.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features and ground-truth target columns.
+    plan:
+        Fitted :class:`~buildml.multitask.results.MultiTaskPlan` from
+        :func:`fit_multitask`.
+    split_plan:
+        Session split plan; required unless ``partition='all'``.
+    partition:
+        Which split to evaluate: ``train``, ``validation``, ``test``, or ``all``.
+
+    Returns
+    -------
+    MultiTaskEvalResult
+        Per-task and aggregate metrics with disclosures for walkthrough replay.
+
+    Raises
+    ------
+    ValidationError
+        When plan is missing, partition requires splits, or columns are absent.
     """
     if plan is None:
         raise ValidationError("No MultiTaskPlan. Call fit_multitask first.")

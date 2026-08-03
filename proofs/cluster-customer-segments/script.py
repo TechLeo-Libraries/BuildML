@@ -133,8 +133,11 @@ def main() -> None:
                 "Test cluster metrics after model locked",
             ],
             "industry_comparison": {
-                "status": "stub",
-                "note": "Tier C: sklearn KMeans + silhouette on same split",
+                "status": "filled",
+                "note": (
+                    "Tier C baseline_industry.py: sklearn KMeans + silhouette twin on the same "
+                    "split; run script then baseline_industry.py for results/comparison.json."
+                ),
             },
             "limitations": [
                 "External labels exist only because data is synthetic",

@@ -79,6 +79,37 @@ class SdvTabularGenerator:
         random_state: int = 42,
         verbose: bool = False,
     ) -> SdvTabularGenerator:
+        """Run fit on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+frame:
+    Partition or full DataFrame slice used for this operation.
+specs:
+    specs (tuple[ColumnSchemaSpec, ...]).
+method:
+    Method or strategy identifier for the resolved backend.
+epochs:
+    Training epochs for torch-backed estimators.
+batch_size:
+    Number of rows to select per query or training minibatch.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+verbose:
+    verbose (bool).
+
+Returns
+-------
+SdvTabularGenerator
+    Return value (SdvTabularGenerator) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         require_sdv(feature=f"SDV method='{method}'")
         if len(frame) < 10:
             raise ValidationError(
@@ -115,6 +146,29 @@ class SdvTabularGenerator:
         random_state: int | None = None,
         condition: dict[str, Any] | None = None,
     ) -> pd.DataFrame:
+        """Run sample on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+n:
+    n (int).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+condition:
+    condition (dict[str, Any] | None).
+
+Returns
+-------
+pd.DataFrame
+    Return value (pd.DataFrame) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         if self.synthesizer is None:
             raise ValidationError("SdvTabularGenerator is not fitted.")
         if condition:

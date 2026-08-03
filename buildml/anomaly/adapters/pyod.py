@@ -31,6 +31,33 @@ def build_pyod_estimator(
     n_neighbors: int,
     n_features: int | None = None,
 ) -> Any:
+    """Construct a pyod estimator ready for fit or scoring.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+contamination:
+    Expected outlier fraction for sklearn-style detectors.
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+n_neighbors:
+    n neighbors (int).
+n_features:
+    n features (int | None).
+
+Returns
+-------
+Any
+    Adapter-specific estimator or model object.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     require_pyod(feature=f"PyOD method '{method}'")
     _ = n_neighbors  # reserved for neighborhood-style PyOD models
     if method == "hbos":
@@ -96,6 +123,29 @@ def build_pyod_estimator(
 
 
 def pyod_anomaly_scores(estimator: Any, *, method: str, x: np.ndarray) -> np.ndarray:
+    """Perform pyod anomaly scores for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+estimator:
+    Fitted model object used for scoring or prediction.
+method:
+    Method or strategy identifier for the resolved backend.
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     require_pyod(feature="PyOD anomaly scoring")
     # PyOD: higher decision_function => more anomalous (aligned with BuildML contract).
     if hasattr(estimator, "decision_function"):

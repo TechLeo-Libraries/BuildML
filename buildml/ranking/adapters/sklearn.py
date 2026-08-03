@@ -41,7 +41,39 @@ def build_sklearn_ranker(
     max_pairs_per_query: int = 80,
     random_state: int | None = 0,
 ) -> SklearnRankerState:
-    """Fit sklearn pointwise or pairwise ranker on standardized features."""
+    """Fit sklearn pointwise or pairwise ranker on standardized features.
+
+    Dispatches to Ridge/HGB pointwise regression or RankSVM-lite pairwise
+    training and packages the result in a :class:`SklearnRankerState`.
+
+    Parameters
+    ----------
+    X:
+        Standardized train feature matrix.
+    y:
+        Graded relevance labels aligned with ``groups``.
+    groups:
+        Query id array with one entry per row (pairwise path only).
+    method:
+        ``pointwise`` or ``pairwise`` sklearn ranker mode.
+    pointwise_estimator:
+        ``ridge`` or ``hgb`` when ``method='pointwise'``.
+    pairwise_estimator:
+        ``ranksvm`` when ``method='pairwise'``.
+    alpha:
+        Ridge regularization for pointwise Ridge.
+    C:
+        LinearSVC regularization for pairwise RankSVM-lite.
+    max_pairs_per_query:
+        Cap on oriented pairs sampled per train query.
+    random_state:
+        Seed for pair sampling and stochastic estimators.
+
+    Returns
+    -------
+    SklearnRankerState
+        Frozen sklearn ranker state for persistence on :class:`RankerPlan`.
+    """
     state = SklearnRankerState(
         method=method,
         pointwise_estimator=pointwise_estimator,
@@ -79,7 +111,28 @@ def build_sklearn_ranker(
 
 
 def score_sklearn_ranker(state: SklearnRankerState, X: np.ndarray) -> np.ndarray:
-    """Score rows with a fitted sklearn ranker state."""
+    """Score rows with a fitted sklearn ranker state.
+
+    Dispatches to pointwise prediction or linear pairwise scoring depending on
+    the method stored on ``state``.
+
+    Parameters
+    ----------
+    state:
+        Frozen sklearn ranker state from :func:`build_sklearn_ranker`.
+    X:
+        Standardized feature matrix to score.
+
+    Returns
+    -------
+    numpy.ndarray
+        Predicted ranking scores, one per row.
+
+    Raises
+    ------
+    ValueError
+        When required estimator or coefficient state is missing from ``state``.
+    """
     if state.method == "pointwise":
         if state.estimator_ is None:
             raise ValueError("SklearnRankerState missing pointwise estimator.")

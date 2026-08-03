@@ -4,9 +4,24 @@ from __future__ import annotations
 
 from typing import Any
 
+from buildml.unsupervised.catalog import unsupervised_capability_matrix
+
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_clusters`` history."""
+    """Compact result_summary for ``fit_clusters`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if fit_result is None:
         return {}
     if hasattr(fit_result, "to_dict"):
@@ -26,7 +41,20 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def assign_result_summary(assign_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``assign_clusters`` history."""
+    """Compact result_summary for ``assign_clusters`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+assign_result:
+    assign result (Any).
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if assign_result is None:
         return {}
     if hasattr(assign_result, "to_dict"):
@@ -45,7 +73,20 @@ def assign_result_summary(assign_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_clusters`` history."""
+    """Compact result_summary for ``evaluate_clusters`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if eval_result is None:
         return {}
     if hasattr(eval_result, "to_dict"):
@@ -69,7 +110,26 @@ def unsupervised_status(
     eval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for unsupervised clustering."""
+    """Factual walkthrough disclosure for unsupervised clustering.
+
+Combines live plan fields, latest operation results, and history evidence into a teaching-oriented status dict with capability attachment.
+
+Parameters
+----------
+plan:
+    Fitted plan object carrying model state and feature contract.
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+history:
+    Session operation history for detecting prior activity.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -130,6 +190,7 @@ def unsupervised_status(
         "has_fit_result": fit_result is not None,
         "has_eval_result": eval_result is not None,
         "eval": eval_payload,
+        "capability_matrix": unsupervised_capability_matrix(),
         "disclosures": disclosures,
         "boundary": (
             "Unsupervised clustering is a Session domain path distinct from EDA "
@@ -139,7 +200,20 @@ def unsupervised_status(
 
 
 def unsupervised_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build unsupervised walkthrough status from a Session instance.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+session:
+    BuildML Session with optional private state attributes.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     return unsupervised_status(
         getattr(session, "_cluster_plan", None),
         fit_result=getattr(session, "_cluster_fit_result", None),

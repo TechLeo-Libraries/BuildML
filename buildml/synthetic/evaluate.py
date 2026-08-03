@@ -40,19 +40,49 @@ def evaluate_synthetic(
 ) -> SyntheticEvalResult:
     """Evaluate a frozen synthesizer.
 
-    Modes
-    -----
-    fidelity
-        Column-wise KS (continuous/integer) and total-variation (categorical),
-        plus continuous pairwise correlation L1. When ``eval_backend='sdmetrics'``
-        or ``eval_backend='auto'`` with SDMetrics installed, also reports
-        SDMetrics QualityReport scores.
-    tstr
-        Train-on-Synthetic, Test-on-Real: fit a simple sklearn estimator on
-        synthetic samples, score on the real holdout partition. Discloses that
-        this is a utility proxy, not a generative quality certificate.
+Modes
+-----
+fidelity
+    Column-wise KS (continuous/integer) and total-variation (categorical),
+    plus continuous pairwise correlation L1. When ``eval_backend='sdmetrics'``
+    or ``eval_backend='auto'`` with SDMetrics installed, also reports
+    SDMetrics QualityReport scores.
+tstr
+    Train-on-Synthetic, Test-on-Real: fit a simple sklearn estimator on
+    synthetic samples, score on the real holdout partition. Discloses that
+    this is a utility proxy, not a generative quality certificate.
+Never refits the generator on the evaluation partition.
 
-    Never refits the generator on the evaluation partition.
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+plan:
+    Fitted plan object carrying model state and feature contract.
+mode:
+    Anomaly detection mode (``unsupervised`` or ``supervised``).
+eval_backend:
+    eval backend (EvalBackend).
+partition:
+    Holdout partition name or ``all`` for the full frame.
+n_synthetic:
+    n synthetic (int | None).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+estimator:
+    Fitted model object used for scoring or prediction.
+
+Returns
+-------
+SyntheticEvalResult
+    Serializable result summary (SyntheticEvalResult) for history recording.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     if plan is None or plan.generator_ is None:
         raise ValidationError("No fitted synthesizer. Call fit_synthesizer(...) first.")

@@ -297,5 +297,115 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             ),
             related_concepts=("anomaly-train-fit-holdout-score", "anomaly-eda-boundary"),
         ),
+        _note(
+            key="anomaly-isolation-forest",
+            title="Isolation Forest (sklearn backend)",
+            summary="Tree ensembles that isolate anomalies via random splits — fast, scale-friendly default in the sklearn backend.",
+            definition=(
+                "Isolation Forest scores points by how quickly random partition trees "
+                "can isolate them; shorter paths imply higher anomaly scores. BuildML "
+                "routes method='isolation_forest' through the sklearn backend with "
+                "train-only fit and disclosed threshold policies."
+            ),
+            intuition="Weird points get separated from the crowd in fewer random cuts.",
+            formal_idea="Anomaly score ∝ average path length to isolation in an ensemble of random trees.",
+            why_it_matters=("Strong default for tabular multivariate anomaly without labels.",),
+            how_buildml_uses=(
+                "Session.fit_anomaly(method='isolation_forest', backend='sklearn').",
+                "See anomaly_capability_matrix() for modes and score calibration.",
+            ),
+            interpretation_rules=("Higher score = more anomalous after orientation disclosure.",),
+            assumptions=("Numeric features; contamination or quantile threshold chosen on train.",),
+            failure_modes=("High-dimensional sparse data without scaling.",),
+            anti_patterns=("Fitting on train+test before split.",),
+            worked_example_pattern=(
+                "fit_anomaly(method='isolation_forest', contamination=0.05) → evaluate_anomaly.",
+            ),
+            related_concepts=("anomaly-train-fit-holdout-score", "anomaly-threshold-alert-rate"),
+        ),
+        _note(
+            key="anomaly-lof",
+            title="Local Outlier Factor (sklearn backend)",
+            summary="Density-relative anomaly scores — flags points much sparser than their neighbours.",
+            definition=(
+                "LOF compares local reachability density of a point to that of its "
+                "k-nearest neighbours. method='lof' on backend='sklearn' fits on train "
+                "only and inverts sklearn's negative_outlier_factor_ so higher = more anomalous."
+            ),
+            intuition="A point in a sparse neighbourhood among dense neighbours looks suspicious.",
+            formal_idea="LOF_k(x) ≈ mean local density of neighbours / local density of x.",
+            why_it_matters=("Captures local density deviations that global methods miss.",),
+            how_buildml_uses=("Session.fit_anomaly(method='lof', n_neighbors=20).",),
+            interpretation_rules=("Tune n_neighbors with feature scale and expected cluster size.",),
+            assumptions=("Meaningful distance metric after scaling.",),
+            failure_modes=("Curse of dimensionality with too many weak features.",),
+            anti_patterns=("Using LOF on unscaled mixed-scale columns.",),
+            worked_example_pattern="fit_anomaly(method='lof') → score_anomalies(partition='test').",
+            related_concepts=("anomaly-isolation-forest", "anomaly-threshold-alert-rate"),
+        ),
+        _note(
+            key="anomaly-one-class-svm",
+            title="One-Class SVM (sklearn backend)",
+            summary="Learn a tight boundary around normal train data; points outside score as anomalies.",
+            definition=(
+                "One-Class SVM finds a hypersphere or hyperplane envelope around "
+                "train-normal structure. method='one_class_svm' supports "
+                "threshold_policy='decision_zero' using sklearn's decision_function sign."
+            ),
+            intuition="Draw the smallest fence around normal examples; outsiders are anomalies.",
+            formal_idea="Minimize volume of envelope subject to most train points inside (ν fraction may be outliers).",
+            why_it_matters=("Useful when normal class is compact and anomalies are far in feature space.",),
+            how_buildml_uses=(
+                "Session.fit_anomaly(method='one_class_svm', kernel='rbf').",
+            ),
+            interpretation_rules=("Kernel and ν strongly affect boundary tightness.",),
+            assumptions=("Scaled numeric features; reasonable ν or contamination prior.",),
+            failure_modes=("Slow on large n; poor with high-dimensional sparse text.",),
+            anti_patterns=("Using default RBF without scaling.",),
+            worked_example_pattern="fit_anomaly(method='one_class_svm', nu=0.05) → evaluate_anomaly.",
+            related_concepts=("anomaly-novelty-vs-unsupervised", "anomaly-threshold-alert-rate"),
+        ),
+        _note(
+            key="anomaly-pyod-hbos-copod-ecod",
+            title="PyOD HBOS / COPOD / ECOD (anomaly-industry backend)",
+            summary="Histogram- and copula-based PyOD detectors for fast multivariate scoring when buildml[anomaly-industry] is installed.",
+            definition=(
+                "HBOS assumes feature independence in histogram bins; COPOD uses "
+                "empirical copula outlier scores; ECOD uses empirical cumulative "
+                "distribution tails. All route through backend='pyod' with train-only fit."
+            ),
+            intuition="Each method asks how extreme this point is along one or many marginal or copula views.",
+            formal_idea="Per-feature tail probabilities or copula-based P-values aggregated into a decision score.",
+            why_it_matters=("Cheap strong baselines beyond sklearn trio when PyOD extra is present.",),
+            how_buildml_uses=(
+                "fit_anomaly(backend='pyod', method='hbos'|'copod'|'ecod').",
+            ),
+            interpretation_rules=("Check pyod available flag in anomaly_capability_matrix().",),
+            assumptions=("Numeric matrix; PyOD installed.",),
+            failure_modes=("Missing buildml[anomaly-industry] raises MissingExtraError.",),
+            anti_patterns=("Claiming PyOD path without the extra installed.",),
+            worked_example_pattern="pip install 'buildml[anomaly-industry]'; fit_anomaly(method='copod').",
+            related_concepts=("anomaly-isolation-forest", "anomaly-train-fit-holdout-score"),
+        ),
+        _note(
+            key="anomaly-autoencoder",
+            title="Tabular autoencoder reconstruction error (torch backend)",
+            summary="Train-only MSE reconstruction on normal train rows; high error flags anomalies when buildml[torch] is available.",
+            definition=(
+                "A small feedforward autoencoder learns to reconstruct train-normal "
+                "patterns. method='autoencoder' on backend='torch' uses reconstruction "
+                "MSE as the anomaly score (higher = more anomalous)."
+            ),
+            intuition="If the model cannot reconstruct a row well, that row did not look like training normals.",
+            formal_idea="score(x) = ||x − decode(encode(x))||² with train-only encoder fit.",
+            why_it_matters=("Nonlinear alternative to distance-based sklearn/PyOD paths.",),
+            how_buildml_uses=("Session.fit_anomaly(backend='torch', method='autoencoder', epochs=...).",),
+            interpretation_rules=("Read torch_present and epochs/disclosures in AnomalyPlan.",),
+            assumptions=("Scaled numeric features; torch installed.",),
+            failure_modes=("Under-trained AE; tiny train sets.",),
+            anti_patterns=("Scoring before scaling or with mismatched feature columns.",),
+            worked_example_pattern="fit_anomaly(backend='torch', method='autoencoder') → score_anomalies.",
+            related_concepts=("anomaly-novelty-vs-unsupervised", "anomaly-threshold-alert-rate"),
+        ),
     )
 }

@@ -38,8 +38,36 @@ def evaluate_probabilistic(
     partition: PartitionOrAll = "validation",
     alpha: float | None = None,
 ) -> ProbabilisticEvalResult:
-    """Score a holdout partition with point + uncertainty metrics.
+    """Score a holdout partition with point and uncertainty metrics.
 
+    Computes proper scoring rules (NLL, Brier, CRPS when available) plus
+    interval coverage and width on validation or test without refitting.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with labeled holdout rows.
+    plan:
+        Train-fitted :class:`~buildml.probabilistic.results.ProbabilisticPlan`.
+    split_plan:
+        Split plan defining the evaluation partition.
+    partition:
+        ``validation``, ``test``, or ``all``.
+    alpha:
+        Miscoverage rate override for interval metrics; defaults to plan alpha.
+
+    Returns
+    -------
+    ProbabilisticEvalResult
+        Point metrics, interval coverage, and honesty disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no plan exists, split plan is missing, or columns are absent.
+
+    Notes
+    -----
     Regression metrics include MAE/RMSE/R², Gaussian NLL (when ``return_std``
     is available), and interval coverage / mean width for the plan's interval
     method. Classification metrics include accuracy/F1, log-loss (NLL), and

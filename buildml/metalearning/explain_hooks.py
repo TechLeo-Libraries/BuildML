@@ -6,7 +6,22 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_metalearning`` history."""
+    """Build a compact history payload from a meta-learning fit result.
+
+    Strips heavy estimator objects so Session history records only the fields
+    needed for walkthrough overlays and audit replay.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.metalearning.results.MetaLearningFitResult` or
+        compatible mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, method, episodic protocol knobs, and meta-train accuracy.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -26,7 +41,22 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_metalearning`` history."""
+    """Build a compact history payload from a meta-learning evaluation result.
+
+    Captures partition-level episodic metrics and task overlap disclosures for
+    explain overlays without serializing per-task detail blobs.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.metalearning.results.MetaLearningEvalResult` or
+        compatible mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, task counts, aggregate metrics, and overlap flags.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -42,7 +72,22 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
 
 
 def adapt_result_summary(adapt_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``adapt_to_task`` history."""
+    """Build a compact history payload from a fast-adapt result.
+
+    Records support size and whether an adapted estimator was produced without
+    embedding private model weights in history.
+
+    Parameters
+    ----------
+    adapt_result:
+        :class:`~buildml.metalearning.results.MetaAdaptResult` or compatible
+        mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Method, task id, support size, and adaptation summary fields.
+    """
     if adapt_result is None:
         return {}
     payload = (
@@ -67,7 +112,33 @@ def metalearning_status(
     adapt_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for meta-learning."""
+    """Build factual walkthrough disclosure for meta-learning state.
+
+    Combines live plan fields, latest fit/eval/adapt payloads, and history
+    evidence into a teaching-oriented status dict with capability matrix
+    attachment.
+
+    Parameters
+    ----------
+    plan:
+        Optional :class:`~buildml.metalearning.results.MetaLearningPlan`.
+    fit_result:
+        Optional latest fit result for ``has_fit_result``.
+    eval_result:
+        Optional latest eval result; metrics are summarized in disclosures.
+    adapt_result:
+        Optional latest adapt result.
+    history:
+        Session operation history used to detect meta-learning activity when no
+        plan is attached.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, episodic protocol summary, disclosures, boundary text,
+        and nested capability matrix from
+        :func:`buildml.explain.capability_status.attach_capability_matrix`.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -130,7 +201,10 @@ def metalearning_status(
             else dict(adapt_result)
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_metalearning_plan": enabled,
@@ -157,11 +231,28 @@ def metalearning_status(
             "evaluation-only. Not foundation-model meta-learning; not "
             "MAML-at-scale; not causal; not federated."
         ),
-    }
+    },
+        "metalearning_capability_matrix",
+    )
 
 
 def metalearning_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build meta-learning walkthrough status from a Session instance.
+
+    Reads private Session attributes set by meta-learning operations and
+    delegates to :func:`metalearning_status`.
+
+    Parameters
+    ----------
+    session:
+        BuildML Session with optional ``_metalearning_*`` state attributes.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`metalearning_status` for the session's plan and
+        results.
+    """
     return metalearning_status(
         getattr(session, "_metalearning_plan", None),
         fit_result=getattr(session, "_metalearning_fit_result", None),

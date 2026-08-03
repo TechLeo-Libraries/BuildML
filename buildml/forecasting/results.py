@@ -37,6 +37,16 @@ class ForecastPlan:
     industry_estimator_: Any = field(default=None, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the forecast plan for bundles and history logs.
+
+        Captures method, column contract, lag settings, and honesty disclosures
+        without embedding fitted estimator objects.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, row counts, and configuration summary.
+        """
         return {
             "method": self.method,
             "target_column": self.target_column,
@@ -79,6 +89,16 @@ class ForecastFitResult:
     train_end_stamp: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise forecast fit output for history logs.
+
+        Records method, column contract, train row counts, and disclosure
+        strings after fit on the train partition completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fit metadata, horizon, lags, and honesty disclosures.
+        """
         return {
             "method": self.method,
             "target_column": self.target_column,
@@ -94,6 +114,11 @@ class ForecastFitResult:
         }
 
     def show(self) -> None:
+        """Print a concise fit summary to stdout for interactive sessions.
+
+        Shows method, univariate mode, row counts, horizon, and the first few
+        disclosure strings from the fit result.
+        """
         mode = "univariate" if self.univariate else "with exogenous"
         print(
             f"ForecastFit · {self.method} · {mode} · "
@@ -117,6 +142,16 @@ class ForecastGenerateResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise horizon generation output for history logs.
+
+        Records method, horizon, origin label, and prediction values without
+        embedding fitted estimator state.
+
+        Returns
+        -------
+        dict[str, Any]
+            Generate metadata, prediction list, and disclosure strings.
+        """
         return {
             "method": self.method,
             "horizon": self.horizon,
@@ -129,6 +164,10 @@ class ForecastGenerateResult:
         }
 
     def show(self) -> None:
+        """Print a concise generate summary to stdout for interactive sessions.
+
+        Shows method, horizon, origin label, and a preview of forecast values.
+        """
         print(
             f"ForecastGenerate · {self.method} · horizon={self.horizon} · "
             f"origin={self.origin}"
@@ -154,6 +193,16 @@ class ForecastEvalResult:
     recommendations: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout evaluation output for history logs.
+
+        Records partition, strategy, headline metrics, and recommendation
+        strings without embedding full prediction vectors twice.
+
+        Returns
+        -------
+        dict[str, Any]
+            Eval metadata, metrics dict, and honesty disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -167,6 +216,11 @@ class ForecastEvalResult:
         }
 
     def show(self) -> None:
+        """Print a concise evaluation summary to stdout for interactive sessions.
+
+        Shows method, partition, strategy, scored-point count, metrics, and
+        the first few recommendation strings.
+        """
         print(
             f"ForecastEval · {self.method} · partition={self.partition} · "
             f"strategy={self.strategy} · n={self.n_points}"

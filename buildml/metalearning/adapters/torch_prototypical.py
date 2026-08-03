@@ -47,7 +47,32 @@ class TabularProtoNet:
         x_query: np.ndarray,
         y_query: np.ndarray,
     ) -> float:
-        """One episodic forward pass; returns query accuracy (for meta-train scoring)."""
+        """Run one episodic forward pass and return query accuracy for meta-train scoring.
+
+        Computes embedding-space prototypes from support and assigns query rows
+        to nearest prototypes; used for diagnostic accuracy during meta-training.
+
+        Parameters
+        ----------
+        x_support:
+            Support feature matrix.
+        y_support:
+            Support integer class codes.
+        x_query:
+            Query feature matrix.
+        y_query:
+            Query integer class codes (ground truth).
+
+        Returns
+        -------
+        float
+            Fraction of query rows classified correctly this episode.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder has not been meta-trained yet.
+        """
         torch = require_torch_metalearning()
         device = torch.device(self.device)
         if self.encoder_ is None:
@@ -77,6 +102,26 @@ class TabularProtoNet:
         return float((pred_codes == y_q).float().mean().item())
 
     def embed(self, x: np.ndarray) -> np.ndarray:
+        """Embed tabular rows through the trained MLP encoder.
+
+        Runs inference mode forward pass and returns CPU numpy embeddings for
+        downstream prototype computation.
+
+        Parameters
+        ----------
+        x:
+            Feature matrix ``(n_samples, n_features)``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Embedding matrix ``(n_samples, embed_dim)``.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder has not been meta-trained yet.
+        """
         torch = require_torch_metalearning()
         if self.encoder_ is None:
             raise ValidationError("TabularProtoNet encoder is not initialized.")
@@ -93,6 +138,25 @@ class TabularProtoNet:
         y_support: np.ndarray,
         x_query: np.ndarray,
     ) -> np.ndarray:
+        """Predict query class codes from support prototypes in embedding space.
+
+        Builds class prototypes from embedded support rows and assigns each query
+        row to the nearest prototype (euclidean distance in embedding space).
+
+        Parameters
+        ----------
+        x_support:
+            Support feature matrix.
+        y_support:
+            Support integer class codes.
+        x_query:
+            Query feature matrix.
+
+        Returns
+        -------
+        numpy.ndarray
+            Predicted integer class codes for query rows.
+        """
         emb_s = self.embed(x_support)
         emb_q = self.embed(x_query)
         protos = compute_prototypes(emb_s, y_support)
@@ -119,7 +183,54 @@ def meta_train_prototypical_torch(
     random_state: int | None = 0,
     device: str = "cpu",
 ) -> tuple[TabularProtoNet, float | None, list[str], list[str]]:
-    """Meta-train a tabular ProtoNet encoder on episodic tasks."""
+    """Meta-train a tabular ProtoNet encoder on episodic tasks.
+
+    Optimizes an MLP encoder with episodic prototype cross-entropy on tabular
+    features. Small-scale ProtoNet — not vision/foundation-model meta-learning.
+
+    Parameters
+    ----------
+    train:
+        Train-partition DataFrame with task and target columns.
+    task_column:
+        Episodic task identifier column.
+    target_column:
+        Classification target column.
+    columns:
+        Feature columns for matrix extraction.
+    label_encoder:
+        Fitted sklearn label encoder for consistent class codes.
+    meta_train_ids:
+        Task ids used for meta-training episodes.
+    n_way:
+        Classes sampled per episode.
+    k_shot:
+        Support examples per class.
+    n_query:
+        Query examples per class.
+    n_episodes:
+        Episodes per meta-epoch.
+    rng:
+        NumPy generator for task/episode sampling (reserved for callers).
+    meta_epochs:
+        Number of outer meta-training epochs.
+    embed_dim:
+        Encoder output embedding dimension.
+    hidden_dim:
+        MLP hidden width.
+    meta_lr:
+        AdamW learning rate for encoder weights.
+    random_state:
+        Seed for episodic sampling.
+    device:
+        Torch device string.
+
+    Returns
+    -------
+    tuple[TabularProtoNet, float | None, list[str], list[str]]
+        Meta-trained ProtoNet, mean episodic query accuracy (or ``None``), notes,
+        and warnings.
+    """
     from buildml.metalearning.features import (
         encode_labels,
         frame_for_task,

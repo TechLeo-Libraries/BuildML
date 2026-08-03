@@ -76,6 +76,60 @@ def fit_recommender(
 
     Honesty: Session collaborative filtering + optional content / hybrid features —
     not a Netflix-scale recsys platform. Never trains on holdout interactions.
+
+    Parameters
+    ----------
+    dataset:
+        Full Session dataset with user/item interaction columns.
+    split_plan:
+        Split definition; only the train partition is used for fitting.
+    method:
+        Recommender algorithm; defaults from feedback and installed extras.
+    backend:
+        Explicit backend override (``"sklearn"``, ``"implicit"``, ``"lightfm"``).
+    user_column:
+        User entity id column.
+    item_column:
+        Item entity id column.
+    rating_column:
+        Explicit rating column; ignored for implicit feedback.
+    feedback:
+        ``"explicit"`` for ratings or ``"implicit"`` for presence-only signals.
+    n_neighbors:
+        Neighbor count for item/user kNN methods.
+    n_factors:
+        Latent dimension for SVD, NMF, ALS, BPR, and LightFM.
+    min_rating:
+        Optional minimum explicit rating after filtering.
+    item_feature_columns:
+        Numeric item side features for content or LightFM hybrid paths.
+    user_feature_columns:
+        Numeric user side features for LightFM hybrid paths.
+    cold_start:
+        Policy for users absent from train (``"popularity"`` or ``"skip"``).
+    random_state:
+        Seed for stochastic factorization and industry backends.
+    n_iterations:
+        Training iterations for implicit ALS/BPR.
+    lightfm_epochs:
+        Training epochs for LightFM hybrid models.
+
+    Returns
+    -------
+    plan:
+        :class:`~buildml.recommenders.results.RecommenderPlan` with fitted
+        state for scoring.
+    result:
+        :class:`~buildml.recommenders.results.RecommenderFitResult` summary
+        for history and disclosure.
+
+    Raises
+    ------
+    ValidationError
+        When split/hyperparameter validation fails, columns are invalid, or
+        the train catalog is too small.
+    MissingExtraError
+        When a resolved industry backend is not installed.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

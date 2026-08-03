@@ -59,9 +59,70 @@ def fit_anomaly(
 ) -> Any:
     """Fit an anomaly detector on the train partition only.
 
-    ``backend`` selects sklearn (core), pyod (``buildml[anomaly-industry]``), or
-    torch (``buildml[torch]``). ``method`` must belong to the backend catalog —
-    see ``anomaly_capability_matrix()``.
+    Delegates to :func:`buildml.anomaly.fit.fit_detector`, stores the
+    :class:`~buildml.anomaly.results.AnomalyPlan` on Session, and records
+    the fit. ``backend`` selects sklearn (core), pyod
+    (``buildml[anomaly-industry]``), or torch (``buildml[torch]``). ``method``
+    must belong to the backend catalog — see :func:`anomaly_capability_matrix_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    backend:
+        Optional backend override (see capability matrix for identifiers).
+    method:
+        Method or strategy identifier for the resolved backend.
+    mode:
+        Anomaly detection mode (``unsupervised`` or ``supervised``).
+    columns:
+        Optional explicit feature column list; ``None`` auto-selects numerics.
+    random_state:
+        Seed for stochastic steps (sampling, initialization, bagging).
+    contamination:
+        Expected outlier fraction for sklearn-style detectors.
+    threshold_policy:
+        How the decision threshold is chosen from train scores.
+    score_threshold:
+        Fixed score cutoff when threshold policy is ``fixed``.
+    quantile:
+        Quantile for score threshold when policy is ``quantile``.
+    n_estimators:
+        Number of trees for forest-based detectors.
+    max_samples:
+        Subsample size for isolation forest (``auto``, int, or float).
+    n_neighbors:
+        Neighborhood size for LOF and similar methods.
+    nu:
+        Upper bound on training-error fraction for one-class SVM.
+    kernel:
+        Kernel type for one-class SVM.
+    gamma:
+        Kernel coefficient for one-class SVM.
+    latent_dim:
+        Bottleneck width for torch autoencoder backend.
+    ae_epochs:
+        Training epochs for torch autoencoder backend.
+    ae_batch_size:
+        Minibatch size for torch autoencoder backend.
+    normal_label_column:
+        Optional column marking normal rows in semi-supervised setups.
+    normal_label_value:
+        Value in ``normal_label_column`` indicating normal rows.
+    positive_label:
+        Positive class label for supervised fraud scorers.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+    flag_column:
+        Output column name for boolean anomaly flags when attaching scores.
+    score_column:
+        Output column name for continuous anomaly scores when attaching.
+
+    Returns
+    -------
+    AnomalyFitResult
+        Serializable fit summary including threshold and alert-rate disclosures.
+        Follow with :func:`score_anomalies_op` or :func:`tune_anomaly_threshold_op`.
     """
     session.assert_can_fit("train")
     plan, result = fit_detector(
@@ -133,7 +194,41 @@ def tune_anomaly_threshold_op(
     allow_test_tuning: bool = False,
     update_plan: bool = True,
 ) -> Any:
-    """Tune anomaly threshold on validation labels (leakage-safe)."""
+    """Tune the anomaly decision threshold on validation labels without refitting.
+
+    Delegates to :func:`buildml.anomaly.threshold.tune_anomaly_threshold` and
+    optionally writes the tuned threshold back to the Session plan. Test
+    tuning requires explicit ``allow_test_tuning=True``.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an anomaly plan from :func:`fit_anomaly`.
+    partition:
+        Labeled holdout partition for threshold search (default ``validation``).
+    label_column:
+        Optional explicit label column; defaults to target role column.
+    positive_label:
+        Positive/anomaly label value for supervised tuning metrics.
+    metric:
+        Metric to optimize (``f1``, ``fbeta``, ``precision``, ``recall``).
+    fbeta:
+        Beta for F-beta when ``metric='fbeta'``.
+    allow_test_tuning:
+        When False, refuse tuning on the test partition.
+    update_plan:
+        When True, apply the tuned threshold to the active Session plan.
+
+    Returns
+    -------
+    AnomalyThresholdTuneResult
+        Tuned threshold, metric value, and partition used for search.
+
+    Raises
+    ------
+    ValidationError
+        When no anomaly plan exists or tuning preconditions fail.
+    """
     plan = getattr(session, "_anomaly_plan", None)
     if plan is None:
         raise ValidationError("No anomaly plan. Call fit_anomaly(...) first.")
@@ -175,6 +270,17 @@ def tune_anomaly_threshold_op(
 
 
 def anomaly_capability_matrix_op() -> dict[str, Any]:
+    """Return the anomaly backend/method capability matrix for this install.
+
+    Delegates to :func:`buildml.anomaly.catalog.anomaly_capability_matrix`.
+    Use before :func:`fit_anomaly` to confirm ``backend`` and ``method`` pairs
+    available with current extras.
+
+    Returns
+    -------
+    dict
+        Nested map of backend identifiers to supported methods and modes.
+    """
     return anomaly_capability_matrix()
 
 
@@ -185,7 +291,32 @@ def score_anomalies_op(
     attach: bool = False,
     override_threshold: float | None = None,
 ) -> Any:
-    """Score/flag rows with the train-fitted anomaly plan (no refit)."""
+    """Score and flag rows with the train-fitted anomaly plan without refitting.
+
+    Delegates to :func:`buildml.anomaly.score.score_anomalies`. When
+    ``attach=True``, score and flag columns are merged into Session dataset.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an anomaly plan from :func:`fit_anomaly`.
+    partition:
+        Partition to score (``train``, ``validation``, ``test``, or ``all``).
+    attach:
+        When True, attach score and flag columns to the Session dataset frame.
+    override_threshold:
+        Optional score cutoff overriding the plan threshold for this call.
+
+    Returns
+    -------
+    AnomalyScoreResult
+        Scores, flags, and optional alert-rate summary for the partition.
+
+    Raises
+    ------
+    ValidationError
+        When no anomaly plan exists on the Session.
+    """
     plan = getattr(session, "_anomaly_plan", None)
     if plan is None:
         raise ValidationError("No anomaly plan. Call fit_anomaly(...) first.")
@@ -221,7 +352,36 @@ def evaluate_anomaly_op(
     k: int | None = None,
     override_threshold: float | None = None,
 ) -> Any:
-    """Evaluate train-fitted anomaly scores on a partition (no refit)."""
+    """Evaluate train-fitted anomaly scores on a labeled holdout partition.
+
+    Delegates to :func:`buildml.anomaly.evaluate.evaluate_anomaly`. Requires
+    labels on the holdout partition; does not refit the detector.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an anomaly plan from :func:`fit_anomaly`.
+    partition:
+        Holdout partition to score. Validation falls back to test when absent.
+    label_column:
+        Optional explicit label column; defaults to target role column.
+    positive_label:
+        Positive/anomaly label value for supervised metrics.
+    k:
+        Optional top-k for precision@k / recall@k style metrics.
+    override_threshold:
+        Optional score cutoff overriding the plan threshold for this evaluation.
+
+    Returns
+    -------
+    AnomalyEvalResult
+        Holdout classification metrics and ranking diagnostics when labels exist.
+
+    Raises
+    ------
+    ValidationError
+        When no anomaly plan exists on the Session.
+    """
     plan = getattr(session, "_anomaly_plan", None)
     if plan is None:
         raise ValidationError("No anomaly plan. Call fit_anomaly(...) first.")
@@ -260,7 +420,28 @@ def evaluate_anomaly_op(
 
 
 def save_anomaly_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active AnomalyPlan as ``buildml.anomaly_bundle.v1``."""
+    """Persist the active anomaly plan as ``buildml.anomaly_bundle.v1``.
+
+    Delegates to :func:`buildml.anomaly.checkpoint.save_anomaly_bundle`.
+    Reload with :func:`load_anomaly_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an anomaly plan from :func:`fit_anomaly`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no anomaly plan exists on the Session.
+    """
     plan = getattr(session, "_anomaly_plan", None)
     if plan is None:
         raise ValidationError("No anomaly plan. Call fit_anomaly(...) first.")
@@ -285,7 +466,23 @@ def save_anomaly_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_anomaly_bundle_op(session, path: str | Path) -> Any:
-    """Load an anomaly bundle into this Session."""
+    """Load an anomaly bundle into this Session.
+
+    Delegates to :func:`buildml.anomaly.checkpoint.load_anomaly_bundle` and
+    clears prior score/eval/threshold-tune results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded anomaly plan.
+    path:
+        Path to a ``buildml.anomaly_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with anomaly plan attached for chaining.
+    """
     plan = load_anomaly_bundle(path)
     session._anomaly_plan = plan
     session._anomaly_fit_result = None

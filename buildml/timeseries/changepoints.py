@@ -17,7 +17,35 @@ def detect_changepoints(
     penalty: float = 10.0,
     target_column: str = "target",
 ) -> TSChangepointResult:
-    """Detect changepoints in a univariate series."""
+    """Detect mean-shift changepoints in a univariate ordered series.
+
+    Runs PELT or binary segmentation via ruptures when installed, otherwise a
+    lightweight CUSUM heuristic. Changepoints are descriptive on the analyzed
+    scope — refit forecasts after structural breaks rather than treating breaks
+    as labels.
+
+    Parameters
+    ----------
+    y:
+        One-dimensional observation vector in temporal order.
+    method:
+        ``pelt`` or ``binseg`` (ruptures) or ``cusum`` (core fallback).
+    penalty:
+        Ruptures penalty for PELT/BinSeg, or CUSUM threshold scale for ``cusum``.
+    target_column:
+        Name recorded on the result for traceability in combined reports.
+
+    Returns
+    -------
+    TSChangepointResult
+        Detected index boundaries, per-segment means, disclosures, and warnings
+        when a requested method fell back to CUSUM.
+
+    Raises
+    ------
+    ValidationError
+        When ``y`` has fewer than four points or ``method`` is unsupported.
+    """
     y = np.asarray(y, dtype=float).reshape(-1)
     n = int(y.shape[0])
     if n < 4:

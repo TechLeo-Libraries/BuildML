@@ -19,7 +19,42 @@ def select_lp_allocate_cvxpy(
     min_score: float | None = None,
     ids: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Fractional budget allocation via CVXPY convex LP."""
+    """Allocate continuous budget shares with a CVXPY convex LP solver.
+
+    Maximizes weighted value subject to a total cost budget and per-item
+    fraction caps. Zero-cost positive-value items receive the maximum
+    fraction for free. Called by
+    :func:`~buildml.optimize.allocate.select_lp_allocate_with_backend` when
+    ``backend='cvxpy'``.
+
+    Parameters
+    ----------
+    values:
+        Non-negative scores or values to maximize (one per candidate).
+    costs:
+        Non-negative unit costs aligned with ``values``.
+    budget:
+        Total cost budget; must be ``>= 0``.
+    max_fraction:
+        Upper bound on each decision variable in ``(0, 1]``.
+    min_score:
+        When set, exclude candidates below this value floor.
+    ids:
+        Optional identifier array aligned with ``values``; defaults to
+        positional indices.
+
+    Returns
+    -------
+    dict[str, Any]
+        Selected indices, ids, fractional allocations, aggregate value/cost,
+        solver metadata, and backend tag for audit.
+
+    Raises
+    ------
+    ValidationError
+        When inputs are misaligned, budgets or fractions are invalid, or the
+        CVXPY solver fails or returns a non-optimal status.
+    """
     cp = require_cvxpy()
     values = np.asarray(values, dtype=float)
     costs = np.asarray(costs, dtype=float)

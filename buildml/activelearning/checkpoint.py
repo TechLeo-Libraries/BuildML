@@ -39,7 +39,32 @@ def save_active_learning_bundle(
     fit_result: ActiveLearningFitResult | None = None,
     eval_result: ActiveLearningEvalResult | None = None,
 ) -> Path:
-    """Write an active-learning bundle directory (``buildml.activelearning_bundle.v1``)."""
+    """Write an active-learning bundle directory (``buildml.activelearning_bundle.v1``).
+
+    Persists the plan and optional fit/eval summaries as joblib + JSON
+    metadata. Distinct from Session checkpoints.
+
+    Parameters
+    ----------
+    path:
+        Destination directory (created if missing).
+    plan:
+        Fitted :class:`~buildml.activelearning.results.ActiveLearningPlan`.
+    fit_result:
+        Optional fit summary to embed in ``meta.json``.
+    eval_result:
+        Optional evaluation summary to embed in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No ActiveLearningPlan to save.")
     destination = Path(path)
@@ -59,7 +84,25 @@ def save_active_learning_bundle(
 
 
 def load_active_learning_bundle(path: str | Path) -> ActiveLearningPlan:
-    """Load an active-learning bundle into a :class:`ActiveLearningPlan`."""
+    """Load an active-learning bundle into a :class:`ActiveLearningPlan`.
+
+    Validates bundle format version and plan object type before returning.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``activelearning_plan.joblib``.
+
+    Returns
+    -------
+    ActiveLearningPlan
+        Deserialized plan with estimator and label encoder attached.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or plan type is wrong.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "activelearning_plan.joblib"

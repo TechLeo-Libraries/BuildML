@@ -6,7 +6,20 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_anomaly`` history."""
+    """Compact result_summary for ``fit_anomaly`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if fit_result is None:
         return {}
     if hasattr(fit_result, "to_dict"):
@@ -28,7 +41,20 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def score_result_summary(score_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``score_anomalies`` history."""
+    """Compact result_summary for ``score_anomalies`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+score_result:
+    score result (Any).
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if score_result is None:
         return {}
     if hasattr(score_result, "to_dict"):
@@ -49,7 +75,20 @@ def score_result_summary(score_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_anomaly`` history."""
+    """Compact result_summary for ``evaluate_anomaly`` history.
+
+Strips heavy model objects so Session history retains only fields needed for walkthrough overlays and audit replay.
+
+Parameters
+----------
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     if eval_result is None:
         return {}
     if hasattr(eval_result, "to_dict"):
@@ -76,7 +115,26 @@ def anomaly_status(
     eval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for anomaly / fraud detection."""
+    """Factual walkthrough disclosure for anomaly / fraud detection.
+
+Combines live plan fields, latest operation results, and history evidence into a teaching-oriented status dict with capability attachment.
+
+Parameters
+----------
+plan:
+    Fitted plan object carrying model state and feature contract.
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+history:
+    Session operation history for detecting prior activity.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     from buildml.anomaly.catalog import anomaly_capability_matrix
 
     records = list(history or [])
@@ -157,7 +215,20 @@ def anomaly_status(
 
 
 def anomaly_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build anomaly walkthrough status from a Session instance.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+session:
+    BuildML Session with optional private state attributes.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     return anomaly_status(
         getattr(session, "_anomaly_plan", None),
         fit_result=getattr(session, "_anomaly_fit_result", None),

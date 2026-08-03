@@ -1,5 +1,5 @@
 {
-  "n_operations": 301,
+  "n_operations": 303,
   "operations": {
     "act_rl": {
       "doc_summary": "Choose actions under the fitted RL policy.",
@@ -39,7 +39,7 @@
       "qualname": "Session.act_rl"
     },
     "activelearning_capability_matrix": {
-      "doc_summary": "Honest capability matrix for active-learning query strategies.",
+      "doc_summary": "Report which active-learning query strategies are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "activelearning_capability_matrix",
@@ -299,7 +299,7 @@
       "qualname": "Session.ai_plan"
     },
     "ai_run_autonomous": {
-      "doc_summary": "Explicit autonomy mode: plan-and-execute allowlisted tools under hard caps.",
+      "doc_summary": "Explicit autonomy mode with hard caps (see :mod:`buildml.ai.autonomous`).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "ai_run_autonomous",
@@ -474,7 +474,7 @@
       "qualname": "Session.analyze_sentiment"
     },
     "analyze_timeseries": {
-      "doc_summary": "Run time-series analysis (decompose, diagnostics, changepoints, features).",
+      "doc_summary": "Run time-series analysis on train-only or full-dataset scope.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "analyze_timeseries",
@@ -574,7 +574,7 @@
       "qualname": "Session.analyze_timeseries"
     },
     "anomaly_capability_matrix": {
-      "doc_summary": "Honest capability matrix for anomaly backends and extras.",
+      "doc_summary": "Return the anomaly backend/method capability matrix for this install.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "anomaly_capability_matrix",
@@ -688,7 +688,7 @@
       "qualname": "Session.assert_can_fit"
     },
     "assign_clusters": {
-      "doc_summary": "Assign cluster labels with the train-fitted plan (no refit).",
+      "doc_summary": "Assign cluster labels with the train-fitted plan without refitting.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "assign_clusters",
@@ -727,7 +727,7 @@
       "qualname": "Session.assign_topics"
     },
     "attach_backbone_head": {
-      "doc_summary": "Attach a classification head to the last :meth:`load_pretrained_backbone` result.",
+      "doc_summary": "Attach a classification head to the Session pretrained backbone.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "attach_backbone_head",
@@ -750,7 +750,7 @@
       "qualname": "Session.attach_backbone_head"
     },
     "automl_capability_matrix": {
-      "doc_summary": "Honest capability matrix for AutoML search backends.",
+      "doc_summary": "Report which AutoML search backends and model families are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "automl_capability_matrix",
@@ -825,7 +825,7 @@
       "qualname": "Session.calibration"
     },
     "causal_capability_matrix": {
-      "doc_summary": "Honest capability matrix for causal inference backends.",
+      "doc_summary": "Report which causal inference backends and estimators are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "causal_capability_matrix",
@@ -833,7 +833,7 @@
       "qualname": "Session.causal_capability_matrix"
     },
     "cbr_capability_matrix": {
-      "doc_summary": "Honest capability matrix for CBR retrieval backends.",
+      "doc_summary": "Report which case-based retrieval backends are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "cbr_capability_matrix",
@@ -946,7 +946,7 @@
       "qualname": "Session.compare_models"
     },
     "cross_validate_torch": {
-      "doc_summary": "Fold-local Torch CV (normalize fit per fold; not nested search).",
+      "doc_summary": "Fold-local Torch CV on the attached numeric tabular dataset.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "cross_validate_torch",
@@ -1090,7 +1090,7 @@
       "qualname": "Session.cv_score"
     },
     "decision_capability_matrix": {
-      "doc_summary": "Honest capability matrix for decision-policy backends.",
+      "doc_summary": "Return the decision/optimization capability matrix for this install.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "decision_capability_matrix",
@@ -1098,7 +1098,7 @@
       "qualname": "Session.decision_capability_matrix"
     },
     "declare_causal_assumptions": {
-      "doc_summary": "Declare identification assumptions required for causal estimation.",
+      "doc_summary": "Declare identification assumptions required before causal estimation.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "declare_causal_assumptions",
@@ -1206,8 +1206,16 @@
       ],
       "qualname": "Session.detect_language"
     },
+    "dl_capability_matrix": {
+      "doc_summary": "Report which deep-learning modalities and backends are available here.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "dl_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.dl_capability_matrix"
+    },
     "domain_adapt_speech_torch": {
-      "doc_summary": "Domain-adapt speech classify (finetune-lite; not FM continued pretrain).",
+      "doc_summary": "Domain-adapt / finetune-lite speech classify (not FM continued pretrain).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "domain_adapt_speech_torch",
@@ -1469,7 +1477,7 @@
       "qualname": "Session.eda_app"
     },
     "emit_k8s_ddp_job": {
-      "doc_summary": "Emit a Kubernetes Job YAML for torchrun DDP (template; not live orchestration).",
+      "doc_summary": "Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "emit_k8s_ddp_job",
@@ -1743,7 +1751,7 @@
       "qualname": "Session.error_slices"
     },
     "estimate_causal": {
-      "doc_summary": "Estimate ATE on a partition with fitted train nuisances.",
+      "doc_summary": "Estimate ATE on a partition using the fitted CausalPlan.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "estimate_causal",
@@ -1875,7 +1883,7 @@
       "qualname": "Session.evaluate"
     },
     "evaluate_active_learning": {
-      "doc_summary": "Evaluate the active learner on labeled partition rows only.",
+      "doc_summary": "Evaluate the active learner on labeled rows of a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_active_learning",
@@ -1898,7 +1906,7 @@
       "qualname": "Session.evaluate_active_learning"
     },
     "evaluate_anomaly": {
-      "doc_summary": "Evaluate train-fitted anomaly scores on a partition without refitting.",
+      "doc_summary": "Evaluate train-fitted anomaly scores on a labeled holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_anomaly",
@@ -1942,7 +1950,7 @@
       "qualname": "Session.evaluate_anomaly"
     },
     "evaluate_asr": {
-      "doc_summary": "Score ASR hypotheses vs references (WER/CER).",
+      "doc_summary": "Score ASR hypotheses vs references (WER/CER); reuse last transcription texts.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_asr",
@@ -1988,7 +1996,7 @@
       "qualname": "Session.evaluate_automl"
     },
     "evaluate_causal": {
-      "doc_summary": "Holdout nuisance predictive checks + ATE (not proof of identification).",
+      "doc_summary": "Evaluate nuisance predictive quality and ATE on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_causal",
@@ -2011,7 +2019,7 @@
       "qualname": "Session.evaluate_causal"
     },
     "evaluate_cbr": {
-      "doc_summary": "Evaluate CBR on a holdout partition (no memory update).",
+      "doc_summary": "Evaluate CBR on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_cbr",
@@ -2034,7 +2042,7 @@
       "qualname": "Session.evaluate_cbr"
     },
     "evaluate_clusters": {
-      "doc_summary": "Evaluate train-fitted clusters on a partition without refitting.",
+      "doc_summary": "Evaluate train-fitted clusters on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_clusters",
@@ -2175,7 +2183,7 @@
       "qualname": "Session.evaluate_federated"
     },
     "evaluate_forecast": {
-      "doc_summary": "Evaluate the train-fitted forecaster on a holdout partition.",
+      "doc_summary": "Evaluate the train-fitted ForecastPlan on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_forecast",
@@ -2198,7 +2206,7 @@
       "qualname": "Session.evaluate_forecast"
     },
     "evaluate_graph": {
-      "doc_summary": "Evaluate node classification on a holdout partition.",
+      "doc_summary": "Evaluate node classification on a holdout graph partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_graph",
@@ -2214,7 +2222,7 @@
       "qualname": "Session.evaluate_graph"
     },
     "evaluate_imitation": {
-      "doc_summary": "Compare predicted actions to held-out demonstration actions.",
+      "doc_summary": "Evaluate BC against held-out demonstration actions.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_imitation",
@@ -2230,7 +2238,7 @@
       "qualname": "Session.evaluate_imitation"
     },
     "evaluate_kg": {
-      "doc_summary": "Holdout filtered link-prediction metrics: MRR, Hits@1/3/K.",
+      "doc_summary": "Evaluate link prediction with filtered MRR and Hits@K.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_kg",
@@ -2253,7 +2261,7 @@
       "qualname": "Session.evaluate_kg"
     },
     "evaluate_metalearning": {
-      "doc_summary": "Evaluate episodic few-shot performance on a holdout partition.",
+      "doc_summary": "Run episodic holdout evaluation without meta-training on holdout.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_metalearning",
@@ -2304,7 +2312,7 @@
       "qualname": "Session.evaluate_metalearning"
     },
     "evaluate_multitask": {
-      "doc_summary": "Evaluate multi-task predictions with per-task and aggregate metrics.",
+      "doc_summary": "Evaluate the multi-task plan on a holdout partition without refitting.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_multitask",
@@ -2320,7 +2328,7 @@
       "qualname": "Session.evaluate_multitask"
     },
     "evaluate_neuro_symbolic": {
-      "doc_summary": "Evaluate the neuro-symbolic hybrid on a holdout partition.",
+      "doc_summary": "Evaluate the neuro-symbolic plan on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_neuro_symbolic",
@@ -2336,7 +2344,7 @@
       "qualname": "Session.evaluate_neuro_symbolic"
     },
     "evaluate_online": {
-      "doc_summary": "Evaluate the online learner on a holdout partition (never for updates).",
+      "doc_summary": "Evaluate the online learner on a holdout partition without updating it.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_online",
@@ -2359,7 +2367,7 @@
       "qualname": "Session.evaluate_online"
     },
     "evaluate_probabilistic": {
-      "doc_summary": "Evaluate probabilistic predictions with proper scoring rules.",
+      "doc_summary": "Evaluate the probabilistic plan on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_probabilistic",
@@ -2382,7 +2390,7 @@
       "qualname": "Session.evaluate_probabilistic"
     },
     "evaluate_ranker": {
-      "doc_summary": "Holdout per-query metrics: nDCG@K, MAP@K, MRR@K.",
+      "doc_summary": "Evaluate per-query ranking metrics on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_ranker",
@@ -2412,7 +2420,7 @@
       "qualname": "Session.evaluate_ranker"
     },
     "evaluate_recommender": {
-      "doc_summary": "Holdout ranking metrics: Precision@K, Recall@K, nDCG@K, MAP@K.",
+      "doc_summary": "Evaluate ranking metrics on a holdout partition (frozen train plan).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_recommender",
@@ -2435,7 +2443,7 @@
       "qualname": "Session.evaluate_recommender"
     },
     "evaluate_rl": {
-      "doc_summary": "Evaluate RL (offline bandit metrics or Gymnasium episode returns).",
+      "doc_summary": "Evaluate RL (offline bandit metrics or Gymnasium rollouts).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_rl",
@@ -2479,7 +2487,7 @@
       "qualname": "Session.evaluate_rl"
     },
     "evaluate_semisupervised": {
-      "doc_summary": "Evaluate semi-supervised predictions on labeled partition rows only.",
+      "doc_summary": "Evaluate the semi-supervised plan on labeled rows of a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_semisupervised",
@@ -2502,7 +2510,7 @@
       "qualname": "Session.evaluate_semisupervised"
     },
     "evaluate_ssl": {
-      "doc_summary": "Evaluate frozen SSL pretext + head on labeled partition rows.",
+      "doc_summary": "Evaluate frozen SSL pretext encoder and head on a labeled partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_ssl",
@@ -2525,7 +2533,7 @@
       "qualname": "Session.evaluate_ssl"
     },
     "evaluate_symbolic": {
-      "doc_summary": "Evaluate the symbolic rule base on a holdout partition.",
+      "doc_summary": "Evaluate the symbolic plan on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_symbolic",
@@ -2541,7 +2549,7 @@
       "qualname": "Session.evaluate_symbolic"
     },
     "evaluate_synthetic": {
-      "doc_summary": "Evaluate the frozen synthesizer (fidelity metrics or TSTR utility).",
+      "doc_summary": "Evaluate the frozen synthesizer for fidelity or TSTR utility.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_synthetic",
@@ -2592,7 +2600,7 @@
       "qualname": "Session.evaluate_synthetic"
     },
     "evaluate_tda": {
-      "doc_summary": "Score the TDA head on a holdout partition (frozen train pipeline).",
+      "doc_summary": "Evaluate the TDA head on a holdout partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_tda",
@@ -2846,8 +2854,31 @@
       ],
       "qualname": "Session.explain"
     },
+    "export_round_history": {
+      "doc_summary": "Export federated round metrics to JSON for audit and teaching overlays.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "export_round_history",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_disclosures",
+          "required": false
+        }
+      ],
+      "qualname": "Session.export_round_history"
+    },
     "export_torch": {
-      "doc_summary": "Export the last Torch trainer to TorchScript or ONNX (alpha escape hatch).",
+      "doc_summary": "Export the last Torch trainer to TorchScript or ONNX.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "export_torch",
@@ -3123,7 +3154,7 @@
       "qualname": "Session.feature_importance"
     },
     "federated_capability_matrix": {
-      "doc_summary": "Honest capability matrix for federated learning backends.",
+      "doc_summary": "Report which federated learning backends are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "federated_capability_matrix",
@@ -3131,7 +3162,7 @@
       "qualname": "Session.federated_capability_matrix"
     },
     "finetune_ssl_head": {
-      "doc_summary": "Fit a supervised head on frozen SSL embeddings (labeled train only).",
+      "doc_summary": "Fit a supervised head on frozen SSL embeddings using labeled train rows.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "finetune_ssl_head",
@@ -3184,7 +3215,7 @@
       "qualname": "Session.fit"
     },
     "fit_active_learner": {
-      "doc_summary": "Fit / initialize an active learner on labeled train rows only.",
+      "doc_summary": "Fit or initialize the active learner on labeled train rows only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_active_learner",
@@ -3298,7 +3329,7 @@
       "qualname": "Session.fit_active_learner"
     },
     "fit_anomaly": {
-      "doc_summary": "Fit an anomaly / fraud detector on the train partition only.",
+      "doc_summary": "Fit an anomaly detector on the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_anomaly",
@@ -3540,7 +3571,7 @@
       "qualname": "Session.fit_blending"
     },
     "fit_causal": {
-      "doc_summary": "Fit causal models (train-only) and estimate backdoor ATE.",
+      "doc_summary": "Fit causal models on this Session train and estimate ATE.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_causal",
@@ -3605,7 +3636,7 @@
       "qualname": "Session.fit_causal"
     },
     "fit_cbr": {
-      "doc_summary": "Build a tabular case memory from Session train.",
+      "doc_summary": "Build a case base from Session train.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_cbr",
@@ -3945,7 +3976,7 @@
       "qualname": "Session.fit_clusters"
     },
     "fit_decision_policy": {
-      "doc_summary": "Fit a decision policy on train/validation (test requires opt-in).",
+      "doc_summary": "Fit a decision policy on train or validation without refitting the model.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_decision_policy",
@@ -4101,7 +4132,7 @@
       "qualname": "Session.fit_decision_policy"
     },
     "fit_federated": {
-      "doc_summary": "Simulate federated averaging on Session train clients.",
+      "doc_summary": "Simulate federated averaging on this Session train clients.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_federated",
@@ -4201,7 +4232,7 @@
       "qualname": "Session.fit_federated"
     },
     "fit_forecast": {
-      "doc_summary": "Fit a forecaster on the train partition only.",
+      "doc_summary": "Fit a classical forecaster on the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_forecast",
@@ -4322,7 +4353,7 @@
       "qualname": "Session.fit_forecast"
     },
     "fit_graph": {
-      "doc_summary": "Fit graph node classification (classical, pure-Torch GCN, or PyG).",
+      "doc_summary": "Fit graph node classification on Session train nodes.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_graph",
@@ -4436,7 +4467,7 @@
       "qualname": "Session.fit_graph"
     },
     "fit_imitation": {
-      "doc_summary": "Fit behavioral cloning from demonstration rows (train only).",
+      "doc_summary": "Fit behavioral cloning on Session train demonstrations.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_imitation",
@@ -4515,7 +4546,7 @@
       "qualname": "Session.fit_imitation"
     },
     "fit_kg": {
-      "doc_summary": "Fit a knowledge-graph embedding model on train triples only.",
+      "doc_summary": "Fit a knowledge-graph embedding model on Session train triples only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_kg",
@@ -4615,7 +4646,7 @@
       "qualname": "Session.fit_kg"
     },
     "fit_metalearning": {
-      "doc_summary": "Meta-train a tabular few-shot / episodic learner on train tasks only.",
+      "doc_summary": "Meta-train on episodic tasks carved from the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_metalearning",
@@ -4757,7 +4788,7 @@
       "qualname": "Session.fit_metalearning"
     },
     "fit_multitask": {
-      "doc_summary": "Fit a multi-target estimator on train only.",
+      "doc_summary": "Fit a multi-target estimator on the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_multitask",
@@ -4864,7 +4895,7 @@
       "qualname": "Session.fit_multitask"
     },
     "fit_neuro_symbolic": {
-      "doc_summary": "Fit a base model + symbolic hybrid in one Session API.",
+      "doc_summary": "Fit a sklearn + symbolic hybrid on Session train.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_neuro_symbolic",
@@ -4985,7 +5016,7 @@
       "qualname": "Session.fit_neuro_symbolic"
     },
     "fit_online": {
-      "doc_summary": "Warm-start an incremental ``partial_fit`` estimator on a train chunk.",
+      "doc_summary": "Warm-start an incremental estimator on the first train chunk.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_online",
@@ -5134,7 +5165,7 @@
       "qualname": "Session.fit_online"
     },
     "fit_probabilistic": {
-      "doc_summary": "Fit a Bayesian / probabilistic estimator with uncertainty.",
+      "doc_summary": "Fit a Bayesian or probabilistic estimator on this Session train only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_probabilistic",
@@ -5234,7 +5265,7 @@
       "qualname": "Session.fit_probabilistic"
     },
     "fit_ranker": {
-      "doc_summary": "Fit a tabular learning-to-rank model on train rows only.",
+      "doc_summary": "Fit a tabular ranker on Session train rows only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_ranker",
@@ -5369,7 +5400,7 @@
       "qualname": "Session.fit_ranker"
     },
     "fit_recommender": {
-      "doc_summary": "Fit a recommender on train interactions only.",
+      "doc_summary": "Fit a recommender on Session train interactions only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_recommender",
@@ -5483,7 +5514,7 @@
       "qualname": "Session.fit_recommender"
     },
     "fit_rl": {
-      "doc_summary": "Fit a contextual bandit (core) or a Gymnasium env policy.",
+      "doc_summary": "Fit a contextual bandit (core) or a Gymnasium env policy (``buildml[rl]``).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_rl",
@@ -5632,7 +5663,7 @@
       "qualname": "Session.fit_rl"
     },
     "fit_semisupervised": {
-      "doc_summary": "Fit a semi-supervised classifier on the train partition only.",
+      "doc_summary": "Fit a semi-supervised classifier on labeled and unlabeled train rows.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_semisupervised",
@@ -5802,7 +5833,7 @@
       "qualname": "Session.fit_semisupervised"
     },
     "fit_speech_torch": {
-      "doc_summary": "Fine-tune tiny speech encoder + classifier (integration/finetune-lite).",
+      "doc_summary": "Fine-tune a tiny speech encoder + classifier head (finetune-lite).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_speech_torch",
@@ -5895,7 +5926,7 @@
       "qualname": "Session.fit_speech_torch"
     },
     "fit_ssl_pretext": {
-      "doc_summary": "Fit a self-supervised pretext on the train partition only.",
+      "doc_summary": "Fit a self-supervised pretext encoder on the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_ssl_pretext",
@@ -6058,7 +6089,7 @@
       "qualname": "Session.fit_ssl_pretext"
     },
     "fit_stacking": {
-      "doc_summary": "Fit a StackingClassifier / StackingRegressor on the train partition only.",
+      "doc_summary": "Fit a stacking ensemble on the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_stacking",
@@ -6109,7 +6140,7 @@
       "qualname": "Session.fit_stacking"
     },
     "fit_symbolic": {
-      "doc_summary": "Compile or induce a symbolic if-then rule base on train.",
+      "doc_summary": "Compile or induce a symbolic rule base on Session train.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_symbolic",
@@ -6209,7 +6240,7 @@
       "qualname": "Session.fit_symbolic"
     },
     "fit_synthesizer": {
-      "doc_summary": "Fit a tabular synthesizer on Session **train** only.",
+      "doc_summary": "Fit a tabular synthesizer on Session train rows only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_synthesizer",
@@ -6295,7 +6326,7 @@
       "qualname": "Session.fit_synthesizer"
     },
     "fit_tda": {
-      "doc_summary": "Fit topological features (+ optional sklearn head) on train only.",
+      "doc_summary": "Fit TDA features and optional supervised head on Session train only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_tda",
@@ -6849,7 +6880,7 @@
       "qualname": "Session.fit_torch"
     },
     "fit_torch_ddp": {
-      "doc_summary": "DDP training (single-node spawn or multi-node torchrun join).",
+      "doc_summary": "DDP training via a fresh ``module_factory`` per process.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_torch_ddp",
@@ -6914,7 +6945,7 @@
       "qualname": "Session.fit_torch_ddp"
     },
     "fit_voting": {
-      "doc_summary": "Fit a VotingClassifier / VotingRegressor on the train partition only.",
+      "doc_summary": "Fit a voting ensemble on the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_voting",
@@ -6951,7 +6982,7 @@
       "qualname": "Session.fit_voting"
     },
     "forecast_capability_matrix": {
-      "doc_summary": "Honest capability matrix for forecasting backends.",
+      "doc_summary": "Report which forecasting backends and model families are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "forecast_capability_matrix",
@@ -6959,7 +6990,7 @@
       "qualname": "Session.forecast_capability_matrix"
     },
     "generate_forecast": {
-      "doc_summary": "Generate an H-step forecast from the train-fitted plan (no refit).",
+      "doc_summary": "Generate an H-step forecast from the train-fitted ForecastPlan.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "generate_forecast",
@@ -6989,7 +7020,7 @@
       "qualname": "Session.generate_forecast"
     },
     "graph_capability_matrix": {
-      "doc_summary": "Honest capability matrix for graph ML backends.",
+      "doc_summary": "Report which graph machine-learning backends are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "graph_capability_matrix",
@@ -7335,7 +7366,7 @@
       "qualname": "Session.interpret_text_prediction"
     },
     "kg_capability_matrix": {
-      "doc_summary": "Honest capability matrix for knowledge-graph backends.",
+      "doc_summary": "Report which knowledge-graph learning backends are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "kg_capability_matrix",
@@ -7343,7 +7374,7 @@
       "qualname": "Session.kg_capability_matrix"
     },
     "label_rows": {
-      "doc_summary": "Incorporate user-provided labels on train-pool rows; optionally refit.",
+      "doc_summary": "Incorporate user-provided labels on train-pool rows and optionally refit.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "label_rows",
@@ -7544,7 +7575,7 @@
       "qualname": "Session.load_cbr_bundle"
     },
     "load_decision_bundle": {
-      "doc_summary": "Load a decision-policy bundle into this Session.",
+      "doc_summary": "Load a decision bundle into this Session.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "load_decision_bundle",
@@ -7752,7 +7783,7 @@
       "qualname": "Session.load_pipeline"
     },
     "load_pretrained_backbone": {
-      "doc_summary": "Load a curated vision/audio/speech backbone (mock weights default; not a full zoo).",
+      "doc_summary": "Load a curated pretrained vision/audio/speech backbone (integration hook).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "load_pretrained_backbone",
@@ -7915,7 +7946,7 @@
       "qualname": "Session.load_ssl_bundle"
     },
     "load_symbolic_bundle": {
-      "doc_summary": "Load a symbolic / neuro-symbolic bundle into this Session.",
+      "doc_summary": "Load a symbolic bundle into this Session.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "load_symbolic_bundle",
@@ -7931,7 +7962,7 @@
       "qualname": "Session.load_symbolic_bundle"
     },
     "load_synthetic_bundle": {
-      "doc_summary": "Load a synthesizer bundle into this Session.",
+      "doc_summary": "Load a synthetic-data bundle into this Session.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "load_synthetic_bundle",
@@ -7993,7 +8024,7 @@
       "qualname": "Session.load_torch_bundle"
     },
     "load_unsupervised_bundle": {
-      "doc_summary": "Load an unsupervised bundle into this Session.",
+      "doc_summary": "Load an unsupervised clustering bundle into this Session.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "load_unsupervised_bundle",
@@ -8293,7 +8324,7 @@
       "qualname": "Session.make_image_multimodal_torch_loaders"
     },
     "make_multimodal_torch_loaders": {
-      "doc_summary": "Build fused multimodal DataLoaders (tabular/text/image/audio; train-only stats).",
+      "doc_summary": "Build fused multimodal DataLoaders (tabular/text/image/audio mixes).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "make_multimodal_torch_loaders",
@@ -8449,7 +8480,7 @@
       "qualname": "Session.make_multimodal_torch_loaders"
     },
     "make_speech_torch_loaders": {
-      "doc_summary": "Build speech classification loaders (finetune-lite; not FM-from-scratch).",
+      "doc_summary": "Build speech classification loaders (finetune-lite encoder path).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "make_speech_torch_loaders",
@@ -8521,7 +8552,7 @@
       "qualname": "Session.make_speech_torch_loaders"
     },
     "make_text_torch_loaders": {
-      "doc_summary": "Build token-id DataLoaders for text classification (sequence modality).",
+      "doc_summary": "Build token-id DataLoaders for text classification (non-tabular modality).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "make_text_torch_loaders",
@@ -8659,7 +8690,7 @@
       "qualname": "Session.metadata"
     },
     "metalearning_capability_matrix": {
-      "doc_summary": "Honest capability matrix for meta-learning backends.",
+      "doc_summary": "Report which meta-learning backends and algorithms are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "metalearning_capability_matrix",
@@ -8667,7 +8698,7 @@
       "qualname": "Session.metalearning_capability_matrix"
     },
     "multitask_capability_matrix": {
-      "doc_summary": "Honest capability matrix for multi-task learning backends.",
+      "doc_summary": "Report which multi-task learning backends are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "multitask_capability_matrix",
@@ -8838,7 +8869,7 @@
       "qualname": "Session.nested_cv_score"
     },
     "nested_cv_torch": {
-      "doc_summary": "Nested Torch CV with fold-local normalize and inner hyperparameter search.",
+      "doc_summary": "Nested Torch CV: outer evaluation after fold-local inner hyperparameter search.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "nested_cv_torch",
@@ -8967,7 +8998,7 @@
       "qualname": "Session.nlp_capability_matrix"
     },
     "online_capability_matrix": {
-      "doc_summary": "Honest capability matrix for online / incremental learning backends.",
+      "doc_summary": "Report which online and incremental learning backends are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "online_capability_matrix",
@@ -9040,7 +9071,7 @@
       "qualname": "Session.open_eda_dashboard"
     },
     "optimize_capability_matrix": {
-      "doc_summary": "Alias for :meth:`decision_capability_matrix`.",
+      "doc_summary": "Return the decision/optimization capability matrix for this install.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "optimize_capability_matrix",
@@ -9148,7 +9179,7 @@
       "qualname": "Session.optuna_search"
     },
     "pack_torchserve": {
-      "doc_summary": "Pack TorchScript into a TorchServe model directory (does not run TorchServe).",
+      "doc_summary": "Pack a TorchScript artifact into a TorchServe-ready directory layout.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "pack_torchserve",
@@ -9178,7 +9209,7 @@
       "qualname": "Session.pack_torchserve"
     },
     "partial_fit_online": {
-      "doc_summary": "Incremental ``partial_fit`` update on the next train chunk or frame.",
+      "doc_summary": "Apply one incremental partial_fit update on the next train chunk or frame.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "partial_fit_online",
@@ -9247,7 +9278,7 @@
       "qualname": "Session.predict"
     },
     "predict_cbr": {
-      "doc_summary": "Predict via retrieve + reuse with case-influence traces.",
+      "doc_summary": "Predict via retrieve + reuse (no case-base update).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_cbr",
@@ -9284,7 +9315,7 @@
       "qualname": "Session.predict_cbr"
     },
     "predict_federated": {
-      "doc_summary": "Predict with the global federated model (no update).",
+      "doc_summary": "Predict with the global federated model without local updates.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_federated",
@@ -9351,7 +9382,7 @@
       "qualname": "Session.predict_from_pipeline"
     },
     "predict_graph": {
-      "doc_summary": "Predict node labels with the fitted :class:`GraphPlan`.",
+      "doc_summary": "Predict node labels with the fitted GraphPlan on a partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_graph",
@@ -9367,7 +9398,7 @@
       "qualname": "Session.predict_graph"
     },
     "predict_imitation_action": {
-      "doc_summary": "Predict actions under the fitted behavioral cloning policy.",
+      "doc_summary": "Predict actions under the fitted BC policy.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_imitation_action",
@@ -9383,7 +9414,7 @@
       "qualname": "Session.predict_imitation_action"
     },
     "predict_interval": {
-      "doc_summary": "Predictive intervals (regression) or conformal prediction sets.",
+      "doc_summary": "Predict predictive intervals or conformal prediction sets on a partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_interval",
@@ -9413,7 +9444,7 @@
       "qualname": "Session.predict_interval"
     },
     "predict_links": {
-      "doc_summary": "Predict missing link components (tail / head / relation).",
+      "doc_summary": "Predict missing link components using the frozen KgPlan.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_links",
@@ -9464,7 +9495,7 @@
       "qualname": "Session.predict_links"
     },
     "predict_multitask": {
-      "doc_summary": "Predict per-task outputs with the frozen multi-task plan (no refit).",
+      "doc_summary": "Predict all targets with the frozen multi-task plan without refitting.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_multitask",
@@ -9494,7 +9525,7 @@
       "qualname": "Session.predict_multitask"
     },
     "predict_neuro_symbolic": {
-      "doc_summary": "Hybrid predict with neural + rule traces (no update).",
+      "doc_summary": "Predict with the neuro-symbolic hybrid (no update).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_neuro_symbolic",
@@ -9517,7 +9548,7 @@
       "qualname": "Session.predict_neuro_symbolic"
     },
     "predict_online": {
-      "doc_summary": "Predict with the incremental online estimator (no update).",
+      "doc_summary": "Predict with the incremental online estimator without updating it.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_online",
@@ -9533,7 +9564,7 @@
       "qualname": "Session.predict_online"
     },
     "predict_probabilistic": {
-      "doc_summary": "Point predictions (optional posterior std / class probabilities).",
+      "doc_summary": "Predict with the probabilistic estimator without updating the plan.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_probabilistic",
@@ -9563,7 +9594,7 @@
       "qualname": "Session.predict_probabilistic"
     },
     "predict_semisupervised": {
-      "doc_summary": "Predict with the train-fitted semi-supervised plan (no refit).",
+      "doc_summary": "Predict with the train-fitted semi-supervised plan without refitting.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_semisupervised",
@@ -9593,7 +9624,7 @@
       "qualname": "Session.predict_semisupervised"
     },
     "predict_symbolic": {
-      "doc_summary": "Predict with rule-firing explanation traces (no update).",
+      "doc_summary": "Predict with the symbolic rule base (no update).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_symbolic",
@@ -9616,7 +9647,7 @@
       "qualname": "Session.predict_symbolic"
     },
     "predict_tda": {
-      "doc_summary": "Predict with the optional TDA supervised head.",
+      "doc_summary": "Predict with the optional TDA supervised head on a partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_tda",
@@ -9692,7 +9723,7 @@
       "qualname": "Session.prepare_design_matrix"
     },
     "prepare_tensorrt_export": {
-      "doc_summary": "Write a TensorRT trtexec plan for an ONNX file (does not build engines).",
+      "doc_summary": "Write a TensorRT ``trtexec`` plan next to a validated ONNX artifact.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "prepare_tensorrt_export",
@@ -9729,7 +9760,7 @@
       "qualname": "Session.prepare_tensorrt_export"
     },
     "probabilistic_capability_matrix": {
-      "doc_summary": "Honest capability matrix for probabilistic prediction backends.",
+      "doc_summary": "Report which probabilistic prediction backends are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "probabilistic_capability_matrix",
@@ -9737,7 +9768,7 @@
       "qualname": "Session.probabilistic_capability_matrix"
     },
     "profile_text_corpus": {
-      "doc_summary": "Profile a text column and screen the split for text contamination.",
+      "doc_summary": "Profile corpus health and screen the split for text contamination.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "profile_text_corpus",
@@ -9781,7 +9812,7 @@
       "qualname": "Session.profile_text_corpus"
     },
     "query_kg": {
-      "doc_summary": "Symbolic neighbors / path / typed query over the train KG.",
+      "doc_summary": "Run symbolic KG queries over the train-fitted graph structure.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "query_kg",
@@ -9839,7 +9870,7 @@
       "qualname": "Session.query_kg"
     },
     "rag_capability_matrix": {
-      "doc_summary": "Honest capability matrix for RAG embed / retrieve stacks.",
+      "doc_summary": "Report which retrieval-augmented generation stacks are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "rag_capability_matrix",
@@ -9900,7 +9931,7 @@
       "qualname": "Session.rag_delete"
     },
     "rag_embed_and_index": {
-      "doc_summary": "Embed chunks and build the default NumPy cosine index.",
+      "doc_summary": "Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "rag_embed_and_index",
@@ -9988,7 +10019,7 @@
       "qualname": "Session.rag_evaluate"
     },
     "rag_generate": {
-      "doc_summary": "Retrieve context and generate a grounded answer with citations.",
+      "doc_summary": "Retrieve (unless reusing the last retrieve) and generate a grounded answer.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "rag_generate",
@@ -10306,7 +10337,7 @@
       "qualname": "Session.randomized_search"
     },
     "rank": {
-      "doc_summary": "Order items for queries (descending score from frozen RankerPlan).",
+      "doc_summary": "Order items for queries in a partition or an explicit query id list.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "rank",
@@ -10343,7 +10374,7 @@
       "qualname": "Session.rank"
     },
     "ranking_capability_matrix": {
-      "doc_summary": "Honest capability matrix for tabular LTR backends and methods.",
+      "doc_summary": "Report which learning-to-rank backends and objectives are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "ranking_capability_matrix",
@@ -10374,7 +10405,7 @@
       "qualname": "Session.reattach"
     },
     "recommend": {
-      "doc_summary": "Top-K item recommendations (train catalog / known-item protocol).",
+      "doc_summary": "Top-K recommendations for partition users or an explicit user id list.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "recommend",
@@ -10411,7 +10442,7 @@
       "qualname": "Session.recommend"
     },
     "recommender_capability_matrix": {
-      "doc_summary": "Honest capability matrix for recommender-system backends.",
+      "doc_summary": "Report which recommender-system backends are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "recommender_capability_matrix",
@@ -10632,7 +10663,7 @@
       "qualname": "Session.resample_strategies"
     },
     "retain_cbr": {
-      "doc_summary": "Retain new labeled cases; refuses Session validation/test indices.",
+      "doc_summary": "Retain new labeled cases (refuses Session validation/test indices).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "retain_cbr",
@@ -10676,7 +10707,7 @@
       "qualname": "Session.retain_cbr"
     },
     "retrieve_cases": {
-      "doc_summary": "Retrieve k nearest cases (no reuse / no memory update).",
+      "doc_summary": "Retrieve k nearest cases for a partition (no reuse).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "retrieve_cases",
@@ -10706,7 +10737,7 @@
       "qualname": "Session.retrieve_cases"
     },
     "rl_capability_matrix": {
-      "doc_summary": "Honest capability matrix for imitation + RL backends and algorithms.",
+      "doc_summary": "Return the RL / imitation capability matrix for this installation.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "rl_capability_matrix",
@@ -10714,7 +10745,7 @@
       "qualname": "Session.rl_capability_matrix"
     },
     "run_automl": {
-      "doc_summary": "Search model families and fold-local preprocess strategies on train.",
+      "doc_summary": "Run AutoML model-family and recipe-strategy search on the train partition.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "run_automl",
@@ -10877,7 +10908,7 @@
       "qualname": "Session.run_automl"
     },
     "sample_synthetic": {
-      "doc_summary": "Sample from the frozen synthesizer; optionally extend train.",
+      "doc_summary": "Sample synthetic rows from the frozen synthesizer plan.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "sample_synthetic",
@@ -10928,7 +10959,7 @@
       "qualname": "Session.sample_synthetic"
     },
     "save_active_learning_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.activelearning_bundle.v1``.",
+      "doc_summary": "Persist the active-learning plan as ``buildml.activelearning_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_active_learning_bundle",
@@ -10999,7 +11030,7 @@
       "qualname": "Session.save_automl_bundle"
     },
     "save_causal_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.causal_bundle.v1``.",
+      "doc_summary": "Persist the active CausalPlan as ``buildml.causal_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_causal_bundle",
@@ -11015,7 +11046,7 @@
       "qualname": "Session.save_causal_bundle"
     },
     "save_cbr_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.cbr_bundle.v1``.",
+      "doc_summary": "Persist the active CbrPlan.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_cbr_bundle",
@@ -11031,7 +11062,7 @@
       "qualname": "Session.save_cbr_bundle"
     },
     "save_decision_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.decision_bundle.v1``.",
+      "doc_summary": "Persist the active DecisionPlan as ``buildml.decision_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_decision_bundle",
@@ -11047,7 +11078,7 @@
       "qualname": "Session.save_decision_bundle"
     },
     "save_ensemble_bundle": {
-      "doc_summary": "Persist the active ensemble plan as ``buildml.ensemble_bundle.v1``.",
+      "doc_summary": "Persist the active EnsemblePlan as ``buildml.ensemble_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_ensemble_bundle",
@@ -11063,7 +11094,7 @@
       "qualname": "Session.save_ensemble_bundle"
     },
     "save_federated_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.federated_bundle.v1``.",
+      "doc_summary": "Persist the active federated plan as ``buildml.federated_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_federated_bundle",
@@ -11079,7 +11110,7 @@
       "qualname": "Session.save_federated_bundle"
     },
     "save_forecast_bundle": {
-      "doc_summary": "Persist the active forecast plan as ``buildml.forecast_bundle.v1``.",
+      "doc_summary": "Persist the active ForecastPlan as ``buildml.forecast_bundle.v2``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_forecast_bundle",
@@ -11095,7 +11126,7 @@
       "qualname": "Session.save_forecast_bundle"
     },
     "save_graph_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.graph_bundle.v1``.",
+      "doc_summary": "Persist the active GraphPlan as ``buildml.graph_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_graph_bundle",
@@ -11111,7 +11142,7 @@
       "qualname": "Session.save_graph_bundle"
     },
     "save_imitation_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.imitation_bundle.v1``.",
+      "doc_summary": "Persist the active ImitationPlan as ``buildml.imitation_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_imitation_bundle",
@@ -11127,7 +11158,7 @@
       "qualname": "Session.save_imitation_bundle"
     },
     "save_kg_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.kg_bundle.v1``.",
+      "doc_summary": "Persist the active KgPlan as ``buildml.kg_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_kg_bundle",
@@ -11143,7 +11174,7 @@
       "qualname": "Session.save_kg_bundle"
     },
     "save_metalearning_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.metalearning_bundle.v1``.",
+      "doc_summary": "Persist the active MetaLearningPlan as ``buildml.metalearning_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_metalearning_bundle",
@@ -11175,7 +11206,7 @@
       "qualname": "Session.save_model"
     },
     "save_multitask_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.multitask_bundle.v1``.",
+      "doc_summary": "Persist the active multi-task plan as ``buildml.multitask_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_multitask_bundle",
@@ -11207,7 +11238,7 @@
       "qualname": "Session.save_nlp_bundle"
     },
     "save_online_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.online_bundle.v1``.",
+      "doc_summary": "Persist the active online plan as ``buildml.online_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_online_bundle",
@@ -11253,7 +11284,7 @@
       "qualname": "Session.save_pipeline"
     },
     "save_probabilistic_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.probabilistic_bundle.v1``.",
+      "doc_summary": "Persist the active ProbabilisticPlan as ``buildml.probabilistic_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_probabilistic_bundle",
@@ -11285,7 +11316,7 @@
       "qualname": "Session.save_rag_bundle"
     },
     "save_ranker_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.ranker_bundle.v1``.",
+      "doc_summary": "Persist the active RankerPlan as ``buildml.ranker_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_ranker_bundle",
@@ -11301,7 +11332,7 @@
       "qualname": "Session.save_ranker_bundle"
     },
     "save_recommender_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.recommender_bundle.v1``.",
+      "doc_summary": "Persist the active RecommenderPlan as ``buildml.recommender_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_recommender_bundle",
@@ -11317,7 +11348,7 @@
       "qualname": "Session.save_recommender_bundle"
     },
     "save_rl_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.rl_bundle.v1``.",
+      "doc_summary": "Persist the active RlPlan as ``buildml.rl_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_rl_bundle",
@@ -11333,7 +11364,7 @@
       "qualname": "Session.save_rl_bundle"
     },
     "save_semisupervised_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.semisupervised_bundle.v1``.",
+      "doc_summary": "Persist the semi-supervised plan as ``buildml.semisupervised_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_semisupervised_bundle",
@@ -11365,7 +11396,7 @@
       "qualname": "Session.save_ssl_bundle"
     },
     "save_symbolic_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.symbolic_bundle.v1``.",
+      "doc_summary": "Persist the active symbolic or neuro-symbolic plan.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_symbolic_bundle",
@@ -11381,7 +11412,7 @@
       "qualname": "Session.save_symbolic_bundle"
     },
     "save_synthetic_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.synthetic_bundle.v1``.",
+      "doc_summary": "Persist the active synthesizer plan as ``buildml.synthetic_bundle.v1``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_synthetic_bundle",
@@ -11397,7 +11428,7 @@
       "qualname": "Session.save_synthetic_bundle"
     },
     "save_tda_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.tda_bundle.v2``.",
+      "doc_summary": "Persist the active TdaPlan as ``buildml.tda_bundle.v2``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_tda_bundle",
@@ -11468,7 +11499,7 @@
       "qualname": "Session.scale"
     },
     "score_anomalies": {
-      "doc_summary": "Score and flag rows with the train-fitted anomaly plan (no refit).",
+      "doc_summary": "Score and flag rows with the train-fitted anomaly plan without refitting.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "score_anomalies",
@@ -11498,7 +11529,7 @@
       "qualname": "Session.score_anomalies"
     },
     "score_triples": {
-      "doc_summary": "Score (head, relation, tail) triples with the frozen KgPlan.",
+      "doc_summary": "Score head-relation-tail triples with the frozen KgPlan.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "score_triples",
@@ -11521,7 +11552,7 @@
       "qualname": "Session.score_triples"
     },
     "search_torch": {
-      "doc_summary": "Inner-fold Torch hyperparameter search on the train universe.",
+      "doc_summary": "Inner-fold Torch hyperparameter search on the Session train universe.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "search_torch",
@@ -11686,7 +11717,7 @@
       "qualname": "Session.select_features"
     },
     "semisupervised_capability_matrix": {
-      "doc_summary": "Honest capability matrix for semi-supervised backends.",
+      "doc_summary": "Report which semi-supervised learning backends are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "semisupervised_capability_matrix",
@@ -11694,7 +11725,7 @@
       "qualname": "Session.semisupervised_capability_matrix"
     },
     "serve_bundle": {
-      "doc_summary": "Launch managed local serving (``buildml[serve]``; optional API-key auth).",
+      "doc_summary": "Launch BuildML managed serving for a pipeline or TorchScript artifact.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "serve_bundle",
@@ -11773,7 +11804,7 @@
       "qualname": "Session.serve_bundle"
     },
     "set_graph": {
-      "doc_summary": "Attach an edge list; Session rows are nodes.",
+      "doc_summary": "Attach an edge list to the Session with dataset rows as nodes.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "set_graph",
@@ -11870,7 +11901,7 @@
       "qualname": "Session.split"
     },
     "ssl_capability_matrix": {
-      "doc_summary": "Honest capability matrix for self-supervised backends.",
+      "doc_summary": "Report which self-supervised learning backends are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "ssl_capability_matrix",
@@ -11878,7 +11909,7 @@
       "qualname": "Session.ssl_capability_matrix"
     },
     "suggest_query": {
-      "doc_summary": "Suggest unlabeled *train* indices for human labeling (no oracle).",
+      "doc_summary": "Suggest unlabeled train-pool indices for human labeling without an oracle.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "suggest_query",
@@ -11990,7 +12021,7 @@
       "qualname": "Session.sync_native"
     },
     "synthetic_capability_matrix": {
-      "doc_summary": "Honest capability matrix for synthetic backends and eval paths.",
+      "doc_summary": "Return the synthetic-data backend/method capability matrix.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "synthetic_capability_matrix",
@@ -11998,7 +12029,7 @@
       "qualname": "Session.synthetic_capability_matrix"
     },
     "tda_capability_matrix": {
-      "doc_summary": "Honest capability matrix for native vs giotto TDA backends.",
+      "doc_summary": "Return the TDA backend and vectorization capability matrix.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "tda_capability_matrix",
@@ -12080,7 +12111,7 @@
       "qualname": "Session.time_split"
     },
     "timeseries_capability_matrix": {
-      "doc_summary": "Honest capability matrix for time-series analysis backends.",
+      "doc_summary": "Report which time-series analysis backends are available on this machine.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "timeseries_capability_matrix",
@@ -12136,7 +12167,7 @@
       "qualname": "Session.torch_training_curve"
     },
     "transcribe_speech": {
-      "doc_summary": "ASR transcription (stub CI-safe; transformers via ``buildml[speech]``).",
+      "doc_summary": "ASR transcription for an audio feature column.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "transcribe_speech",
@@ -12194,7 +12225,7 @@
       "qualname": "Session.transcribe_speech"
     },
     "transform_ssl": {
-      "doc_summary": "Export SSL representations with the train-fitted pretext (no refit).",
+      "doc_summary": "Export SSL representations with the train-fitted pretext encoder.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "transform_ssl",
@@ -12240,7 +12271,7 @@
       "qualname": "Session.transform_tda"
     },
     "ts_decompose": {
-      "doc_summary": "STL/classical decomposition on train-only scope (default).",
+      "doc_summary": "Run decomposition-only time-series analysis on Session data.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "ts_decompose",
@@ -12284,7 +12315,7 @@
       "qualname": "Session.ts_decompose"
     },
     "ts_diagnostics": {
-      "doc_summary": "ACF/PACF and ADF/KPSS stationarity tests.",
+      "doc_summary": "Run diagnostics-only time-series analysis on Session data.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "ts_diagnostics",
@@ -12328,7 +12359,7 @@
       "qualname": "Session.ts_diagnostics"
     },
     "tune_anomaly_threshold": {
-      "doc_summary": "Tune anomaly threshold on validation labels (never test by default).",
+      "doc_summary": "Tune the anomaly decision threshold on validation labels without refitting.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "tune_anomaly_threshold",
@@ -12444,7 +12475,7 @@
       "qualname": "Session.tune_threshold"
     },
     "unsupervised_capability_matrix": {
-      "doc_summary": "Honest capability matrix for clustering / reduction backends.",
+      "doc_summary": "Report which clustering and dimensionality-reduction backends are available here.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "unsupervised_capability_matrix",

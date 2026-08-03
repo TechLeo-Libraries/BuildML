@@ -332,7 +332,10 @@ def cbr_status(
             f"metrics={eval_payload.get('metrics')}."
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_cbr_plan": cbr_plan is not None,
@@ -355,7 +358,9 @@ def cbr_status(
             "adapts their solutions for supervised-style tasks. Distinct from "
             "RAG (text corpus → generation). Not a vector DB product."
         ),
-    }
+    },
+        "cbr_capability_matrix",
+    )
 
 
 def cbr_status_for_session(session: Any) -> dict[str, Any]:

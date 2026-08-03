@@ -23,11 +23,36 @@ def evaluate_decisions(
     *,
     partition: str = "test",
 ) -> DecisionEvalResult:
-    """Evaluate a frozen policy on a partition (default: untouched test).
+    """Evaluate a frozen decision policy on a holdout partition.
 
-    For threshold / cost_matrix: reports classification + realized cost metrics.
-    For allocation: reports selected value/cost/utilization (and label hit-rate
-    when a binary target is available and selections can be aligned).
+    Applies the policy via :func:`~buildml.optimize.apply.apply_decisions`
+    and reports classification metrics, realized costs, or allocation
+    utilization on the requested partition (default untouched test).
+
+    Parameters
+    ----------
+    dataset:
+        Tabular data containing features and target when label metrics apply.
+    split_plan:
+        Split plan defining train/validation/test partitions.
+    fit_result:
+        Session fit result for model-scored methods.
+    plan:
+        Frozen :class:`~buildml.optimize.results.DecisionPlan` to evaluate.
+    partition:
+        Holdout split name; defaults to ``'test'``.
+
+    Returns
+    -------
+    DecisionEvalResult
+        Partition metrics, optional realized cost, selection counts, and
+        honesty disclosures/warnings.
+
+    Raises
+    ------
+    ValidationError
+        When no plan is attached, required fit inputs are missing, or label
+        alignment fails for cost-matrix evaluation.
     """
     if plan is None:
         raise ValidationError("No DecisionPlan. Call fit_decision_policy(...) first.")

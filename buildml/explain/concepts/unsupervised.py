@@ -152,6 +152,54 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
             related_concepts=("unsupervised-train-fit-holdout-assign", "principal-components", "leakage-boundary"),
         ),
         _note(
+            key="cluster-kmeans-vs-density",
+            title="K-means / GMM vs density clustering (DBSCAN, HDBSCAN)",
+            summary="Centroid methods assume spherical groups; density methods find arbitrary shapes and label noise.",
+            definition=(
+                "K-means and GMM fit prototypes (centroids or mixture components) and assign "
+                "by distance/likelihood. DBSCAN/HDBSCAN/OPTICS grow clusters from local density "
+                "and may mark points as noise (-1)."
+            ),
+            intuition=(
+                "K-means draws H circles and asks everyone to join the nearest center. "
+                "DBSCAN walks neighborhoods — sparse points stay unclustered instead of being "
+                "forced into a group."
+            ),
+            formal_idea=(
+                "K-means minimizes within-cluster sum of squares; GMM maximizes mixture "
+                "likelihood with BIC/AIC for k. DBSCAN connects ε-neighbors with min_samples; "
+                "HDBSCAN extracts stable density modes."
+            ),
+            why_it_matters=(
+                "Wrong family yields nonsense segments and unstable assign on holdout.",
+                "Catalog lists both — pick by geometry, not by default."
+            ),
+            how_buildml_uses=(
+                "fit_clusters(method='kmeans'|'gmm'|'dbscan'|'hdbscan'|...).",
+                "assign_strategy and noise_rate disclosed for density methods.",
+                "evaluate_clusters reports internal validity, not ground-truth accuracy.",
+            ),
+            interpretation_rules=(
+                "Read cluster_sizes and noise_rate for DBSCAN/HDBSCAN.",
+                "Prefer scale before k-means when feature scales differ.",
+            ),
+            assumptions=(
+                "Metric geometry is meaningful after preprocessing.",
+                "k or density hyperparameters are chosen on train/disclosed holdout assign.",
+            ),
+            failure_modes=(
+                "Using k-means on elongated or nested manifolds.",
+                "Treating HDBSCAN noise as a failure instead of a feature.",
+            ),
+            anti_patterns=(
+                "Picking k solely to maximize train silhouette without holdout assign.",
+            ),
+            worked_example_pattern=(
+                "scale → fit_clusters(method='hdbscan') → assign_clusters('validation').",
+            ),
+            related_concepts=("unsupervised-cluster-validity", "unsupervised-train-fit-holdout-assign"),
+        ),
+        _note(
             key="unsupervised-bundle-boundary",
             title="Unsupervised bundle boundary",
             summary="Cluster plans persist as buildml.unsupervised_bundle.v2 — complementary to Session checkpoints and Torch/RAG bundles.",

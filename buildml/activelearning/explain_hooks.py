@@ -6,7 +6,22 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_active_learner`` history."""
+    """Build a compact history payload from an active-learning fit result.
+
+    Strips heavy estimator objects so Session history records only the fields
+    needed for walkthrough overlays and audit replay.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.activelearning.results.ActiveLearningFitResult` or
+        compatible mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Strategy, backend, pool sizes, query budget, and target column.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -24,7 +39,22 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def query_result_summary(query_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``suggest_query`` history."""
+    """Build a compact history payload from a query suggestion result.
+
+    Captures suggested indices and budget state without embedding full score
+    vectors in history.
+
+    Parameters
+    ----------
+    query_result:
+        :class:`~buildml.activelearning.results.ActiveLearningQueryResult` or
+        compatible mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Strategy, batch size, pool size, budget remaining, and indices.
+    """
     if query_result is None:
         return {}
     payload = (
@@ -40,7 +70,21 @@ def query_result_summary(query_result: Any) -> dict[str, Any]:
 
 
 def label_result_summary(label_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``label_rows`` history."""
+    """Build a compact history payload from a human labeling round.
+
+    Records how many rows were newly labeled and whether a refit occurred.
+
+    Parameters
+    ----------
+    label_result:
+        :class:`~buildml.activelearning.results.ActiveLearningLabelResult` or
+        compatible mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Newly labeled count, budget state, refit flag, and indices.
+    """
     if label_result is None:
         return {}
     payload = (
@@ -57,7 +101,22 @@ def label_result_summary(label_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_active_learning`` history."""
+    """Build a compact history payload from an active-learning evaluation result.
+
+    Captures partition-level metrics and labeled/unlabeled mix for explain
+    overlays without serializing per-row predictions.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.activelearning.results.ActiveLearningEvalResult` or
+        compatible mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, labeled/unlabeled counts, query usage, and metrics.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -79,7 +138,32 @@ def activelearning_status(
     eval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for active learning."""
+    """Build factual walkthrough disclosure for active-learning state.
+
+    Combines live plan fields, latest fit/query/eval payloads, and history
+    evidence into a teaching-oriented status dict with capability matrix
+    attachment.
+
+    Parameters
+    ----------
+    plan:
+        Optional :class:`~buildml.activelearning.results.ActiveLearningPlan`.
+    fit_result:
+        Optional latest fit result for ``has_fit_result``.
+    query_result:
+        Optional latest query result for ``last_query`` summary.
+    eval_result:
+        Optional latest eval result; metrics are summarized in disclosures.
+    history:
+        Session operation history used to detect active-learning activity when
+        no plan is attached.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, pool/budget summary, disclosures, boundary text, and
+        nested capability matrix.
+    """
     from buildml.activelearning.catalog import activelearning_capability_matrix
 
     records = list(history or [])
@@ -169,7 +253,22 @@ def activelearning_status(
 
 
 def activelearning_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build active-learning walkthrough status from a Session instance.
+
+    Reads private Session attributes set by active-learning operations and
+    delegates to :func:`activelearning_status`.
+
+    Parameters
+    ----------
+    session:
+        BuildML Session with optional ``_activelearning_*`` state attributes.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`activelearning_status` for the session's plan and
+        results.
+    """
     return activelearning_status(
         getattr(session, "_activelearning_plan", None),
         fit_result=getattr(session, "_activelearning_fit_result", None),

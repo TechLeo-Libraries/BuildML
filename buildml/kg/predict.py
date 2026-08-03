@@ -35,8 +35,31 @@ def score_triples(
 ) -> ScoreTriplesResult:
     """Score explicit triples or all triples in a partition.
 
-    Unknown entities/relations (absent from train vocab) receive ``-inf``
-    scores and are counted in ``unknown_*`` disclosures.
+    Uses frozen train embeddings to score candidate triples; unknown entities
+    or relations receive ``-inf`` scores and are counted in disclosures.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset when scoring a partition; ``None`` when ``triples`` supplied.
+    plan:
+        Train-fitted knowledge-graph plan.
+    split_plan:
+        Split plan for partition scoring.
+    partition:
+        ``train``, ``validation``, ``test``, or ``all`` when ``triples`` is ``None``.
+    triples:
+        Explicit triple frame or sequence instead of a partition scan.
+
+    Returns
+    -------
+    ScoreTriplesResult
+        Per-triple scores and OOV counts.
+
+    Raises
+    ------
+    ValidationError
+        When both ``triples`` and ``partition`` are supplied or inputs are invalid.
     """
     if triples is None and partition is None:
         partition = "test"
@@ -194,8 +217,36 @@ def predict_links(
 ) -> PredictLinksResult:
     """Predict missing link components for incomplete triples.
 
-    Modes
+    Ranks candidate heads, tails, or relations using frozen embeddings and
+    optionally applies filtered ranking against known train triples.
+
+    Parameters
+    ----------
+    plan:
+        Train-fitted knowledge-graph plan.
+    mode:
+        ``tail``, ``head``, or ``relation`` prediction task.
+    heads, relations, tails:
+        Query components; required fields depend on ``mode``.
+    k:
+        Number of top candidates to return per query.
+    filtered:
+        When True, remove other known train true triples from rankings.
+
+    Returns
+    -------
+    PredictLinksResult
+        Top-k predictions and scores for each query.
+
+    Raises
+    ------
+    ValidationError
+        When ``k`` is invalid, ``mode`` is unknown, or required query fields are missing.
+
+    Notes
     -----
+    Modes
+    ^^^^^
     - ``tail``: given (h, r, ?), rank candidate tails.
     - ``head``: given (?, r, t), rank candidate heads.
     - ``relation``: given (h, ?, t), rank candidate relations.

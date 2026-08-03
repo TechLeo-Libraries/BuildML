@@ -72,6 +72,15 @@ class ClusterConfig:
     auto_k_max: int = 10
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "n_clusters": self.n_clusters,
@@ -107,12 +116,50 @@ class ClusterConfig:
 
 
 def validate_cluster_method(method: str) -> ClusterMethod:
+    """Validate cluster method against supported catalog identifiers.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+
+Returns
+-------
+ClusterMethod
+    Return value (ClusterMethod) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if method not in ALL_CLUSTER_METHODS:
         raise ValueError(f"Unknown cluster method {method!r}")
     return method  # type: ignore[return-value]
 
 
 def validate_reduce_method(method: str) -> ReduceMethod:
+    """Validate reduce method against supported catalog identifiers.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+
+Returns
+-------
+ReduceMethod
+    Return value (ReduceMethod) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if method not in ALL_REDUCE_METHODS:
         raise ValueError(f"Unknown reduce method {method!r}")
     return method  # type: ignore[return-value]

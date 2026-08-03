@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from buildml.explain.beginner._builder import CORE, FOUNDATION, BeginnerLayer, _index, _layer
+from buildml.explain.beginner._builder import ADVANCED, CORE, FOUNDATION, BeginnerLayer, _index, _layer
 
 ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
@@ -305,6 +305,211 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         tools=("save_anomaly_bundle", "load_anomaly_bundle", "score_anomalies", "checkpoint_save"),
         terms=("bundle", "checkpoint", "plan", "threshold"),
         difficulty=CORE,
+    ),
+    _layer(
+        "anomaly-isolation-forest",
+        plain=(
+            "Isolation Forest is the default tabular anomaly detector in BuildML: an ensemble of "
+            "random trees isolates unusual rows quickly. Shorter isolation paths mean higher "
+            "anomaly scores once the plan orients them so higher means more anomalous."
+        ),
+        analogy=(
+            "Odd items get separated from the crowd in fewer random cuts than normal ones — "
+            "like finding the one red sock in a laundry pile with fewer grabs."
+        ),
+        steps=(
+            "Split first, then scale numeric features when distances matter.",
+            "Call fit_anomaly(method='isolation_forest') on train only.",
+            "Score holdout rows and read alert_rate with a disclosed threshold.",
+            "Compare against LOF or One-Class SVM on validation if ranking differs.",
+        ),
+        use=(
+            "Fast multivariate baseline when labels are scarce or delayed.",
+            "First detector to try before heavier PyOD or torch paths.",
+        ),
+        avoid=(
+            "Heavy contamination in train without novelty mode or a verified clean subset.",
+            "Reporting alert_rate from train without a holdout partition.",
+        ),
+        myths=(
+            ("Isolation Forest needs labels.", "It is unsupervised; labels are for evaluation only."),
+            ("Default contamination is your operating point.", "It is a prior guess — set threshold for capacity."),
+        ),
+        example=(
+            "session.fit_anomaly(method='isolation_forest', contamination=0.05, random_state=0)",
+            "session.evaluate_anomaly(partition='validation')",
+        ),
+        check=(
+            "Did you scale before comparing against LOF or One-Class SVM?",
+            "Which partition produced the alert_rate you are reporting?",
+        ),
+        tools=("fit_anomaly", "score_anomalies", "evaluate_anomaly"),
+        terms=("anomaly detection", "threshold", "outlier"),
+        difficulty=CORE,
+    ),
+    _layer(
+        "anomaly-lof",
+        plain=(
+            "Local Outlier Factor compares how dense a point is relative to its k-nearest "
+            "neighbours. Rows that look sparse among dense neighbours score as anomalies — "
+            "a local-density view rather than a global distance fence."
+        ),
+        analogy=(
+            "Someone standing alone in a packed room while everyone around them is in tight "
+            "groups — locally sparse even if the room overall is crowded."
+        ),
+        steps=(
+            "Scale numeric features so neighbour distances are meaningful.",
+            "Choose n_neighbors with your expected cluster size in mind.",
+            "fit_anomaly(method='lof') on train only.",
+            "Score validation/test and compare alert_rate against Isolation Forest.",
+        ),
+        use=(
+            "When anomalies are locally sparse rather than globally far from everything.",
+            "As a second opinion when Isolation Forest flags too many borderline rows.",
+        ),
+        avoid=(
+            "Very high dimensions without feature selection or scaling.",
+            "Assuming LOF and Isolation Forest must agree on the same rows.",
+        ),
+        myths=(
+            ("LOF and Isolation Forest always agree.", "They optimize different notions of unusual."),
+            ("More neighbours always helps.", "Too large k washes out local structure."),
+        ),
+        example=(
+            "session.fit_anomaly(method='lof', n_neighbors=20, random_state=0)",
+            "session.score_anomalies(partition='test')",
+        ),
+        check=(
+            "Is your feature scale meaningful for k-nearest neighbours?",
+            "Does validation alert_rate fit review capacity?",
+        ),
+        tools=("fit_anomaly", "score_anomalies", "evaluate_anomaly"),
+        terms=("anomaly detection", "outlier", "scaling"),
+        difficulty=CORE,
+    ),
+    _layer(
+        "anomaly-one-class-svm",
+        plain=(
+            "One-Class SVM learns a tight boundary around normal train data in feature space. "
+            "Points outside the learned envelope score as anomalies; threshold_policy='decision_zero' "
+            "uses the sign of sklearn's decision_function."
+        ),
+        analogy=(
+            "Draw the smallest fence around verified-normal examples; anyone outside the fence "
+            "is treated as a stranger even if they are not the strangest person in the city."
+        ),
+        steps=(
+            "Scale numeric columns before fitting the RBF kernel.",
+            "fit_anomaly(method='one_class_svm', kernel='rbf') on train or a normal-only subset.",
+            "Read disclosures for nu, kernel, and train alert_rate.",
+            "Evaluate validation alert_rate before locking an operating threshold.",
+        ),
+        use=(
+            "When the normal class is compact and anomalies lie clearly outside in feature space.",
+            "Novelty mode when you can certify a clean train subset.",
+        ),
+        avoid=(
+            "Large n without subsampling — training cost grows quickly.",
+            "Unscaled mixed-scale columns with an RBF kernel.",
+        ),
+        myths=(
+            ("One-Class SVM finds the same anomalies as Isolation Forest.", "Different boundaries, different flags."),
+            ("nu is the holdout alert rate.", "nu is a training prior; holdout alert_rate can differ."),
+        ),
+        example=(
+            "session.fit_anomaly(method='one_class_svm', nu=0.05, random_state=0)",
+            "session.evaluate_anomaly(partition='validation')",
+        ),
+        check=(
+            "Did you disclose novelty vs unsupervised mode?",
+            "Is validation alert_rate acceptable for reviewers?",
+        ),
+        tools=("fit_anomaly", "evaluate_anomaly", "score_anomalies"),
+        terms=("anomaly detection", "threshold", "scaling"),
+        difficulty=CORE,
+    ),
+    _layer(
+        "anomaly-pyod-hbos-copod-ecod",
+        plain=(
+            "With buildml[anomaly-industry], PyOD adds histogram- and copula-based detectors "
+            "(HBOS, COPOD, ECOD). They score multivariate tails quickly and extend the catalog "
+            "beyond the sklearn isolation/LOF/One-Class trio."
+        ),
+        analogy=(
+            "Check how extreme each column looks on its own or via a copula, then combine those "
+            "tail signals — like multiple thermometers agreeing something is off."
+        ),
+        steps=(
+            "Read anomaly_capability_matrix()['backends']['pyod']['available'].",
+            "fit_anomaly(backend='pyod', method='copod'|'hbos'|'ecod') on train.",
+            "Score validation and compare alert_rate against isolation_forest on the same split.",
+            "Record that PyOD was the backend in your write-up.",
+        ),
+        use=(
+            "Industry-depth tabular scoring when PyOD is installed.",
+            "When sklearn trio rankings plateau but you still lack labels.",
+        ),
+        avoid=(
+            "Requesting pyod methods without buildml[anomaly-industry] installed.",
+            "Treating PyOD scores as calibrated probabilities without checking alert_rate.",
+        ),
+        myths=(
+            ("PyOD path is always better.", "It is another honest baseline, not a guaranteed win."),
+            ("PyOD removes the need for scaling.", "Distance/tail methods still benefit from sensible feature scale."),
+        ),
+        example=(
+            "# pip install 'buildml[anomaly-industry]'",
+            "session.fit_anomaly(backend='pyod', method='ecod', random_state=0)",
+        ),
+        check=(
+            "Does anomaly_capability_matrix show pyod available?",
+            "Did you compare validation alert_rate against sklearn baselines?",
+        ),
+        tools=("fit_anomaly", "anomaly_capability_matrix", "evaluate_anomaly"),
+        terms=("anomaly detection", "extra", "outlier"),
+        difficulty=ADVANCED,
+    ),
+    _layer(
+        "anomaly-autoencoder",
+        plain=(
+            "The torch backend trains a small feedforward autoencoder on normal train rows and "
+            "uses reconstruction mean-squared error as the anomaly score. High error means the "
+            "row did not match patterns the encoder learned as normal."
+        ),
+        analogy=(
+            "If the model cannot rebuild a row well, that row probably did not belong to the "
+            "shapes it memorized from training — like a photocopier struggling on a forged note."
+        ),
+        steps=(
+            "Scale features and confirm buildml[torch] is available.",
+            "fit_anomaly(backend='torch', method='autoencoder', epochs=...) on train.",
+            "Score holdout rows; read reconstruction-error and alert_rate disclosures.",
+            "Compare against isolation_forest on validation before claiming uplift.",
+        ),
+        use=(
+            "Nonlinear normal manifold when sklearn or PyOD rankings plateau.",
+            "When reconstruction error aligns with domain intuition (sensor profiles, embeddings).",
+        ),
+        avoid=(
+            "Tiny train sets where the AE memorizes instead of generalizing normal.",
+            "Scoring without the same scaling pipeline used at fit time.",
+        ),
+        myths=(
+            ("Autoencoder replaces labels.", "It still follows train-fit / holdout-score like every detector."),
+            ("Higher epochs always help.", "Under- or over-training shifts reconstruction calibration."),
+        ),
+        example=(
+            "session.fit_anomaly(backend='torch', method='autoencoder', epochs=40, random_state=0)",
+            "session.score_anomalies(partition='validation')",
+        ),
+        check=(
+            "Are feature columns identical at score time?",
+            "Does validation alert_rate beat a sklearn baseline on the same split?",
+        ),
+        tools=("fit_anomaly", "score_anomalies", "anomaly_capability_matrix"),
+        terms=("anomaly detection", "neural network", "extra"),
+        difficulty=ADVANCED,
     ),
 )
 

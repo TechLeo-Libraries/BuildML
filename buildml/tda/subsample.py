@@ -22,10 +22,37 @@ def apply_train_subsample(
     target_column: str | None,
     random_state: int | None,
 ) -> tuple[SplitPlan, pd.DataFrame, list[str], list[str]]:
-    """Subsample train rows when above ``max_points`` per ``strategy``.
+    """Subsample train rows when count exceeds ``max_points_guard``.
 
-    Returns a shallow copy of ``split_plan`` with reduced train indices,
-    the subsampled train frame, disclosures, and warnings.
+    TDA fit is quadratic in train size through per-row PH; this guard prevents
+    accidental multi-hour fits. Returns an updated split plan when subsampling
+    occurs so downstream code sees consistent train indices.
+
+    Parameters
+    ----------
+    split_plan:
+        Original split plan (train indices may be reduced).
+    frame:
+        Full train partition frame aligned with ``split_plan.train_indices``.
+    max_points:
+        Maximum allowed train rows before ``strategy`` applies.
+    strategy:
+        ``error`` raises; ``random`` or ``stratified`` subsamples train rows.
+    target_column:
+        Target column name for stratified subsampling.
+    random_state:
+        Seed for reproducible subsample selection.
+
+    Returns
+    -------
+    tuple[SplitPlan, pandas.DataFrame, list[str], list[str]]
+        Possibly updated plan, subsampled train frame, disclosures, and warnings.
+
+    Raises
+    ------
+    ValidationError
+        When ``strategy='error'`` and train exceeds ``max_points``, or strategy
+        is unknown.
     """
     disclosures: list[str] = []
     warnings: list[str] = []

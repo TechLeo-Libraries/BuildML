@@ -27,7 +27,28 @@ __all__ = [
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
-    """Build a float design matrix; refuse null features (online wording)."""
+    """Build a float design matrix from selected columns.
+
+    Delegates to semi-supervised matrix building with online-learning error
+    wording when null features are detected.
+
+    Parameters
+    ----------
+    frame:
+        Source DataFrame.
+    columns:
+        Feature column names to extract.
+
+    Returns
+    -------
+    numpy.ndarray
+        2-D float feature matrix.
+
+    Raises
+    ------
+    ValidationError
+        When columns are missing or contain null values.
+    """
     try:
         return _matrix_from_frame(frame, columns)
     except ValidationError as exc:
@@ -44,7 +65,31 @@ def resolve_online_columns(
     prefer_reduce_components: bool = True,
     target_column: str,
 ) -> tuple[list[str], bool, list[str]]:
-    """Resolve numeric feature columns (same contract as semi-supervised)."""
+    """Resolve numeric feature columns for online learning.
+
+    Uses the same contract as semi-supervised column resolution, with disclosure
+    wording adjusted for online-learning context.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with column roles.
+    frame:
+        Train partition frame used for column validation.
+    columns:
+        Optional explicit feature columns; ``None`` auto-resolves from roles.
+    reduce_plan:
+        Optional dimensionality-reduction plan for component columns.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    target_column:
+        Target column name to exclude from features.
+
+    Returns
+    -------
+    tuple[list[str], bool, list[str]]
+        ``(feature_columns, used_reduce_components, disclosures)``.
+    """
     cols, used_reduce, disclosures = resolve_semisupervised_columns(
         dataset,
         frame,
@@ -65,7 +110,30 @@ def encode_classification_targets(
     label_encoder: Any | None = None,
     classes: Sequence[Any] | None = None,
 ) -> tuple[np.ndarray, Any, tuple[Any, ...]]:
-    """Encode classification targets; refuse missing labels in update chunks."""
+    """Encode classification targets for partial_fit chunks.
+
+    Refuses null labels in update chunks and unknown classes not declared at
+    init time.
+
+    Parameters
+    ----------
+    y:
+        Target series for the current chunk.
+    label_encoder:
+        Optional fitted label encoder from a prior fit/update.
+    classes:
+        Optional full class vocabulary for init-time encoding.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, Any, tuple[Any, ...]]
+        ``(encoded_codes, label_encoder, classes_tuple)``.
+
+    Raises
+    ------
+    ValidationError
+        When targets contain nulls or unseen class labels.
+    """
     from sklearn.preprocessing import LabelEncoder
 
     if y.isna().any():
@@ -98,7 +166,22 @@ def encode_classification_targets(
 
 
 def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
-    """Map integer class codes back toward original label values."""
+    """Map integer class codes back toward original label values.
+
+    Attempts to restore numeric types when the original labels were numeric.
+
+    Parameters
+    ----------
+    pred_codes:
+        Integer prediction codes from the estimator.
+    label_encoder:
+        Fitted sklearn label encoder with ``inverse_transform``.
+
+    Returns
+    -------
+    list[Any]
+        Decoded labels in original representation where possible.
+    """
     codes = np.asarray(pred_codes).astype(int)
     decoded = label_encoder.inverse_transform(codes)
     out: list[Any] = []
@@ -122,11 +205,32 @@ def carve_train_chunk(
     n_rows: int,
     indices: Sequence[Any] | None = None,
 ) -> tuple[pd.DataFrame, list[Any], int]:
-    """Carve the next train chunk (or explicit train indices) advancing cursor.
+    """Carve the next train chunk or explicit train indices advancing the cursor.
+
+    Refuses validation/test indices to prevent holdout leakage into partial_fit.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset backing the split.
+    split_plan:
+        Train/validation/test split with train indices.
+    cursor:
+        Current position in the train index ordering.
+    n_rows:
+        Number of unused train rows to take when ``indices`` is ``None``.
+    indices:
+        Optional explicit train-partition dataset indices.
 
     Returns
     -------
-    chunk_frame, dataset_indices, new_cursor
+    tuple[pandas.DataFrame, list[Any], int]
+        ``(chunk_frame, dataset_indices, new_cursor)``.
+
+    Raises
+    ------
+    ValidationError
+        When indices are outside train, ``n_rows`` is invalid, or no rows remain.
     """
     train_indices = list(split_plan.train_indices)
     n_train = len(train_indices)
@@ -171,7 +275,30 @@ def align_external_frame(
     columns: Sequence[str],
     target_column: str,
 ) -> pd.DataFrame:
-    """Validate a user-provided incremental frame against the plan contract."""
+    """Validate a user-provided incremental frame against the plan contract.
+
+    Ensures feature and target columns are present before partial_fit on an
+    external frame (cursor is not advanced for external updates).
+
+    Parameters
+    ----------
+    frame:
+        User-provided incremental DataFrame.
+    columns:
+        Expected feature column names from the OnlinePlan.
+    target_column:
+        Expected target column name from the OnlinePlan.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of ``frame`` restricted to feature + target columns.
+
+    Raises
+    ------
+    ValidationError
+        When required columns are missing.
+    """
     if target_column not in frame.columns:
         raise ValidationError(
             f"External online chunk is missing target column {target_column!r}."
@@ -191,7 +318,27 @@ def chunk_drift_notes(
     columns: Sequence[str],
     enabled: bool = True,
 ) -> list[str]:
-    """Lightweight mean-shift disclosure vs the init chunk (not a full drift product)."""
+    """Produce lightweight mean-shift disclosure notes for a chunk.
+
+    Compares chunk feature means to init-chunk means; this is disclosure only,
+    not a full drift-detection product.
+
+    Parameters
+    ----------
+    chunk_x:
+        Feature matrix for the current chunk.
+    init_means:
+        Per-feature means from the init chunk; ``None`` skips comparison.
+    columns:
+        Feature column names aligned with ``chunk_x`` columns.
+    enabled:
+        When ``False``, returns an empty list without computation.
+
+    Returns
+    -------
+    list[str]
+        Human-readable drift disclosure notes (may be empty).
+    """
     if not enabled or init_means is None or chunk_x.size == 0:
         return []
     means = np.asarray(init_means, dtype=float)
@@ -227,7 +374,25 @@ def chunk_drift_notes(
 
 
 def regression_targets(y: pd.Series) -> np.ndarray:
-    """Numeric regression targets; refuse nulls."""
+    """Extract numeric regression targets from a target series.
+
+    Refuses null or non-numeric targets for online regression chunks.
+
+    Parameters
+    ----------
+    y:
+        Target series for the current chunk.
+
+    Returns
+    -------
+    numpy.ndarray
+        1-D float target array.
+
+    Raises
+    ------
+    ValidationError
+        When targets contain nulls or are non-numeric.
+    """
     if y.isna().any():
         raise ValidationError(
             "Online regression chunks require non-null numeric targets."
@@ -242,5 +407,21 @@ def regression_targets(y: pd.Series) -> np.ndarray:
 def train_partition_frame(
     dataset: Dataset, split_plan: SplitPlan
 ) -> pd.DataFrame:
-    """Train frame helper."""
+    """Return the train-partition DataFrame for online init and column resolution.
+
+    Thin wrapper over :func:`buildml.data.splits.frame_for_partition` restricted
+    to the train split used for partial_fit chunks.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset backing the split.
+    split_plan:
+        Train/validation/test split plan.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Rows belonging to the train partition only.
+    """
     return frame_for_partition(dataset, split_plan, "train")

@@ -31,7 +31,17 @@ TORCH_STRATEGIES = (
 
 
 def activelearning_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for active-learning backends and strategies."""
+    """Build the honest capability matrix for active-learning backends and strategies.
+
+    Reports sklearn, industry, and torch paths, human-label boundaries,
+    evaluation metrics, install hints, and explicit non-goals for teaching
+    overlays and Session walkthroughs.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, query strategies, evaluation rules, and defaults.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -134,7 +144,21 @@ def list_activelearning_strategies(
     *,
     backend: ActiveLearningBackendName | None = None,
 ) -> list[str]:
-    """List query strategies for a backend (or all available when backend is None)."""
+    """List active-learning query strategy names for one or all backends.
+
+    Filters to backends that are actually installed when ``backend`` is omitted.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend name; when set, returns strategies only if that backend
+        is available.
+
+    Returns
+    -------
+    list[str]
+        Sorted unique strategy identifiers (e.g. ``margin``, ``bald``).
+    """
     matrix = activelearning_capability_matrix()
     if backend is not None:
         entry = matrix["backends"].get(backend)
@@ -154,6 +178,21 @@ def list_activelearning_strategies(
 
 
 def backend_available(name: ActiveLearningBackendName) -> bool:
+    """Return whether an active-learning backend is installed and usable.
+
+    Consults :func:`activelearning_capability_matrix` rather than probing
+    imports directly so availability matches teaching disclosures.
+
+    Parameters
+    ----------
+    name:
+        Backend identifier: ``sklearn``, ``industry``, or ``torch``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the capability matrix marks the backend as available.
+    """
     matrix = activelearning_capability_matrix()["backends"]
     entry = matrix.get(name)
     if entry is None:
@@ -166,7 +205,30 @@ def resolve_backend_strategy(
     backend: ActiveLearningBackendName | None,
     strategy: str,
 ) -> tuple[ActiveLearningBackendName, str]:
-    """Validate backend/strategy pairing and apply honest defaults."""
+    """Validate backend/strategy pairing and apply honest defaults.
+
+    Infers the backend from the strategy when ``backend`` is ``None``, then
+    verifies the strategy is allowed and the backend is installed.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend override (``sklearn``, ``industry``, ``torch``).
+    strategy:
+        Query strategy name to validate against the resolved backend.
+
+    Returns
+    -------
+    tuple[ActiveLearningBackendName, str]
+        Resolved ``(backend, strategy)`` pair ready for fit/query operations.
+
+    Raises
+    ------
+    ValidationError
+        When the strategy is not valid for the resolved backend.
+    MissingExtraError
+        When the resolved backend requires an optional extra that is not installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     resolved_backend: ActiveLearningBackendName

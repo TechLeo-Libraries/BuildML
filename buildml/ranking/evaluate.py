@@ -30,18 +30,40 @@ def evaluate_ranker(
 ) -> RankerEvalResult:
     """Score ranking quality on a holdout partition.
 
-    Protocol
-    --------
-    - Fit never sees holdout rows (caller / Session gate).
-    - For each holdout query: score all candidate rows for that query,
-      sort by descending score, then compute graded nDCG@K, MAP@K, and MRR@K.
-    - MAP/MRR treat relevance > ``plan.relevance_threshold`` as relevant.
-    - Metrics are macro-averaged over queries that have ≥1 relevant item
-      (nDCG also requires a positive ideal DCG; queries with all-zero labels
-      are skipped and disclosed).
+    For each holdout query, scores all candidate rows, sorts by descending
+    score, and computes graded nDCG@K, MAP@K, and MRR@K macro-averaged over
+    queries with at least one relevant item.
 
-    Honesty: tabular LTR metrics on labeled judgments — not RAG retrieve
-    eval and not recommender known-item CF metrics.
+    Parameters
+    ----------
+    dataset:
+        Session dataset with query, item, feature, and relevance columns.
+    plan:
+        Frozen train-fitted ranker plan from :func:`buildml.ranking.fit.fit_ranker`.
+    split_plan:
+        Split plan defining train and holdout partitions.
+    partition:
+        Holdout partition name, typically ``test`` or ``validation``.
+    k:
+        Cutoff for nDCG, MAP, and MRR metrics.
+    backend:
+        Optional backend override; must match the frozen plan backend.
+
+    Returns
+    -------
+    RankerEvalResult
+        Macro-averaged metrics, query counts, and honesty disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When ``k`` is less than 1 or scoring inputs are invalid.
+
+    Notes
+    -----
+    Fit never sees holdout rows (caller / Session gate). MAP/MRR treat
+    relevance > ``plan.relevance_threshold`` as relevant. Tabular LTR metrics
+    on labeled judgments — not RAG retrieve eval and not recommender CF metrics.
     """
     if int(k) < 1:
         raise ValidationError("k must be >= 1.")

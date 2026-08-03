@@ -25,6 +25,10 @@ from buildml.unsupervised.types import ClusterConfig
 
 @dataclass(slots=True)
 class FitOutcome:
+    """Typed container for FitOutcome state and disclosures.
+
+Carries fitted model handles, feature contract fields, and disclosure text for walkthrough honesty.
+    """
     labels: np.ndarray
     estimator: Any
     n_clusters: int | None
@@ -91,6 +95,29 @@ def fit_backend(
     *,
     n_train: int,
 ) -> FitOutcome:
+    """Fit backend on the train partition using the recorded contract.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+config:
+    config (ClusterConfig).
+n_train:
+    n train (int).
+
+Returns
+-------
+FitOutcome
+    Return value (FitOutcome) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     method = config.method
     warnings: list[str] = []
     disclosures: list[str] = []
@@ -408,7 +435,27 @@ def fit_backend(
 
 
 def predict_backend(plan: Any, x: np.ndarray) -> np.ndarray:
-    """Assign labels for holdout rows using a fitted plan."""
+    """Assign labels for holdout rows using a fitted plan.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+plan:
+    Fitted plan object carrying model state and feature contract.
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     method = plan.method
     if method == "kmeans":
         return np.asarray(plan.estimator_.predict(x), dtype=int)

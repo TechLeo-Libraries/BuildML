@@ -18,7 +18,39 @@ def select_knapsack_ortools(
     min_score: float | None = None,
     ids: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Exact 0-1 knapsack using OR-Tools binary MIP."""
+    """Solve a 0-1 knapsack exactly with an OR-Tools integer MIP.
+
+    Maximizes total value of selected items subject to a single cost budget
+    using binary decision variables. Invoked when
+    :func:`~buildml.optimize.allocate.select_knapsack_with_backend` resolves
+    ``backend='ortools'``.
+
+    Parameters
+    ----------
+    values:
+        Non-negative item values to maximize.
+    costs:
+        Non-negative item costs aligned with ``values``.
+    budget:
+        Total cost budget; must be ``>= 0``.
+    min_score:
+        When set, exclude items below this value floor.
+    ids:
+        Optional identifier array aligned with ``values``; defaults to
+        positional indices.
+
+    Returns
+    -------
+    dict[str, Any]
+        Selected indices, ids, unit fractions, aggregate value/cost, and
+        solver/backend metadata.
+
+    Raises
+    ------
+    ValidationError
+        When inputs are misaligned, budgets are invalid, no MIP solver is
+        available, or the solve terminates without a feasible/optimal status.
+    """
     require_ortools()
     from ortools.linear_solver import pywraplp
 

@@ -20,9 +20,16 @@ NativeMethodName = Literal["grid", "randomized", "optuna", "evolutionary"]
 
 
 def automl_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for AutoML backends and optional extras.
+    """Build the honest capability matrix for AutoML backends and optional extras.
 
-    Returns a JSON-serializable dict suitable for docs, walkthrough, and AI tools.
+    Reports native, Optuna, FLAML, and AutoGluon paths, fold-local recipe search
+    support, install hints, and explicit non-goals for teaching overlays and
+    Session walkthroughs.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, optional GBDT family flags, and defaults.
     """
     gbdt = {
         "lightgbm": lightgbm_available(),
@@ -136,7 +143,21 @@ def _default_backend_when_installed() -> str:
 
 
 def list_automl_methods(*, backend: AutoMLBackendName | None = None) -> list[str]:
-    """List search methods available for a backend (or all when backend is None)."""
+    """List AutoML search method names available for one or all backends.
+
+    When ``backend`` is omitted, collects methods from every backend entry in
+    the capability matrix (including unavailable backends' declared methods).
+
+    Parameters
+    ----------
+    backend:
+        Optional backend name; when set, returns methods only for that backend.
+
+    Returns
+    -------
+    list[str]
+        Sorted unique method identifiers (e.g. ``randomized``, ``flaml``).
+    """
     matrix = automl_capability_matrix()["backends"]
     if backend is not None:
         entry = matrix.get(backend)
@@ -152,6 +173,21 @@ def list_automl_methods(*, backend: AutoMLBackendName | None = None) -> list[str
 
 
 def backend_available(name: AutoMLBackendName) -> bool:
+    """Return whether an AutoML backend is installed and usable.
+
+    Consults :func:`automl_capability_matrix` rather than probing imports
+    directly so availability matches teaching disclosures.
+
+    Parameters
+    ----------
+    name:
+        Backend identifier: ``native``, ``optuna``, ``flaml``, or ``autogluon``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the capability matrix marks the backend as available.
+    """
     matrix = automl_capability_matrix()["backends"]
     entry = matrix.get(name)
     if entry is None:

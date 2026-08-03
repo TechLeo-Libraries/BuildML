@@ -58,6 +58,7 @@ def test_public_surface_and_catalog() -> None:
     assert hasattr(federated, "federated_capability_matrix")
     assert hasattr(federated, "export_round_history")
     assert hasattr(Session, "fit_federated")
+    assert hasattr(Session, "export_round_history")
     for name in (
         "fit_federated",
         "evaluate_federated",
@@ -109,6 +110,10 @@ def test_session_fedavg_loop_and_bundle(tmp_path: Path) -> None:
     assert before.prerequisite_status.get("federated-plan") is True
 
     bundle = session.save_federated_bundle(tmp_path / "federated_bundle")
+    rounds_path = session.export_round_history(tmp_path / "rounds.json")
+    assert rounds_path.is_file()
+    assert rounds_path.read_text(encoding="utf-8").count("round_history") >= 1
+
     plan = load_federated_bundle(bundle)
     assert plan.method == "fedavg"
 

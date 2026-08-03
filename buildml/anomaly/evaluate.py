@@ -36,14 +36,42 @@ def evaluate_anomaly(
 ) -> AnomalyEvalResult:
     """Score a frozen anomaly plan on a partition and summarize alert behavior.
 
-    Always reports threshold, alert rate, and score summary stats. When a binary
-    ``label_column`` (or the Session target role) is available, also reports
-    precision / recall / F1 / PR-AUC / ROC-AUC and precision@k / recall@k with
-    class-imbalance disclosures.
+Always reports threshold, alert rate, and score summary stats. When a binary
+``label_column`` (or the Session target role) is available, also reports
+precision / recall / F1 / PR-AUC / ROC-AUC and precision@k / recall@k with
+class-imbalance disclosures.
+Labeled metrics are **not** causal fraud proof and do not turn unsupervised
+fit into supervised training (labels are evaluation-only unless the plan
+mode was supervised).
 
-    Labeled metrics are **not** causal fraud proof and do not turn unsupervised
-    fit into supervised training (labels are evaluation-only unless the plan
-    mode was supervised).
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+plan:
+    Fitted plan object carrying model state and feature contract.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+partition:
+    Holdout partition name or ``all`` for the full frame.
+label_column:
+    label column (str | None).
+positive_label:
+    positive label (Any | None).
+k:
+    k (int | None).
+override_threshold:
+    override threshold (float | None).
+
+Returns
+-------
+AnomalyEvalResult
+    Serializable result summary (AnomalyEvalResult) for history recording.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     _, scored = score_anomalies(
         dataset,

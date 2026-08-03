@@ -1198,6 +1198,10 @@ def _build_capability_matrix_tools() -> tuple[ToolSpec, ...]:
             "Honest capability matrix for self-supervised pretext backends.",
         ),
         _capability_matrix_tool(
+            "dl_capability_matrix",
+            "Honest capability matrix for Torch modalities, weight modes, and speech backends.",
+        ),
+        _capability_matrix_tool(
             "unsupervised_capability_matrix",
             "Honest capability matrix for clustering / reduction backends.",
         ),
@@ -1264,6 +1268,42 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             session_method="split",
             read_only=False,
             catalog_operation="split",
+        ),
+        ToolSpec(
+            name="time_split",
+            description=(
+                "Create chronological train/validation/test splits ordered by time. "
+                "Required before fit_forecast, analyze_timeseries, and other temporal "
+                "operations. Random split is refused for those paths."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "test_size": {
+                        "type": "number",
+                        "description": (
+                            "Fraction or row count at the end of the timeline for test."
+                        ),
+                    },
+                    "validation_size": {
+                        "type": "number",
+                        "description": (
+                            "Optional fraction or row count for validation before test."
+                        ),
+                    },
+                    "time_column": {
+                        "type": "string",
+                        "description": (
+                            "Time-ordering column; defaults to the role-assigned time column."
+                        ),
+                    },
+                },
+                "required": [],
+            },
+            confirm_policy=ConfirmPolicy.CONFIRM,
+            session_method="time_split",
+            read_only=False,
+            catalog_operation="time_split",
         ),
         ToolSpec(
             name="impute",

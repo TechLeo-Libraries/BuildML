@@ -34,6 +34,15 @@ class ClusterPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "columns": list(self.columns),
@@ -70,6 +79,15 @@ class ClusterFitResult:
     diagnostics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "n_clusters": self.n_clusters,
@@ -85,6 +103,10 @@ class ClusterFitResult:
         }
 
     def show(self) -> None:
+        """Perform show for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+        """
         print(
             f"ClusterFit · {self.method} · n_clusters={self.n_clusters} · "
             f"n_train={self.n_train_rows}"
@@ -110,6 +132,15 @@ class ClusterAssignResult:
     disclosures: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "partition": self.partition,
             "n_rows": self.n_rows,
@@ -139,6 +170,15 @@ class ClusterEvalResult:
     diagnostics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -153,6 +193,10 @@ class ClusterEvalResult:
         }
 
     def show(self) -> None:
+        """Perform show for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+        """
         print(
             f"ClusterEval · {self.method} · partition={self.partition} · "
             f"n={self.n_rows} · k_obs={self.n_clusters_observed}"

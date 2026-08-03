@@ -17,7 +17,34 @@ def build_ngboost_estimator(
     n_estimators: int = 100,
     learning_rate: float = 0.05,
 ) -> Any:
-    """Construct an NGBRegressor or NGBClassifier."""
+    """Construct an NGBRegressor or NGBClassifier for the industry backend.
+
+    Requires ``buildml[probabilistic-industry]`` and returns an unfitted NGBoost
+    model configured for Normal or Bernoulli predictive distributions.
+
+    Parameters
+    ----------
+    name:
+        ``ngboost_regressor`` or ``ngboost_classifier``.
+    random_state:
+        Seed forwarded to NGBoost.
+    n_estimators:
+        Boosting rounds.
+    learning_rate:
+        NGBoost learning rate.
+
+    Returns
+    -------
+    NGBRegressor or NGBClassifier
+        Unfitted distribution-boosting estimator.
+
+    Raises
+    ------
+    ValidationError
+        When ``name`` is not a supported NGBoost key.
+    MissingExtraError
+        When ngboost is not installed.
+    """
     require_ngboost(feature=f"NGBoost {name}")
     if name == "ngboost_regressor":
         from ngboost import NGBRegressor
@@ -49,7 +76,23 @@ def build_ngboost_estimator(
 
 
 def ngboost_predict_std(estimator_obj: Any, x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Return (mean, std) for regression NGBoost predictive Normal."""
+    """Return predictive mean and standard deviation from an NGBRegressor.
+
+    Reads the Normal predictive distribution via ``pred_dist`` for regression
+    interval and CRPS evaluation paths.
+
+    Parameters
+    ----------
+    estimator_obj:
+        Fitted ``NGBRegressor``.
+    x:
+        Feature matrix.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Mean and standard deviation arrays aligned with ``x`` rows.
+    """
     dist = estimator_obj.pred_dist(x)
     mean = np.asarray(dist.loc, dtype=float)
     scale = getattr(dist, "scale", None)
@@ -61,14 +104,52 @@ def ngboost_predict_std(estimator_obj: Any, x: np.ndarray) -> tuple[np.ndarray, 
 
 
 def ngboost_predict_proba(estimator_obj: Any, x: np.ndarray) -> np.ndarray:
-    """Bernoulli predictive probabilities for binary NGBClassifier."""
+    """Return Bernoulli predictive probabilities from an NGBClassifier.
+
+    Used by classification evaluate and conformal paths on the NGBoost backend.
+
+    Parameters
+    ----------
+    estimator_obj:
+        Fitted ``NGBClassifier``.
+    x:
+        Feature matrix.
+
+    Returns
+    -------
+    numpy.ndarray
+        Class probability matrix from ``predict_proba``.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator lacks ``predict_proba``.
+    """
     if not hasattr(estimator_obj, "predict_proba"):
         raise ValidationError("NGBClassifier lacks predict_proba.")
     return np.asarray(estimator_obj.predict_proba(x), dtype=float)
 
 
 def ngboost_crps_regression(estimator_obj: Any, x: np.ndarray, y: np.ndarray) -> float:
-    """Average CRPS for Normal predictive distribution (regression)."""
+    """Compute average CRPS for a Normal NGBoost predictive distribution.
+
+    Used by :func:`buildml.probabilistic.evaluate.evaluate_probabilistic` when
+    scoring regression holdouts with distribution-aware metrics.
+
+    Parameters
+    ----------
+    estimator_obj:
+        Fitted ``NGBRegressor``.
+    x:
+        Holdout features.
+    y:
+        Holdout targets aligned with ``x``.
+
+    Returns
+    -------
+    float
+        Mean continuous ranked probability score across rows.
+    """
     dist = estimator_obj.pred_dist(x)
     yy = np.asarray(y, dtype=float)
     try:

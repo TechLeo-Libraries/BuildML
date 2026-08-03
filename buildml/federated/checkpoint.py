@@ -40,7 +40,32 @@ def save_federated_bundle(
     fit_result: FederatedFitResult | None = None,
     eval_result: FederatedEvalResult | None = None,
 ) -> Path:
-    """Write a federated-learning bundle directory (``buildml.federated_bundle.v1``)."""
+    """Write a federated-learning bundle directory (``buildml.federated_bundle.v1``).
+
+    Persists the plan and optional fit/eval summaries as joblib + JSON metadata.
+    Distinct from Session checkpoints.
+
+    Parameters
+    ----------
+    path:
+        Destination directory (created if missing).
+    plan:
+        Fitted :class:`~buildml.federated.results.FederatedPlan`.
+    fit_result:
+        Optional fit summary to embed in ``meta.json``.
+    eval_result:
+        Optional evaluation summary to embed in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No FederatedPlan to save.")
     destination = Path(path)
@@ -62,7 +87,25 @@ def save_federated_bundle(
 
 
 def load_federated_bundle(path: str | Path) -> FederatedPlan:
-    """Load a federated-learning bundle into a :class:`FederatedPlan`."""
+    """Load a federated-learning bundle into a :class:`FederatedPlan`.
+
+    Validates bundle format version and plan object type before returning.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``federated_plan.joblib``.
+
+    Returns
+    -------
+    FederatedPlan
+        Deserialized plan with global estimator and label encoder attached.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or plan type is wrong.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "federated_plan.joblib"

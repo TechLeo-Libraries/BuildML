@@ -10,12 +10,21 @@ def fit(
 ) -> Session:
     """Fit a sklearn-compatible estimator on the train partition.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     estimator:
         Unfitted estimator instance.
     task:
         Task type or ``auto``.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -39,12 +48,26 @@ def predict(
 ) -> pd.Series | pd.DataFrame:
     """Predict labels or probabilities on a partition.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     partition:
         Split partition to score.
     return_proba:
         If True and supported, return class probabilities.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    pd.Series
+        Materialized tabular result as a Pandas DataFrame.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -72,16 +95,29 @@ def evaluate(
     """Evaluate the last fitted estimator on a partition.
 
     Returns metrics, diagnostics (confusion matrix / residuals), and
+
     recommendations — not a single score.
 
     Parameters
     ----------
     partition:
         Split partition to score.
-    include_plots / export_figures / export_html:
+        include_plots / export_figures / export_html:
         Optionally build the eval plot board (requires ``buildml[viz]``)
         and persist figures/HTML. Plot board is also stored on
         :attr:`last_plot_board`.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    EvaluateResult
+        Metrics, diagnostics, and recommendations for the scored partition.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -133,14 +169,48 @@ def eval_plots(
     """Build an evaluation plot board for the fitted estimator.
 
     Adaptive panels include confusion/residuals, ROC/PR, calibration,
+
     threshold tradeoffs, learning curves, and permutation importance.
+
     Panels degrade gracefully when ``predict_proba`` or binary targets
+
     are unavailable.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    include_learning_curve:
+        Controls ``include_learning_curve``; see the function signature for type and default.
+    include_importance:
+        Controls ``include_importance``; see the function signature for type and default.
+    n_importance_repeats:
+        Controls ``n_importance_repeats``; see the function signature for type and default.
+    learning_curve_cv:
+        Controls ``learning_curve_cv``; see the function signature for type and default.
+    export_figures:
+        Controls ``export_figures``; see the function signature for type and default.
+    export_html:
+        Controls ``export_html``; see the function signature for type and default.
+    show:
+        Controls ``show``; see the function signature for type and default.
+
+    Returns
+    -------
+    PlotBoardReport
+        Evaluation plot board with figure paths and interpretation notes.
 
     Notes
     -----
     Requires ``pip install 'buildml[viz]'``. Delegates to
     :func:`buildml.model.plot_boards.build_eval_plot_board`.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -183,7 +253,28 @@ def compare_models(
     partition: Literal['train', 'validation', 'test'] = "test",
     ranking_metric: str | None = None,
 ) -> ModelComparison:
-    """Fit/evaluate multiple estimators and return a ranked comparison card."""
+    """Fit/evaluate multiple estimators and return a ranked comparison card.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    estimators:
+        Mapping of model name to unfitted estimator for comparison.
+    task:
+        Task type (``classification``, ``regression``, or ``auto``).
+    partition:
+        Split partition to read or score.
+    ranking_metric:
+        Controls ``ranking_metric``; see the function signature for type and default.
+
+    Returns
+    -------
+    ModelComparison
+        Ranked comparison card with per-estimator metrics.
+    """
     session.assert_can_fit("train")
     comparison = compare_estimators(
         session.dataset,
@@ -224,14 +315,16 @@ def cv_score(
     """Cross-validate an estimator on the train partition only.
 
     Returns mean±std fold metrics, interpretation, limitations, and
+
     recommendations. The test partition is never used for fold membership
+
     or scoring.
 
     Parameters
     ----------
     estimator:
         Unfitted sklearn-compatible estimator.
-    cv / cv_strategy:
+        cv / cv_strategy:
         Fold count or splitter; strategy selects k-fold, stratified,
         group, or time-aware folds when ``cv`` is an integer.
     scoring_metric:
@@ -244,6 +337,15 @@ def cv_score(
         Explicit opt-in when Session-global preprocess already ran.
         Default ``False`` refuses that path even if a fold-local recipe is
         passed (recipes do not rebuild from raw/unpoisoned rows).
+    session:
+        Active Session with dataset and optional split plan attached.
+    task:
+        Task type (``classification``, ``regression``, or ``auto``).
+
+    Returns
+    -------
+    CVScoreResult
+        Cross-validation mean/std metrics and fold summaries.
 
     Notes
     -----
@@ -318,18 +420,21 @@ def nested_cv_score(
     """Outer-loop estimate after inner hyperparameter / recipe-knob search.
 
     Each outer fold chooses estimator params and/or fold-local recipe knobs
+
     (``select_k``, ``n_bins``, …) with inner CV on that fold's training rows
+
     only, then scores the winner on the outer-eval rows. Session test and
+
     validation partitions never enter either loop.
 
     Parameters
     ----------
-    param_grid / param_distributions:
+        param_grid / param_distributions:
         Estimator search space (at most one). Optional when a recipe space
         is provided.
-    recipe_grid / recipe_distributions:
+        recipe_grid / recipe_distributions:
         Fold-local recipe knob space (at most one). Requires ``preprocess``.
-    param_space / recipe_space:
+        param_space / recipe_space:
         Optuna spaces when ``inner_search='optuna'`` (or ``auto`` with these
         args). Declare-style dicts for ``inner_search='evolutionary'``.
         Optuna requires ``pip install 'buildml[optuna]'``.
@@ -337,15 +442,38 @@ def nested_cv_score(
         ``auto``, ``grid``, ``randomized``, ``optuna``, or ``evolutionary``.
     n_trials:
         Optuna inner trials per outer fold; evolutionary ``max_evaluations``.
-    population_size / n_generations:
+        population_size / n_generations:
         Evolutionary GA knobs when ``inner_search='evolutionary'``.
-    outer_cv / inner_cv:
+        outer_cv / inner_cv:
         Outer and inner fold counts or sklearn splitters.
     preprocess:
         Fold-local :class:`PreprocessRecipe` refit in both loops.
     warm_start_studies:
         Opt-in Optuna study sharing across outer folds (default False).
         Safe for Session test/validation (never scored); see nested CV notes.
+    session:
+        Active Session with dataset and optional split plan attached.
+    estimator:
+        Unfitted sklearn-compatible estimator instance.
+    n_iter:
+        Controls ``n_iter``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+    task:
+        Task type (``classification``, ``regression``, or ``auto``).
+    cv_strategy:
+        Controls ``cv_strategy``; see the function signature for type and default.
+    scoring_metric:
+        Controls ``scoring_metric``; see the function signature for type and default.
+    groups:
+        Controls ``groups``; see the function signature for type and default.
+    allow_session_global_preprocess:
+        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+
+    Returns
+    -------
+    NestedCVResult
+        Outer-loop generalization estimate after inner search.
 
     Notes
     -----
@@ -438,8 +566,42 @@ def grid_search(
     """Grid-search estimator params and/or fold-local recipe knobs.
 
     Ranks configurations by mean CV score, never peeking at test. When
+
     ``refit=True`` (default), the winning params/knobs are refit on full
+
     train and become the active :attr:`fit_result`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    estimator:
+        Unfitted sklearn-compatible estimator instance.
+    param_grid:
+        Controls ``param_grid``; see the function signature for type and default.
+    recipe_grid:
+        Controls ``recipe_grid``; see the function signature for type and default.
+    task:
+        Task type (``classification``, ``regression``, or ``auto``).
+    cv:
+        Controls ``cv``; see the function signature for type and default.
+    cv_strategy:
+        Controls ``cv_strategy``; see the function signature for type and default.
+    ranking_metric:
+        Controls ``ranking_metric``; see the function signature for type and default.
+    groups:
+        Controls ``groups``; see the function signature for type and default.
+    preprocess:
+        Controls ``preprocess``; see the function signature for type and default.
+    allow_session_global_preprocess:
+        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+    refit:
+        Controls ``refit``; see the function signature for type and default.
+
+    Returns
+    -------
+    SearchResult
+        Search trials, best params, and optional refit result.
     """
     session.assert_can_fit("train")
     result = run_grid_search(
@@ -509,7 +671,44 @@ def randomized_search(
     """Randomized search over estimator params and/or recipe knobs.
 
     Same leakage contract as :meth:`grid_search`: folds stay inside train;
+
     the winner may be refit onto the full training partition.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    estimator:
+        Unfitted sklearn-compatible estimator instance.
+    param_distributions:
+        Controls ``param_distributions``; see the function signature for type and default.
+    recipe_distributions:
+        Controls ``recipe_distributions``; see the function signature for type and default.
+    n_iter:
+        Controls ``n_iter``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+    task:
+        Task type (``classification``, ``regression``, or ``auto``).
+    cv:
+        Controls ``cv``; see the function signature for type and default.
+    cv_strategy:
+        Controls ``cv_strategy``; see the function signature for type and default.
+    ranking_metric:
+        Controls ``ranking_metric``; see the function signature for type and default.
+    groups:
+        Controls ``groups``; see the function signature for type and default.
+    preprocess:
+        Controls ``preprocess``; see the function signature for type and default.
+    allow_session_global_preprocess:
+        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+    refit:
+        Controls ``refit``; see the function signature for type and default.
+
+    Returns
+    -------
+    SearchResult
+        Search trials, best params, and optional refit result.
     """
     session.assert_can_fit("train")
     result = run_randomized_search(
@@ -583,9 +782,48 @@ def optuna_search(
     """Optuna TPE search with leakage-safe train-fold CV.
 
     Requires ``pip install 'buildml[optuna]'``. ``param_space`` may be a
+
     ``trial -> dict`` callable or a declare-style mapping
+
     (``float`` / ``int`` / ``categorical``). ``recipe_space`` sweeps
+
     fold-local recipe knobs and requires ``preprocess``.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    estimator:
+        Unfitted sklearn-compatible estimator instance.
+    param_space:
+        Controls ``param_space``; see the function signature for type and default.
+    recipe_space:
+        Controls ``recipe_space``; see the function signature for type and default.
+    n_trials:
+        Controls ``n_trials``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+    task:
+        Task type (``classification``, ``regression``, or ``auto``).
+    cv:
+        Controls ``cv``; see the function signature for type and default.
+    cv_strategy:
+        Controls ``cv_strategy``; see the function signature for type and default.
+    ranking_metric:
+        Controls ``ranking_metric``; see the function signature for type and default.
+    groups:
+        Controls ``groups``; see the function signature for type and default.
+    preprocess:
+        Controls ``preprocess``; see the function signature for type and default.
+    allow_session_global_preprocess:
+        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+    refit:
+        Controls ``refit``; see the function signature for type and default.
+
+    Returns
+    -------
+    SearchResult
+        Search trials, best params, and optional refit result.
     """
     session.assert_can_fit("train")
     result = run_optuna_search(
@@ -661,9 +899,60 @@ def evolutionary_search(
     """Genetic-algorithm HPO with leakage-safe train-fold CV.
 
     In-tree NumPy GA (population, tournament selection, crossover/mutation,
+
     elitism) — not random search renamed, not NAS, not a swarm zoo.
+
     ``param_space`` / ``recipe_space`` use the same declare-style float/int/
+
     categorical forms as Optuna declare spaces (dicts only; no trial callables).
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    estimator:
+        Unfitted sklearn-compatible estimator instance.
+    param_space:
+        Controls ``param_space``; see the function signature for type and default.
+    recipe_space:
+        Controls ``recipe_space``; see the function signature for type and default.
+    population_size:
+        Controls ``population_size``; see the function signature for type and default.
+    n_generations:
+        Controls ``n_generations``; see the function signature for type and default.
+    elite_size:
+        Controls ``elite_size``; see the function signature for type and default.
+    crossover_rate:
+        Controls ``crossover_rate``; see the function signature for type and default.
+    mutation_rate:
+        Controls ``mutation_rate``; see the function signature for type and default.
+    tournament_size:
+        Controls ``tournament_size``; see the function signature for type and default.
+    max_evaluations:
+        Controls ``max_evaluations``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+    task:
+        Task type (``classification``, ``regression``, or ``auto``).
+    cv:
+        Controls ``cv``; see the function signature for type and default.
+    cv_strategy:
+        Controls ``cv_strategy``; see the function signature for type and default.
+    ranking_metric:
+        Controls ``ranking_metric``; see the function signature for type and default.
+    groups:
+        Controls ``groups``; see the function signature for type and default.
+    preprocess:
+        Controls ``preprocess``; see the function signature for type and default.
+    allow_session_global_preprocess:
+        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+    refit:
+        Controls ``refit``; see the function signature for type and default.
+
+    Returns
+    -------
+    SearchResult
+        Search trials, best params, and optional refit result.
     """
     session.assert_can_fit("train")
     result = run_evolutionary_search(
@@ -732,8 +1021,27 @@ def save_model(session, path: str | Path) -> Path:
     """Persist the last fitted estimator bundle.
 
     This stores the estimator and feature contract only. Prefer
+
     :meth:`save_pipeline` when impute/encode/scale plans must travel with
+
     the model.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
+
+    Returns
+    -------
+    Path
+        Resolved filesystem path written or loaded.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -743,7 +1051,22 @@ def save_model(session, path: str | Path) -> Path:
 
 
 def load_model(session, path: str | Path) -> Session:
-    """Load a previously saved fitted estimator bundle into this session."""
+    """Load a previously saved fitted estimator bundle into this session.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
+    """
     session._fit_result = load_fit_result(path)
     session._record("load_model", {"path": str(path)})
     return session
@@ -759,9 +1082,13 @@ def save_pipeline(
     """Persist fitted preprocess plans, estimator, and a model card.
 
     Layout includes ``model.joblib``, ``plans.joblib``, ``meta.json``, and
+
     ``model_card`` JSON/Markdown. Persists impute, encode, scale, dates,
+
     outliers, binning, feature selection, and resample (lineage) plans when
+
     present. This is not a Session checkpoint: data, splits, and full
+
     history remain checkpoint concerns.
 
     Parameters
@@ -773,6 +1100,18 @@ def save_pipeline(
         the model card. Use ``None`` to skip evaluation at save time.
     title:
         Optional model-card title.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Path
+        Resolved filesystem path written or loaded.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -864,8 +1203,22 @@ def load_pipeline(session, path: str | Path) -> Session:
     """Load a pipeline bundle (estimator + preprocess plans + model card).
 
     Restores :attr:`fit_result`, preprocess plan attributes, and
+
     :attr:`model_card`. Does not replace the dataset or split; attach
+
     compatible data separately (or via :meth:`checkpoint_load`).
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
     """
     bundle = load_pipeline_bundle(path)
     session._fit_result = bundle.fit_result
@@ -922,6 +1275,8 @@ def predict_from_pipeline(
 ) -> PipelinePredictResult:
     """Score a frame through a saved pipeline bundle in one call.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     path:
@@ -935,11 +1290,23 @@ def predict_from_pipeline(
     apply_plans:
         Replay fitted preprocess plans from the bundle before predict
         (default True).
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    PipelinePredictResult
+        Predictions plus preprocess replay metadata.
 
     Notes
     -----
     Does not mutate this session's dataset or fit_result. Prefer this for
     inference-only scoring of new frames.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if data is None:
         if session._dataset is None:
@@ -975,8 +1342,28 @@ def prepare_design_matrix(
     """Project/sample columns via the active engine before sklearn materialize.
 
     When ``columns`` is omitted and a split exists, prepares the partition
+
     feature+target design matrix. Disclosures record projection and any
+
     sampling; sklearn still requires an in-memory matrix.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    columns:
+        Column names to include or transform.
+    sample_rows:
+        Controls ``sample_rows``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+
+    Returns
+    -------
+    MaterializePrepResult
+        Engine projection/sample disclosure before sklearn materialize.
     """
     if columns is not None:
         result = prepare_design_frame(
@@ -1019,7 +1406,29 @@ def calibration(
     """Probability calibration diagnostics for the fitted classifier.
 
     Returns Brier/ECE, reliability curve points, and interpretation tips.
+
     Optional figure/HTML export uses the viz extra.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    export_figures:
+        Controls ``export_figures``; see the function signature for type and default.
+    export_html:
+        Controls ``export_html``; see the function signature for type and default.
+
+    Returns
+    -------
+    DiagnosticReport
+        Diagnostic tables, curves, and interpretation guidance.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -1053,16 +1462,34 @@ def tune_threshold(
 ) -> DiagnosticReport:
     """Sweep binary decision thresholds with precision/recall/F1 and optional costs.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     partition:
         Rows used for the sweep. Prefer ``validation`` when selecting a
         policy; use ``test`` only to confirm a fixed threshold.
-    fp_cost, fn_cost:
+        fp_cost, fn_cost:
         Non-negative false-positive / false-negative costs. Provide both to
         minimize expected cost on the scored partition.
-    tp_benefit, tn_benefit:
+        tp_benefit, tn_benefit:
         Optional benefits subtracted from cost for true positives / negatives.
+    session:
+        Active Session with dataset and optional split plan attached.
+    export_figures:
+        Controls ``export_figures``; see the function signature for type and default.
+    export_html:
+        Controls ``export_html``; see the function signature for type and default.
+
+    Returns
+    -------
+    DiagnosticReport
+        Diagnostic tables, curves, and interpretation guidance.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -1104,7 +1531,30 @@ def learning_curve(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Compute learning curves on the training partition."""
+    """Compute learning curves on the training partition.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    estimator:
+        Unfitted sklearn-compatible estimator instance.
+    task:
+        Task type (``classification``, ``regression``, or ``auto``).
+    cv:
+        Controls ``cv``; see the function signature for type and default.
+    export_figures:
+        Controls ``export_figures``; see the function signature for type and default.
+    export_html:
+        Controls ``export_html``; see the function signature for type and default.
+
+    Returns
+    -------
+    DiagnosticReport
+        Diagnostic tables, curves, and interpretation guidance.
+    """
     report = learning_curve_report(
         session.dataset,
         session._split_plan,
@@ -1137,7 +1587,33 @@ def feature_importance(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Permutation feature importance on a holdout partition."""
+    """Permutation feature importance on a holdout partition.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    partition:
+        Split partition to read or score.
+    n_repeats:
+        Controls ``n_repeats``; see the function signature for type and default.
+    export_figures:
+        Controls ``export_figures``; see the function signature for type and default.
+    export_html:
+        Controls ``export_html``; see the function signature for type and default.
+
+    Returns
+    -------
+    DiagnosticReport
+        Diagnostic tables, curves, and interpretation guidance.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
+    """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
     report = permutation_importance_report(
@@ -1174,11 +1650,38 @@ def error_slices(
 ) -> DiagnosticReport:
     """Slice prediction errors by one or more columns on a partition.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    by:
+        Column name or sequence of columns used to slice errors.
+    partition:
+        Split partition to read or score.
+    max_segments:
+        Controls ``max_segments``; see the function signature for type and default.
+    min_segment_n:
+        Controls ``min_segment_n``; see the function signature for type and default.
+    export_html:
+        Controls ``export_html``; see the function signature for type and default.
+
+    Returns
+    -------
+    DiagnosticReport
+        Diagnostic tables, curves, and interpretation guidance.
+
     Notes
     -----
     Observational only: segment gaps are not fairness proof. Prefer
     validation for exploration and keep test for a final estimate.
     Segments with ``n < min_segment_n`` are listed under ``small_segments``.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")

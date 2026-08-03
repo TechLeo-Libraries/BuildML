@@ -44,6 +44,37 @@ def evaluate_metalearning(
     disclosure that this is not out-of-task generalization.
 
     Holdout rows are never used for meta-training.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features, target, and task columns.
+    plan:
+        Fitted :class:`~buildml.metalearning.results.MetaLearningPlan`.
+    split_plan:
+        Split plan; required unless ``partition='all'``.
+    partition:
+        Holdout partition to score (``validation``, ``test``, ``train``, or ``all``).
+    k_shot:
+        Override plan ``k_shot`` for episodic support size.
+    n_query:
+        Override plan ``n_query`` for episodic query size.
+    n_way:
+        Override plan ``n_way`` for classes per episode.
+    prefer_novel_tasks:
+        When ``True``, score task ids absent from meta-train first.
+    random_state:
+        Seed for episodic support/query sampling.
+
+    Returns
+    -------
+    MetaLearningEvalResult
+        Aggregate and per-task episodic metrics with overlap disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When plan, partition, or column preconditions are invalid.
     """
     if plan is None:
         raise ValidationError("No MetaLearningPlan. Call fit_metalearning first.")

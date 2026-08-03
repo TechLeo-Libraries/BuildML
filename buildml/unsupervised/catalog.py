@@ -41,6 +41,20 @@ DEFAULT_REDUCE_VIZ = "umap" if umap_available() else "pca"
 
 
 def method_assign_strategy(method: str) -> AssignStrategy:
+    """Perform method assign strategy for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+
+Returns
+-------
+AssignStrategy
+    Return value (AssignStrategy) produced by this operation.
+    """
     if method in {"kmeans", "dec", "idec"}:
         return "native"
     if method == "gmm":
@@ -51,6 +65,20 @@ def method_assign_strategy(method: str) -> AssignStrategy:
 
 
 def method_requires_extra(method: str) -> str | None:
+    """Perform method requires extra for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+
+Returns
+-------
+str | None
+    Return value (str | None) produced by this operation.
+    """
     if method == "hdbscan":
         return "unsupervised"
     if method in TORCH_METHODS:
@@ -59,6 +87,20 @@ def method_requires_extra(method: str) -> str | None:
 
 
 def method_backend(method: str) -> str:
+    """Perform method backend for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+
+Returns
+-------
+str
+    Return value (str) produced by this operation.
+    """
     if method in TORCH_METHODS:
         return "torch"
     if method == "hdbscan":
@@ -67,13 +109,40 @@ def method_backend(method: str) -> str:
 
 
 def resolve_density_method(requested: str | None = None) -> str:
-    """Pick HDBSCAN when installed unless caller explicitly requests dbscan."""
+    """Pick HDBSCAN when installed unless caller explicitly requests dbscan.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+requested:
+    requested (str | None).
+
+Returns
+-------
+str
+    Return value (str) produced by this operation.
+    """
     if requested is not None:
         return requested
     return DEFAULT_DENSITY_METHOD
 
 
 def list_cluster_methods(*, include_torch: bool = True) -> tuple[dict[str, Any], ...]:
+    """List catalog entries for cluster methods.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+include_torch:
+    include torch (bool).
+
+Returns
+-------
+tuple[dict[str, Any], ...]
+    Tuple of results (tuple[dict[str, Any], ...]) for downstream Session steps.
+    """
     rows: list[dict[str, Any]] = []
     for name in sorted(CORE_SKLEARN_METHODS):
         rows.append(
@@ -108,7 +177,15 @@ def list_cluster_methods(*, include_torch: bool = True) -> tuple[dict[str, Any],
 
 
 def unsupervised_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for clustering / reduction backends."""
+    """Honest capability matrix for clustering / reduction backends.
+
+Reports installed backends, supported methods, evaluation rules, install hints, and explicit non-goals for teaching overlays.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -151,6 +228,15 @@ def unsupervised_capability_matrix() -> dict[str, Any]:
 
 
 def list_reduce_methods() -> tuple[dict[str, Any], ...]:
+    """List catalog entries for reduce methods.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Returns
+-------
+tuple[dict[str, Any], ...]
+    Tuple of results (tuple[dict[str, Any], ...]) for downstream Session steps.
+    """
     rows: list[dict[str, Any]] = []
     for name in sorted(REDUCE_METHODS_CORE):
         rows.append(

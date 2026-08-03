@@ -24,6 +24,17 @@ class TSDecomposeResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise decomposition output as a JSON-safe mapping for history logs.
+
+        Omits full trend/seasonal/residual vectors so Session history stays small
+        while preserving method, scope metadata, and disclosure strings.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, column names, point count, seasonal period, and disclosure
+            strings — not the full component vectors.
+        """
         return {
             "method": self.method,
             "target_column": self.target_column,
@@ -36,6 +47,7 @@ class TSDecomposeResult:
         }
 
     def show(self) -> None:
+        """Print a one-line summary and the first few disclosure bullets."""
         print(
             f"TSDecompose · {self.method} · n={self.n_points} · "
             f"period={self.seasonal_period}"
@@ -68,6 +80,16 @@ class TSDiagnosticsResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise diagnostics output as a JSON-safe mapping for history logs.
+
+        Keeps test statistics and lag counts but drops full ACF/PACF vectors for
+        compact audit trails.
+
+        Returns
+        -------
+        dict[str, Any]
+            Lag counts, ADF/KPSS statistics when computed, and disclosure strings.
+        """
         return {
             "target_column": self.target_column,
             "time_column": self.time_column,
@@ -83,6 +105,7 @@ class TSDiagnosticsResult:
         }
 
     def show(self) -> None:
+        """Print lag counts and stationarity test p-values when available."""
         print(f"TSDiagnostics · n={self.n_points} · acf_lags={self.acf_lags}")
         if self.adf_pvalue is not None:
             print(f"  ADF p={self.adf_pvalue:.4g}")
@@ -104,6 +127,16 @@ class TSChangepointResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise changepoint output as a JSON-safe mapping for history logs.
+
+        Records indices and segment counts without embedding per-segment means in
+        history payloads.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, indices, segment count, and disclosure strings.
+        """
         return {
             "method": self.method,
             "target_column": self.target_column,
@@ -131,6 +164,16 @@ class TSFeatureResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise feature output as a JSON-safe mapping for history logs.
+
+        Keeps rolling window metadata and dominant period estimate without full
+        rolling or spectral vectors.
+
+        Returns
+        -------
+        dict[str, Any]
+            Rolling window, dominant period estimate, and disclosure strings.
+        """
         return {
             "target_column": self.target_column,
             "n_points": self.n_points,
@@ -157,6 +200,17 @@ class TSAnalysisResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise the combined analysis as a JSON-safe mapping for history logs.
+
+        Flags which sub-blocks ran and preserves top-level disclosures without
+        nesting full component payloads.
+
+        Returns
+        -------
+        dict[str, Any]
+            Scope, column names, point count, flags for which blocks ran, and
+            top-level disclosures — not nested component vectors.
+        """
         return {
             "target_column": self.target_column,
             "time_column": self.time_column,
@@ -171,6 +225,7 @@ class TSAnalysisResult:
         }
 
     def show(self) -> None:
+        """Print the analysis header and delegate to nested result ``show`` methods."""
         print(
             f"TSAnalysis · {self.target_column} · scope={self.scope} · n={self.n_points}"
         )

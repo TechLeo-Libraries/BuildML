@@ -43,7 +43,34 @@ def save_metalearning_bundle(
     eval_result: MetaLearningEvalResult | None = None,
     adapt_result: MetaAdaptResult | None = None,
 ) -> Path:
-    """Write a meta-learning bundle directory (``buildml.metalearning_bundle.v1``)."""
+    """Write a meta-learning bundle directory (``buildml.metalearning_bundle.v1``).
+
+    Persists the plan and optional fit/eval/adapt summaries as joblib + JSON
+    metadata. Distinct from Session checkpoints.
+
+    Parameters
+    ----------
+    path:
+        Destination directory (created if missing).
+    plan:
+        Fitted :class:`~buildml.metalearning.results.MetaLearningPlan`.
+    fit_result:
+        Optional fit summary to embed in ``meta.json``.
+    eval_result:
+        Optional evaluation summary to embed in ``meta.json``.
+    adapt_result:
+        Optional adaptation summary to embed in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No MetaLearningPlan to save.")
     destination = Path(path)
@@ -66,7 +93,25 @@ def save_metalearning_bundle(
 
 
 def load_metalearning_bundle(path: str | Path) -> MetaLearningPlan:
-    """Load a meta-learning bundle into a :class:`MetaLearningPlan`."""
+    """Load a meta-learning bundle into a :class:`MetaLearningPlan`.
+
+    Validates bundle format version and plan object type before returning.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``metalearning_plan.joblib``.
+
+    Returns
+    -------
+    MetaLearningPlan
+        Deserialized plan with estimators and label encoder attached.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or plan type is wrong.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "metalearning_plan.joblib"

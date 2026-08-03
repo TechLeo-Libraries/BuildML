@@ -65,7 +65,17 @@ class CausalAssumptions:
     allow_empty_confounders: bool = False
 
     def validate(self) -> None:
-        """Raise :class:`ValidationError` when the declaration is incomplete."""
+        """Raise :class:`ValidationError` when the declaration is incomplete.
+
+        Enforces treatment/outcome presence, backdoor ATE scope, non-empty
+        confounders (unless waived), and explicit unconfoundedness/positivity
+        acknowledgements before any fit or estimate call proceeds.
+
+        Raises
+        ------
+        ValidationError
+            When any required field is missing or inconsistent.
+        """
         if not str(self.treatment).strip():
             raise ValidationError(
                 "CausalAssumptions.treatment is required. "
@@ -128,6 +138,17 @@ class CausalAssumptions:
             )
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise declared assumptions for Session history and bundles.
+
+        Emits the treatment/outcome/confounder contract and acknowledgement
+        flags so checkpoints and walkthrough panels can replay what the caller
+        declared without re-running validation.
+
+        Returns
+        -------
+        dict[str, Any]
+            Treatment, outcome, confounders, estimand, and acknowledgement flags.
+        """
         return {
             "treatment": self.treatment,
             "outcome": self.outcome,
@@ -142,7 +163,27 @@ class CausalAssumptions:
 
     @classmethod
     def from_mapping(cls, payload: CausalAssumptions | Mapping[str, Any]) -> CausalAssumptions:
-        """Build assumptions from a mapping (Session / AI tool kwargs)."""
+        """Build assumptions from a mapping (Session / AI tool kwargs).
+
+        Accepts an existing :class:`CausalAssumptions` instance unchanged; otherwise
+        requires ``treatment``, ``outcome``, and ``confounders`` keys with the
+        acknowledgement booleans supplied explicitly by the caller.
+
+        Parameters
+        ----------
+        payload:
+            Assumption instance or mapping with causal column contract fields.
+
+        Returns
+        -------
+        CausalAssumptions
+            Parsed assumption object (not yet validated — call ``validate()``).
+
+        Raises
+        ------
+        ValidationError
+            When ``payload`` is not a mapping or omits required keys.
+        """
         if isinstance(payload, CausalAssumptions):
             return payload
         if not isinstance(payload, Mapping):
@@ -185,6 +226,16 @@ class CausalConfig:
     propensity_model: str = "logistic_regression"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise user-facing causal knobs for plan metadata and bundles.
+
+        Captures method, backend, bootstrap, clipping, and nuisance model
+        choices chosen at fit time for reproducibility in causal bundles.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, backend, bootstrap, clipping, and nuisance model names.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -197,7 +248,22 @@ class CausalConfig:
 
 
 def coerce_confounders(confounders: Sequence[str] | None) -> tuple[str, ...] | None:
-    """Normalize confounders; ``None`` means 'not declared' (incomplete)."""
+    """Normalize confounders; ``None`` means 'not declared' (incomplete).
+
+    Converts caller-supplied sequences to a tuple of strings for
+    :class:`CausalAssumptions` construction; ``None`` signals the confounder
+    list was omitted rather than intentionally empty.
+
+    Parameters
+    ----------
+    confounders:
+        Confounder column names, or ``None`` when not yet declared.
+
+    Returns
+    -------
+    tuple[str, ...] or None
+        Normalised confounder names, or ``None`` when input was ``None``.
+    """
     if confounders is None:
         return None
     return tuple(str(c) for c in confounders)

@@ -23,6 +23,22 @@ def compute_graph_metrics(
 ) -> tuple[np.ndarray, list[str], list[str]]:
     """Compute per-node classical graph metrics under leakage rules.
 
+    Callers pass an already mode-filtered edge set (train-induced at fit;
+    train↔holdout at inductive score; full graph when transductive).
+
+    Parameters
+    ----------
+    n_nodes:
+        Number of nodes (Session rows).
+    src, dst:
+        Edge endpoint row indices after mode filtering.
+    directed:
+        When False, build an undirected NetworkX graph.
+    mode:
+        ``inductive`` or ``transductive`` graph-learning mode.
+    train_mask:
+        Reserved for future mask-aware disclosures.
+
     Returns
     -------
     features:
@@ -127,7 +143,34 @@ def build_classical_design(
     graph_feats: np.ndarray | None,
     graph_names: list[str] | None,
 ) -> tuple[np.ndarray, list[str]]:
-    """Concatenate tabular + graph metric features."""
+    """Concatenate tabular and graph-metric features for classical Graph ML.
+
+    At least one non-empty block is required so sklearn receives a design
+    matrix with one or more columns.
+
+    Parameters
+    ----------
+    tabular:
+        Numeric tabular node features, or empty array.
+    tabular_names:
+        Column names aligned to ``tabular`` columns.
+    graph_feats:
+        Optional NetworkX-derived metric matrix.
+    graph_names:
+        Column names aligned to ``graph_feats`` columns.
+
+    Returns
+    -------
+    X:
+        Horizontally stacked design matrix.
+    names:
+        Combined feature names in column order.
+
+    Raises
+    ------
+    ValidationError
+        When both tabular and graph blocks are empty.
+    """
     parts: list[np.ndarray] = []
     names: list[str] = []
     if tabular is not None and tabular.size and tabular.shape[1] > 0:
@@ -148,5 +191,21 @@ def design_frame(
     X: np.ndarray,
     names: list[str],
 ) -> pd.DataFrame:
-    """Wrap a design matrix as a DataFrame for sklearn pipelines."""
+    """Wrap a design matrix as a DataFrame for sklearn pipelines.
+
+    Preserves feature names so classical estimators and history summaries stay
+    aligned with the concatenated tabular + graph-metric columns.
+
+    Parameters
+    ----------
+    X:
+        Numeric design matrix of shape ``(n_nodes, n_features)``.
+    names:
+        Column names aligned to ``X`` columns.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Feature frame suitable for sklearn estimators.
+    """
     return pd.DataFrame(X, columns=names)

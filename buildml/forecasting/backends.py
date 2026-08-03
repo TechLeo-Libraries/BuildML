@@ -21,6 +21,12 @@ from buildml.forecasting.extras import (
 
 @dataclass(slots=True)
 class IndustryFitOutcome:
+    """Container for a train-fitted industry forecasting backend.
+
+    Wraps the fitted statsmodels, Prophet, or neuralforecast estimator together
+    with backend metadata and honesty disclosures for the ForecastPlan.
+    """
+
     estimator: Any
     backend: str
     method: str
@@ -42,7 +48,46 @@ def fit_industry_backend(
     nbeats_horizon: int = 7,
     max_iter: int = 50,
 ) -> IndustryFitOutcome:
-    """Fit an industry backend on train target history."""
+    """Fit an industry forecasting backend on train target history.
+
+    Routes ``method`` to statsmodels (ARIMA/ETS/SARIMAX), Prophet, or N-BEATS
+    and returns a serialisable estimator payload for :class:`ForecastPlan`.
+
+    Parameters
+    ----------
+    y:
+        One-dimensional train target series in chronological order.
+    method:
+        Industry method key such as ``ets``, ``arima``, ``prophet``, or ``nbeats``.
+    seasonal_period:
+        Seasonal period for ETS, SARIMAX, or Prophet seasonality toggles.
+    exog:
+        Optional contemporaneous exogenous matrix aligned with ``y``.
+    order:
+        ARIMA ``(p, d, q)`` order; auto-selected for ``auto_arima`` when ``None``.
+    seasonal_order:
+        SARIMAX seasonal ``(P, D, Q, s)`` tuple.
+    random_state:
+        Seed for stochastic N-BEATS training.
+    nbeats_input_size:
+        N-BEATS lookback window length.
+    nbeats_horizon:
+        N-BEATS native forecast horizon stored on the fitted model.
+    max_iter:
+        Maximum training steps for N-BEATS.
+
+    Returns
+    -------
+    IndustryFitOutcome
+        Fitted estimator wrapper, backend name, and disclosure strings.
+
+    Raises
+    ------
+    MissingExtraError
+        When the requested method requires an optional extra that is not installed.
+    ValidationError
+        When ``method`` is unknown or N-BEATS train length is insufficient.
+    """
     y = np.asarray(y, dtype=float).reshape(-1)
     n = int(y.shape[0])
     disclosures: list[str] = []
@@ -305,7 +350,33 @@ def industry_predict(
     history: list[float] | None = None,
     exog_future: np.ndarray | None = None,
 ) -> tuple[float, ...]:
-    """Multi-step forecast from a fitted industry estimator wrapper."""
+    """Generate a multi-step forecast from a fitted industry estimator wrapper.
+
+    Dispatches on the estimator ``kind`` stored during
+    :func:`fit_industry_backend` for statsmodels, Prophet, or N-BEATS paths.
+
+    Parameters
+    ----------
+    estimator:
+        Industry estimator dict with ``kind`` and ``result`` keys.
+    steps:
+        Number of future periods to forecast.
+    history:
+        Target history required for N-BEATS rolling context.
+    exog_future:
+        Future exogenous rows for ARIMA/SARIMAX exog-aware models.
+
+    Returns
+    -------
+    tuple[float, ...]
+        Forecast values for the requested horizon.
+
+    Raises
+    ------
+    ValidationError
+        When the payload is invalid, N-BEATS history is missing, or the kind
+        is unsupported.
+    """
     if not isinstance(estimator, dict) or "kind" not in estimator:
         raise ValidationError("Invalid industry estimator payload")
     kind = estimator["kind"]
@@ -352,6 +423,30 @@ def industry_one_step(
     *,
     exog_row: np.ndarray | None = None,
 ) -> float:
-    """One-step ahead prediction for rolling evaluation."""
+    """Predict one step ahead for rolling holdout evaluation.
+
+    Thin wrapper around :func:`industry_predict` used by
+    :func:`rolling_one_step_predictions` so industry backends share the same
+    expanding-history protocol as lag models.
+
+    Parameters
+    ----------
+    estimator:
+        Industry estimator dict from :func:`fit_industry_backend`.
+    history:
+        Chronologically ordered target history ending at the forecast origin.
+    exog_row:
+        Optional contemporaneous exogenous values for the scored step.
+
+    Returns
+    -------
+    float
+        One-step-ahead point forecast.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator payload is invalid or N-BEATS history is missing.
+    """
     preds = industry_predict(estimator, steps=1, history=history, exog_future=exog_row)
     return float(preds[0])

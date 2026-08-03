@@ -115,6 +115,55 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         difficulty=CORE,
     ),
     _layer(
+        "forecast-classical-ets-arima",
+        plain=(
+            "When statsmodels is installed, BuildML can fit classical ETS (Holt-Winters) and ARIMA-family "
+            "models on the target history alone. SARIMAX can add seasonal structure and optional exog "
+            "columns. These are not the same as lag_ridge — read the method on the plan."
+        ),
+        analogy=(
+            "Lag models ask 'what do the last few days look like as features?' ETS/ARIMA ask 'how does "
+            "the level, trend, and seasonal pattern evolve?'"
+        ),
+        steps=(
+            "Use time_split before any forecast fit.",
+            "Start with method='auto' (often ETS) or pick ets/arima/sarimax explicitly.",
+            "Only pass exog_columns to arima/sarimax/lag paths — ETS/Prophet/N-BEATS refuse exog.",
+            "Evaluate with rolling_one_step before trusting long generate paths.",
+            "Read auto_arima warnings — it is a small AIC grid, not pmdarima.",
+        ),
+        use=(
+            "Smooth seasonal business series with enough history for trend/seasonal components.",
+            "When you want a classical baseline before lag models or neural extras.",
+        ),
+        avoid=(
+            "Do not pass promo columns to ETS and assume they were used.",
+            "Do not compare ETS generate metrics to lag_ridge without naming the method change.",
+        ),
+        myths=(
+            (
+                "ETS is always better than lag_ridge.",
+                "Neither is universal — evaluate both on your holdout protocol.",
+            ),
+            (
+                "auto_arima is pmdarima.",
+                "BuildML's auto_arima is a lightweight in-tree AIC search with explicit warnings.",
+            ),
+        ),
+        example=(
+            "session.time_split(test_size=0.2)",
+            "session.fit_forecast(method='ets', seasonal_period=7)",
+            "session.evaluate_forecast(partition='validation', protocol='rolling_one_step')",
+        ),
+        check=(
+            "Is your train window long enough for the seasonal period you chose?",
+            "Did you read plan.univariate before adding exog columns?",
+        ),
+        tools=("time_split", "fit_forecast", "evaluate_forecast", "forecast_capability_matrix"),
+        terms=("seasonality", "forecasting", "time split"),
+        difficulty=CORE,
+    ),
+    _layer(
         "forecast-univariate-vs-exog",
         plain=(
             "A univariate forecast uses only the target's own history. An exogenous forecast also uses "

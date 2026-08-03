@@ -264,8 +264,11 @@ def rag_status(
         in {"save_rag_bundle", "load_rag_bundle"}
         for r in records
     )
+    from buildml.explain.capability_status import attach_capability_matrix
+
     if index_result is None:
-        return {
+        return attach_capability_matrix(
+            {
             "enabled": False,
             "present": saw_rag or corpus is not None,
             "disclosures": (
@@ -292,7 +295,9 @@ def rag_status(
                 "n_documents": getattr(corpus, "n_documents", None),
                 "source": getattr(corpus, "source", None),
             },
-        }
+        },
+            "rag_capability_matrix",
+        )
 
     index_payload = (
         index_result.to_dict() if hasattr(index_result, "to_dict") else dict(index_result)
@@ -379,7 +384,8 @@ def rag_status(
             "source": getattr(corpus, "source", None),
         }
 
-    return {
+    return attach_capability_matrix(
+        {
         "enabled": True,
         "present": True,
         "disclosures": disclosures,
@@ -410,7 +416,9 @@ def rag_status(
             "provider_model": generate_payload.get("provider_model"),
         },
         "corpus": corpus_payload,
-    }
+    },
+        "rag_capability_matrix",
+    )
 
 
 def rag_status_for_session(session: Any) -> dict[str, Any]:

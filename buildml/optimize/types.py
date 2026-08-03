@@ -50,6 +50,16 @@ class DecisionConfig:
     lp_max_fraction: float = 1.0
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise decision configuration knobs for plan metadata.
+
+        Converts dataclass fields to a JSON-friendly dict stored on
+        :class:`~buildml.optimize.results.DecisionPlan`.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, backend, cost, and allocation settings.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -90,6 +100,16 @@ class CostModel:
     extras: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the cost model attached to a decision plan.
+
+        Exports binary expected-cost knobs or multiclass matrix entries for
+        bundle metadata and history logs.
+
+        Returns
+        -------
+        dict[str, Any]
+            Cost kind, numeric knobs, matrix, labels, and formula text.
+        """
         return {
             "kind": self.kind,
             "fp_cost": self.fp_cost,

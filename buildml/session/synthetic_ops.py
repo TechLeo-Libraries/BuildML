@@ -35,7 +35,48 @@ def fit_synthesizer_op(
     epochs: int = 300,
     batch_size: int = 500,
 ):
-    """Fit a tabular synthesizer on Session **train** only.
+    """Fit a tabular synthesizer on Session train rows only.
+
+    Delegates to :func:`buildml.synthetic.fit.fit_synthesizer`, stores the
+    :class:`~buildml.synthetic.results.SynthesizerPlan` on Session, and records
+    the fit. Follow with :func:`sample_synthetic_op` to draw synthetic rows.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    backend:
+        Optional backend override (``native`` or ``sdv`` when installed).
+    method:
+        Synthesizer method key (``gaussian_copula``, ``ctgan``, etc.).
+    columns:
+        Optional explicit columns to model; ``None`` uses train numerics/categoricals.
+    random_state:
+        Seed for stochastic fitting and sampling reproducibility.
+    smooth_sigma:
+        Gaussian smoothing for numeric marginals in copula methods.
+    correlation_ridge:
+        Ridge added to correlation estimates for numerical stability.
+    target_column:
+        Optional target column for conditional/tabular-GAN setups.
+    k_neighbors:
+        Neighbors for SMOTE-like oversampling strategies when applicable.
+    sampling_strategy:
+        Class sampling strategy for conditional oversampling methods.
+    epochs:
+        Training epochs for neural synthesizer backends.
+    batch_size:
+        Minibatch size for neural synthesizer backends.
+
+    Returns
+    -------
+    SyntheticFitResult
+        Serializable fit summary including schema and method disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no split plan exists on the Session.
 
     Notes
     -----
@@ -99,7 +140,39 @@ def sample_synthetic_op(
     provenance_column: str = "_synthetic",
     validate: bool = False,
 ):
-    """Sample from the frozen synthesizer; optionally extend train with provenance."""
+    """Sample synthetic rows from the frozen synthesizer plan.
+
+    Delegates to :func:`buildml.synthetic.sample.sample_and_maybe_merge`.
+    When ``merge_mode='extend_train'``, synthetic rows are appended to train
+    with provenance metadata and the split plan is updated.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a synthesizer plan from :func:`fit_synthesizer_op`.
+    n:
+        Number of rows to sample; defaults to train size when ``None``.
+    random_state:
+        Optional seed override for this sampling call.
+    condition:
+        Optional column-value conditions for conditional sampling.
+    merge_mode:
+        ``none`` returns a frame only; ``extend_train`` merges into Session train.
+    provenance_column:
+        Boolean column marking synthetic rows when merging into train.
+    validate:
+        When True, run post-sample schema/range checks and attach warnings.
+
+    Returns
+    -------
+    SyntheticSampleResult
+        Sampled frame and merge metadata. May update Session dataset/split.
+
+    Raises
+    ------
+    ValidationError
+        When no synthesizer plan or split plan exists on the Session.
+    """
     plan = getattr(session, "_synthesizer_plan", None)
     if plan is None:
         raise ValidationError(
@@ -170,7 +243,39 @@ def evaluate_synthetic_op(
     random_state: int = 0,
     estimator: Literal["auto", "logistic", "ridge"] = "auto",
 ):
-    """Evaluate the frozen synthesizer (fidelity or TSTR utility)."""
+    """Evaluate the frozen synthesizer for fidelity or TSTR utility.
+
+    Delegates to :func:`buildml.synthetic.evaluate.evaluate_synthetic`.
+    Holdout real data is used only for comparison — never to refit the synthesizer.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a synthesizer plan from :func:`fit_synthesizer_op`.
+    mode:
+        ``fidelity`` compares marginals/joints; ``tstr`` trains on synthetic
+        and tests on real holdout rows.
+    eval_backend:
+        Metrics backend (``auto``, ``native``, or ``sdmetrics`` when installed).
+    partition:
+        Real-data holdout partition for comparison or TSTR evaluation.
+    n_synthetic:
+        Synthetic row count for evaluation draws; defaults to holdout size.
+    random_state:
+        Seed for synthetic draws during evaluation.
+    estimator:
+        Downstream estimator for TSTR utility mode.
+
+    Returns
+    -------
+    SyntheticEvalResult
+        Fidelity or TSTR metrics and evaluation disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no synthesizer plan exists on the Session.
+    """
     plan = getattr(session, "_synthesizer_plan", None)
     if plan is None:
         raise ValidationError(
@@ -205,12 +310,44 @@ def evaluate_synthetic_op(
 
 
 def synthetic_capability_matrix_op() -> dict[str, Any]:
+    """Return the synthetic-data backend/method capability matrix.
+
+    Delegates to :func:`buildml.synthetic.catalog.synthetic_capability_matrix`.
+    Use before :func:`fit_synthesizer_op` to see which methods require SDV extras.
+
+    Returns
+    -------
+    dict
+        Nested map of backend identifiers to supported synthesizer methods.
+    """
     from buildml.synthetic.catalog import synthetic_capability_matrix
 
     return synthetic_capability_matrix()
 
 
 def save_synthetic_bundle_op(session, path: str | Path) -> Path:
+    """Persist the active synthesizer plan as ``buildml.synthetic_bundle.v1``.
+
+    Delegates to :func:`buildml.synthetic.checkpoint.save_synthetic_bundle`.
+    Reload with :func:`load_synthetic_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a synthesizer plan from :func:`fit_synthesizer_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no synthesizer plan exists on the Session.
+    """
     plan = getattr(session, "_synthesizer_plan", None)
     if plan is None:
         raise ValidationError("No SynthesizerPlan to save.")
@@ -233,6 +370,23 @@ def save_synthetic_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_synthetic_bundle_op(session, path: str | Path):
+    """Load a synthetic-data bundle into this Session.
+
+    Delegates to :func:`buildml.synthetic.checkpoint.load_synthetic_bundle`
+    and clears prior fit/eval/sample results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded synthesizer plan.
+    path:
+        Path to a ``buildml.synthetic_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with synthesizer plan attached for chaining.
+    """
     plan = load_synthetic_bundle(path)
     session._synthesizer_plan = plan
     session._synthetic_fit_result = None

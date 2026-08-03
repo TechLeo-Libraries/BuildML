@@ -6,7 +6,22 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_online`` history."""
+    """Build a compact history payload from an online fit result.
+
+    Strips heavy estimator objects so Session history records only the fields
+    needed for walkthrough overlays and audit replay.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.online.results.OnlineFitResult` or compatible mapping;
+        ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, estimator, init chunk size, and remaining train rows.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -23,7 +38,22 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def update_result_summary(update_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``partial_fit_online`` history."""
+    """Build a compact history payload from a partial_fit update result.
+
+    Captures chunk size, cumulative seen rows, and drift notes for explain
+    overlays without serializing the full update ledger.
+
+    Parameters
+    ----------
+    update_result:
+        :class:`~buildml.online.results.OnlineUpdateResult` or compatible
+        mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Update mode, chunk row count, drift notes, and refit fallback flag.
+    """
     if update_result is None:
         return {}
     payload = (
@@ -42,7 +72,22 @@ def update_result_summary(update_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_online`` history."""
+    """Build a compact history payload from an online evaluation result.
+
+    Records holdout partition metrics and drift disclosures for explain overlays
+    without embedding raw prediction arrays.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.online.results.OnlineEvalResult` or compatible mapping;
+        ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, metrics, drift flags, and incremental state counters.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -60,7 +105,22 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
 
 
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``predict_online`` history."""
+    """Build a compact history payload from an online predict result.
+
+    Records partition and prediction count without serializing the full
+    prediction tuple for Session history.
+
+    Parameters
+    ----------
+    predict_result:
+        :class:`~buildml.online.results.OnlinePredictResult` or compatible
+        mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, task, row count, and prediction count.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -85,7 +145,29 @@ def online_status(
     eval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for online / continual learning."""
+    """Build a factual walkthrough disclosure for online / continual learning.
+
+    Combines live plan state, optional fit/update/eval summaries, and Session
+    history to produce an explain overlay with capability matrix attachment.
+
+    Parameters
+    ----------
+    plan:
+        Optional live :class:`~buildml.online.results.OnlinePlan`.
+    fit_result:
+        Optional last fit result for disclosure context.
+    update_result:
+        Optional last update result for disclosure context.
+    eval_result:
+        Optional last evaluation result for disclosure context.
+    history:
+        Session operation history records used to detect prior online ops.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, backend/estimator summary, disclosures, and capability matrix.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -149,7 +231,10 @@ def online_status(
             else dict(update_result)
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_online_plan": enabled,
@@ -173,11 +258,27 @@ def online_status(
             "on Session train chunks. Holdout is evaluation-only. Not a streaming "
             "platform; not causal; not federated."
         ),
-    }
+    },
+        "online_capability_matrix",
+    )
 
 
 def online_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build online status disclosure from a Session object's private state.
+
+    Reads ``_online_plan``, fit/update/eval results, and history from the Session
+    and delegates to :func:`online_status`.
+
+    Parameters
+    ----------
+    session:
+        BuildML Session instance with optional online-learning attachments.
+
+    Returns
+    -------
+    dict[str, Any]
+        Walkthrough payload from :func:`online_status`.
+    """
     return online_status(
         getattr(session, "_online_plan", None),
         fit_result=getattr(session, "_online_fit_result", None),

@@ -51,7 +51,13 @@ def main() -> None:
         "test_metrics": metrics_round(dict(getattr(test, "metrics", {}) or {})),
         "bundle_path": str(bundle),
         "leakage_controls": ["Pretext+probe fit on train", "Test after lock"],
-        "industry_comparison": {"status": "stub"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: PCA embedding + logistic probe twin on the same "
+                "split; run script then baseline_industry.py for results/comparison.json."
+            ),
+        },
         "limitations": ["Tabular masked pretext only in this proof"],
     })
     print("ssl-representation-probe OK", getattr(test, "metrics", test))

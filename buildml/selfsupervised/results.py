@@ -32,6 +32,16 @@ class SelfSupervisedPlan:
     bundle_format: str = "buildml.ssl_bundle.v2"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the SSL plan for bundles and history logs.
+
+        Captures method, modality, column contract, and diagnostics without
+        embedding full encoder weight arrays.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-serialisable plan summary.
+        """
         return {
             "method": self.method,
             "modality": self.modality,
@@ -67,6 +77,16 @@ class SelfSupervisedFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise SSL pretext fit output for history logs.
+
+        Records method, train row count, latent width, and loss diagnostics after
+        train-only pretext fit completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fit metadata and disclosure strings.
+        """
         return {
             "method": self.method,
             "modality": self.modality,
@@ -94,6 +114,15 @@ class SelfSupervisedTransformResult:
     disclosures: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise SSL transform output without embedding full arrays.
+
+        Records partition, row count, representation column names, and attach flag.
+
+        Returns
+        -------
+        dict[str, Any]
+            Transform metadata and disclosures.
+        """
         return {
             "partition": self.partition,
             "n_rows": self.n_rows,
@@ -120,6 +149,16 @@ class SSLHeadPlan:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the SSL head plan for bundles and history logs.
+
+        Captures estimator choice, labeled train counts, and class labels without
+        embedding the fitted sklearn estimator object.
+
+        Returns
+        -------
+        dict[str, Any]
+            Head plan metadata and disclosures.
+        """
         return {
             "estimator_name": self.estimator_name,
             "target_column": self.target_column,
@@ -147,6 +186,16 @@ class SSLHeadFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise SSL head fit output for history logs.
+
+        Records labeled/unlabeled train counts and class labels after head fit on
+        frozen representations completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Head fit metadata and disclosures.
+        """
         return {
             "estimator_name": self.estimator_name,
             "n_labeled_train": self.n_labeled_train,
@@ -172,6 +221,16 @@ class SelfSupervisedEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout SSL evaluation metrics for history logs.
+
+        Records partition, labeled/unlabeled counts, and classification metrics
+        without listing individual predictions.
+
+        Returns
+        -------
+        dict[str, Any]
+            Evaluation metadata, metrics dict, and disclosures.
+        """
         return {
             "partition": self.partition,
             "n_rows": self.n_rows,

@@ -71,7 +71,23 @@ __all__ = [
 
 
 def declare_causal_assumptions(**kwargs: Any) -> Any:
-    """Validate and return a :class:`CausalAssumptions` instance."""
+    """Validate and return a :class:`CausalAssumptions` instance.
+
+    Convenience entry point for Session and AI tools: parses keyword arguments
+    into :class:`~buildml.causal.types.CausalAssumptions`, validates the full
+    backdoor declaration, and returns the ready-to-fit object.
+
+    Parameters
+    ----------
+    **kwargs:
+        Mapping accepted by :meth:`~buildml.causal.types.CausalAssumptions.from_mapping`
+        (``treatment``, ``outcome``, ``confounders``, acknowledgement flags).
+
+    Returns
+    -------
+    CausalAssumptions
+        Validated assumption object safe to pass to :func:`fit_causal`.
+    """
     from buildml.causal.types import CausalAssumptions
 
     assumptions = CausalAssumptions.from_mapping(kwargs)

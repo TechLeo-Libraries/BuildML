@@ -23,7 +23,17 @@ _NGBOOST_ESTIMATORS = ("ngboost_regressor", "ngboost_classifier")
 
 
 def probabilistic_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for probabilistic backends and optional extras."""
+    """Build the honest capability matrix for probabilistic backends.
+
+    Reports which native, MAPIE, and NGBoost paths are installed, supported
+    uncertainty outputs, evaluation metrics, and explicit non-goals for teaching
+    overlays and Session walkthrough panels.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, interval methods, install hints, and boundaries.
+    """
     mapie_methods = list(_MAPIE_METHODS)
     if not mapie_available():
         jackknife_note = "install buildml[probabilistic-industry] for MAPIE"
@@ -131,7 +141,21 @@ def list_probabilistic_estimators(
     *,
     backend: ProbabilisticBackendName | None = None,
 ) -> list[str]:
-    """List estimator/method keys for a backend (or all when backend is None)."""
+    """List estimator or conformal method keys for a probabilistic backend.
+
+    Reads :func:`probabilistic_capability_matrix` so callers only offer keys
+    that exist for the requested backend.
+
+    Parameters
+    ----------
+    backend:
+        ``native``, ``mapie``, ``ngboost``, or ``None`` for the combined list.
+
+    Returns
+    -------
+    list[str]
+        Valid estimator or method names for the backend.
+    """
     matrix = probabilistic_capability_matrix()
     if backend == "native":
         return list(matrix["backends"]["native"]["estimators"])
@@ -151,6 +175,21 @@ def list_probabilistic_estimators(
 
 
 def backend_available(name: ProbabilisticBackendName) -> bool:
+    """Return whether a probabilistic backend is available on this machine.
+
+    Checks the ``available`` flag in :func:`probabilistic_capability_matrix`
+    for native, MAPIE, or NGBoost entries.
+
+    Parameters
+    ----------
+    name:
+        Backend key such as ``native``, ``mapie``, or ``ngboost``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the backend can be used for fit without missing extras.
+    """
     entry = probabilistic_capability_matrix()["backends"].get(name)
     if entry is None:
         return False
@@ -165,7 +204,29 @@ def resolve_backend_estimator(
 ) -> tuple[ProbabilisticBackendName, str, str]:
     """Validate backend/estimator pairing and infer task when possible.
 
-    Returns (backend, estimator_key, resolved_task).
+    Normalises MAPIE method aliases, checks install status, and resolves the
+    regression vs classification task before fit proceeds.
+
+    Parameters
+    ----------
+    backend:
+        Explicit backend or ``None`` to infer from ``estimator``.
+    estimator:
+        Estimator or conformal method key from the catalog.
+    task:
+        Optional task override; inferred when omitted for most backends.
+
+    Returns
+    -------
+    tuple[str, str, str]
+        Resolved ``(backend, estimator_key, task)`` triple.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator does not belong to the backend or task conflicts.
+    MissingExtraError
+        When the resolved backend requires an industry extra that is missing.
     """
     from buildml.core.errors import MissingExtraError, ValidationError
 

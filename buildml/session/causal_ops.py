@@ -44,6 +44,45 @@ def declare_causal_assumptions_op(
 ) -> CausalAssumptions:
     """Declare identification assumptions required before causal estimation.
 
+    Captures treatment, outcome, confounders, and explicit acknowledgements
+    of unconfoundedness and positivity. Stores a validated
+    :class:`~buildml.causal.types.CausalAssumptions` object on the Session for
+    downstream fit and estimate APIs.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset attached.
+    treatment:
+        Column name for the treatment or exposure variable.
+    outcome:
+        Column name for the outcome of interest.
+    confounders:
+        Confounder column names; pass ``[]`` only with
+        ``allow_empty_confounders=True``.
+    estimand:
+        Target estimand (``ATE`` by default).
+    identification:
+        Identification strategy (``backdoor`` by default).
+    instruments:
+        Optional instrument column names for IV-style paths.
+    acknowledge_unconfoundedness:
+        Explicit acknowledgement that unconfoundedness holds.
+    acknowledge_positivity:
+        Explicit acknowledgement that positivity/overlap holds.
+    allow_empty_confounders:
+        When True, permit an empty confounder list after validation.
+
+    Returns
+    -------
+    CausalAssumptions
+        Validated assumptions object stored on the Session.
+
+    Raises
+    ------
+    ValidationError
+        When ``confounders`` is ``None`` or validation fails.
+
     Notes
     -----
     EDA / association / feature-importance results never satisfy these
@@ -111,6 +150,37 @@ def fit_causal_op(
 ) -> Any:
     """Fit causal models on Session train and estimate ATE.
 
+    Delegates to :func:`buildml.causal.fit.fit_causal`, stores the
+    :class:`~buildml.causal.results.CausalPlan` on Session, and records the
+    fit. Follow with :func:`estimate_causal_op` or :func:`evaluate_causal_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset, split plan, and declared assumptions.
+    backend:
+        Optional backend override (``native``, ``dowhy``, ``econml``).
+    method:
+        Estimator method (``aipw`` by default).
+    assumptions:
+        Optional assumptions override; uses Session-stored assumptions when
+        omitted.
+    bootstrap_samples:
+        Number of bootstrap draws for uncertainty intervals.
+    random_state:
+        Seed for stochastic nuisance-model steps.
+    clip_propensity:
+        Min/max propensity clipping bounds for IPW-style methods.
+    outcome_model:
+        Outcome nuisance model identifier.
+    propensity_model:
+        Propensity nuisance model identifier.
+
+    Returns
+    -------
+    CausalFitResult
+        Serializable fit summary including ATE point estimate and warnings.
+
     Notes
     -----
     **Leakage:** Requires a split. Nuisance models fit on train only.
@@ -164,7 +234,33 @@ def estimate_causal_op(
     bootstrap_samples: int | None = None,
     random_state: int | None = None,
 ) -> Any:
-    """Estimate ATE on a partition using the fitted CausalPlan."""
+    """Estimate ATE on a partition using the fitted CausalPlan.
+
+    Delegates to :func:`buildml.causal.estimate.estimate_causal` without
+    refitting nuisance models. Useful for re-scoring train or scoring
+    holdout partitions with bootstrap overrides.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a causal plan from :func:`fit_causal_op`.
+    partition:
+        Partition to score (``train``, ``validation``, ``test``, or ``all``).
+    bootstrap_samples:
+        Optional bootstrap override; uses plan default when omitted.
+    random_state:
+        Optional seed override for bootstrap resampling.
+
+    Returns
+    -------
+    CausalEstimateResult
+        Partition ATE estimate with optional bootstrap interval.
+
+    Raises
+    ------
+    ValidationError
+        When no causal plan exists on the Session.
+    """
     plan = getattr(session, "_causal_plan", None)
     if plan is None:
         raise ValidationError("No causal plan. Call fit_causal(...) first.")
@@ -196,7 +292,30 @@ def evaluate_causal_op(
     partition: PartitionOrAll = "validation",
     bootstrap_samples: int | None = None,
 ) -> Any:
-    """Evaluate nuisance predictive quality and ATE on a holdout partition."""
+    """Evaluate nuisance predictive quality and ATE on a holdout partition.
+
+    Delegates to :func:`buildml.causal.evaluate.evaluate_causal` to report
+    outcome/propensity model quality alongside partition-level ATE checks.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a causal plan from :func:`fit_causal_op`.
+    partition:
+        Holdout partition for evaluation (``validation`` by default).
+    bootstrap_samples:
+        Optional bootstrap override for partition ATE uncertainty.
+
+    Returns
+    -------
+    CausalEvalResult
+        Nuisance metrics and partition ATE evaluation summary.
+
+    Raises
+    ------
+    ValidationError
+        When no causal plan exists on the Session.
+    """
     plan = getattr(session, "_causal_plan", None)
     if plan is None:
         raise ValidationError("No causal plan. Call fit_causal(...) first.")
@@ -223,7 +342,30 @@ def refute_causal_op(
     kind: CausalRefuteKind = "placebo_treatment",
     random_state: int | None = 0,
 ) -> Any:
-    """Simple placebo / random-confounder sensitivity disclosure."""
+    """Simple placebo / random-confounder sensitivity disclosure.
+
+    Delegates to :func:`buildml.causal.refute.refute_causal` to stress-test
+    the fitted plan with placebo treatments or random confounders.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a causal plan from :func:`fit_causal_op`.
+    kind:
+        Refutation kind (``placebo_treatment`` by default).
+    random_state:
+        Seed for stochastic refutation steps.
+
+    Returns
+    -------
+    CausalRefuteResult
+        Refutation outcome and sensitivity disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no causal plan exists on the Session.
+    """
     plan = getattr(session, "_causal_plan", None)
     if plan is None:
         raise ValidationError("No causal plan. Call fit_causal(...) first.")
@@ -245,7 +387,28 @@ def refute_causal_op(
 
 
 def save_causal_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active CausalPlan as ``buildml.causal_bundle.v1``."""
+    """Persist the active CausalPlan as ``buildml.causal_bundle.v1``.
+
+    Delegates to :func:`buildml.causal.checkpoint.save_causal_bundle`.
+    Reload with :func:`load_causal_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a causal plan from :func:`fit_causal_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no causal plan exists on the Session.
+    """
     plan = getattr(session, "_causal_plan", None)
     if plan is None:
         raise ValidationError("No causal plan. Call fit_causal(...) first.")
@@ -264,7 +427,23 @@ def save_causal_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_causal_bundle_op(session, path: str | Path):
-    """Load a causal bundle into this Session."""
+    """Load a causal bundle into this Session.
+
+    Delegates to :func:`buildml.causal.checkpoint.load_causal_bundle` and
+    clears prior estimate/eval/refute results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded causal plan.
+    path:
+        Path to a ``buildml.causal_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with causal plan attached for chaining.
+    """
     plan = load_causal_bundle(path)
     session._causal_plan = plan
     session._causal_assumptions = plan.assumptions

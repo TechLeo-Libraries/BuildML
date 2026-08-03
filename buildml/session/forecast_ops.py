@@ -44,6 +44,53 @@ def fit_forecast(
 ) -> Any:
     """Fit a classical forecaster on the train partition only.
 
+    Delegates to :func:`buildml.forecasting.fit.fit_forecaster`, stores the
+    :class:`~buildml.forecasting.results.ForecastPlan` on Session, and records
+    the fit. Follow with :func:`generate_forecast_op` or
+    :func:`evaluate_forecast_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a chronologically ordered dataset and split plan.
+    method:
+        Forecasting method (``lag_ridge``, ``arima``, ``nbeats``, etc.).
+    horizon:
+        Default forecast horizon in steps.
+    lags:
+        Explicit lag indices for lag-based methods.
+    seasonal_period:
+        Seasonal period for seasonal methods.
+    exog_columns:
+        Optional exogenous regressor columns.
+    target_column:
+        Target series column; defaults to target role.
+    time_column:
+        Timestamp column; inferred when omitted.
+    random_state:
+        Seed for stochastic estimators.
+    alpha:
+        Regularization strength for ridge-style methods.
+    max_iter:
+        Maximum iterations for iterative solvers.
+    max_depth:
+        Tree depth for tree-based forecasters.
+    learning_rate:
+        Learning rate for gradient boosting forecasters.
+    order:
+        ARIMA ``(p, d, q)`` order tuple.
+    seasonal_order:
+        Seasonal ARIMA ``(P, D, Q, s)`` order tuple.
+    nbeats_input_size:
+        Input window size for N-BEATS backend.
+    nbeats_horizon:
+        N-BEATS forecast horizon override.
+
+    Returns
+    -------
+    ForecastFitResult
+        Serializable fit summary including method and horizon disclosures.
+
     Notes
     -----
     **Leakage:** Requires ``time_split`` (or chronologically ordered
@@ -100,7 +147,33 @@ def generate_forecast_op(
     origin: str = "train_end",
     future_exog: np.ndarray | pd.DataFrame | list[list[float]] | None = None,
 ) -> Any:
-    """Generate an H-step forecast from the train-fitted ForecastPlan (no refit)."""
+    """Generate an H-step forecast from the train-fitted ForecastPlan.
+
+    Delegates to :func:`buildml.forecasting.predict.generate_forecast` without
+    refitting. History is taken from train end or extended through validation/test
+    when ``origin`` requests it.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a ForecastPlan from :func:`fit_forecast`.
+    horizon:
+        Forecast steps; defaults to the plan horizon when ``None``.
+    origin:
+        History cutoff (``train_end``, ``validation_end``, or ``test_end``).
+    future_exog:
+        Optional exogenous values for the forecast horizon.
+
+    Returns
+    -------
+    ForecastGenerateResult
+        Point forecasts and optional intervals for the requested horizon.
+
+    Raises
+    ------
+    ValidationError
+        When no forecast plan exists or ``origin`` requires a missing split.
+    """
     plan = getattr(session, "_forecast_plan", None)
     if plan is None:
         raise ValidationError("No forecast plan. Call fit_forecast(...) first.")
@@ -146,7 +219,31 @@ def evaluate_forecast_op(
     partition: PartitionName = "test",
     strategy: ForecastEvalStrategy = "rolling_one_step",
 ) -> Any:
-    """Evaluate the train-fitted ForecastPlan on a holdout partition."""
+    """Evaluate the train-fitted ForecastPlan on a holdout partition.
+
+    Delegates to :func:`buildml.forecasting.evaluate.evaluate_forecast` using
+    rolling or static evaluation strategies. Falls back to ``test`` when no
+    validation partition exists.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a ForecastPlan from :func:`fit_forecast`.
+    partition:
+        Holdout partition (default ``test``).
+    strategy:
+        Evaluation strategy (``rolling_one_step`` or ``static_multi_step``).
+
+    Returns
+    -------
+    ForecastEvalResult
+        Holdout error metrics for the frozen forecast plan.
+
+    Raises
+    ------
+    ValidationError
+        When no forecast plan exists on the Session.
+    """
     plan = getattr(session, "_forecast_plan", None)
     if plan is None:
         raise ValidationError("No forecast plan. Call fit_forecast(...) first.")
@@ -176,7 +273,28 @@ def evaluate_forecast_op(
 
 
 def save_forecast_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active ForecastPlan as ``buildml.forecast_bundle.v2``."""
+    """Persist the active ForecastPlan as ``buildml.forecast_bundle.v2``.
+
+    Delegates to :func:`buildml.forecasting.checkpoint.save_forecast_bundle`.
+    Reload with :func:`load_forecast_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a ForecastPlan from :func:`fit_forecast`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no forecast plan exists on the Session.
+    """
     plan = getattr(session, "_forecast_plan", None)
     if plan is None:
         raise ValidationError("No forecast plan. Call fit_forecast(...) first.")
@@ -200,7 +318,23 @@ def save_forecast_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_forecast_bundle_op(session, path: str | Path) -> Any:
-    """Load a forecast bundle into this Session."""
+    """Load a forecast bundle into this Session.
+
+    Delegates to :func:`buildml.forecasting.checkpoint.load_forecast_bundle`
+    and clears prior generate/eval results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded ForecastPlan.
+    path:
+        Path to a ``buildml.forecast_bundle.v2`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with ForecastPlan attached for chaining.
+    """
     plan = load_forecast_bundle(path)
     session._forecast_plan = plan
     session._forecast_fit_result = None

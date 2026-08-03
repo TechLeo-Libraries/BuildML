@@ -64,6 +64,53 @@ def fit_multitask(
     -------
     Train-only fit; validation/test are evaluation-only. Classical
     ``Session.fit`` remains single-target. Not a deep MTL research platform.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features and multi-task target columns.
+    split_plan:
+        Train/validation/test split; train partition is used for fitting.
+    backend:
+        Optional backend override (``sklearn``, ``industry``, ``torch``).
+    method:
+        Multi-task method (``multi_output``, ``shared_trunk_multihead``, etc.).
+    task:
+        ``classification``, ``regression``, ``auto``, or ``mixed`` (torch only).
+    targets:
+        Optional explicit target column names (>= 2 required).
+    columns:
+        Optional explicit feature columns.
+    base_estimator:
+        Sklearn base estimator for MultiOutput/Chain backends.
+    random_state:
+        Seed for sklearn and torch backends.
+    order:
+        Optional chain order for ClassifierChain/RegressorChain targets.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    prediction_prefix:
+        Column prefix used when predictions are attached to the dataset.
+    reduce_plan:
+        Optional dimensionality-reduction plan from an upstream Session step.
+    epochs:
+        Training epochs for torch shared-trunk backend.
+    batch_size:
+        Minibatch size for torch shared-trunk backend.
+    learning_rate:
+        AdamW learning rate for torch shared-trunk backend.
+    device:
+        Torch device string (e.g. ``cpu``, ``cuda``).
+
+    Returns
+    -------
+    tuple[MultiTaskPlan, MultiTaskFitResult]
+        Fitted plan with estimator and encoders, plus fit summary for history.
+
+    Raises
+    ------
+    ValidationError
+        When targets, task type, backend/method pairing, or partitions are invalid.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

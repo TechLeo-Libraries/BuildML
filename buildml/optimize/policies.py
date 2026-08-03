@@ -54,7 +54,33 @@ def fit_threshold_policy(
 
     Wraps :func:`buildml.model.diagnostics.threshold_report` so
     ``tune_threshold`` and ``fit_decision_policy(method='threshold')`` share
-    one cost model. The DecisionPlan persists the recommended cutoff.
+    one cost model. The :class:`~buildml.optimize.results.DecisionPlan`
+    persists the recommended cutoff for apply/eval.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular dataset with features and binary/multiclass target.
+    split_plan:
+        Split plan isolating the tuning partition.
+    fit_result:
+        Classification fit with ``predict_proba`` when cost mode is used.
+    partition:
+        Split name where the operating threshold is selected.
+    allow_test_tuning:
+        Dangerous opt-in to tune on the test partition.
+    fp_cost, fn_cost, tp_benefit, tn_benefit:
+        Expected-cost knobs; omit costs for pure F1-based selection.
+
+    Returns
+    -------
+    tuple[DecisionPlan, dict[str, Any], DiagnosticReport]
+        Frozen policy, fit metrics, and full threshold diagnostic report.
+
+    Raises
+    ------
+    ValidationError
+        When the fit is not classification or cost inputs are invalid.
     """
     if fit_result.task != "classification":
         raise ValidationError("method='threshold' requires a classification fit.")
@@ -157,7 +183,36 @@ def apply_threshold_policy(
     *,
     partition: str,
 ) -> tuple[np.ndarray, np.ndarray, pd.Index]:
-    """Apply a frozen binary threshold to model positive-class probabilities."""
+    """Apply a frozen binary threshold to model positive-class probabilities.
+
+    Scores the requested partition with the effective estimator (including
+    auxiliary industry backends stored on the plan) and labels rows positive
+    when probability meets ``plan.threshold``.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular dataset with feature columns expected by the plan.
+    split_plan:
+        Split plan locating ``partition`` rows.
+    fit_result:
+        Session fit defining feature columns and class order.
+    plan:
+        Frozen threshold :class:`~buildml.optimize.results.DecisionPlan`.
+    partition:
+        Split name to score and label.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray, pandas.Index]
+        Predicted labels, positive-class scores, and row index.
+
+    Raises
+    ------
+    ValidationError
+        When the plan lacks a threshold, the estimator lacks ``predict_proba``,
+        or the problem is not binary.
+    """
     if plan.threshold is None:
         raise ValidationError("DecisionPlan has no threshold.")
     fit_result = _effective_fit_result(plan, fit_result)
@@ -185,6 +240,31 @@ def evaluate_threshold_policy(
     *,
     partition: str,
 ) -> dict[str, Any]:
+    """Evaluate a frozen threshold policy on labeled holdout data.
+
+    Applies the plan, compares predictions to ground-truth labels, and returns
+    classification metrics plus realized expected cost when a cost model is
+    attached.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular dataset with features and target for ``partition``.
+    split_plan:
+        Split plan locating evaluation rows.
+    fit_result:
+        Session fit defining feature columns and positive-class convention.
+    plan:
+        Frozen threshold :class:`~buildml.optimize.results.DecisionPlan`.
+    partition:
+        Holdout split name to evaluate.
+
+    Returns
+    -------
+    dict[str, Any]
+        Metrics dict, optional realized cost, row counts, threshold, and
+        per-row decisions/scores.
+    """
     labels, proba, _index = apply_threshold_policy(
         dataset, split_plan, fit_result, plan, partition=partition
     )
@@ -235,12 +315,39 @@ def fit_cost_matrix_policy(
     cost_matrix: Any,
     class_labels: list[str] | None,
 ) -> tuple[DecisionPlan, dict[str, Any]]:
-    """Bayes decision under a multiclass cost matrix C[true, action].
+    """Fit a multiclass Bayes decision rule under a user cost matrix.
 
-    For each row, choose action a minimizing Σ_y P(y|x) C[y, a] using
-    ``predict_proba``. The matrix itself is user-supplied (not estimated from
-    test labels). Fit-partition metrics report realized cost under true labels
-    for audit only.
+    For each row, chooses action ``a`` minimizing expected cost
+    ``Σ_y P(y|x) C[y, a]`` using ``predict_proba``. The matrix is
+    user-supplied — not estimated from evaluation labels.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular dataset with features and multiclass target.
+    split_plan:
+        Split plan isolating the tuning partition.
+    fit_result:
+        Classification fit with ``predict_proba``.
+    partition:
+        Split name used for fit-partition audit metrics.
+    allow_test_tuning:
+        Dangerous opt-in to audit on the test partition.
+    cost_matrix:
+        Square ``C[true, action]`` cost matrix.
+    class_labels:
+        Optional labels aligning matrix rows/columns with estimator classes.
+
+    Returns
+    -------
+    tuple[DecisionPlan, dict[str, Any]]
+        Frozen Bayes policy and fit-partition realized/expected-cost metrics.
+
+    Raises
+    ------
+    ValidationError
+        When inputs are not classification, ``predict_proba`` is missing,
+        ``cost_matrix`` is absent, or labels disagree with the estimator.
     """
     if fit_result.task != "classification":
         raise ValidationError("method='cost_matrix' requires classification.")
@@ -330,6 +437,34 @@ def apply_cost_matrix_policy(
     *,
     partition: str,
 ) -> tuple[np.ndarray, np.ndarray, pd.Index]:
+    """Apply a frozen multiclass cost-matrix policy to a partition.
+
+    Scores rows with ``predict_proba``, computes expected cost per action,
+    and returns the argmin action labels plus minimum expected costs.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular dataset with feature columns expected by the plan.
+    split_plan:
+        Split plan locating ``partition`` rows.
+    fit_result:
+        Session fit defining feature columns.
+    plan:
+        Frozen cost-matrix :class:`~buildml.optimize.results.DecisionPlan`.
+    partition:
+        Split name to score and assign actions.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray, pandas.Index]
+        Action labels, minimum expected costs, and row index.
+
+    Raises
+    ------
+    ValidationError
+        When the plan is missing a cost matrix or scoring fails validation.
+    """
     matrix = plan.cost_matrix_
     if matrix is None:
         if plan.cost_model is None or plan.cost_model.matrix is None:

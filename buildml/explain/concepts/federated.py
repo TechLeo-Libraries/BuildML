@@ -97,7 +97,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "Claiming Flower backend implies gRPC deployment or secure aggregation.",
             ),
             worked_example_pattern=(
-                "fit_federated(backend='flower', n_rounds=5) → export_round_history(plan, path).",
+                "fit_federated(backend='flower', n_rounds=5) → session.export_round_history('rounds.json').",
             ),
             related_concepts=("federated-simulation", "federated-fedavg", "federated-bundle-boundary"),
         ),

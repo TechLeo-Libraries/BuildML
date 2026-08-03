@@ -27,10 +27,37 @@ def suggest_query(
     strategy: ActiveLearningStrategy | None = None,
     backend: str | None = None,
 ) -> ActiveLearningQueryResult:
-    """Suggest unlabeled *train* indices for the user to label.
+    """Suggest unlabeled train indices for the user to label.
 
     Never queries validation/test. Does not invent labels. Honors the remaining
     label budget when ``plan.label_budget`` is set.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset containing the train partition and target column.
+    plan:
+        Fitted :class:`~buildml.activelearning.results.ActiveLearningPlan`.
+    split_plan:
+        Split plan restricting the query pool to train indices.
+    batch_size:
+        Optional override for how many indices to suggest this round.
+    strategy:
+        Optional query strategy override; defaults to ``plan.strategy``.
+    backend:
+        Optional backend override; defaults to ``plan.backend``.
+
+    Returns
+    -------
+    ActiveLearningQueryResult
+        Suggested indices, scores, pool size, and budget remaining.
+
+    Raises
+    ------
+    ValidationError
+        When no plan exists, pool indices leave train, or ``batch_size`` is invalid.
+    MissingExtraError
+        When the resolved backend requires an optional extra.
     """
     if plan is None:
         raise ValidationError("No ActiveLearningPlan. Call fit_active_learner first.")

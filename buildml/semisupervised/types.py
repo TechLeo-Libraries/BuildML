@@ -61,6 +61,15 @@ class SemiSupervisedConfig:
     modality: str = "tabular"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "backend": self.backend,

@@ -79,7 +79,13 @@ def main() -> None:
         "test_metrics": metrics_round(dict(ev.metrics)),
         "bundle_path": str(bundle),
         "leakage_controls": ["group_split on query_id", "Train-only ranker fit", "Test nDCG after lock"],
-        "industry_comparison": {"status": "stub"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: pointwise Ridge LTR twin on the same split; "
+                "run script then baseline_industry.py for results/comparison.json."
+            ),
+        },
         "limitations": ["Synthetic graded judgments"],
     })
     print("search-relevance-ltr OK", dict(ev.metrics))

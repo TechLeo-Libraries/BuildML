@@ -6,7 +6,21 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_causal`` history."""
+    """Build a compact history summary from a causal fit result.
+
+    Records backend, method, ATE point estimate, and bootstrap CI metadata for
+    Session audit logs without embedding nuisance models.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.causal.results.CausalFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, method, estimand, ATE, and CI summaries.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -26,7 +40,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def estimate_result_summary(estimate_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``estimate_causal`` history."""
+    """Build a compact history summary from a causal estimate result.
+
+    Extracts partition, method, and ATE metadata for Session audit logs
+    without serialising full nuisance models or bootstrap draw arrays.
+
+    Parameters
+    ----------
+    estimate_result:
+        :class:`~buildml.causal.results.CausalEstimateResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, ATE, and CI summaries for history logs.
+    """
     if estimate_result is None:
         return {}
     payload = (
@@ -46,7 +74,21 @@ def estimate_result_summary(estimate_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_causal`` history."""
+    """Build a compact history summary from a causal evaluation result.
+
+    Captures holdout partition metrics and point ATE for walkthrough panels
+    while omitting large nested metric dict copies when the input is ``None``.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.causal.results.CausalEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, ATE, and policy/value metrics for history logs.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -61,7 +103,21 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
 
 
 def refute_result_summary(refute_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``refute_causal`` history."""
+    """Build a compact history summary from a causal refutation result.
+
+    Records refutation kind, original vs perturbed ATE, and shift magnitude
+    for sensitivity disclosures attached to Session history.
+
+    Parameters
+    ----------
+    refute_result:
+        :class:`~buildml.causal.results.CausalRefuteResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Refutation kind, original ATE, refuted ATE, and shift summary.
+    """
     if refute_result is None:
         return {}
     payload = (
@@ -79,7 +135,21 @@ def refute_result_summary(refute_result: Any) -> dict[str, Any]:
 
 
 def assumptions_summary(assumptions: Any) -> dict[str, Any]:
-    """Compact summary for ``declare_causal_assumptions`` history."""
+    """Build a compact summary from declared causal assumptions.
+
+    Surfaces treatment/outcome/confounder columns and acknowledgement flags
+    for teaching overlays without re-running :meth:`CausalAssumptions.validate`.
+
+    Parameters
+    ----------
+    assumptions:
+        :class:`~buildml.causal.types.CausalAssumptions` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Treatment, outcome, confounders, estimand, and acknowledgement flags.
+    """
     if assumptions is None:
         return {}
     payload = (
@@ -106,7 +176,27 @@ def causal_status(
     refute_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for causal ML."""
+    """Build factual walkthrough disclosure for causal Session state.
+
+    Combines assumptions, plan metadata, result summaries, and
+    :func:`~buildml.causal.catalog.causal_capability_matrix` for teaching overlays.
+
+    Parameters
+    ----------
+    plan:
+        Active :class:`~buildml.causal.results.CausalPlan`, if any.
+    assumptions:
+        Declared :class:`~buildml.causal.types.CausalAssumptions`, if any.
+    fit_result, estimate_result, eval_result, refute_result:
+        Last operation reports attached to the Session.
+    history:
+        Session operation records.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, ATE metadata, capability matrix, disclosures, and boundaries.
+    """
     from buildml.causal.catalog import causal_capability_matrix
 
     records = list(history or [])
@@ -204,7 +294,20 @@ def causal_status(
 
 
 def causal_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Report causal status for a Session walkthrough panel.
+
+    Reads causal plan, assumptions, and result slots without mutating Session.
+
+    Parameters
+    ----------
+    session:
+        :class:`~buildml.session.session.Session` instance.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`causal_status` for the Session's causal state.
+    """
     return causal_status(
         getattr(session, "_causal_plan", None),
         assumptions=getattr(session, "_causal_assumptions", None),

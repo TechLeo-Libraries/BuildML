@@ -63,6 +63,71 @@ def fit_ssl_pretext(
 
     Industry default when ``buildml[torch]`` is installed: ``simclr_tabular``.
     Legacy ``masked_tabular`` remains as sklearn fallback with DeprecationWarning.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with numeric, text, or image columns for pretext.
+    split_plan:
+        Split plan defining the train partition.
+    method:
+        SSL method key; inferred from modality and Torch availability when ``None``.
+    columns:
+        Tabular feature columns; resolved from roles/reduce plan when ``None``.
+    text_column:
+        Text column for ``hf_text_ssl`` modality.
+    image_column:
+        Image column for ``vision_ssl`` modality.
+    random_state:
+        Seed for augmentations, Torch training, and sklearn MLP fitting.
+    latent_dim:
+        Representation width exported by transform/attach.
+    hidden:
+        Hidden layer widths for tabular encoders (Torch or sklearn).
+    mask_ratio:
+        Feature mask ratio for MAE/VAE/sklearn masked pretext.
+    n_mask_views:
+        Masked views per row for legacy sklearn ``masked_tabular``.
+    max_iter:
+        Maximum iterations for legacy sklearn MLPRegressor.
+    epochs:
+        Training epochs for Torch tabular/text/vision encoders.
+    batch_size:
+        Minibatch size for Torch training loops.
+    learning_rate:
+        Optimizer learning rate for Torch encoders.
+    temperature:
+        NT-Xent temperature for contrastive tabular/vision methods.
+    projector_dim:
+        Projector output width for contrastive Torch methods.
+    projector_hidden:
+        Projector hidden widths for contrastive Torch methods.
+    prefer_reduce_components:
+        Prefer PCA components from ``reduce_plan`` when resolving columns.
+    reduce_plan:
+        Optional reduce/PCA plan for column resolution.
+    representation_prefix:
+        Prefix for exported embedding column names.
+    backbone:
+        Vision backbone architecture for ``vision_ssl``.
+    weight_mode:
+        Pretrained weight mode (``mock`` or zoo checkpoint name).
+    hf_model_name:
+        HuggingFace sentence-transformer model for ``hf_text_ssl``.
+    device:
+        Torch device string (for example ``cpu`` or ``cuda``).
+
+    Returns
+    -------
+    tuple[SelfSupervisedPlan, SelfSupervisedFitResult]
+        Train-fitted pretext plan and compact fit report.
+
+    Raises
+    ------
+    ValidationError
+        When split/partition requirements fail or column contracts are invalid.
+    MissingExtraError
+        When a Torch-backed method is requested without ``buildml[torch]``.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

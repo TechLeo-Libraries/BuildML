@@ -435,6 +435,138 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "rl-tabular-q-learning",
                 "rl-offline-metrics",
                 "rl-bundle-boundary",
+                "rl-monte-carlo-returns",
+                "rl-actor-critic",
+            ),
+        ),
+        _note(
+            key="rl-monte-carlo-returns",
+            title="Monte Carlo returns (full-episode credit assignment)",
+            summary="Update from complete episode returns — the baseline REINFORCE uses; contrasts with bootstrapped TD and actor-critic.",
+            definition=(
+                "Monte Carlo methods wait until an episode ends, then assign each "
+                "step the actual return G_t from that step forward. BuildML's "
+                "fit_rl(mode='gym_reinforce') uses returns-to-go Monte Carlo targets "
+                "for a linear softmax policy."
+            ),
+            intuition=(
+                "Only after seeing how the episode actually ended do you judge "
+                "each action — no guessing about the future from a value table."
+            ),
+            formal_idea="G_t = Σ_{k=t}^{T} γ^{k−t} r_k; REINFORCE uses ∇ log π(a_t|s_t) · G_t.",
+            why_it_matters=(
+                "Unbiased gradient estimates but high variance — why baselines and "
+                "bootstrapping (TD, actor-critic) exist.",
+                "Bridge concept linking REINFORCE to SB3 policy-gradient methods.",
+            ),
+            how_buildml_uses=(
+                "Session.fit_rl(mode='gym_reinforce') — see rl-gym-reinforce concept.",
+                "Session.fit_rl(mode='gym_sb3', algorithm='ppo'|'a2c') uses industry "
+                "actor-critic stacks instead of raw MC REINFORCE.",
+            ),
+            interpretation_rules=(
+                "Compare variance and sample efficiency against tabular_q / gym_sb3 on the same env.",
+            ),
+            assumptions=("Episodic env with well-defined termination.",),
+            failure_modes=("High-variance updates on long episodes without baseline.",),
+            anti_patterns=(
+                "Calling REINFORCE 'actor-critic' — it is Monte Carlo policy gradient without a critic.",
+            ),
+            worked_example_pattern=(
+                "fit_rl(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=300).",
+            ),
+            related_concepts=("rl-gym-reinforce", "rl-n-step-td", "rl-actor-critic"),
+        ),
+        _note(
+            key="rl-n-step-td",
+            title="n-step TD bootstrapping (between MC and one-step TD)",
+            summary="Blend k steps of real rewards with a bootstrap value — SARSA/Q-learning use n=1; longer n approaches Monte Carlo.",
+            definition=(
+                "n-step TD targets sum n immediate rewards plus γⁿ times an "
+                "estimated value at step t+n. One-step Q-learning and SARSA in "
+                "fit_rl(mode='tabular_q') are the n=1 special case; increasing n "
+                "trades bias for variance toward full Monte Carlo returns."
+            ),
+            intuition=(
+                "Look a few steps ahead with real rewards, then guess the rest "
+                "from your value table — a middle ground between waiting for the "
+                "episode end and updating from a single step."
+            ),
+            formal_idea=(
+                "Target: Σ_{i=0}^{n−1} γⁱ r_{t+i} + γⁿ max_a Q(s_{t+n}, a) (off-policy) "
+                "or γⁿ Q(s_{t+n}, a_{t+n}) (on-policy SARSA)."
+            ),
+            why_it_matters=(
+                "Explains why tabular_q, SARSA, and REINFORCE sit on a spectrum.",
+                "SB3 DQN uses replay + target nets — scaled n-step/bootstrapping in function approximation.",
+            ),
+            how_buildml_uses=(
+                "algorithm='q_learning' | 'sarsa' | 'expected_sarsa' on mode='tabular_q'.",
+                "For n>1 explicitly, use industry SB3 stacks (rl-sb3-industry).",
+            ),
+            interpretation_rules=(
+                "On-policy SARSA targets include the exploring action; Q-learning targets max over next actions.",
+            ),
+            assumptions=("Markov env; tabular or discretized states for BuildML tabular path.",),
+            failure_modes=("n too large with inaccurate bootstrap values.",),
+            anti_patterns=(
+                "Confusing one-step tabular_q with Monte Carlo REINFORCE returns.",
+            ),
+            worked_example_pattern=(
+                "fit_rl(mode='tabular_q', algorithm='q_learning', env_id='FrozenLake-v1').",
+            ),
+            related_concepts=(
+                "rl-tabular-q-learning",
+                "rl-sarsa-on-policy",
+                "rl-monte-carlo-returns",
+                "rl-actor-critic",
+            ),
+        ),
+        _note(
+            key="rl-actor-critic",
+            title="Actor-critic (policy + value together)",
+            summary="Learn a policy (actor) and a value baseline (critic) jointly — SB3 PPO/A2C path; contrasts with REINFORCE and pure Q-learning.",
+            definition=(
+                "Actor-critic methods update a policy π_θ and a value function "
+                "V_φ or Q_φ together: the critic reduces variance for the actor's "
+                "gradient. BuildML exposes this via fit_rl(mode='gym_sb3', "
+                "algorithm='ppo'|'a2c') when buildml[rl-industry] is installed."
+            ),
+            intuition=(
+                "The actor chooses actions; the critic scores how good states look "
+                "so the actor gets smoother feedback than raw episode returns."
+            ),
+            formal_idea=(
+                "Advantage A_t ≈ G_t − V(s_t) or TD residual δ_t; actor update uses "
+                "∇ log π(a_t|s_t) · A_t; critic fits V or Q with TD/MSE losses."
+            ),
+            why_it_matters=(
+                "Bridges Monte Carlo REINFORCE and value-based DQN in one framework.",
+                "Industry default for continuous-control teaching without claiming robotics scope.",
+            ),
+            how_buildml_uses=(
+                "Session.fit_rl(backend='industry', mode='gym_sb3', algorithm='ppo').",
+                "Contrast with mode='gym_reinforce' (MC, no critic) and mode='tabular_q'.",
+            ),
+            interpretation_rules=(
+                "Read rl_capability_matrix() for backend defaults and non-goals.",
+                "mean_return from env rollouts; offline=False.",
+            ),
+            assumptions=("Discrete small Gymnasium env; rl-industry extra for SB3 path.",),
+            failure_modes=("Under-trained policies on CartPole-class envs.",),
+            anti_patterns=(
+                "Calling tabular Q-learning actor-critic — it is pure value-based control.",
+                "Claiming SB3 path equals production robotics stack.",
+            ),
+            worked_example_pattern=(
+                "pip install 'buildml[rl-industry]'; "
+                "fit_rl(mode='gym_sb3', algorithm='a2c', total_timesteps=25000).",
+            ),
+            related_concepts=(
+                "rl-sb3-industry",
+                "rl-monte-carlo-returns",
+                "rl-n-step-td",
+                "rl-gym-reinforce",
             ),
         ),
         _note(

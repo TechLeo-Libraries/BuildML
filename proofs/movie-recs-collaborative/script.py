@@ -84,7 +84,13 @@ def main() -> None:
         "test_metrics": metrics_round(dict(ev.metrics)),
         "bundle_path": str(bundle),
         "leakage_controls": ["Split before fit", "Train-only recommender fit", "Test metrics after lock"],
-        "industry_comparison": {"status": "stub"},
+        "industry_comparison": {
+            "status": "filled",
+            "note": (
+                "Tier C baseline_industry.py: popularity + item-cosine twin on the same split; "
+                "run script then baseline_industry.py for results/comparison.json."
+            ),
+        },
         "limitations": [
             "Synthetic interactions",
             "ALS uses implicit when installed; otherwise item_knn fallback",

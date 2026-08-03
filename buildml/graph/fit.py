@@ -64,12 +64,54 @@ def fit_graph(
 ) -> tuple[GraphPlan, GraphFitResult]:
     """Fit a node classifier with leakage-aware graph structure.
 
-    Honesty
+    Requires ``set_graph`` (:class:`GraphSpec`) and a Session split. Labels
+    for supervision come from the train partition only. Inductive mode fits on
+    the train-induced subgraph; transductive mode uses full topology with
+    train-label-only loss or sklearn fit rows.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset whose rows are graph nodes.
+    split_plan:
+        Session split plan with a train partition.
+    graph_spec:
+        Normalised edge list attached via ``set_graph``.
+    method:
+        Backend: ``classical``, ``gcn``, or ``pyg``.
+    task:
+        Currently ``node_classification`` only.
+    mode:
+        ``inductive`` (train-induced subgraph) or ``transductive`` (full
+        topology, train-label-only supervision).
+    columns:
+        Optional explicit numeric feature columns; auto-resolves when ``None``.
+    classical_estimator:
+        Sklearn estimator when ``method='classical'``.
+    hidden_dim, n_layers, epochs, learning_rate, weight_decay, dropout:
+        Neural-network hyperparameters for ``gcn`` / ``pyg``.
+    random_state:
+        Optional seed for reproducible training.
+    include_graph_metrics:
+        When True, append NetworkX metrics for classical backend.
+    pyg_model:
+        PyG convolution type when ``method='pyg'``.
+    heads:
+        GAT attention heads when ``pyg_model='gat'``.
+
+    Returns
     -------
-    Requires ``set_graph`` (:class:`GraphSpec`) and a Session split. Labels for
-    supervision come from the train partition only. Inductive mode fits on the
-    train-induced subgraph; transductive mode uses full topology with
-    train-label-only loss / sklearn fit rows.
+    plan:
+        Fitted :class:`GraphPlan` for predict/eval/bundle persistence.
+    fit_result:
+        Training summary with train accuracy and honesty disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When split, target, edges, features, or method/mode are invalid.
+    MissingExtraError
+        When the chosen backend's optional dependency is not installed.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

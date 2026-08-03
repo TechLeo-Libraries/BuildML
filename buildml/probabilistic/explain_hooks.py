@@ -6,7 +6,21 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_probabilistic`` history."""
+    """Build a compact history summary from a probabilistic fit result.
+
+    Strips full plan payloads while recording backend, conformal settings, and
+    train carve sizes for Session audit logs.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.probabilistic.results.ProbabilisticFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, estimator, task, alpha, and conformal metadata.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -26,7 +40,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_probabilistic`` history."""
+    """Build a compact history summary from a probabilistic evaluation result.
+
+    Records partition metrics and interval coverage without embedding full
+    prediction arrays in Session history.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.probabilistic.results.ProbabilisticEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, metrics, interval coverage, and width summaries.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -43,7 +71,20 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
 
 
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``predict_probabilistic`` history."""
+    """Build a compact history summary from a probabilistic predict result.
+
+    Records prediction counts and uncertainty flags without listing every row.
+
+    Parameters
+    ----------
+    predict_result:
+        :class:`~buildml.probabilistic.results.ProbabilisticPredictResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, row counts, and std/probability availability flags.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -63,7 +104,21 @@ def predict_result_summary(predict_result: Any) -> dict[str, Any]:
 
 
 def interval_result_summary(interval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``predict_interval`` history."""
+    """Build a compact history summary from an interval prediction result.
+
+    Records interval method, alpha, and whether lower/upper bounds or prediction
+    sets were produced.
+
+    Parameters
+    ----------
+    interval_result:
+        :class:`~buildml.probabilistic.results.ProbabilisticIntervalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, alpha, method, and interval/set availability flags.
+    """
     if interval_result is None:
         return {}
     payload = (
@@ -91,7 +146,31 @@ def probabilistic_status(
     interval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for Bayesian / probabilistic ML."""
+    """Build factual walkthrough disclosure for Bayesian / probabilistic ML.
+
+    Combines live plan metadata, optional evaluation summaries, history
+    detection, and :func:`~buildml.probabilistic.catalog.probabilistic_capability_matrix`
+    for teaching overlays.
+
+    Parameters
+    ----------
+    plan:
+        Active :class:`~buildml.probabilistic.results.ProbabilisticPlan`, if any.
+    fit_result:
+        Last fit report attached to the Session.
+    eval_result:
+        Last evaluation result.
+    interval_result:
+        Last interval or prediction-set result.
+    history:
+        Session operation records.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, backend metadata, embedded capability matrix, disclosures,
+        and boundary text separating sklearn uncertainty from MCMC platforms.
+    """
     from buildml.probabilistic.catalog import probabilistic_capability_matrix
 
     records = list(history or [])
@@ -184,7 +263,20 @@ def probabilistic_status(
 
 
 def probabilistic_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Report probabilistic status for a Session walkthrough panel.
+
+    Reads probabilistic plan and result slots without mutating the Session.
+
+    Parameters
+    ----------
+    session:
+        :class:`~buildml.session.session.Session` instance.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`probabilistic_status` for the Session's state.
+    """
     return probabilistic_status(
         getattr(session, "_probabilistic_plan", None),
         fit_result=getattr(session, "_probabilistic_fit_result", None),

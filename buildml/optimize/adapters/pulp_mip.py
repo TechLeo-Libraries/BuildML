@@ -18,7 +18,39 @@ def select_knapsack_pulp(
     min_score: float | None = None,
     ids: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Exact 0-1 knapsack using PuLP binary variables and CBC."""
+    """Solve a 0-1 knapsack exactly with PuLP and CBC.
+
+    Maximizes total value under a single cost budget using binary integer
+    variables. Invoked when
+    :func:`~buildml.optimize.allocate.select_knapsack_with_backend` resolves
+    ``backend='pulp'``.
+
+    Parameters
+    ----------
+    values:
+        Non-negative item values to maximize.
+    costs:
+        Non-negative item costs aligned with ``values``.
+    budget:
+        Total cost budget; must be ``>= 0``.
+    min_score:
+        When set, exclude items below this value floor.
+    ids:
+        Optional identifier array aligned with ``values``; defaults to
+        positional indices.
+
+    Returns
+    -------
+    dict[str, Any]
+        Selected indices, ids, unit fractions, aggregate value/cost, and
+        solver/backend metadata.
+
+    Raises
+    ------
+    ValidationError
+        When inputs are misaligned, budgets are invalid, or CBC returns a
+        non-optimal status.
+    """
     pulp = require_pulp()
     values = np.asarray(values, dtype=float)
     costs = np.asarray(costs, dtype=float)

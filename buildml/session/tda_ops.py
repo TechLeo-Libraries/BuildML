@@ -46,7 +46,58 @@ def fit_tda_op(
     subsample_strategy: SubsampleStrategy = "error",
     mapper: bool = False,
 ):
-    """Fit TDA features (+ optional head) on Session train only.
+    """Fit TDA features and optional supervised head on Session train only.
+
+    Delegates to :func:`buildml.tda.fit.fit_tda`, stores the
+    :class:`~buildml.tda.results.TdaPlan` on Session, and records the fit.
+    Follow with :func:`transform_tda_op`, :func:`predict_tda_op`, or
+    :func:`evaluate_tda_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with numeric features and a split plan.
+    backend:
+        Optional backend override (``native`` or ``giotto``).
+    vectorization:
+        Persistence diagram vectorization method.
+    homology_dims:
+        Homology dimensions to compute (e.g. H0, H1).
+    knn:
+        Neighborhood size for Vietoris-Rips / kNN graph construction.
+    maxdim:
+        Maximum homology dimension for persistent homology.
+    thresh:
+        Optional distance threshold for filtration truncation.
+    n_bins:
+        Bin count for persistence images and landscapes.
+    n_layers:
+        Layer count for multi-scale vectorizations.
+    pixel_size:
+        Pixel size for persistence images.
+    standardize:
+        Standardize vectorized features before the optional head.
+    head:
+        Optional supervised classifier/regressor head on TDA features.
+    task:
+        Task override when head is supervised (classification/regression).
+    columns:
+        Explicit feature columns; ``None`` auto-selects numerics.
+    random_state:
+        Seed for subsampling and stochastic steps.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+    max_points_guard:
+        Maximum point count before subsample/error guard triggers.
+    subsample_strategy:
+        Behavior when point count exceeds ``max_points_guard``.
+    mapper:
+        When True, also compute a Mapper graph summary.
+
+    Returns
+    -------
+    TdaFitResult
+        Serializable fit summary including homology and vectorizer state.
 
     Notes
     -----
@@ -117,7 +168,30 @@ def transform_tda_op(
     partition: PartitionOrAll = "test",
     backend: TdaBackend | None = None,
 ):
-    """Transform a partition with the frozen train-fitted TDA pipeline."""
+    """Transform a partition with the frozen train-fitted TDA pipeline.
+
+    Delegates to :func:`buildml.tda.transform.transform_tda` using the plan
+    from :func:`fit_tda_op`. No refit occurs on holdout partitions.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a TdaPlan from :func:`fit_tda_op`.
+    partition:
+        Split partition to transform (default ``test``).
+    backend:
+        Optional backend override for transform step.
+
+    Returns
+    -------
+    TdaTransformResult
+        Vectorized persistence features for the requested partition.
+
+    Raises
+    ------
+    ValidationError
+        When no TdaPlan exists on the Session.
+    """
     plan = getattr(session, "_tda_plan", None)
     if plan is None:
         raise ValidationError("No TdaPlan. Call fit_tda(...) first.")
@@ -138,7 +212,28 @@ def transform_tda_op(
 
 
 def predict_tda_op(session, *, partition: PartitionOrAll = "test"):
-    """Predict with the optional TDA supervised head."""
+    """Predict with the optional TDA supervised head on a partition.
+
+    Delegates to :func:`buildml.tda.predict.predict_tda`. Requires a
+    supervised head fitted during :func:`fit_tda_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a TdaPlan from :func:`fit_tda_op`.
+    partition:
+        Split partition to predict on (default ``test``).
+
+    Returns
+    -------
+    TdaPredictResult
+        Predictions and optional probabilities from the TDA head.
+
+    Raises
+    ------
+    ValidationError
+        When no TdaPlan exists on the Session.
+    """
     plan = getattr(session, "_tda_plan", None)
     if plan is None:
         raise ValidationError("No TdaPlan. Call fit_tda(...) first.")
@@ -163,7 +258,36 @@ def evaluate_tda_op(
     diagram_distance_metric: DiagramDistanceMetric = "wasserstein",
     diagram_distance_dim: int = 1,
 ):
-    """Evaluate the TDA head on a holdout partition."""
+    """Evaluate the TDA head on a holdout partition.
+
+    Delegates to :func:`buildml.tda.evaluate.evaluate_tda` and optionally
+    compares persistence diagram distances between partitions.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a TdaPlan from :func:`fit_tda_op`.
+    partition:
+        Holdout partition for evaluation (default ``validation``).
+    backend:
+        Optional backend override for evaluation.
+    compare_diagram_distances:
+        When True, compute diagram distance metrics between partitions.
+    diagram_distance_metric:
+        Distance metric for persistence diagrams (e.g. Wasserstein).
+    diagram_distance_dim:
+        Homology dimension for diagram distance comparison.
+
+    Returns
+    -------
+    TdaEvalResult
+        Holdout metrics for the supervised TDA head and optional distances.
+
+    Raises
+    ------
+    ValidationError
+        When no TdaPlan exists on the Session.
+    """
     plan = getattr(session, "_tda_plan", None)
     if plan is None:
         raise ValidationError("No TdaPlan. Call fit_tda(...) first.")
@@ -192,10 +316,42 @@ def evaluate_tda_op(
 
 
 def tda_capability_matrix_op() -> dict:
+    """Return the TDA backend and vectorization capability matrix.
+
+    Delegates to :func:`buildml.tda.catalog.tda_capability_matrix`.
+    Use before :func:`fit_tda_op` to confirm backend and method availability.
+
+    Returns
+    -------
+    dict
+        Nested map of backend identifiers to supported vectorizations.
+    """
     return tda_capability_matrix()
 
 
 def save_tda_bundle_op(session, path: str | Path) -> Path:
+    """Persist the active TdaPlan as ``buildml.tda_bundle.v2``.
+
+    Delegates to :func:`buildml.tda.checkpoint.save_tda_bundle`.
+    Reload with :func:`load_tda_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a TdaPlan from :func:`fit_tda_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no TdaPlan exists on the Session.
+    """
     plan = getattr(session, "_tda_plan", None)
     if plan is None:
         raise ValidationError("No TdaPlan. Call fit_tda(...) first.")
@@ -214,6 +370,23 @@ def save_tda_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_tda_bundle_op(session, path: str | Path):
+    """Load a TDA bundle into this Session.
+
+    Delegates to :func:`buildml.tda.checkpoint.load_tda_bundle` and clears
+    prior transform/predict/eval results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded TdaPlan.
+    path:
+        Path to a ``buildml.tda_bundle.v2`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with TdaPlan attached for chaining.
+    """
     plan = load_tda_bundle(path)
     session._tda_plan = plan
     session._tda_fit_result = None

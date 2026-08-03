@@ -158,6 +158,93 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         difficulty=CORE,
     ),
     _layer(
+        "online-river-streaming",
+        plain=(
+            "With buildml[online-industry], BuildML can stream updates through River classifiers and "
+            "regressors and attach ADWIN or Page-Hinkley drift notes when recent prediction errors shift."
+        ),
+        analogy=(
+            "A classroom clicker that updates the class average after each question and buzzes when "
+            "today's answers look nothing like yesterday's."
+        ),
+        steps=(
+            "Install the online-industry extra and call fit_online(backend='industry').",
+            "Pick a River estimator matching classification vs regression.",
+            "Feed chunks with partial_fit_online on train rows only.",
+            "Read drift_notes on updates — mean_shift is sklearn-only; ADWIN needs River.",
+            "Evaluate on validation/test without feeding those rows as updates.",
+        ),
+        use=(
+            "Simulated streaming benchmarks and incremental fraud/churn screens.",
+            "When you need drift disclosure beyond sklearn partial_fit.",
+        ),
+        avoid=(
+            "Do not claim a production Kafka pipeline — this is in-process chunk simulation.",
+            "Do not update on holdout partitions.",
+        ),
+        myths=(
+            (
+                "River backend runs a live data platform.",
+                "It is an honest incremental estimator loop inside Session.",
+            ),
+        ),
+        example=(
+            "session.fit_online(backend='industry', estimator='river_logistic', chunk_size=500)",
+            "session.partial_fit_online(next_chunk)",
+            "session.evaluate_online(partition='validation')",
+        ),
+        check=(
+            "Which backend and estimator does online_plan report?",
+            "Did any drift note fire on the last chunk?",
+        ),
+        tools=("fit_online", "partial_fit_online", "evaluate_online", "online_capability_matrix"),
+        terms=("online learning", "drift"),
+        difficulty=CORE,
+    ),
+    _layer(
+        "online-torch-continual",
+        plain=(
+            "The torch online backend trains a small tabular MLP with either a replay buffer or an "
+            "elastic-weight-consolidation penalty so new chunks do not erase old patterns. "
+            "It is classification-only."
+        ),
+        analogy=(
+            "Replay keeps flashcards from old lessons in the pile. EWC writes 'do not forget these weights' "
+            "in the margin before opening a new chapter."
+        ),
+        steps=(
+            "Require buildml[torch] and a classification target.",
+            "fit_online(backend='torch', estimator='replay_mlp' or 'ewc_mlp').",
+            "partial_fit_online on train chunks; read n_updates and n_seen_rows.",
+            "Evaluate on holdout without updating there.",
+        ),
+        use=(
+            "When sklearn partial_fit is too linear but you still want incremental tabular updates.",
+            "Teaching continual-learning tradeoffs without claiming a production platform.",
+        ),
+        avoid=(
+            "Do not use for regression — resolve refuses replay_mlp/ewc_mlp on regression tasks.",
+            "Do not treat this as full lifelong learning at production scale.",
+        ),
+        myths=(
+            (
+                "Torch online equals production continual learning.",
+                "It is a disclosed tabular MLP path for teaching and benchmarks.",
+            ),
+        ),
+        example=(
+            "session.fit_online(backend='torch', estimator='replay_mlp', chunk_size=256)",
+            "session.partial_fit_online(chunk)",
+        ),
+        check=(
+            "Is your task classification?",
+            "Does the plan show backend='torch' and the expected estimator?",
+        ),
+        tools=("fit_online", "partial_fit_online", "online_capability_matrix"),
+        terms=("online learning", "estimator"),
+        difficulty=CORE,
+    ),
+    _layer(
         "online-bundle-boundary",
         plain=(
             "An online model's bundle stores more than the estimator: it also stores the cursor (how far "

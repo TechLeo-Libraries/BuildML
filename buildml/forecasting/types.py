@@ -49,6 +49,16 @@ class ForecastConfig:
     nbeats_horizon: int = 7
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise forecasting configuration knobs for plan metadata.
+
+        Converts dataclass fields to a JSON-friendly dict stored on
+        :class:`~buildml.forecasting.results.ForecastPlan`.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, horizon, lag, and hyperparameter settings.
+        """
         return {
             "method": self.method,
             "horizon": self.horizon,

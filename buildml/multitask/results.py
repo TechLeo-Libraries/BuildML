@@ -31,6 +31,15 @@ class MultiTaskPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the plan to a JSON-friendly dict (no private estimators).
+
+        Omits ``estimator_`` and ``label_encoders_`` so bundles stay lightweight.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, targets, task kinds, and disclosure fields for history/bundles.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -66,6 +75,15 @@ class MultiTaskFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the fit result for history and bundle metadata.
+
+        Captures backend, method, and target contract without model weights.
+
+        Returns
+        -------
+        dict[str, Any]
+            Train row counts, target columns, and disclosure fields.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -96,6 +114,15 @@ class MultiTaskPredictResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize predict metadata without embedding full prediction vectors.
+
+        Stores per-task prediction lengths rather than raw values for history.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, attach flag, prediction prefix, and task column names.
+        """
         return {
             "partition": self.partition,
             "n_rows": self.n_rows,
@@ -127,6 +154,15 @@ class MultiTaskEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize evaluation metrics and per-task scores for history.
+
+        Includes aggregate and per-target metrics for walkthrough replay.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, aggregate metrics, per-task metrics, and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,

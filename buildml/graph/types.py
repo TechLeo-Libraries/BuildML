@@ -53,6 +53,16 @@ class GraphSpec:
     disclosures: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise graph-spec metadata for bundles and history logs.
+
+        Captures column names, edge/node counts, and disclosures without
+        embedding the full edge DataFrame.
+
+        Returns
+        -------
+        dict[str, Any]
+            Endpoint column names, topology counts, and honesty notes.
+        """
         return {
             "source_col": self.source_col,
             "target_col": self.target_col,
@@ -65,6 +75,16 @@ class GraphSpec:
         }
 
     def validate(self) -> None:
+        """Validate edge table shape and required column contract.
+
+        Called by :func:`build_graph_spec` and Session ``set_graph`` before a
+        :class:`GraphSpec` is attached to the workflow.
+
+        Raises
+        ------
+        ValidationError
+            When edges are empty, columns are missing, or node_id_col is blank.
+        """
         if self.edges is None or self.edges.empty:
             raise ValidationError("GraphSpec.edges must be a non-empty DataFrame.")
         for col in (self.source_col, self.target_col):
@@ -100,6 +120,16 @@ class GraphConfig:
     heads: int = 4
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise user-facing graph-ML knobs for plan metadata.
+
+        Stored on :class:`~buildml.graph.results.GraphPlan` so bundles and
+        history logs replay the exact fit configuration.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, mode, feature selection, and neural-network hyperparameters.
+        """
         return {
             "method": self.method,
             "task": self.task,

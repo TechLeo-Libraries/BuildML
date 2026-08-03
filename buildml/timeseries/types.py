@@ -29,6 +29,16 @@ class TSAnalysisConfig:
     spectral_n_fft: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise analysis configuration knobs for plans and history records.
+
+        Every dataclass field is copied into a plain dict suitable for JSON
+        export and Session plan persistence.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plain mapping of every :class:`TSAnalysisConfig` field.
+        """
         return {
             "target_column": self.target_column,
             "time_column": self.time_column,

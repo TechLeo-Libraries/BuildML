@@ -19,7 +19,35 @@ def compute_diagnostics(
     target_column: str = "target",
     time_column: str = "time",
 ) -> TSDiagnosticsResult:
-    """Compute ACF/PACF and optional ADF/KPSS stationarity tests."""
+    """Compute ACF, PACF, and optional ADF/KPSS stationarity tests on a series.
+
+    Uses statsmodels FFT ACF and Yule-Walker PACF when available; falls back to
+    numpy autocorrelation without confidence bands or unit-root tests. Interpret
+    ADF and KPSS jointly — conflicting signals often indicate trend-stationarity
+    or undetected structural breaks.
+
+    Parameters
+    ----------
+    y:
+        One-dimensional observation vector in temporal order.
+    acf_lags, pacf_lags:
+        Maximum lags to compute (capped by series length).
+    adf_regression, kpss_regression:
+        Deterministic term codes passed to statsmodels (``c``, ``ct``, etc.).
+    target_column, time_column:
+        Names recorded on the result for traceability.
+
+    Returns
+    -------
+    TSDiagnosticsResult
+        Autocorrelation vectors, optional test statistics, disclosures, and
+        warnings when statsmodels is missing or a test fails numerically.
+
+    Raises
+    ------
+    ValidationError
+        When ``y`` has fewer than four points or requested lags exceed length.
+    """
     y = np.asarray(y, dtype=float).reshape(-1)
     n = int(y.shape[0])
     if n < 4:

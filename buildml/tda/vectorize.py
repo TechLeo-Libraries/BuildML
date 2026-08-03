@@ -32,7 +32,41 @@ def fit_vectorizer_state(
     n_layers: int,
     pixel_size: float | None = None,
 ) -> dict[str, Any]:
-    """Fit vectorizer hyperparameters from **train** diagrams only."""
+    """Fit vectorizer hyperparameters from train persistence diagrams only.
+
+    Chooses birth/persistence ranges (persistence images), filtration grids
+    (landscapes/silhouettes), and output dimensionality. Holdout transforms must
+    reuse this frozen state — never refit on validation or test diagrams.
+
+    Parameters
+    ----------
+    train_diagrams:
+        One list of diagrams per train row (indexed by homology dimension).
+    vectorization:
+        ``persistence_image``, ``landscape``, or ``silhouette``.
+    homology_dims:
+        Homology dimensions to vectorize (e.g. H0 and H1).
+    n_bins:
+        Grid resolution for landscapes, silhouettes, and persistence images.
+    n_layers:
+        Number of landscape layers (ignored for silhouettes and PI).
+    pixel_size:
+        Optional persistence-image pixel size. Auto-selected from train ranges
+        when ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Serializable vectorizer state including ``kind``, ``feature_dim``, and
+        ranges/grids needed by :func:`vectorize_diagrams`.
+
+    Raises
+    ------
+    ValidationError
+        When ``vectorization`` is not supported on the native backend.
+    MissingExtraError
+        When ``persistence_image`` is requested but persim is not installed.
+    """
     key = str(vectorization).lower().replace("-", "_")
     dims = tuple(int(d) for d in homology_dims)
     if key == "persistence_image":
@@ -136,7 +170,28 @@ def vectorize_diagrams(
     diagrams: Sequence[np.ndarray],
     state: dict[str, Any],
 ) -> np.ndarray:
-    """Vectorize one sample's diagrams (indexed by homology dimension)."""
+    """Vectorize one sample's persistence diagrams using frozen train state.
+
+    Dispatches on ``state['kind']`` to persistence images, landscapes, or
+    silhouettes without refitting ranges on holdout diagrams.
+
+    Parameters
+    ----------
+    diagrams:
+        Diagram list indexed by homology dimension for one row.
+    state:
+        State dict from :func:`fit_vectorizer_state` (never refit here).
+
+    Returns
+    -------
+    numpy.ndarray
+        Fixed-length topological feature vector for the sample.
+
+    Raises
+    ------
+    ValidationError
+        When ``state['kind']`` is unknown.
+    """
     kind = state["kind"]
     dims = tuple(int(d) for d in state["homology_dims"])
     parts: list[np.ndarray] = []
@@ -231,7 +286,21 @@ def _silhouette_vector(
 
 
 def feature_names_from_state(state: dict[str, Any]) -> tuple[str, ...]:
-    """Stable feature names for the topological vector."""
+    """Generate stable feature names matching a fitted vectorizer state.
+
+    Names encode vectorization kind, homology dimension, and bin/layer index so
+    downstream reports remain interpretable after bundle reload.
+
+    Parameters
+    ----------
+    state:
+        Vectorizer state from native or giotto fit paths.
+
+    Returns
+    -------
+    tuple[str, ...]
+        One name per feature dimension in the topological vector.
+    """
     kind = state["kind"]
     dims = tuple(int(d) for d in state["homology_dims"])
     names: list[str] = []

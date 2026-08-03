@@ -103,6 +103,54 @@ def fit_federated(
     No cryptographic secure aggregation; model updates are averaged in-process
     with clear privacy limits (the orchestrator sees client updates).
     Validation/test partitions are never used for local training.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features, target, and client columns.
+    split_plan:
+        Train/validation/test split; train partition is used for local updates.
+    backend:
+        Optional backend override (``native`` or ``flower``).
+    method:
+        Federated aggregation method (``fedavg`` or ``fedprox``).
+    estimator:
+        Sklearn linear/SGD estimator key for local and global models.
+    task:
+        Optional task override; inferred from ``estimator`` when ``None``.
+    client_column:
+        Optional explicit client/group column.
+    columns:
+        Optional explicit feature columns.
+    n_rounds:
+        Number of federated communication rounds.
+    local_epochs:
+        Local training epochs per selected client per round.
+    client_fraction:
+        Fraction of eligible clients sampled each round.
+    mu:
+        FedProx proximal strength (required when ``method='fedprox'``).
+    random_state:
+        Seed for client sampling and estimator initialization.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    min_client_rows:
+        Minimum train rows required for a client to participate.
+    reduce_plan:
+        Optional preprocess reduce plan from Session.
+
+    Returns
+    -------
+    tuple[FederatedPlan, FederatedFitResult]
+        Fitted plan with global estimator and a serializable fit summary.
+
+    Raises
+    ------
+    ValidationError
+        When split, column, client, or hyperparameter preconditions fail.
+    MissingExtraError
+        When ``backend='flower'`` requires ``federated-industry`` and it is
+        missing.
     """
     resolved_backend = resolve_backend(backend, method=method)
     if resolved_backend == "flower":

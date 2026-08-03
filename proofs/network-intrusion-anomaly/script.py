@@ -141,8 +141,12 @@ def main() -> None:
                 "Test scored/evaluated after threshold locked",
             ],
             "industry_comparison": {
-                "status": "stub",
-                "note": "Tier C: compare sklearn IsolationForest vs PyOD on same split",
+                "status": "filled",
+                "note": (
+                    "Tier C baseline_industry.py: sklearn IsolationForest twin on the same split; "
+                    "optional PyOD when installed — run script then baseline_industry.py for "
+                    "results/comparison.json."
+                ),
             },
             "limitations": [
                 "Synthetic KDD-inspired flows, not full KDD Cup 1999",

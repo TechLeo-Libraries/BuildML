@@ -104,6 +104,44 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
             related_concepts=("forecast-horizon-generate", "forecast-temporal-leakage"),
         ),
         _note(
+            key="forecast-classical-ets-arima",
+            title="ETS / ARIMA / SARIMAX industry paths (buildml[timeseries])",
+            summary="Statsmodels Holt-Winters and ARIMA-family models fit univariate history; exog only on arima/sarimax/lag paths.",
+            definition=(
+                "ETS (Exponential Smoothing) captures level/trend/seasonality in the target "
+                "series alone. ARIMA/SARIMAX model autoregressive integrated moving-average "
+                "structure; SARIMAX adds seasonal orders and optional contemporaneous exog. "
+                "auto_arima here is a lightweight in-tree AIC grid — not pmdarima."
+            ),
+            intuition=(
+                "ETS smooths the past forward; ARIMA learns how today relates to recent "
+                "errors and levels. Neither uses promo calendars unless you pick "
+                "sarimax/lag models with exog_columns."
+            ),
+            formal_idea=(
+                "ETS: level + optional trend + seasonal components with additive errors. "
+                "SARIMAX: φ(B)Φ(B^s)(1-B)^d(1-B^s)^D y_t = θ(B)Θ(B^s)ε_t + βX_t."
+            ),
+            why_it_matters=(
+                "Default method='auto' selects ETS when statsmodels is installed.",
+                "exog_columns with ETS/Prophet/N-BEATS/auto_arima is refused at fit time.",
+            ),
+            how_buildml_uses=(
+                "fit_forecast(method='ets'|'arima'|'auto_arima'|'sarimax').",
+                "Prophet/N-BEATS require separate extras; synthetic calendar ds disclosed.",
+            ),
+            interpretation_rules=(
+                "Read plan.backend, method, disclosures, and univariate flag.",
+            ),
+            assumptions=("time_split in place; seasonal_period meaningful when seasonal.",),
+            failure_modes=("Short train for seasonal ETS; expecting exog on univariate methods.",),
+            anti_patterns=("Labeling auto_arima as full pmdarima without reading warnings.",),
+            worked_example_pattern=(
+                "time_split → fit_forecast(method='ets') → evaluate_forecast('validation').",
+            ),
+            related_concepts=("forecast-temporal-leakage", "forecast-univariate-vs-exog"),
+        ),
+        _note(
             key="forecast-univariate-vs-exog",
             title="Univariate vs exogenous forecasting",
             summary="Default path is univariate (target history only); optional numeric exog columns require known future values for horizon generate.",

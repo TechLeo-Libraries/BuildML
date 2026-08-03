@@ -32,6 +32,36 @@ class VisionSSLEncoder:
         random_state: int | None = 0,
         device: str = "cpu",
     ) -> None:
+        """Configure a vision SSL encoder with pretrained backbone and projector.
+
+        Wires zoo backbone loading, SimCLR-style projector finetune, and image
+        decode settings for Session vision-column pretext.
+
+        Parameters
+        ----------
+        architecture:
+            Torchvision backbone name (for example ``resnet18``).
+        weight_mode:
+            Pretrained weight mode forwarded to the model zoo loader.
+        latent_dim:
+            Exported feature width after global pooling (set during fit).
+        projector_dim:
+            SimCLR projector output width during optional finetune.
+        epochs:
+            Finetune epochs on train images.
+        batch_size:
+            Minibatch size for finetune and transform.
+        learning_rate:
+            AdamW learning rate for backbone/projector finetune.
+        temperature:
+            NT-Xent temperature during vision contrastive finetune.
+        image_size:
+            Decode/resize target ``(height, width)`` for image cells.
+        random_state:
+            Seed for augmentations and minibatch shuffling.
+        device:
+            Torch device string.
+        """
         self.architecture = architecture
         self.weight_mode = weight_mode
         self.latent_dim = int(latent_dim)
@@ -49,6 +79,28 @@ class VisionSSLEncoder:
         self.reconstruction_mae_: float | None = None
 
     def fit(self, images: list[Any] | np.ndarray, y: Any = None) -> VisionSSLEncoder:
+        """Finetune backbone+projector with SimCLR-style NT-Xent on train images.
+
+        Decodes Session image cells, applies lightweight augmentations, and
+        updates both backbone and projector weights on the train partition only.
+
+        Parameters
+        ----------
+        images:
+            Train image column values (at least four samples).
+        y:
+            Ignored; present for sklearn API compatibility.
+
+        Returns
+        -------
+        VisionSSLEncoder
+            Fitted encoder with ``pretext_loss_`` and ``latent_dim`` set.
+
+        Raises
+        ------
+        ValidationError
+            When fewer than four image samples are provided.
+        """
         del y
         torch = require_torch(feature="Vision SSL")
         cells = list(images)
@@ -102,6 +154,26 @@ class VisionSSLEncoder:
         return self
 
     def transform(self, images: list[Any] | np.ndarray) -> np.ndarray:
+        """Extract pooled backbone features from image cells.
+
+        Decodes Session image cells, runs the fitted backbone in eval mode, and
+        returns global-pooled features for head fine-tune or attach.
+
+        Parameters
+        ----------
+        images:
+            Image column values to decode and embed.
+
+        Returns
+        -------
+        numpy.ndarray
+            Feature matrix with shape ``(n_samples, latent_dim)``.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder has not been fitted.
+        """
         if self._backbone is None:
             raise ValidationError("VisionSSLEncoder is not fitted.")
         torch = require_torch(feature="Vision SSL transform")
@@ -122,6 +194,21 @@ class VisionSSLEncoder:
         return out
 
     def state_dict(self) -> dict[str, Any]:
+        """Serialise fitted backbone and projector weights for bundle reload.
+
+        Stores architecture metadata and Torch state dicts so vision SSL
+        bundles can restore finetuned weights without refitting.
+
+        Returns
+        -------
+        dict[str, Any]
+            Architecture metadata and Torch state dicts for backbone/projector.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder has not been fitted.
+        """
         if self._backbone is None or self._projector is None:
             raise ValidationError("VisionSSLEncoder is not fitted.")
         return {

@@ -68,7 +68,7 @@ when available).
 | `evaluate_federated(backend=...)` | Global + optional per-client holdout metrics |
 | `predict_federated(backend=...)` | Global predictions (no update) |
 | `save_federated_bundle` / `load_federated_bundle` | `buildml.federated_bundle.v1` |
-| `export_round_history(plan, path)` | JSON export of round metrics/weights |
+| `export_round_history(path)` | JSON export of round metrics/weights (Session facade; module-level `export_round_history(plan, path)` also available) |
 
 Properties: `federated_plan`, `federated_fit_result`,
 `federated_eval_result`, `federated_predict_result`.

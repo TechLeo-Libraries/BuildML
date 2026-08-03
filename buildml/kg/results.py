@@ -10,7 +10,7 @@ import numpy as np
 
 @dataclass(slots=True)
 class KgPlan:
-    """Train-fitted knowledge-graph state.
+    """Stores train-fitted knowledge-graph embeddings and adjacency state.
 
     Persist via ``buildml.kg_bundle.v1``. Distinct from Session checkpoints,
     Graph ML (node classification), and RAG retrieve/generate.
@@ -67,6 +67,16 @@ class KgPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the KG plan for bundles and history logs.
+
+        Captures backend, method, vocabulary sizes, and training metadata
+        without embedding full embedding weight arrays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, and honesty disclosures.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -111,6 +121,16 @@ class KgFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise KG fit output for history logs.
+
+        Records backend, method, vocabulary sizes, and training loss after fit
+        on Session train triples completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fit metadata, triple counts, and honesty disclosures.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -129,6 +149,7 @@ class KgFitResult:
         }
 
     def show(self) -> None:
+        """Print a compact human-readable summary of the KG fit result."""
         loss = "n/a" if self.final_loss is None else f"{self.final_loss:.6f}"
         print(
             f"KgFit · {self.backend}/{self.method} · entities={self.n_entities} · "
@@ -155,6 +176,15 @@ class ScoreTriplesResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise triple-scoring output without listing every score.
+
+        Keeps history payloads compact while recording OOV entity/relation counts.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, triple count, unknown counts, and disclosures.
+        """
         return {
             "method": self.method,
             "n_triples": self.n_triples,
@@ -165,6 +195,7 @@ class ScoreTriplesResult:
         }
 
     def show(self) -> None:
+        """Print a compact summary of triple-scoring output."""
         print(f"ScoreTriples · {self.method} · n={self.n_triples}")
 
 
@@ -187,6 +218,15 @@ class PredictLinksResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise link-prediction output without listing every candidate.
+
+        Records mode, k, query counts, and filtered-ranking flag for history logs.
+
+        Returns
+        -------
+        dict[str, Any]
+            Prediction metadata and disclosures.
+        """
         return {
             "mode": self.mode,
             "method": self.method,
@@ -199,6 +239,7 @@ class PredictLinksResult:
         }
 
     def show(self) -> None:
+        """Print a compact summary of link-prediction output."""
         print(
             f"PredictLinks · {self.method} · mode={self.mode} · "
             f"k={self.k} · queries={self.n_queries}"
@@ -222,6 +263,16 @@ class KgQueryResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise symbolic query output for history logs.
+
+        Records mode, endpoints, hop limit, and result count without embedding
+        full neighbor or path lists.
+
+        Returns
+        -------
+        dict[str, Any]
+            Query metadata and disclosures.
+        """
         return {
             "mode": self.mode,
             "n_results": self.n_results,
@@ -234,6 +285,7 @@ class KgQueryResult:
         }
 
     def show(self) -> None:
+        """Print a compact summary of symbolic query output."""
         print(f"KgQuery · mode={self.mode} · n={self.n_results}")
 
 
@@ -251,6 +303,16 @@ class KgEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout link-prediction evaluation metrics.
+
+        Produced by :func:`buildml.kg.evaluate.evaluate_kg` after filtered
+        ranking on a validation or test partition.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, MRR/Hits metrics, OOV skip counts, and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -263,6 +325,7 @@ class KgEvalResult:
         }
 
     def show(self) -> None:
+        """Print a compact summary of holdout evaluation metrics."""
         print(
             f"KgEval · {self.method} · k={self.k} · "
             f"partition={self.partition} · triples={self.n_triples_scored}"

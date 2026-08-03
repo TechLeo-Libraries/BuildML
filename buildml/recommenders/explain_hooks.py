@@ -6,7 +6,21 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_recommender`` history."""
+    """Build a compact history summary from a recommender fit result.
+
+    Strips full plan payloads while recording method, backend, catalog sizes,
+    and hyperparameters for Session audit logs.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.recommenders.results.RecommenderFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Method, backend, interaction counts, and factor/neighbor settings.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -23,7 +37,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def recommend_result_summary(recommend_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``recommend`` history."""
+    """Build a compact history summary from a recommendation result.
+
+    Records top-K size, user count, and cold-start statistics without storing
+    full per-user item lists in Session history.
+
+    Parameters
+    ----------
+    recommend_result:
+        :class:`~buildml.recommenders.results.RecommendResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        ``k``, user counts, method, and cold-start metadata.
+    """
     if recommend_result is None:
         return {}
     payload = (
@@ -41,7 +69,21 @@ def recommend_result_summary(recommend_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_recommender`` history."""
+    """Build a compact history summary from a holdout eval result.
+
+    Strips per-user recommendation lists while preserving partition, cutoff,
+    and aggregate ranking metrics for Session audit logs.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.recommenders.results.RecommenderEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition name, method, ``k``, users scored, and metric dict.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -62,7 +104,31 @@ def recommender_status(
     recommend_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for recommenders."""
+    """Return factual walkthrough disclosure for recommender operations.
+
+    Combines live plan state, optional fit/eval/recommend results, and history
+    records into a status payload with capability-matrix attachment for Session
+    walkthroughs.
+
+    Parameters
+    ----------
+    plan:
+        Live :class:`~buildml.recommenders.results.RecommenderPlan` or ``None``.
+    fit_result:
+        Most recent fit summary, if any.
+    eval_result:
+        Most recent holdout eval summary, if any.
+    recommend_result:
+        Most recent recommendation summary, if any.
+    history:
+        Session operation history used to detect past recommender activity.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, method/backend metadata, disclosures, and capability
+        matrix attachment.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -109,7 +175,10 @@ def recommender_status(
             f"metrics={eval_payload.get('metrics')}."
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_recommender_plan": enabled,
@@ -128,11 +197,27 @@ def recommender_status(
             "CF or content top-K with ranking metrics. Not RAG, not EDA "
             "Recommendation Findings, not a Netflix-scale platform."
         ),
-    }
+    },
+        "recommender_capability_matrix",
+    )
 
 
 def recommender_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Return recommender walkthrough status from a Session object.
+
+    Reads private Session attributes for the live plan, fit/eval/recommend
+    results, and history, then delegates to :func:`recommender_status`.
+
+    Parameters
+    ----------
+    session:
+        BuildML Session instance with optional recommender state attached.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same status payload as :func:`recommender_status` for walkthrough UI.
+    """
     return recommender_status(
         getattr(session, "_recommender_plan", None),
         fit_result=getattr(session, "_recommender_fit_result", None),

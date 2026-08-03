@@ -30,7 +30,39 @@ def evaluate_ssl(
     partition: PartitionOrAll = "validation",
     unlabeled_marker: Any = None,
 ) -> SelfSupervisedEvalResult:
-    """Score frozen SSL representations + head on labeled partition rows only."""
+    """Score frozen SSL representations and head on labeled holdout rows.
+
+    Encodes the evaluation partition through the train-fitted pretext encoder,
+    then predicts with the frozen head. Unlabeled rows are counted but never
+    treated as ground truth.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing evaluation features and targets.
+    ssl_plan:
+        Train-fitted :class:`~buildml.selfsupervised.results.SelfSupervisedPlan`.
+    head_plan:
+        Supervised :class:`~buildml.selfsupervised.results.SSLHeadPlan`.
+    split_plan:
+        Split plan defining validation/test partitions; required unless
+        ``partition='all'``.
+    partition:
+        Holdout partition name or ``'all'`` for the full frame.
+    unlabeled_marker:
+        Target value treated as unlabeled (default NaN).
+
+    Returns
+    -------
+    SelfSupervisedEvalResult
+        Labeled-row metrics, counts, disclosures, and warnings.
+
+    Raises
+    ------
+    ValidationError
+        When plans are missing, the partition is invalid, or required columns
+        are absent.
+    """
     if ssl_plan is None or head_plan is None:
         raise ValidationError(
             "evaluate_ssl requires both a SelfSupervisedPlan and an SSLHeadPlan."

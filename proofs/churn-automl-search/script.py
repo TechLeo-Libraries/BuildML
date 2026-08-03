@@ -146,8 +146,12 @@ def main() -> None:
                 "evaluate_automl(test) once after search + refit",
             ],
             "industry_comparison": {
-                "status": "stub",
-                "note": "Tier C: FLAML/AutoGluon standalone vs native on same split",
+                "status": "filled",
+                "note": (
+                    "Tier C baseline_industry.py: sklearn RandomizedSearchCV twin on the same "
+                    "split; optional FLAML/AutoGluon when installed — run script then "
+                    "baseline_industry.py for results/comparison.json."
+                ),
             },
             "limitations": [
                 "Synthetic telco churn; finite trial budget (not unbounded HPO)",

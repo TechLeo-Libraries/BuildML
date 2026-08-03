@@ -23,6 +23,30 @@ def resolve_online_task(
     estimator: str,
     task: OnlineTask | None,
 ) -> OnlineTask:
+    """Resolve the online task type for a backend/estimator pair.
+
+    Delegates to the backend-specific resolver and validates classifier vs
+    regressor compatibility.
+
+    Parameters
+    ----------
+    backend:
+        Online backend (``sklearn``, ``industry``, or ``torch``).
+    estimator:
+        Estimator key for the backend.
+    task:
+        Optional explicit task override.
+
+    Returns
+    -------
+    OnlineTask
+        Resolved ``classification`` or ``regression`` task.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator/task pairing is invalid.
+    """
     if backend == "sklearn":
         return resolve_sklearn_task(estimator, task)
     if backend == "industry":
@@ -45,6 +69,44 @@ def build_online_estimator(
     hidden_dim: int = 64,
     device: str = "cpu",
 ) -> Any:
+    """Build a backend-specific online estimator with a partial_fit interface.
+
+    Dispatches to sklearn, River, or torch continual adapters based on
+    ``backend``.
+
+    Parameters
+    ----------
+    backend:
+        Online backend (``sklearn``, ``industry``, or ``torch``).
+    estimator:
+        Estimator key for the backend.
+    random_state:
+        Seed for stochastic estimators.
+    drift_detector:
+        Drift disclosure mode for industry backends.
+    n_features:
+        Feature dimensionality (required for River lazy init).
+    buffer_size:
+        Replay buffer size for torch continual backends.
+    epochs_per_update:
+        Training epochs per partial_fit for torch backends.
+    batch_size:
+        Minibatch size for torch backends.
+    learning_rate:
+        Optimizer learning rate for torch backends.
+    ewc_lambda:
+        EWC penalty weight for ``ewc_mlp``.
+    hidden_dim:
+        MLP hidden width for torch backends.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+
+    Returns
+    -------
+    Any
+        Backend-specific estimator object supporting ``partial_fit`` (or refit
+        fallback when disclosed).
+    """
     if backend == "sklearn":
         return build_sklearn_estimator(estimator, random_state)
     if backend == "industry":

@@ -37,7 +37,31 @@ def save_semisupervised_bundle(
     fit_result: SemiSupervisedFitResult | None = None,
     eval_result: SemiSupervisedEvalResult | None = None,
 ) -> Path:
-    """Write a semi-supervised bundle directory (``buildml.semisupervised_bundle.v1``)."""
+    """Write a semi-supervised bundle directory (``buildml.semisupervised_bundle.v1``).
+
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+
+Parameters
+----------
+path:
+    Filesystem path to the bundle directory.
+plan:
+    Fitted plan object carrying model state and feature contract.
+fit_result:
+    Optional fit summary to embed in bundle metadata or history.
+eval_result:
+    Optional evaluation summary for bundle metadata or history.
+
+Returns
+-------
+Path
+    Resolved filesystem path to the written bundle directory.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if plan is None:
         raise ValidationError("No SemiSupervisedPlan to save.")
     destination = Path(path)
@@ -57,7 +81,25 @@ def save_semisupervised_bundle(
 
 
 def load_semisupervised_bundle(path: str | Path) -> SemiSupervisedPlan:
-    """Load a semi-supervised bundle into a :class:`SemiSupervisedPlan`."""
+    """Load a semi-supervised bundle into a :class:`SemiSupervisedPlan`.
+
+Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+
+Parameters
+----------
+path:
+    Filesystem path to the bundle directory.
+
+Returns
+-------
+SemiSupervisedPlan
+    Fitted plan object (SemiSupervisedPlan) with private estimators attached.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "semisupervised_plan.joblib"

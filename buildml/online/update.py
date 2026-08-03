@@ -40,6 +40,31 @@ def partial_fit_online(
 
     Validation/test are never used for updates. Silent full refits are refused
     unless the plan was created with ``allow_refit_fallback=True`` (disclosed).
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset backing the split (not used for external ``frame=``).
+    plan:
+        Fitted :class:`~buildml.online.results.OnlinePlan` from :func:`fit_online`.
+    split_plan:
+        Train/validation/test split; required unless ``frame=`` is provided.
+    n_rows:
+        Rows to take from unused train indices; defaults to ``plan.chunk_size``.
+    indices:
+        Optional explicit train-partition dataset indices.
+    frame:
+        Optional user-provided incremental frame with role-aligned columns.
+
+    Returns
+    -------
+    tuple[OnlinePlan, OnlineUpdateResult]
+        Updated plan and a serializable update summary.
+
+    Raises
+    ------
+    ValidationError
+        When plan, chunk source, or column preconditions are invalid.
     """
     if plan is None:
         raise ValidationError("No OnlinePlan. Call fit_online first.")

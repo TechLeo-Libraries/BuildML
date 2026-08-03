@@ -57,27 +57,61 @@ def fit_ranker(
     device: str = "cpu",
     random_state: int | None = 0,
 ) -> tuple[RankerPlan, RankerFitResult]:
-    """Fit a leakage-safe tabular ranker on the Session **train** partition.
+    """Fit a leakage-safe tabular ranker on the Session train partition.
 
-    Backends
-    --------
-    sklearn (fallback):
-        Pointwise Ridge/HGB relevance regression or pairwise RankSVM-lite.
-    industry (``buildml[ranking-industry]``):
-        LightGBM LambdaRank, XGBoost rank:ndcg, or CatBoost YetiRank when
-        installed — default backend when available.
-    torch (``buildml[torch]``):
-        Listwise-lite MLP with per-query softmax loss on graded relevance.
+    Resolves columns, discloses query-group split honesty, standardizes features
+    on train only, and fits the selected sklearn, industry GBDT, or torch
+    listwise backend.
 
-    Pipeline
-    --------
-    1. Resolve query / item / relevance / feature columns.
-    2. Disclose query-group split honesty (prefer ``group_split``).
-    3. Standardize features on train only.
-    4. Fit the selected backend/method ranker.
+    Parameters
+    ----------
+    dataset:
+        Session dataset with query, item, feature, and relevance columns.
+    split_plan:
+        Split plan defining the train partition.
+    backend:
+        ``sklearn``, ``industry``, or ``torch``; inferred when ``None``.
+    method:
+        Ranker method such as ``pointwise`` or ``lambdarank_lgbm``; defaults
+        to the capability matrix recommendation.
+    query_column, item_column:
+        Explicit query and item id columns.
+    relevance_column:
+        Graded or binary relevance labels; defaults to Session target.
+    feature_columns:
+        Numeric feature columns; defaults to numeric feature roles.
+    pointwise_estimator:
+        ``ridge`` or ``hgb`` for sklearn pointwise regression.
+    pairwise_estimator:
+        ``ranksvm`` for sklearn pairwise RankSVM-lite.
+    max_pairs_per_query:
+        Cap on oriented pairs sampled per train query for RankSVM-lite.
+    relevance_threshold:
+        Binary relevance cutoff stored on the plan for MAP/MRR evaluation.
+    alpha, C:
+        Regularization for Ridge pointwise and RankSVM pairwise paths.
+    n_estimators, learning_rate:
+        Boosting schedule for industry GBDT rankers.
+    hidden_dim, epochs, device:
+        MLP architecture and training controls for torch listwise-lite.
+    random_state:
+        Seed for pair sampling and stochastic backends.
 
-    Honesty: Session tabular LTR — not a search-engine product, not RAG
-    retrieve/generate, not recommender CF. Never trains on holdout rows.
+    Returns
+    -------
+    tuple[RankerPlan, RankerFitResult]
+        Frozen train-fitted plan and fit summary for history logs.
+
+    Raises
+    ------
+    ValidationError
+        When train data are insufficient, columns are invalid, or backend/method
+        pairing fails validation.
+
+    Notes
+    -----
+    Session tabular LTR — not a search-engine product, not RAG retrieve/generate,
+    not recommender CF. Never trains on holdout rows.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

@@ -26,6 +26,13 @@ class MapieWrapper:
 
     @property
     def confidence_level(self) -> float:
+        """Return the MAPIE confidence level ``1 - alpha`` for interval calls.
+
+        Returns
+        -------
+        float
+            Confidence level implied by the wrapper's miscoverage ``alpha``.
+        """
         return 1.0 - float(self.alpha)
 
 
@@ -70,7 +77,38 @@ def fit_mapie(
     random_state: int | None = 0,
     alpha: float = 0.1,
 ) -> tuple[MapieWrapper, list[str]]:
-    """Fit MAPIE conformal regression/classification on Session train only."""
+    """Fit MAPIE conformal regression/classification on Session train only.
+
+    Selects modern SplitConformal/CrossConformal APIs when available and falls
+    back to legacy MapieRegressor/MapieClassifier wrappers otherwise.
+
+    Parameters
+    ----------
+    method:
+        ``split``, ``cv_plus``, or ``jackknife_plus``.
+    task:
+        ``regression`` or ``classification``.
+    x_fit, y_fit:
+        Fit carve features and targets from Session train.
+    x_cal, y_cal:
+        Calibration carve for split conformal (required for ``split``).
+    random_state:
+        Seed for CV-based MAPIE methods.
+    alpha:
+        Miscoverage rate in ``(0, 1)``.
+
+    Returns
+    -------
+    tuple[MapieWrapper, list[str]]
+        Fitted wrapper and honesty disclosures for the plan.
+
+    Raises
+    ------
+    ValidationError
+        When installed MAPIE lacks supported APIs or split lacks a calib carve.
+    MissingExtraError
+        When mapie is not installed.
+    """
     require_mapie(feature=f"MAPIE {method} conformal ({task})")
     disclosures: list[str] = [
         f"MAPIE backend method={method}, task={task}.",
@@ -304,7 +342,32 @@ def mapie_predict_interval(
     task: str,
     alpha: float,
 ) -> tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...], str]:
-    """Return (point, lower, upper, method_label) from a fitted MAPIE wrapper."""
+    """Return point predictions and symmetric intervals from a fitted MAPIE wrapper.
+
+    Supports modern ``predict_interval`` and legacy ``predict`` APIs for
+    regression tasks only.
+
+    Parameters
+    ----------
+    wrapper:
+        :class:`MapieWrapper` or raw fitted MAPIE object.
+    x:
+        Feature matrix for scoring.
+    task:
+        Must be ``regression`` for interval output.
+    alpha:
+        Miscoverage rate passed to MAPIE predict calls.
+
+    Returns
+    -------
+    tuple[tuple, tuple, tuple, str]
+        Point predictions, lower bounds, upper bounds, and method label.
+
+    Raises
+    ------
+    ValidationError
+        When ``task`` is not regression or the wrapper API is unsupported.
+    """
     handle = _as_wrapper(wrapper, task=task, alpha=alpha)
     if handle.api == "modern" and task == "regression":
         y_pred, y_pis = handle.estimator.predict_interval(x)
@@ -332,7 +395,27 @@ def mapie_predict_sets(
     alpha: float,
     task: str = "classification",
 ) -> tuple[tuple[Any, ...], tuple[tuple[Any, ...], ...]]:
-    """Classification prediction sets from MAPIE."""
+    """Return classification point predictions and MAPIE prediction sets.
+
+    Uses modern ``predict_set`` or legacy boolean mask outputs depending on the
+    installed MAPIE version.
+
+    Parameters
+    ----------
+    wrapper:
+        :class:`MapieWrapper` or raw fitted MAPIE classifier.
+    x:
+        Feature matrix for scoring.
+    alpha:
+        Miscoverage rate for set construction.
+    task:
+        ``classification`` (default).
+
+    Returns
+    -------
+    tuple[tuple, tuple[tuple, ...]]
+        Point class codes and per-row prediction-set tuples.
+    """
     handle = _as_wrapper(wrapper, task=task, alpha=alpha)
     if handle.api == "modern":
         y_pred, y_sets = handle.estimator.predict_set(x)
@@ -375,10 +458,34 @@ def mapie_predict_sets(
 
 
 def mapie_supports_return_std() -> bool:
+    """Return whether MAPIE paths expose posterior standard deviation.
+
+    MAPIE conformal wrappers do not provide ``return_std``; native/GPR paths do.
+
+    Returns
+    -------
+    bool
+        Always ``False`` for the MAPIE backend.
+    """
     return False
 
 
 def mapie_supports_predict_proba(wrapper: Any) -> bool:
+    """Return whether the underlying MAPIE base estimator supports ``predict_proba``.
+
+    Unwraps :class:`MapieWrapper` handles to inspect the inner sklearn classifier
+    before evaluate and predict attach probability outputs.
+
+    Parameters
+    ----------
+    wrapper:
+        :class:`MapieWrapper` or raw MAPIE object.
+
+    Returns
+    -------
+    bool
+        ``True`` when a base classifier with ``predict_proba`` is wrapped.
+    """
     handle = wrapper if isinstance(wrapper, MapieWrapper) else None
     est = None
     if handle is not None:

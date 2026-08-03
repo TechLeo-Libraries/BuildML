@@ -14,7 +14,23 @@ ImplicitMethod = Literal["als", "bpr"]
 
 
 def build_user_item_csr(matrix: np.ndarray) -> csr_matrix:
-    """Convert dense user×item matrix to CSR (users × items)."""
+    """Convert a dense user×item matrix to scipy CSR layout.
+
+    The implicit library expects a sparse confidence-weighted matrix with users
+    as rows and items as columns. Call this after
+    :func:`~buildml.recommenders.features.build_user_item_matrix` when routing
+    to ALS or BPR backends.
+
+    Parameters
+    ----------
+    matrix:
+        Dense ``(n_users, n_items)`` interaction matrix from train data.
+
+    Returns
+    -------
+    csr_matrix
+        Float32 CSR matrix ready for ``implicit`` model ``fit``.
+    """
     return csr_matrix(matrix.astype(np.float32))
 
 
@@ -26,7 +42,40 @@ def fit_implicit_model(
     random_state: int | None,
     n_iterations: int = 15,
 ) -> Any:
-    """Fit an implicit ALS or BPR model on a sparse user×item matrix."""
+    """Fit an implicit ALS or BPR model on a sparse user×item matrix.
+
+    Wraps the ``implicit`` library for implicit-feedback collaborative
+    filtering. The fitted model exposes ``user_factors`` and ``item_factors``
+    consumed by :func:`score_implicit_model`.
+
+    Parameters
+    ----------
+    user_item_csr:
+        Sparse CSR matrix with users as rows and items as columns.
+    method:
+        ``"als"`` for alternating least squares or ``"bpr"`` for Bayesian
+        personalized ranking.
+    n_factors:
+        Latent dimensionality; higher values capture finer taste structure at
+        greater compute cost.
+    random_state:
+        Seed for reproducible factor initialization; ``None`` uses library
+        defaults.
+    n_iterations:
+        Number of training iterations per fit call.
+
+    Returns
+    -------
+    model
+        Fitted ``implicit`` model with ``user_factors`` and ``item_factors``.
+
+    Raises
+    ------
+    MissingExtraError
+        When ``buildml[recommenders-industry]`` is not installed.
+    ValidationError
+        When ``method`` is not ``"als"`` or ``"bpr"``.
+    """
     require_implicit(feature=f"implicit method '{method}'")
     if method == "als":
         from implicit.als import AlternatingLeastSquares
@@ -59,7 +108,27 @@ def score_implicit_model(
     n_items: int,
     exclude_mask: np.ndarray,
 ) -> np.ndarray:
-    """Score all catalog items for one user via latent factor dot product."""
+    """Score all catalog items for one user via latent factor dot product.
+
+    Computes ``user_factors[user_idx] @ item_factors.T`` and masks excluded
+    items with ``-inf`` so they never appear in top-K output.
+
+    Parameters
+    ----------
+    model:
+        Fitted ``implicit`` model from :func:`fit_implicit_model`.
+    user_idx:
+        Row index of the user in the train interaction matrix.
+    n_items:
+        Catalog width; scores are padded or truncated to this length.
+    exclude_mask:
+        Boolean mask over items to suppress (typically train history).
+
+    Returns
+    -------
+    np.ndarray
+        Per-item scores of length ``n_items``; excluded items are ``-inf``.
+    """
     require_implicit(feature="implicit scoring")
     user_factors = np.asarray(model.user_factors, dtype=float)
     item_factors = np.asarray(model.item_factors, dtype=float)

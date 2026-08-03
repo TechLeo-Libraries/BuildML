@@ -76,6 +76,59 @@ def fit_active_learner(
     Unlabeled pool = train rows whose target is missing (NaN by default), matching
     the semi-supervised missingness contract. Validation/test are never used as
     the query pool and never invent labels for selection.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features and target columns.
+    split_plan:
+        Train/validation/test split; train partition defines the query pool.
+    backend:
+        Optional backend override (``sklearn``, ``industry``, ``torch``).
+    strategy:
+        Query strategy (``margin``, ``core_set``, ``bald``, etc.).
+    base_estimator:
+        Sklearn base estimator for non-torch backends.
+    columns:
+        Optional explicit feature columns.
+    random_state:
+        Seed for committee bagging and torch training.
+    batch_size:
+        Default query batch size stored on the plan config.
+    label_budget:
+        Maximum human labels allowed across query rounds; ``None`` is unlimited.
+    unlabeled_marker:
+        Sentinel marking unlabeled pool rows; ``None`` uses NaN/NA missingness.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    committee_size:
+        Number of bagging members for query-by-committee strategies.
+    auto_refit:
+        Whether ``label_rows`` refits automatically after user labels.
+    epochs:
+        Torch training epochs for MC-dropout classifier.
+    learning_rate:
+        Torch AdamW learning rate.
+    mc_samples:
+        MC-dropout forward passes for BALD / entropy scoring.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+    reduce_plan:
+        Optional preprocess reduce plan from Session.
+    prior_plan:
+        Optional existing plan when refitting after a labeling round.
+
+    Returns
+    -------
+    tuple[ActiveLearningPlan, ActiveLearningFitResult]
+        Fitted plan with private estimator and a serializable fit summary.
+
+    Raises
+    ------
+    ValidationError
+        When split, column, pool, or estimator preconditions fail.
+    MissingExtraError
+        When the resolved backend requires an optional extra.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -313,7 +366,35 @@ def pool_masks_from_plan(
     plan: ActiveLearningPlan,
     split_plan: SplitPlan,
 ) -> tuple[pd.DataFrame, np.ndarray, np.ndarray, list[Any], np.ndarray, np.ndarray]:
-    """Return train frame, pool matrix, masks, indices, x_labeled, y_codes."""
+    """Return train frame, pool matrix, masks, indices, and labeled features.
+
+    Reconstructs the unlabeled pool and labeled training matrices from a frozen
+    plan for query scoring and optional refit bookkeeping.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset containing the train partition frame.
+    plan:
+        Fitted :class:`~buildml.activelearning.results.ActiveLearningPlan`.
+    split_plan:
+        Split plan whose train indices align pool rows to dataset indices.
+
+    Returns
+    -------
+    train:
+        Train-partition DataFrame.
+    x_pool:
+        Feature matrix for unlabeled pool rows (may be empty).
+    unlabeled:
+        Boolean mask over train rows — ``True`` for pool rows.
+    pool_indices:
+        Dataset-level indices for unlabeled train rows.
+    x_labeled:
+        Feature matrix for currently labeled train rows.
+    y_labeled:
+        Encoded target codes for labeled train rows.
+    """
     train = frame_for_partition(dataset, split_plan, "train")
     target = plan.target_column
     marker = (plan.config or {}).get("unlabeled_marker")

@@ -30,16 +30,34 @@ def score_anomalies(
 ) -> tuple[Dataset | None, AnomalyScoreResult]:
     """Score and flag rows with a frozen anomaly plan (no refit).
 
-    Parameters
-    ----------
-    partition:
-        ``train``, ``validation``, ``test``, or ``all``.
-    attach:
-        When True, requires ``partition='all'`` and writes ``score_column`` /
-        ``flag_column`` onto a copy of the dataset.
-    override_threshold:
-        Optional absolute threshold on higher-is-more-anomalous scores. When set,
-        it is disclosed and does not mutate the stored plan threshold.
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+partition:
+    ``train``, ``validation``, ``test``, or ``all``.
+attach:
+    When True, requires ``partition='all'`` and writes ``score_column`` /
+    ``flag_column`` onto a copy of the dataset.
+override_threshold:
+    Optional absolute threshold on higher-is-more-anomalous scores. When set,
+    it is disclosed and does not mutate the stored plan threshold.
+dataset:
+    BuildML dataset with features, target, and role metadata.
+plan:
+    Fitted plan object carrying model state and feature contract.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+
+Returns
+-------
+tuple[Dataset | None, AnomalyScoreResult]
+    Tuple of results (tuple[Dataset | None, AnomalyScoreResult]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
     """
     frame, part_name = _frame_for_score(dataset, split_plan, partition)
     missing = [c for c in plan.columns if c not in frame.columns]

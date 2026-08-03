@@ -26,7 +26,35 @@ def predict_semisupervised(
     attach: bool = False,
     prediction_column: str = "semisupervised_prediction",
 ) -> tuple[Dataset | None, SemiSupervisedPredictResult]:
-    """Score a frozen semi-supervised plan on a partition (no refit)."""
+    """Score a frozen semi-supervised plan on a partition (no refit).
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+dataset:
+    BuildML dataset with features, target, and role metadata.
+plan:
+    Fitted plan object carrying model state and feature contract.
+split_plan:
+    Train/validation/test split; fit uses train partition only.
+partition:
+    Holdout partition name or ``all`` for the full frame.
+attach:
+    attach (bool).
+prediction_column:
+    prediction column (str).
+
+Returns
+-------
+tuple[Dataset | None, SemiSupervisedPredictResult]
+    Tuple of results (tuple[Dataset | None, SemiSupervisedPredictResult]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     if plan is None:
         raise ValidationError("No SemiSupervisedPlan. Call fit_semisupervised first.")
     if partition == "all":

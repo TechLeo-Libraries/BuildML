@@ -120,6 +120,73 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
             related_concepts=("online-partial-fit", "online-bundle-boundary"),
         ),
         _note(
+            key="online-river-streaming",
+            title="River streaming backend (buildml[online-industry])",
+            summary="Incremental River estimators with ADWIN/Page-Hinkley drift on prediction error — not a Kafka product.",
+            definition=(
+                "The industry online backend wraps River classifiers/regressors with "
+                "partial_fit-style updates on train chunks and optional ADWIN or "
+                "Page-Hinkley drift detectors on holdout prediction error."
+            ),
+            intuition=(
+                "A lightweight stream processor inside your notebook: each chunk updates "
+                "the model once, and drift notes fire when recent errors diverge."
+            ),
+            formal_idea=(
+                "θ ← River.partial_fit(X_chunk, y_chunk); drift ← ADWIN(error_stream)."
+            ),
+            why_it_matters=(
+                "Sklearn partial_fit alone misses streaming-specific drift tooling.",
+                "Catalog defaults to River when installed — read backend on the plan.",
+            ),
+            how_buildml_uses=(
+                "fit_online(backend='industry', estimator='river_logistic'|...).",
+                "Drift disclosures attached to partial_fit_online / evaluate_online.",
+            ),
+            interpretation_rules=(
+                "Read backend, estimator, drift_notes, and update_mode on results.",
+            ),
+            assumptions=("River extra installed; classification vs regression estimator matches task.",),
+            failure_modes=("Expecting River to run without buildml[online-industry].",),
+            anti_patterns=("Claiming a full streaming platform from River adapters.",),
+            worked_example_pattern=(
+                "fit_online(backend='industry') → partial_fit_online() → evaluate_online('validation').",
+            ),
+            related_concepts=("online-drift-disclose", "online-partial-fit"),
+        ),
+        _note(
+            key="online-torch-continual",
+            title="Torch replay / EWC continual learning (buildml[torch])",
+            summary="Tabular MLP with replay buffer or EWC penalty — classification-only incremental path.",
+            definition=(
+                "Torch online backends train a small tabular MLP with either experience "
+                "replay (replay_mlp) or elastic weight consolidation (ewc_mlp) across "
+                "train chunks. Regression is not supported on this path."
+            ),
+            intuition=(
+                "Replay keeps a scrapbook of past examples so new chunks do not erase "
+                "old patterns; EWC penalizes moving weights that mattered before."
+            ),
+            formal_idea=(
+                "Replay: L = CE(f_θ(X_new), y_new) + CE(f_θ(X_mem), y_mem). "
+                "EWC: L += λ Σ F_i (θ_i - θ*_i)²."
+            ),
+            why_it_matters=(
+                "Neural continual learning differs from sklearn partial_fit semantics.",
+            ),
+            how_buildml_uses=(
+                "fit_online(backend='torch', estimator='replay_mlp'|'ewc_mlp').",
+            ),
+            interpretation_rules=("Read n_updates, n_seen_rows, and backend on OnlinePlan.",),
+            assumptions=("Torch installed; classification task.",),
+            failure_modes=("Calling replay_mlp for regression — refused at resolve time.",),
+            anti_patterns=("Treating replay MLP as full lifelong learning at scale.",),
+            worked_example_pattern=(
+                "fit_online(backend='torch', estimator='ewc_mlp') → partial_fit_online().",
+            ),
+            related_concepts=("online-partial-fit", "online-bundle-boundary"),
+        ),
+        _note(
             key="online-bundle-boundary",
             title="Online-learning bundle boundary",
             summary="buildml.online_bundle.v1 stores OnlinePlan (estimator + cursor + update history); Session checkpoints do not embed it.",

@@ -566,7 +566,10 @@ def nlp_status(
                 "document overlap at the configured threshold."
             )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_text_plan": text_plan is not None,
@@ -603,7 +606,9 @@ def nlp_status(
             "column expansion), from the Torch text path (fine-tuning), and from "
             "buildml.ai (external LLM providers)."
         ),
-    }
+    },
+        "nlp_capability_matrix",
+    )
 
 
 def nlp_status_for_session(session: Any) -> dict[str, Any]:

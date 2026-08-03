@@ -10,21 +10,73 @@ from buildml.core.errors import ValidationError
 
 
 def fit_item_similarity(matrix: np.ndarray) -> np.ndarray:
-    """Item-item cosine similarity from user×item matrix."""
+    """Compute item-item cosine similarity from a user×item matrix.
+
+    Transposes the matrix so each item is a vector over users, then applies
+    sklearn cosine similarity for item-based kNN scoring.
+
+    Parameters
+    ----------
+    matrix:
+        Dense ``(n_users, n_items)`` train interaction matrix.
+
+    Returns
+    -------
+    np.ndarray
+        ``(n_items, n_items)`` cosine similarity matrix.
+    """
     # Items as rows: matrix.T is items × users
     item_vectors = matrix.T
     return cosine_similarity(item_vectors)
 
 
 def fit_user_similarity(matrix: np.ndarray) -> np.ndarray:
-    """User-user cosine similarity from user×item matrix."""
+    """Compute user-user cosine similarity from a user×item matrix.
+
+    Treats each user row as a vector over items for user-based kNN scoring.
+
+    Parameters
+    ----------
+    matrix:
+        Dense ``(n_users, n_items)`` train interaction matrix.
+
+    Returns
+    -------
+    np.ndarray
+        ``(n_users, n_users)`` cosine similarity matrix.
+    """
     return cosine_similarity(matrix)
 
 
 def fit_svd_factors(
     matrix: np.ndarray, *, n_factors: int, random_state: int | None
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Truncated SVD factorization: approx R ≈ U Σ V^T → user/item factors."""
+    """Fit truncated SVD factors for matrix-factorization scoring.
+
+    Centers observed entries by the global train mean before decomposition,
+    then returns user and item latent factors for dot-product scoring.
+
+    Parameters
+    ----------
+    matrix:
+        Dense ``(n_users, n_items)`` train interaction matrix.
+    n_factors:
+        Requested latent dimension; capped by matrix rank.
+    random_state:
+        Seed for reproducible SVD initialization.
+
+    Returns
+    -------
+    user_factors:
+        ``(n_users, n_components)`` user latent matrix.
+    item_factors:
+        ``(n_items, n_components)`` item latent matrix.
+
+    Raises
+    ------
+    ValidationError
+        When the matrix is too small for at least one component.
+    """
     n_users, n_items = matrix.shape
     n_comp = int(min(n_factors, max(1, min(n_users, n_items) - 1)))
     if n_comp < 1:
@@ -46,7 +98,32 @@ def fit_svd_factors(
 def fit_nmf_factors(
     matrix: np.ndarray, *, n_factors: int, random_state: int | None
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Non-negative MF on non-negative interaction matrix."""
+    """Fit non-negative matrix factorization for implicit-friendly scoring.
+
+    Shifts the matrix to be non-negative when needed, then fits sklearn NMF
+    for user and item latent factors.
+
+    Parameters
+    ----------
+    matrix:
+        Dense ``(n_users, n_items)`` train interaction matrix.
+    n_factors:
+        Requested latent dimension; capped by matrix rank.
+    random_state:
+        Seed for reproducible NMF initialization.
+
+    Returns
+    -------
+    user_factors:
+        ``(n_users, n_components)`` user latent matrix.
+    item_factors:
+        ``(n_items, n_components)`` item latent matrix.
+
+    Raises
+    ------
+    ValidationError
+        When the matrix is too small for at least one component.
+    """
     n_users, n_items = matrix.shape
     n_comp = int(min(n_factors, max(1, min(n_users, n_items) - 1)))
     if n_comp < 1:
@@ -75,7 +152,29 @@ def score_item_knn(
     n_neighbors: int,
     exclude_mask: np.ndarray,
 ) -> np.ndarray:
-    """Score all items for one user via item-item kNN CF."""
+    """Score all items for one user via item-item kNN collaborative filtering.
+
+    For each candidate item, aggregates similarities to the user's rated items
+    weighted by those ratings.
+
+    Parameters
+    ----------
+    matrix:
+        Dense train user×item matrix.
+    similarity:
+        Item-item cosine similarity from :func:`fit_item_similarity`.
+    user_idx:
+        Row index of the user to score.
+    n_neighbors:
+        Maximum rated neighbors contributing to each item score.
+    exclude_mask:
+        Boolean mask of items to zero out (typically train history).
+
+    Returns
+    -------
+    np.ndarray
+        Per-item scores of length ``n_items``.
+    """
     rated = matrix[user_idx]
     rated_idx = np.flatnonzero(rated != 0)
     scores = np.zeros(matrix.shape[1], dtype=float)
@@ -107,7 +206,29 @@ def score_user_knn(
     n_neighbors: int,
     exclude_mask: np.ndarray,
 ) -> np.ndarray:
-    """Score all items for one user via user-user kNN CF."""
+    """Score all items for one user via user-user kNN collaborative filtering.
+
+    Finds similar users by cosine similarity and aggregates their ratings
+    weighted by similarity.
+
+    Parameters
+    ----------
+    matrix:
+        Dense train user×item matrix.
+    similarity:
+        User-user cosine similarity from :func:`fit_user_similarity`.
+    user_idx:
+        Row index of the user to score.
+    n_neighbors:
+        Maximum similar users contributing to each item score.
+    exclude_mask:
+        Boolean mask of items to zero out (typically train history).
+
+    Returns
+    -------
+    np.ndarray
+        Per-item scores of length ``n_items``.
+    """
     sims = similarity[user_idx].copy()
     sims[user_idx] = 0.0
     if n_neighbors < len(sims):
@@ -137,6 +258,29 @@ def score_factorization(
     global_mean: float,
     exclude_mask: np.ndarray,
 ) -> np.ndarray:
+    """Score all items for one user via latent factor dot product.
+
+    Adds ``global_mean`` before the user/item factor dot product (used for
+    mean-centered SVD) and masks excluded items with ``-inf``.
+
+    Parameters
+    ----------
+    user_factors:
+        User latent matrix from SVD or NMF.
+    item_factors:
+        Item latent matrix from SVD or NMF.
+    user_idx:
+        Row index of the user to score.
+    global_mean:
+        Train global mean added before dot product; use ``0.0`` for NMF.
+    exclude_mask:
+        Boolean mask of items to suppress in top-K selection.
+
+    Returns
+    -------
+    np.ndarray
+        Per-item scores of length ``n_items``; excluded items are ``-inf``.
+    """
     scores = global_mean + user_factors[user_idx] @ item_factors.T
     scores = np.asarray(scores, dtype=float)
     scores[exclude_mask] = -np.inf
@@ -150,7 +294,27 @@ def score_content(
     *,
     exclude_mask: np.ndarray,
 ) -> np.ndarray:
-    """User profile = rating-weighted mean of interacted item features."""
+    """Score all items for one user via a rating-weighted content profile.
+
+    Builds a user profile as the weighted mean of interacted item features,
+    then scores catalog items by cosine similarity to that profile.
+
+    Parameters
+    ----------
+    matrix:
+        Dense train user×item matrix.
+    item_features:
+        Standardized item feature matrix aligned to catalog order.
+    user_idx:
+        Row index of the user to score.
+    exclude_mask:
+        Boolean mask of items to suppress in top-K selection.
+
+    Returns
+    -------
+    np.ndarray
+        Per-item scores of length ``n_items``; excluded items are ``-inf``.
+    """
     rated = matrix[user_idx]
     rated_idx = np.flatnonzero(rated != 0)
     if rated_idx.size == 0:
@@ -169,6 +333,23 @@ def score_content(
 
 
 def popularity_scores(item_popularity: np.ndarray, exclude_mask: np.ndarray) -> np.ndarray:
+    """Return train item popularity scores for cold-start fallback.
+
+    Copies per-item interaction counts and masks excluded items with ``-inf``
+    so they never appear in top-K output.
+
+    Parameters
+    ----------
+    item_popularity:
+        Train interaction counts per catalog item.
+    exclude_mask:
+        Boolean mask of items to suppress.
+
+    Returns
+    -------
+    np.ndarray
+        Popularity scores; excluded items are ``-inf``.
+    """
     scores = item_popularity.astype(float).copy()
     scores[exclude_mask] = -np.inf
     return scores
@@ -179,6 +360,26 @@ def top_k_from_scores(
     item_ids: tuple,
     k: int,
 ) -> tuple[tuple, tuple[float, ...]]:
+    """Select top-K item ids and scores from a score vector.
+
+    Ignores non-finite scores and returns items in descending score order.
+
+    Parameters
+    ----------
+    scores:
+        Per-item score vector aligned to ``item_ids``.
+    item_ids:
+        Catalog item ids in the same order as ``scores``.
+    k:
+        Maximum number of recommendations to return.
+
+    Returns
+    -------
+    rec_items:
+        Tuple of up to ``k`` recommended item ids.
+    rec_scores:
+        Tuple of scores corresponding to ``rec_items``.
+    """
     if k <= 0 or scores.size == 0:
         return (), ()
     finite = np.isfinite(scores)

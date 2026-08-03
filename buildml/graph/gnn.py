@@ -32,6 +32,29 @@ class GCNClassifier:
         epochs: int = 80,
         random_state: int | None = 0,
     ) -> None:
+        """Configure a pure-Torch GCN for train-mask cross-entropy.
+
+        Validates architecture knobs and defers module construction until
+        :meth:`fit` when torch is available.
+
+        Parameters
+        ----------
+        in_dim:
+            Number of tabular node features.
+        n_classes:
+            Number of target classes (must be >= 2).
+        hidden_dim, n_layers, dropout:
+            Architecture and regularisation knobs.
+        learning_rate, weight_decay, epochs:
+            Optimiser settings for Adam training.
+        random_state:
+            Optional seed for reproducible weight init.
+
+        Raises
+        ------
+        ValidationError
+            When dimensions or layer count are invalid.
+        """
         if in_dim < 1:
             raise ValidationError("GCN in_dim must be >= 1.")
         if n_classes < 2:
@@ -59,6 +82,34 @@ class GCNClassifier:
         train_mask: np.ndarray,
         class_to_index: dict[Any, int],
     ) -> GCNClassifier:
+        """Train the GCN module on train-masked node labels.
+
+        Minimises cross-entropy only on nodes marked True in ``train_mask``
+        using symmetric normalised adjacency message passing.
+
+        Parameters
+        ----------
+        x:
+            Node feature matrix of shape ``(n_nodes, in_dim)``.
+        y:
+            Raw target labels aligned to rows of ``x``.
+        adj_norm:
+            Symmetric normalised adjacency from :func:`normalize_adjacency`.
+        train_mask:
+            Boolean mask selecting supervised nodes.
+        class_to_index:
+            Mapping from raw label values to class indices.
+
+        Returns
+        -------
+        GCNClassifier
+            Fitted classifier (``self``).
+
+        Raises
+        ------
+        ValidationError
+            When fewer than two train nodes are labeled.
+        """
         torch = require_torch(feature="Graph GCN node classification")
         self._torch = torch
         if self.random_state is not None:
@@ -101,6 +152,28 @@ class GCNClassifier:
         return self
 
     def predict_proba(self, x: np.ndarray, adj_norm: np.ndarray) -> np.ndarray:
+        """Return per-node class probabilities from a fitted GCN module.
+
+        Runs a forward pass with the normalised adjacency and applies softmax
+        over logits for each node row.
+
+        Parameters
+        ----------
+        x:
+            Node feature matrix of shape ``(n_nodes, in_dim)``.
+        adj_norm:
+            Symmetric normalised adjacency for message passing.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape ``(n_nodes, n_classes)`` with softmax probabilities.
+
+        Raises
+        ------
+        ValidationError
+            When the classifier has not been fitted.
+        """
         torch = self._torch or require_torch(feature="Graph GCN node classification")
         if self._module is None:
             raise ValidationError("GCNClassifier is not fitted.")
@@ -114,10 +187,43 @@ class GCNClassifier:
         return np.asarray(proba, dtype=np.float64)
 
     def predict(self, x: np.ndarray, adj_norm: np.ndarray) -> np.ndarray:
+        """Return the argmax class index for each node.
+
+        Delegates to :meth:`predict_proba` and selects the highest-probability
+        class per row.
+
+        Parameters
+        ----------
+        x:
+            Node feature matrix of shape ``(n_nodes, in_dim)``.
+        adj_norm:
+            Symmetric normalised adjacency for message passing.
+
+        Returns
+        -------
+        numpy.ndarray
+            Integer class indices of shape ``(n_nodes,)``.
+        """
         proba = self.predict_proba(x, adj_norm)
         return proba.argmax(axis=1)
 
     def to_state(self) -> dict[str, Any]:
+        """Serialise hyperparameters and GCN module weights for bundle reload.
+
+        Captures enough state to rebuild the same architecture and restore
+        trained linear/conv weights via :meth:`from_state`.
+
+        Returns
+        -------
+        dict[str, Any]
+            Architecture knobs, optimiser settings, ``state_dict``, and
+            per-epoch train losses.
+
+        Raises
+        ------
+        ValidationError
+            When the classifier has not been fitted.
+        """
         torch = self._torch or require_torch(feature="Graph GCN node classification")
         if self._module is None:
             raise ValidationError("GCNClassifier is not fitted.")
@@ -137,6 +243,21 @@ class GCNClassifier:
 
     @classmethod
     def from_state(cls, state: dict[str, Any]) -> GCNClassifier:
+        """Reconstruct a fitted classifier from :meth:`to_state` output.
+
+        Instantiates the same architecture, loads stored weights, and sets the
+        module to evaluation mode for scoring.
+
+        Parameters
+        ----------
+        state:
+            Payload produced by :meth:`to_state` or loaded from a graph bundle.
+
+        Returns
+        -------
+        GCNClassifier
+            Classifier with weights restored and set to eval mode.
+        """
         torch = require_torch(feature="Graph GCN node classification")
         obj = cls(
             in_dim=int(state["in_dim"]),

@@ -21,7 +21,16 @@ EconMLMethodName = Literal["dml", "causal_forest", "policy_tree"]
 
 
 def causal_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for causal backends and optional extras."""
+    """Build the honest capability matrix for causal estimation backends.
+
+    Reports native, DoWhy, and EconML methods, refutation kinds, assumption
+    gates, and explicit non-goals for teaching overlays and walkthrough panels.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, install hints, and boundary disclosures.
+    """
     return {
         "backends": {
             "native": {
@@ -111,7 +120,21 @@ def _default_backend_when_installed() -> str:
 
 
 def list_causal_methods(*, backend: CausalBackendName | None = None) -> list[str]:
-    """List estimation methods for a backend (or all when backend is None)."""
+    """List estimation methods for a causal backend.
+
+    Reads :func:`causal_capability_matrix` so callers only offer methods
+    installed for the requested backend.
+
+    Parameters
+    ----------
+    backend:
+        ``native``, ``dowhy``, ``econml``, or ``None`` for the combined list.
+
+    Returns
+    -------
+    list[str]
+        Valid method names such as ``aipw``, ``backdoor_linear``, or ``dml``.
+    """
     matrix = causal_capability_matrix()["backends"]
     if backend is not None:
         entry = matrix.get(backend)
@@ -127,7 +150,21 @@ def list_causal_methods(*, backend: CausalBackendName | None = None) -> list[str
 
 
 def list_refute_kinds(*, backend: CausalBackendName | None = None) -> list[str]:
-    """List refutation kinds supported by a backend."""
+    """List refutation kinds supported by a causal backend.
+
+    DoWhy exposes the richest refutation suite; native and EconML support a
+    smaller placebo/random-confounder subset.
+
+    Parameters
+    ----------
+    backend:
+        ``native``, ``dowhy``, ``econml``, or ``None`` for the combined list.
+
+    Returns
+    -------
+    list[str]
+        Refutation kind keys accepted by :func:`buildml.causal.refute.refute_causal`.
+    """
     matrix = causal_capability_matrix()["backends"]
     if backend is not None:
         entry = matrix.get(backend)
@@ -143,6 +180,21 @@ def list_refute_kinds(*, backend: CausalBackendName | None = None) -> list[str]:
 
 
 def backend_available(name: CausalBackendName) -> bool:
+    """Return whether a causal backend is available on this machine.
+
+    Consults :func:`causal_capability_matrix` so callers can branch before fit
+    without importing DoWhy or EconML at module load time.
+
+    Parameters
+    ----------
+    name:
+        Backend key such as ``native``, ``dowhy``, or ``econml``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the backend can be used without missing extras.
+    """
     matrix = causal_capability_matrix()["backends"]
     entry = matrix.get(name)
     if entry is None:
@@ -155,7 +207,29 @@ def resolve_backend_method(
     backend: CausalBackendName | None,
     method: str,
 ) -> tuple[CausalBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+    Infers backend from method when omitted and checks install status before fit.
+
+    Parameters
+    ----------
+    backend:
+        Explicit backend or ``None`` to infer from ``method``.
+    method:
+        Estimation method key from the catalog.
+
+    Returns
+    -------
+    tuple[str, str]
+        Resolved ``(backend, method_key)`` pair.
+
+    Raises
+    ------
+    ValidationError
+        When the method is not valid for the resolved backend.
+    MissingExtraError
+        When the resolved backend requires ``causal-industry`` and it is missing.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     method_key = str(method).lower().replace("-", "_")

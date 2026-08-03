@@ -10,7 +10,16 @@ KgBackendName = Literal["native", "pykeen"]
 
 
 def kg_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for KG backends and optional extras."""
+    """Build the honest capability matrix for knowledge-graph backends.
+
+    Reports native vs PyKEEN methods, evaluation metrics, query modes, install
+    hints, and explicit non-goals for teaching overlays and Session walkthroughs.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, link-prediction modes, and boundary disclosures.
+    """
     return {
         "backends": {
             "native": {
@@ -80,7 +89,21 @@ def _default_backend_when_installed() -> str:
 
 
 def list_kg_methods(*, backend: KgBackendName | None = None) -> list[str]:
-    """List embedding methods for a backend (or all when backend is None)."""
+    """List embedding methods for a knowledge-graph backend.
+
+    Reads :func:`kg_capability_matrix` so callers only offer methods installed
+    for the requested backend.
+
+    Parameters
+    ----------
+    backend:
+        ``native``, ``pykeen``, or ``None`` for the combined deduplicated list.
+
+    Returns
+    -------
+    list[str]
+        Valid method names such as ``transe``, ``distmult``, ``rotate``.
+    """
     matrix = kg_capability_matrix()["backends"]
     if backend is not None:
         entry = matrix.get(backend)
@@ -96,6 +119,21 @@ def list_kg_methods(*, backend: KgBackendName | None = None) -> list[str]:
 
 
 def backend_available(name: KgBackendName) -> bool:
+    """Return whether a knowledge-graph backend is available on this machine.
+
+    Checks the ``available`` flag in :func:`kg_capability_matrix` for native
+    or pykeen entries.
+
+    Parameters
+    ----------
+    name:
+        Backend key such as ``native`` or ``pykeen``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the backend can be used for fit without missing extras.
+    """
     matrix = kg_capability_matrix()["backends"]
     entry = matrix.get(name)
     if entry is None:
@@ -108,7 +146,30 @@ def resolve_backend_method(
     backend: KgBackendName | None,
     method: str,
 ) -> tuple[KgBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+    Infers backend from method when omitted, checks install status, and
+    normalises method aliases before fit proceeds.
+
+    Parameters
+    ----------
+    backend:
+        Explicit backend or ``None`` to infer from ``method``.
+    method:
+        Embedding method key from the catalog.
+
+    Returns
+    -------
+    tuple[str, str]
+        Resolved ``(backend, method_key)`` pair.
+
+    Raises
+    ------
+    ValidationError
+        When the method is not valid for the resolved backend.
+    MissingExtraError
+        When the resolved backend requires ``kg-industry`` and it is missing.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     method_key = str(method).lower().replace("-", "_")

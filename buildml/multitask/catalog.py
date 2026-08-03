@@ -16,7 +16,16 @@ MultiTaskBackendName = Literal["sklearn", "industry", "torch"]
 
 
 def multitask_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for multi-task backends and methods."""
+    """Build the honest capability matrix for multi-task backends and methods.
+
+    Reports sklearn, industry, and torch paths, evaluation metrics, install
+    hints, and explicit non-goals for teaching overlays and Session walkthroughs.
+
+    Returns
+    -------
+    dict[str, Any]
+        Nested backend entries, evaluation rules, and defaults.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -121,7 +130,21 @@ def list_multitask_methods(
     *,
     backend: MultiTaskBackendName | None = None,
 ) -> list[str]:
-    """List multi-task methods for a backend (or all when backend is None)."""
+    """List multi-task method names available for one or all backends.
+
+    Filters to backends that are actually installed when ``backend`` is omitted.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend name; when set, returns methods only if that backend
+        is available.
+
+    Returns
+    -------
+    list[str]
+        Sorted unique method identifiers (e.g. ``multi_output``, ``shared_trunk_multihead``).
+    """
     matrix = multitask_capability_matrix()
     if backend is not None:
         entry = matrix["backends"].get(backend)
@@ -141,6 +164,21 @@ def list_multitask_methods(
 
 
 def backend_available(name: MultiTaskBackendName) -> bool:
+    """Return whether a multi-task backend is installed and usable.
+
+    Consults :func:`multitask_capability_matrix` rather than probing imports
+    directly so availability matches teaching disclosures.
+
+    Parameters
+    ----------
+    name:
+        Backend identifier: ``sklearn``, ``industry``, or ``torch``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the capability matrix marks the backend as available.
+    """
     matrix = multitask_capability_matrix()["backends"]
     entry = matrix.get(name)
     if entry is None:
@@ -153,7 +191,30 @@ def resolve_backend_method(
     backend: MultiTaskBackendName | None,
     method: str,
 ) -> tuple[MultiTaskBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+    Normalizes method aliases, infers backend when omitted, and raises when the
+    requested pair requires a missing extra.
+
+    Parameters
+    ----------
+    backend:
+        Optional backend override; when ``None``, inferred from ``method``.
+    method:
+        Multi-task method name (case-sensitive catalog identifier).
+
+    Returns
+    -------
+    tuple[MultiTaskBackendName, str]
+        Resolved ``(backend, method)`` pair ready for fit routing.
+
+    Raises
+    ------
+    ValidationError
+        When the method is unknown or incompatible with the backend.
+    MissingExtraError
+        When the resolved backend requires an optional extra that is not installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     resolved_backend: MultiTaskBackendName

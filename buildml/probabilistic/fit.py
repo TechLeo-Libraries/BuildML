@@ -65,8 +65,56 @@ def fit_probabilistic(
 ) -> tuple[ProbabilisticPlan, ProbabilisticFitResult]:
     """Fit a probabilistic / Bayesian-leaning estimator on Session train.
 
+    Resolves backend and estimator keys, optionally carves a conformal calibration
+    subset from train only, and returns a plan ready for predict and evaluate.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset with labeled train rows.
+    split_plan:
+        Split plan defining the train partition.
+    backend:
+        ``native``, ``mapie``, or ``ngboost``; inferred when ``None``.
+    estimator:
+        Catalog estimator or MAPIE method key.
+    task:
+        ``classification`` or ``regression``; inferred for most estimators.
+    columns:
+        Feature columns; resolved from reduce plan when ``None``.
+    random_state:
+        Seed for stochastic estimators and conformal carve.
+    alpha:
+        Miscoverage rate for conformal intervals and sets.
+    conformal:
+        When True, carve calibration rows from train for split conformal.
+    conformal_calibration_fraction:
+        Fraction of train rows reserved for conformal calibration.
+    interval_method:
+        How predict_interval constructs bounds (posterior std, conformal, both).
+    prefer_reduce_components:
+        Prefer PCA components from an active reduce plan when resolving columns.
+    n_restarts_optimizer:
+        GP kernel restarts for native GaussianProcess estimators.
+    n_estimators, learning_rate:
+        NGBoost hyperparameters when backend is ``ngboost``.
+    reduce_plan:
+        Optional dimensionality-reduction plan for column resolution.
+
+    Returns
+    -------
+    tuple[ProbabilisticPlan, ProbabilisticFitResult]
+        Fitted plan and fit summary for history logs.
+
+    Raises
+    ------
+    ValidationError
+        When train partition is missing, alpha is invalid, or carve fails.
+
+    Notes
+    -----
     Backends
-    --------
+    ^^^^^^^^
     native (default):
         sklearn BayesianRidge / GaussianProcess* / GaussianNB + in-tree split
         conformal carved from train only.

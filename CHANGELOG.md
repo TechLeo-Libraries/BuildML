@@ -8,8 +8,57 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Changed
+
+- **Fourth adversarial trust-recovery pass (remaining High/Medium polish).**
+  Graph beginner examples aligned to real ``fit_graph`` kwargs (``mode``,
+  ``pyg_model``, ``include_graph_metrics``, ``classical_estimator``); added
+  ``Session.export_round_history`` facade wired to
+  ``buildml.federated.results.export_round_history``; all proof
+  ``industry_comparison`` stubs replaced with honest ``filled`` Tier C notes
+  (baseline_industry.py companions); ``nlp_capability_matrix`` task entries
+  now expose ``backends_available`` gating matching runtime refusal; thin
+  per-detector anomaly concept notes and RL bridge notes (Monte Carlo, n-step
+  TD, actor-critic) linking to REINFORCE/SB3/tabular_q paths.
+
+- **Docstring ratchet (mid-size domain batch).** Completed and enforced at 0:
+  ``online`` (114), ``federated`` (107), ``automl`` (99), ``multitask`` (96),
+  ``activelearning`` (95), ``anomaly`` (95), ``synthetic`` (93),
+  ``semisupervised`` (90), ``unsupervised`` (83).
+- **Docstring mission complete.** Every audited package — including
+  ``buildml/session/session.py`` and all ``*_ops.py`` facades — is at 0
+  findings. ``buildml/session/`` is now in ``ENFORCED_PREFIXES``; repo-wide
+  ``scripts/audit_docstrings.py --check`` total is 0.
+- **Session ops depth pass.** All 34 ``buildml/session/*_ops.py`` modules plus
+  ``audit``, ``state``, and ``walkthrough`` documented to 0 findings.
+  ``session`` budget ratcheted 1987 → 0.
+- **Docstring budget:** total findings 2859 → 0.
+- **Prior round:** ``kg``, ``causal``, ``forecasting``, ``ranking``,
+  ``selfsupervised``, ``graph``, ``optimize``, ``recommenders``, ``metalearning``.
+
 ### Added
 
+- **Third adversarial capability pass (foundational gaps).**
+  Forecasting refuses ``exog_columns`` on univariate-only methods (ETS,
+  auto_arima, Prophet, N-BEATS) via ``method_supports_exog``; AI agents get
+  ``time_split`` tool + executor dispatch; ranking accepts ``lambdarank`` →
+  ``lambdarank_lgbm`` alias; DoWhy holdout evaluate re-estimates ATE on the
+  partition; KG evaluate adds relation-prediction ranks; ``dl_capability_matrix``
+  + Session/AI introspection; unsupervised/synthetic explain status embed live
+  matrices; scikit-activeml industry path tries import with native fallback;
+  teaching notes for k-means vs density, ETS/ARIMA, River/torch online paths.
+
+- **Capability-matrix walkthrough / audit hooks (second pass).**
+  ``buildml/explain/capability_status.py`` centralizes matrix loading,
+  domain-status attachment, walkthrough routing, and audit suggestions.
+  Domain ``explain_hooks`` status payloads that were missing
+  ``capability_matrix`` (forecasting, timeseries, RAG, CBR, unsupervised,
+  SSL, online, meta-learning, federated, graph, NLP, ranking, recommender,
+  synthetic) now embed the live matrix plus ``capability_introspection`` API
+  hints. Walkthrough reports add ``capability_introspection_status`` and HTML
+  orientation tables; audit ``suggest_next_operations`` prioritizes unchecked
+  matrices before open fit paths; the workflow resolver keeps every
+  ``*_capability_matrix`` operation permanently ``available``.
 - **Capability-matrix wiring audit (foundational introspection).** Domains that
   already published honest backend matrices in catalog code but hid them from
   Session, explain overlays, and the AI operator now expose them consistently:

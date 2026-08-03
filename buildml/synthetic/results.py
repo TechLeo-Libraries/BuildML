@@ -34,6 +34,15 @@ class SynthesizerPlan:
     roles_snapshot: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -66,6 +75,15 @@ class SynthesizerFitResult:
     metrics: dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -79,6 +97,10 @@ class SynthesizerFitResult:
         }
 
     def show(self) -> None:
+        """Perform show for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+        """
         print(
             f"SynthesizerFit · {self.method} · partition={self.partition} · "
             f"n={self.n_rows} · cols={self.n_columns}"
@@ -102,6 +124,15 @@ class SyntheticSampleResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "method": self.method,
             "n_rows": self.n_rows,
@@ -115,6 +146,10 @@ class SyntheticSampleResult:
         }
 
     def show(self) -> None:
+        """Perform show for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+        """
         print(
             f"SyntheticSample · {self.method} · n={self.n_rows} · "
             f"merged={self.merged} ({self.merge_mode})"
@@ -136,6 +171,15 @@ class SyntheticEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the object to a JSON-friendly dict for history and bundles.
+
+Omits private estimator and encoder fields so bundles and history records stay lightweight while preserving teaching disclosures.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+        """
         return {
             "mode": self.mode,
             "partition": self.partition,
@@ -149,6 +193,10 @@ class SyntheticEvalResult:
         }
 
     def show(self) -> None:
+        """Perform show for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+        """
         print(
             f"SyntheticEval · mode={self.mode} · method={self.method} · "
             f"partition={self.partition}"

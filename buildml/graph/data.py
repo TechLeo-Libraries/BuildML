@@ -39,7 +39,30 @@ def normalize_edges(
     target_col: str = "target",
     directed: bool = False,
 ) -> pd.DataFrame:
-    """Normalize an edge list to columns ``source_col`` / ``target_col``."""
+    """Normalize an edge list to columns ``source_col`` / ``target_col``.
+
+    Accepts a DataFrame or pair array, drops nulls and self-loops, and
+    canonicalises undirected edges so duplicate pairs collapse.
+
+    Parameters
+    ----------
+    edges:
+        Edge table or sequence of ``(source, target)`` pairs.
+    source_col, target_col:
+        Column names for endpoint identifiers.
+    directed:
+        When False, symmetrise and deduplicate undirected pairs.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Normalised edge frame with dropped self-loop count in ``.attrs``.
+
+    Raises
+    ------
+    ValidationError
+        When input shape is invalid, endpoints are null, or no edges remain.
+    """
     if isinstance(edges, pd.DataFrame):
         if source_col not in edges.columns or target_col not in edges.columns:
             raise ValidationError(
@@ -88,7 +111,27 @@ def build_graph_spec(
     node_id_col: str = "node_id",
     directed: bool = False,
 ) -> GraphSpec:
-    """Build a validated :class:`GraphSpec` from a raw edge list."""
+    """Build a validated :class:`GraphSpec` from a raw edge list.
+
+    Normalises endpoints, counts nodes appearing in edges, and attaches
+    honesty disclosures for Session ``set_graph``.
+
+    Parameters
+    ----------
+    edges:
+        Edge table or sequence of ``(source, target)`` pairs.
+    source_col, target_col:
+        Column names for endpoint identifiers.
+    node_id_col:
+        Session column whose values must match edge endpoints.
+    directed:
+        When False, symmetrise and deduplicate undirected pairs.
+
+    Returns
+    -------
+    GraphSpec
+        Validated graph specification ready for :func:`fit_graph`.
+    """
     frame = normalize_edges(
         edges, source_col=source_col, target_col=target_col, directed=directed
     )
@@ -118,7 +161,28 @@ def build_graph_spec(
 
 
 def node_id_series(dataset: Dataset, node_id_col: str) -> pd.Series:
-    """Return the node-id series; enforce uniqueness."""
+    """Return the node-id series and enforce uniqueness.
+
+    Session rows are nodes; each ``node_id_col`` value must identify exactly
+    one row for edge matching during fit and predict.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset holding the node table.
+    node_id_col:
+        Column whose values match edge endpoint identifiers.
+
+    Returns
+    -------
+    pandas.Series
+        Node-id values aligned to Session row order.
+
+    Raises
+    ------
+    ValidationError
+        When the column is missing, contains nulls, or has duplicates.
+    """
     frame = dataset._ensure_pandas()
     if node_id_col not in frame.columns:
         raise ValidationError(
@@ -145,6 +209,25 @@ def node_index_map(
 
     Prefer ``node_ids_snapshot`` from :class:`GraphSpec` when present so edge
     matching survives later preprocess that mutates the id column.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset holding the node table.
+    node_id_col:
+        Column whose values match edge endpoint identifiers.
+    node_ids_snapshot:
+        Optional frozen id values captured at ``set_graph`` time.
+
+    Returns
+    -------
+    dict[Any, int]
+        Mapping from node id to zero-based row index.
+
+    Raises
+    ------
+    ValidationError
+        When snapshot length disagrees with the current frame.
     """
     if node_ids_snapshot is not None and len(node_ids_snapshot) > 0:
         frame = dataset._ensure_pandas()
@@ -164,7 +247,30 @@ def partition_node_mask(
     split_plan: SplitPlan,
     partition: str,
 ) -> np.ndarray:
-    """Boolean mask over all Session rows for a partition (or all)."""
+    """Build a boolean mask over Session rows for a split partition.
+
+    Maps split-plan index tuples onto a dense boolean vector aligned to the
+    full node table used by graph fit and predict.
+
+    Parameters
+    ----------
+    n_nodes:
+        Number of nodes (Session rows).
+    split_plan:
+        Session split plan defining train/validation/test indices.
+    partition:
+        Partition name or ``"all"`` to select every row.
+
+    Returns
+    -------
+    numpy.ndarray
+        Boolean mask of shape ``(n_nodes,)``.
+
+    Raises
+    ------
+    ValidationError
+        When validation is requested but absent on the split plan.
+    """
     mask = np.zeros(n_nodes, dtype=bool)
     if partition == "all":
         mask[:] = True
@@ -182,7 +288,30 @@ def edge_pairs_as_indices(
     spec: GraphSpec,
     id_to_index: dict[Any, int],
 ) -> tuple[np.ndarray, np.ndarray, list[str]]:
-    """Convert edge endpoints to row indices; drop edges with unknown nodes."""
+    """Convert edge endpoints to row indices and drop unknown nodes.
+
+    Endpoints whose ids are absent from the Session node table are skipped and
+    counted in returned disclosures.
+
+    Parameters
+    ----------
+    spec:
+        Normalised :class:`GraphSpec` with endpoint columns.
+    id_to_index:
+        Mapping from node id values to Session row indices.
+
+    Returns
+    -------
+    src, dst:
+        Integer endpoint arrays aligned to retained edges.
+    disclosures:
+        Notes about skipped edges whose endpoints are absent from the node table.
+
+    Raises
+    ------
+    ValidationError
+        When no edges map to Session node ids.
+    """
     src_vals = spec.edges[spec.source_col].tolist()
     dst_vals = spec.edges[spec.target_col].tolist()
     src_idx: list[int] = []
@@ -222,13 +351,29 @@ def filter_edges_for_mode(
 ) -> tuple[np.ndarray, np.ndarray, list[str]]:
     """Filter edges according to inductive / transductive leakage rules.
 
+    Applies the Session honesty contract so fit and score never leak holdout
+    labels or forbidden topology under the chosen mode.
+
     Parameters
     ----------
+    src, dst:
+        Edge endpoint row indices.
+    train_mask:
+        Boolean mask marking train nodes.
+    mode:
+        ``inductive`` or ``transductive`` graph-learning mode.
     for_fit:
         When True and mode is inductive, keep only train–train edges.
         When False (scoring) and inductive, keep edges with at least one
         train endpoint or both endpoints in the active graph (train∪score).
         Transductive keeps all edges always.
+
+    Returns
+    -------
+    src, dst:
+        Filtered endpoint arrays.
+    disclosures:
+        Honesty notes describing the leakage rule applied.
     """
     disclosures: list[str] = []
     if mode == "transductive":
@@ -264,7 +409,29 @@ def build_adjacency(
     *,
     directed: bool,
 ) -> np.ndarray:
-    """Dense float adjacency (small graphs). Self-loops added later for GCN."""
+    """Materialise a dense float adjacency for small Session graphs.
+
+    Self-loops are added later by :func:`normalize_adjacency` for GCN use.
+
+    Parameters
+    ----------
+    n_nodes:
+        Number of nodes (matrix side length).
+    src, dst:
+        Edge endpoint row indices.
+    directed:
+        When False, symmetrise entries for undirected graphs.
+
+    Returns
+    -------
+    numpy.ndarray
+        Dense adjacency of shape ``(n_nodes, n_nodes)``.
+
+    Raises
+    ------
+    ValidationError
+        When dimensions are invalid or ``n_nodes`` exceeds the 5000-node guard.
+    """
     if n_nodes <= 0:
         raise ValidationError("n_nodes must be positive.")
     if len(src) != len(dst):
@@ -285,7 +452,20 @@ def build_adjacency(
 
 
 def normalize_adjacency(adj: np.ndarray) -> np.ndarray:
-    """Symmetric normalized adjacency with self-loops: D^{-1/2}(A+I)D^{-1/2}."""
+    """Apply symmetric normalisation with self-loops: D^{-1/2}(A+I)D^{-1/2}.
+
+    Implements the Kipf–Welling normalisation used by the pure-Torch GCN path.
+
+    Parameters
+    ----------
+    adj:
+        Dense binary adjacency without self-loops.
+
+    Returns
+    -------
+    numpy.ndarray
+        Normalised adjacency suitable for pure-Torch GCN layers.
+    """
     a_hat = adj + np.eye(adj.shape[0], dtype=np.float64)
     deg = a_hat.sum(axis=1)
     deg_inv_sqrt = np.where(deg > 0, 1.0 / np.sqrt(deg), 0.0)
@@ -299,7 +479,28 @@ def edge_index_from_pairs(
     *,
     directed: bool,
 ) -> np.ndarray:
-    """Build PyG ``edge_index`` shape ``[2, num_edges]`` from endpoint arrays."""
+    """Build PyG ``edge_index`` shape ``[2, num_edges]`` from endpoint arrays.
+
+    Converts integer endpoint pairs into the sparse layout expected by
+    PyTorch Geometric conv layers.
+
+    Parameters
+    ----------
+    src, dst:
+        Edge endpoint row indices.
+    directed:
+        When False, duplicate reversed edges for undirected message passing.
+
+    Returns
+    -------
+    numpy.ndarray
+        Integer array of shape ``(2, num_edges)``.
+
+    Raises
+    ------
+    ValidationError
+        When ``src`` and ``dst`` lengths differ.
+    """
     src = np.asarray(src, dtype=np.int64)
     dst = np.asarray(dst, dtype=np.int64)
     if len(src) != len(dst):
@@ -319,7 +520,36 @@ def resolve_feature_columns(
     node_id_col: str,
     target_column: str,
 ) -> tuple[list[str], list[str]]:
-    """Resolve numeric tabular node-feature columns."""
+    """Resolve numeric tabular node-feature columns for Graph ML.
+
+    Excludes target, id, group, time, and weight roles unless explicitly
+    requested via ``columns``.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset supplying column roles.
+    frame:
+        Node table used for dtype and null checks.
+    columns:
+        Optional explicit feature column list; auto-resolves when ``None``.
+    node_id_col:
+        Node identifier column to exclude from features.
+    target_column:
+        Target column to exclude from features.
+
+    Returns
+    -------
+    names:
+        Selected numeric feature column names.
+    disclosures:
+        Honesty notes about auto-resolution and graph-metrics-only paths.
+
+    Raises
+    ------
+    ValidationError
+        When columns are unknown, non-numeric, or contain nulls.
+    """
     disclosures: list[str] = []
     protected = {
         ColumnRole.TARGET,
@@ -375,13 +605,50 @@ def resolve_feature_columns(
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
-    """Build a float design matrix from columns (empty → (n, 0))."""
+    """Build a float design matrix from selected columns.
+
+    Returns an empty second dimension when no columns are requested so
+    graph-metrics-only classical paths remain valid.
+
+    Parameters
+    ----------
+    frame:
+        Node table rows aligned to Session order.
+    columns:
+        Feature column names to extract.
+
+    Returns
+    -------
+    numpy.ndarray
+        Float array of shape ``(n_rows, len(columns))`` (or ``(n_rows, 0)``).
+    """
     if not columns:
         return np.zeros((len(frame), 0), dtype=np.float64)
     return frame[columns].to_numpy(dtype=np.float64, copy=True)
 
 
 def target_array(frame: pd.DataFrame, target_column: str) -> np.ndarray:
+    """Extract the node-classification target column as a NumPy array.
+
+    Used by fit and evaluate to align supervised labels with Session row order.
+
+    Parameters
+    ----------
+    frame:
+        Node table rows aligned to Session order.
+    target_column:
+        Name of the supervised target column.
+
+    Returns
+    -------
+    numpy.ndarray
+        Target values with one entry per node row.
+
+    Raises
+    ------
+    ValidationError
+        When the column is missing or contains nulls.
+    """
     if target_column not in frame.columns:
         raise ValidationError(f"Target column {target_column!r} missing.")
     series = frame[target_column]
@@ -391,6 +658,23 @@ def target_array(frame: pd.DataFrame, target_column: str) -> np.ndarray:
 
 
 def train_partition_frame(dataset: Dataset, split_plan: SplitPlan) -> pd.DataFrame:
+    """Return the train-partition node table for supervised graph fitting.
+
+    Asserts the split plan includes train indices before slicing the Session
+    frame.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset holding the node table.
+    split_plan:
+        Split plan that must include a train partition.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Rows belonging to the train partition only.
+    """
     assert_fit_partition(split_plan, "train")
     return frame_for_partition(dataset, split_plan, "train")
 
@@ -400,6 +684,31 @@ def partition_frame(
     split_plan: SplitPlan | None,
     partition: str,
 ) -> pd.DataFrame:
+    """Return node-table rows for a split partition or the full frame.
+
+    Supports scoring all nodes via ``partition='all'`` without requiring a
+    split plan.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset holding the node table.
+    split_plan:
+        Split plan defining partition indices; required unless ``partition``
+        is ``"all"``.
+    partition:
+        Partition name or ``"all"`` to return every row.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Subset of the node table for the requested partition.
+
+    Raises
+    ------
+    ValidationError
+        When a named partition is requested without a split plan.
+    """
     if partition == "all":
         return dataset._ensure_pandas().copy()
     if split_plan is None:

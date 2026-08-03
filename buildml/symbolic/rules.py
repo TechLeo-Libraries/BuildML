@@ -21,10 +21,40 @@ class Predicate:
     value: Any = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the predicate for rule export and bundle persistence.
+
+        Used when serialising rule antecedents inside knowledge bases and
+        teaching overlays that display individual conditions.
+
+        Returns
+        -------
+        dict[str, Any]
+            Column name, operator, and comparison value.
+        """
         return {"column": self.column, "op": self.op, "value": self.value}
 
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any]) -> Predicate:
+        """Build a :class:`Predicate` from a mapping with ``column`` and ``op`` keys.
+
+        Parses declarative rule fragments from Session payloads and bundle
+        files into typed predicate objects for compilation.
+
+        Parameters
+        ----------
+        payload:
+            Dict with ``column``, ``op``, and optional ``value``.
+
+        Returns
+        -------
+        Predicate
+            Parsed atomic condition.
+
+        Raises
+        ------
+        ValidationError
+            When required keys are missing or ``op`` is unsupported.
+        """
         if "column" not in payload or "op" not in payload:
             raise ValidationError(
                 "Predicate requires 'column' and 'op' keys."
@@ -77,6 +107,16 @@ class Rule:
     confidence: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the rule for knowledge-base export and teaching overlays.
+
+        Embeds antecedents, consequent, priority, and optional support stats
+        for history logs and walkthrough rule panels.
+
+        Returns
+        -------
+        dict[str, Any]
+            Rule metadata, antecedents, consequent, and optional support stats.
+        """
         return {
             "rule_id": self.rule_id,
             "antecedents": [p.to_dict() for p in self.antecedents],
@@ -92,6 +132,28 @@ class Rule:
 
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any], *, default_id: str) -> Rule:
+        """Build a :class:`Rule` from a declarative mapping.
+
+        Accepts ``if``/``antecedents`` and ``then``/``consequent`` aliases used
+        in Session declared-rule payloads.
+
+        Parameters
+        ----------
+        payload:
+            Rule definition mapping.
+        default_id:
+            Fallback rule id when none is supplied.
+
+        Returns
+        -------
+        Rule
+            Parsed if-then rule with validated hardness and strength.
+
+        Raises
+        ------
+        ValidationError
+            When consequent or antecedents are malformed.
+        """
         if "consequent" not in payload and "then" not in payload:
             raise ValidationError(
                 "Rule requires 'consequent' (or 'then') key."
@@ -145,6 +207,16 @@ class RuleTrace:
     notes: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise a per-row explanation trace for predict/eval history.
+
+        Records which rules fired, which rule won the decision list, and any
+        repair notes for neuro-symbolic overlays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fired rules, chosen rule, predictions, and repair notes.
+        """
         return {
             "row_index": self.row_index,
             "fired_rule_ids": list(self.fired_rule_ids),
@@ -167,6 +239,16 @@ class RuleKnowledgeBase:
     provenance: str = "declared"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the knowledge base for bundles and walkthrough panels.
+
+        Exports the full ordered rule set plus provenance disclosures so
+        downstream evaluate and predict steps can replay the same logic.
+
+        Returns
+        -------
+        dict[str, Any]
+            Rules, default consequent, provenance, and column contract.
+        """
         return {
             "rules": [r.to_dict() for r in self.rules],
             "default_consequent": self.default_consequent,
@@ -183,7 +265,30 @@ def parse_declared_rules(
     default_consequent: Any = None,
     provenance: str = "declared",
 ) -> RuleKnowledgeBase:
-    """Compile caller-declared rules into a :class:`RuleKnowledgeBase`."""
+    """Compile caller-declared rules into a :class:`RuleKnowledgeBase`.
+
+    Expert-supplied rules are sorted by descending priority and validated for
+    column references before fit continues.
+
+    Parameters
+    ----------
+    rules:
+        Sequence of :class:`Rule` objects or declarative mappings.
+    default_consequent:
+        Prediction when no rule antecedents match a row.
+    provenance:
+        Provenance label recorded on the knowledge base.
+
+    Returns
+    -------
+    RuleKnowledgeBase
+        Ordered, validated rule base ready for predict and evaluate.
+
+    Raises
+    ------
+    ValidationError
+        When ``rules`` is empty or an entry is neither Rule nor mapping.
+    """
     if not rules:
         raise ValidationError(
             "Declared symbolic rules require a non-empty rules sequence."
@@ -223,7 +328,27 @@ def parse_declared_rules(
 
 
 def evaluate_predicate(series: pd.Series, predicate: Predicate) -> np.ndarray:
-    """Vectorized predicate mask over a Series."""
+    """Evaluate a single predicate as a boolean mask over a column.
+
+    Supports numeric comparisons, equality, membership, and null checks.
+
+    Parameters
+    ----------
+    series:
+        Column values for one partition row set.
+    predicate:
+        Atomic condition to evaluate.
+
+    Returns
+    -------
+    numpy.ndarray
+        Boolean mask aligned with ``series``.
+
+    Raises
+    ------
+    ValidationError
+        When ``in``/``not_in`` lack sequence values or numeric ops get non-numeric rhs.
+    """
     op = predicate.op
     if op == "isna":
         return series.isna().to_numpy()
@@ -269,9 +394,30 @@ def fire_rules(
     *,
     row_indices: Sequence[Any] | None = None,
 ) -> tuple[list[Any], list[RuleTrace], np.ndarray]:
-    """Apply decision-list semantics: first matching rule (by priority order).
+    """Apply decision-list semantics and return predictions with traces.
 
-    Returns (predictions, traces, rule_fire_matrix[n_rows, n_rules]).
+    Rules are evaluated in priority order; the first matching rule sets the
+    prediction unless only the default consequent applies.
+
+    Parameters
+    ----------
+    frame:
+        Partition frame containing columns referenced by rules.
+    knowledge_base:
+        Ordered rule base with optional default consequent.
+    row_indices:
+        Row index labels aligned with ``frame`` rows for trace metadata.
+
+    Returns
+    -------
+    tuple[list, list[RuleTrace], numpy.ndarray]
+        Predictions, per-row traces, and a boolean fire matrix shaped
+        ``(n_rows, n_rules)``.
+
+    Raises
+    ------
+    ValidationError
+        When a rule references a missing column or ``row_indices`` length mismatches.
     """
     n = len(frame)
     rules = knowledge_base.rules
@@ -330,7 +476,23 @@ def rule_feature_matrix(
     frame: pd.DataFrame,
     knowledge_base: RuleKnowledgeBase,
 ) -> tuple[np.ndarray, list[str]]:
-    """Binary features: one column per rule (1 if antecedents match)."""
+    """Build binary rule-fire features for rules-as-features neuro-symbolic mode.
+
+    Each column indicates whether a row satisfies a rule's antecedents.
+
+    Parameters
+    ----------
+    frame:
+        Partition frame.
+    knowledge_base:
+        Rule base whose antecedents define the features.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, list[str]]
+        Float matrix shaped ``(n_rows, n_rules)`` and feature names
+        ``rule__<rule_id>``.
+    """
     _, _, fire_matrix = fire_rules(frame, knowledge_base)
     names = [f"rule__{rule.rule_id}" for rule in knowledge_base.rules]
     return fire_matrix.astype(float), names
@@ -340,7 +502,23 @@ def validate_rule_columns(
     knowledge_base: RuleKnowledgeBase,
     available: Iterable[str],
 ) -> None:
-    """Refuse rules that reference unknown columns."""
+    """Refuse rules that reference columns absent from the training frame.
+
+    Called during fit before rule induction or compilation so missing columns
+    fail fast with a clear validation error.
+
+    Parameters
+    ----------
+    knowledge_base:
+        Compiled or declared rule base.
+    available:
+        Column names present on the train partition frame.
+
+    Raises
+    ------
+    ValidationError
+        When any referenced column is missing.
+    """
     available_set = {str(c) for c in available}
     missing = [
         col for col in knowledge_base.columns_used if col not in available_set

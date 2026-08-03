@@ -58,16 +58,67 @@ def fit_tda(
 ) -> tuple[TdaPlan, TdaFitResult]:
     """Fit a leakage-safe TDA pipeline on the Session **train** partition.
 
-    Backends
-    --------
-    native (default when ``buildml[tda]`` installed):
-        ripser VR persistence + persim/in-tree vectorization.
-    giotto (``buildml[tda-industry]``):
-        giotto-tda PH + BettiCurve / PersistenceImage / PersistenceLandscape;
-        optional KeplerMapper train summary when ``mapper=True``.
+    Builds local Vietoris–Rips clouds per row, vectorizes persistence diagrams,
+    and optionally fits a sklearn head on train topological features only.
+    Dispatches to giotto-tda when ``backend='giotto'`` and
+    ``buildml[tda-industry]`` is installed.
 
-    Honesty: Session-shaped persistent homology + vectorization → sklearn —
-    not a full Mapper research suite, not every TDA paper.
+    Parameters
+    ----------
+    dataset:
+        Tabular Session dataset with target and numeric features.
+    split_plan:
+        Train/validation/test split. Fit uses train only.
+    backend:
+        ``native`` (ripser/persim) or ``giotto`` (giotto-tda). Defaults from
+        :func:`buildml.tda.catalog.tda_capability_matrix`.
+    vectorization:
+        Persistence diagram vectorizer (see capability matrix for per-backend
+        names).
+    homology_dims:
+        Homology dimensions to include (e.g. ``(0, 1)`` for H0 and H1).
+    knn:
+        Neighbors per local point cloud (must be >= 2).
+    maxdim:
+        Maximum homology dimension passed to the PH engine.
+    thresh:
+        Optional ripser filtration cutoff (native backend).
+    n_bins, n_layers:
+        Vectorizer grid resolution (landscapes, silhouettes, Betti curves).
+    pixel_size:
+        Optional persistence-image pixel size (native PI path).
+    standardize:
+        When True, z-score numeric features using train statistics before PH.
+    head:
+        Sklearn supervised head or ``none`` for transformer-only fit.
+    task:
+        ``classification`` or ``regression``. Inferred from target when ``None``.
+    columns:
+        Feature columns for clouds. Resolved from roles when ``None``.
+    random_state:
+        Seed for subsampling and sklearn heads.
+    prefer_reduce_components:
+        Prefer PCA components from an active reduce plan when available.
+    reduce_plan:
+        Optional dimensionality-reduction plan for column resolution.
+    max_points_guard:
+        Refuse or subsample when train rows exceed this count.
+    subsample_strategy:
+        ``error``, ``random``, or ``stratified`` when above ``max_points_guard``.
+    mapper:
+        When True on giotto backend, attach a diagnostic KeplerMapper summary.
+
+    Returns
+    -------
+    tuple[TdaPlan, TdaFitResult]
+        Frozen plan for transform/predict/evaluate and a fit report with
+        disclosures and train score when a head is fitted.
+
+    Notes
+    -----
+    **Leakage:** PH, vectorizer ranges, NN index, and head are train-fitted only.
+    Honesty: Session-shaped PH + vectorization → sklearn — not a Mapper research
+    suite.
     """
     resolved_backend, resolved_vec = resolve_backend_vectorization(
         backend=backend,

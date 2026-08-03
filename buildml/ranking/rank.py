@@ -47,7 +47,31 @@ def score_rows(
     *,
     backend: RankerBackend | None = None,
 ) -> np.ndarray:
-    """Score ranking rows with the frozen train ranker."""
+    """Score ranking rows with the frozen train ranker.
+
+    Applies train-fitted standardization and dispatches to the backend stored on
+    ``plan`` without using relevance labels at score time.
+
+    Parameters
+    ----------
+    plan:
+        Frozen train-fitted ranker plan from :func:`buildml.ranking.fit.fit_ranker`.
+    frame:
+        Judgment rows containing the plan's feature columns.
+    backend:
+        Optional backend override; must match the frozen plan backend.
+
+    Returns
+    -------
+    numpy.ndarray
+        Ranking scores aligned with ``frame`` row order.
+
+    Raises
+    ------
+    ValidationError
+        When features contain NaN/Inf, the backend mismatches the plan, or
+        required estimator state is missing.
+    """
     _assert_backend_matches(plan, backend)
     X_raw = feature_matrix(frame, plan.feature_columns)
     if not np.isfinite(X_raw).all():
@@ -95,7 +119,35 @@ def rank_queries(
     k: int = 10,
     backend: RankerBackend | None = None,
 ) -> RankResult:
-    """Order items within each query by descending score."""
+    """Order items within each query by descending ranker score.
+
+    Scores all rows in ``frame``, groups by query id, and returns top-k item
+    ids and scores per query in stable query order.
+
+    Parameters
+    ----------
+    plan:
+        Frozen train-fitted ranker plan.
+    frame:
+        Judgment rows for the queries to rank.
+    query_ids:
+        Optional explicit query order; defaults to first-seen order in ``frame``.
+    k:
+        Number of items to retain per query after sorting.
+    backend:
+        Optional backend override; must match the frozen plan backend.
+
+    Returns
+    -------
+    RankResult
+        Per-query ranked item lists, scores, and honesty disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When ``k`` is less than 1 or requested ``query_ids`` are absent from
+        ``frame``.
+    """
     if int(k) < 1:
         raise ValidationError("k must be >= 1.")
     if frame.empty:
@@ -172,7 +224,33 @@ def rank(
     k: int = 10,
     backend: RankerBackend | None = None,
 ) -> RankResult:
-    """Session-facing rank: order items for queries in a partition or id list."""
+    """Rank items for queries in a Session partition or explicit id list.
+
+    Selects rows from ``partition`` (default ``test`` when neither partition
+    nor ``query_ids`` is given) and delegates to :func:`rank_queries`.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing judgment rows.
+    plan:
+        Frozen train-fitted ranker plan.
+    split_plan:
+        Split plan defining partition indices when ``partition`` is set.
+    partition:
+        Partition name such as ``test``; ignored when ``query_ids`` is set.
+    query_ids:
+        Explicit query ids to rank from the selected frame.
+    k:
+        Number of items to retain per query after sorting.
+    backend:
+        Optional backend override; must match the frozen plan backend.
+
+    Returns
+    -------
+    RankResult
+        Per-query ranked item lists, scores, and honesty disclosures.
+    """
     if query_ids is None and partition is None:
         partition = "test"
     if partition is None:

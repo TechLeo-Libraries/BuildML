@@ -48,6 +48,17 @@ class CausalPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the causal plan for bundles and history logs.
+
+        Captures assumptions, train ATE, bootstrap metadata, and backend
+        configuration without embedding fitted nuisance models or DoWhy/EconML
+        artifacts.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, ATE summaries, and disclosures.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -100,6 +111,17 @@ class CausalFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the causal plan for bundles and history logs.
+
+        Captures assumptions, train ATE, bootstrap metadata, and backend
+        configuration without embedding fitted nuisance models or DoWhy/EconML
+        artifacts.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, ATE summaries, and disclosures.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -142,6 +164,17 @@ class CausalEstimateResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the causal plan for bundles and history logs.
+
+        Captures assumptions, train ATE, bootstrap metadata, and backend
+        configuration without embedding fitted nuisance models or DoWhy/EconML
+        artifacts.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, ATE summaries, and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -176,6 +209,17 @@ class CausalEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the causal plan for bundles and history logs.
+
+        Captures assumptions, train ATE, bootstrap metadata, and backend
+        configuration without embedding fitted nuisance models or DoWhy/EconML
+        artifacts.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, ATE summaries, and disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -208,6 +252,17 @@ class CausalRefuteResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the causal plan for bundles and history logs.
+
+        Captures assumptions, train ATE, bootstrap metadata, and backend
+        configuration without embedding fitted nuisance models or DoWhy/EconML
+        artifacts.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, ATE summaries, and disclosures.
+        """
         return {
             "kind": self.kind,
             "method": self.method,

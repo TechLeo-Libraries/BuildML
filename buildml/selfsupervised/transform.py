@@ -29,7 +29,36 @@ def transform_ssl(
     partition: PartitionOrAll = "train",
     attach: bool = False,
 ) -> tuple[Dataset | None, SelfSupervisedTransformResult, np.ndarray]:
-    """Project features through the frozen SSL encoder (no refit)."""
+    """Project features through the frozen SSL encoder without refit.
+
+    Encodes the requested partition and optionally attaches representation
+    columns to a new Session dataset when ``attach=True``.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing SSL input columns.
+    plan:
+        Train-fitted :class:`~buildml.selfsupervised.results.SelfSupervisedPlan`.
+    split_plan:
+        Split plan defining partitions; required unless ``partition='all'``.
+    partition:
+        Partition name or ``'all'`` for the full frame.
+    attach:
+        When True, return a new dataset with embedding columns added (requires
+        ``partition='all'``).
+
+    Returns
+    -------
+    tuple[Dataset | None, SelfSupervisedTransformResult, numpy.ndarray]
+        Optional attached dataset, transform report, and embedding matrix.
+
+    Raises
+    ------
+    ValidationError
+        When the plan is missing, partition requirements fail, columns are
+        absent, or attach would overwrite existing columns.
+    """
     if plan is None:
         raise ValidationError("No SelfSupervisedPlan. Call fit_ssl_pretext first.")
     if partition == "all":

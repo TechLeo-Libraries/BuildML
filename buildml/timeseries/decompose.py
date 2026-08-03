@@ -20,7 +20,38 @@ def decompose_series(
     time_column: str = "time",
     timestamps: tuple[str, ...] = (),
 ) -> TSDecomposeResult:
-    """Decompose a univariate series into trend / seasonal / residual."""
+    """Decompose a univariate series into trend, seasonal, and residual components.
+
+    Prefers STL or classical additive decomposition via statsmodels when
+    ``buildml[timeseries]`` is installed; otherwise uses a centered moving-average
+    trend with a repeating seasonal profile. Seasonal period is inferred when not
+    supplied.
+
+    Parameters
+    ----------
+    y:
+        One-dimensional observation vector in temporal order.
+    method:
+        ``stl``, ``classical``, or ``moving_average``.
+    seasonal_period:
+        Cycle length (e.g. 7 for weekly seasonality on daily data). Inferred from
+        series length when ``None``.
+    target_column, time_column:
+        Names recorded on the result for downstream reports.
+    timestamps:
+        Optional string stamps aligned with ``y`` for export and display.
+
+    Returns
+    -------
+    TSDecomposeResult
+        Component vectors, method actually used (after fallback), disclosures, and
+        warnings when the series is short relative to the seasonal period.
+
+    Raises
+    ------
+    ValidationError
+        When ``method`` is unsupported.
+    """
     y = np.asarray(y, dtype=float).reshape(-1)
     n = int(y.shape[0])
     period = infer_seasonal_period(y, seasonal_period=seasonal_period)

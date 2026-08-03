@@ -18,7 +18,37 @@ def select_topk(
     min_score: float | None = None,
     ids: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Select up to ``capacity`` highest-scoring candidates (optional floor)."""
+    """Select up to a fixed number of highest-scoring candidates.
+
+    Ranks eligible rows by score (descending) and takes the top ``capacity``
+    items. Optional per-item costs are summed for reporting but do not
+    constrain selection unless combined with knapsack/LP helpers.
+
+    Parameters
+    ----------
+    scores:
+        Candidate scores to rank (higher is better).
+    capacity:
+        Maximum number of items to select; must be ``>= 1``.
+    costs:
+        Optional per-item costs for aggregate reporting; defaults to ones.
+    min_score:
+        When set, exclude candidates below this score floor.
+    ids:
+        Optional identifier array aligned with ``scores``; defaults to
+        positional indices.
+
+    Returns
+    -------
+    dict[str, Any]
+        Selected indices, ids, unit fractions, counts, and aggregate
+        value/cost totals.
+
+    Raises
+    ------
+    ValidationError
+        When ``capacity < 1`` or ``costs`` shape does not match ``scores``.
+    """
     scores = np.asarray(scores, dtype=float)
     n = int(scores.size)
     if capacity < 1:
@@ -70,7 +100,35 @@ def select_knapsack_with_backend(
     min_score: float | None = None,
     ids: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Route knapsack selection to native DP/greedy or industry MIP backends."""
+    """Route knapsack selection to native DP, greedy, or industry MIP backends.
+
+    Resolves the backend via :func:`~buildml.optimize.catalog.resolve_backend`
+    and delegates to PuLP, OR-Tools, or the native
+    :func:`~buildml.optimize.allocate.select_knapsack` implementation.
+
+    Parameters
+    ----------
+    values:
+        Non-negative item values to maximize.
+    costs:
+        Non-negative item costs aligned with ``values``.
+    budget:
+        Total cost budget; must be ``>= 0``.
+    backend:
+        Explicit backend name; ``None`` picks an installed default.
+    solver:
+        Native fallback solver: ``'dp'`` (exact when feasible) or ``'greedy'``.
+    min_score:
+        When set, exclude items below this value floor.
+    ids:
+        Optional identifier array aligned with ``values``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Selection payload from the resolved backend, including solver metadata
+        and approximate flags when greedy fallback is used.
+    """
     resolved = resolve_backend(method="knapsack", backend=backend)
     if resolved == "pulp":
         from buildml.optimize.adapters.pulp_mip import select_knapsack_pulp
@@ -104,7 +162,35 @@ def select_lp_allocate_with_backend(
     min_score: float | None = None,
     ids: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Route LP allocation to scipy linprog or CVXPY."""
+    """Route continuous LP allocation to scipy linprog or CVXPY.
+
+    Resolves the backend via :func:`~buildml.optimize.catalog.resolve_backend`
+    and delegates to :func:`~buildml.optimize.adapters.cvxpy_lp.select_lp_allocate_cvxpy`
+    or native :func:`~buildml.optimize.allocate.select_lp_allocate`.
+
+    Parameters
+    ----------
+    values:
+        Non-negative scores or values to maximize.
+    costs:
+        Non-negative unit costs aligned with ``values``.
+    budget:
+        Total cost budget; must be ``>= 0``.
+    backend:
+        Explicit backend name; ``None`` defaults to native linprog.
+    max_fraction:
+        Upper bound on each fractional allocation in ``(0, 1]``.
+    min_score:
+        When set, exclude candidates below this value floor.
+    ids:
+        Optional identifier array aligned with ``values``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Fractional selection payload with indices, ids, allocations, and
+        solver/backend metadata.
+    """
     resolved = resolve_backend(method="lp_allocate", backend=backend)
     if resolved == "cvxpy":
         from buildml.optimize.adapters.cvxpy_lp import select_lp_allocate_cvxpy
@@ -136,12 +222,39 @@ def select_knapsack(
     min_score: float | None = None,
     ids: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """0-1 knapsack-lite: maximize value under a budget.
+    """Solve a 0-1 knapsack-lite problem under a single cost budget.
 
-    ``solver='dp'`` uses exact integer DP after scaling costs to cents when
-    costs are near-integral; falls back to value/cost greedy when the scaled
-    state space would exceed a hard bound. ``solver='greedy'`` always uses
-    density greedy (disclose approximation).
+    ``solver='dp'`` uses exact integer dynamic programming when costs scale
+    cleanly to integers and the state space stays within bounds; otherwise
+    it falls back to value/cost greedy with an ``approximate`` flag.
+    ``solver='greedy'`` always uses density greedy.
+
+    Parameters
+    ----------
+    values:
+        Non-negative item values to maximize.
+    costs:
+        Non-negative item costs aligned with ``values``.
+    budget:
+        Total cost budget; must be ``>= 0``.
+    solver:
+        ``'dp'`` for exact DP when feasible, else ``'greedy'``.
+    min_score:
+        When set, exclude items below this value floor.
+    ids:
+        Optional identifier array aligned with ``values``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Selected indices, ids, fractions, aggregate value/cost, solver name,
+        and approximate/cost-scale metadata.
+
+    Raises
+    ------
+    ValidationError
+        When inputs are misaligned, budgets are invalid, or ``solver`` is
+        unrecognized.
     """
     values = np.asarray(values, dtype=float)
     costs = np.asarray(costs, dtype=float)
@@ -219,11 +332,38 @@ def select_lp_allocate(
     min_score: float | None = None,
     ids: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Continuous budget allocation via ``scipy.optimize.linprog``.
+    """Allocate continuous budget shares via ``scipy.optimize.linprog``.
 
-    Maximizes Σ value_i * x_i subject to Σ cost_i * x_i ≤ budget and
-    0 ≤ x_i ≤ max_fraction. This is a fractional knapsack / portfolio-lite
-    helper — not a general OR / MIP platform (no PuLP / OR-Tools).
+    Maximizes weighted value subject to total cost and per-item fraction
+    caps. Zero-cost positive-value items receive the maximum fraction for
+    free. This is a fractional knapsack helper — not a general MIP platform.
+
+    Parameters
+    ----------
+    values:
+        Non-negative scores or values to maximize.
+    costs:
+        Non-negative unit costs aligned with ``values``.
+    budget:
+        Total cost budget; must be ``>= 0``.
+    max_fraction:
+        Upper bound on each decision variable in ``(0, 1]``.
+    min_score:
+        When set, exclude candidates below this value floor.
+    ids:
+        Optional identifier array aligned with ``values``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Selected indices, ids, fractional allocations, aggregate value/cost,
+        and linprog status metadata.
+
+    Raises
+    ------
+    ValidationError
+        When inputs are misaligned, budgets or fractions are invalid, scipy
+        is unavailable, or linprog fails.
     """
     values = np.asarray(values, dtype=float)
     costs = np.asarray(costs, dtype=float)

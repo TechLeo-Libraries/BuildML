@@ -32,6 +32,16 @@ class KgConfig:
     random_state: int | None = 0
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise KG configuration knobs for plans and history records.
+
+        Snapshots backend, method, triple columns, and training hyperparameters
+        used when :func:`buildml.kg.fit.fit_kg` runs on train triples.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plain mapping of every :class:`KgConfig` field.
+        """
         return {
             "backend": self.backend,
             "method": self.method,

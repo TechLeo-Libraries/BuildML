@@ -39,7 +39,32 @@ def save_symbolic_bundle(
     fit_result: SymbolicFitResult | NeuroSymbolicFitResult | None = None,
     eval_result: SymbolicEvalResult | None = None,
 ) -> Path:
-    """Write a symbolic bundle directory (``buildml.symbolic_bundle.v1``)."""
+    """Write a train-fitted symbolic plan to a ``buildml.symbolic_bundle.v1`` directory.
+
+    Persists either a :class:`SymbolicPlan` or :class:`NeuroSymbolicPlan` plus
+    optional fit/eval summaries separate from Session checkpoints.
+
+    Parameters
+    ----------
+    path:
+        Destination directory (created if missing).
+    plan:
+        Train-fitted symbolic or neuro-symbolic plan.
+    fit_result:
+        Optional fit report embedded in ``meta.json``.
+    eval_result:
+        Optional evaluation report embedded in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        Bundle directory containing ``symbolic_plan.joblib`` and ``meta.json``.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No SymbolicPlan / NeuroSymbolicPlan to save.")
     destination = Path(path)
@@ -63,7 +88,26 @@ def save_symbolic_bundle(
 
 
 def load_symbolic_bundle(path: str | Path) -> SymbolicPlan | NeuroSymbolicPlan:
-    """Load a symbolic bundle into a plan object."""
+    """Load a symbolic bundle from disk into a plan object.
+
+    Supports bundles written by :func:`save_symbolic_bundle` or Session
+    :meth:`~buildml.session.session.Session.load_symbolic_bundle`.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory containing ``meta.json`` and ``symbolic_plan.joblib``.
+
+    Returns
+    -------
+    SymbolicPlan or NeuroSymbolicPlan
+        Train-fitted plan ready for predict and evaluate calls.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, the format is unsupported, or the payload is invalid.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "symbolic_plan.joblib"

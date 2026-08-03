@@ -2620,26 +2620,79 @@ class Session:
         auto_k_max: int = 10,
     ) -> ClusterFitResult:
         """Fit a clusterer on the train partition only.
-
+        
+        Delegates to :meth:`buildml.unsupervised.cluster.fit_clusterer`, stores the
+        :class:`~buildml.unsupervised.results.ClusterPlan` on this Session, and records
+        the fit. Follow with :meth:`assign_clusters` or :meth:`evaluate_clusters`.
+        
         Parameters
         ----------
         method:
-            Core: ``kmeans``, ``agglomerative``, ``dbscan``, ``gmm`` (BIC k),
-            ``spectral``, ``optics``, ``mean_shift``. Industry extras:
-            ``hdbscan`` (``buildml[unsupervised]``). Deep: ``dec`` / ``idec``
-            (``buildml[torch]``).
+            Clustering method key (``kmeans``, ``gmm``, ``hdbscan``, etc.).
         n_clusters:
-            Required for partition-based methods; density methods observe k.
+            Target cluster count for parametric methods; ignored for density methods.
+        columns:
+            Optional explicit feature columns; ``None`` auto-selects numerics.
+        random_state:
+            Seed for stochastic initialization and sampling.
+        n_init:
+            Number of k-means restarts (``auto`` uses sklearn default).
+        max_iter:
+            Maximum iterations for iterative clusterers.
+        linkage:
+            Linkage criterion for hierarchical clustering.
+        eps:
+            Neighborhood radius for DBSCAN.
+        min_samples:
+            Minimum samples per core point for DBSCAN/OPTICS.
+        gmm_covariance_type:
+            Covariance structure for Gaussian mixture models.
+        gmm_max_components:
+            Upper bound on components when ``auto_k`` selects GMM k.
+        gmm_select_by:
+            Model-selection score for GMM component count (``bic`` or ``aic``).
+        hdbscan_min_cluster_size:
+            Minimum cluster size for HDBSCAN.
+        hdbscan_min_samples:
+            Core distance samples for HDBSCAN; defaults to min cluster size.
+        spectral_affinity:
+            Affinity matrix type for spectral clustering.
+        spectral_n_neighbors:
+            Neighbors for spectral nearest-neighbors affinity.
+        optics_min_samples:
+            Minimum samples for OPTICS core distances.
+        optics_xi:
+            Steepness threshold for OPTICS cluster extraction.
+        optics_min_cluster_size:
+            Minimum cluster size for OPTICS extraction.
+        bandwidth:
+            Kernel bandwidth for mean-shift; ``None`` estimates from data.
+        latent_dim:
+            Embedding dimension for deep clustering backend.
+        pretrain_epochs:
+            Pretraining epochs for deep clustering autoencoder.
+        finetune_epochs:
+            Fine-tuning epochs for deep clustering head.
+        batch_size:
+            Minibatch size for deep clustering backend.
+        learning_rate:
+            Optimizer learning rate for deep clustering backend.
         prefer_reduce_components:
-            When True and :meth:`reduce_dimensions` components are on the frame,
-            cluster those components instead of raw features.
+            Prefer reduced component columns when a reduce plan exists on this Session.
+        label_column:
+            Output column name for cluster assignments when attaching.
         auto_k:
-            Elbow (k-means) or BIC range (GMM) selection on train.
-
-        Notes
-        -----
-        **Leakage:** Requires a split. Geometry is learned on train only.
-        Scale numeric inputs first for distance-based methods."""
+            When True, search ``auto_k_min``..``auto_k_max`` for k-means/GMM.
+        auto_k_min:
+            Lower bound for automatic k search.
+        auto_k_max:
+            Upper bound for automatic k search.
+        
+        Returns
+        -------
+        ClusterFitResult
+            Serializable fit summary including cluster count and method disclosures.
+        """
         return unsupervised_ops.fit_clusters(
             self,
             method=method,
@@ -2680,15 +2733,28 @@ class Session:
         partition: PartitionName | Literal["all"] = "test",
         attach: bool = False,
     ) -> ClusterAssignResult:
-        """Assign cluster labels with the train-fitted plan (no refit).
-
+        """Assign cluster labels with the train-fitted plan without refitting.
+        
+        Delegates to :meth:`buildml.unsupervised.cluster.assign_clusters`. When
+        ``attach=True``, cluster labels are merged into Session dataset.
+        
         Parameters
         ----------
         partition:
-            ``train``, ``validation``, ``test``, or ``all``.
+            Partition to assign (``train``, ``validation``, ``test``, or ``all``).
         attach:
-            When True, requires ``partition='all'`` and writes ``label_column``
-            onto the Session frame as a feature role column."""
+            When True, attach cluster label column to this Session dataset frame.
+        
+        Returns
+        -------
+        ClusterAssignResult
+            Cluster assignments and optional attached column metadata.
+        
+        Raises
+        ------
+        ValidationError
+            When no cluster plan exists on this Session.
+        """
         return unsupervised_ops.assign_clusters_op(
             self, partition=partition, attach=attach
         )
@@ -2707,11 +2773,44 @@ class Session:
         elbow_k_min: int = 2,
         elbow_k_max: int = 10,
     ) -> ClusterEvalResult:
-        """Evaluate train-fitted clusters on a partition without refitting.
-
-        Internal metrics (silhouette, Calinski–Harabasz, Davies–Bouldin) describe
-        geometry — not supervised accuracy. Optional bootstrap stability and elbow
-        diagnostics available. Optional ``external_label_column`` adds ARI/NMI."""
+        """Evaluate train-fitted clusters on a holdout partition.
+        
+        Delegates to :meth:`buildml.unsupervised.evaluate.evaluate_clustering`.
+        Computes internal metrics and optional external alignment when labels exist.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition to score. Validation falls back to test when absent.
+        external_label_column:
+            Optional column for external cluster-quality metrics (e.g. ARI).
+        sample_size:
+            Optional subsample size for expensive metrics; ``None`` uses all rows.
+        random_state:
+            Seed for subsampling and stability bootstraps.
+        compute_stability:
+            When True, run bootstrap stability diagnostics.
+        stability_runs:
+            Number of bootstrap runs for stability analysis.
+        stability_sample_fraction:
+            Fraction of rows sampled per stability bootstrap.
+        compute_elbow:
+            When True, compute elbow curve for k-means k selection diagnostics.
+        elbow_k_min:
+            Minimum k for elbow diagnostics.
+        elbow_k_max:
+            Maximum k for elbow diagnostics.
+        
+        Returns
+        -------
+        ClusterEvalResult
+            Internal and optional external clustering metrics.
+        
+        Raises
+        ------
+        ValidationError
+            When no cluster plan exists on this Session.
+        """
         return unsupervised_ops.evaluate_clusters(
             self,
             partition=partition,
@@ -2728,34 +2827,99 @@ class Session:
 
     @property
     def cluster_plan(self) -> ClusterPlan | None:
-        """Last fitted unsupervised :class:`~buildml.unsupervised.results.ClusterPlan`."""
+        """Return the last unsupervised cluster plan, if any.
+        
+        Stored on this Session after :meth:`fit_clusters` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ClusterPlan or None
+            ``None`` before the first :meth:`fit_clusters` call on this session.
+        """
         return self._cluster_plan
 
     @property
     def cluster_fit_result(self) -> ClusterFitResult | None:
-        """Last :class:`~buildml.unsupervised.results.ClusterFitResult`, if any."""
+        """Return the last cluster fit result, if any.
+        
+        Stored on this Session after :meth:`fit_clusters` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ClusterFitResult or None
+            ``None`` before the first :meth:`fit_clusters` call on this session.
+        """
         return self._cluster_fit_result
 
     @property
     def cluster_assign_result(self) -> ClusterAssignResult | None:
-        """Last :class:`~buildml.unsupervised.results.ClusterAssignResult`, if any."""
+        """Return the last cluster assignment result, if any.
+        
+        Stored on this Session after :meth:`assign_clusters` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ClusterAssignResult or None
+            ``None`` before the first :meth:`assign_clusters` call on this session.
+        """
         return self._cluster_assign_result
 
     @property
     def cluster_eval_result(self) -> ClusterEvalResult | None:
-        """Last :class:`~buildml.unsupervised.results.ClusterEvalResult`, if any."""
+        """Return the last cluster evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_clusters` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ClusterEvalResult or None
+            ``None`` before the first :meth:`evaluate_clusters` call on this session.
+        """
         return self._cluster_eval_result
 
     def save_unsupervised_bundle(self, path: str | Path) -> Path:
         """Persist the active cluster plan as ``buildml.unsupervised_bundle.v2``.
-
-        Distinct from Session checkpoints, classical pipelines, Torch trainer
-        bundles, and RAG bundles. See
-        :data:`buildml.unsupervised.checkpoint.CHECKPOINT_BOUNDARY`."""
+        
+        Delegates to :meth:`buildml.unsupervised.checkpoint.save_unsupervised_bundle`.
+        Reload with :meth:`load_unsupervised_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no cluster plan exists on this Session.
+        """
         return unsupervised_ops.save_unsupervised_bundle_op(self, path=path)
 
     def load_unsupervised_bundle(self, path: str | Path) -> Session:
-        """Load an unsupervised bundle into this Session."""
+        """Load an unsupervised clustering bundle into this Session.
+        
+        Delegates to :meth:`buildml.unsupervised.checkpoint.load_unsupervised_bundle`
+        and clears prior fit/assign/eval results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.unsupervised_bundle.v2`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with cluster plan attached for chaining.
+        """
         return unsupervised_ops.load_unsupervised_bundle_op(self, path=path)
 
     def fit_voting(
@@ -2766,23 +2930,32 @@ class Session:
         weights: Sequence[float] | None = None,
         task: Literal["classification", "regression", "auto"] = "auto",
     ) -> EnsembleFitResult:
-        """Fit a VotingClassifier / VotingRegressor on the train partition only.
-
+        """Fit a voting ensemble on the train partition only.
+        
+        Delegates to :meth:`buildml.ensemble.fit.fit_voting_ensemble`, stores the
+        plan on this Session, and sets ``fit_result`` so classical evaluate/predict work.
+        
         Parameters
         ----------
         estimators:
-            Mapping or sequence of ``(name, estimator)`` base learners.
+            Base estimators as a mapping or ``(name, estimator)`` sequence.
         voting:
-            ``hard`` or ``soft`` (classification; soft needs ``predict_proba``).
+            Voting strategy (``hard`` or ``soft`` for classifiers).
         weights:
-            Optional per-estimator weights.
-
+            Optional per-estimator vote weights.
+        task:
+            Task type override (``classification``, ``regression``, or ``auto``).
+        
+        Returns
+        -------
+        EnsembleFitResult
+            Serializable fit summary including base estimator names.
+        
         Notes
         -----
-        **Leakage:** Requires a split. Fits on train only. Sets
-        :attr:`fit_result` so :meth:`evaluate` / :meth:`predict` /
-        :meth:`save_pipeline` work. Distinct from passing a single RandomForest
-        to :meth:`fit`."""
+        **Leakage:** Requires a split. Fits on train only. Sets Session ``fit_result``
+        so classical ``evaluate`` / ``predict`` / ``save_pipeline`` work.
+        """
         return ensemble_ops.fit_voting(
             self, estimators, voting=voting, weights=weights, task=task
         )
@@ -2797,12 +2970,36 @@ class Session:
         stack_method: str = "auto",
         task: Literal["classification", "regression", "auto"] = "auto",
     ) -> EnsembleFitResult:
-        """Fit a StackingClassifier / StackingRegressor on the train partition only.
-
+        """Fit a stacking ensemble on the train partition only.
+        
+        Delegates to :meth:`buildml.ensemble.fit.fit_stacking_ensemble` with
+        out-of-fold meta features computed inside train only.
+        
+        Parameters
+        ----------
+        estimators:
+            Base estimators as a mapping or ``(name, estimator)`` sequence.
+        final_estimator:
+            Meta-learner fitted on out-of-fold base predictions.
+        cv:
+            Number of cross-validation folds inside train for OOF features.
+        passthrough:
+            When True, include original features in meta-learner input.
+        stack_method:
+            Base prediction method (``auto``, ``predict_proba``, etc.).
+        task:
+            Task type override (``classification``, ``regression``, or ``auto``).
+        
+        Returns
+        -------
+        EnsembleFitResult
+            Serializable fit summary including CV fold count and base names.
+        
         Notes
         -----
-        **Leakage:** Stacking CV folds stay inside train. Session test is never
-        used for out-of-fold meta features."""
+        **Leakage:** Stacking CV folds stay inside train. Session test is never used
+        for out-of-fold meta features.
+        """
         return ensemble_ops.fit_stacking(
             self,
             estimators,
@@ -2826,14 +3023,40 @@ class Session:
         task: Literal["classification", "regression", "auto"] = "auto",
     ) -> EnsembleFitResult:
         """Fit a holdout-blend ensemble on the train partition only.
-
-        The blend holdout is carved from **train** (not Session validation/test).
-        Prefer :meth:`fit_stacking` when you want CV out-of-fold meta features.
-
+        
+        Delegates to :meth:`buildml.ensemble.fit.fit_blending_ensemble` with a
+        holdout carved from train for meta-learner fitting.
+        
+        Parameters
+        ----------
+        estimators:
+            Base estimators as a mapping or ``(name, estimator)`` sequence.
+        final_estimator:
+            Meta-learner fitted on holdout base predictions.
+        holdout_fraction:
+            Fraction of train rows reserved for blend holdout.
+        blend_method:
+            Base prediction method for blending (``predict_proba``, etc.).
+        random_state:
+            Seed for holdout split and base estimator initialization.
+        refit_bases_on_full_train:
+            When True, refit base estimators on all train rows after blending.
+        passthrough:
+            When True, include original features in meta-learner input.
+        task:
+            Task type override (``classification``, ``regression``, or ``auto``).
+        
+        Returns
+        -------
+        EnsembleFitResult
+            Serializable fit summary including holdout fraction disclosures.
+        
         Notes
         -----
-        **Leakage:** Meta-learner fits on an inner train holdout only. Bases are
-        optionally refit on full train for deployment (disclosed)."""
+        **Leakage:** The blend holdout is carved from train. Session validation/test
+        never enter meta-learner fitting. Prefer stacking when you want CV OOF
+        meta features instead of a single holdout.
+        """
         return ensemble_ops.fit_blending(
             self,
             estimators,
@@ -2852,32 +3075,94 @@ class Session:
         partition: Literal["train", "validation", "test"] = "test",
     ) -> EvaluateResult:
         """Evaluate the last native ensemble with classical supervised metrics.
-
-        Same metric path as :meth:`evaluate`, with ensemble strategy disclosures
-        attached to recommendations / diagnostics."""
+        
+        Delegates to the same metric path as ``Session.evaluate``. Requires a
+        prior :meth:`fit_voting`, :meth:`fit_stacking`, or :meth:`fit_blending`.
+        
+        Parameters
+        ----------
+        partition:
+            Partition to evaluate (``train``, ``validation``, or ``test``).
+        
+        Returns
+        -------
+        EvaluateResult
+            Classical metrics plus ensemble strategy disclosures.
+        
+        Raises
+        ------
+        ValidationError
+            When no fitted ensemble exists on this Session.
+        """
         return ensemble_ops.evaluate_ensemble(self, partition=partition)
 
     @property
     def ensemble_plan(self) -> EnsemblePlan | None:
-        """Last fitted native :class:`~buildml.ensemble.results.EnsemblePlan`."""
+        """Return the last native ensemble plan, if any.
+        
+        Stored on this Session after :meth:`fit_voting` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        EnsemblePlan or None
+            ``None`` before the first :meth:`fit_voting` call on this session.
+        """
         return self._ensemble_plan
 
     @property
     def ensemble_fit_result(self) -> EnsembleFitResult | None:
-        """Last :class:`~buildml.ensemble.results.EnsembleFitResult`, if any."""
+        """Return the last ensemble fit result, if any.
+        
+        Stored on this Session after :meth:`fit_voting` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        EnsembleFitResult or None
+            ``None`` before the first :meth:`fit_voting` call on this session.
+        """
         return self._ensemble_fit_result
 
     def save_ensemble_bundle(self, path: str | Path) -> Path:
-        """Persist the active ensemble plan as ``buildml.ensemble_bundle.v1``.
-
-        Distinct from Session checkpoints and classical pipeline bundles. See
-        :data:`buildml.ensemble.checkpoint.CHECKPOINT_BOUNDARY`. Prefer
-        :meth:`save_pipeline` when preprocess plans must travel with the
-        estimator."""
+        """Persist the active EnsemblePlan as ``buildml.ensemble_bundle.v1``.
+        
+        Delegates to :meth:`buildml.ensemble.checkpoint.save_ensemble_bundle`.
+        Reload with :meth:`load_ensemble_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no ensemble plan exists on this Session.
+        """
         return ensemble_ops.save_ensemble_bundle_op(self, path=path)
 
     def load_ensemble_bundle(self, path: str | Path) -> Session:
-        """Load an ensemble bundle into this Session."""
+        """Load an ensemble bundle into this Session.
+        
+        Delegates to :meth:`buildml.ensemble.checkpoint.load_ensemble_bundle`
+        and restores ``fit_result`` for classical evaluate/predict.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.ensemble_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with EnsemblePlan and ``fit_result`` attached.
+        """
         return ensemble_ops.load_ensemble_bundle_op(self, path=path)
 
     def run_automl(
@@ -2908,46 +3193,70 @@ class Session:
         budget: AutoMLBudget | None = None,
         time_budget: float | None = None,
     ) -> AutoMLResult:
-        """Search model families and fold-local preprocess strategies on train.
-
-        Goes beyond single-estimator :meth:`grid_search` / :meth:`optuna_search`
-        by jointly ranking estimator **families**, discrete **recipe
-        strategies** (impute/scale/encode/select), modest hyperparameter
-        catalogs, and optionally voting ensembles of diverse top families.
-
+        """Run AutoML model-family and recipe-strategy search on the train partition.
+        
+        Delegates to :meth:`buildml.automl.search.run_automl`, stores the
+        :class:`~buildml.automl.results.AutoMLPlan` and winner on this Session, and
+        optionally refits the best candidate. Follow with :meth:`evaluate_automl`
+        for classical supervised metrics on a holdout partition.
+        
         Parameters
         ----------
         backend:
-            ``native`` (default), ``optuna`` (deepened Optuna),
-            ``flaml`` or ``autogluon`` (``buildml[automl-industry]``).
+            ``native``, ``optuna``, ``flaml``, or ``autogluon`` search backend.
+        task:
+            ``classification``, ``regression``, or ``auto`` to infer from target.
         method:
-            ``randomized`` (default), ``grid``, ``optuna`` (``buildml[automl]``),
-            or ``evolutionary`` (in-tree GA).
+            Search method (``randomized``, ``grid``, ``optuna``, ``evolutionary``).
         selection:
-            ``cv`` (train-fold CV), ``nested`` (outer train estimate after
-            inner selection), or ``validation`` (rank on Session validation;
-            never test).
+            How to rank trials: ``cv``, ``nested``, or ``validation``.
+        n_trials:
+            Maximum candidate trials under the trial budget.
+        cv:
+            Inner CV folds or splitter for ``selection='cv'`` / ``'nested'``.
+        outer_cv:
+            Outer CV folds when ``selection='nested'``.
+        cv_strategy:
+            CV splitter strategy (``auto``, ``kfold``, ``stratified``, etc.).
+        ranking_metric:
+            Metric to rank candidates; defaults to task-appropriate score.
+        families:
+            Optional subset of model family names to search.
         include_recipe_search:
-            Search discrete fold-local :class:`PreprocessRecipe` strategies.
+            When True, search discrete fold-local recipe strategies.
         include_industry_families:
-            When ``buildml[automl-industry]`` GBDT libs are installed, extend
-            the native catalog with LightGBM / XGBoost / CatBoost.
+            When True, extend catalog with GBDT families when extras installed.
         include_ensembles:
-            Optionally score voting/stacking ensembles of diverse top families.
+            When True, evaluate voting ensembles from diverse top families.
         ensemble_mode:
-            ``voting``, ``stacking``, or ``both`` when ``include_ensembles=True``.
-        time_budget:
-            Optional wall-clock cap in seconds (disclosed in results).
+            Ensemble types to score when ``include_ensembles=True``.
+        max_ensemble_bases:
+            Maximum base families combined in one ensemble trial.
+        preprocess:
+            Fixed fold-local recipe when ``include_recipe_search=False``.
         allow_session_global_preprocess:
-            Same hard refusal contract as classical CV/search.
-
+            Allow search when Session-global preprocess was already applied.
+        refit:
+            When True, refit the best candidate on all train rows after selection.
+        random_state:
+            Seed for randomized search and CV splitters.
+        groups:
+            Optional group labels for grouped CV strategies.
+        budget:
+            Structured trial/time budget caps for the search loop.
+        time_budget:
+            Optional wall-clock seconds cap for the search.
+        
+        Returns
+        -------
+        AutoMLResult
+            Ranked trial table, winner metadata, and search disclosures.
+            Session ``_fit_result`` is set when ``refit=True``.
+        
         Notes
         -----
-        **Leakage:** Session test never enters selection. Fold-local recipes
-        refit on fold-train only. **Not** NAS, not causal discovery, not a
-        fully automated AI scientist — finite disclosed catalogs under a
-        trial budget. Sets :attr:`fit_result` so :meth:`evaluate` /
-        :meth:`predict` / :meth:`save_pipeline` work.
+        **Leakage:** Same refusal as classical CV/search when Session-global
+        preprocess already poisoned the frame. Session test never enters selection.
         """
         return automl_ops.run_automl_op(
             self,
@@ -2981,32 +3290,95 @@ class Session:
         partition: Literal["train", "validation", "test"] = "test",
     ) -> EvaluateResult:
         """Evaluate the last AutoML winner with classical supervised metrics.
-
-        Same metric path as :meth:`evaluate`, with AutoML disclosures attached
-        to recommendations / diagnostics."""
+        
+        Delegates to :meth:`buildml.model.supervised.evaluate_estimator` on the
+        refitted winner stored in Session ``_fit_result``. Annotates diagnostics
+        with AutoML plan metadata when available.
+        
+        Parameters
+        ----------
+        partition:
+            Split partition to score (``train``, ``validation``, or ``test``).
+        
+        Returns
+        -------
+        EvaluateResult
+            Metrics, diagnostics, and recommendations for the winning estimator.
+        
+        Raises
+        ------
+        ValidationError
+            When no refitted AutoML winner exists on this Session.
+        """
         return automl_ops.evaluate_automl(self, partition=partition)
 
     @property
     def automl_plan(self) -> AutoMLPlan | None:
-        """Last selected :class:`~buildml.automl.results.AutoMLPlan`."""
+        """Return the last selected AutoML plan, if any.
+        
+        Stored on this Session after :meth:`run_automl` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        AutoMLPlan or None
+            ``None`` before the first :meth:`run_automl` call on this session.
+        """
         return self._automl_plan
 
     @property
     def automl_result(self) -> AutoMLResult | None:
-        """Last :class:`~buildml.automl.results.AutoMLResult`, if any."""
+        """Return the last AutoML search result, if any.
+        
+        Stored on this Session after :meth:`run_automl` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        AutoMLResult or None
+            ``None`` before the first :meth:`run_automl` call on this session.
+        """
         return self._automl_result
 
     def save_automl_bundle(self, path: str | Path) -> Path:
         """Persist the active AutoML plan as ``buildml.automl_bundle.v1``.
-
-        Distinct from Session checkpoints and classical pipeline bundles. See
-        :data:`buildml.automl.checkpoint.CHECKPOINT_BOUNDARY`. Prefer
-        :meth:`save_pipeline` when Session-global preprocess plans must travel
-        with the estimator."""
+        
+        Delegates to :meth:`buildml.automl.checkpoint.save_automl_bundle`.
+        Reload with :meth:`load_automl_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no AutoML plan exists on this Session.
+        """
         return automl_ops.save_automl_bundle_op(self, path=path)
 
     def load_automl_bundle(self, path: str | Path) -> Session:
-        """Load an AutoML bundle into this Session."""
+        """Load an AutoML bundle into this Session.
+        
+        Delegates to :meth:`buildml.automl.checkpoint.load_automl_bundle`,
+        restores plan and refitted winner, and clears search result cache.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.automl_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with AutoML plan and fit result attached for chaining.
+        """
         return automl_ops.load_automl_bundle_op(self, path=path)
 
     def fit_forecast(
@@ -3029,30 +3401,58 @@ class Session:
         nbeats_input_size: int = 24,
         nbeats_horizon: int | None = None,
     ) -> ForecastFitResult:
-        """Fit a forecaster on the train partition only.
-
+        """Fit a classical forecaster on the train partition only.
+        
+        Delegates to :meth:`buildml.forecasting.fit.fit_forecaster`, stores the
+        :class:`~buildml.forecasting.results.ForecastPlan` on this Session, and records
+        the fit. Follow with :meth:`generate_forecast` or
+        :meth:`evaluate_forecast`.
+        
         Parameters
         ----------
         method:
-            ``auto`` (ETS when statsmodels installed, else ``lag_ridge``),
-            baselines, ``lag_ridge``/``lag_hgb``, or with ``buildml[timeseries]``:
-            ``arima``, ``auto_arima``, ``ets``, ``sarimax``. Prophet / N-BEATS
-            behind ``timeseries-prophet`` / ``timeseries-ml``.
+            Forecasting method (``lag_ridge``, ``arima``, ``nbeats``, etc.).
         horizon:
-            Default generate horizon stored on the plan.
+            Default forecast horizon in steps.
         lags:
-            Positive lag orders for lag models (defaults to ``(1, 2, 3, 7)``).
+            Explicit lag indices for lag-based methods.
         seasonal_period:
-            Required semantics for ``seasonal_naive`` (defaults to ``max(lags)``).
+            Seasonal period for seasonal methods.
         exog_columns:
-            Optional numeric exogenous columns. Empty ⇒ univariate.
-
+            Optional exogenous regressor columns.
+        target_column:
+            Target series column; defaults to target role.
+        time_column:
+            Timestamp column; inferred when omitted.
+        random_state:
+            Seed for stochastic estimators.
+        alpha:
+            Regularization strength for ridge-style methods.
+        max_iter:
+            Maximum iterations for iterative solvers.
+        max_depth:
+            Tree depth for tree-based forecasters.
+        learning_rate:
+            Learning rate for gradient boosting forecasters.
+        order:
+            ARIMA ``(p, d, q)`` order tuple.
+        seasonal_order:
+            Seasonal ARIMA ``(P, D, Q, s)`` order tuple.
+        nbeats_input_size:
+            Input window size for N-BEATS backend.
+        nbeats_horizon:
+            N-BEATS forecast horizon override.
+        
+        Returns
+        -------
+        ForecastFitResult
+            Serializable fit summary including method and horizon disclosures.
+        
         Notes
         -----
-        **Leakage:** Requires :meth:`time_split` (or chronologically ordered
-        :meth:`inject_split`). Random/stratified/group splits are refused.
-        Not a digital twin. With ``buildml[timeseries]``, statsmodels ETS/ARIMA
-        are industry defaults; core lag/baseline fallback when extras absent.
+        **Leakage:** Requires ``time_split`` (or chronologically ordered
+        ``inject_split``). Random/stratified/group splits are refused. Lag features
+        use only past target values.
         """
         return forecast_ops.fit_forecast(
             self,
@@ -3081,16 +3481,30 @@ class Session:
         origin: str = "train_end",
         future_exog: Any | None = None,
     ) -> ForecastGenerateResult:
-        """Generate an H-step forecast from the train-fitted plan (no refit).
-
+        """Generate an H-step forecast from the train-fitted ForecastPlan.
+        
+        Delegates to :meth:`buildml.forecasting.predict.generate_forecast` without
+        refitting. History is taken from train end or extended through validation/test
+        when ``origin`` requests it.
+        
         Parameters
         ----------
         horizon:
-            Steps ahead; defaults to the plan horizon.
+            Forecast steps; defaults to the plan horizon when ``None``.
         origin:
-            ``train_end``, ``validation_end``, or ``test_end``.
+            History cutoff (``train_end``, ``validation_end``, or ``test_end``).
         future_exog:
-            Required when the plan uses exogenous columns.
+            Optional exogenous values for the forecast horizon.
+        
+        Returns
+        -------
+        ForecastGenerateResult
+            Point forecasts and optional intervals for the requested horizon.
+        
+        Raises
+        ------
+        ValidationError
+            When no forecast plan exists or ``origin`` requires a missing split.
         """
         return forecast_ops.generate_forecast_op(
             self, horizon=horizon, origin=origin, future_exog=future_exog
@@ -3102,11 +3516,28 @@ class Session:
         partition: PartitionName = "test",
         strategy: ForecastEvalStrategy = "rolling_one_step",
     ) -> ForecastEvalResult:
-        """Evaluate the train-fitted forecaster on a holdout partition.
-
-        Metrics: MAE, RMSE, MAPE (MAPE unstable near zero — disclosed).
-        Defaults to validation when requested but missing, falling back to test
-        via the ops layer for empty validation only when partition='validation'.
+        """Evaluate the train-fitted ForecastPlan on a holdout partition.
+        
+        Delegates to :meth:`buildml.forecasting.evaluate.evaluate_forecast` using
+        rolling or static evaluation strategies. Falls back to ``test`` when no
+        validation partition exists.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition (default ``test``).
+        strategy:
+            Evaluation strategy (``rolling_one_step`` or ``static_multi_step``).
+        
+        Returns
+        -------
+        ForecastEvalResult
+            Holdout error metrics for the frozen forecast plan.
+        
+        Raises
+        ------
+        ValidationError
+            When no forecast plan exists on this Session.
         """
         return forecast_ops.evaluate_forecast_op(
             self, partition=partition, strategy=strategy
@@ -3114,34 +3545,99 @@ class Session:
 
     @property
     def forecast_plan(self) -> ForecastPlan | None:
-        """Last fitted :class:`~buildml.forecasting.results.ForecastPlan`."""
+        """Return the last forecast plan, if any.
+        
+        Stored on this Session after :meth:`fit_forecast` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ForecastPlan or None
+            ``None`` before the first :meth:`fit_forecast` call on this session.
+        """
         return self._forecast_plan
 
     @property
     def forecast_fit_result(self) -> ForecastFitResult | None:
-        """Last :class:`~buildml.forecasting.results.ForecastFitResult`, if any."""
+        """Return the last forecast fit result, if any.
+        
+        Stored on this Session after :meth:`fit_forecast` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ForecastFitResult or None
+            ``None`` before the first :meth:`fit_forecast` call on this session.
+        """
         return self._forecast_fit_result
 
     @property
     def forecast_generate_result(self) -> ForecastGenerateResult | None:
-        """Last :class:`~buildml.forecasting.results.ForecastGenerateResult`, if any."""
+        """Return the last forecast generation result, if any.
+        
+        Stored on this Session after :meth:`generate_forecast` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ForecastGenerateResult or None
+            ``None`` before the first :meth:`generate_forecast` call on this session.
+        """
         return self._forecast_generate_result
 
     @property
     def forecast_eval_result(self) -> ForecastEvalResult | None:
-        """Last :class:`~buildml.forecasting.results.ForecastEvalResult`, if any."""
+        """Return the last forecast evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_forecast` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ForecastEvalResult or None
+            ``None`` before the first :meth:`evaluate_forecast` call on this session.
+        """
         return self._forecast_eval_result
 
     def save_forecast_bundle(self, path: str | Path) -> Path:
-        """Persist the active forecast plan as ``buildml.forecast_bundle.v1``.
-
-        Distinct from Session checkpoints, classical pipelines, Torch trainer
-        bundles, and RAG bundles. See
-        :data:`buildml.forecasting.checkpoint.CHECKPOINT_BOUNDARY`."""
+        """Persist the active ForecastPlan as ``buildml.forecast_bundle.v2``.
+        
+        Delegates to :meth:`buildml.forecasting.checkpoint.save_forecast_bundle`.
+        Reload with :meth:`load_forecast_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no forecast plan exists on this Session.
+        """
         return forecast_ops.save_forecast_bundle_op(self, path=path)
 
     def load_forecast_bundle(self, path: str | Path) -> Session:
-        """Load a forecast bundle into this Session."""
+        """Load a forecast bundle into this Session.
+        
+        Delegates to :meth:`buildml.forecasting.checkpoint.load_forecast_bundle`
+        and clears prior generate/eval results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.forecast_bundle.v2`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with ForecastPlan attached for chaining.
+        """
         return forecast_ops.load_forecast_bundle_op(self, path=path)
 
     def analyze_timeseries(
@@ -3161,12 +3657,54 @@ class Session:
         changepoint_penalty: float = 10.0,
         rolling_window: int = 7,
     ) -> Any:
-        """Run time-series analysis (decompose, diagnostics, changepoints, features).
-
-        Notes
-        -----
-        **Leakage:** Requires :meth:`time_split`. Default ``scope='train'``.
-        Industry defaults (STL, ADF/KPSS) when ``buildml[timeseries]`` installed.
+        """Run time-series analysis on train-only or full-dataset scope.
+        
+        Delegates to :meth:`buildml.timeseries.analyze.analyze_timeseries`, stores
+        the result on this Session, and records the operation. Default scope is
+        ``train`` to avoid peeking at holdout data during EDA.
+        
+        Parameters
+        ----------
+        target_column:
+            Series to analyze; defaults to the target role column.
+        time_column:
+            Timestamp or index column; inferred when omitted.
+        scope:
+            ``train`` (default) restricts to train indices; ``all`` uses full data.
+        seasonal_period:
+            Seasonal period for decomposition and diagnostics.
+        decompose_method:
+            Decomposition algorithm (STL, classical, etc.).
+        include_decompose:
+            When True, run seasonal decomposition.
+        include_diagnostics:
+            When True, run stationarity and autocorrelation diagnostics.
+        include_changepoints:
+            When True, detect structural changepoints.
+        include_features:
+            When True, extract lag/rolling/spectral features.
+        acf_lags:
+            Maximum lag for autocorrelation function plots.
+        pacf_lags:
+            Maximum lag for partial autocorrelation function plots.
+        adf_regression:
+            Regression term for Augmented Dickey-Fuller test.
+        kpss_regression:
+            Regression term for KPSS stationarity test.
+        changepoint_method:
+            Changepoint detection algorithm override.
+        changepoint_penalty:
+            Penalty controlling changepoint count.
+        rolling_window:
+            Window size for rolling statistics.
+        spectral_n_fft:
+            FFT size for spectral analysis (``None`` uses series length).
+        
+        Returns
+        -------
+        TimeseriesAnalysisResult
+            Decomposition, diagnostics, changepoints, and feature summaries.
+            Use :meth:`ts_decompose` or :meth:`ts_diagnostics` for focused runs.
         """
         return timeseries_ops.analyze_timeseries_op(
             self,
@@ -3194,7 +3732,31 @@ class Session:
         seasonal_period: int | None = None,
         decompose_method: str | None = None,
     ) -> Any:
-        """STL/classical decomposition on train-only scope (default)."""
+        """Run decomposition-only time-series analysis on Session data.
+
+        Convenience wrapper around :meth:`analyze_timeseries` that enables
+        seasonal decomposition and disables diagnostics, changepoints, and
+        feature extraction. Use this when you only need trend/seasonal/residual
+        components before choosing a forecast method.
+
+        Parameters
+        ----------
+        target_column:
+            Series to decompose; defaults to the target role column.
+        time_column:
+            Timestamp or index column; inferred when omitted.
+        scope:
+            ``train`` (default) restricts to train indices; ``all`` uses full data.
+        seasonal_period:
+            Seasonal period for decomposition.
+        decompose_method:
+            Decomposition algorithm (STL, classical, etc.).
+
+        Returns
+        -------
+        TimeseriesAnalysisResult
+            Result with decomposition components populated.
+        """
         return timeseries_ops.ts_decompose_op(
             self,
             target_column=target_column,
@@ -3213,7 +3775,30 @@ class Session:
         acf_lags: int = 40,
         pacf_lags: int = 40,
     ) -> Any:
-        """ACF/PACF and ADF/KPSS stationarity tests."""
+        """Run diagnostics-only time-series analysis on Session data.
+
+        Convenience wrapper around :meth:`analyze_timeseries` that runs ACF/PACF
+        and ADF/KPSS stationarity tests while skipping decomposition,
+        changepoints, and feature extraction.
+
+        Parameters
+        ----------
+        target_column:
+            Series to diagnose; defaults to the target role column.
+        time_column:
+            Timestamp or index column; inferred when omitted.
+        scope:
+            ``train`` (default) restricts to train indices; ``all`` uses full data.
+        acf_lags:
+            Maximum lag for autocorrelation function plots.
+        pacf_lags:
+            Maximum lag for partial autocorrelation function plots.
+
+        Returns
+        -------
+        TimeseriesAnalysisResult
+            Result with diagnostic tests and ACF/PACF summaries populated.
+        """
         return timeseries_ops.ts_diagnostics_op(
             self,
             target_column=target_column,
@@ -3225,7 +3810,16 @@ class Session:
 
     @property
     def ts_analysis_result(self) -> Any | None:
-        """Last time-series analysis result, if any."""
+        """Return the last time-series analysis result, if any.
+        
+        Stored on this Session after :meth:`analyze_timeseries` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        TimeseriesAnalysisResult or None
+            ``None`` before the first :meth:`analyze_timeseries` call on this session.
+        """
         return self._ts_analysis_result
 
     def fit_anomaly(
@@ -3256,35 +3850,70 @@ class Session:
         flag_column: str = "is_anomaly",
         score_column: str = "anomaly_score",
     ) -> AnomalyFitResult:
-        """Fit an anomaly / fraud detector on the train partition only.
-
+        """Fit an anomaly detector on the train partition only.
+        
+        Delegates to :meth:`buildml.anomaly.fit.fit_detector`, stores the
+        :class:`~buildml.anomaly.results.AnomalyPlan` on this Session, and records
+        the fit. ``backend`` selects sklearn (core), pyod
+        (``buildml[anomaly-industry]``), or torch (``buildml[torch]``). ``method``
+        must belong to the backend catalog — see :meth:`anomaly_capability_matrix`.
+        
         Parameters
         ----------
         backend:
-            ``sklearn`` (core), ``pyod`` (``buildml[anomaly-industry]``), or
-            ``torch`` (``buildml[torch]`` autoencoder path).
+            Optional backend override (see capability matrix for identifiers).
         method:
-            Catalog method for the backend — see
-            :func:`buildml.anomaly.anomaly_capability_matrix`.
+            Method or strategy identifier for the resolved backend.
         mode:
-            ``unsupervised`` (fit all train rows), ``novelty`` (normal-only
-            train subset via ``normal_label_column``), or ``supervised``.
+            Anomaly detection mode (``unsupervised`` or ``supervised``).
+        columns:
+            Optional explicit feature column list; ``None`` auto-selects numerics.
+        random_state:
+            Seed for stochastic steps (sampling, initialization, bagging).
         contamination:
-            Prior alert fraction used when ``threshold_policy='contamination'``
-            (and IsolationForest/LOF contamination knobs).
+            Expected outlier fraction for sklearn-style detectors.
         threshold_policy:
-            ``contamination``, ``quantile``, ``score_threshold``, or
-            ``decision_zero`` (One-Class SVM). Use
-            :meth:`tune_anomaly_threshold` for validation-tuned cutoffs.
-
-        Notes
-        -----
-        **Leakage:** Requires a split. Detector fit on train only. Higher
-        ``anomaly_score`` means more anomalous; thresholds and alert rates are
-        always disclosed. Distinct from EDA IsolationForest screens and
-        :meth:`handle_outliers`. Not a graph-fraud or streaming platform; no
-        causal fraud claims. Clustering (:meth:`fit_clusters`) remains a
-        separate structure API.
+            How the decision threshold is chosen from train scores.
+        score_threshold:
+            Fixed score cutoff when threshold policy is ``fixed``.
+        quantile:
+            Quantile for score threshold when policy is ``quantile``.
+        n_estimators:
+            Number of trees for forest-based detectors.
+        max_samples:
+            Subsample size for isolation forest (``auto``, int, or float).
+        n_neighbors:
+            Neighborhood size for LOF and similar methods.
+        nu:
+            Upper bound on training-error fraction for one-class SVM.
+        kernel:
+            Kernel type for one-class SVM.
+        gamma:
+            Kernel coefficient for one-class SVM.
+        latent_dim:
+            Bottleneck width for torch autoencoder backend.
+        ae_epochs:
+            Training epochs for torch autoencoder backend.
+        ae_batch_size:
+            Minibatch size for torch autoencoder backend.
+        normal_label_column:
+            Optional column marking normal rows in semi-supervised setups.
+        normal_label_value:
+            Value in ``normal_label_column`` indicating normal rows.
+        positive_label:
+            Positive class label for supervised fraud scorers.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
+        flag_column:
+            Output column name for boolean anomaly flags when attaching scores.
+        score_column:
+            Output column name for continuous anomaly scores when attaching.
+        
+        Returns
+        -------
+        AnomalyFitResult
+            Serializable fit summary including threshold and alert-rate disclosures.
+            Follow with :meth:`score_anomalies` or :meth:`tune_anomaly_threshold`.
         """
         return anomaly_ops.fit_anomaly(
             self,
@@ -3325,10 +3954,38 @@ class Session:
         allow_test_tuning: bool = False,
         update_plan: bool = True,
     ) -> AnomalyThresholdTuneResult:
-        """Tune anomaly threshold on validation labels (never test by default).
-
-        Same leakage discipline as :meth:`tune_threshold` — tune on validation,
-        evaluate final claims on untouched test.
+        """Tune the anomaly decision threshold on validation labels without refitting.
+        
+        Delegates to :meth:`buildml.anomaly.threshold.tune_anomaly_threshold` and
+        optionally writes the tuned threshold back to this Session plan. Test
+        tuning requires explicit ``allow_test_tuning=True``.
+        
+        Parameters
+        ----------
+        partition:
+            Labeled holdout partition for threshold search (default ``validation``).
+        label_column:
+            Optional explicit label column; defaults to target role column.
+        positive_label:
+            Positive/anomaly label value for supervised tuning metrics.
+        metric:
+            Metric to optimize (``f1``, ``fbeta``, ``precision``, ``recall``).
+        fbeta:
+            Beta for F-beta when ``metric='fbeta'``.
+        allow_test_tuning:
+            When False, refuse tuning on the test partition.
+        update_plan:
+            When True, apply the tuned threshold to the active Session plan.
+        
+        Returns
+        -------
+        AnomalyThresholdTuneResult
+            Tuned threshold, metric value, and partition used for search.
+        
+        Raises
+        ------
+        ValidationError
+            When no anomaly plan exists or tuning preconditions fail.
         """
         return anomaly_ops.tune_anomaly_threshold_op(
             self,
@@ -3343,7 +4000,17 @@ class Session:
 
     @staticmethod
     def anomaly_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for anomaly backends and extras."""
+        """Return the anomaly backend/method capability matrix for this install.
+        
+        Delegates to :meth:`buildml.anomaly.catalog.anomaly_capability_matrix`.
+        Use before :meth:`fit_anomaly` to confirm ``backend`` and ``method`` pairs
+        available with current extras.
+        
+        Returns
+        -------
+        dict
+            Nested map of backend identifiers to supported methods and modes.
+        """
         return anomaly_ops.anomaly_capability_matrix_op()
 
     def score_anomalies(
@@ -3353,18 +4020,29 @@ class Session:
         attach: bool = False,
         override_threshold: float | None = None,
     ) -> AnomalyScoreResult:
-        """Score and flag rows with the train-fitted anomaly plan (no refit).
-
+        """Score and flag rows with the train-fitted anomaly plan without refitting.
+        
+        Delegates to :meth:`buildml.anomaly.score.score_anomalies`. When
+        ``attach=True``, score and flag columns are merged into Session dataset.
+        
         Parameters
         ----------
         partition:
-            ``train``, ``validation``, ``test``, or ``all``.
+            Partition to score (``train``, ``validation``, ``test``, or ``all``).
         attach:
-            When True, requires ``partition='all'`` and writes score/flag
-            columns onto the Session frame.
+            When True, attach score and flag columns to this Session dataset frame.
         override_threshold:
-            Optional absolute threshold for this call only (does not mutate
-            the stored plan threshold).
+            Optional score cutoff overriding the plan threshold for this call.
+        
+        Returns
+        -------
+        AnomalyScoreResult
+            Scores, flags, and optional alert-rate summary for the partition.
+        
+        Raises
+        ------
+        ValidationError
+            When no anomaly plan exists on this Session.
         """
         return anomaly_ops.score_anomalies_op(
             self,
@@ -3382,13 +4060,33 @@ class Session:
         k: int | None = None,
         override_threshold: float | None = None,
     ) -> AnomalyEvalResult:
-        """Evaluate train-fitted anomaly scores on a partition without refitting.
-
-        Always reports threshold and alert rate. When labels are available
-        (``label_column`` or a target role), also reports precision/recall/F1,
-        PR-AUC, ROC-AUC, and precision/recall@k with imbalance disclosures.
-        Defaults to validation, falling back to test when no validation
-        partition exists.
+        """Evaluate train-fitted anomaly scores on a labeled holdout partition.
+        
+        Delegates to :meth:`buildml.anomaly.evaluate.evaluate_anomaly`. Requires
+        labels on the holdout partition; does not refit the detector.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition to score. Validation falls back to test when absent.
+        label_column:
+            Optional explicit label column; defaults to target role column.
+        positive_label:
+            Positive/anomaly label value for supervised metrics.
+        k:
+            Optional top-k for precision@k / recall@k style metrics.
+        override_threshold:
+            Optional score cutoff overriding the plan threshold for this evaluation.
+        
+        Returns
+        -------
+        AnomalyEvalResult
+            Holdout classification metrics and ranking diagnostics when labels exist.
+        
+        Raises
+        ------
+        ValidationError
+            When no anomaly plan exists on this Session.
         """
         return anomaly_ops.evaluate_anomaly_op(
             self,
@@ -3401,34 +4099,99 @@ class Session:
 
     @property
     def anomaly_plan(self) -> AnomalyPlan | None:
-        """Last fitted :class:`~buildml.anomaly.results.AnomalyPlan`."""
+        """Return the last anomaly plan, if any.
+        
+        Stored on this Session after :meth:`fit_anomaly` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        AnomalyPlan or None
+            ``None`` before the first :meth:`fit_anomaly` call on this session.
+        """
         return self._anomaly_plan
 
     @property
     def anomaly_fit_result(self) -> AnomalyFitResult | None:
-        """Last :class:`~buildml.anomaly.results.AnomalyFitResult`, if any."""
+        """Return the last anomaly fit result, if any.
+        
+        Stored on this Session after :meth:`fit_anomaly` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        AnomalyFitResult or None
+            ``None`` before the first :meth:`fit_anomaly` call on this session.
+        """
         return self._anomaly_fit_result
 
     @property
     def anomaly_score_result(self) -> AnomalyScoreResult | None:
-        """Last :class:`~buildml.anomaly.results.AnomalyScoreResult`, if any."""
+        """Return the last anomaly scoring result, if any.
+        
+        Stored on this Session after :meth:`score_anomalies` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        AnomalyScoreResult or None
+            ``None`` before the first :meth:`score_anomalies` call on this session.
+        """
         return self._anomaly_score_result
 
     @property
     def anomaly_eval_result(self) -> AnomalyEvalResult | None:
-        """Last :class:`~buildml.anomaly.results.AnomalyEvalResult`, if any."""
+        """Return the last anomaly evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_anomaly` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        AnomalyEvalResult or None
+            ``None`` before the first :meth:`evaluate_anomaly` call on this session.
+        """
         return self._anomaly_eval_result
 
     def save_anomaly_bundle(self, path: str | Path) -> Path:
         """Persist the active anomaly plan as ``buildml.anomaly_bundle.v1``.
-
-        Distinct from Session checkpoints, unsupervised bundles, classical
-        pipelines, Torch trainer bundles, and RAG bundles. See
-        :data:`buildml.anomaly.checkpoint.CHECKPOINT_BOUNDARY`."""
+        
+        Delegates to :meth:`buildml.anomaly.checkpoint.save_anomaly_bundle`.
+        Reload with :meth:`load_anomaly_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no anomaly plan exists on this Session.
+        """
         return anomaly_ops.save_anomaly_bundle_op(self, path=path)
 
     def load_anomaly_bundle(self, path: str | Path) -> Session:
-        """Load an anomaly bundle into this Session."""
+        """Load an anomaly bundle into this Session.
+        
+        Delegates to :meth:`buildml.anomaly.checkpoint.load_anomaly_bundle` and
+        clears prior score/eval/threshold-tune results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.anomaly_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with anomaly plan attached for chaining.
+        """
         return anomaly_ops.load_anomaly_bundle_op(self, path=path)
 
     def fit_semisupervised(
@@ -3458,28 +4221,71 @@ class Session:
         unlabeled_marker: Any = None,
         prefer_reduce_components: bool = True,
     ) -> SemiSupervisedFitResult:
-        """Fit a semi-supervised classifier on the train partition only.
-
+        """Fit a semi-supervised classifier on labeled and unlabeled train rows.
+        
+        Delegates to :meth:`buildml.semisupervised.fit.fit_semisupervised`, stores
+        the :class:`~buildml.semisupervised.results.SemiSupervisedPlan` on this Session,
+        and records the fit. Follow with :meth:`predict_semisupervised` or
+        :meth:`evaluate_semisupervised`.
+        
         Parameters
         ----------
         backend:
-            ``sklearn`` (default), ``industry`` (XGB/LGBM pseudo-label),
-            ``torch`` (FixMatch/MixMatch tabular), or ``hf`` (text pseudo-label).
+            Optional backend override (``sklearn``, ``industry``, ``torch``, ``text``).
         method:
-            Algorithm within the backend — see
-            :func:`buildml.semisupervised.semisupervised_capability_matrix`.
+            Semi-supervised method key (``label_propagation``, ``self_training``, etc.).
+        columns:
+            Optional explicit feature columns for tabular backends.
+        random_state:
+            Seed for stochastic steps.
+        kernel:
+            Kernel or affinity type for graph-based methods.
+        n_neighbors:
+            Neighborhood size for kNN graph construction.
+        max_iter:
+            Maximum iterations for iterative label propagation methods.
+        alpha:
+            Clamping factor for label propagation (labeled vs propagated mass).
+        base_estimator:
+            Base classifier for self-training and pseudo-label methods.
+        threshold:
+            Confidence threshold for pseudo-label acceptance.
+        criterion:
+            Pseudo-label selection criterion (``threshold`` or ``k_best``).
+        k_best:
+            Top-k pseudo-labels per iteration when ``criterion='k_best'``.
+        max_self_train_iter:
+            Maximum self-training rounds for pseudo-label methods.
+        epochs:
+            Training epochs for torch consistency-regularization backend.
+        batch_size:
+            Minibatch size for torch backend.
+        learning_rate:
+            Optimizer learning rate for torch backend.
+        consistency_weight:
+            Weight on unlabeled consistency loss for torch backend.
+        mixup_alpha:
+            Mixup alpha for torch consistency backend.
+        device:
+            Torch device string (``cpu`` or ``cuda``).
+        text_column:
+            Text column for HF embedding semi-supervised backend.
+        text_model_name:
+            Sentence-transformer model name for text backend.
         unlabeled_marker:
-            Extra sentinel treated as unlabeled. Default ``None`` means pandas
-            missing values (NaN) in the target role mark unlabeled rows.
-
+            Value treated as unlabeled in the train target column.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
+        
+        Returns
+        -------
+        SemiSupervisedFitResult
+            Serializable fit summary including labeled/unlabeled train counts.
+        
         Notes
         -----
-        **Leakage:** Requires a split. Fit uses train only. Validation/test
-        never invent labels for model selection. Distinct from anomaly novelty
-        and from self-supervised pretext (:meth:`fit_ssl_pretext`).
-
-        **SSL integration:** ``fit_ssl_pretext`` → ``transform_ssl`` (or reduce
-        on embeddings) → ``fit_semisupervised`` uses partial labels on SSL features.
+        **Leakage:** Requires a split. Fit uses train only. Unlabeled rows are
+        target NaNs (default). Validation/test never invent labels for selection.
         """
         return semisupervised_ops.fit_semisupervised_op(
             self,
@@ -3515,7 +4321,30 @@ class Session:
         attach: bool = False,
         prediction_column: str = "semisupervised_prediction",
     ) -> SemiSupervisedPredictResult:
-        """Predict with the train-fitted semi-supervised plan (no refit)."""
+        """Predict with the train-fitted semi-supervised plan without refitting.
+        
+        Delegates to :meth:`buildml.semisupervised.predict.predict_semisupervised`.
+        When ``attach=True``, predictions are merged into Session dataset.
+        
+        Parameters
+        ----------
+        partition:
+            Partition to score (``train``, ``validation``, ``test``, or ``all``).
+        attach:
+            When True, attach prediction column to this Session dataset frame.
+        prediction_column:
+            Column name used when ``attach=True``.
+        
+        Returns
+        -------
+        SemiSupervisedPredictResult
+            Predictions and optional probabilities for the requested partition.
+        
+        Raises
+        ------
+        ValidationError
+            When no semi-supervised plan exists on this Session.
+        """
         return semisupervised_ops.predict_semisupervised_op(
             self,
             partition=partition,
@@ -3529,10 +4358,27 @@ class Session:
         partition: PartitionName | Literal["all"] = "validation",
         unlabeled_marker: Any = None,
     ) -> SemiSupervisedEvalResult:
-        """Evaluate semi-supervised predictions on labeled partition rows only.
-
-        Unlabeled holdout rows are disclosed and excluded from metrics. Defaults
-        to validation, falling back to test when no validation partition exists.
+        """Evaluate the semi-supervised plan on labeled rows of a holdout partition.
+        
+        Delegates to :meth:`buildml.semisupervised.evaluate.evaluate_semisupervised`.
+        Unlabeled holdout rows are skipped; holdout data is never used during fit.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition to score. Validation falls back to test when absent.
+        unlabeled_marker:
+            Value treated as unlabeled when scoring labeled rows only.
+        
+        Returns
+        -------
+        SemiSupervisedEvalResult
+            Holdout metrics computed on labeled rows only.
+        
+        Raises
+        ------
+        ValidationError
+            When no semi-supervised plan exists on this Session.
         """
         return semisupervised_ops.evaluate_semisupervised_op(
             self,
@@ -3542,32 +4388,99 @@ class Session:
 
     @property
     def semisupervised_plan(self) -> SemiSupervisedPlan | None:
-        """Last fitted :class:`~buildml.semisupervised.results.SemiSupervisedPlan`."""
+        """Return the last semi-supervised plan, if any.
+        
+        Stored on this Session after :meth:`fit_semisupervised` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SemiSupervisedPlan or None
+            ``None`` before the first :meth:`fit_semisupervised` call on this session.
+        """
         return self._semisupervised_plan
 
     @property
     def semisupervised_fit_result(self) -> SemiSupervisedFitResult | None:
-        """Last :class:`~buildml.semisupervised.results.SemiSupervisedFitResult`."""
+        """Return the last semi-supervised fit result, if any.
+        
+        Stored on this Session after :meth:`fit_semisupervised` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SemiSupervisedFitResult or None
+            ``None`` before the first :meth:`fit_semisupervised` call on this session.
+        """
         return self._semisupervised_fit_result
 
     @property
     def semisupervised_predict_result(self) -> SemiSupervisedPredictResult | None:
-        """Last :class:`~buildml.semisupervised.results.SemiSupervisedPredictResult`."""
+        """Return the last semi-supervised prediction result, if any.
+        
+        Stored on this Session after :meth:`predict_semisupervised` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SemiSupervisedPredictResult or None
+            ``None`` before the first :meth:`predict_semisupervised` call on this session.
+        """
         return self._semisupervised_predict_result
 
     @property
     def semisupervised_eval_result(self) -> SemiSupervisedEvalResult | None:
-        """Last :class:`~buildml.semisupervised.results.SemiSupervisedEvalResult`."""
+        """Return the last semi-supervised evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_semisupervised` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SemiSupervisedEvalResult or None
+            ``None`` before the first :meth:`evaluate_semisupervised` call on this session.
+        """
         return self._semisupervised_eval_result
 
     def save_semisupervised_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.semisupervised_bundle.v1``.
-
-        See :data:`buildml.semisupervised.checkpoint.CHECKPOINT_BOUNDARY`."""
+        """Persist the semi-supervised plan as ``buildml.semisupervised_bundle.v1``.
+        
+        Delegates to :meth:`buildml.semisupervised.checkpoint.save_semisupervised_bundle`.
+        Reload with :meth:`load_semisupervised_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no semi-supervised plan exists on this Session.
+        """
         return semisupervised_ops.save_semisupervised_bundle_op(self, path=path)
 
     def load_semisupervised_bundle(self, path: str | Path) -> Session:
-        """Load a semi-supervised bundle into this Session."""
+        """Load a semi-supervised bundle into this Session.
+        
+        Delegates to :meth:`buildml.semisupervised.checkpoint.load_semisupervised_bundle`
+        and clears prior fit/predict/eval results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.semisupervised_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with semi-supervised plan attached for chaining.
+        """
         return semisupervised_ops.load_semisupervised_bundle_op(self, path=path)
 
     def fit_ssl_pretext(
@@ -3596,22 +4509,63 @@ class Session:
         hf_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
         device: str = "cpu",
     ) -> SelfSupervisedFitResult:
-        """Fit a self-supervised pretext on the train partition only.
-
+        """Fit a self-supervised pretext encoder on the train partition only.
+        
+        Delegates to :meth:`buildml.selfsupervised.fit.fit_ssl_pretext`, stores the
+        :class:`~buildml.selfsupervised.results.SSLPlan` on this Session, and records
+        the fit. Follow with :meth:`transform_ssl` or :meth:`finetune_ssl_head`.
+        
         Parameters
         ----------
         method:
-            Torch tabular defaults: ``simclr_tabular``, ``byol_tabular``,
-            ``vicreg_tabular``, ``mae_tabular``, ``vae_tabular``.
-            Legacy ``masked_tabular`` (sklearn) is deprecated.
-            Text: ``hf_text_ssl``. Vision: ``vision_ssl``.
+            Self-supervised method override; inferred from modality when ``None``.
+        columns:
+            Tabular feature columns for pretext training.
+        text_column:
+            Text column for language-model or contrastive text methods.
+        image_column:
+            Image path/bytes column for vision methods.
+        random_state:
+            Seed for augmentations and initialization.
         latent_dim:
-            Bottleneck width exported as representation columns.
-
-        Notes
-        -----
-        **Leakage:** Requires a split. Pretext fits on train features only
-        (labels ignored). Install ``buildml[torch]`` for industry defaults.
+            Output embedding dimensionality.
+        hidden:
+            Hidden layer sizes for tabular encoders.
+        mask_ratio:
+            Fraction of features masked in masked-modeling pretext tasks.
+        n_mask_views:
+            Number of masked views per sample for contrastive objectives.
+        max_iter:
+            Maximum iterations for sklearn-style encoders.
+        epochs:
+            Training epochs for torch backends.
+        batch_size:
+            Minibatch size for torch training.
+        learning_rate:
+            Optimizer learning rate for torch backends.
+        temperature:
+            Temperature for contrastive loss scaling.
+        projector_dim:
+            Projector head dimension for contrastive methods.
+        projector_hidden:
+            Hidden sizes for the contrastive projector MLP.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
+        representation_prefix:
+            Column prefix when attaching embeddings to the dataset.
+        backbone:
+            Vision backbone architecture name for image methods.
+        weight_mode:
+            Weight initialization mode for mock/demo vision backends.
+        hf_model_name:
+            HuggingFace model name for text embedding methods.
+        device:
+            Torch device string (``cpu`` or ``cuda``).
+        
+        Returns
+        -------
+        SSLFitResult
+            Serializable fit summary including method, modality, and disclosures.
         """
         return selfsupervised_ops.fit_ssl_pretext_op(
             self,
@@ -3645,7 +4599,28 @@ class Session:
         partition: PartitionName | Literal["all"] = "train",
         attach: bool = False,
     ) -> SelfSupervisedTransformResult:
-        """Export SSL representations with the train-fitted pretext (no refit)."""
+        """Export SSL representations with the train-fitted pretext encoder.
+        
+        Delegates to :meth:`buildml.selfsupervised.transform.transform_ssl`
+        without refitting. Optionally attaches embedding columns to Session dataset.
+        
+        Parameters
+        ----------
+        partition:
+            Split partition to encode (default ``train``).
+        attach:
+            When True, merge embedding columns into this Session dataset frame.
+        
+        Returns
+        -------
+        SSLTransformResult
+            Embedding matrix metadata and optional attached column names.
+        
+        Raises
+        ------
+        ValidationError
+            When no SSL plan exists on this Session.
+        """
         return selfsupervised_ops.transform_ssl_op(
             self,
             partition=partition,
@@ -3659,10 +4634,29 @@ class Session:
         random_state: int | None = 0,
         unlabeled_marker: Any = None,
     ) -> SSLHeadFitResult:
-        """Fit a supervised head on frozen SSL embeddings (labeled train only).
-
-        Unlabeled train targets (NaN by default) are skipped. Holdout partitions
-        are evaluation-only; the pretext encoder is not updated.
+        """Fit a supervised head on frozen SSL embeddings using labeled train rows.
+        
+        Delegates to :meth:`buildml.selfsupervised.finetune.finetune_ssl_head`.
+        Requires a prior :meth:`fit_ssl_pretext`.
+        
+        Parameters
+        ----------
+        estimator:
+            Supervised head estimator (``logistic_regression``, etc.).
+        random_state:
+            Seed for head fitting.
+        unlabeled_marker:
+            Value marking unlabeled rows to exclude from head training.
+        
+        Returns
+        -------
+        SSLHeadFitResult
+            Head fit summary including labeled row counts and disclosures.
+        
+        Raises
+        ------
+        ValidationError
+            When no SSL plan exists on this Session.
         """
         return selfsupervised_ops.finetune_ssl_head_op(
             self,
@@ -3677,7 +4671,29 @@ class Session:
         partition: PartitionName | Literal["all"] = "validation",
         unlabeled_marker: Any = None,
     ) -> SelfSupervisedEvalResult:
-        """Evaluate frozen SSL pretext + head on labeled partition rows."""
+        """Evaluate frozen SSL pretext encoder and head on a labeled partition.
+        
+        Delegates to :meth:`buildml.selfsupervised.evaluate.evaluate_ssl`.
+        Requires both :meth:`fit_ssl_pretext` and :meth:`finetune_ssl_head`.
+        Falls back to ``test`` when no validation partition exists.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (default ``validation``).
+        unlabeled_marker:
+            Value marking unlabeled rows to exclude from evaluation.
+        
+        Returns
+        -------
+        SSLEvalResult
+            Holdout metrics for the frozen pretext + head pipeline.
+        
+        Raises
+        ------
+        ValidationError
+            When SSL or head plans are missing on this Session.
+        """
         return selfsupervised_ops.evaluate_ssl_op(
             self,
             partition=partition,
@@ -3686,42 +4702,127 @@ class Session:
 
     @property
     def ssl_plan(self) -> SelfSupervisedPlan | None:
-        """Last fitted :class:`~buildml.selfsupervised.results.SelfSupervisedPlan`."""
+        """Return the last self-supervised pretext plan, if any.
+        
+        Stored on this Session after :meth:`fit_ssl_pretext` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SelfSupervisedPlan or None
+            ``None`` before the first :meth:`fit_ssl_pretext` call on this session.
+        """
         return self._ssl_plan
 
     @property
     def ssl_fit_result(self) -> SelfSupervisedFitResult | None:
-        """Last :class:`~buildml.selfsupervised.results.SelfSupervisedFitResult`."""
+        """Return the last self-supervised fit result, if any.
+        
+        Stored on this Session after :meth:`fit_ssl_pretext` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SelfSupervisedFitResult or None
+            ``None`` before the first :meth:`fit_ssl_pretext` call on this session.
+        """
         return self._ssl_fit_result
 
     @property
     def ssl_transform_result(self) -> SelfSupervisedTransformResult | None:
-        """Last :class:`~buildml.selfsupervised.results.SelfSupervisedTransformResult`."""
+        """Return the last SSL transform result, if any.
+        
+        Stored on this Session after :meth:`transform_ssl` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SelfSupervisedTransformResult or None
+            ``None`` before the first :meth:`transform_ssl` call on this session.
+        """
         return self._ssl_transform_result
 
     @property
     def ssl_head_plan(self) -> SSLHeadPlan | None:
-        """Last :class:`~buildml.selfsupervised.results.SSLHeadPlan`, if any."""
+        """Return the last SSL head plan, if any.
+        
+        Stored on this Session after :meth:`finetune_ssl_head` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SSLHeadPlan or None
+            ``None`` before the first :meth:`finetune_ssl_head` call on this session.
+        """
         return self._ssl_head_plan
 
     @property
     def ssl_head_fit_result(self) -> SSLHeadFitResult | None:
-        """Last :class:`~buildml.selfsupervised.results.SSLHeadFitResult`, if any."""
+        """Return the last SSL head fit result, if any.
+        
+        Stored on this Session after :meth:`finetune_ssl_head` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SSLHeadFitResult or None
+            ``None`` before the first :meth:`finetune_ssl_head` call on this session.
+        """
         return self._ssl_head_fit_result
 
     @property
     def ssl_eval_result(self) -> SelfSupervisedEvalResult | None:
-        """Last :class:`~buildml.selfsupervised.results.SelfSupervisedEvalResult`."""
+        """Return the last SSL evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_ssl` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        SelfSupervisedEvalResult or None
+            ``None`` before the first :meth:`evaluate_ssl` call on this session.
+        """
         return self._ssl_eval_result
 
     def save_ssl_bundle(self, path: str | Path) -> Path:
         """Persist the active SSL plan as ``buildml.ssl_bundle.v2``.
-
-        See :data:`buildml.selfsupervised.checkpoint.CHECKPOINT_BOUNDARY`."""
+        
+        Delegates to :meth:`buildml.selfsupervised.checkpoint.save_ssl_bundle`.
+        Reload with :meth:`load_ssl_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no SSL plan exists on this Session.
+        """
         return selfsupervised_ops.save_ssl_bundle_op(self, path=path)
 
     def load_ssl_bundle(self, path: str | Path) -> Session:
-        """Load a self-supervised bundle into this Session."""
+        """Load a self-supervised bundle into this Session.
+        
+        Delegates to :meth:`buildml.selfsupervised.checkpoint.load_ssl_bundle`
+        and clears prior transform/head/eval results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.ssl_bundle.v2`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with SSLPlan and optional head plan attached.
+        """
         return selfsupervised_ops.load_ssl_bundle_op(self, path=path)
 
     def fit_active_learner(
@@ -3743,27 +4844,56 @@ class Session:
         mc_samples: int = 20,
         device: str = "cpu",
     ) -> ActiveLearningFitResult:
-        """Fit / initialize an active learner on labeled train rows only.
-
+        """Fit or initialize the active learner on labeled train rows only.
+        
+        Delegates to :meth:`buildml.activelearning.fit.fit_active_learner`, stores
+        the :class:`~buildml.activelearning.results.ActiveLearningPlan` on this Session,
+        and records the fit. Follow with :meth:`suggest_query` and
+        :meth:`label_rows` in a human-in-the-loop loop.
+        
         Parameters
         ----------
         backend:
-            ``sklearn`` (default), ``industry`` (scikit-activeml), or ``torch``.
+            Optional backend override (``sklearn``, ``industry``, ``torch``).
         strategy:
-            Uncertainty / committee / CoreSet / BALD strategies — see
-            :func:`activelearning_capability_matrix`.
+            Query strategy (``margin``, ``entropy``, ``committee``, etc.).
+        base_estimator:
+            Base estimator key for sklearn/industry backends.
+        columns:
+            Optional explicit feature columns.
+        random_state:
+            Seed for stochastic steps and committee members.
+        batch_size:
+            Default number of rows to suggest per query round.
         label_budget:
-            Cap on labels acquired via :meth:`label_rows` (``None`` = unlimited).
+            Optional cap on total labels before query stops.
         unlabeled_marker:
-            Extra sentinel treated as unlabeled pool. Default ``None`` means
-            pandas missing values (NaN) in the target role mark the pool.
-
+            Value treated as unlabeled in the train target column.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
+        committee_size:
+            Number of committee members for query-by-committee strategies.
+        auto_refit:
+            When True, refit after each labeling round by default.
+        epochs:
+            Training epochs for torch uncertainty backend.
+        learning_rate:
+            Optimizer learning rate for torch backend.
+        mc_samples:
+            Monte Carlo dropout samples for torch uncertainty strategies.
+        device:
+            Torch device string (``cpu`` or ``cuda``).
+        
+        Returns
+        -------
+        ActiveLearningFitResult
+            Serializable fit summary including labeled/unlabeled pool sizes.
+        
         Notes
         -----
         **Leakage:** Requires a split. Fit uses labeled train rows only. The
-        query pool is train missingness — never validation/test. Labels come
-        from the user (no oracle in core). Distinct from
-        :meth:`fit_semisupervised` propagation and :meth:`fit_ssl_pretext`.
+        unlabeled pool is train target missingness (NaN by default). Validation/test
+        are never the query pool. Labels come from the user — no oracle in core.
         """
         return activelearning_ops.fit_active_learner_op(
             self,
@@ -3790,10 +4920,28 @@ class Session:
         batch_size: int | None = None,
         strategy: ActiveLearningStrategy | None = None,
     ) -> ActiveLearningQueryResult:
-        """Suggest unlabeled *train* indices for human labeling (no oracle).
-
-        Never queries validation/test. Honors the remaining label budget.
-        Low-level package alias: ``buildml.activelearning.query_indices``.
+        """Suggest unlabeled train-pool indices for human labeling without an oracle.
+        
+        Delegates to :meth:`buildml.activelearning.query.suggest_query` and stores
+        suggested indices on this Session. User labels must be supplied via
+        :meth:`label_rows`.
+        
+        Parameters
+        ----------
+        batch_size:
+            Optional override for rows to suggest this round.
+        strategy:
+            Optional override for the query strategy this round.
+        
+        Returns
+        -------
+        ActiveLearningQueryResult
+            Suggested train-pool indices, scores, and strategy metadata.
+        
+        Raises
+        ------
+        ValidationError
+            When no active-learning plan exists on this Session.
         """
         return activelearning_ops.suggest_query_op(
             self,
@@ -3808,11 +4956,29 @@ class Session:
         labels: list[Any] | tuple[Any, ...],
         refit: bool | None = None,
     ) -> ActiveLearningLabelResult:
-        """Incorporate user-provided labels on train-pool rows; optionally refit.
-
-        Labels must come from the user (or a test harness oracle). Core never
-        invents labels. Refuses validation/test indices and enforces
-        ``label_budget``.
+        """Incorporate user-provided labels on train-pool rows and optionally refit.
+        
+        Delegates to :meth:`buildml.activelearning.label.label_rows`, mutates
+        Session dataset labels, updates the plan, and optionally refits the learner.
+        
+        Parameters
+        ----------
+        indices:
+            Train-pool dataset indices to label (from :meth:`suggest_query`).
+        labels:
+            User-supplied labels aligned with ``indices``.
+        refit:
+            When True/False, override plan ``auto_refit`` for this labeling round.
+        
+        Returns
+        -------
+        ActiveLearningLabelResult
+            Labeling summary including whether a refit occurred.
+        
+        Raises
+        ------
+        ValidationError
+            When no active-learning plan exists on this Session.
         """
         return activelearning_ops.label_rows_op(
             self,
@@ -3827,10 +4993,27 @@ class Session:
         partition: PartitionName | Literal["all"] = "validation",
         unlabeled_marker: Any = None,
     ) -> ActiveLearningEvalResult:
-        """Evaluate the active learner on labeled partition rows only.
-
-        Unlabeled holdout rows are disclosed and excluded from metrics. Defaults
-        to validation, falling back to test when no validation partition exists.
+        """Evaluate the active learner on labeled rows of a holdout partition.
+        
+        Delegates to :meth:`buildml.activelearning.evaluate.evaluate_active_learning`.
+        Unlabeled holdout rows are skipped; holdout data is never queried.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition to score. Validation falls back to test when absent.
+        unlabeled_marker:
+            Value treated as unlabeled when scoring labeled rows only.
+        
+        Returns
+        -------
+        ActiveLearningEvalResult
+            Holdout metrics computed on labeled rows only.
+        
+        Raises
+        ------
+        ValidationError
+            When no active-learning plan exists on this Session.
         """
         return activelearning_ops.evaluate_active_learning_op(
             self,
@@ -3840,37 +5023,115 @@ class Session:
 
     @property
     def activelearning_plan(self) -> ActiveLearningPlan | None:
-        """Last fitted :class:`~buildml.activelearning.results.ActiveLearningPlan`."""
+        """Return the last active-learning plan, if any.
+        
+        Stored on this Session after :meth:`fit_active_learner` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ActiveLearningPlan or None
+            ``None`` before the first :meth:`fit_active_learner` call on this session.
+        """
         return self._activelearning_plan
 
     @property
     def activelearning_fit_result(self) -> ActiveLearningFitResult | None:
-        """Last :class:`~buildml.activelearning.results.ActiveLearningFitResult`."""
+        """Return the last active-learning fit result, if any.
+        
+        Stored on this Session after :meth:`fit_active_learner` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ActiveLearningFitResult or None
+            ``None`` before the first :meth:`fit_active_learner` call on this session.
+        """
         return self._activelearning_fit_result
 
     @property
     def activelearning_query_result(self) -> ActiveLearningQueryResult | None:
-        """Last :class:`~buildml.activelearning.results.ActiveLearningQueryResult`."""
+        """Return the last active-learning query result, if any.
+        
+        Stored on this Session after :meth:`suggest_query` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ActiveLearningQueryResult or None
+            ``None`` before the first :meth:`suggest_query` call on this session.
+        """
         return self._activelearning_query_result
 
     @property
     def activelearning_label_result(self) -> ActiveLearningLabelResult | None:
-        """Last :class:`~buildml.activelearning.results.ActiveLearningLabelResult`."""
+        """Return the last active-learning labeling result, if any.
+        
+        Stored on this Session after :meth:`label_rows` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ActiveLearningLabelResult or None
+            ``None`` before the first :meth:`label_rows` call on this session.
+        """
         return self._activelearning_label_result
 
     @property
     def activelearning_eval_result(self) -> ActiveLearningEvalResult | None:
-        """Last :class:`~buildml.activelearning.results.ActiveLearningEvalResult`."""
+        """Return the last active-learning evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_active_learning` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ActiveLearningEvalResult or None
+            ``None`` before the first :meth:`evaluate_active_learning` call on this session.
+        """
         return self._activelearning_eval_result
 
     def save_active_learning_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.activelearning_bundle.v1``.
-
-        See :data:`buildml.activelearning.checkpoint.CHECKPOINT_BOUNDARY`."""
+        """Persist the active-learning plan as ``buildml.activelearning_bundle.v1``.
+        
+        Delegates to
+        :meth:`buildml.activelearning.checkpoint.save_active_learning_bundle`.
+        Reload with :meth:`load_active_learning_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no active-learning plan exists on this Session.
+        """
         return activelearning_ops.save_active_learning_bundle_op(self, path=path)
 
     def load_active_learning_bundle(self, path: str | Path) -> Session:
-        """Load an active-learning bundle into this Session."""
+        """Load an active-learning bundle into this Session.
+        
+        Delegates to
+        :meth:`buildml.activelearning.checkpoint.load_active_learning_bundle`
+        and clears prior fit/query/label/eval results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.activelearning_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with active-learning plan attached for chaining.
+        """
         return activelearning_ops.load_active_learning_bundle_op(self, path=path)
 
     def fit_online(
@@ -3897,29 +5158,69 @@ class Session:
         hidden_dim: int = 64,
         device: str = "cpu",
     ) -> OnlineFitResult:
-        """Warm-start an incremental ``partial_fit`` estimator on a train chunk.
-
+        """Warm-start an incremental estimator on the first train chunk.
+        
+        Delegates to :meth:`buildml.online.fit.fit_online`, stores the resulting
+        :class:`~buildml.online.results.OnlinePlan` on this Session, and records
+        the operation. Follow with :meth:`partial_fit_online` for train-only
+        updates, then :meth:`evaluate_online` or :meth:`predict_online`
+        on holdout partitions.
+        
         Parameters
         ----------
         backend:
-            ``sklearn`` (default partial_fit family), ``industry`` (River +
-            ``buildml[online-industry]``), or ``torch`` (replay/EWC continual MLP +
-            ``buildml[torch]``).
+            Optional backend override (``sklearn``, ``industry``, ``torch``).
         estimator:
-            Backend-specific estimator name (see ``online_capability_matrix()``).
+            Online estimator key (see the online capability matrix).
+        task:
+            Optional task override (``classification`` or ``regression``).
+        columns:
+            Optional explicit feature columns.
+        random_state:
+            Seed for stochastic estimators.
+        chunk_size:
+            Default rows per subsequent partial_fit chunk.
+        n_init:
+            Init chunk size; defaults to ``chunk_size`` when ``None``.
+        indices:
+            Optional explicit train-partition indices for the init chunk.
         classes:
-            Full class vocabulary for classifiers. When omitted, discovered from
-            the full train target column (labels only).
+            Full label vocabulary for classifiers (discovered from train if omitted).
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
         allow_refit_fallback:
-            If ``True``, estimators without ``partial_fit`` may full-refit on
-            cumulative seen rows with an explicit disclosure. Default ``False``
-            refuses silent full refits.
-
+            Permit disclosed full refits when an estimator lacks partial_fit.
+        drift_disclose:
+            Enable mean-shift drift disclosure on updates.
+        drift_detector:
+            Drift detector key (``mean_shift``, ``adwin``, ``page_hinkley``, ``none``).
+        buffer_size:
+            Replay buffer size for torch continual backends.
+        epochs_per_update:
+            Training epochs per partial_fit for torch backends.
+        batch_size:
+            Minibatch size for torch backends.
+        learning_rate:
+            Optimizer learning rate for torch backends.
+        ewc_lambda:
+            EWC penalty weight for ``ewc_mlp``.
+        hidden_dim:
+            MLP hidden width for torch backends.
+        device:
+            Torch device string (``cpu`` or ``cuda``).
+        
+        Returns
+        -------
+        OnlineFitResult
+            Serializable fit summary including warnings and init-chunk stats.
+            Use :meth:`partial_fit_online` next for incremental updates.
+        
         Notes
         -----
-        **Leakage:** Requires a split. Init uses a train chunk only.
-        Validation/test are never used for updates. Honesty: batch/stream-chunk
-        Session updates — not a distributed streaming platform.
+        **Leakage:** Requires a split. Init and later updates use train chunks only
+        (or role-aligned external frames). Validation/test are never used for
+        updates. Classifiers need a ``classes`` vocabulary (explicit or discovered
+        from the full train target column — labels only).
         """
         return online_ops.fit_online_op(
             self,
@@ -3952,11 +5253,31 @@ class Session:
         indices: list[Any] | tuple[Any, ...] | None = None,
         frame: pd.DataFrame | None = None,
     ) -> OnlineUpdateResult:
-        """Incremental ``partial_fit`` update on the next train chunk or frame.
-
-        Provide at most one of ``indices`` or ``frame``. Default advances the
-        train cursor by ``n_rows`` (or the plan ``chunk_size``). Refuses
-        validation/test indices.
+        """Apply one incremental partial_fit update on the next train chunk or frame.
+        
+        Delegates to :meth:`buildml.online.update.partial_fit_online`, advances the
+        Session online plan cursor, and records the update. Requires a prior call
+        to :meth:`fit_online`.
+        
+        Parameters
+        ----------
+        n_rows:
+            Rows to take from unused train indices; defaults to plan ``chunk_size``.
+        indices:
+            Optional explicit train-partition dataset indices for this update.
+        frame:
+            Optional user-provided incremental frame with role-aligned columns.
+        
+        Returns
+        -------
+        OnlineUpdateResult
+            Serializable update summary including drift notes and refit mode.
+            Repeat for more chunks or call :meth:`evaluate_online`.
+        
+        Raises
+        ------
+        ValidationError
+            When no online plan exists or chunk source preconditions fail.
         """
         return online_ops.partial_fit_online_op(
             self,
@@ -3971,11 +5292,29 @@ class Session:
         partition: PartitionName | Literal["all"] = "validation",
         drift_check: bool = True,
     ) -> OnlineEvalResult:
-        """Evaluate the online learner on a holdout partition (never for updates).
-
-        Defaults to validation, falling back to test when no validation
-        partition exists. ``drift_check`` surfaces River ADWIN/Page-Hinkley or
-        mean-shift disclosure without updating the model.
+        """Evaluate the online learner on a holdout partition without updating it.
+        
+        Delegates to :meth:`buildml.online.evaluate.evaluate_online` and stores
+        the result on this Session. Holdout partitions are never used for partial_fit
+        updates.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition to score (``validation``, ``test``, or ``all``).
+            Validation falls back to test when no validation split exists.
+        drift_check:
+            When True, compare holdout feature means to the training stream.
+        
+        Returns
+        -------
+        OnlineEvalResult
+            Holdout metrics and optional drift flags. Does not mutate the estimator.
+        
+        Raises
+        ------
+        ValidationError
+            When no online plan exists on this Session.
         """
         return online_ops.evaluate_online_op(
             self, partition=partition, drift_check=drift_check
@@ -3986,42 +5325,139 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "test",
     ) -> OnlinePredictResult:
-        """Predict with the incremental online estimator (no update)."""
+        """Predict with the incremental online estimator without updating it.
+        
+        Delegates to :meth:`buildml.online.predict.predict_online` and stores
+        predictions on this Session. Use after :meth:`fit_online` and optional
+        :meth:`partial_fit_online` calls.
+        
+        Parameters
+        ----------
+        partition:
+            Partition to score (``train``, ``validation``, ``test``, or ``all``).
+        
+        Returns
+        -------
+        OnlinePredictResult
+            Predictions and optional probabilities for the requested partition.
+        
+        Raises
+        ------
+        ValidationError
+            When no online plan exists on this Session.
+        """
         return online_ops.predict_online_op(self, partition=partition)
 
     @property
     def online_plan(self) -> OnlinePlan | None:
-        """Last fitted :class:`~buildml.online.results.OnlinePlan`."""
+        """Return the last online-learning plan, if any.
+        
+        Stored on this Session after :meth:`fit_online` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        OnlinePlan or None
+            ``None`` before the first :meth:`fit_online` call on this session.
+        """
         return self._online_plan
 
     @property
     def online_fit_result(self) -> OnlineFitResult | None:
-        """Last :class:`~buildml.online.results.OnlineFitResult`."""
+        """Return the last online fit result, if any.
+        
+        Stored on this Session after :meth:`fit_online` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        OnlineFitResult or None
+            ``None`` before the first :meth:`fit_online` call on this session.
+        """
         return self._online_fit_result
 
     @property
     def online_update_result(self) -> OnlineUpdateResult | None:
-        """Last :class:`~buildml.online.results.OnlineUpdateResult`."""
+        """Return the last online update result, if any.
+        
+        Stored on this Session after :meth:`partial_fit_online` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        OnlineUpdateResult or None
+            ``None`` before the first :meth:`partial_fit_online` call on this session.
+        """
         return self._online_update_result
 
     @property
     def online_eval_result(self) -> OnlineEvalResult | None:
-        """Last :class:`~buildml.online.results.OnlineEvalResult`."""
+        """Return the last online evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_online` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        OnlineEvalResult or None
+            ``None`` before the first :meth:`evaluate_online` call on this session.
+        """
         return self._online_eval_result
 
     @property
     def online_predict_result(self) -> OnlinePredictResult | None:
-        """Last :class:`~buildml.online.results.OnlinePredictResult`."""
+        """Return the last online prediction result, if any.
+        
+        Stored on this Session after :meth:`predict_online` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        OnlinePredictResult or None
+            ``None`` before the first :meth:`predict_online` call on this session.
+        """
         return self._online_predict_result
 
     def save_online_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.online_bundle.v1``.
-
-        See :data:`buildml.online.checkpoint.CHECKPOINT_BOUNDARY`."""
+        """Persist the active online plan as ``buildml.online_bundle.v1``.
+        
+        Delegates to :meth:`buildml.online.checkpoint.save_online_bundle`.
+        Distinct from Session checkpoints — reload the learner with
+        :meth:`load_online_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no online plan exists on this Session.
+        """
         return online_ops.save_online_bundle_op(self, path=path)
 
     def load_online_bundle(self, path: str | Path) -> Session:
-        """Load an online-learning bundle into this Session."""
+        """Load an online-learning bundle into this Session.
+        
+        Delegates to :meth:`buildml.online.checkpoint.load_online_bundle`,
+        replaces Session online state, and clears prior fit/eval/predict results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.online_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with online plan attached for chaining.
+        """
         return online_ops.load_online_bundle_op(self, path=path)
 
     def fit_multitask(
@@ -4042,33 +5478,55 @@ class Session:
         learning_rate: float = 1e-3,
         device: str = "cpu",
     ) -> MultiTaskFitResult:
-        """Fit a multi-target estimator on train only.
-
+        """Fit a multi-target estimator on the train partition only.
+        
+        Delegates to :meth:`buildml.multitask.fit.fit_multitask`, stores the
+        :class:`~buildml.multitask.results.MultiTaskPlan` on this Session, and records
+        the fit. Follow with :meth:`predict_multitask` or
+        :meth:`evaluate_multitask`.
+        
         Parameters
         ----------
         backend:
-            ``sklearn`` (default when no extras), ``industry`` (XGB/LGBM/CatBoost
-            multi-target), or ``torch`` (shared-trunk multi-head). See
-            :func:`buildml.multitask.multitask_capability_matrix`.
+            Optional backend override (``sklearn``, ``industry``, ``torch``).
         method:
-            Algorithm within the backend — e.g. ``multi_output``,
-            ``multi_output_xgb``, ``shared_trunk_multihead``.
+            Multi-task strategy (``multi_output``, ``chain``, ``torch_multihead``).
         task:
-            ``classification``, ``regression``, ``auto`` (infers; mixed kinds
-            allowed only on torch), or ``mixed`` (torch only).
+            Task mix (``auto``, ``classification``, ``regression``, ``mixed``).
         targets:
-            Optional explicit target columns. When omitted, all
-            ``role='target'`` columns are used (requires ``>= 2``).
+            Optional explicit target column names (roles or list).
+        columns:
+            Optional explicit feature columns.
         base_estimator:
-            Sklearn backend only — classification: ``logistic_regression``,
-            ``hist_gradient_boosting``; regression: ``ridge``,
-            ``hist_gradient_boosting_regressor``.
-
+            Base estimator key for sklearn/industry backends.
+        random_state:
+            Seed for stochastic steps.
+        order:
+            Optional target column order for chained strategies.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
+        prediction_prefix:
+            Prefix for attached prediction column names.
+        epochs:
+            Training epochs for torch multi-head backend.
+        batch_size:
+            Minibatch size for torch backend.
+        learning_rate:
+            Optimizer learning rate for torch backend.
+        device:
+            Torch device string (``cpu`` or ``cuda``).
+        
+        Returns
+        -------
+        MultiTaskFitResult
+            Serializable fit summary per target and backend disclosures.
+        
         Notes
         -----
         **Leakage:** Requires a split. Fit uses train only. Validation/test are
-        never used for fitting. Classical :meth:`fit` remains single-target via
-        ``require_target()``.
+        never used for fitting. Needs ``>= 2`` target columns (roles or
+        ``targets=``). Sklearn/industry require same-type tasks; torch supports
+        mixed cls+reg. Classical ``Session.fit`` remains single-target.
         """
         return multitask_ops.fit_multitask_op(
             self,
@@ -4095,10 +5553,29 @@ class Session:
         attach: bool = False,
         prediction_prefix: str | None = None,
     ) -> MultiTaskPredictResult:
-        """Predict per-task outputs with the frozen multi-task plan (no refit).
-
-        ``attach=True`` requires ``partition='all'`` and writes
-        ``{prediction_prefix}_{target}`` feature columns.
+        """Predict all targets with the frozen multi-task plan without refitting.
+        
+        Delegates to :meth:`buildml.multitask.predict.predict_multitask`. When
+        ``attach=True``, prediction columns are merged into Session dataset.
+        
+        Parameters
+        ----------
+        partition:
+            Partition to score (``train``, ``validation``, ``test``, or ``all``).
+        attach:
+            When True, attach prediction columns to this Session dataset frame.
+        prediction_prefix:
+            Optional override for attached column name prefix.
+        
+        Returns
+        -------
+        MultiTaskPredictResult
+            Per-target predictions and optional attached column metadata.
+        
+        Raises
+        ------
+        ValidationError
+            When no multi-task plan exists on this Session.
         """
         return multitask_ops.predict_multitask_op(
             self,
@@ -4112,41 +5589,123 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "validation",
     ) -> MultiTaskEvalResult:
-        """Evaluate multi-task predictions with per-task and aggregate metrics.
-
-        Defaults to validation, falling back to test when no validation
-        partition exists. Holdout rows are never used for fitting.
+        """Evaluate the multi-task plan on a holdout partition without refitting.
+        
+        Delegates to :meth:`buildml.multitask.evaluate.evaluate_multitask`.
+        Holdout partitions are never used during fit.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition to score. Validation falls back to test when absent.
+        
+        Returns
+        -------
+        MultiTaskEvalResult
+            Per-target and aggregated holdout metrics.
+        
+        Raises
+        ------
+        ValidationError
+            When no multi-task plan exists on this Session.
         """
         return multitask_ops.evaluate_multitask_op(self, partition=partition)
 
     @property
     def multitask_plan(self) -> MultiTaskPlan | None:
-        """Last fitted :class:`~buildml.multitask.results.MultiTaskPlan`."""
+        """Return the last multi-task plan, if any.
+        
+        Stored on this Session after :meth:`fit_multitask` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        MultiTaskPlan or None
+            ``None`` before the first :meth:`fit_multitask` call on this session.
+        """
         return self._multitask_plan
 
     @property
     def multitask_fit_result(self) -> MultiTaskFitResult | None:
-        """Last :class:`~buildml.multitask.results.MultiTaskFitResult`."""
+        """Return the last multi-task fit result, if any.
+        
+        Stored on this Session after :meth:`fit_multitask` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        MultiTaskFitResult or None
+            ``None`` before the first :meth:`fit_multitask` call on this session.
+        """
         return self._multitask_fit_result
 
     @property
     def multitask_predict_result(self) -> MultiTaskPredictResult | None:
-        """Last :class:`~buildml.multitask.results.MultiTaskPredictResult`."""
+        """Return the last multi-task prediction result, if any.
+        
+        Stored on this Session after :meth:`predict_multitask` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        MultiTaskPredictResult or None
+            ``None`` before the first :meth:`predict_multitask` call on this session.
+        """
         return self._multitask_predict_result
 
     @property
     def multitask_eval_result(self) -> MultiTaskEvalResult | None:
-        """Last :class:`~buildml.multitask.results.MultiTaskEvalResult`."""
+        """Return the last multi-task evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_multitask` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        MultiTaskEvalResult or None
+            ``None`` before the first :meth:`evaluate_multitask` call on this session.
+        """
         return self._multitask_eval_result
 
     def save_multitask_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.multitask_bundle.v1``.
-
-        See :data:`buildml.multitask.checkpoint.CHECKPOINT_BOUNDARY`."""
+        """Persist the active multi-task plan as ``buildml.multitask_bundle.v1``.
+        
+        Delegates to :meth:`buildml.multitask.checkpoint.save_multitask_bundle`.
+        Reload with :meth:`load_multitask_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no multi-task plan exists on this Session.
+        """
         return multitask_ops.save_multitask_bundle_op(self, path=path)
 
     def load_multitask_bundle(self, path: str | Path) -> Session:
-        """Load a multi-task bundle into this Session."""
+        """Load a multi-task bundle into this Session.
+        
+        Delegates to :meth:`buildml.multitask.checkpoint.load_multitask_bundle`
+        and clears prior fit/eval/predict results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.multitask_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with multi-task plan attached for chaining.
+        """
         return multitask_ops.load_multitask_bundle_op(self, path=path)
 
     def fit_metalearning(
@@ -4172,32 +5731,65 @@ class Session:
         hidden_dim: int = 64,
         device: str = "cpu",
     ) -> MetaLearningFitResult:
-        """Meta-train a tabular few-shot / episodic learner on train tasks only.
-
+        """Meta-train on episodic tasks carved from the train partition only.
+        
+        Delegates to :meth:`buildml.metalearning.fit.fit_metalearning`, stores the
+        :class:`~buildml.metalearning.results.MetaLearningPlan` on this Session, and
+        records the fit. Follow with :meth:`adapt_to_task` or
+        :meth:`evaluate_metalearning`.
+        
         Parameters
         ----------
         backend:
-            ``sklearn`` (default), ``torch`` (``buildml[torch]``), or
-            ``industry`` (``buildml[metalearning-industry,torch]``).
+            Optional backend override (``native`` or ``torch``).
         method:
-            ``prototypical``, ``warm_start``, ``prototypical_torch``,
-            ``maml``, or ``reptile`` depending on backend.
+            Meta-learning method (``prototypical``, ``maml``, etc.).
         task_column:
-            Episodic task id column. When omitted, the single
-            ``role='group'`` column is used.
-        k_shot / n_query / n_episodes:
-            Episodic protocol knobs for meta-train disclosure metrics.
+            Column identifying tasks/episodes; inferred from roles when omitted.
+        columns:
+            Explicit feature columns for episodic sampling.
+        n_way:
+            Classes per episode; inferred from data when ``None``.
+        k_shot:
+            Support examples per class in each episode.
+        n_query:
+            Query examples per class in each episode.
+        n_episodes:
+            Number of meta-training episodes per epoch.
+        base_estimator:
+            Fallback sklearn estimator for non-torch backends.
+        random_state:
+            Seed for episode sampling and initialization.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
         task_holdout_fraction:
-            Fraction of train task ids held out internally when enough
-            tasks exist (``>= 3``).
-
+            Fraction of train tasks held out during meta-training.
+        meta_epochs:
+            Number of meta-training epochs (torch backends).
+        inner_lr:
+            Inner-loop learning rate for MAML-style methods.
+        inner_steps:
+            Inner-loop gradient steps per episode.
+        meta_lr:
+            Outer/meta learning rate.
+        embed_dim:
+            Embedding dimension for torch encoders.
+        hidden_dim:
+            Hidden layer width for torch encoders.
+        device:
+            Torch device string (``cpu`` or ``cuda``).
+        
+        Returns
+        -------
+        MetaLearningFitResult
+            Serializable fit summary including task counts and disclosures.
+        
         Notes
         -----
-        **Leakage:** Requires a split. Meta-train uses train only.
-        Validation/test are never used for meta-training. Needs exactly one
-        ``role='target'`` and a task/group column. Honesty: practical tabular
-        few-shot / episodic Session protocol — not foundation-model
-        meta-learning or MAML-at-scale.
+        **Leakage:** Requires a split. Meta-train uses train only. Validation/test
+        are never used for meta-training. Needs a task/group column (role or
+        ``task_column=``) and exactly one ``role='target'``. Honesty: tabular
+        few-shot / episodic protocols — not foundation-model meta-learning.
         """
         return metalearning_ops.fit_metalearning_op(
             self,
@@ -4232,9 +5824,32 @@ class Session:
         random_state: int | None = 0,
     ) -> MetaAdaptResult:
         """Fast-adapt the meta-learner to one task's labeled support set.
-
-        Provide ``task_id`` (rows pulled from ``partition``) or an explicit
-        ``support_frame``. Does not refit the global meta-train plan.
+        
+        Delegates to :meth:`buildml.metalearning.adapt.adapt_to_task` using the
+        plan from :meth:`fit_metalearning`. No meta-training occurs here.
+        
+        Parameters
+        ----------
+        task_id:
+            Task identifier to adapt to; required when multiple tasks exist.
+        partition:
+            Partition containing support labels (default ``train``).
+        support_frame:
+            Optional explicit support DataFrame instead of a partition slice.
+        max_support_per_class:
+            Cap on support rows sampled per class.
+        random_state:
+            Seed for support sampling.
+        
+        Returns
+        -------
+        MetaLearningAdaptResult
+            Adapted predictions and support-set summary for the task.
+        
+        Raises
+        ------
+        ValidationError
+            When no meta-learning plan exists on this Session.
         """
         return metalearning_ops.adapt_to_task_op(
             self,
@@ -4255,11 +5870,35 @@ class Session:
         prefer_novel_tasks: bool = True,
         random_state: int | None = 0,
     ) -> MetaLearningEvalResult:
-        """Evaluate episodic few-shot performance on a holdout partition.
-
-        Prefers novel task ids absent from meta-train. Defaults to
-        validation, falling back to test when no validation partition
-        exists. Holdout rows are never used for meta-training.
+        """Run episodic holdout evaluation without meta-training on holdout.
+        
+        Delegates to :meth:`buildml.metalearning.evaluate.evaluate_metalearning`.
+        Falls back to ``test`` when no validation partition exists.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition for episodic evaluation (default ``validation``).
+        k_shot:
+            Support examples per class override for evaluation episodes.
+        n_query:
+            Query examples per class override for evaluation episodes.
+        n_way:
+            Classes per episode override.
+        prefer_novel_tasks:
+            When True, prefer tasks not seen during meta-training.
+        random_state:
+            Seed for episode construction.
+        
+        Returns
+        -------
+        MetaLearningEvalResult
+            Episodic accuracy metrics on the holdout partition.
+        
+        Raises
+        ------
+        ValidationError
+            When no meta-learning plan exists on this Session.
         """
         return metalearning_ops.evaluate_metalearning_op(
             self,
@@ -4273,32 +5912,99 @@ class Session:
 
     @property
     def metalearning_plan(self) -> MetaLearningPlan | None:
-        """Last fitted :class:`~buildml.metalearning.results.MetaLearningPlan`."""
+        """Return the last meta-learning plan, if any.
+        
+        Stored on this Session after :meth:`fit_metalearning` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        MetaLearningPlan or None
+            ``None`` before the first :meth:`fit_metalearning` call on this session.
+        """
         return self._metalearning_plan
 
     @property
     def metalearning_fit_result(self) -> MetaLearningFitResult | None:
-        """Last :class:`~buildml.metalearning.results.MetaLearningFitResult`."""
+        """Return the last meta-learning fit result, if any.
+        
+        Stored on this Session after :meth:`fit_metalearning` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        MetaLearningFitResult or None
+            ``None`` before the first :meth:`fit_metalearning` call on this session.
+        """
         return self._metalearning_fit_result
 
     @property
     def metalearning_adapt_result(self) -> MetaAdaptResult | None:
-        """Last :class:`~buildml.metalearning.results.MetaAdaptResult`."""
+        """Return the last meta-learning adaptation result, if any.
+        
+        Stored on this Session after :meth:`adapt_to_task` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        MetaAdaptResult or None
+            ``None`` before the first :meth:`adapt_to_task` call on this session.
+        """
         return self._metalearning_adapt_result
 
     @property
     def metalearning_eval_result(self) -> MetaLearningEvalResult | None:
-        """Last :class:`~buildml.metalearning.results.MetaLearningEvalResult`."""
+        """Return the last meta-learning evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_metalearning` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        MetaLearningEvalResult or None
+            ``None`` before the first :meth:`evaluate_metalearning` call on this session.
+        """
         return self._metalearning_eval_result
 
     def save_metalearning_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.metalearning_bundle.v1``.
-
-        See :data:`buildml.metalearning.checkpoint.CHECKPOINT_BOUNDARY`."""
+        """Persist the active MetaLearningPlan as ``buildml.metalearning_bundle.v1``.
+        
+        Delegates to :meth:`buildml.metalearning.checkpoint.save_metalearning_bundle`.
+        Reload with :meth:`load_metalearning_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no meta-learning plan exists on this Session.
+        """
         return metalearning_ops.save_metalearning_bundle_op(self, path=path)
 
     def load_metalearning_bundle(self, path: str | Path) -> Session:
-        """Load a meta-learning bundle into this Session."""
+        """Load a meta-learning bundle into this Session.
+        
+        Delegates to :meth:`buildml.metalearning.checkpoint.load_metalearning_bundle`
+        and clears prior adapt/eval results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.metalearning_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with MetaLearningPlan attached for chaining.
+        """
         return metalearning_ops.load_metalearning_bundle_op(self, path=path)
 
     def fit_federated(
@@ -4318,37 +6024,55 @@ class Session:
         prefer_reduce_components: bool = True,
         min_client_rows: int = 2,
     ) -> FederatedFitResult:
-        """Simulate federated averaging on Session train clients.
-
+        """Simulate federated averaging on this Session train clients.
+        
+        Delegates to :meth:`buildml.federated.fit.fit_federated`, stores the global
+        :class:`~buildml.federated.results.FederatedPlan` on this Session, and records
+        the fit. Follow with :meth:`evaluate_federated` or
+        :meth:`predict_federated` on holdout partitions.
+        
         Parameters
         ----------
         backend:
-            ``native`` (default in-process FedAvg/FedProx) or ``flower``
-            (``buildml[federated-industry]`` NumPyClient + flwr aggregation).
-            When omitted and ``flwr`` is installed, defaults to ``flower``.
+            Optional backend override (``native`` or ``flower``).
         method:
-            ``fedavg`` (weighted coefficient averaging) or ``fedprox``
-            (FedAvg + proximal pull; requires ``mu > 0``).
+            Federated aggregation method (``fedavg`` or ``fedprox``).
         estimator:
-            Linear / SGD family supporting ``coef_`` / ``intercept_``
-            aggregation (``sgd_classifier``, ``sgd_regressor``,
-            ``logistic_regression``, ``ridge``, ``linear_regression``).
+            Sklearn linear/SGD estimator key for local and global models.
+        task:
+            Optional task override; inferred from ``estimator`` when ``None``.
         client_column:
-            Client id column. When omitted, the single ``role='group'``
-            column is used.
-        n_rounds / local_epochs / client_fraction:
-            Federation schedule knobs.
+            Optional explicit client/group column.
+        columns:
+            Optional explicit feature columns.
+        n_rounds:
+            Number of federated communication rounds.
+        local_epochs:
+            Local training epochs per selected client per round.
+        client_fraction:
+            Fraction of eligible clients sampled each round.
         mu:
-            FedProx proximal strength (required ``> 0`` when
-            ``method='fedprox'``).
-
+            FedProx proximal strength (required when ``method='fedprox'``).
+        random_state:
+            Seed for client sampling and estimator initialization.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
+        min_client_rows:
+            Minimum train rows required for a client to participate.
+        
+        Returns
+        -------
+        FederatedFitResult
+            Serializable fit summary including rounds, clients, and disclosures.
+            Use :meth:`evaluate_federated` or :meth:`predict_federated` next.
+        
         Notes
         -----
         **Leakage:** Requires a split. Local client updates use train only.
-        Validation/test are never used for training. Needs exactly one
-        ``role='target'`` and a client/group column. Honesty: local
-        FedAvg-style simulation on partitioned Session data — not a
-        networked FL deployment unless you operate one separately; not
+        Validation/test are never used for training. Needs a client/group column
+        (role or ``client_column=``) and exactly one ``role='target'``. Honesty:
+        local FedAvg-style simulation — ``backend='flower'`` uses Flower libraries
+        but still runs in-process unless you deploy Flower separately; not
         cryptographic secure aggregation.
         """
         return federated_ops.fit_federated_op(
@@ -4376,10 +6100,28 @@ class Session:
         per_client: bool = True,
     ) -> FederatedEvalResult:
         """Evaluate the global federated model on a holdout partition.
-
-        Defaults to validation, falling back to test when no validation
-        partition exists. Holdout rows are never used for local updates.
-        Optional ``backend=`` validates consistency with the fitted plan.
+        
+        Delegates to :meth:`buildml.federated.evaluate.evaluate_federated`.
+        Holdout data is never used for federated training rounds.
+        
+        Parameters
+        ----------
+        backend:
+            Optional backend override for evaluation adapters.
+        partition:
+            Holdout partition to score. Validation falls back to test when absent.
+        per_client:
+            When True, include per-client holdout metrics in the result.
+        
+        Returns
+        -------
+        FederatedEvalResult
+            Global and optional per-client holdout metrics.
+        
+        Raises
+        ------
+        ValidationError
+            When no federated plan exists on this Session.
         """
         return federated_ops.evaluate_federated_op(
             self,
@@ -4394,9 +6136,27 @@ class Session:
         backend: FederatedBackend | None = None,
         partition: PartitionName | Literal["all"] = "test",
     ) -> FederatedPredictResult:
-        """Predict with the global federated model (no update).
-
-        Optional ``backend=`` validates consistency with the fitted plan.
+        """Predict with the global federated model without local updates.
+        
+        Delegates to :meth:`buildml.federated.predict.predict_federated` and
+        stores predictions on this Session.
+        
+        Parameters
+        ----------
+        backend:
+            Optional backend override for prediction adapters.
+        partition:
+            Partition to score (``train``, ``validation``, ``test``, or ``all``).
+        
+        Returns
+        -------
+        FederatedPredictResult
+            Predictions from the aggregated global model.
+        
+        Raises
+        ------
+        ValidationError
+            When no federated plan exists on this Session.
         """
         return federated_ops.predict_federated_op(
             self,
@@ -4406,32 +6166,133 @@ class Session:
 
     @property
     def federated_plan(self) -> FederatedPlan | None:
-        """Last fitted :class:`~buildml.federated.results.FederatedPlan`."""
+        """Return the last federated plan, if any.
+        
+        Stored on this Session after :meth:`fit_federated` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        FederatedPlan or None
+            ``None`` before the first :meth:`fit_federated` call on this session.
+        """
         return self._federated_plan
 
     @property
     def federated_fit_result(self) -> FederatedFitResult | None:
-        """Last :class:`~buildml.federated.results.FederatedFitResult`."""
+        """Return the last federated fit result, if any.
+        
+        Stored on this Session after :meth:`fit_federated` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        FederatedFitResult or None
+            ``None`` before the first :meth:`fit_federated` call on this session.
+        """
         return self._federated_fit_result
 
     @property
     def federated_eval_result(self) -> FederatedEvalResult | None:
-        """Last :class:`~buildml.federated.results.FederatedEvalResult`."""
+        """Return the last federated evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_federated` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        FederatedEvalResult or None
+            ``None`` before the first :meth:`evaluate_federated` call on this session.
+        """
         return self._federated_eval_result
 
     @property
     def federated_predict_result(self) -> FederatedPredictResult | None:
-        """Last :class:`~buildml.federated.results.FederatedPredictResult`."""
+        """Return the last federated prediction result, if any.
+        
+        Stored on this Session after :meth:`predict_federated` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        FederatedPredictResult or None
+            ``None`` before the first :meth:`predict_federated` call on this session.
+        """
         return self._federated_predict_result
 
     def save_federated_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.federated_bundle.v1``.
-
-        See :data:`buildml.federated.checkpoint.CHECKPOINT_BOUNDARY`."""
+        """Persist the active federated plan as ``buildml.federated_bundle.v1``.
+        
+        Delegates to :meth:`buildml.federated.checkpoint.save_federated_bundle`.
+        Reload with :meth:`load_federated_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no federated plan exists on this Session.
+        """
         return federated_ops.save_federated_bundle_op(self, path=path)
 
+    def export_round_history(
+        self,
+        path: str | Path,
+        *,
+        include_disclosures: bool = False,
+    ) -> Path:
+        """Export federated round metrics to JSON for audit and teaching overlays.
+
+        Delegates to :func:`buildml.federated.results.export_round_history` using
+        the active :class:`~buildml.federated.results.FederatedPlan` on this Session.
+
+        Parameters
+        ----------
+        path:
+            Destination JSON file path (parent directories are created).
+        include_disclosures:
+            When ``True``, embed plan disclosures and warnings in the payload.
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved output file path.
+
+        Raises
+        ------
+        ValidationError
+            When no federated plan exists on this Session.
+        """
+        return federated_ops.export_round_history_op(
+            self,
+            path,
+            include_disclosures=include_disclosures,
+        )
+
     def load_federated_bundle(self, path: str | Path) -> Session:
-        """Load a federated-learning bundle into this Session."""
+        """Load a federated-learning bundle into this Session.
+        
+        Delegates to :meth:`buildml.federated.checkpoint.load_federated_bundle`
+        and clears prior fit/eval/predict results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.federated_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with federated plan attached for chaining.
+        """
         return federated_ops.load_federated_bundle_op(self, path=path)
 
     def fit_probabilistic(
@@ -4451,33 +6312,56 @@ class Session:
         n_estimators: int = 100,
         learning_rate: float = 0.05,
     ) -> ProbabilisticFitResult:
-        """Fit a Bayesian / probabilistic estimator with uncertainty.
-
+        """Fit a Bayesian or probabilistic estimator on this Session train only.
+        
+        Delegates to :meth:`buildml.probabilistic.fit.fit_probabilistic`, stores
+        the :class:`~buildml.probabilistic.results.ProbabilisticPlan` on this Session,
+        and records the fit. Follow with :meth:`predict_probabilistic` or
+        :meth:`predict_interval`.
+        
         Parameters
         ----------
         backend:
-            ``native`` (sklearn + in-tree conformal), ``mapie``, or ``ngboost``
-            when ``buildml[probabilistic-industry]`` is installed.
+            Optional backend override (``native``, ``mapie``, ``ngboost``).
         estimator:
-            Native: ``bayesian_ridge``, ``gaussian_process_*``, ``gaussian_nb``.
-            MAPIE: ``split``, ``cv_plus``, ``jackknife_plus``.
-            NGBoost: ``ngboost_regressor``, ``ngboost_classifier``.
+            Probabilistic estimator key (``bayesian_ridge``, etc.).
+        task:
+            Task override; inferred from target when ``None``.
+        columns:
+            Explicit feature columns; ``None`` auto-selects numerics.
+        random_state:
+            Seed for stochastic steps.
         alpha:
-            Miscoverage level for intervals / prediction sets (default 0.1 →
-            nominal 90% coverage).
+            Significance level for intervals (e.g. 0.1 for 90% intervals).
         conformal:
-            When True, carve a split-conformal calibration subset from the
-            Session **train** partition only (native/ngboost; MAPIE owns conformal).
+            When True, apply split-conformal calibration on train carve-out.
+        conformal_calibration_fraction:
+            Fraction of train reserved for conformal calibration.
         interval_method:
-            ``posterior_std``, ``split_conformal``, ``both``, or ``none``.
-            Inferred when omitted.
-
+            Interval construction method override.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on this Session.
+        n_restarts_optimizer:
+            Restarts for Bayesian ridge optimizer.
+        n_estimators:
+            Tree count for NGBoost backend.
+        learning_rate:
+            Learning rate for NGBoost backend.
+        
+        Returns
+        -------
+        ProbabilisticFitResult
+            Serializable fit summary including backend and conformal disclosures.
+        
         Notes
         -----
-        **Leakage:** Requires a split. Fit and conformal calibration use train
-        only. Holdout is for ``evaluate_probabilistic`` / ``predict_interval``.
-        Honesty: tabular uncertainty quantification — **not** PyMC/Stan MCMC or
-        Bayesian deep nets. Classical :meth:`calibration` remains unchanged.
+        **Backends:** ``native`` (sklearn + in-tree conformal), ``mapie`` and
+        ``ngboost`` when ``buildml[probabilistic-industry]`` is installed.
+        
+        **Leakage:** Requires a split. Fit and optional split-conformal calibration
+        use train only (conformal carve never touches validation/test). Honesty:
+        uncertainty quantification for tabular estimators — not PyMC/Stan MCMC.
+        Classical ``Session.calibration()`` is unchanged.
         """
         return probabilistic_ops.fit_probabilistic_op(
             self,
@@ -4502,11 +6386,28 @@ class Session:
         partition: PartitionName | Literal["all"] = "validation",
         alpha: float | None = None,
     ) -> ProbabilisticEvalResult:
-        """Evaluate probabilistic predictions with proper scoring rules.
-
-        Defaults to validation, falling back to test when no validation
-        partition exists. Reports NLL / coverage / Brier (as applicable).
-        Holdout rows are never used for fit or conformal calibration.
+        """Evaluate the probabilistic plan on a holdout partition.
+        
+        Delegates to :meth:`buildml.probabilistic.evaluate.evaluate_probabilistic`
+        for calibration and interval coverage metrics. Falls back to ``test`` when
+        no validation partition exists.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition (default ``validation``).
+        alpha:
+            Significance level override for interval metrics.
+        
+        Returns
+        -------
+        ProbabilisticEvalResult
+            Calibration, coverage, and sharpness metrics on the partition.
+        
+        Raises
+        ------
+        ValidationError
+            When no probabilistic plan exists on this Session.
         """
         return probabilistic_ops.evaluate_probabilistic_op(
             self,
@@ -4521,7 +6422,30 @@ class Session:
         return_std: bool = True,
         return_proba: bool = True,
     ) -> ProbabilisticPredictResult:
-        """Point predictions (optional posterior std / class probabilities)."""
+        """Predict with the probabilistic estimator without updating the plan.
+        
+        Delegates to :meth:`buildml.probabilistic.predict.predict_probabilistic`
+        and optionally returns standard deviations or class probabilities.
+        
+        Parameters
+        ----------
+        partition:
+            Split partition to predict on (default ``test``).
+        return_std:
+            When True, include predictive standard deviations (regression).
+        return_proba:
+            When True, include class probabilities (classification).
+        
+        Returns
+        -------
+        ProbabilisticPredictResult
+            Point predictions with optional uncertainty outputs.
+        
+        Raises
+        ------
+        ValidationError
+            When no probabilistic plan exists on this Session.
+        """
         return probabilistic_ops.predict_probabilistic_op(
             self,
             partition=partition,
@@ -4536,7 +6460,30 @@ class Session:
         alpha: float | None = None,
         method: str | None = None,
     ) -> ProbabilisticIntervalResult:
-        """Predictive intervals (regression) or conformal prediction sets."""
+        """Predict predictive intervals or conformal prediction sets on a partition.
+        
+        Delegates to :meth:`buildml.probabilistic.predict.predict_interval`.
+        Regression returns lower/upper bounds; classification returns prediction sets.
+        
+        Parameters
+        ----------
+        partition:
+            Split partition to score (default ``test``).
+        alpha:
+            Significance level override for interval width.
+        method:
+            Interval method override (conformal, native, etc.).
+        
+        Returns
+        -------
+        ProbabilisticIntervalResult
+            Interval bounds or conformal sets per row.
+        
+        Raises
+        ------
+        ValidationError
+            When no probabilistic plan exists on this Session.
+        """
         return probabilistic_ops.predict_interval_op(
             self,
             partition=partition,
@@ -4546,37 +6493,113 @@ class Session:
 
     @property
     def probabilistic_plan(self) -> ProbabilisticPlan | None:
-        """Last fitted :class:`~buildml.probabilistic.results.ProbabilisticPlan`."""
+        """Return the last probabilistic plan, if any.
+        
+        Stored on this Session after :meth:`fit_probabilistic` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ProbabilisticPlan or None
+            ``None`` before the first :meth:`fit_probabilistic` call on this session.
+        """
         return self._probabilistic_plan
 
     @property
     def probabilistic_fit_result(self) -> ProbabilisticFitResult | None:
-        """Last :class:`~buildml.probabilistic.results.ProbabilisticFitResult`."""
+        """Return the last probabilistic fit result, if any.
+        
+        Stored on this Session after :meth:`fit_probabilistic` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ProbabilisticFitResult or None
+            ``None`` before the first :meth:`fit_probabilistic` call on this session.
+        """
         return self._probabilistic_fit_result
 
     @property
     def probabilistic_eval_result(self) -> ProbabilisticEvalResult | None:
-        """Last :class:`~buildml.probabilistic.results.ProbabilisticEvalResult`."""
+        """Return the last probabilistic evaluation result, if any.
+        
+        Stored on this Session after :meth:`evaluate_probabilistic` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ProbabilisticEvalResult or None
+            ``None`` before the first :meth:`evaluate_probabilistic` call on this session.
+        """
         return self._probabilistic_eval_result
 
     @property
     def probabilistic_predict_result(self) -> ProbabilisticPredictResult | None:
-        """Last :class:`~buildml.probabilistic.results.ProbabilisticPredictResult`."""
+        """Return the last probabilistic prediction result, if any.
+        
+        Stored on this Session after :meth:`predict_probabilistic` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ProbabilisticPredictResult or None
+            ``None`` before the first :meth:`predict_probabilistic` call on this session.
+        """
         return self._probabilistic_predict_result
 
     @property
     def probabilistic_interval_result(self) -> ProbabilisticIntervalResult | None:
-        """Last :class:`~buildml.probabilistic.results.ProbabilisticIntervalResult`."""
+        """Return the last probabilistic interval result, if any.
+        
+        Stored on this Session after :meth:`predict_interval` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        ProbabilisticIntervalResult or None
+            ``None`` before the first :meth:`predict_interval` call on this session.
+        """
         return self._probabilistic_interval_result
 
     def save_probabilistic_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.probabilistic_bundle.v1``.
-
-        See :data:`buildml.probabilistic.checkpoint.CHECKPOINT_BOUNDARY`."""
+        """Persist the active ProbabilisticPlan as ``buildml.probabilistic_bundle.v1``.
+        
+        Delegates to :meth:`buildml.probabilistic.checkpoint.save_probabilistic_bundle`.
+        Reload with :meth:`load_probabilistic_bundle`.
+        
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+        
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+        
+        Raises
+        ------
+        ValidationError
+            When no probabilistic plan exists on this Session.
+        """
         return probabilistic_ops.save_probabilistic_bundle_op(self, path=path)
 
     def load_probabilistic_bundle(self, path: str | Path) -> Session:
-        """Load a probabilistic bundle into this Session."""
+        """Load a probabilistic bundle into this Session.
+        
+        Delegates to :meth:`buildml.probabilistic.checkpoint.load_probabilistic_bundle`
+        and clears prior eval/predict/interval results.
+        
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.probabilistic_bundle.v1`` directory.
+        
+        Returns
+        -------
+        Session
+            this Session with ProbabilisticPlan attached for chaining.
+        """
         return probabilistic_ops.load_probabilistic_bundle_op(self, path=path)
 
     def declare_causal_assumptions(
@@ -4592,12 +6615,50 @@ class Session:
         acknowledge_positivity: bool = False,
         allow_empty_confounders: bool = False,
     ) -> CausalAssumptions:
-        """Declare identification assumptions required for causal estimation.
-
-        Causal APIs refuse estimation until treatment, outcome, confounders
-        (or an explicit empty-confounder waiver), estimand, and the
-        unconfoundedness / positivity acknowledgements are set. EDA /
-        association / feature-importance paths never satisfy these fields.
+        """Declare identification assumptions required before causal estimation.
+        
+        Captures treatment, outcome, confounders, and explicit acknowledgements
+        of unconfoundedness and positivity. Stores a validated
+        :class:`~buildml.causal.types.CausalAssumptions` object on this Session for
+        downstream fit and estimate APIs.
+        
+        Parameters
+        ----------
+        treatment:
+            Column name for the treatment or exposure variable.
+        outcome:
+            Column name for the outcome of interest.
+        confounders:
+            Confounder column names; pass ``[]`` only with
+            ``allow_empty_confounders=True``.
+        estimand:
+            Target estimand (``ATE`` by default).
+        identification:
+            Identification strategy (``backdoor`` by default).
+        instruments:
+            Optional instrument column names for IV-style paths.
+        acknowledge_unconfoundedness:
+            Explicit acknowledgement that unconfoundedness holds.
+        acknowledge_positivity:
+            Explicit acknowledgement that positivity/overlap holds.
+        allow_empty_confounders:
+            When True, permit an empty confounder list after validation.
+        
+        Returns
+        -------
+        CausalAssumptions
+            Validated assumptions object stored on this Session.
+        
+        Raises
+        ------
+        ValidationError
+            When ``confounders`` is ``None`` or validation fails.
+        
+        Notes
+        -----
+        EDA / association / feature-importance results never satisfy these
+        acknowledgements. Estimation APIs refuse to run without a validated
+        :class:`CausalAssumptions` object on this Session (or passed explicitly).
         """
         return causal_ops.declare_causal_assumptions_op(
             self,
@@ -4624,29 +6685,44 @@ class Session:
         outcome_model: str = "ridge",
         propensity_model: str = "logistic_regression",
     ) -> CausalFitResult:
-        """Fit causal models (train-only) and estimate backdoor ATE.
-
+        """Fit causal models on this Session train and estimate ATE.
+        
+        Delegates to :meth:`buildml.causal.fit.fit_causal`, stores the
+        :class:`~buildml.causal.results.CausalPlan` on this Session, and records the
+        fit. Follow with :meth:`estimate_causal` or :meth:`evaluate_causal`.
+        
         Parameters
         ----------
         backend:
-            ``native`` (default), ``dowhy``, or ``econml``. Industry backends
-            require ``buildml[causal-industry]``.
+            Optional backend override (``native``, ``dowhy``, ``econml``).
         method:
-            Native: ``t_learner``, ``ipw``, ``aipw``. DoWhy: ``backdoor_linear``,
-            ``backdoor_propensity_score``, ``backdoor_propensity_weighting``.
-            EconML: ``dml``, ``causal_forest``, ``policy_tree``.
+            Estimator method (``aipw`` by default).
         assumptions:
-            Optional explicit :class:`CausalAssumptions` / mapping. When
-            omitted, uses the object from :meth:`declare_causal_assumptions`.
+            Optional assumptions override; uses Session-stored assumptions when
+            omitted.
         bootstrap_samples:
-            Full retrain bootstrap on train for uncertainty (0 disables;
-            native and econml; DoWhy uses estimator CIs).
-
+            Number of bootstrap draws for uncertainty intervals.
+        random_state:
+            Seed for stochastic nuisance-model steps.
+        clip_propensity:
+            Min/max propensity clipping bounds for IPW-style methods.
+        outcome_model:
+            Outcome nuisance model identifier.
+        propensity_model:
+            Propensity nuisance model identifier.
+        
+        Returns
+        -------
+        CausalFitResult
+            Serializable fit summary including ATE point estimate and warnings.
+        
         Notes
         -----
-        **Leakage:** Requires a split. Nuisances fit on train only.
-        **Assumptions:** Refuses without validated CausalAssumptions.
-        Not causal discovery. EDA remains associational.
+        **Leakage:** Requires a split. Nuisance models fit on train only.
+        **Assumptions:** Requires validated CausalAssumptions — refused otherwise.
+        Backends: native (T-learner/IPW/AIPW), dowhy, econml when
+        ``buildml[causal-industry]`` is installed. Not causal discovery; EDA
+        remains associational.
         """
         return causal_ops.fit_causal_op(
             self,
@@ -4667,7 +6743,31 @@ class Session:
         bootstrap_samples: int | None = None,
         random_state: int | None = None,
     ) -> CausalEstimateResult:
-        """Estimate ATE on a partition with fitted train nuisances."""
+        """Estimate ATE on a partition using the fitted CausalPlan.
+        
+        Delegates to :meth:`buildml.causal.estimate.estimate_causal` without
+        refitting nuisance models. Useful for re-scoring train or scoring
+        holdout partitions with bootstrap overrides.
+        
+        Parameters
+        ----------
+        partition:
+            Partition to score (``train``, ``validation``, ``test``, or ``all``).
+        bootstrap_samples:
+            Optional bootstrap override; uses plan default when omitted.
+        random_state:
+            Optional seed override for bootstrap resampling.
+        
+        Returns
+        -------
+        CausalEstimateResult
+            Partition ATE estimate with optional bootstrap interval.
+        
+        Raises
+        ------
+        ValidationError
+            When no causal plan exists on this Session.
+        """
         return causal_ops.estimate_causal_op(
             self,
             partition=partition,
@@ -4681,7 +6781,28 @@ class Session:
         partition: PartitionName | Literal["all"] = "validation",
         bootstrap_samples: int | None = None,
     ) -> CausalEvalResult:
-        """Holdout nuisance predictive checks + ATE (not proof of identification)."""
+        """Evaluate nuisance predictive quality and ATE on a holdout partition.
+        
+        Delegates to :meth:`buildml.causal.evaluate.evaluate_causal` to report
+        outcome/propensity model quality alongside partition-level ATE checks.
+        
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (``validation`` by default).
+        bootstrap_samples:
+            Optional bootstrap override for partition ATE uncertainty.
+        
+        Returns
+        -------
+        CausalEvalResult
+            Nuisance metrics and partition ATE evaluation summary.
+        
+        Raises
+        ------
+        ValidationError
+            When no causal plan exists on this Session.
+        """
         return causal_ops.evaluate_causal_op(
             self,
             partition=partition,
@@ -4695,8 +6816,26 @@ class Session:
         random_state: int | None = 0,
     ) -> CausalRefuteResult:
         """Simple placebo / random-confounder sensitivity disclosure.
-
-        Not a full DoWhy refutation suite.
+        
+        Delegates to :meth:`buildml.causal.refute.refute_causal` to stress-test
+        the fitted plan with placebo treatments or random confounders.
+        
+        Parameters
+        ----------
+        kind:
+            Refutation kind (``placebo_treatment`` by default).
+        random_state:
+            Seed for stochastic refutation steps.
+        
+        Returns
+        -------
+        CausalRefuteResult
+            Refutation outcome and sensitivity disclosures.
+        
+        Raises
+        ------
+        ValidationError
+            When no causal plan exists on this Session.
         """
         return causal_ops.refute_causal_op(
             self,
@@ -4706,42 +6845,130 @@ class Session:
 
     @property
     def causal_assumptions(self) -> CausalAssumptions | None:
-        """Last declared :class:`~buildml.causal.types.CausalAssumptions`."""
+        """Return the last declared causal assumptions, if any.
+        
+        Stored on this Session after :meth:`declare_causal_assumptions` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        CausalAssumptions or None
+            ``None`` before the first :meth:`declare_causal_assumptions` call on this session.
+        """
         return self._causal_assumptions
 
     @property
     def causal_plan(self) -> CausalPlan | None:
-        """Last fitted :class:`~buildml.causal.results.CausalPlan`."""
+        """Return the last causal plan, if any.
+        
+        Stored on this Session after :meth:`fit_causal` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        CausalPlan or None
+            ``None`` before the first :meth:`fit_causal` call on this session.
+        """
         return self._causal_plan
 
     @property
     def causal_fit_result(self) -> CausalFitResult | None:
-        """Last :class:`~buildml.causal.results.CausalFitResult`."""
+        """Return the last causal fit result, if any.
+        
+        Stored on this Session after :meth:`fit_causal` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        CausalFitResult or None
+            ``None`` before the first :meth:`fit_causal` call on this session.
+        """
         return self._causal_fit_result
 
     @property
     def causal_estimate_result(self) -> CausalEstimateResult | None:
-        """Last :class:`~buildml.causal.results.CausalEstimateResult`."""
+        """Return the last causal estimate result, if any.
+        
+        Stored on this Session after :meth:`estimate_causal` so later calls can reuse
+        the same plan without refitting.
+        
+        Returns
+        -------
+        CausalEstimateResult or None
+            ``None`` before the first :meth:`estimate_causal` call on this session.
+        """
         return self._causal_estimate_result
 
     @property
     def causal_eval_result(self) -> CausalEvalResult | None:
-        """Last :class:`~buildml.causal.results.CausalEvalResult`."""
+        """
+        Return the metrics from the most recent causal evaluation.
+
+        Stored on Session after :meth:`evaluate_causal` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.causal.results.CausalEvalResult` or None
+            ``None`` until :meth:`evaluate_causal` has run.
+        """
         return self._causal_eval_result
 
     @property
     def causal_refute_result(self) -> CausalRefuteResult | None:
-        """Last :class:`~buildml.causal.results.CausalRefuteResult`."""
+        """
+        Return the refutation from the most recent refute_causal call.
+
+        Stored on Session after :meth:`refute_causal` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.causal.results.CausalRefuteResult` or None
+            ``None`` until :meth:`refute_causal` has run.
+        """
         return self._causal_refute_result
 
     def save_causal_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.causal_bundle.v1``.
+        """
+        Persist the active CausalPlan as ``buildml.causal_bundle.v1``.
 
-        See :data:`buildml.causal.checkpoint.CHECKPOINT_BOUNDARY`."""
+        Delegates to :func:`buildml.causal.checkpoint.save_causal_bundle`.
+        Reload with :meth:`load_causal_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no causal plan exists on the Session.
+        """
         return causal_ops.save_causal_bundle_op(self, path=path)
 
     def load_causal_bundle(self, path: str | Path) -> Session:
-        """Load a causal bundle into this Session."""
+        """
+        Load a causal bundle into this Session.
+
+        Delegates to :func:`buildml.causal.checkpoint.load_causal_bundle` and
+        clears prior estimate/eval/refute results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded causal plan.
+        path:
+            Path to a ``buildml.causal_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with causal plan attached for chaining.
+        """
         return causal_ops.load_causal_bundle_op(self, path=path)
 
     def set_graph(
@@ -4753,17 +6980,40 @@ class Session:
         node_id_col: str = "node_id",
         directed: bool = False,
     ) -> GraphSpec:
-        """Attach an edge list; Session rows are nodes.
+        """
+        Attach an edge list to the Session with dataset rows as nodes.
 
-        Conventions: one dataset row per node; ``node_id_col`` uniquely
-        identifies nodes and must match edge endpoints. ``Session.split``
-        creates **node** partitions. Not a Neo4j/KG product surface.
+        Delegates to :func:`buildml.graph.data.build_graph_spec` and validates
+        node identifiers against the dataset. Call before :meth:`fit_graph`.
 
         Parameters
         ----------
         edges:
-            Edge list as a DataFrame with ``source_col``/``target_col`` or a
-            sequence of ``(source, target)`` pairs.
+            Edge list as a DataFrame or sequence of ``(source, target)`` tuples.
+        source_col:
+            Column name for edge source endpoints.
+        target_col:
+            Column name for edge target endpoints.
+        node_id_col:
+            Column uniquely identifying dataset rows as graph nodes.
+        directed:
+            When True, treat edges as directed.
+
+        Returns
+        -------
+        GraphSpec
+            Validated graph specification stored on Session as ``_graph_spec``.
+
+        Raises
+        ------
+        ValidationError
+            When no dataset is attached or node ids are invalid.
+
+        Notes
+        -----
+        Dataset rows are nodes. ``node_id_col`` must uniquely identify rows and
+        match edge endpoints. Splits created with :meth:`Session.split` are node
+        partitions. Call this before :meth:`Session.fit_graph`.
         """
         return graph_ops.set_graph_op(
             self,
@@ -4793,14 +7043,63 @@ class Session:
         pyg_model: PyGModel = "gcn",
         heads: int = 4,
     ) -> GraphFitResult:
-        """Fit graph node classification (classical, pure-Torch GCN, or PyG).
+        """
+        Fit graph node classification on Session train nodes.
 
-        **Leakage:** Requires a split and :meth:`set_graph`. Train labels only.
-        Default ``mode='inductive'`` fits on the train-induced subgraph;
-        ``transductive`` uses full topology with train-label-only supervision
-        (disclosed). Classical path needs ``buildml[graph]`` (NetworkX);
-        GCN needs ``buildml[torch]``; PyG needs ``buildml[graph-pyg]``
-        with ``pyg_model`` in ``gcn`` / ``graphsage`` / ``gat``.
+        Delegates to :func:`buildml.graph.fit.fit_graph`, stores the
+        :class:`~buildml.graph.results.GraphPlan` on Session, and records the fit.
+        Follow with :meth:`predict_graph` or :meth:`evaluate_graph`.
+
+        Parameters
+        ----------
+        method:
+            Graph learning method (``classical`` or ``pyg``).
+        task:
+            Graph task type (currently ``node_classification``).
+        mode:
+            ``inductive`` (train subgraph) or ``transductive`` (full topology).
+        columns:
+            Node feature columns; ``None`` auto-selects numerics.
+        classical_estimator:
+            Sklearn estimator for classical graph method.
+        hidden_dim:
+            Hidden dimension for GNN layers.
+        n_layers:
+            Number of message-passing layers.
+        epochs:
+            Training epochs for GNN backends.
+        learning_rate:
+            Optimizer learning rate.
+        weight_decay:
+            L2 regularization for GNN training.
+        dropout:
+            Dropout rate between GNN layers.
+        random_state:
+            Seed for weight initialization and sampling.
+        include_graph_metrics:
+            When True, compute graph-level structural metrics.
+        pyg_model:
+            PyG architecture (``gcn``, ``graphsage``, ``gat``).
+        heads:
+            Attention heads for GAT when ``pyg_model='gat'``.
+
+        Returns
+        -------
+        GraphFitResult
+            Serializable fit summary including method and mode disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no GraphSpec exists on the Session.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Labels from train only.
+        **Inductive (default):** train-induced subgraph for fit.
+        **Transductive:** full topology; train-label-only supervision (disclosed).
+        Classical needs ``buildml[graph]``; GCN needs ``buildml[torch]``;
+        PyG needs ``buildml[graph-pyg]`` (``pyg_model``: gcn/graphsage/gat).
         """
         return graph_ops.fit_graph_op(
             self,
@@ -4826,7 +7125,26 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "validation",
     ) -> GraphPredictResult:
-        """Predict node labels with the fitted :class:`GraphPlan`."""
+        """
+        Predict node labels with the fitted GraphPlan on a partition.
+
+        Delegates to :func:`buildml.graph.predict.predict_graph` without refitting.
+
+        Parameters
+        ----------
+        partition:
+            Node partition to predict on (default ``validation``).
+
+        Returns
+        -------
+        GraphPredictResult
+            Node predictions and optional probabilities for the partition.
+
+        Raises
+        ------
+        ValidationError
+            When no graph plan exists on the Session.
+        """
         return graph_ops.predict_graph_op(self, partition=partition)
 
     def evaluate_graph(
@@ -4834,42 +7152,141 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "validation",
     ) -> GraphEvalResult:
-        """Evaluate node classification on a holdout partition."""
+        """
+        Evaluate node classification on a holdout graph partition.
+
+        Delegates to :func:`buildml.graph.evaluate.evaluate_graph` and stores
+        metrics on Session.
+
+        Parameters
+        ----------
+        partition:
+            Holdout node partition (default ``validation``).
+
+        Returns
+        -------
+        GraphEvalResult
+            Classification metrics for nodes in the partition.
+
+        Raises
+        ------
+        ValidationError
+            When no graph plan exists on the Session.
+        """
         return graph_ops.evaluate_graph_op(self, partition=partition)
 
     @property
     def graph_spec(self) -> GraphSpec | None:
-        """Last attached :class:`~buildml.graph.types.GraphSpec`."""
+        """
+        Return the graph specification attached by the most recent set_graph call.
+
+        Stored on Session after :meth:`set_graph` or :meth:`load_graph_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.graph.types.GraphSpec` or None
+            ``None`` until :meth:`set_graph` or :meth:`load_graph_bundle` has run.
+        """
         return self._graph_spec
 
     @property
     def graph_plan(self) -> GraphPlan | None:
-        """Last fitted :class:`~buildml.graph.results.GraphPlan`."""
+        """
+        Return the graph plan built by the most recent graph fit.
+
+        Stored on Session after :meth:`fit_graph` or :meth:`load_graph_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.graph.results.GraphPlan` or None
+            ``None`` until :meth:`fit_graph` or :meth:`load_graph_bundle` has run.
+        """
         return self._graph_plan
 
     @property
     def graph_fit_result(self) -> GraphFitResult | None:
-        """Last :class:`~buildml.graph.results.GraphFitResult`."""
+        """
+        Return the report from the most recent graph fit.
+
+        Stored on Session after :meth:`fit_graph` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.graph.results.GraphFitResult` or None
+            ``None`` until :meth:`fit_graph` has run.
+        """
         return self._graph_fit_result
 
     @property
     def graph_predict_result(self) -> GraphPredictResult | None:
-        """Last :class:`~buildml.graph.results.GraphPredictResult`."""
+        """
+        Return the node predictions from the most recent graph scoring call.
+
+        Stored on Session after :meth:`predict_graph` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.graph.results.GraphPredictResult` or None
+            ``None`` until :meth:`predict_graph` has run.
+        """
         return self._graph_predict_result
 
     @property
     def graph_eval_result(self) -> GraphEvalResult | None:
-        """Last :class:`~buildml.graph.results.GraphEvalResult`."""
+        """
+        Return the metrics from the most recent graph evaluation.
+
+        Stored on Session after :meth:`evaluate_graph` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.graph.results.GraphEvalResult` or None
+            ``None`` until :meth:`evaluate_graph` has run.
+        """
         return self._graph_eval_result
 
     def save_graph_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.graph_bundle.v1``.
+        """
+        Persist the active GraphPlan as ``buildml.graph_bundle.v1``.
 
-        See :data:`buildml.graph.checkpoint.CHECKPOINT_BOUNDARY`."""
+        Delegates to :func:`buildml.graph.checkpoint.save_graph_bundle`.
+        Reload with :meth:`load_graph_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no graph plan exists on the Session.
+        """
         return graph_ops.save_graph_bundle_op(self, path=path)
 
     def load_graph_bundle(self, path: str | Path) -> Session:
-        """Load a graph bundle into this Session."""
+        """
+        Load a graph bundle into this Session.
+
+        Delegates to :func:`buildml.graph.checkpoint.load_graph_bundle`,
+        restores GraphSpec from the plan, and clears prior predict/eval results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded GraphPlan.
+        path:
+            Path to a ``buildml.graph_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with GraphPlan and GraphSpec attached for chaining.
+        """
         return graph_ops.load_graph_bundle_op(self, path=path)
 
     def fit_symbolic(
@@ -4889,30 +7306,52 @@ class Session:
         prefer_reduce_components: bool = True,
         verify_constraints: bool = False,
     ) -> SymbolicFitResult:
-        """Compile or induce a symbolic if-then rule base on train.
+        """
+        Compile or induce a symbolic rule base on Session train.
+
+        Delegates to :func:`buildml.symbolic.fit.fit_symbolic`, stores the
+        :class:`~buildml.symbolic.results.SymbolicPlan` on Session, and records
+        the fit. Follow with :meth:`predict_symbolic` or
+        :meth:`evaluate_symbolic`.
 
         Parameters
         ----------
         backend:
-            ``sklearn`` (core tree/list/declared) or ``industry`` (skope-rules /
-            imodels when ``buildml[symbolic-industry]`` is installed). Defaults
-            to industry when installed, else sklearn.
+            Optional symbolic backend override.
         source:
-            ``declared`` (expert rules via ``rules=``), ``decision_tree``
-            (sklearn path export), or ``decision_list`` (sequential covering).
-            Used when ``backend='sklearn'``.
+            Rule source (``decision_tree`` induction or declared rules).
         method:
-            ``skope_rules``, ``rulefit``, or ``boosted_rules`` when
-            ``backend='industry'``.
+            Optional industry backend method override.
+        task:
+            Optional task override (classification/regression).
+        rules:
+            Optional pre-declared rules to compile instead of inducing.
+        columns:
+            Optional explicit feature column list.
+        random_state:
+            Seed for stochastic induction steps.
+        max_depth:
+            Maximum tree depth when inducing from a decision tree.
+        min_samples_leaf:
+            Minimum leaf size for tree induction.
+        max_rules:
+            Cap on emitted rules after induction.
+        default_consequent:
+            Fallback prediction when no rule fires.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists.
         verify_constraints:
-            When True and z3-solver is installed, run a lite SAT check on hard
-            constraint rules (not a full SMT product).
+            When True, run optional Z3 constraint verification when available.
+
+        Returns
+        -------
+        SymbolicFitResult
+            Serializable fit summary including rule count and disclosures.
 
         Notes
         -----
-        **Leakage:** Requires a split. Induction uses Session train only.
-        Honesty: structured tabular rules with explanation traces — **not**
-        an AGI symbolic reasoner, Prolog engine, or full Z3 SMT product.
+        **Leakage:** Requires a split. Induction / compile statistics use train
+        only. Honesty: structured tabular if-then rules — not Prolog/Z3/AGI.
         """
         return symbolic_ops.fit_symbolic_op(
             self,
@@ -4936,7 +7375,27 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "validation",
     ) -> SymbolicEvalResult:
-        """Evaluate the symbolic rule base on a holdout partition."""
+        """
+        Evaluate the symbolic plan on a holdout partition.
+
+        Delegates to :func:`buildml.symbolic.evaluate.evaluate_symbolic` using the
+        frozen train rule base. Falls back to ``test`` when validation is empty.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (``validation`` by default).
+
+        Returns
+        -------
+        SymbolicEvalResult
+            Holdout metrics and rule-coverage disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no symbolic plan exists on the Session.
+        """
         return symbolic_ops.evaluate_symbolic_op(self, partition=partition)
 
     def predict_symbolic(
@@ -4945,7 +7404,29 @@ class Session:
         partition: PartitionName | Literal["all"] = "test",
         return_traces: bool = True,
     ) -> SymbolicPredictResult:
-        """Predict with rule-firing explanation traces (no update)."""
+        """
+        Predict with the symbolic rule base (no update).
+
+        Delegates to :func:`buildml.symbolic.predict.predict_symbolic` without
+        modifying the induced or compiled rules.
+
+        Parameters
+        ----------
+        partition:
+            Partition to predict on (``test`` by default).
+        return_traces:
+            When True, include fired-rule traces per row.
+
+        Returns
+        -------
+        SymbolicPredictResult
+            Predictions and optional rule traces for the partition.
+
+        Raises
+        ------
+        ValidationError
+            When no symbolic plan exists on the Session.
+        """
         return symbolic_ops.predict_symbolic_op(
             self,
             partition=partition,
@@ -4972,13 +7453,59 @@ class Session:
         torch_epochs: int = 60,
         device: str = "cpu",
     ) -> NeuroSymbolicFitResult:
-        """Fit a base model + symbolic hybrid in one Session API.
+        """
+        Fit a sklearn + symbolic hybrid on Session train.
 
-        Backends: ``sklearn`` (core) or ``torch`` (concept-bottleneck / NAM lite
-        when ``buildml[torch]`` is installed). Modes: ``constraint_overlay``,
-        ``rules_as_features``, ``constraint_repair``. Rules may be declared or
-        train-induced (``rule_source``). Train-only for learning; holdout for
-        eval/predict.
+        Delegates to :func:`buildml.symbolic.fit.fit_neuro_symbolic`, stores the
+        :class:`~buildml.symbolic.results.NeuroSymbolicPlan` on Session, and
+        records the fit. Follow with :meth:`predict_neuro_symbolic` or
+        :meth:`evaluate_neuro_symbolic`.
+
+        Parameters
+        ----------
+        backend:
+            Optional neuro-symbolic backend override.
+        mode:
+            Hybrid mode (``constraint_overlay`` by default).
+        base_estimator:
+            Sklearn base estimator identifier.
+        torch_method:
+            Optional torch method when backend is torch.
+        task:
+            Optional task override (classification/regression).
+        rules:
+            Optional pre-declared rules for the symbolic overlay.
+        rule_source:
+            Rule induction source when ``rules`` is omitted.
+        columns:
+            Optional explicit feature column list.
+        random_state:
+            Seed for stochastic base-estimator and induction steps.
+        soft_strength:
+            Soft constraint strength for overlay modes.
+        max_depth:
+            Maximum tree depth for rule induction.
+        min_samples_leaf:
+            Minimum leaf size for rule induction.
+        max_rules:
+            Cap on induced rules for the overlay.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists.
+        torch_epochs:
+            Training epochs for torch hybrid backend.
+        device:
+            Torch device string.
+
+        Returns
+        -------
+        NeuroSymbolicFitResult
+            Serializable fit summary including hybrid disclosures.
+
+        Notes
+        -----
+        **Leakage:** Requires a split. Base estimator fit and any rule induction
+        use train only. This is a real Session-integrated hybrid — not a
+        disconnected "fit then apply rules" pair without shared state.
         """
         return symbolic_ops.fit_neuro_symbolic_op(
             self,
@@ -5005,7 +7532,29 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "validation",
     ) -> SymbolicEvalResult:
-        """Evaluate the neuro-symbolic hybrid on a holdout partition."""
+        """
+        Evaluate the neuro-symbolic plan on a holdout partition.
+
+        Delegates to :func:`buildml.symbolic.evaluate.evaluate_neuro_symbolic`
+        using the frozen hybrid plan. Falls back to ``test`` when validation is
+        empty.
+
+        Parameters
+        ----------
+            :meth:`fit_neuro_symbolic`.
+        partition:
+            Holdout partition for evaluation (``validation`` by default).
+
+        Returns
+        -------
+        SymbolicEvalResult
+            Holdout metrics and hybrid overlay disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no neuro-symbolic plan exists on the Session.
+        """
         return symbolic_ops.evaluate_neuro_symbolic_op(self, partition=partition)
 
     def predict_neuro_symbolic(
@@ -5014,7 +7563,30 @@ class Session:
         partition: PartitionName | Literal["all"] = "test",
         return_traces: bool = True,
     ) -> SymbolicPredictResult:
-        """Hybrid predict with neural + rule traces (no update)."""
+        """
+        Predict with the neuro-symbolic hybrid (no update).
+
+        Delegates to :func:`buildml.symbolic.predict.predict_neuro_symbolic`
+        without refitting the base estimator or rules.
+
+        Parameters
+        ----------
+            :meth:`fit_neuro_symbolic`.
+        partition:
+            Partition to predict on (``test`` by default).
+        return_traces:
+            When True, include overlay/rule traces per row.
+
+        Returns
+        -------
+        NeuroSymbolicPredictResult
+            Predictions and optional traces for the partition.
+
+        Raises
+        ------
+        ValidationError
+            When no neuro-symbolic plan exists on the Session.
+        """
         return symbolic_ops.predict_neuro_symbolic_op(
             self,
             partition=partition,
@@ -5023,66 +7595,196 @@ class Session:
 
     @property
     def symbolic_plan(self) -> SymbolicPlan | None:
-        """Last fitted :class:`~buildml.symbolic.results.SymbolicPlan`."""
+        """
+        Return the symbolic rule plan built by the most recent symbolic fit.
+
+        Stored on Session after :meth:`fit_symbolic` or :meth:`load_symbolic_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.symbolic.results.SymbolicPlan` or None
+            ``None`` until :meth:`fit_symbolic` or :meth:`load_symbolic_bundle` has run.
+        """
         return self._symbolic_plan
 
     @property
     def neuro_symbolic_plan(self) -> NeuroSymbolicPlan | None:
-        """Last fitted :class:`~buildml.symbolic.results.NeuroSymbolicPlan`."""
+        """
+        Return the neuro-symbolic plan built by the most recent hybrid fit.
+
+        Stored on Session after :meth:`fit_neuro_symbolic` or :meth:`load_symbolic_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.symbolic.results.NeuroSymbolicPlan` or None
+            ``None`` until :meth:`fit_neuro_symbolic` or :meth:`load_symbolic_bundle` has run.
+        """
         return self._neuro_symbolic_plan
 
     @property
     def symbolic_fit_result(self) -> SymbolicFitResult | None:
-        """Last :class:`~buildml.symbolic.results.SymbolicFitResult`."""
+        """
+        Return the report from the most recent pure-symbolic fit.
+
+        Stored on Session after :meth:`fit_symbolic` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.symbolic.results.SymbolicFitResult` or None
+            ``None`` until :meth:`fit_symbolic` has run.
+        """
         return self._symbolic_fit_result
 
     @property
     def neuro_symbolic_fit_result(self) -> NeuroSymbolicFitResult | None:
-        """Last :class:`~buildml.symbolic.results.NeuroSymbolicFitResult`."""
+        """
+        Return the report from the most recent neuro-symbolic fit.
+
+        Stored on Session after :meth:`fit_neuro_symbolic` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.symbolic.results.NeuroSymbolicFitResult` or None
+            ``None`` until :meth:`fit_neuro_symbolic` has run.
+        """
         return self._neuro_symbolic_fit_result
 
     @property
     def symbolic_eval_result(self) -> SymbolicEvalResult | None:
-        """Last symbolic / neuro-symbolic :class:`SymbolicEvalResult`."""
+        """
+        Return the metrics from the most recent symbolic or neuro-symbolic evaluation.
+
+        Stored on Session after :meth:`evaluate_symbolic` or :meth:`evaluate_neuro_symbolic` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.symbolic.results.SymbolicEvalResult` or None
+            ``None`` until :meth:`evaluate_symbolic` or :meth:`evaluate_neuro_symbolic` has run.
+        """
         return self._symbolic_eval_result
 
     @property
     def symbolic_predict_result(self) -> SymbolicPredictResult | None:
-        """Last pure-symbolic :class:`SymbolicPredictResult`."""
+        """
+        Return the predictions from the most recent pure-symbolic scoring call.
+
+        Stored on Session after :meth:`predict_symbolic` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.symbolic.results.SymbolicPredictResult` or None
+            ``None`` until :meth:`predict_symbolic` has run.
+        """
         return self._symbolic_predict_result
 
     @property
     def neuro_symbolic_predict_result(self) -> SymbolicPredictResult | None:
-        """Last neuro-symbolic :class:`SymbolicPredictResult`."""
+        """
+        Return the predictions from the most recent neuro-symbolic scoring call.
+
+        Stored on Session after :meth:`predict_neuro_symbolic` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.symbolic.results.SymbolicPredictResult` or None
+            ``None`` until :meth:`predict_neuro_symbolic` has run.
+        """
         return self._neuro_symbolic_predict_result
 
     def save_symbolic_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.symbolic_bundle.v1``.
+        """
+        Persist the active symbolic or neuro-symbolic plan.
 
-        Prefers ``NeuroSymbolicPlan`` when both are present. See
-        :data:`buildml.symbolic.checkpoint.CHECKPOINT_BOUNDARY`.
+        Delegates to :func:`buildml.symbolic.checkpoint.save_symbolic_bundle`.
+        Reload with :meth:`load_symbolic_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no symbolic / neuro-symbolic plan exists on the Session.
         """
         return symbolic_ops.save_symbolic_bundle_op(self, path=path)
 
     def load_symbolic_bundle(self, path: str | Path) -> Session:
-        """Load a symbolic / neuro-symbolic bundle into this Session."""
+        """
+        Load a symbolic bundle into this Session.
+
+        Delegates to :func:`buildml.symbolic.checkpoint.load_symbolic_bundle` and
+        clears prior eval/predict results. Restores either a pure symbolic or a
+        neuro-symbolic plan based on bundle contents.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded plan.
+        path:
+            Path to a ``buildml.symbolic_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with symbolic plan attached for chaining.
+        """
         return symbolic_ops.load_symbolic_bundle_op(self, path=path)
 
     @staticmethod
     def symbolic_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for symbolic / neuro-symbolic backends."""
+        """
+        Honest capability matrix for symbolic / neuro-symbolic backends.
+
+        Delegates to :func:`buildml.symbolic.catalog.symbolic_capability_matrix`.
+        Use before :meth:`fit_symbolic` or :meth:`fit_neuro_symbolic` to
+        confirm available backends, sources, and methods for the current install.
+
+        Returns
+        -------
+        dict
+            Nested map of backend identifiers to supported sources and methods.
+        """
         return symbolic_ops.symbolic_capability_matrix_op()
 
     @staticmethod
     def cbr_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for CBR retrieval backends."""
+        """
+        Report which case-based retrieval backends are available on this machine.
+
+        Call before :meth:`fit_cbr` when choosing among sklearn kNN, ANN industry
+        extras, text embeddings, or torch metric encoders. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            Retrieval backends, metrics, and install hints from
+            :func:`buildml.cbr.catalog.cbr_capability_matrix`.
+        """
         from buildml.cbr.catalog import cbr_capability_matrix
 
         return cbr_capability_matrix()
 
     @staticmethod
     def ranking_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for tabular LTR backends and methods."""
+        """
+        Report which learning-to-rank backends and objectives are available here.
+
+        Call before :meth:`fit_ranker` to confirm LightGBM/XGBoost/CatBoost or
+        sklearn fallbacks before writing a fit call that will fail on this install.
+        Read-only — no dataset required.
+
+        Returns
+        -------
+        dict[str, Any]
+            Ranker backends, supported objectives, and install hints from
+            :func:`buildml.ranking.catalog.ranking_capability_matrix`.
+        """
         from buildml.ranking.catalog import ranking_capability_matrix
 
         return ranking_capability_matrix()
@@ -5107,26 +7809,57 @@ class Session:
         torch_epochs: int = 40,
         device: str = "cpu",
     ) -> CbrFitResult:
-        """Build a tabular case memory from Session train.
+        """
+        Build a case base from Session train.
+
+        Delegates to :func:`buildml.cbr.fit.fit_cbr`, stores the
+        :class:`~buildml.cbr.results.CbrPlan` on Session, and records the fit.
+        Follow with :meth:`retrieve_cases` or :meth:`predict_cbr`.
 
         Parameters
         ----------
         backend:
-            ``sklearn`` (exact kNN fallback), ``industry`` (hnswlib/faiss ANN when
-            ``buildml[cbr-industry]``), ``embedding`` (sentence-transformers text
-            cases when ``buildml[rag|ssl]``), ``torch`` (learned metric encoder).
+            Optional backend override (see CBR capability matrix).
+        task:
+            Optional task override (classification/regression).
         metric:
-            ``euclidean`` / ``manhattan`` / ``cosine`` (numeric) or ``mixed``
-            (Gower-style numeric + categorical).
+            Case distance metric (``euclidean`` by default).
         reuse:
-            Classification: ``majority`` / ``distance_weighted``.
-            Regression: ``distance_weighted`` / ``local_mean`` / ``local_ridge``.
+            Reuse mode for combining retrieved cases.
+        adapt:
+            Adaptation mode applied after retrieval.
+        k:
+            Default number of neighbors to retrieve.
+        columns:
+            Optional explicit feature column list.
+        categorical_columns:
+            Optional categorical feature columns for mixed distances.
+        text_columns:
+            Optional text columns for embedding-based retrieval.
+        text_model_name:
+            Sentence-transformer model for text columns.
+        standardize:
+            When True, standardize numeric features on train.
+        distance_eps:
+            Epsilon added to distances for numerical stability.
+        random_state:
+            Seed for stochastic steps.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists.
+        torch_epochs:
+            Training epochs for torch embedding backend.
+        device:
+            Torch device string for embedding backend.
+
+        Returns
+        -------
+        CbrFitResult
+            Serializable fit summary including case-base size and disclosures.
 
         Notes
         -----
-        **Leakage:** Requires a split. Case base uses train only.
-        Honesty: case→solution CBR for supervised-style tasks — **not** RAG
-        (document retrieval for generation) and not a vector DB product.
+        **Leakage:** Requires a split. Case memory uses train only. Honesty:
+        tabular case→solution CBR — not RAG document retrieval.
         """
         return cbr_ops.fit_cbr_op(
             self,
@@ -5155,7 +7888,31 @@ class Session:
         k: int | None = None,
         backend: str | None = None,
     ) -> CbrRetrieveResult:
-        """Retrieve k nearest cases (no reuse / no memory update)."""
+        """
+        Retrieve k nearest cases for a partition (no reuse).
+
+        Delegates to :func:`buildml.cbr.retrieve.retrieve_cases` for inspection
+        without applying a reuse/adapt policy.
+
+        Parameters
+        ----------
+        partition:
+            Partition to retrieve against (``test`` by default).
+        k:
+            Optional neighbor override; uses plan default when omitted.
+        backend:
+            Optional backend override for retrieval.
+
+        Returns
+        -------
+        CbrRetrieveResult
+            Retrieved cases and distance traces for each query row.
+
+        Raises
+        ------
+        ValidationError
+            When no CBR plan exists on the Session.
+        """
         return cbr_ops.retrieve_cases_op(
             self, partition=partition, k=k, backend=backend
         )
@@ -5168,7 +7925,33 @@ class Session:
         return_traces: bool = True,
         backend: str | None = None,
     ) -> CbrPredictResult:
-        """Predict via retrieve + reuse with case-influence traces."""
+        """
+        Predict via retrieve + reuse (no case-base update).
+
+        Delegates to :func:`buildml.cbr.predict.predict_cbr` using the fitted
+        reuse/adapt policy without modifying the case base.
+
+        Parameters
+        ----------
+        partition:
+            Partition to predict on (``test`` by default).
+        k:
+            Optional neighbor override; uses plan default when omitted.
+        return_traces:
+            When True, include retrieval/reuse traces in the result.
+        backend:
+            Optional backend override for prediction.
+
+        Returns
+        -------
+        CbrPredictResult
+            Predictions and optional retrieval traces for the partition.
+
+        Raises
+        ------
+        ValidationError
+            When no CBR plan exists on the Session.
+        """
         return cbr_ops.predict_cbr_op(
             self,
             partition=partition,
@@ -5183,7 +7966,29 @@ class Session:
         partition: PartitionName | Literal["all"] = "validation",
         k: int | None = None,
     ) -> CbrEvalResult:
-        """Evaluate CBR on a holdout partition (no memory update)."""
+        """
+        Evaluate CBR on a holdout partition.
+
+        Delegates to :func:`buildml.cbr.evaluate.evaluate_cbr` using the frozen
+        train case base. Falls back to ``test`` when validation is empty.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (``validation`` by default).
+        k:
+            Optional neighbor override; uses plan default when omitted.
+
+        Returns
+        -------
+        CbrEvalResult
+            Holdout metrics and retrieval disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no CBR plan exists on the Session.
+        """
         return cbr_ops.evaluate_cbr_op(self, partition=partition, k=k)
 
     def retain_cbr(
@@ -5195,10 +8000,36 @@ class Session:
         source_disclosure: str,
         allow_overlap_with_train: bool = True,
     ) -> CbrRetainResult:
-        """Retain new labeled cases; refuses Session validation/test indices.
+        """
+        Retain new labeled cases (refuses Session validation/test indices).
 
-        Requires a non-empty ``source_disclosure``. Pass either
-        ``labeled_frame`` or ``row_indices`` (not both).
+        Delegates to :func:`buildml.cbr.retain.retain_cbr` or
+        :func:`buildml.cbr.retain.retain_from_indices` to grow the case base
+        with explicit source disclosure.
+
+        Parameters
+        ----------
+        labeled_frame:
+            Optional frame of new labeled rows to retain.
+        row_indices:
+            Optional dataset row indices to retain (mutually exclusive with
+            ``labeled_frame``).
+        solution_column:
+            Solution column when ``labeled_frame`` is supplied.
+        source_disclosure:
+            Required provenance string for retained cases.
+        allow_overlap_with_train:
+            When True, permit overlap between retained rows and train indices.
+
+        Returns
+        -------
+        CbrRetainResult
+            Retain summary including updated case-base size.
+
+        Raises
+        ------
+        ValidationError
+            When no CBR plan exists or retain inputs are invalid.
         """
         return cbr_ops.retain_cbr_op(
             self,
@@ -5211,48 +8042,144 @@ class Session:
 
     @property
     def cbr_plan(self) -> CbrPlan | None:
-        """Last fitted :class:`~buildml.cbr.results.CbrPlan`."""
+        """
+        Return the case memory built by the most recent CBR fit.
+
+        Stored on Session after :meth:`fit_cbr` or :meth:`load_cbr_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.cbr.results.CbrPlan` or None
+            ``None`` until :meth:`fit_cbr` or :meth:`load_cbr_bundle` has run.
+        """
         return self._cbr_plan
 
     @property
     def cbr_fit_result(self) -> CbrFitResult | None:
-        """Last :class:`~buildml.cbr.results.CbrFitResult`."""
+        """
+        Return the report from the most recent CBR fit.
+
+        Stored on Session after :meth:`fit_cbr` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.cbr.results.CbrFitResult` or None
+            ``None`` until :meth:`fit_cbr` has run.
+        """
         return self._cbr_fit_result
 
     @property
     def cbr_eval_result(self) -> CbrEvalResult | None:
-        """Last :class:`~buildml.cbr.results.CbrEvalResult`."""
+        """
+        Return the metrics from the most recent CBR evaluation.
+
+        Stored on Session after :meth:`evaluate_cbr` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.cbr.results.CbrEvalResult` or None
+            ``None`` until :meth:`evaluate_cbr` has run.
+        """
         return self._cbr_eval_result
 
     @property
     def cbr_predict_result(self) -> CbrPredictResult | None:
-        """Last :class:`~buildml.cbr.results.CbrPredictResult`."""
+        """
+        Return the predictions from the most recent CBR scoring call.
+
+        Stored on Session after :meth:`predict_cbr` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.cbr.results.CbrPredictResult` or None
+            ``None`` until :meth:`predict_cbr` has run.
+        """
         return self._cbr_predict_result
 
     @property
     def cbr_retrieve_result(self) -> CbrRetrieveResult | None:
-        """Last :class:`~buildml.cbr.results.CbrRetrieveResult`."""
+        """
+        Return the nearest cases from the most recent retrieval call.
+
+        Stored on Session after :meth:`retrieve_cases` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.cbr.results.CbrRetrieveResult` or None
+            ``None`` until :meth:`retrieve_cases` has run.
+        """
         return self._cbr_retrieve_result
 
     @property
     def cbr_retain_result(self) -> CbrRetainResult | None:
-        """Last :class:`~buildml.cbr.results.CbrRetainResult`."""
+        """
+        Return the report from the most recent case retention call.
+
+        Stored on Session after :meth:`retain_cbr` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.cbr.results.CbrRetainResult` or None
+            ``None`` until :meth:`retain_cbr` has run.
+        """
         return self._cbr_retain_result
 
     def save_cbr_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.cbr_bundle.v1``.
+        """
+        Persist the active CbrPlan.
 
-        See :data:`buildml.cbr.checkpoint.CHECKPOINT_BOUNDARY`.
+        Delegates to :func:`buildml.cbr.checkpoint.save_cbr_bundle`.
+        Reload with :meth:`load_cbr_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no CBR plan exists on the Session.
         """
         return cbr_ops.save_cbr_bundle_op(self, path=path)
 
     def load_cbr_bundle(self, path: str | Path) -> Session:
-        """Load a CBR bundle into this Session."""
+        """
+        Load a CBR bundle into this Session.
+
+        Delegates to :func:`buildml.cbr.checkpoint.load_cbr_bundle` and clears
+        prior eval/predict/retrieve/retain results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded CBR plan.
+        path:
+            Path to a ``buildml.cbr_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with CBR plan attached for chaining.
+        """
         return cbr_ops.load_cbr_bundle_op(self, path=path)
 
     @staticmethod
     def nlp_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for NLP backends and task surfaces."""
+        """
+        Honest capability matrix for NLP backends and task surfaces.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+        Returns
+        -------
+        dict[str, Any]
+            Domain result object from the underlying ``buildml`` module.
+        """
         return nlp_ops.nlp_capability_matrix_op()
 
     def profile_text_corpus(
@@ -5264,26 +8191,28 @@ class Session:
         detect_languages: bool = True,
         stopword_language: str | None = None,
     ) -> NlpCorpusProfile:
-        """Profile a text column and screen the split for text contamination.
+        """
+        Profile corpus health and screen the split for text contamination.
 
-        Reports length distributions, vocabulary size, duplicate rate, dominant
-        language, top tokens, and - when a split exists - exact plus
-        near-duplicate holdout documents that also appear in train, along with
-        the holdout out-of-vocabulary token rate.
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
         text_column:
-            Text column to profile. Defaults to the dataset's single text-like
-            column when it is unambiguous.
+            Text column name; defaults to the sole text-role column.
+        top_tokens:
+            Controls ``top_tokens``; see the function signature for type and default.
         near_duplicate_threshold:
-            Cosine similarity on character n-grams above which a holdout
-            document counts as a near-duplicate of a train document.
+            Controls ``near_duplicate_threshold``; see the function signature for type and default.
+        detect_languages:
+            Controls ``detect_languages``; see the function signature for type and default.
+        stopword_language:
+            Controls ``stopword_language``; see the function signature for type and default.
 
-        Notes
-        -----
-        Honesty: contamination is reported, never silently removed. Deciding
-        what to drop stays with you.
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.profile_text_corpus_op(
             self,
@@ -5302,18 +8231,26 @@ class Session:
         text_column: str | None = None,
         min_characters: int = 12,
     ) -> NlpLanguageResult:
-        """Identify the language of every document in a partition.
+        """
+        Identify the language of every document in a partition.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
+        partition:
+            Split partition to read or score.
         backend:
-            ``native`` (shipped Unicode-script plus function-word scoring, no
-            extra install) or ``langdetect`` (``buildml[nlp]``).
+            Backend identifier; see capability matrix for valid values.
+        text_column:
+            Text column name; defaults to the sole text-role column.
+        min_characters:
+            Controls ``min_characters``; see the function signature for type and default.
 
-        Notes
-        -----
-        Honesty: short documents are reported as ``und`` rather than guessed.
-        The native backend covers the shipped marker languages only.
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.detect_language_op(
             self,
@@ -5353,34 +8290,76 @@ class Session:
         device: str = "cpu",
         random_state: int | None = 0,
     ) -> NlpFitResult:
-        """Fit a single-label document classifier on Session train.
+        """
+        Fit a single-label document classifier on Session train.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
         backend:
-            ``sklearn`` (train-fitted bag-of-n-grams; default and always
-            available), ``embedding`` (frozen sentence-transformer document
-            vectors, ``buildml[nlp]``), or ``transformer`` (frozen mean-pooled
-            Hugging Face encoder, ``buildml[nlp]``).
+            Backend identifier; see capability matrix for valid values.
         estimator:
-            ``logistic`` / ``linear_svm`` / ``sgd`` (linear, token attributions
-            available) or ``complement_nb`` / ``multinomial_nb`` (count-based,
-            sklearn backend only).
+            Unfitted sklearn-compatible estimator instance.
+        text_column:
+            Text column name; defaults to the sole text-role column.
         vectorizer:
-            ``tfidf`` / ``count`` / ``hashing`` (sklearn backend). ``hashing``
-            has no invertible vocabulary, so token attributions are refused.
-        stem, lemmatize:
-            Optional NLTK morphology (``buildml[nlp]``). Both are fitted-free
-            and applied identically to train and holdout.
+            Controls ``vectorizer``; see the function signature for type and default.
+        analyzer:
+            Controls ``analyzer``; see the function signature for type and default.
+        ngram_range:
+            Controls ``ngram_range``; see the function signature for type and default.
+        max_features:
+            Controls ``max_features``; see the function signature for type and default.
+        min_df:
+            Controls ``min_df``; see the function signature for type and default.
+        max_df:
+            Controls ``max_df``; see the function signature for type and default.
+        sublinear_tf:
+            Controls ``sublinear_tf``; see the function signature for type and default.
+        binary:
+            Controls ``binary``; see the function signature for type and default.
+        n_hash_features:
+            Controls ``n_hash_features``; see the function signature for type and default.
+        normalize_steps:
+            Controls ``normalize_steps``; see the function signature for type and default.
+        stopwords:
+            Controls ``stopwords``; see the function signature for type and default.
+        stopword_language:
+            Controls ``stopword_language``; see the function signature for type and default.
+        min_token_length:
+            Controls ``min_token_length``; see the function signature for type and default.
+        max_token_length:
+            Controls ``max_token_length``; see the function signature for type and default.
+        stem:
+            Controls ``stem``; see the function signature for type and default.
+        lemmatize:
+            Controls ``lemmatize``; see the function signature for type and default.
+        class_weight:
+            Controls ``class_weight``; see the function signature for type and default.
+        C:
+            Controls ``C``; see the function signature for type and default.
+        alpha:
+            Controls ``alpha``; see the function signature for type and default.
+        embedding_model_name:
+            Controls ``embedding_model_name``; see the function signature for type and default.
+        max_seq_tokens:
+            Controls ``max_seq_tokens``; see the function signature for type and default.
+        device:
+            Controls ``device``; see the function signature for type and default.
+        random_state:
+            Controls ``random_state``; see the function signature for type and default.
+
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
 
         Notes
         -----
         **Leakage:** Requires a split. Normalization, vocabulary, document
-        frequencies, and the head are fitted on train only; holdout partitions
-        are transform-and-score.
-        Honesty: single-label document classification - **not** sequence
-        labelling, not generation, not RAG, and not transformer fine-tuning
-        (the Torch text path owns that).
+        frequencies, and the head are all fitted on train only. Honesty: document
+        classification - not sequence labelling, not generation, not RAG.
         """
         return nlp_ops.fit_text_classifier_op(
             self,
@@ -5418,12 +8397,22 @@ class Session:
         partition: PartitionName | Literal["all"] = "test",
         return_probabilities: bool = True,
     ) -> NlpPredictResult:
-        """Score a partition with the train-fitted text plan.
+        """
+        Score a partition with the train-fitted text plan.
 
-        Notes
-        -----
-        Honesty: margin-only heads (``linear_svm``) report no probabilities
-        rather than inventing calibrated ones.
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+        Parameters
+        ----------
+        partition:
+            Split partition to read or score.
+        return_probabilities:
+            Controls ``return_probabilities``; see the function signature for type and default.
+
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.predict_text_op(
             self,
@@ -5436,11 +8425,20 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "validation",
     ) -> NlpEvalResult:
-        """Evaluate the text classifier on a holdout partition.
+        """
+        Evaluate the text classifier on a holdout partition.
 
-        Reports accuracy, balanced accuracy, macro / weighted F1, log loss and
-        ROC AUC where the head supports probabilities, a per-class report, a
-        confusion matrix, and the holdout out-of-vocabulary token rate.
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+        Parameters
+        ----------
+        partition:
+            Split partition to read or score.
+
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.evaluate_text_classifier_op(self, partition=partition)
 
@@ -5453,20 +8451,28 @@ class Session:
         max_documents: int = 10,
         include_global: bool = True,
     ) -> NlpInterpretResult:
-        """Explain document decisions with per-token contributions.
+        """
+        Explain document decisions with per-token contributions.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
+        partition:
+            Split partition to read or score.
         target_class:
-            Class whose score is decomposed. Defaults to the positive class for
-            binary problems and to each document's predicted class otherwise.
+            Controls ``target_class``; see the function signature for type and default.
+        top_k:
+            Controls ``top_k``; see the function signature for type and default.
+        max_documents:
+            Controls ``max_documents``; see the function signature for type and default.
+        include_global:
+            Controls ``include_global``; see the function signature for type and default.
 
-        Notes
-        -----
-        Honesty: contributions are the exact ``weight * feature_value`` terms of
-        a linear decision function, not an approximation. Hashing vectorizers
-        and frozen embedding / transformer representations have no invertible
-        vocabulary, so this operation refuses them instead of guessing.
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.interpret_text_prediction_op(
             self,
@@ -5495,20 +8501,51 @@ class Session:
         max_iter: int = 300,
         random_state: int | None = 0,
     ) -> NlpTopicResult:
-        """Fit an unsupervised topic model on Session train documents.
+        """
+        Fit an unsupervised topic model on Session train documents.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
         method:
-            ``nmf`` (TF-IDF, deterministic, usually crisper topics) or ``lda``
-            (counts, probabilistic mixture).
+            Algorithm or method identifier for the resolved backend.
+        n_topics:
+            Controls ``n_topics``; see the function signature for type and default.
+        text_column:
+            Text column name; defaults to the sole text-role column.
+        top_terms:
+            Controls ``top_terms``; see the function signature for type and default.
+        max_features:
+            Controls ``max_features``; see the function signature for type and default.
+        min_df:
+            Controls ``min_df``; see the function signature for type and default.
+        max_df:
+            Controls ``max_df``; see the function signature for type and default.
+        ngram_range:
+            Controls ``ngram_range``; see the function signature for type and default.
+        normalize_steps:
+            Controls ``normalize_steps``; see the function signature for type and default.
+        stopwords:
+            Controls ``stopwords``; see the function signature for type and default.
+        stopword_language:
+            Controls ``stopword_language``; see the function signature for type and default.
+        stem:
+            Controls ``stem``; see the function signature for type and default.
+        max_iter:
+            Controls ``max_iter``; see the function signature for type and default.
+        random_state:
+            Controls ``random_state``; see the function signature for type and default.
+
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
 
         Notes
         -----
-        **Leakage:** Requires a split. Vectorizer and decomposition are fitted
-        on train only, so ``assign_topics`` on holdout is a pure transform.
-        Honesty: topics are ranked term lists with NPMI coherence, not named
-        semantic categories. Labels are the top terms joined for readability.
+        **Leakage:** Requires a split. The vectorizer and decomposition are fitted on
+        train only, so ``assign_topics`` on holdout is a pure transform.
         """
         return nlp_ops.fit_topics_op(
             self,
@@ -5533,7 +8570,21 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "test",
     ) -> NlpTopicAssignResult:
-        """Transform a partition into per-document topic weights."""
+        """
+        Transform a partition into per-document topic weights.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+
+        Parameters
+        ----------
+        partition:
+            Split partition to read or score.
+
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
+        """
         return nlp_ops.assign_topics_op(self, partition=partition)
 
     def extract_keyphrases(
@@ -5553,19 +8604,44 @@ class Session:
         window: int = 4,
         random_state: int | None = 0,
     ) -> NlpKeyphraseResult:
-        """Rank keyphrases for a partition with an unsupervised scorer.
+        """
+        Rank keyphrases for a partition with an unsupervised scorer.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
+        partition:
+            Split partition to read or score.
         method:
-            ``tfidf`` (corpus-weighted n-grams), ``rake`` (degree-over-frequency
-            on stopword-delimited candidates), or ``textrank`` (word graph
-            centrality summed over candidate phrases).
+            Algorithm or method identifier for the resolved backend.
+        text_column:
+            Text column name; defaults to the sole text-role column.
+        top_n:
+            Controls ``top_n``; see the function signature for type and default.
+        max_phrase_words:
+            Controls ``max_phrase_words``; see the function signature for type and default.
+        per_document:
+            Controls ``per_document``; see the function signature for type and default.
+        max_documents:
+            Controls ``max_documents``; see the function signature for type and default.
+        stopword_language:
+            Controls ``stopword_language``; see the function signature for type and default.
+        stopwords:
+            Controls ``stopwords``; see the function signature for type and default.
+        min_df:
+            Controls ``min_df``; see the function signature for type and default.
+        max_df:
+            Controls ``max_df``; see the function signature for type and default.
+        window:
+            Controls ``window``; see the function signature for type and default.
+        random_state:
+            Controls ``random_state``; see the function signature for type and default.
 
-        Notes
-        -----
-        Honesty: unsupervised ranking with no gold keyphrase set, so no
-        precision or recall is claimed. Scores are comparable within a run.
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.extract_keyphrases_op(
             self,
@@ -5595,24 +8671,32 @@ class Session:
         transformer_model: str = "distilbert-base-uncased-finetuned-sst-2-english",
         device: str = "cpu",
     ) -> NlpSentimentResult:
-        """Score a partition's documents for sentiment.
+        """
+        Score a partition's documents for sentiment.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
+        partition:
+            Split partition to read or score.
         backend:
-            ``lexicon`` (shipped valence lexicon with negation, intensifier,
-            contrast, punctuation and capitalisation handling; no install),
-            ``supervised`` (reuse the fitted text classifier's own labels), or
-            ``transformer`` (a sentiment checkpoint via ``buildml[nlp]``).
+            Backend identifier; see capability matrix for valid values.
+        text_column:
+            Text column name; defaults to the sole text-role column.
+        threshold:
+            Controls ``threshold``; see the function signature for type and default.
         compare_to_target:
-            When the dataset target looks like sentiment labels, report
-            agreement between predicted polarity and that target.
+            Controls ``compare_to_target``; see the function signature for type and default.
+        transformer_model:
+            Controls ``transformer_model``; see the function signature for type and default.
+        device:
+            Controls ``device``; see the function signature for type and default.
 
-        Notes
-        -----
-        Honesty: the lexicon backend reports its matched-term rate, so you can
-        see when documents scored neutral because nothing matched rather than
-        because they were balanced. English lexicon only.
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.analyze_sentiment_op(
             self,
@@ -5637,23 +8721,34 @@ class Session:
         max_documents: int = 25,
         batch_size: int = 32,
     ) -> NlpEntityResult:
-        """Extract entity mentions from a partition's documents.
+        """
+        Extract entity mentions from a partition's documents.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
+        partition:
+            Split partition to read or score.
         backend:
-            ``rules`` (precision-first regex patterns plus your gazetteers, no
-            install) or ``spacy`` (statistical NER via
-            ``buildml[nlp-industry]`` plus a downloaded model).
+            Backend identifier; see capability matrix for valid values.
+        text_column:
+            Text column name; defaults to the sole text-role column.
+        labels:
+            Controls ``labels``; see the function signature for type and default.
         gazetteers:
-            Mapping of label to term list, matched case-insensitively on whole
-            words. Use it to add domain entities the rules cannot know.
+            Controls ``gazetteers``; see the function signature for type and default.
+        spacy_model:
+            Controls ``spacy_model``; see the function signature for type and default.
+        max_documents:
+            Controls ``max_documents``; see the function signature for type and default.
+        batch_size:
+            Controls ``batch_size``; see the function signature for type and default.
 
-        Notes
-        -----
-        Honesty: rule extraction favours precision and will miss entity types
-        it has no pattern for; it is not a trained NER model. Overlapping spans
-        are resolved by span length and pattern priority.
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.extract_entities_op(
             self,
@@ -5679,20 +8774,34 @@ class Session:
         stopword_language: str | None = "en",
         stopwords: list[str] | None = None,
     ) -> NlpSummaryResult:
-        """Build extractive summaries for a partition's documents.
+        """
+        Build extractive summaries for a partition's documents.
+
+        Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
 
         Parameters
         ----------
+        partition:
+            Split partition to read or score.
         method:
-            ``textrank`` (token-overlap sentence graph), ``lexrank`` (TF-IDF
-            cosine sentence graph with a similarity floor), or ``lead`` (first
-            k sentences - the honest baseline worth beating).
+            Algorithm or method identifier for the resolved backend.
+        text_column:
+            Text column name; defaults to the sole text-role column.
+        n_sentences:
+            Controls ``n_sentences``; see the function signature for type and default.
+        max_documents:
+            Controls ``max_documents``; see the function signature for type and default.
+        max_input_sentences:
+            Controls ``max_input_sentences``; see the function signature for type and default.
+        stopword_language:
+            Controls ``stopword_language``; see the function signature for type and default.
+        stopwords:
+            Controls ``stopwords``; see the function signature for type and default.
 
-        Notes
-        -----
-        Honesty: extractive only. Sentences are selected from the document and
-        returned in original order; nothing is paraphrased or generated, and no
-        ROUGE score is claimed without reference summaries.
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module.
         """
         return nlp_ops.summarize_text_op(
             self,
@@ -5961,19 +9070,46 @@ class Session:
         random_state: int | None = 0,
         prefer_reduce_components: bool = True,
     ) -> ImitationFitResult:
-        """Fit behavioral cloning from demonstration rows (train only).
+        """
+        Fit behavioral cloning on Session train demonstrations.
+
+        Delegates to :func:`buildml.rl.imitation.fit_imitation`, stores the
+        :class:`~buildml.rl.results.ImitationPlan` on Session, and records the
+        fit. Follow with :meth:`predict_imitation_action` or
+        :meth:`evaluate_imitation`.
 
         Parameters
         ----------
+        backend:
+            Optional backend override (sklearn, torch).
+        task:
+            Optional task override (classification/regression).
+        estimator:
+            Optional BC estimator identifier.
+        method:
+            Optional method alias for the resolved backend.
+        columns:
+            Optional explicit state feature columns.
         action_column:
-            Demonstrated action column. Defaults to the Dataset target.
-        task / estimator:
-            Classification or regression BC; inferred when omitted.
+            Optional action column override.
+        env_id:
+            Optional Gymnasium environment id for env-backed demos.
+        n_epochs:
+            Training epochs for torch BC backend.
+        random_state:
+            Seed for stochastic training steps.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists.
+
+        Returns
+        -------
+        ImitationFitResult
+            Serializable fit summary including action-space disclosures.
 
         Notes
         -----
-        **Leakage:** Requires a split. Policy uses train only.
-        Honesty: BC from tables — not inverse RL, not DAgger, not robotics.
+        **Leakage:** Requires a split. Policy uses train only. Honesty: BC from
+        tables — not inverse RL / DAgger / robotics.
         """
         return rl_ops.fit_imitation_op(
             self,
@@ -5994,7 +9130,27 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "test",
     ) -> ImitationPredictResult:
-        """Predict actions under the fitted behavioral cloning policy."""
+        """
+        Predict actions under the fitted BC policy.
+
+        Delegates to :func:`buildml.rl.imitation.predict_imitation_action` on a
+        named partition without refitting the policy.
+
+        Parameters
+        ----------
+        partition:
+            Partition to predict on (``test`` by default).
+
+        Returns
+        -------
+        ImitationPredictResult
+            Predicted actions and optional quality disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no imitation plan exists on the Session.
+        """
         return rl_ops.predict_imitation_action_op(self, partition=partition)
 
     def evaluate_imitation(
@@ -6002,40 +9158,143 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "validation",
     ) -> ImitationEvalResult:
-        """Compare predicted actions to held-out demonstration actions."""
+        """
+        Evaluate BC against held-out demonstration actions.
+
+        Delegates to :func:`buildml.rl.imitation.evaluate_imitation` on a holdout
+        partition. Falls back to ``test`` when validation is empty.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (``validation`` by default).
+
+        Returns
+        -------
+        ImitationEvalResult
+            Held-out action prediction metrics and disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no imitation plan exists on the Session.
+        """
         return rl_ops.evaluate_imitation_op(self, partition=partition)
 
     @property
     def imitation_plan(self) -> ImitationPlan | None:
-        """Last fitted :class:`~buildml.rl.results.ImitationPlan`."""
+        """
+        Return the behavioral-cloning plan built by the most recent imitation fit.
+
+        Stored on Session after :meth:`fit_imitation` or :meth:`load_imitation_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.rl.results.ImitationPlan` or None
+            ``None`` until :meth:`fit_imitation` or :meth:`load_imitation_bundle` has run.
+        """
         return self._imitation_plan
 
     @property
     def imitation_fit_result(self) -> ImitationFitResult | None:
-        """Last :class:`~buildml.rl.results.ImitationFitResult`."""
+        """
+        Return the report from the most recent imitation fit.
+
+        Stored on Session after :meth:`fit_imitation` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.rl.results.ImitationFitResult` or None
+            ``None`` until :meth:`fit_imitation` has run.
+        """
         return self._imitation_fit_result
 
     @property
     def imitation_eval_result(self) -> ImitationEvalResult | None:
-        """Last :class:`~buildml.rl.results.ImitationEvalResult`."""
+        """
+        Return the metrics from the most recent imitation evaluation.
+
+        Stored on Session after :meth:`evaluate_imitation` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.rl.results.ImitationEvalResult` or None
+            ``None`` until :meth:`evaluate_imitation` has run.
+        """
         return self._imitation_eval_result
 
     @property
     def imitation_predict_result(self) -> ImitationPredictResult | None:
-        """Last :class:`~buildml.rl.results.ImitationPredictResult`."""
+        """
+        Return the actions from the most recent imitation prediction call.
+
+        Stored on Session after :meth:`predict_imitation_action` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.rl.results.ImitationPredictResult` or None
+            ``None`` until :meth:`predict_imitation_action` has run.
+        """
         return self._imitation_predict_result
 
     def save_imitation_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.imitation_bundle.v1``."""
+        """
+        Persist the active ImitationPlan as ``buildml.imitation_bundle.v1``.
+
+        Delegates to :func:`buildml.rl.checkpoint.save_imitation_bundle`.
+        Reload with :meth:`load_imitation_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no imitation plan exists on the Session.
+        """
         return rl_ops.save_imitation_bundle_op(self, path=path)
 
     def load_imitation_bundle(self, path: str | Path) -> Session:
-        """Load an imitation bundle into this Session."""
+        """
+        Load an imitation bundle into this Session.
+
+        Delegates to :func:`buildml.rl.checkpoint.load_imitation_bundle` and
+        clears prior eval/predict results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded imitation plan.
+        path:
+            Path to a ``buildml.imitation_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with imitation plan attached for chaining.
+        """
         return rl_ops.load_imitation_bundle_op(self, path=path)
 
     @staticmethod
     def rl_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for imitation + RL backends and algorithms."""
+        """
+        Return the RL / imitation capability matrix for this installation.
+
+        Delegates to :func:`buildml.rl.catalog.rl_capability_matrix`. Use before
+        :meth:`fit_rl` or :meth:`fit_imitation` to confirm available
+        backends, modes, and algorithms for the current extras install.
+
+        Returns
+        -------
+        dict
+            Nested map of backend identifiers to supported modes and methods.
+        """
         return rl_ops.rl_capability_matrix_op()
 
     def fit_rl(
@@ -6062,34 +9321,66 @@ class Session:
         epsilon_min: float = 0.01,
         epsilon_decay: float = 0.995,
     ) -> RlFitResult:
-        """Fit a contextual bandit (core) or a Gymnasium env policy.
+        """
+        Fit a contextual bandit (core) or a Gymnasium env policy (``buildml[rl]``).
+
+        Delegates to :func:`buildml.rl.fit.fit_rl`, stores the
+        :class:`~buildml.rl.results.RlPlan` on Session, and records the fit.
+        Follow with :meth:`act_rl` or :meth:`evaluate_rl`.
 
         Parameters
         ----------
-        mode:
-            ``contextual_bandit`` (train logged table), ``gym_reinforce`` or
-            ``tabular_q`` (``buildml[rl]``), or ``gym_sb3``
-            (``buildml[rl-industry]``).
         backend:
-            ``sklearn`` (bandit), ``native`` (REINFORCE-lite / tabular TD
-            control), or ``industry`` (SB3).
+            Optional backend override.
+        mode:
+            RL mode (``contextual_bandit`` or gym-style modes).
         algorithm:
-            Bandit: ``linucb`` / ``epsilon_greedy`` / ``softmax``.
-            Tabular: ``q_learning`` / ``sarsa`` / ``expected_sarsa`` /
-            ``double_q_learning``.
-            SB3: ``ppo`` / ``dqn`` / ``a2c``.
+            Bandit or policy algorithm identifier.
+        columns:
+            Optional state feature columns for bandit mode.
+        action_column:
+            Logged action column for bandit mode.
+        reward_column:
+            Logged reward column for bandit mode.
+        alpha:
+            Exploration/strength parameter for LinUCB-style bandits.
+        epsilon:
+            Epsilon for epsilon-greedy exploration.
+        temperature:
+            Softmax temperature for stochastic action selection.
+        random_state:
+            Seed for stochastic training and exploration.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists.
+        env_id:
+            Gymnasium environment id for env-loop modes.
+        n_episodes:
+            Number of training episodes for tabular/env modes.
+        max_steps:
+            Maximum steps per episode.
+        learning_rate:
+            Optimizer learning rate for policy updates.
+        gamma:
+            Discount factor for temporal-difference methods.
+        total_timesteps:
+            Total timesteps for SB3-style trainers.
         n_bins:
-            Uniform bins per observation dimension for ``tabular_q`` on
-            continuous (Box) observation spaces.
-        epsilon_min / epsilon_decay:
-            Exploration schedule for ``tabular_q``
-            (``eps_t = max(epsilon_min, epsilon * epsilon_decay ** episode)``).
+            Discretization bins for tabular Q-learning.
+        epsilon_min:
+            Minimum epsilon for decay schedules.
+        epsilon_decay:
+            Per-episode epsilon decay multiplier.
+
+        Returns
+        -------
+        RlFitResult
+            Serializable fit summary including mode and algorithm disclosures.
 
         Notes
         -----
-        **Leakage (bandit):** Requires a split; policy updates use train only.
-        Holdout metrics are **offline** (DM/IPS) and disclosed as such.
-        Honesty: Session bandit / small-env RL — not MuJoCo / robotics.
+        **Leakage (bandit):** Requires a split; updates use train logged data only.
+        **gym_reinforce / tabular_q / gym_sb3:** Env loop; does not fit on Session
+        tabular partitions. Honesty: not MuJoCo / robotics / multi-agent.
         """
         return rl_ops.fit_rl_op(
             self,
@@ -6123,11 +9414,32 @@ class Session:
         deterministic: bool = True,
         random_state: int | None = 0,
     ) -> RlActResult:
-        """Choose actions under the fitted RL policy.
+        """
+        Choose actions under the fitted RL policy.
 
-        For ``gym_reinforce`` / ``tabular_q`` / ``gym_sb3``, pass
-        ``observations=...`` (env observation vectors, or state indices for
-        ``tabular_q`` on Discrete observation spaces).
+        Delegates to :func:`buildml.rl.act.act_rl` for bandit rows or env
+        observations without refitting the policy.
+
+        Parameters
+        ----------
+        partition:
+            Partition for bandit action selection (``test`` by default).
+        observations:
+            Optional explicit observation batch for env/bandit modes.
+        deterministic:
+            When True, disable exploratory sampling where supported.
+        random_state:
+            Seed for stochastic action selection.
+
+        Returns
+        -------
+        RlActResult
+            Selected actions and policy disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no RL plan exists on the Session.
         """
         return rl_ops.act_rl_op(
             self,
@@ -6146,7 +9458,36 @@ class Session:
         random_state: int | None = 0,
         deterministic: bool = True,
     ) -> RlEvalResult:
-        """Evaluate RL (offline bandit metrics or Gymnasium episode returns)."""
+        """
+        Evaluate RL (offline bandit metrics or Gymnasium rollouts).
+
+        Delegates to :func:`buildml.rl.evaluate.evaluate_rl` on a holdout
+        partition or env rollouts. Falls back to ``test`` for bandits when
+        validation is empty.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition for bandit evaluation (``validation`` by default).
+        n_episodes:
+            Optional episode override for env evaluation.
+        max_steps:
+            Optional per-episode step cap for env evaluation.
+        random_state:
+            Seed for stochastic rollouts.
+        deterministic:
+            When True, disable exploratory sampling during evaluation.
+
+        Returns
+        -------
+        RlEvalResult
+            Offline or env evaluation metrics and disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no RL plan exists on the Session.
+        """
         return rl_ops.evaluate_rl_op(
             self,
             partition=partition,
@@ -6158,30 +9499,102 @@ class Session:
 
     @property
     def rl_plan(self) -> RlPlan | None:
-        """Last fitted :class:`~buildml.rl.results.RlPlan`."""
+        """
+        Return the RL plan built by the most recent fit_rl call.
+
+        Stored on Session after :meth:`fit_rl` or :meth:`load_rl_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.rl.results.RlPlan` or None
+            ``None`` until :meth:`fit_rl` or :meth:`load_rl_bundle` has run.
+        """
         return self._rl_plan
 
     @property
     def rl_fit_result(self) -> RlFitResult | None:
-        """Last :class:`~buildml.rl.results.RlFitResult`."""
+        """
+        Return the report from the most recent RL fit.
+
+        Stored on Session after :meth:`fit_rl` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.rl.results.RlFitResult` or None
+            ``None`` until :meth:`fit_rl` has run.
+        """
         return self._rl_fit_result
 
     @property
     def rl_eval_result(self) -> RlEvalResult | None:
-        """Last :class:`~buildml.rl.results.RlEvalResult`."""
+        """
+        Return the metrics from the most recent RL evaluation.
+
+        Stored on Session after :meth:`evaluate_rl` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.rl.results.RlEvalResult` or None
+            ``None`` until :meth:`evaluate_rl` has run.
+        """
         return self._rl_eval_result
 
     @property
     def rl_act_result(self) -> RlActResult | None:
-        """Last :class:`~buildml.rl.results.RlActResult`."""
+        """
+        Return the actions from the most recent act_rl call.
+
+        Stored on Session after :meth:`act_rl` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.rl.results.RlActResult` or None
+            ``None`` until :meth:`act_rl` has run.
+        """
         return self._rl_act_result
 
     def save_rl_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.rl_bundle.v1``."""
+        """
+        Persist the active RlPlan as ``buildml.rl_bundle.v1``.
+
+        Delegates to :func:`buildml.rl.checkpoint.save_rl_bundle`.
+        Reload with :meth:`load_rl_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no RL plan exists on the Session.
+        """
         return rl_ops.save_rl_bundle_op(self, path=path)
 
     def load_rl_bundle(self, path: str | Path) -> Session:
-        """Load an RL bundle into this Session."""
+        """
+        Load an RL bundle into this Session.
+
+        Delegates to :func:`buildml.rl.checkpoint.load_rl_bundle` and clears
+        prior eval/act results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded RL plan.
+        path:
+            Path to a ``buildml.rl_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with RL plan attached for chaining.
+        """
         return rl_ops.load_rl_bundle_op(self, path=path)
 
     def fit_tda(
@@ -6206,16 +9619,63 @@ class Session:
         subsample_strategy: SubsampleStrategy = "error",
         mapper: bool = False,
     ) -> TdaFitResult:
-        """Fit topological features (+ optional sklearn head) on train only.
+        """
+        Fit TDA features and optional supervised head on Session train only.
 
-        Requires ``buildml[tda]`` (native) or ``buildml[tda-industry]`` (giotto).
-        Local Vietoris–Rips on kNN train neighborhoods; vectorizer ranges and
-        head use train only.
+        Delegates to :func:`buildml.tda.fit.fit_tda`, stores the
+        :class:`~buildml.tda.results.TdaPlan` on Session, and records the fit.
+        Follow with :meth:`transform_tda`, :meth:`predict_tda`, or
+        :meth:`evaluate_tda`.
+
+        Parameters
+        ----------
+        backend:
+            Optional backend override (``native`` or ``giotto``).
+        vectorization:
+            Persistence diagram vectorization method.
+        homology_dims:
+            Homology dimensions to compute (e.g. H0, H1).
+        knn:
+            Neighborhood size for Vietoris-Rips / kNN graph construction.
+        maxdim:
+            Maximum homology dimension for persistent homology.
+        thresh:
+            Optional distance threshold for filtration truncation.
+        n_bins:
+            Bin count for persistence images and landscapes.
+        n_layers:
+            Layer count for multi-scale vectorizations.
+        pixel_size:
+            Pixel size for persistence images.
+        standardize:
+            Standardize vectorized features before the optional head.
+        head:
+            Optional supervised classifier/regressor head on TDA features.
+        task:
+            Task override when head is supervised (classification/regression).
+        columns:
+            Explicit feature columns; ``None`` auto-selects numerics.
+        random_state:
+            Seed for subsampling and stochastic steps.
+        prefer_reduce_components:
+            Prefer reduced component columns when a reduce plan exists on Session.
+        max_points_guard:
+            Maximum point count before subsample/error guard triggers.
+        subsample_strategy:
+            Behavior when point count exceeds ``max_points_guard``.
+        mapper:
+            When True, also compute a Mapper graph summary.
+
+        Returns
+        -------
+        TdaFitResult
+            Serializable fit summary including homology and vectorizer state.
 
         Notes
         -----
-        **Leakage:** Requires a split. Holdout never updates the PH pipeline.
-        Honesty: Session PH + vectorization → sklearn — not a Mapper suite.
+        **Leakage:** Requires a split. NN index, vectorizer ranges, and head use
+        train only. Requires ``buildml[tda]`` (native) or ``buildml[tda-industry]``
+        (giotto backend).
         """
         return tda_ops.fit_tda_op(
             self,
@@ -6241,124 +9701,339 @@ class Session:
 
     @staticmethod
     def tda_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for native vs giotto TDA backends."""
+        """
+        Return the TDA backend and vectorization capability matrix.
+
+        Delegates to :func:`buildml.tda.catalog.tda_capability_matrix`.
+        Use before :meth:`fit_tda` to confirm backend and method availability.
+
+        Returns
+        -------
+        dict
+            Nested map of backend identifiers to supported vectorizations.
+        """
         return tda_ops.tda_capability_matrix_op()
 
     @staticmethod
     def ssl_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for self-supervised backends."""
+        """
+        Report which self-supervised learning backends are available on this machine.
+
+        Call before contrastive or masked-model fit methods to confirm torch and
+        industry SSL extras. Read-only — no Session state is changed.
+
+        Returns
+        -------
+        dict[str, Any]
+            SSL backends, pretext tasks, and install hints from
+            :func:`buildml.selfsupervised.torch.catalog.ssl_capability_matrix`.
+        """
         from buildml.selfsupervised.torch.catalog import ssl_capability_matrix
 
         return ssl_capability_matrix()
 
     @staticmethod
+    def dl_capability_matrix() -> dict[str, Any]:
+        """
+        Report which deep-learning modalities and backends are available here.
+
+        Call before ``fit_torch``, speech transcription, or backbone loading to
+        confirm torch/speech extras and weight-mode defaults. Read-only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Modalities, weight modes, speech backends, and install hints from
+            :func:`buildml.dl.catalog.dl_capability_matrix`.
+        """
+        from buildml.dl.catalog import dl_capability_matrix
+
+        return dl_capability_matrix()
+
+    @staticmethod
     def unsupervised_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for clustering / reduction backends."""
+        """
+        Report which clustering and dimensionality-reduction backends are available here.
+
+        Call before :meth:`fit_clusters` or :meth:`reduce_dimensions` to choose among
+        sklearn, HDBSCAN, torch, or industry extras on this install. Read-only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Clustering backends, methods, and install hints from
+            :func:`buildml.unsupervised.catalog.unsupervised_capability_matrix`.
+        """
         from buildml.unsupervised.catalog import unsupervised_capability_matrix
 
         return unsupervised_capability_matrix()
 
     @staticmethod
     def rag_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for RAG embed / retrieve stacks."""
+        """
+        Report which retrieval-augmented generation stacks are available here.
+
+        Call before :meth:`build_rag_index` or generate helpers to confirm embed,
+        store, rerank, and LLM extras on this machine. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            RAG backends, embedders, and install hints from
+            :func:`buildml.rag.catalog.rag_capability_matrix`.
+        """
         from buildml.rag.catalog import rag_capability_matrix
 
         return rag_capability_matrix()
 
     @staticmethod
     def forecast_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for forecasting backends."""
+        """
+        Report which forecasting backends and model families are available here.
+
+        Call before :meth:`fit_forecast` to see whether statsmodels, Prophet,
+        neuralforecast, or core fallbacks imported successfully. Read-only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Forecast backends, horizons, and install hints from
+            :func:`buildml.forecasting.catalog.forecast_capability_matrix`.
+        """
         from buildml.forecasting.catalog import forecast_capability_matrix
 
         return forecast_capability_matrix()
 
     @staticmethod
     def timeseries_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for time-series analysis backends."""
+        """
+        Report which time-series analysis backends are available on this machine.
+
+        Call before :meth:`analyze_timeseries` to confirm statsmodels STL/ADF and
+        ruptures changepoint extras versus core fallbacks. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            Decomposition and changepoint backends from
+            :func:`buildml.timeseries.catalog.timeseries_capability_matrix`.
+        """
         from buildml.timeseries.catalog import timeseries_capability_matrix
 
         return timeseries_capability_matrix()
 
     @staticmethod
     def causal_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for causal inference backends."""
+        """
+        Report which causal inference backends and estimators are available here.
+
+        Call before :meth:`estimate_causal_effect` or related causal fit methods to
+        confirm DoWhy, EconML, or native paths on this install. Read-only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Causal backends, identification methods, and install hints from
+            :func:`buildml.causal.catalog.causal_capability_matrix`.
+        """
         from buildml.causal.catalog import causal_capability_matrix
 
         return causal_capability_matrix()
 
     @staticmethod
     def federated_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for federated learning backends."""
+        """
+        Report which federated learning backends are available on this machine.
+
+        Call before federated fit or aggregation helpers to confirm Flower, sklearn
+        FedAvg, or native simulation paths. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            Federated backends and install hints from
+            :func:`buildml.federated.catalog.federated_capability_matrix`.
+        """
         from buildml.federated.catalog import federated_capability_matrix
 
         return federated_capability_matrix()
 
     @staticmethod
     def graph_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for graph ML backends."""
+        """
+        Report which graph machine-learning backends are available here.
+
+        Call before :meth:`fit_graph` to see whether PyTorch Geometric, DGL, or
+        sklearn graph kernels imported successfully. Read-only — no dataset required.
+
+        Returns
+        -------
+        dict[str, Any]
+            Graph backends, tasks, and install hints from
+            :func:`buildml.graph.catalog.graph_capability_matrix`.
+        """
         from buildml.graph.catalog import graph_capability_matrix
 
         return graph_capability_matrix()
 
     @staticmethod
     def kg_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for knowledge-graph backends."""
+        """
+        Report which knowledge-graph learning backends are available on this machine.
+
+        Call before link-prediction or embedding fit methods to confirm PyKEEN,
+        DGL-KE, or native paths on this install. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            KG backends, tasks, and install hints from
+            :func:`buildml.kg.catalog.kg_capability_matrix`.
+        """
         from buildml.kg.catalog import kg_capability_matrix
 
         return kg_capability_matrix()
 
     @staticmethod
     def metalearning_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for meta-learning backends."""
+        """
+        Report which meta-learning backends and algorithms are available here.
+
+        Call before few-shot or MAML-style fit methods to confirm learn2learn,
+        torch meta modules, or sklearn fallbacks. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            Meta-learning backends and install hints from
+            :func:`buildml.metalearning.catalog.metalearning_capability_matrix`.
+        """
         from buildml.metalearning.catalog import metalearning_capability_matrix
 
         return metalearning_capability_matrix()
 
     @staticmethod
     def multitask_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for multi-task learning backends."""
+        """
+        Report which multi-task learning backends are available on this machine.
+
+        Call before :meth:`fit_multitask` to confirm chained sklearn, torch
+        shared-trunk, or industry extras on this install. Read-only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Multi-task backends, heads, and install hints from
+            :func:`buildml.multitask.catalog.multitask_capability_matrix`.
+        """
         from buildml.multitask.catalog import multitask_capability_matrix
 
         return multitask_capability_matrix()
 
     @staticmethod
     def online_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for online / incremental learning backends."""
+        """
+        Report which online and incremental learning backends are available here.
+
+        Call before :meth:`fit_online` to see whether River, sklearn partial_fit,
+        or torch streaming paths imported successfully. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            Online backends, update modes, and install hints from
+            :func:`buildml.online.catalog.online_capability_matrix`.
+        """
         from buildml.online.catalog import online_capability_matrix
 
         return online_capability_matrix()
 
     @staticmethod
     def probabilistic_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for probabilistic prediction backends."""
+        """
+        Report which probabilistic prediction backends are available on this machine.
+
+        Call before conformal or distributional fit methods to confirm mapie,
+        torch quantile heads, or sklearn fallbacks on this install. Read-only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Probabilistic backends, interval methods, and install hints from
+            :func:`buildml.probabilistic.catalog.probabilistic_capability_matrix`.
+        """
         from buildml.probabilistic.catalog import probabilistic_capability_matrix
 
         return probabilistic_capability_matrix()
 
     @staticmethod
     def recommender_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for recommender-system backends."""
+        """
+        Report which recommender-system backends are available on this machine.
+
+        Call before :meth:`fit_recommender` to confirm implicit, LightFM, or sklearn
+        matrix-factorization paths on this install. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            Recommender backends, interaction models, and install hints from
+            :func:`buildml.recommenders.catalog.recommender_capability_matrix`.
+        """
         from buildml.recommenders.catalog import recommender_capability_matrix
 
         return recommender_capability_matrix()
 
     @staticmethod
     def semisupervised_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for semi-supervised backends."""
+        """
+        Report which semi-supervised learning backends are available here.
+
+        Call before label-propagation or pseudo-label fit methods to confirm sklearn,
+        torch, or industry SSL hybrids on this install. Read-only.
+
+        Returns
+        -------
+        dict[str, Any]
+            Semi-supervised backends and install hints from
+            :func:`buildml.semisupervised.catalog.semisupervised_capability_matrix`.
+        """
         from buildml.semisupervised.catalog import semisupervised_capability_matrix
 
         return semisupervised_capability_matrix()
 
     @staticmethod
     def activelearning_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for active-learning query strategies."""
+        """
+        Report which active-learning query strategies are available on this machine.
+
+        Call before pool-based query loops to confirm modAL, sklearn uncertainty
+        samplers, or native strategies on this install. Read-only introspection.
+
+        Returns
+        -------
+        dict[str, Any]
+            Query strategies, backends, and install hints from
+            :func:`buildml.activelearning.catalog.activelearning_capability_matrix`.
+        """
         from buildml.activelearning.catalog import activelearning_capability_matrix
 
         return activelearning_capability_matrix()
 
     @staticmethod
     def automl_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for AutoML search backends."""
+        """
+        Report which AutoML search backends and model families are available here.
+
+        Call before :meth:`run_automl` to confirm FLAML, Optuna HPO, or native
+        sklearn search paths on this install. Read-only — no dataset required.
+
+        Returns
+        -------
+        dict[str, Any]
+            AutoML backends, search spaces, and install hints from
+            :func:`buildml.automl.catalog.automl_capability_matrix`.
+        """
         from buildml.automl.catalog import automl_capability_matrix
 
         return automl_capability_matrix()
@@ -6369,7 +10044,29 @@ class Session:
         partition: PartitionName | Literal["all"] = "test",
         backend: TdaBackend | None = None,
     ) -> TdaTransformResult:
-        """Transform a partition with the frozen train-fitted TDA pipeline."""
+        """
+        Transform a partition with the frozen train-fitted TDA pipeline.
+
+        Delegates to :func:`buildml.tda.transform.transform_tda` using the plan
+        from :meth:`fit_tda`. No refit occurs on holdout partitions.
+
+        Parameters
+        ----------
+        partition:
+            Split partition to transform (default ``test``).
+        backend:
+            Optional backend override for transform step.
+
+        Returns
+        -------
+        TdaTransformResult
+            Vectorized persistence features for the requested partition.
+
+        Raises
+        ------
+        ValidationError
+            When no TdaPlan exists on the Session.
+        """
         return tda_ops.transform_tda_op(self, partition=partition, backend=backend)
 
     def predict_tda(
@@ -6377,7 +10074,27 @@ class Session:
         *,
         partition: PartitionName | Literal["all"] = "test",
     ) -> TdaPredictResult:
-        """Predict with the optional TDA supervised head."""
+        """
+        Predict with the optional TDA supervised head on a partition.
+
+        Delegates to :func:`buildml.tda.predict.predict_tda`. Requires a
+        supervised head fitted during :meth:`fit_tda`.
+
+        Parameters
+        ----------
+        partition:
+            Split partition to predict on (default ``test``).
+
+        Returns
+        -------
+        TdaPredictResult
+            Predictions and optional probabilities from the TDA head.
+
+        Raises
+        ------
+        ValidationError
+            When no TdaPlan exists on the Session.
+        """
         return tda_ops.predict_tda_op(self, partition=partition)
 
     def evaluate_tda(
@@ -6389,7 +10106,35 @@ class Session:
         diagram_distance_metric: DiagramDistanceMetric = "wasserstein",
         diagram_distance_dim: int = 1,
     ) -> TdaEvalResult:
-        """Score the TDA head on a holdout partition (frozen train pipeline)."""
+        """
+        Evaluate the TDA head on a holdout partition.
+
+        Delegates to :func:`buildml.tda.evaluate.evaluate_tda` and optionally
+        compares persistence diagram distances between partitions.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (default ``validation``).
+        backend:
+            Optional backend override for evaluation.
+        compare_diagram_distances:
+            When True, compute diagram distance metrics between partitions.
+        diagram_distance_metric:
+            Distance metric for persistence diagrams (e.g. Wasserstein).
+        diagram_distance_dim:
+            Homology dimension for diagram distance comparison.
+
+        Returns
+        -------
+        TdaEvalResult
+            Holdout metrics for the supervised TDA head and optional distances.
+
+        Raises
+        ------
+        ValidationError
+            When no TdaPlan exists on the Session.
+        """
         return tda_ops.evaluate_tda_op(
             self,
             partition=partition,
@@ -6401,35 +10146,116 @@ class Session:
 
     @property
     def tda_plan(self) -> TdaPlan | None:
-        """Last fitted :class:`~buildml.tda.results.TdaPlan`."""
+        """
+        Return the TDA plan built by the most recent fit_tda call.
+
+        Stored on Session after :meth:`fit_tda` or :meth:`load_tda_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.tda.results.TdaPlan` or None
+            ``None`` until :meth:`fit_tda` or :meth:`load_tda_bundle` has run.
+        """
         return self._tda_plan
 
     @property
     def tda_fit_result(self) -> TdaFitResult | None:
-        """Last :class:`~buildml.tda.results.TdaFitResult`."""
+        """
+        Return the report from the most recent TDA fit.
+
+        Stored on Session after :meth:`fit_tda` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.tda.results.TdaFitResult` or None
+            ``None`` until :meth:`fit_tda` has run.
+        """
         return self._tda_fit_result
 
     @property
     def tda_eval_result(self) -> TdaEvalResult | None:
-        """Last :class:`~buildml.tda.results.TdaEvalResult`."""
+        """
+        Return the metrics from the most recent TDA evaluation.
+
+        Stored on Session after :meth:`evaluate_tda` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.tda.results.TdaEvalResult` or None
+            ``None`` until :meth:`evaluate_tda` has run.
+        """
         return self._tda_eval_result
 
     @property
     def tda_transform_result(self) -> TdaTransformResult | None:
-        """Last :class:`~buildml.tda.results.TdaTransformResult`."""
+        """
+        Return the topological features from the most recent transform_tda call.
+
+        Stored on Session after :meth:`transform_tda` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.tda.results.TdaTransformResult` or None
+            ``None`` until :meth:`transform_tda` has run.
+        """
         return self._tda_transform_result
 
     @property
     def tda_predict_result(self) -> TdaPredictResult | None:
-        """Last :class:`~buildml.tda.results.TdaPredictResult`."""
+        """
+        Return the predictions from the most recent predict_tda call.
+
+        Stored on Session after :meth:`predict_tda` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.tda.results.TdaPredictResult` or None
+            ``None`` until :meth:`predict_tda` has run.
+        """
         return self._tda_predict_result
 
     def save_tda_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.tda_bundle.v2``."""
+        """
+        Persist the active TdaPlan as ``buildml.tda_bundle.v2``.
+
+        Delegates to :func:`buildml.tda.checkpoint.save_tda_bundle`.
+        Reload with :meth:`load_tda_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no TdaPlan exists on the Session.
+        """
         return tda_ops.save_tda_bundle_op(self, path=path)
 
     def load_tda_bundle(self, path: str | Path) -> Session:
-        """Load a TDA bundle into this Session."""
+        """
+        Load a TDA bundle into this Session.
+
+        Delegates to :func:`buildml.tda.checkpoint.load_tda_bundle` and clears
+        prior transform/predict/eval results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded TdaPlan.
+        path:
+            Path to a ``buildml.tda_bundle.v2`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with TdaPlan attached for chaining.
+        """
         return tda_ops.load_tda_bundle_op(self, path=path)
 
     def fit_recommender(
@@ -6451,20 +10277,62 @@ class Session:
         n_iterations: int = 15,
         lightfm_epochs: int = 10,
     ) -> RecommenderFitResult:
-        """Fit a recommender on train interactions only.
+        """
+        Fit a recommender on Session train interactions only.
 
-        Requires explicit ``user_column`` / ``item_column``. Rating defaults to
-        the Session target for ``feedback='explicit'``. Core algorithms: item/user
-        kNN CF, TruncatedSVD / NMF, content-based item features. With
-        ``buildml[recommenders-industry]``: implicit ALS/BPR (default for
-        ``feedback='implicit'``) and LightFM hybrid.
+        Delegates to :func:`buildml.recommenders.fit.fit_recommender`, stores the
+        :class:`~buildml.recommenders.results.RecommenderPlan` on Session, and
+        records the fit. Follow with :meth:`recommend` or
+        :meth:`evaluate_recommender`.
+
+        Parameters
+        ----------
+        method:
+            Optional recommender method override.
+        backend:
+            Optional backend override (sklearn, implicit, lightfm).
+        user_column:
+            User identifier column.
+        item_column:
+            Item identifier column.
+        rating_column:
+            Rating or interaction strength column.
+        feedback:
+            Feedback mode (``explicit`` or ``implicit``).
+        n_neighbors:
+            Neighborhood size for kNN-style recommenders.
+        n_factors:
+            Latent factor dimension for matrix-factorization methods.
+        min_rating:
+            Optional minimum rating threshold for explicit feedback.
+        item_feature_columns:
+            Optional item-side content feature columns.
+        user_feature_columns:
+            Optional user-side content feature columns.
+        cold_start:
+            Cold-start policy for unseen users/items.
+        random_state:
+            Seed for stochastic training steps.
+        n_iterations:
+            Iteration count for ALS-style trainers.
+        lightfm_epochs:
+            Epoch count for LightFM backend.
 
         Notes
         -----
-        **Leakage:** Requires a split. Holdout interactions never update the
-        model. Known-item protocol + cold-start disclosure on recommend/eval.
-        Distinct from RAG and from EDA ``Recommendation`` Findings.
-        """
+        **Leakage:** Requires a split. Similarities / factors / content profiles
+        use train interactions only. Holdout items may appear as cold catalog
+        misses (known-item protocol). Distinct from RAG and EDA Recommendation
+        Findings.
+
+        When ``feedback='implicit'`` and ``method`` is omitted, defaults to ALS
+        (``implicit`` library) when ``buildml[recommenders-industry]`` is installed.
+
+
+        Returns
+        -------
+            RecommenderFitResult
+                    Fit report with method, backend, and training disclosures."""
         return recommender_ops.fit_recommender_op(
             self,
             method=method,
@@ -6492,7 +10360,34 @@ class Session:
         k: int = 10,
         exclude_train_items: bool = True,
     ) -> RecommendResult:
-        """Top-K item recommendations (train catalog / known-item protocol)."""
+        """
+        Top-K recommendations for partition users or an explicit user id list.
+
+        Delegates to :func:`buildml.recommenders.recommend.recommend` using the
+        fitted plan. Defaults to the ``test`` partition when neither ``partition``
+        nor ``user_ids`` is supplied.
+
+        Parameters
+        ----------
+        partition:
+            Optional partition whose users receive recommendations.
+        user_ids:
+            Optional explicit user identifiers to recommend for.
+        k:
+            Number of items to recommend per user.
+        exclude_train_items:
+            When True, exclude items seen in train interactions.
+
+        Raises
+        ------
+        ValidationError
+            When no recommender plan exists on the Session.
+
+
+        Returns
+        -------
+            RecommendResult
+                    Top-k recommendations per user with provenance and warnings."""
         return recommender_ops.recommend_op(
             self,
             partition=partition,
@@ -6507,37 +10402,131 @@ class Session:
         partition: PartitionName | Literal["all"] = "test",
         k: int = 10,
     ) -> RecommenderEvalResult:
-        """Holdout ranking metrics: Precision@K, Recall@K, nDCG@K, MAP@K."""
+        """
+        Evaluate ranking metrics on a holdout partition (frozen train plan).
+
+        Delegates to :func:`buildml.recommenders.evaluate.evaluate_recommender`
+        without refitting the recommender on holdout interactions.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (``test`` by default).
+        k:
+            Cutoff k for ranking metrics.
+
+        Raises
+        ------
+        ValidationError
+            When no recommender plan exists on the Session.
+
+
+        Returns
+        -------
+            RecommenderEvalResult
+                    Ranking metrics on the holdout partition."""
         return recommender_ops.evaluate_recommender_op(
             self, partition=partition, k=k
         )
 
     @property
     def recommender_plan(self) -> RecommenderPlan | None:
-        """Last fitted :class:`~buildml.recommenders.results.RecommenderPlan`."""
+        """
+        Return the recommender plan built by the most recent fit_recommender call.
+
+        Stored on Session after :meth:`fit_recommender` or :meth:`load_recommender_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.recommenders.results.RecommenderPlan` or None
+            ``None`` until :meth:`fit_recommender` or :meth:`load_recommender_bundle` has run.
+        """
         return self._recommender_plan
 
     @property
     def recommender_fit_result(self) -> RecommenderFitResult | None:
-        """Last :class:`~buildml.recommenders.results.RecommenderFitResult`."""
+        """
+        Return the report from the most recent recommender fit.
+
+        Stored on Session after :meth:`fit_recommender` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.recommenders.results.RecommenderFitResult` or None
+            ``None`` until :meth:`fit_recommender` has run.
+        """
         return self._recommender_fit_result
 
     @property
     def recommender_eval_result(self) -> RecommenderEvalResult | None:
-        """Last :class:`~buildml.recommenders.results.RecommenderEvalResult`."""
+        """
+        Return the metrics from the most recent recommender evaluation.
+
+        Stored on Session after :meth:`evaluate_recommender` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.recommenders.results.RecommenderEvalResult` or None
+            ``None`` until :meth:`evaluate_recommender` has run.
+        """
         return self._recommender_eval_result
 
     @property
     def recommender_recommend_result(self) -> RecommendResult | None:
-        """Last :class:`~buildml.recommenders.results.RecommendResult`."""
+        """
+        Return the recommendations from the most recent recommend call.
+
+        Stored on Session after :meth:`recommend` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.recommenders.results.RecommendResult` or None
+            ``None`` until :meth:`recommend` has run.
+        """
         return self._recommender_recommend_result
 
     def save_recommender_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.recommender_bundle.v1``."""
+        """
+        Persist the active RecommenderPlan as ``buildml.recommender_bundle.v1``.
+
+        Delegates to :func:`buildml.recommenders.checkpoint.save_recommender_bundle`.
+        Reload with :meth:`load_recommender_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no recommender plan exists on the Session.
+        """
         return recommender_ops.save_recommender_bundle_op(self, path=path)
 
     def load_recommender_bundle(self, path: str | Path) -> Session:
-        """Load a recommender bundle into this Session."""
+        """
+        Load a recommender bundle into this Session.
+
+        Delegates to :func:`buildml.recommenders.checkpoint.load_recommender_bundle`
+        and clears prior fit/eval/recommend results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded recommender plan.
+        path:
+            Path to a ``buildml.recommender_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with recommender plan attached for chaining.
+        """
         return recommender_ops.load_recommender_bundle_op(self, path=path)
 
     def fit_ranker(
@@ -6562,23 +10551,63 @@ class Session:
         device: str = "cpu",
         random_state: int | None = 0,
     ) -> RankerFitResult:
-        """Fit a tabular learning-to-rank model on train rows only.
+        """
+        Fit a tabular ranker on Session train rows only.
 
-        Requires explicit ``query_column`` / ``item_column``. Relevance defaults
-        to the Session target. Prefer ``group_split`` on the query id so test
-        queries' labels never enter training.
+        Delegates to :func:`buildml.ranking.fit.fit_ranker`, stores the
+        :class:`~buildml.ranking.results.RankerPlan` on Session, and records
+        the fit. Follow with :meth:`rank` or :meth:`evaluate_ranker`.
 
-        Backends (see ``ranking_capability_matrix()``):
-        ``sklearn`` pointwise/pairwise fallback; ``industry`` GBDT rankers
-        (``buildml[ranking-industry]``); ``torch`` listwise-lite
-        (``buildml[torch]``). Industry is the default when installed.
+        Parameters
+        ----------
+        backend:
+            Optional ranker backend override.
+        method:
+            Optional method override (pointwise/pairwise/listwise identifiers).
+        query_column:
+            Query/group column for LTR examples.
+        item_column:
+            Item/document column for LTR examples.
+        relevance_column:
+            Relevance or grade column for supervised ranking.
+        feature_columns:
+            Optional explicit feature columns for ranker inputs.
+        pointwise_estimator:
+            Pointwise base estimator when method is pointwise.
+        pairwise_estimator:
+            Pairwise base estimator when method is pairwise.
+        max_pairs_per_query:
+            Cap on generated pairs per query for pairwise training.
+        relevance_threshold:
+            Threshold for binarizing graded relevance in some metrics.
+        alpha:
+            Regularization strength for linear rankers.
+        C:
+            Inverse regularization for SVM-style pairwise rankers.
+        n_estimators:
+            Number of trees for GBDT rankers.
+        learning_rate:
+            Learning rate for GBDT/torch rankers.
+        hidden_dim:
+            Hidden width for torch listwise ranker.
+        epochs:
+            Training epochs for torch backend.
+        device:
+            Torch device string.
+        random_state:
+            Seed for stochastic training steps.
 
         Notes
         -----
-        **Leakage:** Requires a split. Holdout rows never update the model.
-        Distinct from RAG retrieve/generate and from recommender CF.
-        Honesty: Session tabular LTR — not a search-engine product.
-        """
+        **Leakage:** Requires a split. Prefer ``group_split`` on ``query_column``
+        so test queries' labels never appear in train. Distinct from RAG and from
+        recommender CF. See ``ranking_capability_matrix()`` for backends.
+
+
+        Returns
+        -------
+            RankerFitResult
+                    Fit report with backend, method, and training disclosures."""
         return ranking_ops.fit_ranker_op(
             self,
             backend=backend,
@@ -6609,7 +10638,35 @@ class Session:
         k: int = 10,
         backend: RankerBackend | None = None,
     ) -> RankResult:
-        """Order items for queries (descending score from frozen RankerPlan)."""
+        """
+        Order items for queries in a partition or an explicit query id list.
+
+        Delegates to :func:`buildml.ranking.rank.rank` using the fitted ranker
+        plan. Defaults to the ``test`` partition when neither ``partition`` nor
+        ``query_ids`` is supplied.
+
+        Parameters
+        ----------
+        partition:
+            Optional partition to rank (``train``, ``validation``, ``test``,
+            or ``all``).
+        query_ids:
+            Optional explicit query identifiers to rank.
+        k:
+            Top-k items to return per query.
+        backend:
+            Optional backend override for ranking.
+
+        Raises
+        ------
+        ValidationError
+            When no ranker plan exists on the Session.
+
+
+        Returns
+        -------
+            RankResult
+                    Ranked items per query with scores and provenance."""
         return ranking_ops.rank_op(
             self,
             partition=partition,
@@ -6625,37 +10682,133 @@ class Session:
         k: int = 10,
         backend: RankerBackend | None = None,
     ) -> RankerEvalResult:
-        """Holdout per-query metrics: nDCG@K, MAP@K, MRR@K."""
+        """
+        Evaluate per-query ranking metrics on a holdout partition.
+
+        Delegates to :func:`buildml.ranking.evaluate.evaluate_ranker` using the
+        frozen train ranker without refitting.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (``test`` by default).
+        k:
+            Cutoff k for ranking metrics (NDCG@k, etc.).
+        backend:
+            Optional backend override for evaluation.
+
+        Raises
+        ------
+        ValidationError
+            When no ranker plan exists on the Session.
+
+
+        Returns
+        -------
+            RankerEvalResult
+                    Per-query ranking metrics on the holdout partition."""
         return ranking_ops.evaluate_ranker_op(
             self, partition=partition, k=k, backend=backend
         )
 
     @property
     def ranker_plan(self) -> RankerPlan | None:
-        """Last fitted :class:`~buildml.ranking.results.RankerPlan`."""
+        """
+        Return the ranker plan built by the most recent fit_ranker call.
+
+        Stored on Session after :meth:`fit_ranker` or :meth:`load_ranker_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.ranking.results.RankerPlan` or None
+            ``None`` until :meth:`fit_ranker` or :meth:`load_ranker_bundle` has run.
+        """
         return self._ranker_plan
 
     @property
     def ranker_fit_result(self) -> RankerFitResult | None:
-        """Last :class:`~buildml.ranking.results.RankerFitResult`."""
+        """
+        Return the report from the most recent ranker fit.
+
+        Stored on Session after :meth:`fit_ranker` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.ranking.results.RankerFitResult` or None
+            ``None`` until :meth:`fit_ranker` has run.
+        """
         return self._ranker_fit_result
 
     @property
     def ranker_eval_result(self) -> RankerEvalResult | None:
-        """Last :class:`~buildml.ranking.results.RankerEvalResult`."""
+        """
+        Return the metrics from the most recent ranker evaluation.
+
+        Stored on Session after :meth:`evaluate_ranker` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.ranking.results.RankerEvalResult` or None
+            ``None`` until :meth:`evaluate_ranker` has run.
+        """
         return self._ranker_eval_result
 
     @property
     def ranker_rank_result(self) -> RankResult | None:
-        """Last :class:`~buildml.ranking.results.RankResult`."""
+        """
+        Return the rankings from the most recent rank call.
+
+        Stored on Session after :meth:`rank` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.ranking.results.RankResult` or None
+            ``None`` until :meth:`rank` has run.
+        """
         return self._ranker_rank_result
 
     def save_ranker_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.ranker_bundle.v1``."""
+        """
+        Persist the active RankerPlan as ``buildml.ranker_bundle.v1``.
+
+        Delegates to :func:`buildml.ranking.checkpoint.save_ranker_bundle`.
+        Reload with :meth:`load_ranker_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no ranker plan exists on the Session.
+        """
         return ranking_ops.save_ranker_bundle_op(self, path=path)
 
     def load_ranker_bundle(self, path: str | Path) -> Session:
-        """Load a ranker bundle into this Session."""
+        """
+        Load a ranker bundle into this Session.
+
+        Delegates to :func:`buildml.ranking.checkpoint.load_ranker_bundle` and
+        clears prior fit/eval/rank results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded ranker plan.
+        path:
+            Path to a ``buildml.ranker_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with ranker plan attached for chaining.
+        """
         return ranking_ops.load_ranker_bundle_op(self, path=path)
 
     def fit_kg(
@@ -6675,19 +10828,54 @@ class Session:
         norm: KgNorm = "l1",
         random_state: int | None = 0,
     ) -> KgFitResult:
-        """Fit a knowledge-graph embedding model on train triples only.
+        """
+        Fit a knowledge-graph embedding model on Session train triples only.
 
-        Requires explicit ``head_column`` / ``relation_column`` /
-        ``tail_column``. Backends: ``native`` (numpy TransE/DistMult) or
-        ``pykeen`` (RotatE/ComplEx/TransE/DistMult when
-        ``buildml[kg-industry]`` is installed).
+        Delegates to :func:`buildml.kg.fit.fit_kg`, stores the
+        :class:`~buildml.kg.results.KgPlan` on Session, and records the fit.
+        Follow with :meth:`score_triples`, :meth:`predict_links`, or
+        :meth:`evaluate_kg`.
+
+        Parameters
+        ----------
+        backend:
+            Optional backend override (``native`` or ``pykeen``).
+        method:
+            Embedding method (``transe``, ``distmult``, ``rotate``, etc.).
+        head_column:
+            Subject/head entity column; inferred from roles when omitted.
+        relation_column:
+            Relation/predicate column.
+        tail_column:
+            Object/tail entity column.
+        embedding_dim:
+            Latent embedding dimensionality.
+        epochs:
+            Training epochs over positive triples.
+        batch_size:
+            Minibatch size for stochastic training.
+        learning_rate:
+            Optimizer learning rate.
+        margin:
+            Margin for ranking-loss methods like TransE.
+        neg_ratio:
+            Negative samples per positive triple per batch.
+        norm:
+            Distance norm for TransE (``l1`` or ``l2``).
+        random_state:
+            Seed for negative sampling and initialization.
+
+        Returns
+        -------
+        KgFitResult
+            Serializable fit summary including vocab sizes and disclosures.
 
         Notes
         -----
-        **Leakage:** Requires a split. Holdout triples never update embeddings
-        or the train adjacency used by ``query_kg``. Distinct from Graph ML
-        (``set_graph`` / ``fit_graph`` node classification) and from RAG.
-        Honesty: Session KG learning/query — not a Neo4j / graph-DB product.
+        **Leakage:** Requires a split. Vocabularies, embeddings, and adjacency
+        use train triples only. Holdout triples never update the model.
+        Distinct from Graph ML (``set_graph`` / ``fit_graph``) and from RAG.
+        Honesty: Session KG learning — not a Neo4j / graph-DB product.
         """
         return kg_ops.fit_kg_op(
             self,
@@ -6712,7 +10900,29 @@ class Session:
         partition: PartitionName | Literal["all"] | None = None,
         triples: Any | None = None,
     ) -> ScoreTriplesResult:
-        """Score (head, relation, tail) triples with the frozen KgPlan."""
+        """
+        Score head-relation-tail triples with the frozen KgPlan.
+
+        Delegates to :func:`buildml.kg.predict.score_triples` without refitting
+        embeddings. Use explicit ``triples`` or a Session partition.
+
+        Parameters
+        ----------
+        partition:
+            Optional split partition whose triples to score.
+        triples:
+            Optional explicit triples as a DataFrame or sequence of tuples.
+
+        Returns
+        -------
+        KgScoreResult
+            Plausibility scores for each triple.
+
+        Raises
+        ------
+        ValidationError
+            When no KgPlan exists on the Session.
+        """
         return kg_ops.score_triples_op(
             self, partition=partition, triples=triples
         )
@@ -6727,7 +10937,37 @@ class Session:
         k: int = 10,
         filtered: bool = True,
     ) -> PredictLinksResult:
-        """Predict missing link components (tail / head / relation)."""
+        """
+        Predict missing link components using the frozen KgPlan.
+
+        Delegates to :func:`buildml.kg.predict.predict_links` to rank candidate
+        tails, heads, or relations for given query entities.
+
+        Parameters
+        ----------
+        mode:
+            Which component to predict (``tail``, ``head``, or ``relation``).
+        heads:
+            Optional head entities to query; defaults to all known heads.
+        relations:
+            Optional relations to constrain predictions.
+        tails:
+            Optional tail entities for head/relation prediction modes.
+        k:
+            Number of top-ranked candidates to return per query.
+        filtered:
+            When True, filter out triples already present in the train graph.
+
+        Returns
+        -------
+        KgPredictResult
+            Ranked link predictions and scores for each query.
+
+        Raises
+        ------
+        ValidationError
+            When no KgPlan exists on the Session.
+        """
         return kg_ops.predict_links_op(
             self,
             mode=mode,
@@ -6749,10 +10989,38 @@ class Session:
         direction: Literal["out", "in", "both"] = "out",
         max_hops: int = 3,
     ) -> KgQueryResult:
-        """Symbolic neighbors / path / typed query over the train KG.
+        """
+        Run symbolic KG queries over the train-fitted graph structure.
 
-        Not an LLM, not Neo4j/Cypher, not RAG — BFS / adjacency on train
-        triples only.
+        Delegates to :func:`buildml.kg.query.query_kg` for neighbor lookup,
+        path finding, or typed queries over the frozen KgPlan.
+
+        Parameters
+        ----------
+        mode:
+            Query mode (``neighbors``, ``path``, or ``typed``).
+        entity:
+            Anchor entity for neighbor queries.
+        source:
+            Path query source entity.
+        target:
+            Path query target entity.
+        relation:
+            Optional relation filter for neighbor/path queries.
+        direction:
+            Edge direction to traverse (``out``, ``in``, or ``both``).
+        max_hops:
+            Maximum path length for path queries.
+
+        Returns
+        -------
+        KgQueryResult
+            Query results as neighbor lists or paths.
+
+        Raises
+        ------
+        ValidationError
+            When no KgPlan exists on the Session.
         """
         return kg_ops.query_kg_op(
             self,
@@ -6771,45 +11039,157 @@ class Session:
         partition: PartitionName | Literal["all"] = "test",
         k: int = 10,
     ) -> KgEvalResult:
-        """Holdout filtered link-prediction metrics: MRR, Hits@1/3/K."""
+        """
+        Evaluate link prediction with filtered MRR and Hits@K.
+
+        Delegates to :func:`buildml.kg.evaluate.evaluate_kg` on a holdout
+        partition without updating embeddings.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition containing test triples (default ``test``).
+        k:
+            Cutoff for Hits@K metrics.
+
+        Returns
+        -------
+        KgEvalResult
+            Filtered ranking metrics (MRR, Hits@K) for the partition.
+
+        Raises
+        ------
+        ValidationError
+            When no KgPlan exists on the Session.
+        """
         return kg_ops.evaluate_kg_op(self, partition=partition, k=k)
 
     @property
     def kg_plan(self) -> KgPlan | None:
-        """Last fitted :class:`~buildml.kg.results.KgPlan`."""
+        """
+        Return the knowledge-graph plan built by the most recent fit_kg call.
+
+        Stored on Session after :meth:`fit_kg` or :meth:`load_kg_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.kg.results.KgPlan` or None
+            ``None`` until :meth:`fit_kg` or :meth:`load_kg_bundle` has run.
+        """
         return self._kg_plan
 
     @property
     def kg_fit_result(self) -> KgFitResult | None:
-        """Last :class:`~buildml.kg.results.KgFitResult`."""
+        """
+        Return the report from the most recent KG fit.
+
+        Stored on Session after :meth:`fit_kg` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.kg.results.KgFitResult` or None
+            ``None`` until :meth:`fit_kg` has run.
+        """
         return self._kg_fit_result
 
     @property
     def kg_eval_result(self) -> KgEvalResult | None:
-        """Last :class:`~buildml.kg.results.KgEvalResult`."""
+        """
+        Return the metrics from the most recent KG evaluation.
+
+        Stored on Session after :meth:`evaluate_kg` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.kg.results.KgEvalResult` or None
+            ``None`` until :meth:`evaluate_kg` has run.
+        """
         return self._kg_eval_result
 
     @property
     def kg_score_result(self) -> ScoreTriplesResult | None:
-        """Last :class:`~buildml.kg.results.ScoreTriplesResult`."""
+        """
+        Return the triple scores from the most recent score_triples call.
+
+        Stored on Session after :meth:`score_triples` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.kg.results.ScoreTriplesResult` or None
+            ``None`` until :meth:`score_triples` has run.
+        """
         return self._kg_score_result
 
     @property
     def kg_predict_result(self) -> PredictLinksResult | None:
-        """Last :class:`~buildml.kg.results.PredictLinksResult`."""
+        """
+        Return the link predictions from the most recent predict_links call.
+
+        Stored on Session after :meth:`predict_links` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.kg.results.PredictLinksResult` or None
+            ``None`` until :meth:`predict_links` has run.
+        """
         return self._kg_predict_result
 
     @property
     def kg_query_result(self) -> KgQueryResult | None:
-        """Last :class:`~buildml.kg.results.KgQueryResult`."""
+        """
+        Return the graph query from the most recent query_kg call.
+
+        Stored on Session after :meth:`query_kg` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.kg.results.KgQueryResult` or None
+            ``None`` until :meth:`query_kg` has run.
+        """
         return self._kg_query_result
 
     def save_kg_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.kg_bundle.v1``."""
+        """
+        Persist the active KgPlan as ``buildml.kg_bundle.v1``.
+
+        Delegates to :func:`buildml.kg.checkpoint.save_kg_bundle`.
+        Reload with :meth:`load_kg_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no KgPlan exists on the Session.
+        """
         return kg_ops.save_kg_bundle_op(self, path=path)
 
     def load_kg_bundle(self, path: str | Path) -> Session:
-        """Load a knowledge-graph bundle into this Session."""
+        """
+        Load a knowledge-graph bundle into this Session.
+
+        Delegates to :func:`buildml.kg.checkpoint.load_kg_bundle` and clears
+        prior score/predict/query/eval results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded KgPlan.
+        path:
+            Path to a ``buildml.kg_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with KgPlan attached for chaining.
+        """
         return kg_ops.load_kg_bundle_op(self, path=path)
 
     def fit_decision_policy(
@@ -6837,18 +11217,72 @@ class Session:
         min_score: float | None = None,
         lp_max_fraction: float = 1.0,
     ) -> DecisionFitResult:
-        """Fit a decision policy on train/validation (test requires opt-in).
+        """
+        Fit a decision policy on train or validation without refitting the model.
 
-        Methods: ``threshold`` (wraps classical ``tune_threshold`` engine),
-        ``cost_matrix`` (multiclass Bayes), ``topk``, ``knapsack``,
-        ``lp_allocate`` (scipy linprog or CVXPY). ``backend=`` selects industry
-        solvers when installed (see ``decision_capability_matrix()``).
-        Prefer ``partition='validation'``.
+        Delegates to :func:`buildml.optimize.fit.fit_decision_policy`, stores the
+        :class:`~buildml.optimize.results.DecisionPlan` on Session, and records
+        the fit. Follow with :meth:`apply_decisions` or
+        :meth:`evaluate_decisions`.
+
+        Parameters
+        ----------
+        method:
+            Decision strategy (``threshold``, ``knapsack``, ``lp``, etc.).
+        backend:
+            Optional solver backend override for MIP/LP methods.
+        partition:
+            Partition used for threshold/allocation tuning (default ``validation``).
+        allow_test_tuning:
+            When False, refuse tuning on the test partition.
+        fp_cost, fn_cost:
+            False-positive and false-negative costs for threshold tuning.
+        tp_benefit, tn_benefit:
+            True-positive and true-negative benefits for cost-sensitive tuning.
+        cost_matrix:
+            Optional multi-class cost matrix for threshold methods.
+        class_labels:
+            Class label order matching ``cost_matrix`` rows/columns.
+        capacity:
+            Maximum selections for knapsack-style allocation.
+        budget:
+            Total budget for knapsack or LP allocation methods.
+        score_source:
+            Where decision scores come from (model probabilities, raw scores, etc.).
+        score_column:
+            Explicit column for scores when ``score_source`` is column-based.
+        cost_column:
+            Per-row cost column for knapsack/LP methods.
+        value_column:
+            Per-row value column for knapsack/LP methods.
+        id_column:
+            Row identifier column for allocation output.
+        knapsack_solver:
+            Knapsack solver (``dp`` or ``pulp``).
+        objective:
+            Allocation objective (maximize score, minimize cost, etc.).
+        min_score:
+            Minimum score cutoff before allocation.
+        lp_max_fraction:
+            Maximum fraction of budget any single item may consume in LP mode.
+
+        Returns
+        -------
+        DecisionFitResult
+            Serializable fit summary including tuned threshold or allocation.
+            Use :meth:`apply_decisions` to apply the frozen plan.
+
+        Raises
+        ------
+        ValidationError
+            When no split plan exists on the Session.
 
         Notes
         -----
-        **Leakage:** Tuning on Session test requires ``allow_test_tuning=True``.
-        Honesty: ML score/cost/allocation helpers — not a general OR platform.
+        **Leakage:** Defaults to ``partition='validation'``. Tuning on Session
+        test requires ``allow_test_tuning=True`` and emits a dangerous-opt-in
+        disclosure. ``method='threshold'`` wraps the same engine as
+        :meth:`Session.tune_threshold` and also updates ``last_diagnostic``.
         """
         return decision_ops.fit_decision_policy_op(
             self,
@@ -6881,7 +11315,31 @@ class Session:
         partition: PartitionName | Literal["all"] | None = "test",
         candidates: pd.DataFrame | None = None,
     ) -> ApplyDecisionsResult:
-        """Apply the frozen DecisionPlan to a partition or candidate frame."""
+        """
+        Apply the frozen DecisionPlan to a partition or candidate frame.
+
+        Delegates to :func:`buildml.optimize.apply.apply_decisions` using the
+        plan from :meth:`fit_decision_policy`. Stores apply results on Session
+        and records the operation.
+
+        Parameters
+        ----------
+        partition:
+            Split partition to apply decisions to (``train``, ``validation``,
+            ``test``, or ``all``). Ignored when ``candidates`` is provided.
+        candidates:
+            Optional explicit candidate frame instead of a Session partition.
+
+        Returns
+        -------
+        DecisionApplyResult
+            Selected rows, scores, and allocation metadata for the partition.
+
+        Raises
+        ------
+        ValidationError
+            When no DecisionPlan exists on the Session.
+        """
         return decision_ops.apply_decisions_op(
             self, partition=partition, candidates=candidates
         )
@@ -6891,45 +11349,160 @@ class Session:
         *,
         partition: PartitionName = "test",
     ) -> DecisionEvalResult:
-        """Evaluate the frozen DecisionPlan on a holdout partition."""
+        """
+        Evaluate the frozen DecisionPlan on a holdout partition.
+
+        Delegates to :func:`buildml.optimize.evaluate.evaluate_decisions` and
+        stores evaluation metrics on Session. Requires a prior
+        :meth:`fit_decision_policy`.
+
+        Parameters
+        ----------
+        partition:
+            Holdout partition for evaluation (default ``test``).
+
+        Returns
+        -------
+        DecisionEvalResult
+            Cost, benefit, and confusion-style metrics for the frozen plan.
+
+        Raises
+        ------
+        ValidationError
+            When no DecisionPlan exists on the Session.
+        """
         return decision_ops.evaluate_decisions_op(self, partition=partition)
 
     @property
     def decision_plan(self) -> DecisionPlan | None:
-        """Last fitted :class:`~buildml.optimize.results.DecisionPlan`."""
+        """
+        Return the decision policy built by the most recent fit_decision_policy call.
+
+        Stored on Session after :meth:`fit_decision_policy` or :meth:`load_decision_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.optimize.results.DecisionPlan` or None
+            ``None`` until :meth:`fit_decision_policy` or :meth:`load_decision_bundle` has run.
+        """
         return self._decision_plan
 
     @property
     def decision_fit_result(self) -> DecisionFitResult | None:
-        """Last :class:`~buildml.optimize.results.DecisionFitResult`."""
+        """
+        Return the report from the most recent decision-policy fit.
+
+        Stored on Session after :meth:`fit_decision_policy` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.optimize.results.DecisionFitResult` or None
+            ``None`` until :meth:`fit_decision_policy` has run.
+        """
         return self._decision_fit_result
 
     @property
     def decision_eval_result(self) -> DecisionEvalResult | None:
-        """Last :class:`~buildml.optimize.results.DecisionEvalResult`."""
+        """
+        Return the metrics from the most recent decision-policy evaluation.
+
+        Stored on Session after :meth:`evaluate_decisions` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.optimize.results.DecisionEvalResult` or None
+            ``None`` until :meth:`evaluate_decisions` has run.
+        """
         return self._decision_eval_result
 
     @property
     def decision_apply_result(self) -> ApplyDecisionsResult | None:
-        """Last :class:`~buildml.optimize.results.ApplyDecisionsResult`."""
+        """
+        Return the decisions from the most recent apply_decisions call.
+
+        Stored on Session after :meth:`apply_decisions` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.optimize.results.ApplyDecisionsResult` or None
+            ``None`` until :meth:`apply_decisions` has run.
+        """
         return self._decision_apply_result
 
     def save_decision_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.decision_bundle.v1``."""
+        """
+        Persist the active DecisionPlan as ``buildml.decision_bundle.v1``.
+
+        Delegates to :func:`buildml.optimize.checkpoint.save_decision_bundle`.
+        Reload with :meth:`load_decision_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no DecisionPlan exists on the Session.
+        """
         return decision_ops.save_decision_bundle_op(self, path=path)
 
     def load_decision_bundle(self, path: str | Path) -> Session:
-        """Load a decision-policy bundle into this Session."""
+        """
+        Load a decision bundle into this Session.
+
+        Delegates to :func:`buildml.optimize.checkpoint.load_decision_bundle`
+        and clears prior fit/eval/apply results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded DecisionPlan.
+        path:
+            Path to a ``buildml.decision_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with DecisionPlan attached for chaining.
+        """
         return decision_ops.load_decision_bundle_op(self, path=path)
 
     @staticmethod
     def decision_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for decision-policy backends."""
+        """
+        Return the decision/optimization capability matrix for this install.
+
+        Delegates to :func:`buildml.optimize.catalog.decision_capability_matrix`.
+        Use before :meth:`fit_decision_policy` to confirm ``method`` and
+        ``backend`` pairs available with current extras.
+
+        Returns
+        -------
+        dict
+            Nested map of method identifiers to supported backends and options.
+        """
         return decision_ops.decision_capability_matrix_op()
 
     @staticmethod
     def optimize_capability_matrix() -> dict[str, Any]:
-        """Alias for :meth:`decision_capability_matrix`."""
+        """
+        Return the decision/optimization capability matrix for this install.
+
+        Delegates to :func:`buildml.optimize.catalog.decision_capability_matrix`.
+        Use before :meth:`fit_decision_policy` to confirm ``method`` and
+        ``backend`` pairs available with current extras.
+
+        Returns
+        -------
+        dict
+            Nested map of method identifiers to supported backends and options.
+        """
         return decision_ops.decision_capability_matrix_op()
 
     def fit_synthesizer(
@@ -6947,16 +11520,55 @@ class Session:
         epochs: int = 300,
         batch_size: int = 500,
     ) -> SynthesizerFitResult:
-        """Fit a tabular synthesizer on Session **train** only.
+        """
+        Fit a tabular synthesizer on Session train rows only.
 
-        Backends (see ``synthetic_capability_matrix()``):
-        native — bootstrap / Gaussian copula / SMOTE (``buildml[imbalanced]``).
-        sdv — CTGAN / TVAE / CopulaGAN (``buildml[synthetic-industry]``).
+        Delegates to :func:`buildml.synthetic.fit.fit_synthesizer`, stores the
+        :class:`~buildml.synthetic.results.SynthesizerPlan` on Session, and records
+        the fit. Follow with :meth:`sample_synthetic` to draw synthetic rows.
+
+        Parameters
+        ----------
+        backend:
+            Optional backend override (``native`` or ``sdv`` when installed).
+        method:
+            Synthesizer method key (``gaussian_copula``, ``ctgan``, etc.).
+        columns:
+            Optional explicit columns to model; ``None`` uses train numerics/categoricals.
+        random_state:
+            Seed for stochastic fitting and sampling reproducibility.
+        smooth_sigma:
+            Gaussian smoothing for numeric marginals in copula methods.
+        correlation_ridge:
+            Ridge added to correlation estimates for numerical stability.
+        target_column:
+            Optional target column for conditional/tabular-GAN setups.
+        k_neighbors:
+            Neighbors for SMOTE-like oversampling strategies when applicable.
+        sampling_strategy:
+            Class sampling strategy for conditional oversampling methods.
+        epochs:
+            Training epochs for neural synthesizer backends.
+        batch_size:
+            Minibatch size for neural synthesizer backends.
+
+        Returns
+        -------
+        SyntheticFitResult
+            Serializable fit summary including schema and method disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no split plan exists on the Session.
 
         Notes
         -----
-        **Leakage:** Always train-only. Distinct from :meth:`resample`
-        (class-balance preprocess). **Privacy:** not differential privacy.
+        **Leakage:** Always fits on train. Validation/test are never used to
+        estimate schema, marginals, or joints. Distinct from
+        :meth:`Session.resample` (class-balance preprocess).
+
+        **Privacy:** Not a differential-privacy product.
         """
         return synthetic_ops.fit_synthesizer_op(
             self,
@@ -6983,12 +11595,37 @@ class Session:
         provenance_column: str = "_synthetic",
         validate: bool = False,
     ) -> SyntheticSampleResult:
-        """Sample from the frozen synthesizer; optionally extend train.
+        """
+        Sample synthetic rows from the frozen synthesizer plan.
 
-        Default ``merge_mode='none'`` returns a Frame without mutating roles.
-        ``merge_mode='extend_train'`` appends to train with a provenance
-        column (role=ignore); holdouts unchanged. ``validate=True`` runs
-        built-in schema checks on the sample.
+        Delegates to :func:`buildml.synthetic.sample.sample_and_maybe_merge`.
+        When ``merge_mode='extend_train'``, synthetic rows are appended to train
+        with provenance metadata and the split plan is updated.
+
+        Parameters
+        ----------
+        n:
+            Number of rows to sample; defaults to train size when ``None``.
+        random_state:
+            Optional seed override for this sampling call.
+        condition:
+            Optional column-value conditions for conditional sampling.
+        merge_mode:
+            ``none`` returns a frame only; ``extend_train`` merges into Session train.
+        provenance_column:
+            Boolean column marking synthetic rows when merging into train.
+        validate:
+            When True, run post-sample schema/range checks and attach warnings.
+
+        Returns
+        -------
+        SyntheticSampleResult
+            Sampled frame and merge metadata. May update Session dataset/split.
+
+        Raises
+        ------
+        ValidationError
+            When no synthesizer plan or split plan exists on the Session.
         """
         return synthetic_ops.sample_synthetic_op(
             self,
@@ -7010,7 +11647,38 @@ class Session:
         random_state: int = 0,
         estimator: Literal["auto", "logistic", "ridge"] = "auto",
     ) -> SyntheticEvalResult:
-        """Evaluate the frozen synthesizer (fidelity metrics or TSTR utility)."""
+        """
+        Evaluate the frozen synthesizer for fidelity or TSTR utility.
+
+        Delegates to :func:`buildml.synthetic.evaluate.evaluate_synthetic`.
+        Holdout real data is used only for comparison — never to refit the synthesizer.
+
+        Parameters
+        ----------
+        mode:
+            ``fidelity`` compares marginals/joints; ``tstr`` trains on synthetic
+            and tests on real holdout rows.
+        eval_backend:
+            Metrics backend (``auto``, ``native``, or ``sdmetrics`` when installed).
+        partition:
+            Real-data holdout partition for comparison or TSTR evaluation.
+        n_synthetic:
+            Synthetic row count for evaluation draws; defaults to holdout size.
+        random_state:
+            Seed for synthetic draws during evaluation.
+        estimator:
+            Downstream estimator for TSTR utility mode.
+
+        Returns
+        -------
+        SyntheticEvalResult
+            Fidelity or TSTR metrics and evaluation disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no synthesizer plan exists on the Session.
+        """
         return synthetic_ops.evaluate_synthetic_op(
             self,
             mode=mode,
@@ -7023,35 +11691,117 @@ class Session:
 
     @staticmethod
     def synthetic_capability_matrix() -> dict[str, Any]:
-        """Honest capability matrix for synthetic backends and eval paths."""
+        """
+        Return the synthetic-data backend/method capability matrix.
+
+        Delegates to :func:`buildml.synthetic.catalog.synthetic_capability_matrix`.
+        Use before :meth:`fit_synthesizer` to see which methods require SDV extras.
+
+        Returns
+        -------
+        dict
+            Nested map of backend identifiers to supported synthesizer methods.
+        """
         return synthetic_ops.synthetic_capability_matrix_op()
 
     @property
     def synthesizer_plan(self) -> SynthesizerPlan | None:
-        """Last fitted :class:`~buildml.synthetic.results.SynthesizerPlan`."""
+        """
+        Return the synthesizer plan built by the most recent fit_synthesizer call.
+
+        Stored on Session after :meth:`fit_synthesizer` or :meth:`load_synthetic_bundle` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.synthetic.results.SynthesizerPlan` or None
+            ``None`` until :meth:`fit_synthesizer` or :meth:`load_synthetic_bundle` has run.
+        """
         return self._synthesizer_plan
 
     @property
     def synthetic_fit_result(self) -> SynthesizerFitResult | None:
-        """Last :class:`~buildml.synthetic.results.SynthesizerFitResult`."""
+        """
+        Return the report from the most recent synthesizer fit.
+
+        Stored on Session after :meth:`fit_synthesizer` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.synthetic.results.SynthesizerFitResult` or None
+            ``None`` until :meth:`fit_synthesizer` has run.
+        """
         return self._synthetic_fit_result
 
     @property
     def synthetic_eval_result(self) -> SyntheticEvalResult | None:
-        """Last :class:`~buildml.synthetic.results.SyntheticEvalResult`."""
+        """
+        Return the metrics from the most recent synthetic evaluation.
+
+        Stored on Session after :meth:`evaluate_synthetic` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.synthetic.results.SyntheticEvalResult` or None
+            ``None`` until :meth:`evaluate_synthetic` has run.
+        """
         return self._synthetic_eval_result
 
     @property
     def synthetic_sample_result(self) -> SyntheticSampleResult | None:
-        """Last :class:`~buildml.synthetic.results.SyntheticSampleResult`."""
+        """
+        Return the sample from the most recent sample_synthetic call.
+
+        Stored on Session after :meth:`sample_synthetic` so downstream calls can replay the same plan without refitting.
+
+        Returns
+        -------
+        :class:`~buildml.synthetic.results.SyntheticSampleResult` or None
+            ``None`` until :meth:`sample_synthetic` has run.
+        """
         return self._synthetic_sample_result
 
     def save_synthetic_bundle(self, path: str | Path) -> Path:
-        """Persist the active plan as ``buildml.synthetic_bundle.v1``."""
+        """
+        Persist the active synthesizer plan as ``buildml.synthetic_bundle.v1``.
+
+        Delegates to :func:`buildml.synthetic.checkpoint.save_synthetic_bundle`.
+        Reload with :meth:`load_synthetic_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no synthesizer plan exists on the Session.
+        """
         return synthetic_ops.save_synthetic_bundle_op(self, path=path)
 
     def load_synthetic_bundle(self, path: str | Path) -> Session:
-        """Load a synthesizer bundle into this Session."""
+        """
+        Load a synthetic-data bundle into this Session.
+
+        Delegates to :func:`buildml.synthetic.checkpoint.load_synthetic_bundle`
+        and clears prior fit/eval/sample results.
+
+        Parameters
+        ----------
+            Session instance to populate with the loaded synthesizer plan.
+        path:
+            Path to a ``buildml.synthetic_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            This Session with synthesizer plan attached for chaining.
+        """
         return synthetic_ops.load_synthetic_bundle_op(self, path=path)
 
     @classmethod
@@ -7709,13 +12459,39 @@ class Session:
         task: Literal["classification", "regression", "auto"] = "auto",
         apply_plans: bool = False,
     ) -> TorchLoaderBundle:
-        """Build Torch DataLoaders from current roles and split partitions.
+        """
+        Build Torch DataLoaders from current roles and split partitions.
 
         Requires ``pip install 'buildml[torch]'`` (or ``buildml[dl]``). Shuffle
         applies to the train loader only. When ``normalize`` is True, mean/std
-        are fit on train and frozen for validation/test. Attached classical
-        plans are disclosed on the loader report; pass ``apply_plans=True`` to
-        re-apply fitted plans before building tensors.
+        are fit on train and frozen for validation/test.
+
+        Classical preprocess: Session ``impute`` / ``encode`` / ``scale`` already
+        mutate the attached frame with train-fitted plans. Attached plans are
+        disclosed on the loader report. Pass ``apply_plans=True`` to explicitly
+        re-apply fitted plans via :meth:`apply_preprocess_plans` before building
+        loaders (score-time replay; does not refit).
+
+        Parameters
+        ----------
+        batch_size:
+            Minibatch size for all loaders.
+        num_workers:
+            DataLoader worker processes.
+        pin_memory:
+            When True, pin CPU memory for faster GPU transfer.
+        shuffle_train:
+            When True, shuffle the train loader each epoch.
+        drop_last:
+            When True, drop the final partial train batch.
+        normalize:
+            When True, fit normalize stats on train only.
+        seed:
+            Seed for shuffling and sampling.
+        task:
+            Supervised task (``classification``, ``regression``, or ``auto``).
+        apply_plans:
+            When True, re-apply Session preprocess plans before building loaders.
 
         Returns
         -------
@@ -7745,9 +12521,33 @@ class Session:
         shuffle_train: bool = True,
         seed: int = 0,
     ) -> TorchLoaderBundle:
-        """Build token-id DataLoaders for text classification (sequence modality).
+        """
+        Build token-id DataLoaders for text classification (non-tabular modality).
 
-        Vocabulary is fit on train only. Requires ``buildml[torch]``."""
+        Vocabulary is fit on the train partition only. Requires ``buildml[torch]``.
+        Delegates to :func:`buildml.dl.text.make_text_loaders`.
+
+        Parameters
+        ----------
+        text_column:
+            Optional text column; auto-detected when omitted.
+        batch_size:
+            Minibatch size for all loaders.
+        max_len:
+            Maximum token sequence length.
+        max_vocab:
+            Maximum vocabulary size fit on train.
+        min_freq:
+            Minimum token frequency to enter the vocabulary.
+        shuffle_train:
+            When True, shuffle the train loader each epoch.
+        seed:
+            Seed for shuffling and vocabulary sampling.
+
+        Returns
+        -------
+        TorchLoaderBundle
+            Text loaders plus vocabulary and text contract metadata."""
         return dl_ops.make_text_torch_loaders(
             self,
             text_column=text_column,
@@ -7779,36 +12579,61 @@ class Session:
         dropout: float = 0.1,
         mixed_precision: bool = False,
     ) -> Session:
-        """Train an ``nn.Module`` on the train Torch loader.
+        """
+        Train an ``nn.Module`` on the train Torch loader.
 
-        Requires ``pip install 'buildml[torch]'``. When ``module`` is omitted,
-        builds a tabular MLP, text classifier, or multimodal fusion module from
-        the loader contract. Does not replace classical :meth:`fit`.
+        Requires ``pip install 'buildml[torch]'``. When ``module`` is omitted, builds
+        a tabular MLP, text classifier, or multimodal fusion module from the active
+        loader contract so the happy path does not require a hand-rolled network.
+
+        Does not replace classical :meth:`fit` / :attr:`fit_result`.
+        Delegates to :func:`buildml.dl.train.train_supervised_module`.
 
         Parameters
         ----------
         module:
-            Optional ``torch.nn.Module``. When omitted, a built-in model is
-            constructed from the active loader contract. When ``resume=True``,
-            weights are restored from :attr:`dl_train_result`.
+            Optional ``nn.Module`` to train; auto-built when omitted.
         loss_fn:
-            Optional ``(module, xb, yb) -> loss``. Defaults to CrossEntropy
-            (classification) or MSE (regression).
+            Optional custom loss function.
         optimizer_factory:
-            Optional ``callable(params) -> optimizer``. Defaults to Adam.
-        epochs / learning_rate / device / grad_clip_norm / log_every:
-            Train-loop knobs used when ``config`` is omitted. With ``resume=True``,
-            ``epochs`` are **additional** epochs.
-        early_stopping_patience / early_stopping_monitor / scheduler:
-            Patience requires a validation loader. Scheduler defaults to ``none``.
+            Optional factory returning a torch optimizer.
+        epochs:
+            Number of training epochs.
+        learning_rate:
+            Optimizer learning rate.
+        device:
+            Compute device (``cpu``, ``cuda``, ``mps``, or ``auto``).
+        grad_clip_norm:
+            Optional gradient clipping norm.
+        log_every:
+            Log training metrics every N epochs.
+        early_stopping_patience:
+            Optional validation patience for early stopping.
+        early_stopping_monitor:
+            Metric name monitored for early stopping.
+        scheduler:
+            Learning-rate scheduler kind.
         resume:
-            When True, continue from :attr:`dl_train_result`.
+            When True, resume from the prior ``dl_train_result``.
         config:
-            Optional :class:`~buildml.dl.types.TrainConfig` overriding scalar knobs.
-        hidden / dropout:
-            Built-in MLP / text classifier knobs when ``module`` is omitted.
+            Optional full :class:`~buildml.dl.types.TrainConfig` override.
+        hidden:
+            Hidden layer sizes for auto-built tabular MLPs.
+        dropout:
+            Dropout rate for auto-built modules.
         mixed_precision:
-            When True on CUDA, enables AMP; CPU/MPS is a documented no-op."""
+            When True, enable autocast mixed precision where supported.
+
+        Returns
+        -------
+        Session
+            ``self`` with ``dl_train_result`` attached for chaining.
+
+        Raises
+        ------
+        ValidationError
+            When resume is requested without a prior trainer or multimodal
+            contracts are incomplete."""
         return dl_ops.fit_torch(
             self,
             module=module,
@@ -7854,11 +12679,74 @@ class Session:
         preprocess: Any | None = None,
         use_saved_preprocess: bool = False,
     ) -> TorchLoaderBundle:
-        """Build fused multimodal DataLoaders (tabular/text/image/audio; train-only stats).
-
-        Pass ``preprocess=`` or ``use_saved_preprocess=True`` to restore frozen
-        multimodal fit stats from a prior trainer bundle.
         """
+        Build fused multimodal DataLoaders (tabular/text/image/audio mixes).
+
+        Requires ``buildml[torch]``. Fit stats (vocab, numeric mean/std, image
+        channel mean/std, audio amplitude mean/std) use the train partition only.
+        Batches follow ``(numeric?, tokens?, image?, audio?, y)`` for present
+        modalities. Audio fusion is a small 1D-CNN branch — not a speech foundation
+        model.
+
+        Pass ``preprocess=`` (contract / dict) to freeze restore stats, or
+        ``use_saved_preprocess=True`` to reuse ``dl_train_result.multimodal_preprocess``.
+        Delegates to :func:`buildml.dl.multimodal.make_multimodal_loaders`.
+
+        Parameters
+        ----------
+        text_column:
+            Optional text column for multimodal fusion.
+        numeric_columns:
+            Optional numeric columns for tabular branch.
+        image_column:
+            Optional image column/path column.
+        audio_column:
+            Optional audio column/path column.
+        batch_size:
+            Minibatch size for all loaders.
+        max_len:
+            Maximum token sequence length for text branch.
+        max_vocab:
+            Maximum vocabulary size fit on train.
+        min_freq:
+            Minimum token frequency for vocabulary.
+        normalize:
+            When True, normalize numeric features on train only.
+        normalize_images:
+            When True, normalize image channels on train only.
+        normalize_audio:
+            When True, normalize audio amplitude on train only.
+        image_size:
+            Target image height/width for image branch.
+        image_channels:
+            Number of image channels.
+        audio_sample_rate:
+            Target audio sample rate after resampling.
+        audio_max_samples:
+            Maximum audio samples per example.
+        audio_source_sample_rate:
+            Optional source sample rate before resampling.
+        shuffle_train:
+            When True, shuffle the train loader each epoch.
+        seed:
+            Seed for shuffling and preprocessing.
+        task:
+            Supervised task (``classification``, ``regression``, or ``auto``).
+        preprocess:
+            Optional frozen preprocess contract/dict to restore stats.
+        use_saved_preprocess:
+            When True, reuse preprocess meta from ``dl_train_result``.
+
+        Returns
+        -------
+        TorchLoaderBundle
+            Multimodal loaders plus contracts and preprocess disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When both ``preprocess`` and ``use_saved_preprocess`` are supplied or
+            saved preprocess meta is missing."""
         return dl_ops.make_multimodal_torch_loaders(
             self,
             text_column=text_column,
@@ -7907,11 +12795,63 @@ class Session:
         seed: int = 0,
         task: Literal["classification", "regression", "auto"] = "auto",
     ) -> TorchLoaderBundle:
-        """Build image multimodal loaders (image ⊕ tabular and/or text and/or audio).
-
-        Path cells need Pillow (bundled in ``buildml[torch]``); array cells work
-        with Torch alone.
         """
+        Build image multimodal loaders (image ⊕ tabular and/or text and/or audio).
+
+        Thin facade that requires ``image_column`` and delegates to the shared
+        multimodal loader builder. Path cells need Pillow (bundled in
+        ``buildml[torch]``); array/list cells work with Torch alone.
+
+        Parameters
+        ----------
+        image_column:
+            Required image column or path column.
+        text_column:
+            Optional text column for multimodal fusion.
+        numeric_columns:
+            Optional numeric columns for tabular branch.
+        audio_column:
+            Optional audio column for audio branch.
+        batch_size:
+            Minibatch size for all loaders.
+        max_len:
+            Maximum token sequence length for text branch.
+        max_vocab:
+            Maximum vocabulary size fit on train.
+        min_freq:
+            Minimum token frequency for vocabulary.
+        normalize:
+            When True, normalize numeric features on train only.
+        normalize_images:
+            When True, normalize image channels on train only.
+        normalize_audio:
+            When True, normalize audio amplitude on train only.
+        image_size:
+            Target image height/width for image branch.
+        image_channels:
+            Number of image channels.
+        audio_sample_rate:
+            Target audio sample rate after resampling.
+        audio_max_samples:
+            Maximum audio samples per example.
+        audio_source_sample_rate:
+            Optional source sample rate before resampling.
+        shuffle_train:
+            When True, shuffle the train loader each epoch.
+        seed:
+            Seed for shuffling and preprocessing.
+        task:
+            Supervised task (``classification``, ``regression``, or ``auto``).
+
+        Returns
+        -------
+        TorchLoaderBundle
+            Image-centric multimodal loaders plus contracts.
+
+        Raises
+        ------
+        ValidationError
+            When ``image_column`` is missing or empty."""
         return dl_ops.make_image_multimodal_torch_loaders(
             self,
             image_column=image_column,
@@ -7958,12 +12898,65 @@ class Session:
         seed: int = 0,
         task: Literal["classification", "regression", "auto"] = "auto",
     ) -> TorchLoaderBundle:
-        """Build audio multimodal loaders (audio ⊕ tabular and/or text and/or image).
-
-        Path cells need soundfile (bundled in ``buildml[torch]`` /
-        ``buildml[audio]``); waveform arrays work with Torch alone. Small 1D-CNN
-        fusion branch — not a speech foundation model.
         """
+        Build audio multimodal loaders (audio ⊕ tabular and/or text and/or image).
+
+        Thin facade that requires ``audio_column`` and delegates to the shared
+        multimodal loader builder. Path cells need soundfile (bundled in
+        ``buildml[torch]`` / ``buildml[audio]``); waveform array cells work with
+        Torch alone. Uses a small 1D-CNN fusion branch — not a speech foundation
+        model.
+
+        Parameters
+        ----------
+        audio_column:
+            Required audio column or path column.
+        text_column:
+            Optional text column for multimodal fusion.
+        numeric_columns:
+            Optional numeric columns for tabular branch.
+        image_column:
+            Optional image column for image branch.
+        batch_size:
+            Minibatch size for all loaders.
+        max_len:
+            Maximum token sequence length for text branch.
+        max_vocab:
+            Maximum vocabulary size fit on train.
+        min_freq:
+            Minimum token frequency for vocabulary.
+        normalize:
+            When True, normalize numeric features on train only.
+        normalize_images:
+            When True, normalize image channels on train only.
+        normalize_audio:
+            When True, normalize audio amplitude on train only.
+        image_size:
+            Target image height/width for optional image branch.
+        image_channels:
+            Number of image channels.
+        audio_sample_rate:
+            Target audio sample rate after resampling.
+        audio_max_samples:
+            Maximum audio samples per example.
+        audio_source_sample_rate:
+            Optional source sample rate before resampling.
+        shuffle_train:
+            When True, shuffle the train loader each epoch.
+        seed:
+            Seed for shuffling and preprocessing.
+        task:
+            Supervised task (``classification``, ``regression``, or ``auto``).
+
+        Returns
+        -------
+        TorchLoaderBundle
+            Audio-centric multimodal loaders plus contracts.
+
+        Raises
+        ------
+        ValidationError
+            When ``audio_column`` is missing or empty."""
         return dl_ops.make_audio_multimodal_torch_loaders(
             self,
             audio_column=audio_column,
@@ -8001,7 +12994,46 @@ class Session:
         task: Literal["classification", "regression", "auto"] = "auto",
         module_factory: Any | None = None,
     ) -> TorchCVResult:
-        """Fold-local Torch CV (normalize fit per fold; not nested search)."""
+        """
+        Fold-local Torch CV on the attached numeric tabular dataset.
+
+        Normalize stats are fit per fold. Classical Session plans are disclosed as
+        a limitation unless you supply a custom factory path — this helper does not
+        silently refit Session-global plans inside each fold.
+        Delegates to :func:`buildml.dl.cv.cross_validate_torch`.
+
+        Parameters
+        ----------
+        n_folds:
+            Number of cross-validation folds.
+        epochs:
+            Training epochs per fold.
+        batch_size:
+            Minibatch size per fold.
+        learning_rate:
+            Optimizer learning rate per fold.
+        device:
+            Compute device for fold-local training.
+        normalize:
+            When True, fit normalize stats per fold on train only.
+        seed:
+            Seed for fold splitting and training.
+        stratify:
+            When True, stratify folds for classification tasks.
+        task:
+            Supervised task (``classification``, ``regression``, or ``auto``).
+        module_factory:
+            Optional factory returning a fresh module per fold.
+
+        Returns
+        -------
+        TorchCVResult
+            Per-fold metrics and mean summary.
+
+        Raises
+        ------
+        ValidationError
+            When no dataset is attached to the Session."""
         return dl_ops.cross_validate_torch(
             self,
             n_folds=n_folds,
@@ -8035,7 +13067,55 @@ class Session:
         scoring_metric: str | None = None,
         module_factory: Any | None = None,
     ) -> Any:
-        """Inner-fold Torch hyperparameter search on the train universe."""
+        """
+        Inner-fold Torch hyperparameter search on the Session train universe.
+
+        Held-out validation/test partitions are never scored. For a nested outer
+        estimate after search, use :meth:`nested_cv_torch`.
+        Delegates to :func:`buildml.dl.search.search_torch`.
+
+        Parameters
+        ----------
+        param_grid:
+            Optional grid of hyperparameter lists.
+        param_distributions:
+            Optional randomized search distributions.
+        inner_search:
+            Inner search strategy (``grid``, ``randomized``, or ``auto``).
+        n_iter:
+            Randomized search iterations when applicable.
+        n_folds:
+            Number of inner CV folds.
+        epochs:
+            Training epochs per candidate per fold.
+        batch_size:
+            Minibatch size for inner CV training.
+        learning_rate:
+            Optimizer learning rate for inner CV training.
+        device:
+            Compute device for inner CV training.
+        normalize:
+            When True, fit normalize stats per fold on train only.
+        seed:
+            Seed for fold splitting and search sampling.
+        stratify:
+            When True, stratify folds for classification tasks.
+        task:
+            Supervised task (``classification``, ``regression``, or ``auto``).
+        scoring_metric:
+            Optional metric name for ranking candidates.
+        module_factory:
+            Optional factory returning a fresh module per candidate/fold.
+
+        Returns
+        -------
+        TorchSearchResult
+            Best params, inner CV scores, and search disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no dataset is attached to the Session."""
         return dl_ops.search_torch(
             self,
             param_grid=param_grid,
@@ -8075,7 +13155,57 @@ class Session:
         scoring_metric: str | None = None,
         module_factory: Any | None = None,
     ) -> Any:
-        """Nested Torch CV with fold-local normalize and inner hyperparameter search."""
+        """
+        Nested Torch CV: outer evaluation after fold-local inner hyperparameter search.
+
+        Outer-eval rows never enter inner ranking. Session validation/test stay
+        untouched. Normalize stats are fit fold-locally.
+        Delegates to :func:`buildml.dl.search.nested_cv_torch`.
+
+        Parameters
+        ----------
+        param_grid:
+            Optional grid of hyperparameter lists for inner search.
+        param_distributions:
+            Optional randomized search distributions for inner search.
+        inner_search:
+            Inner search strategy (``grid``, ``randomized``, or ``auto``).
+        n_iter:
+            Randomized search iterations when applicable.
+        outer_cv:
+            Number of outer evaluation folds.
+        inner_cv:
+            Number of inner CV folds per outer fold.
+        epochs:
+            Training epochs per candidate per inner fold.
+        batch_size:
+            Minibatch size for nested CV training.
+        learning_rate:
+            Optimizer learning rate for nested CV training.
+        device:
+            Compute device for nested CV training.
+        normalize:
+            When True, fit normalize stats per fold on train only.
+        seed:
+            Seed for fold splitting and search sampling.
+        stratify:
+            When True, stratify folds for classification tasks.
+        task:
+            Supervised task (``classification``, ``regression``, or ``auto``).
+        scoring_metric:
+            Optional metric name for inner ranking and outer reporting.
+        module_factory:
+            Optional factory returning a fresh module per candidate/fold.
+
+        Returns
+        -------
+        TorchNestedCVResult
+            Outer-fold metrics, inner search summaries, and disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no dataset is attached to the Session."""
         return dl_ops.nested_cv_torch(
             self,
             param_grid=param_grid,
@@ -8105,7 +13235,36 @@ class Session:
         dynamic_batch: bool = True,
         example_input: Any | None = None,
     ) -> Any:
-        """Export the last Torch trainer to TorchScript or ONNX (alpha escape hatch)."""
+        """
+        Export the last Torch trainer to TorchScript or ONNX.
+
+        Uses train-loader example inputs when ``example_input`` is omitted.
+        Alpha-quality escape hatch — see export result limitations.
+        Delegates to :func:`buildml.dl.export.export_train_result`.
+
+        Parameters
+        ----------
+        path:
+            Destination file path for the exported artifact.
+        format:
+            Export format (``torchscript`` or ``onnx``).
+        opset:
+            ONNX opset version when ``format='onnx'``.
+        dynamic_batch:
+            When True, declare dynamic batch axes where supported.
+        example_input:
+            Optional explicit example input matching module layout.
+
+        Returns
+        -------
+        TorchExportResult
+            Export path, format, and limitation disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no torch trainer exists or non-tabular loaders/example inputs
+            are missing."""
         return dl_ops.export_torch(
             self,
             path=path,
@@ -8127,12 +13286,40 @@ class Session:
         multi_node: bool = False,
         config: TrainConfig | None = None,
     ) -> Any:
-        """DDP training (single-node spawn or multi-node torchrun join).
-
-        Single-node requires multi-GPU unless ``allow_cpu_ddp``. Multi-node
-        joins ``WORLD_SIZE``/``RANK``/``LOCAL_RANK``/``MASTER_ADDR``/
-        ``MASTER_PORT`` from torchrun.
         """
+        DDP training via a fresh ``module_factory`` per process.
+
+        * Single-node (default): spawn local ranks. Requires
+          ``torch.cuda.device_count() >= 2`` unless ``allow_cpu_ddp=True`` (gloo smoke).
+        * Multi-node: ``multi_node=True`` joins a ``torchrun`` rendezvous
+          (``WORLD_SIZE`` / ``RANK`` / ``LOCAL_RANK`` / ``MASTER_ADDR`` /
+          ``MASTER_PORT``; ``LOCAL_RANK`` is required — global rank is not used as a
+          local CUDA index). Not a Kubernetes multi-cluster orchestrator.
+        Delegates to :func:`buildml.dl.ddp.train_supervised_module_ddp`.
+
+        Parameters
+        ----------
+        module_factory:
+            Callable returning a fresh ``nn.Module`` per DDP process.
+        epochs:
+            Number of training epochs.
+        learning_rate:
+            Optimizer learning rate.
+        mixed_precision:
+            When True, enable autocast mixed precision where supported.
+        world_size:
+            Optional explicit process/world size override.
+        allow_cpu_ddp:
+            When True, permit CPU gloo smoke tests with fewer GPUs.
+        multi_node:
+            When True, join an external torchrun rendezvous instead of spawning.
+        config:
+            Optional full :class:`~buildml.dl.types.TrainConfig` override.
+
+        Returns
+        -------
+        DDPTrainResult
+            DDP run summary and optional aggregated train result."""
         return dl_ops.fit_torch_ddp(
             self,
             module_factory,
@@ -8158,7 +13345,38 @@ class Session:
         shuffle_train: bool = True,
         seed: int = 0,
     ) -> TorchLoaderBundle:
-        """Build speech classification loaders (finetune-lite; not FM-from-scratch)."""
+        """
+        Build speech classification loaders (finetune-lite encoder path).
+
+        Requires ``buildml[torch]``. Amplitude stats fit on train only. This is an
+        integration/finetune path — not training a foundation model from scratch.
+        Delegates to :func:`buildml.dl.speech.make_speech_loaders`.
+
+        Parameters
+        ----------
+        audio_column:
+            Optional audio column; auto-detected when omitted.
+        batch_size:
+            Minibatch size for all loaders.
+        sample_rate:
+            Target audio sample rate after resampling.
+        max_samples:
+            Maximum audio samples per example.
+        source_sample_rate:
+            Optional source sample rate before resampling.
+        normalize_audio:
+            When True, normalize audio amplitude on train only.
+        encoder_dim:
+            Encoder embedding dimension for speech contract metadata.
+        shuffle_train:
+            When True, shuffle the train loader each epoch.
+        seed:
+            Seed for shuffling and preprocessing.
+
+        Returns
+        -------
+        TorchLoaderBundle
+            Speech loaders plus speech contract metadata."""
         return dl_ops.make_speech_torch_loaders(
             self,
             audio_column=audio_column,
@@ -8188,7 +13406,45 @@ class Session:
         encoder_dim: int = 64,
         seed: int = 0,
     ) -> Session:
-        """Fine-tune tiny speech encoder + classifier (integration/finetune-lite)."""
+        """
+        Fine-tune a tiny speech encoder + classifier head (finetune-lite).
+
+        Builds speech loaders when missing. Honest alpha: not Whisper-scale FM
+        training from scratch. Requires ``buildml[torch]``.
+        Delegates to :func:`buildml.dl.train.train_supervised_module` after building
+        a speech classifier module.
+
+        Parameters
+        ----------
+        epochs:
+            Number of training epochs.
+        learning_rate:
+            Optimizer learning rate.
+        device:
+            Compute device (``cpu``, ``cuda``, ``mps``, or ``auto``).
+        freeze_encoder:
+            When True, freeze the speech encoder during finetuning.
+        audio_column:
+            Optional audio column when loaders must be built.
+        batch_size:
+            Minibatch size when loaders must be built.
+        sample_rate:
+            Target sample rate when loaders must be built.
+        max_samples:
+            Maximum samples per example when loaders must be built.
+        source_sample_rate:
+            Optional source sample rate when loaders must be built.
+        normalize_audio:
+            When True, normalize audio amplitude on train only.
+        encoder_dim:
+            Encoder embedding dimension for the speech classifier.
+        seed:
+            Seed for shuffling and training.
+
+        Returns
+        -------
+        Session
+            ``self`` with ``dl_train_result`` attached for chaining."""
         return dl_ops.fit_speech_torch(
             self,
             epochs=epochs,
@@ -8216,7 +13472,40 @@ class Session:
         source_sample_rate: int | None = None,
         partition: Literal["train", "validation", "test", "all"] = "all",
     ) -> Any:
-        """ASR transcription (stub CI-safe; transformers via ``buildml[speech]``)."""
+        """
+        ASR transcription for an audio feature column.
+
+        ``backend="stub"`` is CI-safe. ``backend="transformers"`` requires
+        ``buildml[speech]`` and may download Whisper-class weights. Integration
+        path only — not FM training from scratch.
+        Delegates to :func:`buildml.dl.speech.transcribe_from_dataset`.
+
+        Parameters
+        ----------
+        audio_column:
+            Audio feature column to transcribe.
+        backend:
+            ASR backend (``stub`` or ``transformers``).
+        model_id:
+            Optional Hugging Face model id for transformers backend.
+        sample_rate:
+            Target audio sample rate for decoding.
+        max_samples:
+            Maximum audio samples per row.
+        source_sample_rate:
+            Optional source sample rate before resampling.
+        partition:
+            Dataset partition to transcribe (``all`` by default).
+
+        Returns
+        -------
+        SpeechTranscribeResult
+            Transcripts, model metadata, and row counts.
+
+        Raises
+        ------
+        ValidationError
+            When no dataset is attached to the Session."""
         return dl_ops.transcribe_speech(
             self,
             audio_column=audio_column,
@@ -8242,12 +13531,53 @@ class Session:
         ssl_certfile: str | Path | None = None,
         ssl_keyfile: str | Path | None = None,
     ) -> Any:
-        """Launch managed local serving (``buildml[serve]``; optional API-key auth).
-
-        Non-loopback binds require ``api_keys`` unless
-        ``allow_insecure_public_bind=True``. Optional ``ssl_certfile`` /
-        ``ssl_keyfile`` enable local HTTPS. Not an AI tool (CLI/Session-primary).
         """
+        Launch BuildML managed serving for a pipeline or TorchScript artifact.
+
+        Requires ``buildml[serve]``. Defaults to localhost bind. Optional
+        ``api_keys`` enables Bearer / ``X-API-Key`` middleware (still not a managed
+        IAM / cloud auth product). Non-loopback binds without ``api_keys`` raise
+        unless ``allow_insecure_public_bind=True``. Optional ``ssl_certfile`` /
+        ``ssl_keyfile`` enable local uvicorn HTTPS (library-owned; not managed
+        certs). Prefer TLS at a reverse proxy for non-local exposure. When ``path``
+        is omitted and ``kind="pipeline"``, uses the last saved pipeline path
+        recorded on the Session if available.
+
+        Not registered as an AI tool — CLI / Session-primary by design.
+        Delegates to :func:`buildml.serving.launch.serve_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Optional artifact path; inferred for pipelines when omitted.
+        kind:
+            Artifact kind (``pipeline`` or ``torchscript``).
+        host:
+            Bind host address.
+        port:
+            Bind port number.
+        title:
+            Service title shown in OpenAPI metadata.
+        blocking:
+            When True, block until the server stops.
+        api_keys:
+            Optional API keys enabling Bearer / header auth middleware.
+        allow_insecure_public_bind:
+            When True, permit non-loopback binds without API keys.
+        ssl_certfile:
+            Optional TLS certificate file for local HTTPS.
+        ssl_keyfile:
+            Optional TLS private key file for local HTTPS.
+
+        Returns
+        -------
+        ServeHandle
+            Running server handle with URL and lifecycle controls.
+
+        Raises
+        ------
+        ValidationError
+            When no resolvable artifact path is available."""
         return dl_ops.serve_bundle(
             self,
             path,
@@ -8272,7 +13602,31 @@ class Session:
         seed: int = 0,
         model_id: str | None = None,
     ) -> Any:
-        """Load a curated vision/audio/speech backbone (mock weights default; not a full zoo)."""
+        """
+        Load a curated pretrained vision/audio/speech backbone (integration hook).
+
+        Delegates to :func:`buildml.dl.zoo.load_pretrained_backbone` and stores the
+        backbone on the Session for downstream head attachment.
+
+        Parameters
+        ----------
+        modality:
+            Backbone modality (``vision``, ``audio``, or ``speech``).
+        architecture:
+            Optional architecture identifier within the curated zoo.
+        weights:
+            Weight source (``none``, ``mock``, or ``pretrained``).
+        freeze:
+            When True, freeze backbone parameters by default.
+        seed:
+            Seed for mock-weight initialization.
+        model_id:
+            Optional Hugging Face or zoo model identifier.
+
+        Returns
+        -------
+        PretrainedBackbone
+            Loaded backbone metadata and module shell."""
         return dl_ops.load_pretrained_backbone(
             self,
             modality,
@@ -8289,7 +13643,28 @@ class Session:
         *,
         freeze_backbone: bool | None = None,
     ) -> Any:
-        """Attach a classification head to the last :meth:`load_pretrained_backbone` result."""
+        """
+        Attach a classification head to the Session pretrained backbone.
+
+        Delegates to :func:`buildml.dl.zoo.attach_backbone_head` using the backbone
+        stored by :meth:`load_pretrained_backbone`.
+
+        Parameters
+        ----------
+        n_classes:
+            Number of output classes for the attached head.
+        freeze_backbone:
+            Optional override for whether the backbone stays frozen.
+
+        Returns
+        -------
+        BackboneHeadBundle
+            Combined backbone+head module metadata.
+
+        Raises
+        ------
+        ValidationError
+            When no backbone is loaded or ``n_classes`` is invalid."""
         return dl_ops.attach_backbone_head(
             self,
             n_classes,
@@ -8303,11 +13678,30 @@ class Session:
         references: list[str],
         lowercase: bool = True,
     ) -> Any:
-        """Score ASR hypotheses vs references (WER/CER).
-
-        When ``hypotheses`` is omitted, reuses texts from the last
-        :meth:`transcribe_speech` result.
         """
+        Score ASR hypotheses vs references (WER/CER); reuse last transcription texts.
+
+        Delegates to :func:`buildml.dl.speech.evaluate_asr`. When ``hypotheses`` is
+        omitted, reuses texts from the prior :meth:`transcribe_speech` result.
+
+        Parameters
+        ----------
+        hypotheses:
+            Optional hypothesis strings; inferred from Session when omitted.
+        references:
+            Reference transcript strings aligned with hypotheses.
+        lowercase:
+            When True, lowercase strings before WER/CER scoring.
+
+        Returns
+        -------
+        AsrEvalResult
+            WER/CER metrics and scoring metadata.
+
+        Raises
+        ------
+        ValidationError
+            When hypotheses are missing and no transcription result exists."""
         return dl_ops.evaluate_asr(
             self,
             hypotheses=hypotheses,
@@ -8322,7 +13716,30 @@ class Session:
         torchscript_path: str | Path | None = None,
         model_name: str = "buildml_model",
     ) -> Any:
-        """Pack TorchScript into a TorchServe model directory (does not run TorchServe)."""
+        """
+        Pack a TorchScript artifact into a TorchServe-ready directory layout.
+
+        Delegates to :func:`buildml.dl.packaging.pack_torchserve_model`. Uses the
+        last TorchScript export on the Session when ``torchscript_path`` is omitted.
+
+        Parameters
+        ----------
+        output_dir:
+            Destination directory for the TorchServe model store layout.
+        torchscript_path:
+            Optional explicit TorchScript artifact path.
+        model_name:
+            Model name used in the TorchServe manifest.
+
+        Returns
+        -------
+        PackagingResult
+            Output paths and packaging disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no TorchScript path is available."""
         return dl_ops.pack_torchserve(
             self,
             output_dir,
@@ -8338,7 +13755,32 @@ class Session:
         engine_name: str = "model.engine",
         fp16: bool = True,
     ) -> Any:
-        """Write a TensorRT trtexec plan for an ONNX file (does not build engines)."""
+        """
+        Write a TensorRT ``trtexec`` plan next to a validated ONNX artifact.
+
+        Delegates to :func:`buildml.dl.packaging.prepare_tensorrt_export_plan`.
+        Uses the last ONNX export on the Session when ``onnx_path`` is omitted.
+
+        Parameters
+        ----------
+        output_dir:
+            Destination directory for the TensorRT export plan.
+        onnx_path:
+            Optional explicit ONNX artifact path.
+        engine_name:
+            Output TensorRT engine filename.
+        fp16:
+            When True, request FP16 optimization in the export plan.
+
+        Returns
+        -------
+        PackagingResult
+            Export plan paths and limitation disclosures.
+
+        Raises
+        ------
+        ValidationError
+            When no ONNX path is available."""
         return dl_ops.prepare_tensorrt_export(
             self,
             output_dir,
@@ -8364,7 +13806,45 @@ class Session:
         service_account: str | None = None,
         include_configmap: bool = True,
     ) -> Any:
-        """Emit a Kubernetes Job YAML for torchrun DDP (template; not live orchestration)."""
+        """
+        Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only).
+
+        Delegates to :func:`buildml.dl.k8s.write_torchrun_ddp_job`. This writes a
+        starter manifest — not a managed cluster orchestrator.
+
+        Parameters
+        ----------
+        path:
+            Destination YAML file path.
+        job_name:
+            Kubernetes Job name.
+        namespace:
+            Kubernetes namespace.
+        image:
+            Container image for torchrun workers.
+        nnodes:
+            Number of nodes in the torchrun job.
+        nproc_per_node:
+            Processes launched per node.
+        script_path:
+            Training script path inside the container.
+        cpu_request:
+            CPU resource request per worker.
+        memory_request:
+            Memory resource request per worker.
+        gpu_limit:
+            GPU limit per worker.
+        gpu_request:
+            Optional GPU request per worker.
+        service_account:
+            Optional Kubernetes service account name.
+        include_configmap:
+            When True, include a starter ConfigMap manifest.
+
+        Returns
+        -------
+        K8sManifestResult
+            Written manifest paths and template limitations."""
         return dl_ops.emit_k8s_ddp_job(
             self,
             path,
@@ -8396,7 +13876,39 @@ class Session:
         gpu_limit: int | None = None,
         service_account: str | None = None,
     ) -> Any:
-        """Emit a Kubernetes Deployment+Service YAML for managed serve (template only)."""
+        """
+        Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
+
+        Delegates to :func:`buildml.dl.k8s.write_serve_deployment`. This writes a
+        starter manifest — not a managed cluster orchestrator.
+
+        Parameters
+        ----------
+        path:
+            Destination YAML file path.
+        name:
+            Deployment and Service name.
+        namespace:
+            Kubernetes namespace.
+        image:
+            Container image for the serve deployment.
+        replicas:
+            Desired replica count.
+        port:
+            Service/container port for managed serve.
+        cpu_request:
+            CPU resource request per replica.
+        memory_request:
+            Memory resource request per replica.
+        gpu_limit:
+            Optional GPU limit per replica.
+        service_account:
+            Optional Kubernetes service account name.
+
+        Returns
+        -------
+        K8sManifestResult
+            Written manifest paths and template limitations."""
         return dl_ops.emit_k8s_serve_deployment(
             self,
             path,
@@ -8427,7 +13939,43 @@ class Session:
         encoder_dim: int = 64,
         seed: int = 0,
     ) -> Session:
-        """Domain-adapt speech classify (finetune-lite; not FM continued pretrain)."""
+        """
+        Domain-adapt / finetune-lite speech classify (not FM continued pretrain).
+
+        Alias of :meth:`fit_speech_torch` with stronger domain-adapt disclosures
+        recorded under the ``domain_adapt_speech_torch`` operation name.
+
+        Parameters
+        ----------
+        epochs:
+            Number of training epochs.
+        learning_rate:
+            Optimizer learning rate.
+        device:
+            Compute device (``cpu``, ``cuda``, ``mps``, or ``auto``).
+        freeze_encoder:
+            When True, freeze the speech encoder during adaptation.
+        audio_column:
+            Optional audio column when loaders must be built.
+        batch_size:
+            Minibatch size when loaders must be built.
+        sample_rate:
+            Target sample rate when loaders must be built.
+        max_samples:
+            Maximum samples per example when loaders must be built.
+        source_sample_rate:
+            Optional source sample rate when loaders must be built.
+        normalize_audio:
+            When True, normalize audio amplitude on train only.
+        encoder_dim:
+            Encoder embedding dimension for the speech classifier.
+        seed:
+            Seed for shuffling and training.
+
+        Returns
+        -------
+        Session
+            ``self`` with ``dl_train_result`` attached for chaining."""
         return dl_ops.domain_adapt_speech_torch(
             self,
             epochs=epochs,
@@ -8450,59 +13998,146 @@ class Session:
 
     @property
     def dl_speech_result(self) -> Any | None:
-        """Last :meth:`transcribe_speech` result, if any."""
+        """Return the report from the most recent speech transcription.
+
+        Stored on Session after :meth:`transcribe_speech` so downstream calls can
+        reuse transcripts without re-running ASR.
+
+        Returns
+        -------
+        SpeechTranscribeResult or None
+            ``None`` until :meth:`transcribe_speech` has run."""
         return self._dl_speech_result
 
     @property
     def dl_backbone(self) -> Any | None:
-        """Last :meth:`load_pretrained_backbone` result, if any."""
+        """Return the pretrained backbone loaded by the most recent zoo call.
+
+        Stored on Session after :meth:`load_pretrained_backbone` for head attachment
+        or finetune-lite workflows.
+
+        Returns
+        -------
+        PretrainedBackbone or None
+            ``None`` until :meth:`load_pretrained_backbone` has run."""
         return self._dl_backbone
 
     @property
     def dl_backbone_head(self) -> Any | None:
-        """Last :meth:`attach_backbone_head` result, if any."""
+        """Return the backbone-plus-head bundle from the most recent attach.
+
+        Stored on Session after :meth:`attach_backbone_head` for training or export.
+
+        Returns
+        -------
+        BackboneHeadBundle or None
+            ``None`` until :meth:`attach_backbone_head` has run."""
         return self._dl_backbone_head
 
     @property
     def dl_asr_eval(self) -> Any | None:
-        """Last :meth:`evaluate_asr` result, if any."""
+        """Return WER/CER metrics from the most recent ASR evaluation.
+
+        Stored on Session after :meth:`evaluate_asr` for reporting and comparison.
+
+        Returns
+        -------
+        AsrEvalResult or None
+            ``None`` until :meth:`evaluate_asr` has run."""
         return self._dl_asr_eval
 
     @property
     def dl_train_result(self) -> TrainResult | None:
-        """Last Torch :class:`~buildml.dl.results.TrainResult`, if any."""
+        """Return the last Torch training result from fit or bundle load.
+
+        Stored on Session after :meth:`fit_torch`, :meth:`fit_speech_torch`,
+        :meth:`domain_adapt_speech_torch`, or :meth:`load_torch_bundle`.
+
+        Returns
+        -------
+        TrainResult or None
+            ``None`` until a torch trainer has been fit or loaded."""
         return self._dl_train_result
 
     @property
     def dl_cv_result(self) -> TorchCVResult | None:
-        """Last :class:`~buildml.dl.cv.TorchCVResult`, if any."""
+        """Return the last fold-local Torch cross-validation result.
+
+        Stored on Session after :meth:`cross_validate_torch` for model selection review.
+
+        Returns
+        -------
+        TorchCVResult or None
+            ``None`` until :meth:`cross_validate_torch` has run."""
         return self._dl_cv_result
 
     @property
     def dl_search_result(self) -> Any | None:
-        """Last :meth:`search_torch` result, if any."""
+        """Return the last inner-fold Torch hyperparameter search result.
+
+        Stored on Session after :meth:`search_torch` for reviewing best params.
+
+        Returns
+        -------
+        TorchSearchResult or None
+            ``None`` until :meth:`search_torch` has run."""
         return self._dl_search_result
 
     @property
     def dl_nested_cv_result(self) -> Any | None:
-        """Last :meth:`nested_cv_torch` result, if any."""
+        """Return the last nested Torch CV result with inner search.
+
+        Stored on Session after :meth:`nested_cv_torch` for unbiased performance review.
+
+        Returns
+        -------
+        TorchNestedCVResult or None
+            ``None`` until :meth:`nested_cv_torch` has run."""
         return self._dl_nested_cv_result
 
     @property
     def dl_export_result(self) -> Any | None:
-        """Last :meth:`export_torch` result, if any."""
+        """Return the last TorchScript or ONNX export result.
+
+        Stored on Session after :meth:`export_torch` for serving and packaging flows.
+
+        Returns
+        -------
+        TorchExportResult or None
+            ``None`` until :meth:`export_torch` has run."""
         return self._dl_export_result
 
     @property
     def dl_ddp_result(self) -> Any | None:
-        """Last :meth:`fit_torch_ddp` result, if any."""
+        """Return the last distributed data parallel training result.
+
+        Stored on Session after :meth:`fit_torch_ddp` for multi-GPU run review.
+
+        Returns
+        -------
+        DDPTrainResult or None
+            ``None`` until :meth:`fit_torch_ddp` has run."""
         return self._dl_ddp_result
 
     def torch_training_curve(self) -> TrainingCurveReport:
-        """Return structured training-curve teaching data for the last Torch run.
+        """
+        Return structured training-curve teaching data for the last Torch run.
 
         Requires a prior :meth:`fit_torch` / :meth:`load_torch_bundle`. Torch-free
-        to read once :attr:`dl_train_result` exists."""
+        to read once :attr:`dl_train_result` exists.
+        Delegates to :func:`buildml.dl.curves.build_training_curve`.
+
+        Parameters
+        ----------
+        Returns
+        -------
+        TrainingCurve
+            Epoch-wise loss/metric series for visualization or reporting.
+
+        Raises
+        ------
+        ValidationError
+            When no torch trainer exists on the Session."""
         return dl_ops.torch_training_curve(self)
 
     def evaluate_torch(
@@ -8511,17 +14146,53 @@ class Session:
         partition: Literal["train", "validation", "test"] = "test",
         device: str | None = None,
     ) -> DLEvaluateResult:
-        """Evaluate the last Torch trainer on a named partition.
+        """
+        Evaluate the last Torch trainer on a named partition.
 
         Requires ``pip install 'buildml[torch]'``. Uses loaders from
-        :meth:`make_torch_loaders` (rebuilds them if missing)."""
+        :meth:`make_torch_loaders` (rebuilds them if missing).
+        Delegates to :func:`buildml.dl.metrics.evaluate_module`.
+
+        Parameters
+        ----------
+        partition:
+            Partition to evaluate (``train``, ``validation``, or ``test``).
+        device:
+            Optional device override for evaluation.
+
+        Returns
+        -------
+        TorchEvalResult
+            Partition metrics for the trained module.
+
+        Raises
+        ------
+        ValidationError
+            When no torch trainer exists or non-tabular loaders are missing."""
         return dl_ops.evaluate_torch(self, partition=partition, device=device)
 
     def save_torch_bundle(self, path: str | Path) -> Path:
-        """Persist the last Torch trainer as ``buildml.torch_bundle.v1``.
+        """
+        Persist the last Torch trainer as ``buildml.torch_bundle.v1``.
 
         Distinct from Session checkpoints and classical pipeline bundles.
-        See :data:`buildml.dl.checkpoint.CHECKPOINT_BOUNDARY`."""
+        See :data:`buildml.dl.checkpoint.CHECKPOINT_BOUNDARY`.
+        Delegates to :func:`buildml.dl.checkpoint.save_torch_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no torch trainer exists on the Session."""
         return dl_ops.save_torch_bundle(self, path=path)
 
     def load_torch_bundle(
@@ -8531,10 +14202,13 @@ class Session:
         *,
         map_location: str | None = None,
     ) -> Session:
-        """Load a Torch trainer bundle into this Session.
+        """
+        Load a Torch trainer bundle into this Session.
 
-        Restores weights plus optional multimodal preprocess meta. Does not
-        rebuild DataLoaders — remake multimodal/text loaders before scoring.
+        Restores weights plus optional ``multimodal_preprocess`` meta (frozen
+        image/audio stats and layout). Does **not** rebuild DataLoaders — remake
+        multimodal/text loaders before fit/evaluate/export.
+        Delegates to :func:`buildml.dl.checkpoint.load_torch_bundle`.
 
         Parameters
         ----------
@@ -8543,7 +14217,12 @@ class Session:
         module:
             Compatible ``nn.Module`` shell that receives ``load_state_dict``.
         map_location:
-            Optional device for ``torch.load`` (default CPU)."""
+            Optional device for ``torch.load`` (default CPU).
+
+        Returns
+        -------
+        Session
+            ``self`` with ``dl_train_result`` attached for chaining."""
         return dl_ops.load_torch_bundle(self, path=path, module=module, map_location=map_location)
 
     def rag_ingest_corpus(
@@ -8556,13 +14235,38 @@ class Session:
         encoding: str = "utf-8",
         role: Literal["index", "eval_only"] = "index",
     ) -> Session:
-        """Load a text corpus for the RAG path (requires ``buildml[rag]``).
+        """
+        Load a text corpus for the RAG path (requires ``buildml[rag]``).
 
         Provide a file/directory ``source``, an in-memory document sequence, or
         ``text_column`` to bridge the current Session frame. Never silently
-        indexes every column.
+        indexes every column. Delegates to :mod:`buildml.rag.corpus`. Distinct
+        from classical ingest.
 
-        Delegates to :mod:`buildml.rag.corpus`. Distinct from classical ingest."""
+        Parameters
+        ----------
+        source:
+            Optional path, directory, or in-memory document sequence.
+        text_column:
+            Optional Session frame column to ingest as documents.
+        id_column:
+            Optional document id column when using ``text_column``.
+        glob:
+            Glob pattern when ``source`` is a directory (``*.txt`` by default).
+        encoding:
+            Text encoding for file-based sources.
+        role:
+            Corpus role (``index`` or ``eval_only``).
+
+        Returns
+        -------
+        Session
+            ``self`` with RAG corpus attached for chaining.
+
+        Raises
+        ------
+        ValidationError
+            When inputs are missing or ``text_column`` is used without a dataset."""
         return rag_ops.rag_ingest_corpus(
             self,
             source=source,
@@ -8580,7 +14284,31 @@ class Session:
         overlap: int = 64,
         strategy: str = "fixed",
     ) -> Session:
-        """Chunk the active RAG corpus (fixed or recursive strategy)."""
+        """
+        Chunk the active RAG corpus (fixed or recursive strategy).
+
+        ``strategy="recursive"`` splits on paragraph/line/sentence boundaries before
+        applying size/overlap (LangChain/LlamaIndex parity). Requires ``buildml[rag]``.
+        Delegates to :func:`buildml.rag.chunk.chunk_documents`.
+
+        Parameters
+        ----------
+        size:
+            Target chunk size in characters or tokens.
+        overlap:
+            Overlap between consecutive chunks.
+        strategy:
+            Chunking strategy (``fixed`` or ``recursive``).
+
+        Returns
+        -------
+        Session
+            ``self`` with chunk result attached for chaining.
+
+        Raises
+        ------
+        ValidationError
+            When no RAG corpus exists on the Session."""
         return rag_ops.rag_chunk(self, size=size, overlap=overlap, strategy=strategy)
 
     def rag_embed_and_index(
@@ -8592,11 +14320,38 @@ class Session:
         chunk_strategy: str | None = None,
         device: str | None = None,
     ) -> Session:
-        """Embed chunks and build the default NumPy cosine index.
+        """
+        Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
 
-        Default embedder is ``auto`` (sentence-transformers when ``buildml[rag]``
-        is installed, else hashing with disclosure). Pass ``embedder="hashing"``
-        for explicit lexical/CI paths."""
+        Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
+        Default embedder is ``auto``: sentence-transformers when ``buildml[rag]`` is
+        installed, else explicit hashing fallback with disclosure.
+        Pass ``embedder="hashing"`` for deterministic CI / lexical-only paths.
+        ``device`` applies to sentence-transformer backends; hashing stays CPU-only.
+        Delegates to :func:`buildml.rag.index.build_index`.
+
+        Parameters
+        ----------
+        embedder:
+            Embedder id or ``auto`` / ``hashing`` sentinel.
+        chunk_size:
+            Optional chunk size override before indexing.
+        chunk_overlap:
+            Optional chunk overlap override before indexing.
+        chunk_strategy:
+            Optional chunk strategy override before indexing.
+        device:
+            Optional device for sentence-transformer embedders.
+
+        Returns
+        -------
+        Session
+            ``self`` with RAG index attached for chaining.
+
+        Raises
+        ------
+        ValidationError
+            When no RAG corpus exists on the Session."""
         return rag_ops.rag_embed_and_index(
             self,
             embedder=embedder,
@@ -8617,10 +14372,39 @@ class Session:
         rerank: bool | str | None = None,
         config: Any | None = None,
     ) -> Any:
-        """Retrieve ranked chunks (dense / BM25 / hybrid) against the active RAG index.
+        """
+        Retrieve ranked chunks (dense / BM25 / hybrid) against the active RAG index.
 
-        Defaults: ``mode="hybrid"`` when ``buildml[rag]`` is installed, else ``dense``.
-        Metadata filters and cross-encoder rerank are opt-in."""
+        Defaults: ``mode="hybrid"`` (BM25 + dense RRF) when ``buildml[rag]`` is installed,
+        else ``mode="dense"``. Metadata filters and cross-encoder rerank are opt-in.
+        Delegates to :func:`buildml.rag.retrieve.retrieve`.
+
+        Parameters
+        ----------
+        query:
+            Natural-language query string.
+        k:
+            Number of chunks to retrieve.
+        mode:
+            Optional retrieve mode override (``dense``, ``bm25``, ``hybrid``).
+        fusion:
+            Optional fusion strategy for hybrid retrieval.
+        filters:
+            Optional metadata filters applied before ranking.
+        rerank:
+            Optional reranker toggle or model identifier.
+        config:
+            Optional full :class:`~buildml.rag.types.RetrieveConfig` override.
+
+        Returns
+        -------
+        RetrieveResult
+            Ranked chunks, scores, and retrieve provenance.
+
+        Raises
+        ------
+        ValidationError
+            When no RAG index exists on the Session."""
         return rag_ops.rag_retrieve(
             self,
             query=query,
@@ -8641,10 +14425,35 @@ class Session:
         mode: str | None = None,
         retrieve_config: Any | None = None,
     ) -> Any:
-        """Score retrieval with gold qrels (recall@k, MRR, nDCG@k, hit-rate@k).
+        """
+        Score retrieval with gold qrels (recall@k, MRR, nDCG@k, hit-rate@k).
 
         ``relevance_mode="document"`` (default) scores parent ``doc_id`` hits;
-        ``"chunk"`` scores ``chunk_id`` labels. Requires ``buildml[rag]``."""
+        ``"chunk"`` scores ``chunk_id`` labels. Requires ``buildml[rag]``.
+        Delegates to :func:`buildml.rag.evaluate.evaluate_retrieval`.
+
+        Parameters
+        ----------
+        qrels:
+            Gold relevance judgments mapping queries to relevant ids.
+        k:
+            Cutoff k for retrieval metrics.
+        relevance_mode:
+            Whether qrels label documents or chunks.
+        mode:
+            Optional retrieve mode override for evaluation queries.
+        retrieve_config:
+            Optional retrieve configuration override.
+
+        Returns
+        -------
+        RagEvalResult
+            Aggregate retrieval metrics and per-query summaries.
+
+        Raises
+        ------
+        ValidationError
+            When no RAG index exists on the Session."""
         return rag_ops.rag_evaluate(
             self,
             qrels=qrels,
@@ -8668,11 +14477,48 @@ class Session:
         config: GenerateConfig | None = None,
         use_last_retrieve: bool = False,
     ) -> GenerateResult:
-        """Retrieve context and generate a grounded answer with citations.
+        """
+        Retrieve (unless reusing the last retrieve) and generate a grounded answer.
 
-        Requires an active RAG index and a chat provider (explicit ``provider``
-        or a prior :meth:`ai_configure`). Empty retrieval and provider failures
-        raise :class:`~buildml.core.errors.ValidationError`."""
+        Requires an active RAG index and a chat provider. When ``provider`` is
+        omitted, reuses ``:meth:`ai_configure```'s provider. For offline CI, pass
+        :class:`buildml.rag.generate.EchoGroundedProvider` or a
+        :class:`buildml.ai.provider.MockProvider`. Delegates to
+        :func:`buildml.rag.generate.generate_grounded`.
+
+        Parameters
+        ----------
+        query:
+            Natural-language question to answer.
+        k:
+            Number of chunks to retrieve for grounding.
+        provider:
+            Optional chat provider; uses Session AI provider when omitted.
+        mode:
+            Optional retrieve mode passed through to retrieval.
+        fusion:
+            Optional fusion strategy for hybrid retrieval.
+        filters:
+            Optional metadata filters for retrieval.
+        rerank:
+            Optional reranker toggle or model identifier.
+        retrieve_config:
+            Optional retrieve configuration override.
+        config:
+            Optional :class:`~buildml.rag.types.GenerateConfig` override.
+        use_last_retrieve:
+            When True, reuse the prior :meth:`rag_retrieve` result.
+
+        Returns
+        -------
+        GenerateResult
+            Answer text, citations (source ids / chunk / doc), and retrieve provenance.
+
+        Raises
+        ------
+        ValidationError
+            When no RAG index or provider is available, or reuse is requested
+            without a prior retrieve result."""
         return rag_ops.rag_generate(
             self,
             query=query,
@@ -8694,9 +14540,32 @@ class Session:
         chunks: Sequence[Any] | None = None,
         chunk: bool = True,
     ) -> Session:
-        """Upsert documents or chunks into the active RAG index without a full rebuild.
+        """
+        Upsert documents or chunks into the active RAG index without a full rebuild.
 
-        Replaces existing ``chunk_id`` rows and re-embeds only new/changed text."""
+        Replaces existing ``chunk_id`` rows and re-embeds only new/changed text.
+        Delegates to the active index object's upsert methods.
+
+        Parameters
+        ----------
+        documents:
+            Optional new or updated documents to upsert.
+        chunks:
+            Optional pre-chunked rows to upsert (mutually exclusive with
+            ``documents``).
+        chunk:
+            When True and ``documents`` is supplied, chunk before upserting.
+
+        Returns
+        -------
+        Session
+            ``self`` with updated index and chunk state attached.
+
+        Raises
+        ------
+        ValidationError
+            When no RAG index exists or neither ``documents`` nor ``chunks`` is
+            supplied."""
         return rag_ops.rag_upsert(self, documents=documents, chunks=chunks, chunk=chunk)
 
     def rag_delete(
@@ -8705,38 +14574,118 @@ class Session:
         chunk_ids: Sequence[str] | None = None,
         doc_ids: Sequence[str] | None = None,
     ) -> Session:
-        """Delete chunks by id and/or parent document id from the active RAG index."""
+        """
+        Delete chunks by id and/or parent document id from the active RAG index.
+
+        Removes matching rows from the in-memory index and refreshes Session chunk
+        state without requiring a full rebuild.
+
+        Parameters
+        ----------
+        chunk_ids:
+            Optional chunk identifiers to delete.
+        doc_ids:
+            Optional parent document identifiers whose chunks should be deleted.
+
+        Returns
+        -------
+        Session
+            ``self`` with updated index and chunk state attached.
+
+        Raises
+        ------
+        ValidationError
+            When no RAG index exists on the Session."""
         return rag_ops.rag_delete(self, chunk_ids=chunk_ids, doc_ids=doc_ids)
 
     @property
     def rag_index_result(self) -> IndexResult | None:
-        """Last :class:`~buildml.rag.results.IndexResult`, if any."""
+        """Return the index metadata from the most recent embed-and-index call.
+
+        Stored on Session after :meth:`rag_embed_and_index` or :meth:`load_rag_bundle`.
+
+        Returns
+        -------
+        IndexResult or None
+            ``None`` until :meth:`rag_embed_and_index` or :meth:`load_rag_bundle` has run."""
         return self._rag_index_result
 
     @property
     def rag_retrieve_result(self) -> RetrieveResult | None:
-        """Last :class:`~buildml.rag.results.RetrieveResult`, if any."""
+        """Return the ranked chunks from the most recent retrieval call.
+
+        Stored on Session after :meth:`rag_retrieve` or a generate call that retrieved.
+
+        Returns
+        -------
+        RetrieveResult or None
+            ``None`` until :meth:`rag_retrieve` or :meth:`rag_generate` has run."""
         return self._rag_retrieve_result
 
     @property
     def rag_eval_result(self) -> RagEvalResult | None:
-        """Last :class:`~buildml.rag.results.RagEvalResult`, if any."""
+        """Return retrieval metrics from the most recent RAG evaluation.
+
+        Stored on Session after :meth:`rag_evaluate` for offline retrieval QA.
+
+        Returns
+        -------
+        RagEvalResult or None
+            ``None`` until :meth:`rag_evaluate` has run."""
         return self._rag_eval_result
 
     @property
     def rag_generate_result(self) -> GenerateResult | None:
-        """Last :class:`~buildml.rag.results.GenerateResult`, if any."""
+        """Return the grounded answer from the most recent RAG generate call.
+
+        Stored on Session after :meth:`rag_generate` for audit and downstream reuse.
+
+        Returns
+        -------
+        GenerateResult or None
+            ``None`` until :meth:`rag_generate` has run."""
         return self._rag_generate_result
 
     def save_rag_bundle(self, path: str | Path) -> Path:
-        """Persist the active RAG index as ``buildml.rag_bundle.v1``.
+        """
+        Persist the active RAG index as ``buildml.rag_bundle.v1``.
 
         Distinct from Session checkpoints and Torch trainer bundles.
-        See :data:`buildml.rag.checkpoint.CHECKPOINT_BOUNDARY`."""
+        See :data:`buildml.rag.checkpoint.CHECKPOINT_BOUNDARY`.
+        Delegates to :func:`buildml.rag.checkpoint.save_rag_bundle`.
+
+        Parameters
+        ----------
+        path:
+            Destination directory for the bundle (created if missing).
+
+        Returns
+        -------
+        pathlib.Path
+            Resolved bundle directory path.
+
+        Raises
+        ------
+        ValidationError
+            When no RAG index exists on the Session."""
         return rag_ops.save_rag_bundle(self, path=path)
 
     def load_rag_bundle(self, path: str | Path) -> Session:
-        """Load a RAG bundle into this Session (requires ``buildml[rag]``)."""
+        """
+        Load a RAG bundle into this Session (requires ``buildml[rag]``).
+
+        Delegates to :func:`buildml.rag.checkpoint.load_rag_bundle` and restores
+        index, chunk, and index-result state on the Session.
+
+        Parameters
+        ----------
+        path:
+            Path to a ``buildml.rag_bundle.v1`` directory.
+
+        Returns
+        -------
+        Session
+            ``self`` with RAG index attached for chaining."""
         return rag_ops.load_rag_bundle(self, path=path)
 
     def ai_configure(
@@ -8758,23 +14707,23 @@ class Session:
 
         Parameters
         ----------
-        provider
+        provider:
             Provider name (currently ``"openai"`` for OpenAI-compatible APIs,
             or ``"mock"`` for CI testing without real keys).
-        model
+        model:
             Model identifier for the provider.
-        api_key
+        api_key:
             API key (if None, reads from ``api_key_env`` environment variable).
-        api_key_env
+        api_key_env:
             Environment variable name for the API key.
-        egress_level
+        egress_level:
             Default egress level: ``"schema_only"``, ``"stats_only"`` (default),
             ``"redacted_sample"``, or ``"full_sample"``.
-        max_iterations
+        max_iterations:
             Maximum tool iterations per AI call (default 10).
-        max_tokens
+        max_tokens:
             Optional token budget limit across all AI calls.
-        max_cost_usd
+        max_cost_usd:
             Optional cost budget limit (USD) across all AI calls.
 
         Returns
@@ -8807,12 +14756,12 @@ class Session:
 
         Parameters
         ----------
-        level
+        level:
             Override egress level for this preview (``"schema_only"``,
             ``"stats_only"``, ``"redacted_sample"``, ``"full_sample"``).
-        allow_columns
+        allow_columns:
             Explicit allowlist of columns to include.
-        deny_columns
+        deny_columns:
             Explicit denylist of columns to exclude.
 
         Returns
@@ -8836,9 +14785,9 @@ class Session:
 
         Parameters
         ----------
-        question
+        question:
             The question or goal to preview.
-        level
+        level:
             Override egress level for this preview.
 
         Returns
@@ -8861,11 +14810,11 @@ class Session:
 
         Parameters
         ----------
-        question
+        question:
             The question to ask about the workflow.
-        level
+        level:
             Override egress level for this call.
-        confirm
+        confirm:
             Required True for FULL_SAMPLE egress (raw data). REDACTED_SAMPLE
             also requires explicit confirmation.
 
@@ -8895,11 +14844,11 @@ class Session:
 
         Parameters
         ----------
-        goal
+        goal:
             The workflow goal to plan for.
-        level
+        level:
             Override egress level for this call.
-        confirm
+        confirm:
             Required True for FULL_SAMPLE or REDACTED_SAMPLE egress levels.
 
         Returns
@@ -8928,11 +14877,11 @@ class Session:
 
         Parameters
         ----------
-        tool
+        tool:
             Name of the tool to execute (must be in the allowed registry).
-        params
+        params:
             Tool arguments as a dictionary.
-        confirm
+        confirm:
             If True, confirms and executes; otherwise returns a proposal.
 
         Returns
@@ -8958,18 +14907,18 @@ class Session:
 
         Parameters
         ----------
-        plan
+        plan:
             The PlanResult to execute. If None, uses the last ai_plan result.
-        confirmations
+        confirmations:
             Dict mapping step_index -> True/False for confirmation decisions.
             Steps not in the dict use default confirmation behavior.
-        auto_confirm_read_only
+        auto_confirm_read_only:
             If True (default), auto-confirm read-only operations.
-        stop_on_error
+        stop_on_error:
             If True (default), stop execution on first error.
-        stop_on_unconfirmed
+        stop_on_unconfirmed:
             If True (default), stop at steps requiring unconfirmed confirmation.
-        max_steps
+        max_steps:
             Maximum number of steps to execute (None = no limit).
 
         Returns
@@ -9002,13 +14951,32 @@ class Session:
         allow_destructive: bool = False,
         provider_plan: bool = True,
     ) -> Any:
-        """Explicit autonomy mode: plan-and-execute allowlisted tools under hard caps.
-
-        Default AI remains propose→confirm→execute. This path auto-confirms only
-        after ``confirm_autonomy=True``, with max-steps, allowlist, blocked sample
-        egress, destructive gating, and transcript audit. Operator automation —
-        not unconstrained agency.
         """
+        Explicit autonomy mode with hard caps (see :mod:`buildml.ai.autonomous`).
+
+        Records the operation on Session history and returns the result for downstream chaining.
+
+        Parameters
+        ----------
+        goal:
+            Workflow goal for planning or autonomous execution.
+        plan:
+            Structured plan object from a prior planning call.
+        confirm_autonomy:
+            Controls ``confirm_autonomy``; see the function signature for type and default.
+        max_steps:
+            Controls ``max_steps``; see the function signature for type and default.
+        tool_allowlist:
+            Controls ``tool_allowlist``; see the function signature for type and default.
+        allow_destructive:
+            Controls ``allow_destructive``; see the function signature for type and default.
+        provider_plan:
+            Controls ``provider_plan``; see the function signature for type and default.
+
+        Returns
+        -------
+        Any
+            Domain result object from the underlying ``buildml`` module."""
         return ai_ops.ai_run_autonomous(
             self,
             goal,
@@ -9033,48 +15001,75 @@ class Session:
         return ai_ops.ai_status(self)
 
     def save_ai_transcript(self, path: str | Path, *, redact: bool = True) -> Path:
-        """Save the AI transcript to a JSON file (secrets redacted by default).
+        """
+        Save the AI transcript to a JSON file (secrets redacted by default).
 
         Transcripts record conversation history, tool calls, and egress
+
         manifests. API keys and raw data are redacted before saving.
 
         Parameters
         ----------
-        path
+            path:
             Output file path.
-        redact
+            redact:
             If True (default), redact potential secrets before saving.
+        path:
+            Filesystem path for load or save.
+        redact:
+            When True, redact secrets before persisting transcripts.
 
         Returns
         -------
         Path
-            The resolved output path."""
+        The resolved output path."""
         return ai_ops.save_ai_transcript(self, path=path, redact=redact)
 
     def load_ai_transcript(self, path: str | Path) -> Session:
-        """Load an AI transcript for resume or audit.
+        """
+        Load an AI transcript for resume or audit.
+
+        Records the operation on Session history and returns the result for downstream chaining.
 
         Parameters
         ----------
-        path
+            path:
             Input file path.
+        path:
+            Filesystem path for load or save.
 
         Returns
         -------
         Session
-            Self for chaining."""
+        Self for chaining."""
         return ai_ops.load_ai_transcript(self, path=path)
 
     @property
     def ai_result(
         self,
     ) -> AdvisorResult | PlanResult | ExecutorResult | PlanExecutionResult | None:
-        """Last AI result (AdvisorResult, PlanResult, or ExecutorResult)."""
+        """Return the most recent AI advisor, plan, execute, or run-plan result.
+
+        Updated by :meth:`ai_advisor`, :meth:`ai_plan`, :meth:`ai_execute`,
+        :meth:`ai_run_plan`, and :meth:`ai_run_autonomous`.
+
+        Returns
+        -------
+        AdvisorResult, PlanResult, ExecutorResult, PlanExecutionResult, or None
+            ``None`` until an AI operation has produced a result."""
         return self._ai_result
 
     @property
     def ai_transcript(self) -> TranscriptStore | None:
-        """Active AI transcript store, if any."""
+        """Return the active AI transcript store for this Session.
+
+        Created by :meth:`ai_configure` and populated by AI calls; reload with
+        :meth:`load_ai_transcript`.
+
+        Returns
+        -------
+        TranscriptStore or None
+            ``None`` until :meth:`ai_configure` or :meth:`load_ai_transcript` has run."""
         return self._ai_transcript
 
     def eval_plots(
@@ -11471,6 +17466,8 @@ class Session:
             a metric is mostly noise — three rows and two errors is not a 67%
             error rate, it is three rows. Smaller segments are listed
             separately rather than discarded.
+        export_html:
+            Optional path to write an HTML report of segment findings.
 
         Returns
         -------

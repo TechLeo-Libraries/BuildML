@@ -49,7 +49,66 @@ def fit_ssl_pretext_op(
     hf_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
     device: str = "cpu",
 ) -> Any:
-    """Fit a self-supervised pretext encoder on the train partition only."""
+    """Fit a self-supervised pretext encoder on the train partition only.
+
+    Delegates to :func:`buildml.selfsupervised.fit.fit_ssl_pretext`, stores the
+    :class:`~buildml.selfsupervised.results.SSLPlan` on Session, and records
+    the fit. Follow with :func:`transform_ssl_op` or :func:`finetune_ssl_head_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with tabular, text, or image columns and a split plan.
+    method:
+        Self-supervised method override; inferred from modality when ``None``.
+    columns:
+        Tabular feature columns for pretext training.
+    text_column:
+        Text column for language-model or contrastive text methods.
+    image_column:
+        Image path/bytes column for vision methods.
+    random_state:
+        Seed for augmentations and initialization.
+    latent_dim:
+        Output embedding dimensionality.
+    hidden:
+        Hidden layer sizes for tabular encoders.
+    mask_ratio:
+        Fraction of features masked in masked-modeling pretext tasks.
+    n_mask_views:
+        Number of masked views per sample for contrastive objectives.
+    max_iter:
+        Maximum iterations for sklearn-style encoders.
+    epochs:
+        Training epochs for torch backends.
+    batch_size:
+        Minibatch size for torch training.
+    learning_rate:
+        Optimizer learning rate for torch backends.
+    temperature:
+        Temperature for contrastive loss scaling.
+    projector_dim:
+        Projector head dimension for contrastive methods.
+    projector_hidden:
+        Hidden sizes for the contrastive projector MLP.
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+    representation_prefix:
+        Column prefix when attaching embeddings to the dataset.
+    backbone:
+        Vision backbone architecture name for image methods.
+    weight_mode:
+        Weight initialization mode for mock/demo vision backends.
+    hf_model_name:
+        HuggingFace model name for text embedding methods.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+
+    Returns
+    -------
+    SSLFitResult
+        Serializable fit summary including method, modality, and disclosures.
+    """
     session.assert_can_fit("train")
     plan, result = fit_ssl_pretext(
         session.dataset,
@@ -121,7 +180,30 @@ def transform_ssl_op(
     partition: PartitionOrAll = "train",
     attach: bool = False,
 ) -> Any:
-    """Export SSL representations with the train-fitted pretext (no refit)."""
+    """Export SSL representations with the train-fitted pretext encoder.
+
+    Delegates to :func:`buildml.selfsupervised.transform.transform_ssl`
+    without refitting. Optionally attaches embedding columns to Session dataset.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an SSLPlan from :func:`fit_ssl_pretext_op`.
+    partition:
+        Split partition to encode (default ``train``).
+    attach:
+        When True, merge embedding columns into the Session dataset frame.
+
+    Returns
+    -------
+    SSLTransformResult
+        Embedding matrix metadata and optional attached column names.
+
+    Raises
+    ------
+    ValidationError
+        When no SSL plan exists on the Session.
+    """
     plan = getattr(session, "_ssl_plan", None)
     if plan is None:
         raise ValidationError("No SSL plan. Call fit_ssl_pretext(...) first.")
@@ -150,7 +232,32 @@ def finetune_ssl_head_op(
     random_state: int | None = 0,
     unlabeled_marker: Any = None,
 ) -> Any:
-    """Fit a supervised head on frozen SSL embeddings (labeled train only)."""
+    """Fit a supervised head on frozen SSL embeddings using labeled train rows.
+
+    Delegates to :func:`buildml.selfsupervised.finetune.finetune_ssl_head`.
+    Requires a prior :func:`fit_ssl_pretext_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an SSLPlan from :func:`fit_ssl_pretext_op`.
+    estimator:
+        Supervised head estimator (``logistic_regression``, etc.).
+    random_state:
+        Seed for head fitting.
+    unlabeled_marker:
+        Value marking unlabeled rows to exclude from head training.
+
+    Returns
+    -------
+    SSLHeadFitResult
+        Head fit summary including labeled row counts and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no SSL plan exists on the Session.
+    """
     plan = getattr(session, "_ssl_plan", None)
     if plan is None:
         raise ValidationError("No SSL plan. Call fit_ssl_pretext(...) first.")
@@ -185,7 +292,31 @@ def evaluate_ssl_op(
     partition: PartitionOrAll = "validation",
     unlabeled_marker: Any = None,
 ) -> Any:
-    """Evaluate frozen SSL pretext + head on labeled partition rows."""
+    """Evaluate frozen SSL pretext encoder and head on a labeled partition.
+
+    Delegates to :func:`buildml.selfsupervised.evaluate.evaluate_ssl`.
+    Requires both :func:`fit_ssl_pretext_op` and :func:`finetune_ssl_head_op`.
+    Falls back to ``test`` when no validation partition exists.
+
+    Parameters
+    ----------
+    session:
+        Active Session with SSL and head plans from prior fit steps.
+    partition:
+        Holdout partition for evaluation (default ``validation``).
+    unlabeled_marker:
+        Value marking unlabeled rows to exclude from evaluation.
+
+    Returns
+    -------
+    SSLEvalResult
+        Holdout metrics for the frozen pretext + head pipeline.
+
+    Raises
+    ------
+    ValidationError
+        When SSL or head plans are missing on the Session.
+    """
     ssl_plan = getattr(session, "_ssl_plan", None)
     head_plan = getattr(session, "_ssl_head_plan", None)
     if ssl_plan is None or head_plan is None:
@@ -219,7 +350,28 @@ def evaluate_ssl_op(
 
 
 def save_ssl_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active SSL plan (+ optional head) as ``buildml.ssl_bundle.v2``."""
+    """Persist the active SSL plan as ``buildml.ssl_bundle.v2``.
+
+    Delegates to :func:`buildml.selfsupervised.checkpoint.save_ssl_bundle`.
+    Reload with :func:`load_ssl_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an SSLPlan from :func:`fit_ssl_pretext_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no SSL plan exists on the Session.
+    """
     plan = getattr(session, "_ssl_plan", None)
     if plan is None:
         raise ValidationError("No SSL plan. Call fit_ssl_pretext(...) first.")
@@ -245,7 +397,23 @@ def save_ssl_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_ssl_bundle_op(session, path: str | Path) -> Any:
-    """Load a self-supervised bundle into this Session."""
+    """Load a self-supervised bundle into this Session.
+
+    Delegates to :func:`buildml.selfsupervised.checkpoint.load_ssl_bundle`
+    and clears prior transform/head/eval results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded SSLPlan.
+    path:
+        Path to a ``buildml.ssl_bundle.v2`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with SSLPlan and optional head plan attached.
+    """
     plan, head = load_ssl_bundle(path)
     session._ssl_plan = plan
     session._ssl_head_plan = head

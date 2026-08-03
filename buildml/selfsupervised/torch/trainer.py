@@ -14,6 +14,12 @@ from buildml.selfsupervised.torch import augment, losses, models
 
 @dataclass(slots=True)
 class SSLTrainConfig:
+    """Hyperparameters for tabular Torch SSL training loops.
+
+    Captures method-specific loss weights, augmentation strengths, and optimizer
+    settings used by :func:`train_tabular_ssl`.
+    """
+
     method: str
     epochs: int = 40
     batch_size: int = 64
@@ -35,6 +41,12 @@ class SSLTrainConfig:
 
 @dataclass(slots=True)
 class SSLTrainResult:
+    """Outcome of training a tabular Torch SSL module on train features.
+
+    Holds fitted modules, final loss diagnostics, and the config snapshot used
+    during training.
+    """
+
     module: Any
     target_module: Any | None
     pretext_loss: float
@@ -57,7 +69,36 @@ def train_tabular_ssl(
     predictor_hidden: tuple[int, ...] = (64,),
     config: SSLTrainConfig | None = None,
 ) -> SSLTrainResult:
-    """Fit a tabular SSL module on feature matrix ``x`` (train only)."""
+    """Fit a tabular Torch SSL module on feature matrix ``x``.
+
+    Routes to method-specific training loops for SimCLR, BYOL, VICReg, MAE,
+    and VAE tabular encoders using train-only minibatches.
+
+    Parameters
+    ----------
+    x:
+        2D float train feature matrix.
+    method:
+        Tabular SSL method key.
+    latent_dim:
+        Encoder bottleneck width.
+    hidden:
+        Encoder hidden layer widths.
+    projector_hidden, projector_dim, predictor_hidden:
+        Contrastive head widths when applicable.
+    config:
+        Training hyperparameters; defaults are created when ``None``.
+
+    Returns
+    -------
+    SSLTrainResult
+        Fitted module(s), loss history, and diagnostics.
+
+    Raises
+    ------
+    ValidationError
+        When ``x`` is too small or the method is unsupported.
+    """
     require_torch(feature="SSL training")
     x_arr = np.asarray(x, dtype=np.float32)
     if x_arr.ndim != 2 or x_arr.shape[0] < 4:

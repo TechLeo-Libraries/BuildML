@@ -6,6 +6,21 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
+    """Build a compact history summary from an SSL pretext fit result.
+
+    Strips full encoder payloads while recording method, modality, and train
+    diagnostics for Session audit logs.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.selfsupervised.results.SelfSupervisedFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Method, modality, train row count, latent width, and loss summaries.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -21,6 +36,21 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def transform_result_summary(result: Any) -> dict[str, Any]:
+    """Build a compact history summary from an SSL transform result.
+
+    Records partition, row count, and representation column names without
+    embedding full embedding arrays in Session history.
+
+    Parameters
+    ----------
+    result:
+        :class:`~buildml.selfsupervised.results.SelfSupervisedTransformResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, row count, method, attach flag, and column count.
+    """
     if result is None:
         return {}
     payload = result.to_dict() if hasattr(result, "to_dict") else dict(result)
@@ -34,6 +64,21 @@ def transform_result_summary(result: Any) -> dict[str, Any]:
 
 
 def head_fit_result_summary(result: Any) -> dict[str, Any]:
+    """Build a compact history summary from an SSL head fit result.
+
+    Records labeled/unlabeled train counts and estimator choice without
+    serialising the fitted classifier.
+
+    Parameters
+    ----------
+    result:
+        :class:`~buildml.selfsupervised.results.SSLHeadFitResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Estimator name, labeled train count, skipped unlabeled count, and target.
+    """
     if result is None:
         return {}
     payload = result.to_dict() if hasattr(result, "to_dict") else dict(result)
@@ -46,6 +91,21 @@ def head_fit_result_summary(result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(result: Any) -> dict[str, Any]:
+    """Build a compact history summary from an SSL evaluation result.
+
+    Records partition metrics and labeled/unlabeled mix without listing every
+    prediction in Session history.
+
+    Parameters
+    ----------
+    result:
+        :class:`~buildml.selfsupervised.results.SelfSupervisedEvalResult` or ``None``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, row counts, labeled eval count, and metrics dict.
+    """
     if result is None:
         return {}
     payload = result.to_dict() if hasattr(result, "to_dict") else dict(result)
@@ -66,7 +126,30 @@ def selfsupervised_status(
     eval_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for self-supervised hooks."""
+    """Build factual walkthrough disclosure for self-supervised hooks.
+
+    Combines live plan metadata, optional head/eval summaries, history
+    detection, and :func:`~buildml.selfsupervised.torch.catalog.ssl_capability_matrix`
+    for teaching overlays.
+
+    Parameters
+    ----------
+    plan:
+        Active :class:`~buildml.selfsupervised.results.SelfSupervisedPlan`, if any.
+    head_plan:
+        Optional :class:`~buildml.selfsupervised.results.SSLHeadPlan`.
+    fit_result:
+        Last pretext fit report attached to the Session.
+    eval_result:
+        Last holdout evaluation report attached to the Session.
+    history:
+        Session operation history used to detect prior SSL calls.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, method metadata, eval payload, disclosures, and capability matrix.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -118,7 +201,10 @@ def selfsupervised_status(
             eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_ssl_plan": enabled,
@@ -138,10 +224,26 @@ def selfsupervised_status(
             "then attach a supervised head. Distinct from semi-supervised label "
             "propagation and from Torch zoo backbone transfer."
         ),
-    }
+    },
+        "ssl_capability_matrix",
+    )
 
 
 def selfsupervised_status_for_session(session: Any) -> dict[str, Any]:
+    """Report self-supervised status for a Session walkthrough panel.
+
+    Reads SSL plan, head, and result slots without mutating the Session.
+
+    Parameters
+    ----------
+    session:
+        :class:`~buildml.session.session.Session` instance.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`selfsupervised_status` for the Session's SSL state.
+    """
     return selfsupervised_status(
         getattr(session, "_ssl_plan", None),
         head_plan=getattr(session, "_ssl_head_plan", None),

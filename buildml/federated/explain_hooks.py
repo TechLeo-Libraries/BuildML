@@ -6,7 +6,22 @@ from typing import Any
 
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``fit_federated`` history."""
+    """Build a compact history payload from a federated fit result.
+
+    Strips heavy estimator objects so Session history records only the fields
+    needed for walkthrough overlays and audit replay.
+
+    Parameters
+    ----------
+    fit_result:
+        :class:`~buildml.federated.results.FederatedFitResult` or compatible
+        mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Backend, method, client counts, round metadata, and train metric.
+    """
     if fit_result is None:
         return {}
     payload = fit_result.to_dict() if hasattr(fit_result, "to_dict") else dict(fit_result)
@@ -26,7 +41,22 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``evaluate_federated`` history."""
+    """Build a compact history payload from a federated evaluation result.
+
+    Captures partition-level holdout metrics and per-client evaluation counts
+    for explain overlays without serializing full metric blobs.
+
+    Parameters
+    ----------
+    eval_result:
+        :class:`~buildml.federated.results.FederatedEvalResult` or compatible
+        mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, row counts, aggregate metrics, and clients evaluated.
+    """
     if eval_result is None:
         return {}
     payload = eval_result.to_dict() if hasattr(eval_result, "to_dict") else dict(eval_result)
@@ -41,7 +71,22 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
 
 
 def predict_result_summary(predict_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``predict_federated`` history."""
+    """Build a compact history payload from a federated predict result.
+
+    Records partition and prediction counts without embedding full prediction
+    tuples in Session history.
+
+    Parameters
+    ----------
+    predict_result:
+        :class:`~buildml.federated.results.FederatedPredictResult` or compatible
+        mapping; ``None`` yields an empty dict.
+
+    Returns
+    -------
+    dict[str, Any]
+        Partition, row counts, and prediction count metadata.
+    """
     if predict_result is None:
         return {}
     payload = (
@@ -66,7 +111,33 @@ def federated_status(
     predict_result: Any = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for federated learning."""
+    """Build factual walkthrough disclosure for federated learning state.
+
+    Combines live plan fields, latest fit/eval/predict payloads, and history
+    evidence into a teaching-oriented status dict with capability matrix
+    attachment.
+
+    Parameters
+    ----------
+    plan:
+        Optional :class:`~buildml.federated.results.FederatedPlan`.
+    fit_result:
+        Optional latest fit result for ``has_fit_result``.
+    eval_result:
+        Optional latest eval result; metrics are summarized in disclosures.
+    predict_result:
+        Optional latest predict result.
+    history:
+        Session operation history used to detect federated activity when no
+        plan is attached.
+
+    Returns
+    -------
+    dict[str, Any]
+        Enabled flags, client partition summary, disclosures, boundary text,
+        and nested capability matrix from
+        :func:`buildml.explain.capability_status.attach_capability_matrix`.
+    """
     records = list(history or [])
     saw = any(
         str(r.get("operation_id") or r.get("action"))
@@ -76,6 +147,7 @@ def federated_status(
             "predict_federated",
             "save_federated_bundle",
             "load_federated_bundle",
+            "export_round_history",
         }
         for r in records
     )
@@ -129,7 +201,10 @@ def federated_status(
             else dict(predict_result)
         )
 
-    return {
+    from buildml.explain.capability_status import attach_capability_matrix
+
+    return attach_capability_matrix(
+        {
         "enabled": enabled,
         "present": enabled or saw,
         "has_federated_plan": enabled,
@@ -163,11 +238,28 @@ def federated_status(
             "(still local unless you deploy Flower). Holdout is "
             "evaluation-only. Not cryptographic secure aggregation; not causal."
         ),
-    }
+    },
+        "federated_capability_matrix",
+    )
 
 
 def federated_status_for_session(session: Any) -> dict[str, Any]:
-    """Session-facing status helper."""
+    """Build federated walkthrough status from a Session instance.
+
+    Reads private Session attributes set by federated operations and delegates
+    to :func:`federated_status`.
+
+    Parameters
+    ----------
+    session:
+        BuildML Session with optional ``_federated_*`` state attributes.
+
+    Returns
+    -------
+    dict[str, Any]
+        Same payload as :func:`federated_status` for the session's plan and
+        results.
+    """
     return federated_status(
         getattr(session, "_federated_plan", None),
         fit_result=getattr(session, "_federated_fit_result", None),

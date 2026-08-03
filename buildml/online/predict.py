@@ -20,7 +20,32 @@ def predict_online(
     *,
     partition: PartitionOrAll = "test",
 ) -> OnlinePredictResult:
-    """Predict with the incremental estimator (no update / no leakage into fit)."""
+    """Predict with the incremental estimator without updating the model.
+
+    Scores a holdout or full-dataset partition using the current partial_fit
+    state; predictions do not leak back into training.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with feature columns from the plan.
+    plan:
+        Fitted :class:`~buildml.online.results.OnlinePlan`.
+    split_plan:
+        Split plan; required unless ``partition='all'``.
+    partition:
+        Partition to predict on (``validation``, ``test``, ``train``, or ``all``).
+
+    Returns
+    -------
+    OnlinePredictResult
+        Decoded predictions and disclosure fields.
+
+    Raises
+    ------
+    ValidationError
+        When plan, partition, or column preconditions are invalid.
+    """
     if plan is None:
         raise ValidationError("No OnlinePlan. Call fit_online first.")
 

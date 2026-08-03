@@ -14,7 +14,24 @@ def sdmetrics_quality_scores(
     synthetic: pd.DataFrame,
     metadata: Any | None = None,
 ) -> tuple[dict[str, float], list[str]]:
-    """Run SDMetrics QualityReport; return scalar metrics + warnings."""
+    """Run SDMetrics QualityReport; return scalar metrics + warnings.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+real:
+    real (pd.DataFrame).
+synthetic:
+    synthetic (pd.DataFrame).
+metadata:
+    metadata (Any | None).
+
+Returns
+-------
+tuple[dict[str, float], list[str]]
+    Tuple of results (tuple[dict[str, float], list[str]]) for downstream Session steps.
+    """
     require_sdmetrics()
     from sdmetrics.reports.single_table import QualityReport
 

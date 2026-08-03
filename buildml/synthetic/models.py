@@ -14,7 +14,20 @@ from buildml.synthetic.types import ColumnKind, ColumnSchemaSpec
 
 
 def infer_column_kind(series: pd.Series) -> ColumnKind:
-    """Heuristic column kind for mixed-type tabular synthesis."""
+    """Heuristic column kind for mixed-type tabular synthesis.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+series:
+    series (pd.Series).
+
+Returns
+-------
+ColumnKind
+    Return value (ColumnKind) produced by this operation.
+    """
     if pd.api.types.is_bool_dtype(series):
         return "categorical"
     if pd.api.types.is_integer_dtype(series):
@@ -29,6 +42,20 @@ def infer_column_kind(series: pd.Series) -> ColumnKind:
 
 
 def build_column_specs(frame: pd.DataFrame) -> tuple[ColumnSchemaSpec, ...]:
+    """Construct a column specs ready for fit or scoring.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+frame:
+    Partition or full DataFrame slice used for this operation.
+
+Returns
+-------
+tuple[ColumnSchemaSpec, ...]
+    Tuple of results (tuple[ColumnSchemaSpec, ...]) for downstream Session steps.
+    """
     specs: list[ColumnSchemaSpec] = []
     for name in frame.columns:
         series = frame[name]
@@ -88,6 +115,31 @@ class BootstrapGenerator:
         smooth_sigma: float = 0.0,
         random_state: int = 42,
     ) -> BootstrapGenerator:
+        """Run fit on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+frame:
+    Partition or full DataFrame slice used for this operation.
+specs:
+    specs (tuple[ColumnSchemaSpec, ...]).
+smooth_sigma:
+    smooth sigma (float).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+BootstrapGenerator
+    Return value (BootstrapGenerator) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         if frame.empty:
             raise ValidationError("Bootstrap synthesizer requires non-empty train rows.")
         continuous = tuple(s.name for s in specs if s.kind == "continuous")
@@ -109,6 +161,27 @@ class BootstrapGenerator:
         )
 
     def sample(self, n: int, *, random_state: int | None = None) -> pd.DataFrame:
+        """Run sample on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+n:
+    n (int).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+pd.DataFrame
+    Return value (pd.DataFrame) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         if n < 1:
             raise ValidationError("sample_synthetic n must be >= 1.")
         rng = np.random.default_rng(
@@ -168,6 +241,31 @@ class GaussianCopulaGenerator:
         correlation_ridge: float = 1e-3,
         random_state: int = 42,
     ) -> GaussianCopulaGenerator:
+        """Run fit on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+frame:
+    Partition or full DataFrame slice used for this operation.
+specs:
+    specs (tuple[ColumnSchemaSpec, ...]).
+correlation_ridge:
+    correlation ridge (float).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+GaussianCopulaGenerator
+    Return value (GaussianCopulaGenerator) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         if frame.empty:
             raise ValidationError("Gaussian copula requires non-empty train rows.")
         if len(frame) < 3:
@@ -271,6 +369,29 @@ class GaussianCopulaGenerator:
         random_state: int | None = None,
         condition: dict[str, Any] | None = None,
     ) -> pd.DataFrame:
+        """Run sample on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+n:
+    n (int).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+condition:
+    condition (dict[str, Any] | None).
+
+Returns
+-------
+pd.DataFrame
+    Return value (pd.DataFrame) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         if n < 1:
             raise ValidationError("sample_synthetic n must be >= 1.")
         rng = np.random.default_rng(
@@ -380,6 +501,37 @@ class SmoteGenerator:
         sampling_strategy: Any = "auto",
         random_state: int = 42,
     ) -> SmoteGenerator:
+        """Run fit on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+frame:
+    Partition or full DataFrame slice used for this operation.
+specs:
+    specs (tuple[ColumnSchemaSpec, ...]).
+target_column:
+    Name of the supervised target column.
+feature_columns:
+    feature columns (tuple[str, ...] | None).
+k_neighbors:
+    k neighbors (int).
+sampling_strategy:
+    sampling strategy (Any).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+SmoteGenerator
+    Return value (SmoteGenerator) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         try:
             from imblearn.over_sampling import SMOTE  # noqa: F401
         except ImportError as exc:
@@ -454,6 +606,27 @@ class SmoteGenerator:
         )
 
     def sample(self, n: int, *, random_state: int | None = None) -> pd.DataFrame:
+        """Run sample on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+n:
+    n (int).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+pd.DataFrame
+    Return value (pd.DataFrame) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         from imblearn.over_sampling import SMOTE
 
         if n < 1:

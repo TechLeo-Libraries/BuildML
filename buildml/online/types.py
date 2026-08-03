@@ -55,6 +55,16 @@ class OnlineConfig:
     device: str = "cpu"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize user-facing online config knobs for plan metadata.
+
+        Captures chunk protocol, drift, and continual-learning hyperparameters
+        stored on :class:`OnlinePlan.config`.
+
+        Returns
+        -------
+        dict[str, Any]
+            Estimator, backend, chunk protocol, and continual-learning knobs.
+        """
         return {
             "estimator": self.estimator,
             "backend": self.backend,

@@ -28,6 +28,23 @@ class GBDTMultiTargetEstimator:
     estimator_: Any = field(default=None, repr=False)
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> GBDTMultiTargetEstimator:
+        """Fit the GBDT multi-target estimator on design matrix ``x`` and targets ``y``.
+
+        Builds the backend-specific estimator via :meth:`_build_estimator`, then
+        fits on train-only data passed from :func:`fit_multitask`.
+
+        Parameters
+        ----------
+        x:
+            Float feature matrix of shape ``(n_samples, n_features)``.
+        y:
+            Target matrix of shape ``(n_samples, n_tasks)``.
+
+        Returns
+        -------
+        GBDTMultiTargetEstimator
+            Fitted estimator with ``estimator_`` populated (``self``).
+        """
         x_arr = np.asarray(x, dtype=float)
         y_arr = np.asarray(y)
         if y_arr.ndim == 1:
@@ -42,6 +59,27 @@ class GBDTMultiTargetEstimator:
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Predict multi-target outputs for rows in ``x``.
+
+        Delegates to the fitted GBDT backend and rounds classification outputs
+        to integer label codes.
+
+        Parameters
+        ----------
+        x:
+            Float feature matrix of shape ``(n_samples, n_features)``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Predictions of shape ``(n_samples, n_tasks)``; classification outputs
+            are rounded to integer codes.
+
+        Raises
+        ------
+        ValidationError
+            When the estimator has not been fitted.
+        """
         if self.estimator_ is None:
             raise ValidationError("GBDTMultiTargetEstimator is not fitted.")
         x_arr = np.asarray(x, dtype=float)
@@ -130,6 +168,31 @@ def build_gbdt_estimator(
     task: str,
     random_state: int | None,
 ) -> GBDTMultiTargetEstimator:
+    """Construct a GBDT multi-target estimator for one industry method.
+
+    Validates that ``task`` is same-type (classification or regression) before
+    returning the adapter used by :func:`fit_multitask`.
+
+    Parameters
+    ----------
+    method:
+        Industry method: ``multi_output_xgb``, ``multi_output_lgbm``, or
+        ``multi_output_catboost``.
+    task:
+        ``classification`` or ``regression`` (mixed targets are not supported).
+    random_state:
+        Seed passed to the underlying GBDT implementation.
+
+    Returns
+    -------
+    GBDTMultiTargetEstimator
+        Unfitted estimator ready for :meth:`GBDTMultiTargetEstimator.fit`.
+
+    Raises
+    ------
+    ValidationError
+        When ``task`` is mixed or the method is unsupported.
+    """
     if task not in {"classification", "regression"}:
         raise ValidationError(
             "Industry GBDT multi-task supports same-type targets only. "

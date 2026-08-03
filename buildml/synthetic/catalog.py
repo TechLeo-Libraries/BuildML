@@ -18,7 +18,15 @@ SDV_METHODS = ("ctgan", "tvae", "copulagan")
 
 
 def synthetic_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for synthetic backends and evaluation paths."""
+    """Honest capability matrix for synthetic backends and evaluation paths.
+
+Reports installed backends, supported methods, evaluation rules, install hints, and explicit non-goals for teaching overlays.
+
+Returns
+-------
+dict[str, Any]
+    JSON-friendly mapping for history, bundles, or walkthrough overlays.
+    """
     return {
         "backends": {
             "native": {
@@ -136,7 +144,20 @@ def list_synthetic_methods(
     *,
     backend: SyntheticBackendName | None = None,
 ) -> list[str]:
-    """List synthesizer methods for a backend (or all when backend is None)."""
+    """List synthesizer methods for a backend (or all when backend is None).
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+backend:
+    Optional backend override (see capability matrix for identifiers).
+
+Returns
+-------
+list[str]
+    List of string identifiers from the catalog.
+    """
     matrix = synthetic_capability_matrix()
     if backend is not None:
         entry = matrix["backends"].get(backend)
@@ -152,6 +173,20 @@ def list_synthetic_methods(
 
 
 def backend_available(name: SyntheticBackendName) -> bool:
+    """Return whether backend optional dependencies are installed and usable.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+name:
+    Backend or catalog identifier to look up.
+
+Returns
+-------
+bool
+    ``True`` when the capability or dependency check succeeds.
+    """
     entry = synthetic_capability_matrix()["backends"].get(name)
     if entry is None:
         return False
@@ -163,7 +198,27 @@ def resolve_backend_method(
     backend: SyntheticBackendName | None,
     method: str,
 ) -> tuple[SyntheticBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults."""
+    """Validate backend/method pairing and apply honest defaults.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+backend:
+    Optional backend override (see capability matrix for identifiers).
+method:
+    Method or strategy identifier for the resolved backend.
+
+Returns
+-------
+tuple[SyntheticBackendName, str]
+    Tuple of results (tuple[SyntheticBackendName, str]) for downstream Session steps.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     resolved_backend: SyntheticBackendName

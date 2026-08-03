@@ -41,6 +41,16 @@ class ProbabilisticPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the probabilistic plan for bundles and history logs.
+
+        Captures backend, conformal settings, and capability flags without
+        embedding the full sklearn/MAPIE/NGBoost estimator object.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, conformal quantile, and disclosures.
+        """
         return {
             "backend": self.backend,
             "estimator_name": self.estimator_name,
@@ -87,11 +97,18 @@ class ProbabilisticFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise probabilistic fit output for history logs.
+
+        Records backend, conformal carve sizes, and interval method after fit
+        on Session train completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fit metadata, conformal quantile, MAPIE method, and disclosures.
+        """
         return {
             "backend": self.backend,
-            "estimator_name": self.estimator_name,
-            "task": self.task,
-            "n_train_rows": self.n_train_rows,
             "n_fit_rows": self.n_fit_rows,
             "n_conformal_calib_rows": self.n_conformal_calib_rows,
             "columns": list(self.columns),
@@ -124,6 +141,16 @@ class ProbabilisticEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout evaluation metrics and interval coverage.
+
+        Produced by :func:`buildml.probabilistic.evaluate.evaluate_probabilistic`
+        after scoring a validation or test partition without refitting.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition metrics, interval coverage, mean width, and disclosures.
+        """
         return {
             "partition": self.partition,
             "estimator_name": self.estimator_name,
@@ -153,6 +180,15 @@ class ProbabilisticPredictResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise predict output without listing every prediction row.
+
+        Keeps history payloads compact while recording std and probability flags.
+
+        Returns
+        -------
+        dict[str, Any]
+            Prediction counts, uncertainty availability flags, and disclosures.
+        """
         return {
             "partition": self.partition,
             "estimator_name": self.estimator_name,
@@ -185,6 +221,16 @@ class ProbabilisticIntervalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise interval or prediction-set output for history logs.
+
+        Records method, alpha, and whether lower/upper bounds or sets were
+        produced without embedding full interval arrays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Interval metadata, availability flags, and disclosures.
+        """
         return {
             "partition": self.partition,
             "estimator_name": self.estimator_name,

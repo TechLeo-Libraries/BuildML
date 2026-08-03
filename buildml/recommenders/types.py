@@ -42,6 +42,16 @@ class RecommenderConfig:
     lightfm_epochs: int = 10
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise recommender configuration knobs for plan metadata.
+
+        Mirrors the user-facing kwargs accepted by :func:`fit_recommender` so
+        bundles and history can replay the fit contract without the live plan.
+
+        Returns
+        -------
+        dict[str, Any]
+            Method, backend, column names, hyperparameters, and policies.
+        """
         return {
             "method": self.method,
             "backend": self.backend,

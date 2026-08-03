@@ -21,7 +21,33 @@ def predict_tda(
     *,
     partition: str = "test",
 ) -> TdaPredictResult:
-    """Score a partition with the head fitted on train topological features."""
+    """Predict on a partition using the train-fitted TDA supervised head.
+
+    Runs :func:`transform_tda` with the frozen plan, then applies the sklearn head
+    fitted on train topological features. Classification predictions are decoded
+    through the plan's label encoder when present.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset.
+    plan:
+        Train-fitted plan with ``head_estimator_`` and ``task`` set.
+    split_plan:
+        Split plan for the requested partition.
+    partition:
+        ``train``, ``validation``, ``test``, or ``all``.
+
+    Returns
+    -------
+    TdaPredictResult
+        Decoded predictions and partition metadata.
+
+    Raises
+    ------
+    ValidationError
+        When ``head='none'`` was used at fit time or ``plan.task`` is missing.
+    """
     if plan.head_estimator_ is None or plan.head == "none":
         raise ValidationError(
             "No TDA supervised head. Refit with head!='none' or use transform_tda."

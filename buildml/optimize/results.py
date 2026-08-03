@@ -66,6 +66,16 @@ class DecisionPlan:
     aux_estimator_: Any | None = field(default=None, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the decision plan for bundles and history logs.
+
+        Captures method, operating points, cost/allocation knobs, and honesty
+        disclosures without embedding auxiliary estimator objects.
+
+        Returns
+        -------
+        dict[str, Any]
+            JSON-safe plan metadata and configuration summary.
+        """
         return {
             "method": self.method,
             "partition_fitted": self.partition_fitted,
@@ -125,6 +135,17 @@ class DecisionFitResult:
     backend: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise decision fit output for history logs.
+
+        Records method, backend, tuning partition, threshold, and allocation
+        metrics after :func:`~buildml.optimize.fit.fit_decision_policy`
+        completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fit metadata, metrics, and honesty disclosures.
+        """
         return {
             "method": self.method,
             "backend": self.backend,
@@ -145,6 +166,11 @@ class DecisionFitResult:
         }
 
     def show(self) -> None:
+        """Print a concise fit summary to stdout for interactive sessions.
+
+        Shows method, partition, row count, threshold or selection totals, and
+        the first few disclosure bullets.
+        """
         print(
             f"DecisionFit · {self.method} · partition={self.partition} · "
             f"n={self.n_rows}"
@@ -184,6 +210,16 @@ class ApplyDecisionsResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise apply-decisions output for history logs.
+
+        Records method, partition, selection counts, and aggregate allocation
+        totals without embedding full per-row decision vectors.
+
+        Returns
+        -------
+        dict[str, Any]
+            Apply metadata and honesty disclosures.
+        """
         return {
             "method": self.method,
             "partition": self.partition,
@@ -199,6 +235,10 @@ class ApplyDecisionsResult:
         }
 
     def show(self) -> None:
+        """Print a concise apply summary to stdout for interactive sessions.
+
+        Shows method, partition, row count, and number selected.
+        """
         print(
             f"ApplyDecisions · {self.method} · partition={self.partition} · "
             f"n={self.n_rows} · selected={self.n_selected}"
@@ -222,6 +262,16 @@ class DecisionEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout evaluation output for history logs.
+
+        Records partition, method, headline metrics, and realized cost without
+        duplicating full prediction vectors.
+
+        Returns
+        -------
+        dict[str, Any]
+            Eval metadata, metrics dict, and honesty disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -237,6 +287,10 @@ class DecisionEvalResult:
         }
 
     def show(self) -> None:
+        """Print a concise evaluation summary to stdout for interactive sessions.
+
+        Shows method, partition, row count, and formatted metric lines.
+        """
         print(
             f"DecisionEval · {self.method} · partition={self.partition} · "
             f"n={self.n_rows}"

@@ -51,6 +51,16 @@ class SelfSupervisedConfig:
     extra: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise user-facing SSL configuration for plans and logs.
+
+        Converts dataclass fields into a JSON-friendly dict including optional
+        column lists and extra kwargs.
+
+        Returns
+        -------
+        dict[str, Any]
+            Full configuration snapshot.
+        """
         return {
             "method": self.method,
             "modality": self.modality,

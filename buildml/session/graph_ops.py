@@ -41,7 +41,35 @@ def set_graph_op(
     node_id_col: str = "node_id",
     directed: bool = False,
 ) -> GraphSpec:
-    """Attach an edge list to the Session (nodes = dataset rows).
+    """Attach an edge list to the Session with dataset rows as nodes.
+
+    Delegates to :func:`buildml.graph.data.build_graph_spec` and validates
+    node identifiers against the dataset. Call before :func:`fit_graph_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an ingested dataset.
+    edges:
+        Edge list as a DataFrame or sequence of ``(source, target)`` tuples.
+    source_col:
+        Column name for edge source endpoints.
+    target_col:
+        Column name for edge target endpoints.
+    node_id_col:
+        Column uniquely identifying dataset rows as graph nodes.
+    directed:
+        When True, treat edges as directed.
+
+    Returns
+    -------
+    GraphSpec
+        Validated graph specification stored on Session as ``_graph_spec``.
+
+    Raises
+    ------
+    ValidationError
+        When no dataset is attached or node ids are invalid.
 
     Notes
     -----
@@ -105,6 +133,55 @@ def fit_graph_op(
     heads: int = 4,
 ) -> Any:
     """Fit graph node classification on Session train nodes.
+
+    Delegates to :func:`buildml.graph.fit.fit_graph`, stores the
+    :class:`~buildml.graph.results.GraphPlan` on Session, and records the fit.
+    Follow with :func:`predict_graph_op` or :func:`evaluate_graph_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with GraphSpec, split plan, and node labels.
+    method:
+        Graph learning method (``classical`` or ``pyg``).
+    task:
+        Graph task type (currently ``node_classification``).
+    mode:
+        ``inductive`` (train subgraph) or ``transductive`` (full topology).
+    columns:
+        Node feature columns; ``None`` auto-selects numerics.
+    classical_estimator:
+        Sklearn estimator for classical graph method.
+    hidden_dim:
+        Hidden dimension for GNN layers.
+    n_layers:
+        Number of message-passing layers.
+    epochs:
+        Training epochs for GNN backends.
+    learning_rate:
+        Optimizer learning rate.
+    weight_decay:
+        L2 regularization for GNN training.
+    dropout:
+        Dropout rate between GNN layers.
+    random_state:
+        Seed for weight initialization and sampling.
+    include_graph_metrics:
+        When True, compute graph-level structural metrics.
+    pyg_model:
+        PyG architecture (``gcn``, ``graphsage``, ``gat``).
+    heads:
+        Attention heads for GAT when ``pyg_model='gat'``.
+
+    Returns
+    -------
+    GraphFitResult
+        Serializable fit summary including method and mode disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When no GraphSpec exists on the Session.
 
     Notes
     -----
@@ -174,7 +251,27 @@ def predict_graph_op(
     *,
     partition: PartitionOrAll = "validation",
 ) -> Any:
-    """Predict node labels with the fitted GraphPlan."""
+    """Predict node labels with the fitted GraphPlan on a partition.
+
+    Delegates to :func:`buildml.graph.predict.predict_graph` without refitting.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a GraphPlan from :func:`fit_graph_op`.
+    partition:
+        Node partition to predict on (default ``validation``).
+
+    Returns
+    -------
+    GraphPredictResult
+        Node predictions and optional probabilities for the partition.
+
+    Raises
+    ------
+    ValidationError
+        When no graph plan exists on the Session.
+    """
     plan = getattr(session, "_graph_plan", None)
     if plan is None:
         raise ValidationError("No graph plan. Call fit_graph(...) first.")
@@ -199,7 +296,28 @@ def evaluate_graph_op(
     *,
     partition: PartitionOrAll = "validation",
 ) -> Any:
-    """Evaluate node classification on a holdout partition."""
+    """Evaluate node classification on a holdout graph partition.
+
+    Delegates to :func:`buildml.graph.evaluate.evaluate_graph` and stores
+    metrics on Session.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a GraphPlan from :func:`fit_graph_op`.
+    partition:
+        Holdout node partition (default ``validation``).
+
+    Returns
+    -------
+    GraphEvalResult
+        Classification metrics for nodes in the partition.
+
+    Raises
+    ------
+    ValidationError
+        When no graph plan exists on the Session.
+    """
     plan = getattr(session, "_graph_plan", None)
     if plan is None:
         raise ValidationError("No graph plan. Call fit_graph(...) first.")
@@ -220,7 +338,28 @@ def evaluate_graph_op(
 
 
 def save_graph_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active GraphPlan as ``buildml.graph_bundle.v1``."""
+    """Persist the active GraphPlan as ``buildml.graph_bundle.v1``.
+
+    Delegates to :func:`buildml.graph.checkpoint.save_graph_bundle`.
+    Reload with :func:`load_graph_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a GraphPlan from :func:`fit_graph_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no graph plan exists on the Session.
+    """
     plan = getattr(session, "_graph_plan", None)
     if plan is None:
         raise ValidationError("No graph plan. Call fit_graph(...) first.")
@@ -239,7 +378,23 @@ def save_graph_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_graph_bundle_op(session, path: str | Path):
-    """Load a graph bundle into this Session."""
+    """Load a graph bundle into this Session.
+
+    Delegates to :func:`buildml.graph.checkpoint.load_graph_bundle`,
+    restores GraphSpec from the plan, and clears prior predict/eval results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded GraphPlan.
+    path:
+        Path to a ``buildml.graph_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with GraphPlan and GraphSpec attached for chaining.
+    """
     plan = load_graph_bundle(path)
     session._graph_plan = plan
     session._graph_spec = plan.graph_spec

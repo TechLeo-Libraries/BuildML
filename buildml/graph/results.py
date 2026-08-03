@@ -39,6 +39,16 @@ class GraphPlan:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialise the graph plan for bundles and history logs.
+
+        Captures method, mode, feature contract, and training metadata without
+        embedding full estimator weights or adjacency arrays.
+
+        Returns
+        -------
+        dict[str, Any]
+            Plan metadata, column contract, graph spec summary, and disclosures.
+        """
         return {
             "method": self.method,
             "task": self.task,
@@ -76,6 +86,16 @@ class GraphFitResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise graph fit output for history logs.
+
+        Records method, mode, train node/edge counts, and train accuracy after
+        fit on Session train nodes completes.
+
+        Returns
+        -------
+        dict[str, Any]
+            Fit metadata, class counts, and honesty disclosures.
+        """
         return {
             "method": self.method,
             "mode": self.mode,
@@ -105,6 +125,16 @@ class GraphPredictResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise node predictions for history logs.
+
+        Records partition, method, mode, and node count without embedding full
+        probability matrices when they are present.
+
+        Returns
+        -------
+        dict[str, Any]
+            Prediction metadata, class list, and honesty disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,
@@ -133,6 +163,16 @@ class GraphEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise holdout node-classification evaluation metrics.
+
+        Produced by :func:`buildml.graph.evaluate.evaluate_graph` after scoring
+        a validation or test partition with a frozen :class:`GraphPlan`.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, accuracy/F1/ROC-AUC metrics, and honesty disclosures.
+        """
         return {
             "partition": self.partition,
             "method": self.method,

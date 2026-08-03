@@ -39,12 +39,40 @@ def evaluate_causal(
 ) -> CausalEvalResult:
     """Evaluate nuisance predictive quality and ATE on a holdout partition.
 
+    Scores outcome and propensity model calibration on holdout rows using
+    train-fitted nuisances, then delegates to :func:`estimate_causal` for the
+    partition ATE and bootstrap metadata.
+
     Notes
     -----
     Holdout rows are **never** used to refit nuisances. Metrics describe
     predictive calibration of outcome / propensity models and the estimator
     applied out-of-sample; they do **not** prove identification. Causal
     claims still rest entirely on the declared :class:`CausalAssumptions`.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing the evaluation partition.
+    plan:
+        :class:`~buildml.causal.results.CausalPlan` from :func:`fit_causal`.
+    split_plan:
+        Split plan defining partition indices.
+    partition:
+        Holdout partition name; defaults to ``validation`` (falls back to
+        ``test`` when validation is empty).
+    bootstrap_samples:
+        Override plan bootstrap count for the nested estimate call.
+
+    Returns
+    -------
+    CausalEvalResult
+        Holdout metrics, partition ATE, bootstrap CI, and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is missing or required columns are absent.
     """
     if plan is None:
         raise ValidationError("No CausalPlan. Call fit_causal first.")
@@ -126,6 +154,20 @@ def evaluate_causal(
             mu1=plan.mu1_,
             propensity=plan.propensity_,
             clip_propensity=plan.clip_propensity,
+        )
+    elif backend == "dowhy":
+        from buildml.causal.adapters.dowhy import estimate_dowhy_partition
+
+        ate, extras = estimate_dowhy_partition(
+            plan,
+            dataset,
+            split_plan,
+            partition=resolved,
+            random_state=getattr(plan, "config", {}).get("random_state"),
+        )
+        disclosures.append(
+            "DoWhy holdout ATE is a fresh backdoor estimate on the partition — "
+            "not the train ATE copied forward."
         )
     else:
         ate = float(plan.ate)

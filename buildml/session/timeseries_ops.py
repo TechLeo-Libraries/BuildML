@@ -30,7 +30,57 @@ def analyze_timeseries_op(
     rolling_window: int = 7,
     spectral_n_fft: int | None = None,
 ) -> Any:
-    """Run time-series analysis on train-only (default) or all scope."""
+    """Run time-series analysis on train-only or full-dataset scope.
+
+    Delegates to :func:`buildml.timeseries.analyze.analyze_timeseries`, stores
+    the result on Session, and records the operation. Default scope is
+    ``train`` to avoid peeking at holdout data during EDA.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a time-ordered dataset and optional split plan.
+    target_column:
+        Series to analyze; defaults to the target role column.
+    time_column:
+        Timestamp or index column; inferred when omitted.
+    scope:
+        ``train`` (default) restricts to train indices; ``all`` uses full data.
+    seasonal_period:
+        Seasonal period for decomposition and diagnostics.
+    decompose_method:
+        Decomposition algorithm (STL, classical, etc.).
+    include_decompose:
+        When True, run seasonal decomposition.
+    include_diagnostics:
+        When True, run stationarity and autocorrelation diagnostics.
+    include_changepoints:
+        When True, detect structural changepoints.
+    include_features:
+        When True, extract lag/rolling/spectral features.
+    acf_lags:
+        Maximum lag for autocorrelation function plots.
+    pacf_lags:
+        Maximum lag for partial autocorrelation function plots.
+    adf_regression:
+        Regression term for Augmented Dickey-Fuller test.
+    kpss_regression:
+        Regression term for KPSS stationarity test.
+    changepoint_method:
+        Changepoint detection algorithm override.
+    changepoint_penalty:
+        Penalty controlling changepoint count.
+    rolling_window:
+        Window size for rolling statistics.
+    spectral_n_fft:
+        FFT size for spectral analysis (``None`` uses series length).
+
+    Returns
+    -------
+    TimeseriesAnalysisResult
+        Decomposition, diagnostics, changepoints, and feature summaries.
+        Use :func:`ts_decompose_op` or :func:`ts_diagnostics_op` for focused runs.
+    """
     if scope == "train":
         session.assert_can_fit("train")
     result = analyze_timeseries(
@@ -71,7 +121,25 @@ def analyze_timeseries_op(
 
 
 def ts_decompose_op(session, **kwargs: Any) -> Any:
-    """Decomposition-only Session entry."""
+    """Run decomposition-only time-series analysis on Session data.
+
+    Convenience wrapper around :func:`analyze_timeseries_op` that enables
+    decomposition and disables diagnostics, changepoints, and features.
+    All other keyword arguments are forwarded unchanged.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a time-ordered dataset.
+    **kwargs:
+        Forwarded to :func:`analyze_timeseries_op` (``target_column``,
+        ``time_column``, ``scope``, ``seasonal_period``, etc.).
+
+    Returns
+    -------
+    TimeseriesAnalysisResult
+        Result with decomposition components populated.
+    """
     kwargs = dict(kwargs)
     kwargs.setdefault("include_decompose", True)
     kwargs.setdefault("include_diagnostics", False)
@@ -91,7 +159,25 @@ def ts_decompose_op(session, **kwargs: Any) -> Any:
 
 
 def ts_diagnostics_op(session, **kwargs: Any) -> Any:
-    """Diagnostics-only Session entry."""
+    """Run diagnostics-only time-series analysis on Session data.
+
+    Convenience wrapper around :func:`analyze_timeseries_op` that enables
+    stationarity and autocorrelation diagnostics while disabling
+    decomposition, changepoints, and features.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a time-ordered dataset.
+    **kwargs:
+        Forwarded to :func:`analyze_timeseries_op` (``target_column``,
+        ``time_column``, ``scope``, ``acf_lags``, etc.).
+
+    Returns
+    -------
+    TimeseriesAnalysisResult
+        Result with diagnostic tests and ACF/PACF summaries populated.
+    """
     kwargs = dict(kwargs)
     kwargs.setdefault("include_decompose", False)
     kwargs.setdefault("include_diagnostics", True)

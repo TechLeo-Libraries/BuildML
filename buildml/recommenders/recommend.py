@@ -104,7 +104,33 @@ def recommend_for_users(
     k: int = 10,
     exclude_train_items: bool = True,
 ) -> RecommendResult:
-    """Recommend top-K train-catalog items for the given user ids."""
+    """Recommend top-K train-catalog items for the given user ids.
+
+    Scores each warm user with the fitted plan method, applies cold-start
+    policy for unknown users, and restricts candidates to the train item
+    catalog (known-item protocol).
+
+    Parameters
+    ----------
+    plan:
+        Train-fitted :class:`~buildml.recommenders.results.RecommenderPlan`.
+    user_ids:
+        User entity ids to generate recommendations for.
+    k:
+        Number of items to recommend per user.
+    exclude_train_items:
+        When ``True``, suppress items the user already interacted with in train.
+
+    Returns
+    -------
+    RecommendResult
+        Parallel per-user recommendation lists, scores, and cold-start metadata.
+
+    Raises
+    ------
+    ValidationError
+        When ``k`` is less than 1 or the plan lacks required fitted state.
+    """
     if int(k) < 1:
         raise ValidationError("k must be >= 1.")
 
@@ -181,6 +207,36 @@ def recommend(
     """Recommend top-K items for users from a partition or an explicit list.
 
     Provide either ``user_ids`` or ``partition`` (unique users in that frame).
+    Delegates scoring to :func:`recommend_for_users` after resolving the user
+    list.
+
+    Parameters
+    ----------
+    dataset:
+        Session dataset containing user interaction columns.
+    plan:
+        Train-fitted :class:`~buildml.recommenders.results.RecommenderPlan`.
+    split_plan:
+        Split definition used when ``partition`` is provided.
+    partition:
+        Split partition name whose unique users receive recommendations.
+    user_ids:
+        Explicit list of user entity ids to recommend for.
+    k:
+        Number of items to recommend per user.
+    exclude_train_items:
+        When ``True``, suppress items the user already interacted with in train.
+
+    Returns
+    -------
+    RecommendResult
+        Parallel per-user recommendation lists, scores, and cold-start metadata.
+
+    Raises
+    ------
+    ValidationError
+        When neither or both of ``user_ids`` and ``partition`` are supplied,
+        the user column is missing, or no users remain to score.
     """
     if user_ids is None and partition is None:
         raise ValidationError("recommend() requires user_ids= or partition=.")

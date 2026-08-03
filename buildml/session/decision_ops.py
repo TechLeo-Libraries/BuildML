@@ -54,7 +54,66 @@ def fit_decision_policy_op(
     min_score: float | None = None,
     lp_max_fraction: float = 1.0,
 ):
-    """Fit a decision policy on train/validation (test requires opt-in).
+    """Fit a decision policy on train or validation without refitting the model.
+
+    Delegates to :func:`buildml.optimize.fit.fit_decision_policy`, stores the
+    :class:`~buildml.optimize.results.DecisionPlan` on Session, and records
+    the fit. Follow with :func:`apply_decisions_op` or
+    :func:`evaluate_decisions_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset, split plan, and fitted supervised model.
+    method:
+        Decision strategy (``threshold``, ``knapsack``, ``lp``, etc.).
+    backend:
+        Optional solver backend override for MIP/LP methods.
+    partition:
+        Partition used for threshold/allocation tuning (default ``validation``).
+    allow_test_tuning:
+        When False, refuse tuning on the test partition.
+    fp_cost, fn_cost:
+        False-positive and false-negative costs for threshold tuning.
+    tp_benefit, tn_benefit:
+        True-positive and true-negative benefits for cost-sensitive tuning.
+    cost_matrix:
+        Optional multi-class cost matrix for threshold methods.
+    class_labels:
+        Class label order matching ``cost_matrix`` rows/columns.
+    capacity:
+        Maximum selections for knapsack-style allocation.
+    budget:
+        Total budget for knapsack or LP allocation methods.
+    score_source:
+        Where decision scores come from (model probabilities, raw scores, etc.).
+    score_column:
+        Explicit column for scores when ``score_source`` is column-based.
+    cost_column:
+        Per-row cost column for knapsack/LP methods.
+    value_column:
+        Per-row value column for knapsack/LP methods.
+    id_column:
+        Row identifier column for allocation output.
+    knapsack_solver:
+        Knapsack solver (``dp`` or ``pulp``).
+    objective:
+        Allocation objective (maximize score, minimize cost, etc.).
+    min_score:
+        Minimum score cutoff before allocation.
+    lp_max_fraction:
+        Maximum fraction of budget any single item may consume in LP mode.
+
+    Returns
+    -------
+    DecisionFitResult
+        Serializable fit summary including tuned threshold or allocation.
+        Use :func:`apply_decisions_op` to apply the frozen plan.
+
+    Raises
+    ------
+    ValidationError
+        When no split plan exists on the Session.
 
     Notes
     -----
@@ -136,7 +195,32 @@ def apply_decisions_op(
     partition: PartitionOrAll | None = "test",
     candidates: pd.DataFrame | None = None,
 ):
-    """Apply the frozen DecisionPlan to a partition or candidate frame."""
+    """Apply the frozen DecisionPlan to a partition or candidate frame.
+
+    Delegates to :func:`buildml.optimize.apply.apply_decisions` using the
+    plan from :func:`fit_decision_policy_op`. Stores apply results on Session
+    and records the operation.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a DecisionPlan from :func:`fit_decision_policy_op`.
+    partition:
+        Split partition to apply decisions to (``train``, ``validation``,
+        ``test``, or ``all``). Ignored when ``candidates`` is provided.
+    candidates:
+        Optional explicit candidate frame instead of a Session partition.
+
+    Returns
+    -------
+    DecisionApplyResult
+        Selected rows, scores, and allocation metadata for the partition.
+
+    Raises
+    ------
+    ValidationError
+        When no DecisionPlan exists on the Session.
+    """
     plan = getattr(session, "_decision_plan", None)
     if plan is None:
         raise ValidationError(
@@ -168,7 +252,29 @@ def evaluate_decisions_op(
     *,
     partition: PartitionName = "test",
 ):
-    """Evaluate the frozen DecisionPlan on a holdout partition."""
+    """Evaluate the frozen DecisionPlan on a holdout partition.
+
+    Delegates to :func:`buildml.optimize.evaluate.evaluate_decisions` and
+    stores evaluation metrics on Session. Requires a prior
+    :func:`fit_decision_policy_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a DecisionPlan from :func:`fit_decision_policy_op`.
+    partition:
+        Holdout partition for evaluation (default ``test``).
+
+    Returns
+    -------
+    DecisionEvalResult
+        Cost, benefit, and confusion-style metrics for the frozen plan.
+
+    Raises
+    ------
+    ValidationError
+        When no DecisionPlan exists on the Session.
+    """
     plan = getattr(session, "_decision_plan", None)
     if plan is None:
         raise ValidationError(
@@ -192,6 +298,28 @@ def evaluate_decisions_op(
 
 
 def save_decision_bundle_op(session, path: str | Path) -> Path:
+    """Persist the active DecisionPlan as ``buildml.decision_bundle.v1``.
+
+    Delegates to :func:`buildml.optimize.checkpoint.save_decision_bundle`.
+    Reload with :func:`load_decision_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with a DecisionPlan from :func:`fit_decision_policy_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no DecisionPlan exists on the Session.
+    """
     plan = getattr(session, "_decision_plan", None)
     if plan is None:
         raise ValidationError("No DecisionPlan to save.")
@@ -211,6 +339,23 @@ def save_decision_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_decision_bundle_op(session, path: str | Path):
+    """Load a decision bundle into this Session.
+
+    Delegates to :func:`buildml.optimize.checkpoint.load_decision_bundle`
+    and clears prior fit/eval/apply results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded DecisionPlan.
+    path:
+        Path to a ``buildml.decision_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with DecisionPlan attached for chaining.
+    """
     plan = load_decision_bundle(path)
     session._decision_plan = plan
     session._decision_fit_result = None
@@ -225,6 +370,17 @@ def load_decision_bundle_op(session, path: str | Path):
 
 
 def decision_capability_matrix_op() -> dict[str, Any]:
+    """Return the decision/optimization capability matrix for this install.
+
+    Delegates to :func:`buildml.optimize.catalog.decision_capability_matrix`.
+    Use before :func:`fit_decision_policy_op` to confirm ``method`` and
+    ``backend`` pairs available with current extras.
+
+    Returns
+    -------
+    dict
+        Nested map of method identifiers to supported backends and options.
+    """
     from buildml.optimize.catalog import decision_capability_matrix
 
     return decision_capability_matrix()

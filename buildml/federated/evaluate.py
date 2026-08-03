@@ -44,6 +44,33 @@ def evaluate_federated(
     Holdout rows are never used for local client updates. Optional
     ``per_client=True`` reports metrics sliced by the client column on the
     evaluation partition (still evaluation-only).
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features, target, and client columns.
+    plan:
+        Fitted :class:`~buildml.federated.results.FederatedPlan`.
+    split_plan:
+        Split plan; required unless ``partition='all'``.
+    backend:
+        Optional backend override; must match ``plan.backend`` when set.
+    partition:
+        Holdout partition to score (``validation``, ``test``, ``train``, or
+        ``all``).
+    per_client:
+        When ``True``, compute metrics per client id on the evaluation frame.
+
+    Returns
+    -------
+    FederatedEvalResult
+        Aggregate and optional per-client holdout metrics with disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When plan is missing, backend mismatches, split is required, or
+        columns are absent from the evaluation frame.
     """
     if plan is None:
         raise ValidationError("No FederatedPlan. Call fit_federated first.")

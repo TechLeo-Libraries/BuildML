@@ -73,6 +73,67 @@ def fit_online(
     Updates are batch/stream-chunk ``partial_fit`` calls on Session train data.
     This is not a distributed streaming platform or lifelong-learning research
     suite. Validation/test are never used for updates.
+
+    Parameters
+    ----------
+    dataset:
+        BuildML dataset with features and target.
+    split_plan:
+        Train/validation/test split; train partition is used for init fit.
+    backend:
+        Optional backend override (``sklearn``, ``industry``, ``torch``).
+    estimator:
+        Online estimator key (see :func:`online_capability_matrix`).
+    task:
+        Optional task override (``classification`` or ``regression``).
+    columns:
+        Optional explicit feature columns.
+    random_state:
+        Seed for stochastic estimators.
+    chunk_size:
+        Default rows per subsequent partial_fit chunk.
+    n_init:
+        Init chunk size; defaults to ``chunk_size`` when ``None``.
+    indices:
+        Optional explicit train-partition indices for the init chunk.
+    classes:
+        Full label vocabulary for classifiers (discovered from train if omitted).
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists.
+    allow_refit_fallback:
+        Permit disclosed full refits when an estimator lacks partial_fit.
+    drift_disclose:
+        Enable mean-shift drift disclosure on updates.
+    drift_detector:
+        Drift detector key (``mean_shift``, ``adwin``, ``page_hinkley``, ``none``).
+    buffer_size:
+        Replay buffer size for torch continual backends.
+    epochs_per_update:
+        Training epochs per partial_fit for torch backends.
+    batch_size:
+        Minibatch size for torch backends.
+    learning_rate:
+        Optimizer learning rate for torch backends.
+    ewc_lambda:
+        EWC penalty weight for ``ewc_mlp``.
+    hidden_dim:
+        MLP hidden width for torch backends.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+    reduce_plan:
+        Optional preprocess reduce plan from Session.
+
+    Returns
+    -------
+    tuple[OnlinePlan, OnlineFitResult]
+        Fitted plan with private estimator and a serializable fit summary.
+
+    Raises
+    ------
+    ValidationError
+        When split, column, class, or backend preconditions fail.
+    MissingExtraError
+        When the resolved backend requires an optional extra.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

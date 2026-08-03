@@ -20,7 +20,20 @@ TorchNeuroMethod = Literal["concept_bottleneck_lite", "neural_additive_lite"]
 
 
 def symbolic_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for symbolic backends and optional extras."""
+    """Report which symbolic and neuro-symbolic backends are available here.
+
+    Call before :func:`fit_symbolic` or Session
+    :meth:`~buildml.session.session.Session.fit_symbolic` to confirm sklearn,
+    skope-rules, imodels, Z3, and torch paths on this install. Read-only
+    introspection.
+
+    Returns
+    -------
+    dict[str, Any]
+        Symbolic and neuro-symbolic backends, constraint verification scope,
+        evaluation metrics, install hints, and non_goals separating tabular rules
+        from logic-programming products.
+    """
     return {
         "backends": {
             "sklearn": {
@@ -155,7 +168,21 @@ def list_symbolic_methods(
     *,
     backend: SymbolicBackendName | None = None,
 ) -> list[str]:
-    """List symbolic induction methods/sources for a backend."""
+    """List symbolic induction methods or sources for a backend.
+
+    Sklearn sources include ``declared``, ``decision_tree``, and
+    ``decision_list``. Industry methods appear only when extras import cleanly.
+
+    Parameters
+    ----------
+    backend:
+        ``sklearn``, ``industry``, or ``None`` for the union across backends.
+
+    Returns
+    -------
+    list[str]
+        Method/source names valid for the requested backend.
+    """
     matrix = symbolic_capability_matrix()
     if backend == "sklearn" or backend is None:
         sources = list(matrix["backends"]["sklearn"]["sources"])
@@ -178,6 +205,22 @@ def list_neuro_symbolic_methods(
     *,
     backend: NeuroSymbolicBackendName | None = None,
 ) -> list[str]:
+    """List neuro-symbolic base estimators or torch methods for a backend.
+
+    Reads :func:`symbolic_capability_matrix` so Session and catalog callers
+    only offer methods that are installed for the requested backend.
+
+    Parameters
+    ----------
+    backend:
+        ``sklearn`` (base estimator names), ``torch`` (lite tabular methods), or
+        ``None`` for sklearn defaults.
+
+    Returns
+    -------
+    list[str]
+        Valid ``base_estimator`` or torch method names for the backend.
+    """
     matrix = symbolic_capability_matrix()
     if backend == "torch":
         entry = matrix["neuro_symbolic_backends"]["torch"]
@@ -192,6 +235,21 @@ def list_neuro_symbolic_methods(
 
 
 def backend_available(name: SymbolicBackendName | NeuroSymbolicBackendName) -> bool:
+    """Return whether a symbolic or neuro-symbolic backend is available here.
+
+    Checks both ``backends`` and ``neuro_symbolic_backends`` entries in
+    :func:`symbolic_capability_matrix`.
+
+    Parameters
+    ----------
+    name:
+        Backend key such as ``sklearn``, ``industry``, or ``torch``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the matrix reports the backend as available.
+    """
     matrix = symbolic_capability_matrix()
     if name in matrix["backends"]:
         return bool(matrix["backends"][name].get("available"))
@@ -206,7 +264,32 @@ def resolve_symbolic_backend_method(
     source: str | None,
     method: str | None,
 ) -> tuple[SymbolicBackendName, str, str]:
-    """Validate backend/source/method and apply honest defaults."""
+    """Validate backend/source/method and apply honest defaults.
+
+    Maps declared rules, sklearn induction sources, and industry methods to a
+    consistent triple used by :func:`fit_symbolic`.
+
+    Parameters
+    ----------
+    backend:
+        ``sklearn`` or ``industry``. When ``None``, inferred from source/method.
+    source:
+        ``declared``, ``decision_tree``, or ``decision_list`` for sklearn paths.
+    method:
+        Industry method such as ``skope_rules`` or ``rulefit``.
+
+    Returns
+    -------
+    tuple[SymbolicBackendName, str, str]
+        Resolved backend, source key, and method/source name.
+
+    Raises
+    ------
+    ValidationError
+        When source/method pairing is invalid for the backend.
+    MissingExtraError
+        When the resolved backend's extra is not installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     source_key = str(source or "decision_tree").lower().replace("-", "_")
@@ -257,7 +340,32 @@ def resolve_neuro_symbolic_backend(
     base_estimator: str,
     torch_method: str | None = None,
 ) -> tuple[NeuroSymbolicBackendName, str]:
-    """Validate neuro-symbolic backend and resolve base estimator / torch method."""
+    """Validate neuro-symbolic backend and resolve base estimator or torch method.
+
+    Sklearn path accepts logistic/ridge/RF/DT bases. Torch path accepts lite
+    concept-bottleneck and neural-additive methods when torch is installed.
+
+    Parameters
+    ----------
+    backend:
+        ``sklearn`` or ``torch``. When ``None``, inferred from estimator names.
+    base_estimator:
+        Sklearn base name or torch method alias.
+    torch_method:
+        Explicit torch method override for torch backend.
+
+    Returns
+    -------
+    tuple[NeuroSymbolicBackendName, str]
+        Resolved backend and base/torch method key.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator or torch method is unsupported.
+    MissingExtraError
+        When ``backend='torch'`` but torch is not installed.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     base_key = str(base_estimator).lower().replace("-", "_")

@@ -51,6 +51,63 @@ def fit_online_op(
 ) -> Any:
     """Warm-start an incremental estimator on the first train chunk.
 
+    Delegates to :func:`buildml.online.fit.fit_online`, stores the resulting
+    :class:`~buildml.online.results.OnlinePlan` on the Session, and records
+    the operation. Follow with :func:`partial_fit_online_op` for train-only
+    updates, then :func:`evaluate_online_op` or :func:`predict_online_op`
+    on holdout partitions.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and split plan attached.
+    backend:
+        Optional backend override (``sklearn``, ``industry``, ``torch``).
+    estimator:
+        Online estimator key (see the online capability matrix).
+    task:
+        Optional task override (``classification`` or ``regression``).
+    columns:
+        Optional explicit feature columns.
+    random_state:
+        Seed for stochastic estimators.
+    chunk_size:
+        Default rows per subsequent partial_fit chunk.
+    n_init:
+        Init chunk size; defaults to ``chunk_size`` when ``None``.
+    indices:
+        Optional explicit train-partition indices for the init chunk.
+    classes:
+        Full label vocabulary for classifiers (discovered from train if omitted).
+    prefer_reduce_components:
+        Prefer reduced component columns when a reduce plan exists on Session.
+    allow_refit_fallback:
+        Permit disclosed full refits when an estimator lacks partial_fit.
+    drift_disclose:
+        Enable mean-shift drift disclosure on updates.
+    drift_detector:
+        Drift detector key (``mean_shift``, ``adwin``, ``page_hinkley``, ``none``).
+    buffer_size:
+        Replay buffer size for torch continual backends.
+    epochs_per_update:
+        Training epochs per partial_fit for torch backends.
+    batch_size:
+        Minibatch size for torch backends.
+    learning_rate:
+        Optimizer learning rate for torch backends.
+    ewc_lambda:
+        EWC penalty weight for ``ewc_mlp``.
+    hidden_dim:
+        MLP hidden width for torch backends.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+
+    Returns
+    -------
+    OnlineFitResult
+        Serializable fit summary including warnings and init-chunk stats.
+        Use :func:`partial_fit_online_op` next for incremental updates.
+
     Notes
     -----
     **Leakage:** Requires a split. Init and later updates use train chunks only
@@ -119,7 +176,35 @@ def partial_fit_online_op(
     indices: Sequence[Any] | None = None,
     frame: pd.DataFrame | None = None,
 ) -> Any:
-    """Incremental ``partial_fit`` update on the next train chunk or frame."""
+    """Apply one incremental partial_fit update on the next train chunk or frame.
+
+    Delegates to :func:`buildml.online.update.partial_fit_online`, advances the
+    Session online plan cursor, and records the update. Requires a prior call
+    to :func:`fit_online_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an :class:`~buildml.online.results.OnlinePlan`
+        from :func:`fit_online_op`.
+    n_rows:
+        Rows to take from unused train indices; defaults to plan ``chunk_size``.
+    indices:
+        Optional explicit train-partition dataset indices for this update.
+    frame:
+        Optional user-provided incremental frame with role-aligned columns.
+
+    Returns
+    -------
+    OnlineUpdateResult
+        Serializable update summary including drift notes and refit mode.
+        Repeat for more chunks or call :func:`evaluate_online_op`.
+
+    Raises
+    ------
+    ValidationError
+        When no online plan exists or chunk source preconditions fail.
+    """
     plan = getattr(session, "_online_plan", None)
     if plan is None:
         raise ValidationError("No online plan. Call fit_online(...) first.")
@@ -153,7 +238,32 @@ def evaluate_online_op(
     partition: PartitionOrAll = "validation",
     drift_check: bool = True,
 ) -> Any:
-    """Evaluate the online learner on a holdout partition (never for updates)."""
+    """Evaluate the online learner on a holdout partition without updating it.
+
+    Delegates to :func:`buildml.online.evaluate.evaluate_online` and stores
+    the result on Session. Holdout partitions are never used for partial_fit
+    updates.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an online plan from :func:`fit_online_op`.
+    partition:
+        Holdout partition to score (``validation``, ``test``, or ``all``).
+        Validation falls back to test when no validation split exists.
+    drift_check:
+        When True, compare holdout feature means to the training stream.
+
+    Returns
+    -------
+    OnlineEvalResult
+        Holdout metrics and optional drift flags. Does not mutate the estimator.
+
+    Raises
+    ------
+    ValidationError
+        When no online plan exists on the Session.
+    """
     plan = getattr(session, "_online_plan", None)
     if plan is None:
         raise ValidationError("No online plan. Call fit_online(...) first.")
@@ -187,7 +297,29 @@ def predict_online_op(
     *,
     partition: PartitionOrAll = "test",
 ) -> Any:
-    """Predict with the incremental online estimator (no update)."""
+    """Predict with the incremental online estimator without updating it.
+
+    Delegates to :func:`buildml.online.predict.predict_online` and stores
+    predictions on Session. Use after :func:`fit_online_op` and optional
+    :func:`partial_fit_online_op` calls.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an online plan from :func:`fit_online_op`.
+    partition:
+        Partition to score (``train``, ``validation``, ``test``, or ``all``).
+
+    Returns
+    -------
+    OnlinePredictResult
+        Predictions and optional probabilities for the requested partition.
+
+    Raises
+    ------
+    ValidationError
+        When no online plan exists on the Session.
+    """
     plan = getattr(session, "_online_plan", None)
     if plan is None:
         raise ValidationError("No online plan. Call fit_online(...) first.")
@@ -208,7 +340,29 @@ def predict_online_op(
 
 
 def save_online_bundle_op(session, path: str | Path) -> Path:
-    """Persist the active OnlinePlan as ``buildml.online_bundle.v1``."""
+    """Persist the active online plan as ``buildml.online_bundle.v1``.
+
+    Delegates to :func:`buildml.online.checkpoint.save_online_bundle`.
+    Distinct from Session checkpoints — reload the learner with
+    :func:`load_online_bundle_op`.
+
+    Parameters
+    ----------
+    session:
+        Active Session with an online plan from :func:`fit_online_op`.
+    path:
+        Destination directory for the bundle (created if missing).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
+    ------
+    ValidationError
+        When no online plan exists on the Session.
+    """
     plan = getattr(session, "_online_plan", None)
     if plan is None:
         raise ValidationError("No online plan. Call fit_online(...) first.")
@@ -233,7 +387,23 @@ def save_online_bundle_op(session, path: str | Path) -> Path:
 
 
 def load_online_bundle_op(session, path: str | Path) -> Any:
-    """Load an online-learning bundle into this Session."""
+    """Load an online-learning bundle into this Session.
+
+    Delegates to :func:`buildml.online.checkpoint.load_online_bundle`,
+    replaces Session online state, and clears prior fit/eval/predict results.
+
+    Parameters
+    ----------
+    session:
+        Session instance to populate with the loaded online plan.
+    path:
+        Path to a ``buildml.online_bundle.v1`` directory.
+
+    Returns
+    -------
+    Session
+        ``session`` with online plan attached for chaining.
+    """
     plan = load_online_bundle(path)
     session._online_plan = plan
     session._online_fit_result = None

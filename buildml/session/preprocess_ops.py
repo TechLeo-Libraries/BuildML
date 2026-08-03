@@ -8,15 +8,19 @@ from buildml.session._imports import *  # noqa: F403
 def drop_columns(session, columns: list[str] | tuple[str, ...]) -> Session:
     """Drop columns from the current dataset.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     columns:
         Column names to remove.
+    session:
+        Active Session with dataset and optional split plan attached.
 
     Returns
     -------
     Session
-        ``self`` for fluent chaining.
+    ``self`` for fluent chaining.
 
     Notes
     -----
@@ -37,6 +41,8 @@ def impute(
 ) -> Session:
     """Fit imputation on train and transform the full dataset.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     columns:
@@ -47,6 +53,13 @@ def impute(
         Imputation strategy.
     fill_value:
         Constant fill when ``strategy='constant'``.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -79,6 +92,8 @@ def encode(
 ) -> Session:
     """Fit categorical encoding on train and transform the full dataset.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     columns:
@@ -92,8 +107,15 @@ def encode(
     min_frequency:
         For ``infrequent``: float in (0, 1) as a train fraction, or an
         absolute integer count threshold.
-    n_folds / random_state / smoothing:
+        n_folds / random_state / smoothing:
         Target-encoding controls (ignored for other methods).
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -134,6 +156,8 @@ def handle_outliers(
 ) -> Session:
     """Screen or treat numeric outliers using train-fitted fences.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     method:
@@ -142,6 +166,19 @@ def handle_outliers(
         ``detect`` records the screen without mutating values; ``cap``
         winsorizes to the fences; ``drop`` removes flagged rows and rebuilds
         split membership.
+    session:
+        Active Session with dataset and optional split plan attached.
+    columns:
+        Column names to include or transform.
+    iqr_multiplier:
+        Controls ``iqr_multiplier``; see the function signature for type and default.
+    zscore_threshold:
+        Controls ``zscore_threshold``; see the function signature for type and default.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -182,6 +219,26 @@ def bin(
 ) -> Session:
     """Discretize numeric columns with train-fitted bin edges.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    columns:
+        Column names to include or transform.
+    strategy:
+        Controls ``strategy``; see the function signature for type and default.
+    n_bins:
+        Controls ``n_bins``; see the function signature for type and default.
+    encode_as:
+        Controls ``encode_as``; see the function signature for type and default.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
+
     Notes
     -----
     **Leakage:** Edges are learned on train only. End bins use open
@@ -217,14 +274,25 @@ def select_features(
 ) -> Session:
     """Select a feature subset using train-only scores or model reliance.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     strategy:
         ``variance`` (VarianceThreshold), ``univariate`` (SelectKBest), or
         ``model`` (SelectFromModel).
-    threshold / k / score_func / estimator:
+        threshold / k / score_func / estimator:
         Strategy-specific controls. Non-feature roles (target, id, group,
         time, weight) are preserved.
+    session:
+        Active Session with dataset and optional split plan attached.
+    columns:
+        Column names to include or transform.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -256,6 +324,8 @@ def scale(
 ) -> Session:
     """Fit scaling on train and transform the full dataset.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     columns:
@@ -265,6 +335,13 @@ def scale(
         ``columns=[...]`` to force-include any column.
     method:
         ``standard`` or ``minmax``.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -289,6 +366,8 @@ def text_features(
 ) -> Session:
     """Fit text vectorizers on train and expand columns into numeric features.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     method:
@@ -297,6 +376,17 @@ def text_features(
         Vocabulary width for count/TF-IDF, or hashing output width.
     ngram_range:
         Inclusive n-gram bounds passed to the sklearn vectorizer.
+    session:
+        Active Session with dataset and optional split plan attached.
+    columns:
+        Column names to include or transform.
+    drop_input_columns:
+        Controls ``drop_input_columns``; see the function signature for type and default.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -336,7 +426,40 @@ def reduce_dimensions(
     tsne_perplexity: float = 30.0,
     tsne_learning_rate: str | float = "auto",
 ) -> Session:
-    """Fit dimensionality reduction on train and replace numeric columns."""
+    """Fit dimensionality reduction on train and replace numeric columns.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    columns:
+        Column names to include or transform.
+    method:
+        Algorithm or method identifier for the resolved backend.
+    n_components:
+        Controls ``n_components``; see the function signature for type and default.
+    drop_input_columns:
+        Controls ``drop_input_columns``; see the function signature for type and default.
+    prefix:
+        Controls ``prefix``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+    umap_n_neighbors:
+        Controls ``umap_n_neighbors``; see the function signature for type and default.
+    umap_min_dist:
+        Controls ``umap_min_dist``; see the function signature for type and default.
+    tsne_perplexity:
+        Controls ``tsne_perplexity``; see the function signature for type and default.
+    tsne_learning_rate:
+        Controls ``tsne_learning_rate``; see the function signature for type and default.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
+    """
     session.assert_can_fit("train")
     plan = fit_reducer(
         session.dataset,
@@ -379,7 +502,34 @@ def register_transform(
     """Register a custom train-fit transform for :meth:`apply_custom_transform`.
 
     The ``fit`` callable receives only train rows for the selected columns.
+
     See :func:`buildml.preprocess.register_transform` for the full contract.
+
+    Parameters
+    ----------
+    session_cls:
+        Session class constructor used by module-level factory helpers.
+    name:
+        Registered transform or bundle identifier.
+    fit:
+        Controls ``fit``; see the function signature for type and default.
+    transform:
+        Controls ``transform``; see the function signature for type and default.
+    description:
+        Controls ``description``; see the function signature for type and default.
+    output_columns:
+        Controls ``output_columns``; see the function signature for type and default.
+    drop_input_columns:
+        Controls ``drop_input_columns``; see the function signature for type and default.
+    serializable:
+        Controls ``serializable``; see the function signature for type and default.
+    overwrite:
+        Controls ``overwrite``; see the function signature for type and default.
+
+    Returns
+    -------
+    CustomTransformSpec
+        Registered transform specification for reuse.
     """
     return register_custom_transform(
         name,
@@ -394,7 +544,20 @@ def register_transform(
 
 
 def list_transforms(session_cls) -> tuple[CustomTransformSpec, ...]:
-    """Return registered custom transforms in name order."""
+    """Return registered custom transforms in name order.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session_cls:
+        Session class constructor used by module-level factory helpers.
+
+    Returns
+    -------
+    tuple[CustomTransformSpec, ...]
+        Registered transform specification for reuse.
+    """
     return list_registered_transforms()
 
 
@@ -402,6 +565,8 @@ def apply_custom_transform(
     session, name: str, *, columns: list[str], params: Mapping[str, Any] | None = None
 ) -> Session:
     """Fit a registered custom transform on train and apply it to all rows.
+
+    Records the operation on Session history and returns the result for downstream chaining.
 
     Parameters
     ----------
@@ -411,6 +576,13 @@ def apply_custom_transform(
         Input columns passed to fit/transform.
     params:
         Optional parameters forwarded to the registered ``fit`` callable.
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
 
     Notes
     -----
@@ -440,7 +612,26 @@ def extract_dates(
     include_time: bool = False,
     drop_original: bool = False,
 ) -> Session:
-    """Expand datetime columns into calendar/time parts (``.dt``-correct)."""
+    """Expand datetime columns into calendar/time parts (``.dt``-correct).
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    columns:
+        Column names to include or transform.
+    include_time:
+        Controls ``include_time``; see the function signature for type and default.
+    drop_original:
+        Controls ``drop_original``; see the function signature for type and default.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
+    """
     session._dataset, plan = extract_date_features(
         session.dataset, columns=columns, include_time=include_time, drop_original=drop_original
     )
@@ -459,6 +650,8 @@ def apply_preprocess_plans(
 ) -> ApplyPlansResult:
     """Re-apply fitted preprocess plans in score-time order.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
     data:
@@ -474,20 +667,26 @@ def apply_preprocess_plans(
         outlier drop rewrote membership.
     use_session_plans:
         Merge session-attached plans under any explicit ``plans`` mapping.
+    session:
+        Active Session with dataset and optional split plan attached.
 
     Returns
     -------
     ApplyPlansResult
-        Transformed dataset plus applied/skipped steps and warnings.
+    Transformed dataset plus applied/skipped steps and warnings.
 
     Notes
     -----
     **Order:** dates → impute → outliers → encode → binning → scale →
     feature_select. Resample plans are lineage-only and are never
     reapplied at score time.
-
     **Leakage:** Plans must already be train-fitted; this method does not
     fit. Missing columns raise :class:`~buildml.core.errors.ValidationError`.
+
+    Raises
+    ------
+    ValidationError
+        When prerequisites are missing or inputs are invalid.
     """
     if session._dataset is None and data is None:
         raise ValidationError("No dataset attached. Ingest data or pass data=...")
@@ -525,7 +724,24 @@ def resample(
     """Resample the **train** partition only (requires ``buildml[imbalanced]``).
 
     Validation/test rows are never altered. See
+
     :meth:`resample_strategies` for strategy guidance.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    sampler:
+        Controls ``sampler``; see the function signature for type and default.
+    random_state:
+        Controls ``random_state``; see the function signature for type and default.
+    sampling_strategy:
+        Controls ``sampling_strategy``; see the function signature for type and default.
+
+    Returns
+    -------
+    Session
+        ``self`` for fluent chaining.
     """
     dataset, plan, resample_plan = resample_train(
         session.dataset,
@@ -542,5 +758,18 @@ def resample(
 
 
 def resample_strategies(session) -> list[dict[str, Any]]:
-    """List imbalance resampling strategies and when to use them."""
+    """List imbalance resampling strategies and when to use them.
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        Domain result object from the underlying ``buildml`` module.
+    """
     return list_resample_strategies()

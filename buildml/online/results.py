@@ -39,6 +39,16 @@ class OnlinePlan:
     backend: str = "sklearn"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the plan to a JSON-friendly dict (no private estimators).
+
+        Omits ``estimator_`` and ``label_encoder_`` so bundles and history stay
+        lightweight.
+
+        Returns
+        -------
+        dict[str, Any]
+            Incremental state, cursor, update history, and disclosure fields.
+        """
         return {
             "estimator_name": self.estimator_name,
             "backend": self.backend,
@@ -81,6 +91,16 @@ class OnlineFitResult:
     backend: str = "sklearn"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the fit result for history and bundle metadata.
+
+        Includes init chunk counters and disclosure fields only; omits private
+        estimator objects.
+
+        Returns
+        -------
+        dict[str, Any]
+            Init chunk size, remaining train rows, and disclosure fields.
+        """
         return {
             "estimator_name": self.estimator_name,
             "backend": self.backend,
@@ -115,6 +135,16 @@ class OnlineUpdateResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the update result for history and explain overlays.
+
+        Includes chunk counters, drift notes, and update mode without embedding
+        the full OnlinePlan.
+
+        Returns
+        -------
+        dict[str, Any]
+            Chunk size, cumulative counters, drift notes, and update mode.
+        """
         return {
             "estimator_name": self.estimator_name,
             "task": self.task,
@@ -147,6 +177,15 @@ class OnlineEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the evaluation result for history and explain overlays.
+
+        Includes holdout metrics and drift flags without raw predictions.
+
+        Returns
+        -------
+        dict[str, Any]
+            Holdout partition, metrics, drift flags, and disclosure fields.
+        """
         return {
             "partition": self.partition,
             "estimator_name": self.estimator_name,
@@ -175,6 +214,15 @@ class OnlinePredictResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the predict result for history (predictions omitted).
+
+        Records partition and prediction count so history stays lightweight.
+
+        Returns
+        -------
+        dict[str, Any]
+            Partition, row count, prediction count, and disclosure fields.
+        """
         return {
             "partition": self.partition,
             "estimator_name": self.estimator_name,

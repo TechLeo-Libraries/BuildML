@@ -20,33 +20,52 @@ def ai_configure(
     """Configure an AI provider for LLM-assisted workflow guidance.
 
     API keys are read from environment variables by default. Keys are never
+
     logged, persisted in transcripts/checkpoints, or echoed in errors.
 
     Parameters
     ----------
-    provider
+        provider
         Provider name (currently ``"openai"`` for OpenAI-compatible APIs,
         or ``"mock"`` for CI testing without real keys).
-    model
+        model
         Model identifier for the provider.
-    api_key
+        api_key
         API key (if None, reads from ``api_key_env`` environment variable).
-    api_key_env
+        api_key_env
         Environment variable name for the API key.
-    egress_level
+        egress_level
         Default egress level: ``"schema_only"``, ``"stats_only"`` (default),
         ``"redacted_sample"``, or ``"full_sample"``.
-    max_iterations
+        max_iterations
         Maximum tool iterations per AI call (default 10).
-    max_tokens
+        max_tokens
         Optional token budget limit across all AI calls.
-    max_cost_usd
+        max_cost_usd
         Optional cost budget limit (USD) across all AI calls.
+    session:
+        Active Session with dataset and optional split plan attached.
+    provider:
+        LLM provider identifier (``openai`` or ``mock``).
+    model:
+        Provider model identifier.
+    api_key:
+        Optional API key; defaults to the named environment variable.
+    api_key_env:
+        Environment variable name holding the API key.
+    egress_level:
+        Default data egress level sent to the provider.
+    max_iterations:
+        Controls ``max_iterations``; see the function signature for type and default.
+    max_tokens:
+        Controls ``max_tokens``; see the function signature for type and default.
+    max_cost_usd:
+        Controls ``max_cost_usd``; see the function signature for type and default.
 
     Returns
     -------
     Session
-        Self for chaining.
+    Self for chaining.
     """
     from buildml.ai.planner import BudgetTracker
     from buildml.ai.privacy import EgressConfig, EgressLevel
@@ -97,22 +116,31 @@ def ai_egress_preview(
     """Preview what data will leave the machine before an LLM call.
 
     Returns an :class:`~buildml.ai.privacy.EgressManifest` showing columns,
+
     row counts, and estimated tokens that would be sent to the provider.
 
     Parameters
     ----------
-    level
+        level
         Override egress level for this preview (``"schema_only"``,
         ``"stats_only"``, ``"redacted_sample"``, ``"full_sample"``).
-    allow_columns
+        allow_columns
         Explicit allowlist of columns to include.
-    deny_columns
+        deny_columns
         Explicit denylist of columns to exclude.
+    session:
+        Active Session with dataset and optional split plan attached.
+    level:
+        Optional egress level override for this call.
+    allow_columns:
+        Explicit allowlist of columns included in egress.
+    deny_columns:
+        Explicit denylist of columns excluded from egress.
 
     Returns
     -------
     EgressManifest
-        What would leave the machine at this egress level.
+    What would leave the machine at this egress level.
     """
     from buildml.ai.privacy import EgressConfig, EgressLevel, build_egress_payload
 
@@ -141,19 +169,26 @@ def ai_dry_run(session, question: str, *, level: str | None = None) -> dict[str,
     """Preview the full prompt payload without calling the provider.
 
     Returns the system prompt, user message, tools, and egress manifest
+
     that would be sent to the LLM.
 
     Parameters
     ----------
-    question
+        question
         The question or goal to preview.
-    level
+        level
         Override egress level for this preview.
+    session:
+        Active Session with dataset and optional split plan attached.
+    question:
+        Natural-language question or goal for the advisor.
+    level:
+        Optional egress level override for this call.
 
     Returns
     -------
     dict
-        Prompt payload including messages, tools, and egress manifest.
+    Prompt payload including messages, tools, and egress manifest.
     """
     from buildml.ai.advisor import build_advisor_context, build_state_digest
     from buildml.ai.privacy import EgressConfig, EgressLevel
@@ -187,28 +222,37 @@ def ai_advisor(session, question: str, *, level: str | None = None, confirm: boo
     """Get advisory Q&A guidance about the current workflow (read-only).
 
     The advisor can describe data, explain operations, and suggest next
+
     steps, but cannot execute state-changing operations.
 
     Parameters
     ----------
-    question
+        question
         The question to ask about the workflow.
-    level
+        level
         Override egress level for this call.
-    confirm
+        confirm
         Required True for FULL_SAMPLE egress (raw data). REDACTED_SAMPLE
         also requires explicit confirmation.
+    session:
+        Active Session with dataset and optional split plan attached.
+    question:
+        Natural-language question or goal for the advisor.
+    level:
+        Optional egress level override for this call.
+    confirm:
+        Explicit confirmation for sensitive egress or write operations.
 
     Returns
     -------
     AdvisorResult
-        Advisory response with evidence and recommendations.
+    Advisory response with evidence and recommendations.
 
     Raises
     ------
     ValidationError
-        If FULL_SAMPLE or REDACTED_SAMPLE egress is requested without
-        confirm=True.
+    If FULL_SAMPLE or REDACTED_SAMPLE egress is requested without
+    confirm=True.
     """
     from buildml.ai.advisor import run_advisor
     from buildml.ai.explain_hooks import advisor_result_summary
@@ -286,27 +330,36 @@ def ai_plan(session, goal: str, *, level: str | None = None, confirm: bool = Fal
     """Generate a structured workflow plan for a goal (read-only).
 
     Returns a plan with steps, prerequisites, and expected changes based
+
     on the current Session state.
 
     Parameters
     ----------
-    goal
+        goal
         The workflow goal to plan for.
-    level
+        level
         Override egress level for this call.
-    confirm
+        confirm
         Required True for FULL_SAMPLE or REDACTED_SAMPLE egress levels.
+    session:
+        Active Session with dataset and optional split plan attached.
+    goal:
+        Workflow goal for planning or autonomous execution.
+    level:
+        Optional egress level override for this call.
+    confirm:
+        Explicit confirmation for sensitive egress or write operations.
 
     Returns
     -------
     PlanResult
-        Structured plan with steps, rationale, and limitations.
+    Structured plan with steps, rationale, and limitations.
 
     Raises
     ------
     ValidationError
-        If FULL_SAMPLE or REDACTED_SAMPLE egress is requested without
-        confirm=True.
+    If FULL_SAMPLE or REDACTED_SAMPLE egress is requested without
+    confirm=True.
     """
     from buildml.ai.advisor import run_plan
     from buildml.ai.explain_hooks import plan_result_summary
@@ -364,21 +417,30 @@ def ai_execute(
     """Execute a single tool with propose-confirm-execute flow.
 
     Proposes the tool execution and requires explicit confirmation for
+
     write operations. Read-only tools may auto-confirm.
 
     Parameters
     ----------
-    tool
+        tool
         Name of the tool to execute (must be in the allowed registry).
-    params
+        params
         Tool arguments as a dictionary.
-    confirm
+        confirm
         If True, confirms and executes; otherwise returns a proposal.
+    session:
+        Active Session with dataset and optional split plan attached.
+    tool:
+        Tool name from the AI registry to execute.
+    params:
+        Optional parameters forwarded to the underlying callable.
+    confirm:
+        Explicit confirmation for sensitive egress or write operations.
 
     Returns
     -------
     ExecutorProposal or ExecutorResult
-        Proposal (if not confirmed) or execution result (if confirmed).
+    Proposal (if not confirmed) or execution result (if confirmed).
     """
     from buildml.ai.executor import execute_tool, propose_tool_execution
     from buildml.ai.explain_hooks import executor_result_summary
@@ -424,33 +486,48 @@ def ai_run_plan(
     """Execute a multi-step plan with confirmation gating.
 
     Default behavior pauses at the first step requiring confirmation that
+
     hasn't been confirmed. Read-only steps auto-confirm by default.
 
     Parameters
     ----------
-    plan
+        plan
         The PlanResult to execute. If None, uses the last ai_plan result.
-    confirmations
+        confirmations
         Dict mapping step_index -> True/False for confirmation decisions.
         Steps not in the dict use default confirmation behavior.
-    auto_confirm_read_only
+        auto_confirm_read_only
         If True (default), auto-confirm read-only operations.
-    stop_on_error
+        stop_on_error
         If True (default), stop execution on first error.
-    stop_on_unconfirmed
+        stop_on_unconfirmed
         If True (default), stop at steps requiring unconfirmed confirmation.
-    max_steps
+        max_steps
         Maximum number of steps to execute (None = no limit).
+    session:
+        Active Session with dataset and optional split plan attached.
+    plan:
+        Structured plan object from a prior planning call.
+    confirmations:
+        Step index to confirmation flag for plan execution.
+    auto_confirm_read_only:
+        Controls ``auto_confirm_read_only``; see the function signature for type and default.
+    stop_on_error:
+        Controls ``stop_on_error``; see the function signature for type and default.
+    stop_on_unconfirmed:
+        Controls ``stop_on_unconfirmed``; see the function signature for type and default.
+    max_steps:
+        Controls ``max_steps``; see the function signature for type and default.
 
     Returns
     -------
     PlanExecutionResult
-        Combined result of the plan execution with per-step details.
+    Combined result of the plan execution with per-step details.
 
     Raises
     ------
     ValidationError
-        If no plan is provided and no prior ai_plan result exists.
+    If no plan is provided and no prior ai_plan result exists.
     """
     from buildml.ai.planner import run_plan as execute_plan
     from buildml.ai.results import PlanResult
@@ -515,7 +592,34 @@ def ai_run_autonomous(
     allow_destructive: bool = False,
     provider_plan: bool = True,
 ) -> Any:
-    """Explicit autonomy mode with hard caps (see :mod:`buildml.ai.autonomous`)."""
+    """Explicit autonomy mode with hard caps (see :mod:`buildml.ai.autonomous`).
+
+    Records the operation on Session history and returns the result for downstream chaining.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
+    goal:
+        Workflow goal for planning or autonomous execution.
+    plan:
+        Structured plan object from a prior planning call.
+    confirm_autonomy:
+        Controls ``confirm_autonomy``; see the function signature for type and default.
+    max_steps:
+        Controls ``max_steps``; see the function signature for type and default.
+    tool_allowlist:
+        Controls ``tool_allowlist``; see the function signature for type and default.
+    allow_destructive:
+        Controls ``allow_destructive``; see the function signature for type and default.
+    provider_plan:
+        Controls ``provider_plan``; see the function signature for type and default.
+
+    Returns
+    -------
+    Any
+        Domain result object from the underlying ``buildml`` module.
+    """
     from buildml.ai.autonomous import AutonomyConfig, run_autonomous
 
     allowlist = (
@@ -559,12 +663,18 @@ def ai_status(session) -> dict[str, Any]:
     """Get AI operator status including provider, egress, budget, and autonomy.
 
     Returns factual walkthrough disclosure about the current AI configuration.
+
     Default path remains propose→confirm→execute; autonomy is opt-in only.
+
+    Parameters
+    ----------
+    session:
+        Active Session with dataset and optional split plan attached.
 
     Returns
     -------
     dict
-        Status including provider, egress level, budget, and transcript info.
+    Status including provider, egress level, budget, and transcript info.
     """
     from buildml.ai.autonomous import autonomy_status_dict
     from buildml.ai.explain_hooks import ai_status_for_session
@@ -584,19 +694,26 @@ def save_ai_transcript(session, path: str | Path, *, redact: bool = True) -> Pat
     """Save the AI transcript to a JSON file (secrets redacted by default).
 
     Transcripts record conversation history, tool calls, and egress
+
     manifests. API keys and raw data are redacted before saving.
 
     Parameters
     ----------
-    path
+        path
         Output file path.
-    redact
+        redact
         If True (default), redact potential secrets before saving.
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
+    redact:
+        When True, redact secrets before persisting transcripts.
 
     Returns
     -------
     Path
-        The resolved output path.
+    The resolved output path.
     """
     from buildml.ai.transcript import TranscriptStore, save_transcript
 
@@ -611,15 +728,21 @@ def save_ai_transcript(session, path: str | Path, *, redact: bool = True) -> Pat
 def load_ai_transcript(session, path: str | Path) -> Session:
     """Load an AI transcript for resume or audit.
 
+    Records the operation on Session history and returns the result for downstream chaining.
+
     Parameters
     ----------
-    path
+        path
         Input file path.
+    session:
+        Active Session with dataset and optional split plan attached.
+    path:
+        Filesystem path for load or save.
 
     Returns
     -------
     Session
-        Self for chaining.
+    Self for chaining.
     """
     from buildml.ai.transcript import load_transcript
 

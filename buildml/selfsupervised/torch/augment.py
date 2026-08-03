@@ -17,7 +17,29 @@ def augment_tabular_pair(
     scale_jitter: float = 0.05,
     rng: np.random.Generator | None = None,
 ) -> tuple[Any, Any]:
-    """Return two augmented views of a tabular batch (numpy or torch tensor)."""
+    """Return two augmented views of a tabular batch.
+
+    Applies scale jitter, Gaussian noise, and feature dropout independently to
+    produce contrastive views for SimCLR/BYOL/VICReg training.
+
+    Parameters
+    ----------
+    x:
+        Tabular batch as numpy array or Torch tensor.
+    noise_std:
+        Standard deviation of additive Gaussian noise.
+    feature_dropout:
+        Probability of zeroing each feature dimension.
+    scale_jitter:
+        Uniform scale perturbation magnitude per feature.
+    rng:
+        NumPy random generator; created when ``None``.
+
+    Returns
+    -------
+    tuple
+        Two augmented views with the same type/device as the input when possible.
+    """
     require_torch(feature="SSL tabular augment")
     is_torch = hasattr(x, "device")
     if is_torch:
@@ -68,7 +90,25 @@ def random_feature_mask(
     mask_ratio: float,
     rng: np.random.Generator,
 ) -> tuple[Any, Any]:
-    """Return (masked_input, boolean_mask) for MAE-style training."""
+    """Return masked input and boolean mask for MAE-style training.
+
+    Randomly masks feature dimensions and fills masked positions with batch
+    column means so the encoder learns reconstruction from partial inputs.
+
+    Parameters
+    ----------
+    x:
+        Tabular batch as numpy array or Torch tensor.
+    mask_ratio:
+        Fraction of feature dimensions to mask per row.
+    rng:
+        NumPy random generator for mask sampling.
+
+    Returns
+    -------
+    tuple
+        ``(masked_input, boolean_mask)`` suitable for MAE loss computation.
+    """
     torch = require_torch(feature="SSL MAE mask")
     arr = x if hasattr(x, "device") else torch.as_tensor(np.asarray(x, dtype=np.float32))
     n, d = arr.shape

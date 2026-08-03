@@ -16,6 +16,28 @@ _TORCH_CLASSIFIERS = {"replay_mlp", "ewc_mlp"}
 
 
 def resolve_torch_task(estimator: str, task: OnlineTask | None) -> OnlineTask:
+    """Resolve the task type for a torch continual tabular estimator.
+
+    Torch continual adapters currently support classification only; regression
+    requests are rejected with a clear validation error.
+
+    Parameters
+    ----------
+    estimator:
+        Torch continual method key (``replay_mlp`` or ``ewc_mlp``).
+    task:
+        Optional explicit task override.
+
+    Returns
+    -------
+    OnlineTask
+        Resolved task (currently always ``classification``).
+
+    Raises
+    ------
+    ValidationError
+        When the estimator is unknown or ``task='regression'`` is requested.
+    """
     if estimator in _TORCH_CLASSIFIERS:
         if task == "regression":
             raise ValidationError(
@@ -40,6 +62,36 @@ def build_torch_continual_estimator(
     hidden_dim: int = 64,
     device: str = "cpu",
 ) -> ContinualTabularClassifier:
+    """Build a lite replay-buffer or EWC tabular MLP continual learner.
+
+    Requires ``buildml[torch]``; exposes a sklearn-like ``partial_fit`` API.
+
+    Parameters
+    ----------
+    name:
+        Continual method (``replay_mlp`` or ``ewc_mlp``).
+    random_state:
+        Seed for buffer minibatch shuffling.
+    buffer_size:
+        Maximum replay buffer capacity.
+    epochs_per_update:
+        Training epochs per ``partial_fit`` call.
+    batch_size:
+        Minibatch size during buffer training.
+    learning_rate:
+        AdamW learning rate.
+    ewc_lambda:
+        EWC penalty weight for ``ewc_mlp``.
+    hidden_dim:
+        MLP hidden layer width.
+    device:
+        Torch device string (``cpu`` or ``cuda``).
+
+    Returns
+    -------
+    ContinualTabularClassifier
+        Classifier wrapper with ``partial_fit`` and ``predict``.
+    """
     return ContinualTabularClassifier(
         method=name,
         buffer_size=int(buffer_size),
@@ -81,6 +133,32 @@ class ContinualTabularClassifier:
         y: np.ndarray,
         classes: Sequence[Any] | None = None,
     ) -> ContinualTabularClassifier:
+        """Append a chunk to the replay buffer and train the MLP.
+
+        For ``ewc_mlp``, captures Fisher information on the first update for
+        elastic-weight consolidation.
+
+        Parameters
+        ----------
+        x:
+            2-D float feature matrix.
+        y:
+            Integer class codes aligned with ``x`` rows.
+        classes:
+            Optional full class code vocabulary on first fit.
+
+        Returns
+        -------
+        ContinualTabularClassifier
+            ``self`` for chaining.
+
+        Raises
+        ------
+        ValidationError
+            When fewer than two classes are present on init.
+        MissingExtraError
+            When torch is not installed.
+        """
         torch = require_torch_continual()
         x_arr = np.asarray(x, dtype=np.float32)
         y_arr = np.asarray(y, dtype=int)
@@ -191,6 +269,28 @@ class ContinualTabularClassifier:
                 optimizer.step()
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Predict class codes for a batch of tabular rows.
+
+        Runs the fitted MLP in eval mode and maps internal logits back to the
+        original ``classes_`` vocabulary.
+
+        Parameters
+        ----------
+        x:
+            2-D float feature matrix.
+
+        Returns
+        -------
+        numpy.ndarray
+            Original class codes (not internal 0..K-1 indices).
+
+        Raises
+        ------
+        ValidationError
+            When the classifier has not been fitted yet.
+        MissingExtraError
+            When torch is not installed.
+        """
         torch = require_torch_continual()
         if self.module_ is None:
             raise ValidationError("ContinualTabularClassifier is not fitted.")

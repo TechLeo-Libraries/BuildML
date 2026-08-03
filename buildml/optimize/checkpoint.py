@@ -42,7 +42,37 @@ def save_decision_bundle(
     eval_result: DecisionEvalResult | None = None,
     apply_result: ApplyDecisionsResult | None = None,
 ) -> Path:
-    """Write a decision-policy bundle directory (``buildml.decision_bundle.v1``)."""
+    """Write a decision-policy bundle directory (``buildml.decision_bundle.v1``).
+
+    Persists the fitted :class:`~buildml.optimize.results.DecisionPlan`,
+    optional fit/eval/apply summaries, and auxiliary estimator objects to
+    disk. Distinct from Session checkpoints — reload policies via
+    :func:`~buildml.optimize.checkpoint.load_decision_bundle`.
+
+    Parameters
+    ----------
+    path:
+        Destination directory; created when missing.
+    plan:
+        Fitted decision policy to serialise.
+    fit_result:
+        Optional fit summary stored in ``meta.json``.
+    eval_result:
+        Optional holdout evaluation summary stored in ``meta.json``.
+    apply_result:
+        Optional apply summary stored in ``meta.json``.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory containing ``decision_plan.joblib`` and
+        ``meta.json``.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None`` or serialisation inputs are invalid.
+    """
     if plan is None:
         raise ValidationError("No DecisionPlan to save.")
     destination = Path(path)
@@ -67,7 +97,30 @@ def save_decision_bundle(
 
 
 def load_decision_bundle(path: str | Path) -> DecisionPlan:
-    """Load a decision-policy bundle into a :class:`DecisionPlan`."""
+    """Load a decision-policy bundle into a :class:`DecisionPlan`.
+
+    Reads ``meta.json`` and ``decision_plan.joblib`` produced by
+    :func:`~buildml.optimize.checkpoint.save_decision_bundle`, rebuilds cost
+    matrix and auxiliary estimator fields when needed, and returns a plan
+    ready for :func:`~buildml.optimize.apply.apply_decisions`.
+
+    Parameters
+    ----------
+    path:
+        Bundle directory written by :func:`save_decision_bundle`.
+
+    Returns
+    -------
+    DecisionPlan
+        Rehydrated policy with cost matrix and auxiliary estimator restored
+        when present in the bundle.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, the format version is unsupported, or the
+        payload does not contain a valid :class:`DecisionPlan`.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "decision_plan.joblib"

@@ -22,7 +22,37 @@ def score_industry_native_pool(
     estimator: Any,
     committee: Any | None = None,
 ) -> np.ndarray:
-    """Score pool rows with CoreSet / QBC enhancements (numpy + sklearn)."""
+    """Score pool rows with CoreSet / QBC industry query strategies.
+
+    Uses native numpy/sklearn scoring — no torch coupling. CoreSet ranks pool
+    points by distance to the labeled set; QBC strategies measure committee
+    disagreement.
+
+    Parameters
+    ----------
+    strategy:
+        Industry strategy (``core_set``, ``qbc_kl``, or ``qbc_variation_ratios``).
+    x_labeled:
+        Feature matrix for currently labeled train rows.
+    y_labeled:
+        Encoded labels for labeled rows (unused by CoreSet scoring).
+    x_pool:
+        Feature matrix for unlabeled pool rows.
+    estimator:
+        Fitted base estimator (reserved for future hybrid strategies).
+    committee:
+        Fitted bagging committee required for QBC strategies.
+
+    Returns
+    -------
+    np.ndarray
+        One score per pool row; higher means higher labeling priority.
+
+    Raises
+    ------
+    ValidationError
+        When the strategy is unsupported or QBC is requested without a committee.
+    """
     x_pool = np.asarray(x_pool, dtype=float)
     if x_pool.shape[0] == 0:
         return np.empty(0, dtype=float)

@@ -107,6 +107,55 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         difficulty=CORE,
     ),
     _layer(
+        "cluster-kmeans-vs-density",
+        plain=(
+            "K-means and GMM look for round, compact groups around centers. DBSCAN and HDBSCAN grow "
+            "clusters from local density and can leave sparse points unlabeled as noise. Pick the family "
+            "that matches your geometry, not whichever method is the default."
+        ),
+        analogy=(
+            "K-means is assigning everyone to the nearest city on a map. DBSCAN is finding crowded "
+            "neighborhoods and refusing to claim someone lives downtown when they are miles from anyone."
+        ),
+        steps=(
+            "Scale numeric features when magnitudes differ.",
+            "Try k-means/GMM when groups are roughly spherical and you can pick k.",
+            "Try DBSCAN/HDBSCAN when shapes are irregular or you expect outliers/noise.",
+            "Read cluster_sizes and noise_rate on density methods.",
+            "Assign on validation — never pick k only from train silhouette alone.",
+        ),
+        use=(
+            "Segmentation with clear blob-shaped groups (k-means/GMM).",
+            "Fraud or anomaly-shaped sparse clusters in dense background (density methods).",
+        ),
+        avoid=(
+            "Do not run k-means on elongated manifolds without reduction first.",
+            "Do not treat DBSCAN noise labels as errors — they are often the point.",
+        ),
+        myths=(
+            (
+                "Higher k always means better clusters.",
+                "It means smaller, tighter groups — not necessarily useful ones.",
+            ),
+            (
+                "HDBSCAN always beats k-means.",
+                "It wins on messy geometry; k-means is simpler and faster on round blobs.",
+            ),
+        ),
+        example=(
+            "session.fit_clusters(method='hdbscan', min_cluster_size=25)",
+            "session.assign_clusters(partition='validation')",
+            "session.evaluate_clusters(partition='validation')",
+        ),
+        check=(
+            "Does your chosen method match how the points actually look in 2D/3D plots?",
+            "For density clustering: what fraction of rows are noise?",
+        ),
+        tools=("fit_clusters", "assign_clusters", "evaluate_clusters", "reduce_dimensions"),
+        terms=("clustering", "unsupervised", "metric"),
+        difficulty=CORE,
+    ),
+    _layer(
         "pca-cluster-integration",
         plain=(
             "You can compress your numeric columns with PCA first and cluster in that compressed space. "

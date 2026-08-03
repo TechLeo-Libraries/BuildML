@@ -33,7 +33,31 @@ def save_graph_bundle(
     fit_result: GraphFitResult | None = None,
     eval_result: GraphEvalResult | None = None,
 ) -> Path:
-    """Write a graph bundle directory (``buildml.graph_bundle.v1``)."""
+    """Write a graph bundle directory (``buildml.graph_bundle.v1``).
+
+    Persists the fitted :class:`~buildml.graph.results.GraphPlan` separately
+    from Session checkpoints so tabular workflow and graph-learner state reload
+    independently.
+
+    Parameters
+    ----------
+    path:
+        Destination directory for ``meta.json`` and ``graph_plan.joblib``.
+    plan:
+        Train-fitted graph plan to persist.
+    fit_result, eval_result:
+        Optional last operation reports for bundle metadata.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory that was written.
+
+    Raises
+    ------
+    ValidationError
+        When ``plan`` is ``None``.
+    """
     if plan is None:
         raise ValidationError("No GraphPlan to save.")
     destination = Path(path)
@@ -53,7 +77,26 @@ def save_graph_bundle(
 
 
 def load_graph_bundle(path: str | Path) -> GraphPlan:
-    """Load a graph bundle into a :class:`GraphPlan`."""
+    """Load a graph bundle into a :class:`GraphPlan`.
+
+    Validates bundle format and restores the fitted plan from
+    ``graph_plan.joblib``.
+
+    Parameters
+    ----------
+    path:
+        Directory containing ``meta.json`` and ``graph_plan.joblib``.
+
+    Returns
+    -------
+    GraphPlan
+        Deserialised graph-learning plan.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, format is unsupported, or payload is invalid.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "graph_plan.joblib"

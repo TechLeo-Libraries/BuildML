@@ -26,6 +26,27 @@ class PseudoLabelGBDTClassifier:
     iterations_run_: int = 0
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> PseudoLabelGBDTClassifier:
+        """Run fit on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+y:
+    Target vector or series aligned with ``x``.
+
+Returns
+-------
+PseudoLabelGBDTClassifier
+    Return value (PseudoLabelGBDTClassifier) produced by this operation.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         x_arr = np.asarray(x, dtype=float)
         y_arr = np.asarray(y, dtype=int)
         labeled = y_arr != SKLEARN_UNLABELED
@@ -69,11 +90,49 @@ class PseudoLabelGBDTClassifier:
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Run predict on input data using the fitted internal state.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         if self.estimator_ is None:
             raise ValidationError("PseudoLabelGBDTClassifier is not fitted.")
         return np.asarray(self.estimator_.predict(x), dtype=int)
 
     def predict_proba(self, x: np.ndarray) -> np.ndarray:
+        """Perform predict proba for the Session-facing workflow step.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+x:
+    Feature matrix input rows.
+
+Returns
+-------
+np.ndarray
+    NumPy array aligned with input rows.
+
+Raises
+------
+ValidationError
+    When preconditions for this operation are not met.
+        """
         if self.estimator_ is None:
             raise ValidationError("PseudoLabelGBDTClassifier is not fitted.")
         return np.asarray(self.estimator_.predict_proba(x), dtype=float)
@@ -110,6 +169,26 @@ def build_industry_estimator(
     max_iter: int,
     random_state: int | None,
 ) -> PseudoLabelGBDTClassifier:
+    """Construct a industry estimator ready for fit or scoring.
+
+Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+
+Parameters
+----------
+method:
+    Method or strategy identifier for the resolved backend.
+threshold:
+    Decision threshold applied to anomaly scores.
+max_iter:
+    max iter (int).
+random_state:
+    Seed for stochastic steps (sampling, initialization, bagging).
+
+Returns
+-------
+PseudoLabelGBDTClassifier
+    Return value (PseudoLabelGBDTClassifier) produced by this operation.
+    """
     return PseudoLabelGBDTClassifier(
         method=method,
         threshold=float(threshold),

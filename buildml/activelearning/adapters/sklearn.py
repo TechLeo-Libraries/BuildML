@@ -16,7 +16,34 @@ def score_sklearn_pool(
     estimator: Any,
     committee: Any | None = None,
 ) -> np.ndarray:
-    """Score unlabeled pool rows with sklearn-native query strategies."""
+    """Score unlabeled pool rows with sklearn-native query strategies.
+
+    Higher scores indicate higher priority for human labeling. Supports
+    uncertainty-based strategies and query-by-committee vote entropy.
+
+    Parameters
+    ----------
+    strategy:
+        Query strategy name (``least_confidence``, ``margin``, ``entropy``,
+        ``committee``, or ``expected_model_change_lite``).
+    x_pool:
+        Feature matrix for unlabeled pool rows.
+    estimator:
+        Fitted sklearn-compatible classifier with ``predict_proba`` when required.
+    committee:
+        Optional fitted :class:`~sklearn.ensemble.BaggingClassifier` for
+        ``committee`` strategy.
+
+    Returns
+    -------
+    np.ndarray
+        One non-negative score per pool row, same length as ``x_pool``.
+
+    Raises
+    ------
+    ValidationError
+        When the strategy is unsupported or required estimators are missing.
+    """
     if strategy in {
         "least_confidence",
         "margin",

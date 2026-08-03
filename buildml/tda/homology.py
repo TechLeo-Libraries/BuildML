@@ -11,7 +11,26 @@ from buildml.tda.extras import require_ripser
 
 
 def finite_diagram(diagram: np.ndarray) -> np.ndarray:
-    """Drop infinite death times (common for H0 essential class)."""
+    """Remove infinite death times and zero-persistence noise from one diagram.
+
+    ripser often emits an essential H0 class with infinite death; downstream
+    vectorizers need finite ``(birth, death)`` pairs only.
+
+    Parameters
+    ----------
+    diagram:
+        Persistence diagram shaped ``(n, 2)`` with columns ``birth`` and ``death``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Filtered diagram with finite pairs where ``death - birth > 1e-12``.
+
+    Raises
+    ------
+    ValidationError
+        When ``diagram`` is not two-dimensional with two columns.
+    """
     dgm = np.asarray(diagram, dtype=float)
     if dgm.size == 0:
         return np.zeros((0, 2), dtype=float)
@@ -29,10 +48,32 @@ def compute_rips_diagrams(
     maxdim: int = 1,
     thresh: float | None = None,
 ) -> list[np.ndarray]:
-    """Compute Vietoris–Rips persistence diagrams for a point cloud.
+    """Compute Vietoris–Rips persistence diagrams for a local point cloud.
 
-    Returns a list of diagrams indexed by homology dimension (H0, H1, …),
-    each shaped ``(n_points, 2)`` as ``(birth, death)``.
+    Wraps ripser on a single cloud (typically ``knn`` train neighbors around one
+    row). Each list entry is one homology dimension's finite diagram.
+
+    Parameters
+    ----------
+    points:
+        Point cloud shaped ``(n_points, n_features)``.
+    maxdim:
+        Maximum homology dimension to compute (H0 through H``maxdim``).
+    thresh:
+        Optional ripser filtration cutoff. ``None`` uses ripser defaults.
+
+    Returns
+    -------
+    list[numpy.ndarray]
+        Diagrams indexed by dimension; each array is ``(n_pairs, 2)`` as
+        ``(birth, death)``.
+
+    Raises
+    ------
+    ValidationError
+        When ``points`` is not two-dimensional or ripser returns no diagrams.
+    MissingExtraError
+        When ``buildml[tda]`` (ripser) is not installed.
     """
     ripser_mod = require_ripser(feature="fit_tda / transform_tda (ripser)")
     cloud = np.asarray(points, dtype=float)
@@ -58,7 +99,28 @@ def local_point_cloud(
     *,
     knn: int,
 ) -> np.ndarray:
-    """Build a local cloud from ``knn`` nearest **train** neighbors of ``query``."""
+    """Build a local point cloud from ``knn`` nearest train neighbors of ``query``.
+
+    Each tabular row becomes a small Euclidean neighborhood in feature space;
+    persistent homology runs on that cloud. Neighbors always come from the frozen
+    train matrix — holdout rows never enter the index.
+
+    Parameters
+    ----------
+    query:
+        One row vector in the same feature space as ``train_x``.
+    neighbor_index:
+        Fitted ``sklearn.neighbors.NearestNeighbors`` on train rows.
+    train_x:
+        Standardized or raw train design matrix used to fit ``neighbor_index``.
+    knn:
+        Number of neighbors to include (capped by train size).
+
+    Returns
+    -------
+    numpy.ndarray
+        Local cloud shaped ``(knn, n_features)``.
+    """
     k = int(min(max(knn, 2), len(train_x)))
     dists, idxs = neighbor_index.kneighbors(
         np.asarray(query, dtype=float).reshape(1, -1), n_neighbors=k

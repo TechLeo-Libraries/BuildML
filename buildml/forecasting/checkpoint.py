@@ -44,10 +44,31 @@ def save_forecast_bundle(
 ) -> Path:
     """Write a forecast bundle directory (``buildml.forecast_bundle.v2``).
 
-    Layout
+    Persists a train-fitted :class:`ForecastPlan` plus optional fit, eval,
+    and generate summaries for reload via :func:`load_forecast_bundle`.
+
+    Parameters
+    ----------
+    path:
+        Destination directory for ``meta.json`` and ``forecast_plan.joblib``.
+    plan:
+        Train-fitted forecast plan to serialise.
+    fit_result:
+        Optional fit summary stored in bundle metadata.
+    eval_result:
+        Optional holdout evaluation summary stored in metadata.
+    generate_result:
+        Optional horizon generation summary stored in metadata.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved bundle directory path.
+
+    Raises
     ------
-    ``meta.json``, ``forecast_plan.joblib``.
-    v1 bundles remain loadable via :func:`load_forecast_bundle`.
+    ValidationError
+        When ``plan`` is ``None``.
     """
     if plan is None:
         raise ValidationError("No ForecastPlan to save.")
@@ -73,7 +94,27 @@ def save_forecast_bundle(
 
 
 def load_forecast_bundle(path: str | Path) -> ForecastPlan:
-    """Load a forecast bundle into a :class:`ForecastPlan`."""
+    """Load a forecast bundle into a :class:`ForecastPlan`.
+
+    Reads ``meta.json`` for format validation and ``forecast_plan.joblib`` for
+    the plan payload, supporting both v1 and v2 bundle layouts.
+
+    Parameters
+    ----------
+    path:
+        Root directory of a saved forecast bundle.
+
+    Returns
+    -------
+    ForecastPlan
+        Deserialised train-fitted plan ready for generate and evaluate.
+
+    Raises
+    ------
+    ValidationError
+        When files are missing, the format is unsupported, or the payload is
+        not a valid :class:`ForecastPlan`.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "forecast_plan.joblib"

@@ -67,7 +67,24 @@ class _Candidate:
 
 
 def export_comparison_metrics(result: AutoMLResult, path: str | Path) -> Path:
-    """Export ranked trial comparison metrics to JSON for downstream analysis."""
+    """Export ranked trial comparison metrics to JSON for downstream analysis.
+
+    Writes a lightweight JSON file with best candidate summary and per-trial
+    scores suitable for dashboards or external comparison tools.
+
+    Parameters
+    ----------
+    result:
+        Completed :class:`~buildml.automl.results.AutoMLResult` from
+        :func:`run_automl`.
+    path:
+        Destination file path; parent directories are created if missing.
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved path to the written JSON file.
+    """
     import json
     from pathlib import Path as PathType
 
@@ -140,36 +157,87 @@ def run_automl(
 
     Parameters
     ----------
-    method:
-        ``randomized`` (default, no extra), ``grid`` (small exhaustive catalog),
-        ``optuna`` (requires ``buildml[automl]``), or ``evolutionary`` (in-tree GA).
+    dataset:
+        BuildML dataset with features and a single target column.
+    split_plan:
+        Train/validation/test split; train partition is used for search and
+        refit; test never enters selection scoring.
     backend:
         ``native`` (default), ``optuna`` (deepened Optuna path),
         ``flaml`` or ``autogluon`` (industry adapters; ``buildml[automl-industry]``).
-    include_industry_families:
-        When True and ``buildml[automl-industry]`` GBDT libs are installed, extend
-        the native catalog with LightGBM / XGBoost / CatBoost families.
-    ensemble_mode:
-        When ``include_ensembles=True``, score ``voting``, ``stacking``, or ``both``
-        ensembles of diverse top families.
-    time_budget:
-        Optional wall-clock cap (seconds). Industry backends use this directly;
-        native search stops after the current trial when exceeded.
+    task:
+        ``classification``, ``regression``, or ``auto`` to infer from the target.
+    method:
+        ``randomized`` (default, no extra), ``grid`` (small exhaustive catalog),
+        ``optuna`` (requires ``buildml[automl]``), or ``evolutionary`` (in-tree GA).
     selection:
         ``cv`` — rank by train-fold CV;
         ``nested`` — outer train folds after inner selection (honest post-selection
         estimate) then refit best globally;
         ``validation`` — rank on Session validation (never test). Requires a
         validation partition.
+    n_trials:
+        Maximum number of candidate trials to evaluate under the trial budget.
+    cv:
+        Inner cross-validation folds or splitter for ``selection='cv'`` /
+        ``'nested'``.
+    outer_cv:
+        Outer cross-validation folds when ``selection='nested'``.
+    cv_strategy:
+        CV splitter strategy: ``auto``, ``kfold``, ``stratified``, ``group``,
+        ``stratified_group``, or ``time``.
+    ranking_metric:
+        Metric used to rank candidates; defaults to task-appropriate score.
+    families:
+        Optional subset of model family names to search; ``None`` uses the full
+        catalog for the resolved task.
     include_recipe_search:
         When True, search discrete fold-local recipe strategies. When False,
         use ``preprocess`` (or passthrough) as a fixed recipe.
+    include_industry_families:
+        When True and ``buildml[automl-industry]`` GBDT libs are installed, extend
+        the native catalog with LightGBM / XGBoost / CatBoost families.
     include_ensembles:
         When True, after single-model trials, evaluate a small number of voting
         ensembles built from diverse top families under shared recipes.
+    ensemble_mode:
+        When ``include_ensembles=True``, score ``voting``, ``stacking``, or ``both``
+        ensembles of diverse top families.
+    max_ensemble_bases:
+        Maximum number of diverse base families combined in one ensemble trial.
+    preprocess:
+        Fixed fold-local recipe used when ``include_recipe_search=False``.
+    session_preprocess_applied:
+        When True, Session-global preprocess was already applied to the frame.
     allow_session_global_preprocess:
         Same hard refusal as classical ``cv_score`` / ``grid_search`` when
         Session-global prep already poisoned the frame.
+    refit:
+        When True, refit the best candidate on all train rows after selection.
+    random_state:
+        Seed for randomized search and CV splitters.
+    groups:
+        Optional group labels for grouped CV strategies.
+    budget:
+        Optional :class:`~buildml.automl.types.AutoMLBudget` caps on trials,
+        families, recipes, ensembles, and wall-clock time.
+    time_budget:
+        Optional wall-clock cap (seconds). Industry backends use this directly;
+        native search stops after the current trial when exceeded.
+
+    Returns
+    -------
+    tuple[AutoMLPlan, AutoMLResult, FitResult | None]
+        Train-selected plan, full ranked search result, and optional classical
+        :class:`~buildml.model.supervised.FitResult` when ``refit=True``.
+
+    Raises
+    ------
+    ValidationError
+        When backend, method, selection, or partition configuration is invalid.
+    LeakageError
+        When Session-global preprocess would leak into fold-local CV without
+        explicit opt-in.
 
     Notes
     -----

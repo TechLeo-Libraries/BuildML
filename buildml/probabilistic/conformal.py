@@ -16,11 +16,27 @@ from buildml.core.errors import ValidationError
 
 
 def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
-    """Finite-sample split-conformal quantile at level ``1 - alpha``.
+    """Compute the finite-sample split-conformal quantile at level ``1 - alpha``.
 
-    Uses the standard ``ceil((n+1)(1-alpha))/n`` order-statistic index
-    (clipped), equivalent to the common MAPIE split-conformal recipe for
-    absolute residual scores.
+    Uses the standard ``ceil((n+1)(1-alpha))/n`` order-statistic index on sorted
+    nonconformity scores from the train-only calibration carve.
+
+    Parameters
+    ----------
+    scores:
+        Nonconformity scores from calibration rows.
+    alpha:
+        Miscoverage rate in ``(0, 1)``.
+
+    Returns
+    -------
+    float
+        Quantile applied when building intervals or prediction sets.
+
+    Raises
+    ------
+    ValidationError
+        When ``scores`` is empty or ``alpha`` is outside ``(0, 1)``.
     """
     arr = np.asarray(scores, dtype=float).ravel()
     n = int(arr.size)
@@ -29,7 +45,6 @@ def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
     if not 0.0 < float(alpha) < 1.0:
         raise ValidationError(f"alpha must be in (0, 1); got {alpha}.")
     level = 1.0 - float(alpha)
-    # Finite-sample correction: q-hat = Rank ceil((n+1)(1-α)) / n
     k = int(np.ceil((n + 1) * level))
     k = min(max(k, 1), n)
     ordered = np.sort(arr)
@@ -37,7 +52,21 @@ def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
 
 
 def absolute_residual_scores(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-    """Nonconformity scores for regression: |y − ŷ|."""
+    """Compute regression nonconformity scores as absolute residuals.
+
+    Used by native split conformal calibration on the train carve before
+    interval construction on holdout partitions.
+
+    Parameters
+    ----------
+    y_true, y_pred:
+        Parallel calibration targets and point predictions.
+
+    Returns
+    -------
+    numpy.ndarray
+        Absolute residual scores ``|y - ŷ|`` per row.
+    """
     return np.abs(np.asarray(y_true, dtype=float) - np.asarray(y_pred, dtype=float))
 
 
@@ -45,7 +74,23 @@ def regression_intervals(
     y_pred: np.ndarray,
     quantile: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Symmetric absolute-residual intervals around point predictions."""
+    """Build symmetric absolute-residual intervals around point predictions.
+
+    Applies a calibrated conformal quantile as a fixed half-width around each
+    point prediction from the fitted probabilistic plan.
+
+    Parameters
+    ----------
+    y_pred:
+        Point predictions for the scoring partition.
+    quantile:
+        Calibrated conformal half-width from train-only calibration.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray]
+        Lower and upper bound arrays aligned with ``y_pred``.
+    """
     pred = np.asarray(y_pred, dtype=float)
     q = float(quantile)
     return pred - q, pred + q
@@ -55,7 +100,28 @@ def classification_nonconformity(
     proba: np.ndarray,
     y_true_codes: np.ndarray,
 ) -> np.ndarray:
-    """Score = 1 − p̂(y_true); higher means less conforming."""
+    """Compute classification nonconformity as ``1 - p̂(y_true)``.
+
+    Higher scores mean the observed label received lower predicted probability
+    on calibration rows.
+
+    Parameters
+    ----------
+    proba:
+        Predicted class probabilities shaped ``(n_rows, n_classes)``.
+    y_true_codes:
+        Integer-encoded true class indices aligned with ``proba`` rows.
+
+    Returns
+    -------
+    numpy.ndarray
+        Nonconformity score per calibration row.
+
+    Raises
+    ------
+    ValidationError
+        When shapes mismatch or class codes are out of range.
+    """
     p = np.asarray(proba, dtype=float)
     y = np.asarray(y_true_codes).astype(int)
     if p.ndim != 2:
@@ -72,14 +138,31 @@ def classification_prediction_sets(
     quantile: float,
     classes: tuple[Any, ...],
 ) -> list[tuple[Any, ...]]:
-    """Include labels with nonconformity ≤ quantile (1 − p̂(y) ≤ q)."""
+    """Build prediction sets from calibrated nonconformity thresholds.
+
+    Includes every class whose nonconformity ``1 - p̂(y)`` is at most the
+    conformal quantile; falls back to the argmax class when the set is empty.
+
+    Parameters
+    ----------
+    proba:
+        Predicted class probabilities shaped ``(n_rows, n_classes)``.
+    quantile:
+        Calibrated conformal threshold from train-only calibration.
+    classes:
+        Class labels corresponding to probability columns.
+
+    Returns
+    -------
+    list[tuple]
+        One prediction-set tuple per row.
+    """
     p = np.asarray(proba, dtype=float)
     q = float(quantile)
     sets: list[tuple[Any, ...]] = []
     for row in p:
         members = [classes[j] for j in range(len(classes)) if (1.0 - row[j]) <= q]
         if not members:
-            # Guarantee non-empty set: keep the MAP label.
             members = [classes[int(np.argmax(row))]]
         sets.append(tuple(members))
     return sets

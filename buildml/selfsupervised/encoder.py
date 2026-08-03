@@ -32,6 +32,26 @@ class MaskedTabularEncoder(BaseEstimator, TransformerMixin):
         max_iter: int = 200,
         random_state: int | None = 0,
     ) -> None:
+        """Configure a masked tabular autoencoder for SSL pretext training.
+
+        Sets MLP architecture and masking hyperparameters used during
+        unsupervised reconstruction pretext on numeric tabular features.
+
+        Parameters
+        ----------
+        latent_dim:
+            Bottleneck width exported by :meth:`transform`.
+        hidden:
+            Hidden layer widths before the latent bottleneck.
+        mask_ratio:
+            Fraction of features masked per augmented view during fit.
+        n_mask_views:
+            Number of random mask views stacked per row during fit.
+        max_iter:
+            Maximum MLPRegressor iterations.
+        random_state:
+            Seed for mask sampling and MLP fitting.
+        """
         self.latent_dim = int(latent_dim)
         self.hidden = tuple(int(h) for h in hidden)
         self.mask_ratio = float(mask_ratio)
@@ -40,6 +60,28 @@ class MaskedTabularEncoder(BaseEstimator, TransformerMixin):
         self.random_state = random_state
 
     def fit(self, X: Any, y: Any = None) -> MaskedTabularEncoder:
+        """Fit the masked reconstruction MLP on augmented train features.
+
+        Builds multiple masked views per row and learns to reconstruct the
+        original features. Labels are ignored because pretext is unsupervised.
+
+        Parameters
+        ----------
+        X:
+            2D float feature matrix with at least two rows.
+        y:
+            Ignored; present for sklearn API compatibility.
+
+        Returns
+        -------
+        MaskedTabularEncoder
+            Fitted encoder with ``mlp_`` and ``reconstruction_mae_`` set.
+
+        Raises
+        ------
+        ValidationError
+            When ``X`` shape is invalid or hyperparameters are out of range.
+        """
         del y  # pretext is unsupervised w.r.t. labels
         x = np.asarray(X, dtype=float)
         if x.ndim != 2 or x.shape[0] < 2 or x.shape[1] < 1:
@@ -90,6 +132,25 @@ class MaskedTabularEncoder(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: Any) -> np.ndarray:
+        """Export latent-layer activations for downstream heads.
+
+        Returns bottleneck representations, not full feature reconstructions.
+
+        Parameters
+        ----------
+        X:
+            2D float matrix with ``n_features_in_`` columns.
+
+        Returns
+        -------
+        numpy.ndarray
+            Latent activations with shape ``(n_samples, latent_dim)``.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder is not fitted or column count mismatches.
+        """
         self._check_fitted()
         x = np.asarray(X, dtype=float)
         if x.ndim != 2 or x.shape[1] != self.n_features_in_:
@@ -100,7 +161,26 @@ class MaskedTabularEncoder(BaseEstimator, TransformerMixin):
         return self._latent_activations(x)
 
     def reconstruct(self, X: Any) -> np.ndarray:
-        """Return reconstructed features (for diagnostics, not the Session default)."""
+        """Return reconstructed features for diagnostics.
+
+        Session export uses :meth:`transform` representations by default; this
+        path exposes full MLP reconstructions for quality checks.
+
+        Parameters
+        ----------
+        X:
+            2D float feature matrix matching ``n_features_in_``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Reconstructed features with the same shape as ``X``.
+
+        Raises
+        ------
+        ValidationError
+            When the encoder is not fitted.
+        """
         self._check_fitted()
         return np.asarray(self.mlp_.predict(np.asarray(X, dtype=float)), dtype=float)
 

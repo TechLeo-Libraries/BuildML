@@ -20,7 +20,26 @@ def assert_tuning_partition(
     *,
     allow_test_tuning: bool,
 ) -> None:
-    """Refuse silent policy tuning on Session test without explicit opt-in."""
+    """Refuse silent decision-policy tuning on Session test without opt-in.
+
+    Validates the tuning partition name and raises when ``partition='test'``
+    is requested without ``allow_test_tuning=True``. Call before fitting any
+    threshold, cost-matrix, or allocation policy.
+
+    Parameters
+    ----------
+    partition:
+        Split name used to select operating points or allocations.
+    allow_test_tuning:
+        Explicit dangerous opt-in required to tune on the test partition.
+
+    Raises
+    ------
+    ValidationError
+        When ``partition`` is not ``'train'``, ``'validation'``, or ``'test'``.
+    LeakageError
+        When ``partition='test'`` and ``allow_test_tuning`` is ``False``.
+    """
     if partition not in {"train", "validation", "test"}:
         raise ValidationError(
             "Decision-policy tuning partition must be 'train', 'validation', "
@@ -37,6 +56,26 @@ def assert_tuning_partition(
 
 
 def require_split(split_plan: SplitPlan | None) -> SplitPlan:
+    """Return a split plan or raise when partitioning is required.
+
+    Decision fit/apply/eval paths need an explicit train/validation/test
+    split before scoring tuning or holdout partitions.
+
+    Parameters
+    ----------
+    split_plan:
+        Session split plan, or ``None`` when not yet configured.
+
+    Returns
+    -------
+    SplitPlan
+        The provided non-``None`` split plan.
+
+    Raises
+    ------
+    ValidationError
+        When ``split_plan`` is ``None``.
+    """
     if split_plan is None:
         raise ValidationError(
             "A split is required before fitting or evaluating a decision policy."
@@ -45,6 +84,27 @@ def require_split(split_plan: SplitPlan | None) -> SplitPlan:
 
 
 def require_fit_result(fit_result: FitResult | None) -> FitResult:
+    """Return a fit result or raise when model scoring is required.
+
+    Model-scored threshold, cost-matrix, and allocation helpers need a
+    completed :class:`~buildml.model.supervised.FitResult` unless explicit
+    score columns are supplied.
+
+    Parameters
+    ----------
+    fit_result:
+        Session fit result, or ``None`` when not yet fitted.
+
+    Returns
+    -------
+    FitResult
+        The provided non-``None`` fit result.
+
+    Raises
+    ------
+    ValidationError
+        When ``fit_result`` is ``None``.
+    """
     if fit_result is None:
         raise ValidationError(
             "No fitted estimator. Call Session.fit(...) before model-score "
@@ -60,6 +120,28 @@ def validate_binary_costs(
     tp_benefit: float,
     tn_benefit: float,
 ) -> tuple[float, float, float, float]:
+    """Validate and normalise binary cost-sensitive threshold inputs.
+
+    Ensures false-positive and false-negative costs are present, finite, and
+    non-negative before expected-cost threshold sweeps.
+
+    Parameters
+    ----------
+    fp_cost, fn_cost:
+        False-positive and false-negative costs; both required for cost mode.
+    tp_benefit, tn_benefit:
+        Optional benefits subtracted from total expected cost.
+
+    Returns
+    -------
+    tuple[float, float, float, float]
+        Normalised ``(fp_cost, fn_cost, tp_benefit, tn_benefit)`` floats.
+
+    Raises
+    ------
+    ValidationError
+        When costs are missing, non-finite, or negative where disallowed.
+    """
     if fp_cost is None or fn_cost is None:
         raise ValidationError(
             "Cost-sensitive threshold policy requires both fp_cost and fn_cost "
@@ -87,6 +169,31 @@ def parse_cost_matrix(
     class_labels: Sequence[str] | None,
     n_classes: int | None = None,
 ) -> tuple[np.ndarray, tuple[str, ...]]:
+    """Parse and validate a square multiclass cost matrix and label order.
+
+    Converts user input to a finite square ``numpy`` matrix and aligns class
+    label names with matrix dimension for Bayes decision policies.
+
+    Parameters
+    ----------
+    cost_matrix:
+        Square ``C[true, action]`` costs supplied by the user.
+    class_labels:
+        Optional label names; positional strings are generated when ``None``.
+    n_classes:
+        Expected class count for shape validation against the estimator.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, tuple[str, ...]]
+        Validated cost matrix and corresponding class label tuple.
+
+    Raises
+    ------
+    ValidationError
+        When the matrix is not square, contains non-finite values, or label
+        counts disagree with matrix dimension.
+    """
     matrix = np.asarray(cost_matrix, dtype=float)
     if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
         raise ValidationError(
@@ -115,6 +222,25 @@ def partition_frame(
     split_plan: SplitPlan,
     partition: str,
 ) -> pd.DataFrame:
+    """Return the dataframe rows for a named split partition.
+
+    Uses the split plan to slice ``dataset``; ``partition='all'`` returns the
+    full frame copy for column-driven allocation on explicit candidates.
+
+    Parameters
+    ----------
+    dataset:
+        Source tabular dataset.
+    split_plan:
+        Train/validation/test split definition.
+    partition:
+        Partition name or ``'all'`` for the full dataset frame.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of rows belonging to the requested partition.
+    """
     if partition == "all":
         return dataset.frame.copy()
     return frame_for_partition(dataset, split_plan, partition).copy()  # type: ignore[arg-type]
@@ -128,7 +254,36 @@ def model_scores(
     *,
     score_source: str = "model_proba",
 ) -> tuple[pd.Index, np.ndarray, np.ndarray | None, Any]:
-    """Return (index, scores, proba_or_None, y_true_or_None) for a partition."""
+    """Score a split partition with the fitted Session estimator.
+
+    Returns index-aligned scores (and optional probability matrix) for
+    threshold, cost-matrix, or allocation helpers that consume model outputs.
+
+    Parameters
+    ----------
+    dataset:
+        Tabular dataset with features for the partition.
+    split_plan:
+        Split definition locating ``partition`` rows.
+    fit_result:
+        Fitted estimator and feature-column contract.
+    partition:
+        Split name to score (``'train'``, ``'validation'``, or ``'test'``).
+    score_source:
+        ``'model_proba'`` or ``'model_decision_function'`` scoring mode.
+
+    Returns
+    -------
+    tuple[pandas.Index, numpy.ndarray, numpy.ndarray | None, Any]
+        Row index, primary score vector, optional probability matrix, and true
+        labels when available.
+
+    Raises
+    ------
+    ValidationError
+        When the estimator lacks the requested scoring method or
+        ``score_source`` is unknown.
+    """
     x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)  # type: ignore[arg-type]
     x = x[list(fit_result.feature_columns)]
     estimator = fit_result.estimator
@@ -171,7 +326,35 @@ def column_scores(
     value_column: str | None,
     id_column: str | None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Return (ids, scores/values, costs, positions) from candidate columns."""
+    """Extract ids, values, costs, and positions from candidate columns.
+
+    Reads score/value and optional cost/id columns from an explicit candidate
+    frame for column-driven allocation without model scoring.
+
+    Parameters
+    ----------
+    frame:
+        Candidate rows with score/value (and optional cost/id) columns.
+    score_column:
+        Column used as the ranking score when ``value_column`` is ``None``.
+    cost_column:
+        Optional per-row costs; defaults to ones when ``None``.
+    value_column:
+        Optional explicit value column overriding ``score_column``.
+    id_column:
+        Optional identifier column; defaults to the frame index.
+
+    Returns
+    -------
+    tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
+        ``(ids, values, costs, positions)`` aligned arrays for allocation
+        solvers.
+
+    Raises
+    ------
+    ValidationError
+        When required columns are missing or contain non-finite values.
+    """
     if score_column is None and value_column is None:
         raise ValidationError(
             "Column-driven allocation requires score_column or value_column."
@@ -214,6 +397,26 @@ def binary_confusion_cost(
     tp_benefit: float = 0.0,
     tn_benefit: float = 0.0,
 ) -> dict[str, float]:
+    """Compute binary confusion counts and expected cost from predictions.
+
+    Aggregates TP/FP/TN/FN and derives total/mean expected cost plus
+    precision, recall, and F1 for threshold evaluation.
+
+    Parameters
+    ----------
+    y_true, y_pred:
+        Binary ground-truth and predicted labels encoded as ``{0, 1}``.
+    fp_cost, fn_cost:
+        Costs applied to false positives and false negatives.
+    tp_benefit, tn_benefit:
+        Benefits subtracted from total cost for true positives/negatives.
+
+    Returns
+    -------
+    dict[str, float]
+        Confusion counts, expected-cost totals/means, and classification
+        metrics.
+    """
     y_true = np.asarray(y_true).astype(int)
     y_pred = np.asarray(y_pred).astype(int)
     tp = int(((y_pred == 1) & (y_true == 1)).sum())
@@ -247,6 +450,23 @@ def multiclass_realized_cost(
     y_pred_idx: np.ndarray,
     cost_matrix: np.ndarray,
 ) -> float:
+    """Sum realized multiclass costs for paired true and predicted indices.
+
+    Looks up ``cost_matrix[true, pred]`` for each row and returns the total
+    realized cost under a fixed Bayes or argmin action policy.
+
+    Parameters
+    ----------
+    y_true_idx, y_pred_idx:
+        Integer class indices aligned row-wise.
+    cost_matrix:
+        Square ``C[true, action]`` cost matrix.
+
+    Returns
+    -------
+    float
+        Total realized cost summed over all pairs.
+    """
     total = 0.0
     for t, p in zip(y_true_idx.tolist(), y_pred_idx.tolist(), strict=True):
         total += float(cost_matrix[int(t), int(p)])
