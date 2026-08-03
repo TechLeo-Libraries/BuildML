@@ -114,8 +114,8 @@ Same metric names (nDCG, MRR) can appear in all three: **do not compare**
 
 ---
 
-## Next
+## See also
 
-- Deep dive: [ranking-deep.md](ranking-deep.md)
-- Benchmark: `benchmarks/ranking/ndcg_lift.py`
-- After LTR PASS: optimisation helpers (R6.9)
+- [Ranking deep guide](ranking-deep.md)
+- [Optimize / decisions quickstart](quickstart-optimize.md)
+

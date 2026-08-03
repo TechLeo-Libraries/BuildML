@@ -208,17 +208,6 @@ Schema: `buildml.unsupervised_bundle.v1`. See
 
 ---
 
-## Phase coverage note
-
-Phase 1 depth-first order (**complete**): unsupervised (this guide) → ensembles →
-AutoML → forecasting → anomaly/fraud (see [Anomaly deep](anomaly-deep.md)).
-Later paradigms (semi/self-supervised, federated,
-causal path, GNNs, RL, …) wait until Phase 1 items hit this bar. Explicit
-non-goals (TTS, swarm zoo, digital twins, AV/robotics product stacks, full COCO
-detection suite, …) stay undocumented as product surfaces.
-
----
-
 ## Teaching surface
 
 ```python

@@ -86,5 +86,5 @@ print(session.evaluate_neuro_symbolic(partition="test").metrics)
 Benchmark: `python benchmarks/symbolic/rule_fidelity.py` (rule accuracy vs
 black-box RandomForest on tabular reference data).
 
-Next Phase 2 item after symbolic: **Case-based reasoning**
+See also: [case-based reasoning quickstart](quickstart-cbr.md).
 ([quickstart-cbr](quickstart-cbr.md)).

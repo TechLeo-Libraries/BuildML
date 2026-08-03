@@ -31,11 +31,6 @@ RAG / unsupervised / ensemble guides.
 | AutoML bundle + classical pipeline compatibility | Session checkpoint substitute |
 | Predictive ranking under a trial budget | Causal discovery / automated science |
 
-Phase 1 depth-first order (**complete**): unsupervised → ensembles →
-**AutoML (this guide)** → forecasting → anomaly (see
-[Anomaly deep](anomaly-deep.md)). Explicit non-goals (neuromorphic, swarm zoo,
-digital twins, AV/robotics, TTS, full COCO suite) stay out.
-
 ---
 
 ## AutoML vs `grid_search` / `optuna_search` / `evolutionary_search`

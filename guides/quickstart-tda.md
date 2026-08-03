@@ -86,9 +86,8 @@ Session.tda_capability_matrix()  # honest backend / vectorization matrix
 
 ---
 
-## Next
+## See also
 
-TDA **PASS (R5.9 industry depth)**. Phase 3 application systems start at
-[recommendation systems](quickstart-recommenders.md); after that PASS:
-search/LTR, knowledge graphs, optimisation helpers, synthetic-data: one at a
-time.
+- [Recommenders](quickstart-recommenders.md)
+- [TDA deep guide](tda-deep.md)
+

@@ -81,7 +81,3 @@ python benchmarks/multitask/multi_target_quality.py
 Writes `benchmarks/multitask/results/multi_target_quality.json` comparing
 sklearn vs industry/torch when extras are installed.
 
-## Phase tracker
-
-Phase 2 item 5 (**multi-task industry depth**, R6.4) is done.
-Next depth-first item: **meta-learning** (R6.5).

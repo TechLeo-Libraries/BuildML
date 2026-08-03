@@ -151,11 +151,3 @@ vs sklearn pointwise on synthetic judgments.
 
 ---
 
-## Tracker
-
-Phase 3 application systems: depth-first:
-
-1. Recommenders: **PASS**
-2. Search / LTR: **PASS** (R6.8 industry depth)
-3. Knowledge graphs: **PASS**
-4. Optimisation / decision helpers: next (R6.9)

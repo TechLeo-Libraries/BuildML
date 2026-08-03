@@ -72,5 +72,5 @@ session.save_multitask_bundle("artifacts/multitask_bundle")
 | Per-task + aggregate holdout metrics | Causal multi-task / federated MTL |
 | Distinct `buildml.multitask_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item after multi-task industry depth (R6.4): **meta-learning**
+See also: [meta-learning quickstart](quickstart-meta-learning.md).
 (see [Meta-learning quickstart](quickstart-meta-learning.md)).

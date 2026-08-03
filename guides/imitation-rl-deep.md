@@ -187,6 +187,3 @@ Benchmark: `python benchmarks/rl/policy_return.py` (BC baseline vs SB3 return).
 
 ---
 
-## Tracker
-
-IL+RL industry depth is **PASS** (R6.11). R6 sweep complete.

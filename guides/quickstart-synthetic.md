@@ -93,4 +93,4 @@ reusable sampling, fidelity/TSTR, and controlled augmentation with provenance.
 | Merge | Explicit `merge_mode`; default returns Frame only |
 | Industry | SDV optional: native copula always available |
 
-R6.10 industry depth **PASS**. Benchmark: `benchmarks/synthetic/tstr_quality.py`.
+Benchmark: `benchmarks/synthetic/tstr_quality.py`.

@@ -78,4 +78,4 @@ session.save_graph_bundle("artifacts/graph_bundle")
 | Inductive / transductive modes | Graph-level classify zoo |
 | Distinct `buildml.graph_bundle.v1` | Silent full-graph train as "inductive" |
 
-Next Phase 2 item after this: **Evolutionary algorithms** (search/HPO backend).
+See also: [diagnostics & model search](classical-diagnostics-search.md) for Optuna / evolutionary-style HPO backends when installed.

@@ -86,4 +86,4 @@ vote entropy), `expected_model_change_lite`.
 **Not this API:** semi-supervised propagation (`fit_semisupervised`),
 self-supervised pretext (`fit_ssl_pretext`), or online/`partial_fit` streams
 (`fit_online` / `partial_fit_online`)
-(Phase 2 next).
+.

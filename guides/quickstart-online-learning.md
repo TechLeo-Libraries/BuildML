@@ -72,4 +72,4 @@ session.save_online_bundle("artifacts/online_bundle")
 | Holdout eval never used for updates | Lifelong / continual research suites (EWC, replay zoos, …) |
 | Optional lite drift disclosure vs init chunk | Full production drift platform |
 
-Next Phase 2 item after multi-task: **meta-learning**.
+See also: [meta-learning quickstart](quickstart-meta-learning.md).

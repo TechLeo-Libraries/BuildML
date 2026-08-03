@@ -105,4 +105,4 @@ knapsack and CVXPY LP only; not a general OR platform or digital twin.
 `tune_threshold` remains the classical diagnostic sweep;
 `fit_decision_policy(method="threshold")` persists the chosen operating point.
 
-Phase-3 synthetic-data systems: **PASS** → [quickstart-synthetic.md](quickstart-synthetic.md).
+See also: [synthetic-data quickstart](quickstart-synthetic.md).

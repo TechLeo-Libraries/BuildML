@@ -3,7 +3,7 @@
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 
-Industry depth (R6.1): scarce-label classification with unlabeled train features :
+Industry depth: scarce-label classification with unlabeled train features :
 not anomaly novelty, not self-supervised pretext, not active learning.
 
 ## Contract
@@ -109,4 +109,4 @@ Writes `benchmarks/semisupervised/results/partial_labels.json`.
 - [Quickstart](quickstart-semisupervised.md)
 - [Self-supervised](quickstart-selfsupervised.md) (pretext → head / embeddings)
 - [Anomaly](anomaly-deep.md) (novelty is a different metaphor)
-- Next Phase 2 item: **active learning** (`buildml.activelearning`)
+- See also: [active learning](quickstart-active-learning.md) (`buildml.activelearning`)

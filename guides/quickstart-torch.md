@@ -39,7 +39,6 @@ frame = pd.DataFrame(
     }
 )
 
-
 class TinyMLP(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -47,7 +46,6 @@ class TinyMLP(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
-
 
 session = (
     Session.ingest(frame)
@@ -135,7 +133,7 @@ text_session.make_text_torch_loaders(text_column="text")
 text_session.fit_torch(epochs=3)  # builds embedding text classifier
 ```
 
-## Nested search and multimodal (Pass G)
+## Nested search and multimodal
 
 ```python
 # Nested Torch HPO (outer estimate after inner search; fold-local normalize)

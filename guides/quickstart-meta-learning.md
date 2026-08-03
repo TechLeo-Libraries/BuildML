@@ -78,5 +78,5 @@ session.save_metalearning_bundle("artifacts/metalearning_bundle")
 | Leakage-safe train-only meta-train | Meta-training on validation/test |
 | Distinct `buildml.metalearning_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item after meta-learning (now shipped): **federated learning**
+See also: [federated learning quickstart](quickstart-federated.md).
 (see [Federated quickstart](quickstart-federated.md)).

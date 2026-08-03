@@ -16,6 +16,14 @@ with pre-release tags for alpha (`aN`) builds.
   `scripts/run_full_coverage.py` (per-module isolation on Windows + combine):
   **70.7%** (39539/55914). `fail_under` raised 25 → 60; next planned 70
   (`scripts/coverage_ratchet.json`).
+- **Runtime stability probe.** `scripts/verify_runtime_stability.py`
+  subprocess-isolates core/optional use cases (ok/fail/crash/skip) so native
+  access violations cannot kill the parent; see `docs/stability.md`.
+- **Safe install guide.** `guides/safe-install-and-runtime.md`: staged venv
+  install on Python 3.11/3.12, `PYTHONNOUSERSITE=1` on Windows, classical first,
+  then Torch/industry extras one group at a time with re-probe.
+- **User-doc voice cleanup.** Guides and user-facing docs drop internal Phase /
+  R5–R6 / PASS trackers; copy addresses readers directly (developer → user).
 - **Lazy/cached walkthrough capability probes.** Default
   `walkthrough(capability_probe="lazy")` skips inactive domain industry imports;
   process-wide matrix + subprocess import caches; `eager` / `skip` modes.

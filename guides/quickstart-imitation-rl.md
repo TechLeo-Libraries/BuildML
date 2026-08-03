@@ -219,6 +219,8 @@ session.save_rl_bundle("artifacts/rl_sb3_demo_bundle")
 
 ---
 
-## Next
+## See also
 
-IL+RL industry depth is **PASS** (R6.11). R6 sweep complete. Next: application systems.
+- [Imitation & RL deep guide](imitation-rl-deep.md)
+- [Guides index](README.md)
+

@@ -83,7 +83,7 @@ answer = session.rag_generate(
 print(answer.answer)
 print([c.doc_id for c in answer.citations])
 
-# Cheap faithfulness hooks (Pass V): citation-marker coverage + lexical overlap.
+# Cheap faithfulness hooks: citation-marker coverage + lexical overlap.
 # Attached automatically on GenerateResult when score_grounding is enabled (default).
 print(answer.faithfulness)
 if answer.faithfulness is not None:

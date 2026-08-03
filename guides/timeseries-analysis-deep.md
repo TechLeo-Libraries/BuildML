@@ -1,6 +1,7 @@
 # Time-series analysis (deep)
 
-Phase R3 analysis plugin: distinct Session surface from forecasting.
+Distinct Session surface from forecasting: analysis and diagnostics only
+(not `fit_forecast`).
 
 ## Architecture
 

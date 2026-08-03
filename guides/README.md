@@ -1,8 +1,7 @@
 # BuildML guides
 
-User-facing tutorials for BuildML 2.x. Markdown under `guides/` is the
-**canonical** source; Sphinx renders the same files on Read the Docs when the
-hosted build is current
+Tutorials for BuildML 2.x. These Markdown pages are the source of truth; the
+same content appears on Read the Docs when the hosted build is current
 ([buildml.readthedocs.io](https://buildml.readthedocs.io/)).
 
 **Install honesty:** PyPI `buildml` is still legacy **1.x**. Session 2.x
@@ -26,7 +25,7 @@ and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
 
 | Stage | Read | Outcome |
 | --- | --- | --- |
-| 0 | [Installation](../docs/installation.rst), [concepts](../docs/concepts.rst), [workflow guide](../docs/workflow-guide.rst) | Vocabulary, install honesty, stage decisions |
+| 0 | [Installation](../docs/installation.rst), [Safe install & runtime](safe-install-and-runtime.md), [concepts](../docs/concepts.rst), [workflow guide](../docs/workflow-guide.rst) | Vocabulary, staged venv install, and runtime probe before optional extras |
 | 0b | New to machine learning? `session.learn()` then `session.explain("<step>")`: see [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough) | Plain-language concepts and operations, in reading order |
 | 1 | [Classical quickstart](quickstart-classical.md) → [Classical end-to-end](classical-end-to-end.md) | Dirty data → roles → split → prep → fit → evaluate |
 | 2 | [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Why BuildML refuses poisoned CV; good vs bad patterns |

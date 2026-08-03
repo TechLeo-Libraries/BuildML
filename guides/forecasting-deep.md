@@ -14,7 +14,7 @@ exogenous support, bundles, and honesty bounds.
 **Related:** [Forecasting quickstart](quickstart-forecasting.md) ·
 [Leakage](leakage-cv-recipes.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md) ·
-[AutoML deep](automl-deep.md) (Phase 1 predecessor).
+[AutoML deep](automl-deep.md).
 
 ---
 
@@ -28,12 +28,6 @@ exogenous support, bundles, and honesty bounds.
 | Univariate default + optional numeric exog | Silent multivariate identification claims |
 | `buildml.forecast_bundle.v2` (v1 loadable) | Session checkpoint substitute |
 | statsmodels ETS/ARIMA when `[timeseries]` | Torch sequence forecaster in this package |
-
-Phase 1 order (depth-first, **complete**): unsupervised → ensembles → AutoML →
-**forecasting** → anomaly (see [Anomaly deep](anomaly-deep.md)). Explicit
-non-goals unchanged (neuromorphic, swarm, digital twins, AV/robotics, TTS,
-multi-agent sims, full COCO detection). Phase 2 first item: semi/self-supervised
-hooks.
 
 ---
 
@@ -192,4 +186,4 @@ unsupervised, ensemble, or AutoML bundles. See
 - No Torch sequence forecaster in this package (prefer a complete classical
   Session over a shallow DL stub).
 - No causal identification APIs; EDA remains associational.
-- Anomaly/fraud is the next Phase 1 item: not this guide.
+- Anomaly/fraud is the related guide: not this guide.

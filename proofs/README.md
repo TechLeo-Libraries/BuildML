@@ -13,12 +13,12 @@ artifacts where applicable, and JSON metrics under `results/` (gitignored).
 **Expansion:** +30 Tier A, +30 Tier B, +30 Tier C twins beyond the baseline cohort
 (ensembles, Torch/DL, and previously uncomposed Tier B domains).
 
-**Status:** proof program **complete** for the expanded inventory. Optional
+**Status:** the expanded Tier A/B/C inventory is runnable end-to-end. Optional
 deepeners (not failures): `gymnasium` via `buildml[rl]` enables CartPole /
 FrozenLake paths; TDA prefers editable `pip install -e ".[tda]"`; Torch wheels
 deepen `torch-*` / `nova-torch-bench` when importable.
 
-**Richer backends exercised in this env when installed:**
+**Richer backends exercised when installed:**
 
 | Package | Proof path deepened |
 | --- | --- |
@@ -95,7 +95,7 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 
 ---
 
-## Docs inventory (sync to R1–R6 reality)
+## Docs inventory (guide → proof map)
 
 | Area | Canonical guide(s) | Proof deep-link |
 | --- | --- | --- |
@@ -271,9 +271,9 @@ Re-run Tier C after the matching Tier A `script.py`:
 
 ---
 
-## Optional backlog (not blockers)
+## Optional deepeners (not blockers)
 
-1. AutoGluon on Py3.13 / Windows when upstream wheels resolve (FLAML covers
+1. AutoGluon on Python 3.13 / Windows when upstream wheels resolve (FLAML covers
    industry AutoML today).
-2. LightFM / learn2learn / giotto-tda / neuralforecast where markers still skip.
-3. Release cut (PyPI 2.x): only when explicitly requested.
+2. LightFM / learn2learn / giotto-tda / neuralforecast where environment markers
+   still skip those wheels.

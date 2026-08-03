@@ -67,6 +67,3 @@ Concepts: `tda-persistent-homology`, `tda-vectorization`, `tda-supervised-head`,
 `tda-bundle-boundary`, `tda-extra-boundary`, `tda-giotto-backend`. Overlays +
 AI allowlist + walkthrough `tda_status` are wired.
 
-## Tracker
-
-Phase 2 TDA → **PASS (R5.9 industry depth)**.

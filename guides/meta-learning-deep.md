@@ -156,4 +156,4 @@ Teaching-critical tools: `fit_metalearning`, `adapt_to_task`,
 - Random row splits may place the same task id in train and holdout: disclosed.
 - Causal meta / EconML-style estimation lives in `buildml.causal`, not here.
 
-Next Phase 2 R6 item: **symbolic / neuro-symbolic** learning.
+See also: [symbolic / neuro-symbolic deep guide](symbolic-deep.md).

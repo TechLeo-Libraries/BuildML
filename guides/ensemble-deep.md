@@ -27,11 +27,6 @@ RAG / unsupervised guides.
 | Ensemble bundle + classical pipeline compatibility | Session checkpoint substitute |
 | sklearn Voting*/Stacking* façade (+ honest blend) | AutoML search product |
 
-Phase 1 depth-first order (**complete**): unsupervised → **ensembles (this guide)**
-→ AutoML → forecasting → anomaly (see [Anomaly deep](anomaly-deep.md)). Explicit
-non-goals (neuromorphic, swarm zoo, digital twins, AV/robotics, TTS, full COCO
-suite) stay out.
-
 ---
 
 ## Strategy choice
@@ -188,6 +183,6 @@ use Ridge as the default meta-learner when unspecified.
 - No dedicated ensemble dashboard charts
 - No fold-local preprocess recipe inside stacking CV (same Session-global
   preprocess caveats as classical CV: see [leakage guide](leakage-cv-recipes.md))
-- AutoML and forecasting are separate Phase 1 Session paths (see their deep guides)
+- AutoML and forecasting are separate Session paths (see their deep guides)
 
 Runnable mirror: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py).

@@ -75,6 +75,3 @@ Compares accuracy over train chunks vs a full-batch SGD refit baseline on synthe
 - Overlays for all Session ops; AI allowlist: `fit_online`, `partial_fit_online`, `evaluate_online`, save/load bundle
 - Walkthrough / audit include online status with backend disclosure
 
-## Phase tracker
-
-Phase 2 items 1–4 (semi / self / active / **online industry depth**) are done. **Next:** multi-task learning (R6.4).

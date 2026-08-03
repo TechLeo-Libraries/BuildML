@@ -1,7 +1,7 @@
 # Optimisation / decision helpers: deep guide
 
 Session path for turning model scores into **decisions** under costs and
-capacity constraints. R6.9 industry depth: PuLP/OR-Tools MIP knapsack, CVXPY
+capacity constraints. Industry depth: PuLP/OR-Tools MIP knapsack, CVXPY
 LP, XGB/calibrated cost-sensitive thresholds: with honest native fallback.
 
 ## What this is / is not
@@ -116,7 +116,3 @@ exists without a threshold/decision step.
 `benchmarks/optimize/policy_value.py` compares validation-tuned cost-optimal
 policies vs a fixed 0.5 baseline on held-out expected cost.
 
-## Tracker
-
-Recommenders / LTR / KG: **PASS**. This module: R6.9 industry depth **PASS**.
-Phase-3 synthetic-data systems: **PASS** (see [synthetic-deep.md](synthetic-deep.md)).

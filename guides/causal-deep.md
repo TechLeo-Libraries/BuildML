@@ -72,8 +72,3 @@ Probabilistic ML quantifies predictive uncertainty. Classical fit/evaluate
 optimize predictive risk. Neither identifies counterfactual effects. Causal ML
 is a third path with a harder entry gate: declared assumptions.
 
-## Tracker
-
-Known residuals (accepted): no IV/front-door; binary treatment; ATE not full CATE
-product (heterogeneity via causal_forest only). Next Phase 2 depth item:
-**Federated** (R5.5) → KG → Probabilistic deepenings → Graph PyG → TDA.

@@ -120,7 +120,8 @@ CI also runs a **Windows classical-only** job (`windows-classical`: import smoke
 ruff, classical alpha smoke). Torch / PyG / industry extras stay Linux-only.
 `scripts/probe_industry_extras.py` prints which industry modules import vs skip
 on the current platform and can write a JSON artifact; it must not fail the
-build when wheels are missing.
+build when wheels are missing. For use-case stability (ok/fail/crash/skip),
+run `python scripts/verify_runtime_stability.py` (see `docs/stability.md`).
 
 After Session / AI tool / overlay changes, regenerate teaching surfaces:
 

@@ -88,5 +88,5 @@ Honest boundaries
 * **Out of scope:** foundation-model meta-learning; learned ProtoNet
   embeddings; full MAML/Reptile; meta-training on holdout.
 
-Next Phase 2 item after meta-learning (now shipped): **federated learning**
+See also: [federated learning quickstart](quickstart-federated.md).
 (:doc:`quickstart-federated`).

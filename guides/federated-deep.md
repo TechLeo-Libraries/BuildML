@@ -121,7 +121,7 @@ optional Flower convergence curves.
 
 - No turnkey Flower gRPC / Ray production deployment from Session alone.
 - No cryptographic secure aggregation on any backend.
-- No FedOpt / SCAFFOLD / neural FedAvg zoo (unless later implemented for real).
+- No FedOpt / SCAFFOLD / neural FedAvg zoo (not offered as a production path).
 - No causal APIs.
 
-Next Phase 2 item: **Knowledge graphs (KG)**.
+See also: [knowledge graphs quickstart](quickstart-kg.md).

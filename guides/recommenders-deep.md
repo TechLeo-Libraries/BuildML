@@ -181,8 +181,3 @@ Benchmark: ``python benchmarks/recommenders/ranking_quality.py``
 
 ---
 
-## Tracker
-
-Phase 3 application systems: **recommenders** (this guide): PASS (R5.3 industry depth).
-Search/LTR: PASS. Knowledge graphs: PASS.
-**Next (R5.4):** Causal inference (dowhy/econml).

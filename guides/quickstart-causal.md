@@ -80,4 +80,4 @@ session.save_causal_bundle("artifacts/causal_bundle")
 | DoWhy refutation when installed | Proof of unconfoundedness from holdout |
 | Distinct `buildml.causal_bundle.v1` | Multi-valued / continuous treatment |
 
-Next in R5 tracker: **Federated** (R5.5).
+See also: [federated learning quickstart](quickstart-federated.md).

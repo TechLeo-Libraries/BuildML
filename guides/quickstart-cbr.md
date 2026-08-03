@@ -68,4 +68,4 @@ Optional extras: `buildml[cbr-industry]` (hnswlib ANN), `buildml[rag|ssl]`
 (text embeddings), `buildml[torch]` (learned metric encoder). Included in
 `buildml[production]`.
 
-Next Phase 2 item after this: **Learning to rank (LTR)**.
+See also: [learning to rank quickstart](quickstart-ranking.md).

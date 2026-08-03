@@ -78,5 +78,5 @@ What you get
 * **Out of scope:** Flower/OpenFL networking; cryptographic secure aggregation;
   non-linear FedAvg zoo.
 
-Next Phase 2 item after Bayesian / probabilistic: **Causal ML**
+See also: [causal ML quickstart](quickstart-causal.md).
 (assumption-declared path; EDA stays associational).

@@ -115,8 +115,3 @@ session.save_kg_bundle("artifacts/kg_demo_bundle")
 
 ---
 
-## Tracker
-
-- Recommenders **PASS**; LTR **PASS**
-- Knowledge graphs (this guide): **PASS** (R5.6 industry depth)
-- Next: **probabilistic** (R5.7)

@@ -77,4 +77,4 @@ session.save_federated_bundle("artifacts/federated_bundle")
 | Train-only local updates; holdout eval | Claiming production FL from simulation |
 | Distinct `buildml.federated_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item: **Knowledge graphs (KG)**.
+See also: [knowledge graphs quickstart](quickstart-kg.md).

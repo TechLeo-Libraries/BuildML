@@ -41,7 +41,7 @@ for row in list_pretrained_backbones():
     print(row["modality"], row["architecture"], row["provider"])
 ```
 
-Curated architectures (Pass V expansion):
+Curated architectures:
 
 | Modality | Architectures | Provider |
 | --- | --- | --- |

@@ -1,7 +1,6 @@
 # Synthetic-data systems: deep guide
 
-Session path for **train-fitted tabular generators**. Phase-1 bar + **R6.10
-industry depth**: native fallback, SDV when installed, honest capability matrix.
+Session path for **train-fitted tabular generators**. Industry depth: native fallback, SDV when installed, honest capability matrix.
 
 ## What this is / is not
 
@@ -112,9 +111,3 @@ methods run when `buildml[synthetic-industry]` is installed.
 Not differential privacy. Do not ship synthetic samples as an anonymization
 control without a dedicated privacy review.
 
-## Phase tracker
-
-R6.10 **PASS**: native fallback + SDV industry depth + capability matrix +
-benchmark + guides/explain/AI allowlist/tests/production extra.
-
-Next: R6.11 imitation + RL (final R6 item).

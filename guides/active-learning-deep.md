@@ -150,6 +150,3 @@ checkpoints do **not** embed the learner. See [Artifacts](artifacts-checkpoints-
 
 ---
 
-## Phase tracker
-
-R6.2 active-learning industry depth is **PASS**. **Next:** R6.3 online/continual.

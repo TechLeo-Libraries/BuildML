@@ -37,9 +37,8 @@ exists today. Each step links to pages that go deeper than a single toy example.
    see :doc:`features` and the Markdown guide index for domain → proof maps
 #. **1.x migration**: :doc:`legacy`
 
-The Markdown files under ``guides/`` are the canonical source for quickstarts,
-deep guides, and the glossary. Sphinx includes them via MyST so Read the Docs
-and GitHub stay aligned.
+Quickstarts, deep guides, and the glossary live as Markdown under ``guides/``.
+Sphinx includes them via MyST so Read the Docs and GitHub stay aligned.
 
 .. toctree::
    :maxdepth: 2

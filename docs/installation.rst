@@ -9,6 +9,15 @@ BuildML supports Python 3.10 through 3.13.
    **1.x** line (``1.0.9``, MIT). It does **not** install Session 2.x.
    Until a 2.x wheel is published, install from GitHub (or a source checkout).
 
+.. tip::
+
+   **Safe install (recommended):** use a clean venv on **Python 3.11 or 3.12**,
+   install classical / ``[dev]`` first, then add Torch or industry extras one
+   group at a time. Verify with
+   ``python scripts/verify_runtime_stability.py``.
+   Full walkthrough: ``guides/safe-install-and-runtime.md``.
+   On Windows set ``PYTHONNOUSERSITE=1`` so user-site packages cannot leak in.
+
 Install BuildML 2.x (GitHub)
 ----------------------------
 
@@ -65,7 +74,7 @@ install of 2.x):
    pip install "buildml[ai]"           # LLM operator (alias: buildml[llm])
    pip install "buildml[shap]"         # optional SHAP attribution (explain_shap)
    pip install "buildml[all-classical]"
-   pip install "buildml[production]"   # best-effort R1-R6 industry meta-extra
+   pip install "buildml[production]"   # best-effort industry meta-extra
 
 The core install includes NumPy, Pandas, PyArrow, and scikit-learn. Plotting
 methods, ``session.eda_app()``, engine adapters, ``session.optuna_search()``,
@@ -91,6 +100,13 @@ Source checkout
 
    git clone https://github.com/TechLeo-Libraries/BuildML.git
    cd BuildML
-   pip install -e ".[dev]"
+   python3.12 -m venv .venv
+   source .venv/bin/activate   # Windows: .\\.venv\\Scripts\\Activate.ps1
+   export PYTHONNOUSERSITE=1   # Windows: $env:PYTHONNOUSERSITE = "1"
+   pip install -e ".[dev,shap]"
+   python scripts/verify_runtime_stability.py
 
 The development extra includes pytest, Ruff, mypy, build, and coverage tools.
+Only after the stability probe reports ``ok`` for ``gate`` / ``core`` tiers,
+add optional stacks (for example ``pip install -e ".[torch]"``) and re-run the
+probe. See ``guides/safe-install-and-runtime.md``.

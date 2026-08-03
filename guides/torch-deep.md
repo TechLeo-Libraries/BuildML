@@ -47,7 +47,6 @@ frame = pd.DataFrame(
     }
 )
 
-
 class TinyMLP(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -55,7 +54,6 @@ class TinyMLP(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
-
 
 session = (
     Session.ingest(frame)
@@ -129,7 +127,7 @@ loaders and calling `evaluate_torch` is refused: keep loader kind consistent.
 ## Use case C: Multimodal fusion (tabular + text)
 
 Default built-in fusion (when `fit_torch` omits a module) uses **concat** late
-fusion. Pass V also ships **gated** late fusion via
+fusion. **Gated** late fusion is also available via
 `build_multimodal_fusion(..., fusion="gated")` (aliases: `fusion_type`,
 `fusion_mode`).
 
@@ -162,7 +160,7 @@ bundle = mm.make_multimodal_torch_loaders(text_column="text")
 # Built-in concat fusion:
 # mm.fit_torch(epochs=5, device="cpu", mixed_precision=False)
 
-# Explicit gated fusion (Pass V):
+# Explicit gated fusion:
 contract = bundle.multimodal_contract
 gated = build_multimodal_fusion(contract, fusion="gated")
 mm.fit_torch(gated, epochs=5, device="cpu", mixed_precision=False)

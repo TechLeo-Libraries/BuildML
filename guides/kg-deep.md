@@ -121,11 +121,3 @@ python benchmarks/kg/link_prediction.py
 Writes `benchmarks/kg/results/link_prediction.json` with native runs always
 and PyKEEN runs when installed.
 
-## Tracker
-
-Phase 3 application systems: depth-first:
-
-1. Recommendation systems: **PASS**
-2. Search / LTR: **PASS**
-3. Knowledge graphs (this guide): **PASS** (R5.6 industry depth)
-4. Next: **probabilistic** (R5.7)

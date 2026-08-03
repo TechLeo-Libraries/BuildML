@@ -1,4 +1,4 @@
-# Self-supervised deep guide (Phase R1: Torch industry depth)
+# Self-supervised deep guide
 
 > **Install:**
 > `pip install "buildml[torch]"` for tabular contrastive/generative SSL defaults.

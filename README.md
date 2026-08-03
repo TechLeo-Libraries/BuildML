@@ -17,13 +17,14 @@ The public 2.x entry point is `buildml.Session`.
 | Torch DL | Optional multimodal / speech / vision extras on the same Session |
 | RAG | Optional retrieve → generate → evaluate |
 | AI operator | Optional LLM-assisted plan/execute with allowlists |
-| R1–R6 industry depth | Optional backends + capability matrices per domain |
+| Industry depth | Optional backends + capability matrices per domain |
 
 ---
 
 ## Install
 
-**Python 3.10–3.13.**
+**Python 3.10–3.13** (prefer **3.11/3.12** in a clean venv; see
+[safe install guide](guides/safe-install-and-runtime.md)).
 
 > **Install honesty:** PyPI `buildml` is still the legacy **1.x** line
 > (`1.0.9`, MIT). It does **not** install Session 2.x. Until a 2.x wheel is
@@ -34,7 +35,10 @@ The public 2.x entry point is `buildml.Session`.
 pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 
 # Editable source checkout (recommended for development / proofs)
-pip install -e ".[dev]"
+# Recommended: python3.12 -m venv .venv && source .venv/bin/activate
+# Windows: set PYTHONNOUSERSITE=1 before pip install
+pip install -e ".[dev,shap]"
+python scripts/verify_runtime_stability.py   # confirm core ok before [torch]/industry
 ```
 
 ### Optional extras (scannable)
@@ -52,7 +56,7 @@ pip install -e ".[dev]"
 | Graph / RL / TDA | `buildml[graph]`, `[graph-pyg]`, `[rl]`, `[rl-industry]`, `[tda]` | NetworkX / PyG; Gymnasium / SB3; ripser/persim |
 | AI | `buildml[ai]` / `[llm]` | LLM operator (BYO API key) |
 | Classical bundle | `buildml[all-classical]` | engines + imbalanced + eda + excel + dashboard + optuna + automl |
-| Industry meta | `buildml[production]` | R1–R6 industry extras: **best-effort** (see below) |
+| Industry meta | `buildml[production]` | Industry extras meta-package: **best-effort** (see below) |
 
 ```bash
 pip install "buildml[production]"   # after GitHub / editable install above
@@ -60,10 +64,10 @@ pip install "buildml[production]"   # after GitHub / editable install above
 
 ### `buildml[production]` honesty
 
-R1–R6 industry refinement is **complete** (capability matrices, backend routing,
-benchmark smokes, guides). `buildml[production]` is a **best-effort** meta-extra:
-it pulls domain depth plus `*-industry` adapters: **not** a guarantee that every
-nested industry wheel installs on every platform.
+`buildml[production]` is a **best-effort** meta-extra: it pulls domain depth
+plus `*-industry` adapters (capability matrices, backend routing, benchmark
+smokes, and guides). It is **not** a guarantee that every nested industry wheel
+installs on every platform.
 
 On **Python 3.13** (especially Windows) some nested pins are skipped via
 environment markers when upstream wheels are missing or broken (LightFM,

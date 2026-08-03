@@ -73,5 +73,5 @@ Residuals (honest)
 * No MAML/Reptile second-order loops.
 * Random row splits may place the same task id in train and holdout: disclosed.
 
-Next Phase 2 item after meta-learning (now shipped): **federated learning**
+See also: [federated learning quickstart](quickstart-federated.md).
 (:doc:`federated-deep`).

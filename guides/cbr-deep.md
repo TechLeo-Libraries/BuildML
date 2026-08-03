@@ -15,7 +15,7 @@ reuse/adapt → optional retain, explanation traces, and a dedicated bundle.
 | `save_cbr_bundle` / `load_cbr_bundle` | `buildml.cbr_bundle.v1` |
 | `cbr_capability_matrix()` | Honest backend / extra matrix |
 
-## Backends (R6.7 industry depth)
+## Industry backends
 
 | `backend` | Extra | Retrieval |
 | --- | --- | --- |

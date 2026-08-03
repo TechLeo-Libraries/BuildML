@@ -60,7 +60,7 @@ Explicit non-goals
 
 * No Flower / OpenFL / gRPC client runtime.
 * No cryptographic secure aggregation.
-* No FedOpt / SCAFFOLD / neural FedAvg zoo (unless later implemented for real).
+* No FedOpt / SCAFFOLD / neural FedAvg zoo (not offered as a production path).
 * No causal APIs in this module (see the separate assumption-declared causal path).
 
-Next after Bayesian / probabilistic: **Causal ML**.
+See also: causal ML (``guides/quickstart-causal.md``).

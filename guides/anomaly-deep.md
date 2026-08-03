@@ -111,7 +111,7 @@ supervised HGB with validation threshold tuning.
 
 ---
 
-## Out of scope (Phase 1)
+## Out of scope
 
 - Graph fraud / entity networks
 - Online / streaming detectors as a product

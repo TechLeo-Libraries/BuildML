@@ -111,7 +111,7 @@ session.save_recommender_bundle("artifacts/recommender_demo_bundle")
 
 ---
 
-## Next
+## See also
 
 - Deep guide: [recommenders-deep.md](recommenders-deep.md)
 - Distinct tabular ranking path: [Search / LTR](quickstart-ranking.md)
