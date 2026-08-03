@@ -1,11 +1,8 @@
-joblib==1.5.3
-narwhals==2.24.0
-numpy==2.5.1
-pandas==3.0.5
-pyarrow==25.0.0
-python-dateutil==2.9.0.post0
-scikit-learn==1.9.0
-scipy==1.18.0
-six==1.17.0
-threadpoolctl==3.6.0
-tzdata==2026.3
+# Generated-style lock for local classical installs.
+# Source of truth for ranges: pyproject.toml [project] dependencies.
+# Prefer `pip install -e .` or `pip install -e ".[dev]"` over these pins.
+# Pins below track a known-good classical stack within those ranges.
+numpy>=1.23
+pandas>=2.0
+pyarrow>=14.0
+scikit-learn>=1.3

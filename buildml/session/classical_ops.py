@@ -183,19 +183,19 @@ def eval_plots(
     partition:
         Split partition to read or score.
     include_learning_curve:
-        Controls ``include_learning_curve``; see the function signature for type and default.
+        When True, compute learning-curve panels in the evaluation/report payload.
     include_importance:
-        Controls ``include_importance``; see the function signature for type and default.
+        When True, attach feature-importance tables/plots to the result.
     n_importance_repeats:
-        Controls ``n_importance_repeats``; see the function signature for type and default.
+        Repeats for permutation-importance style estimates. Higher is stabler and slower.
     learning_curve_cv:
-        Controls ``learning_curve_cv``; see the function signature for type and default.
+        CV arity/splitter used when computing learning curves.
     export_figures:
-        Controls ``export_figures``; see the function signature for type and default.
+        When True, export plot figures alongside the report (may require viz extras).
     export_html:
-        Controls ``export_html``; see the function signature for type and default.
+        When True, write an HTML report artifact for the operation result.
     show:
-        Controls ``show``; see the function signature for type and default.
+        When True, display plots/reports interactively in notebook-style environments.
 
     Returns
     -------
@@ -268,7 +268,7 @@ def compare_models(
     partition:
         Split partition to read or score.
     ranking_metric:
-        Controls ``ranking_metric``; see the function signature for type and default.
+        Primary ranking metric name used for selection or reporting (for example NDCG@k).
 
     Returns
     -------
@@ -456,19 +456,19 @@ def nested_cv_score(
     estimator:
         Unfitted sklearn-compatible estimator instance.
     n_iter:
-        Controls ``n_iter``; see the function signature for type and default.
+        Number of random-search / iterative trials. More iterations explore more of the space at linear cost.
     random_state:
-        Controls ``random_state``; see the function signature for type and default.
+        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
     task:
         Task type (``classification``, ``regression``, or ``auto``).
     cv_strategy:
-        Controls ``cv_strategy``; see the function signature for type and default.
+        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
     scoring_metric:
-        Controls ``scoring_metric``; see the function signature for type and default.
+        Metric name used to score candidates during search or model selection.
     groups:
-        Controls ``groups``; see the function signature for type and default.
+        Group labels for group-aware splitting so entities do not leak across partitions.
     allow_session_global_preprocess:
-        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
 
     Returns
     -------
@@ -578,25 +578,25 @@ def grid_search(
     estimator:
         Unfitted sklearn-compatible estimator instance.
     param_grid:
-        Controls ``param_grid``; see the function signature for type and default.
+        Hyperparameter grid or distributions for search. Keys must match estimator parameters.
     recipe_grid:
-        Controls ``recipe_grid``; see the function signature for type and default.
+        Grid of preprocess/model recipes explored by combinatorial AutoML-style search.
     task:
         Task type (``classification``, ``regression``, or ``auto``).
     cv:
-        Controls ``cv``; see the function signature for type and default.
+        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
     cv_strategy:
-        Controls ``cv_strategy``; see the function signature for type and default.
+        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
     ranking_metric:
-        Controls ``ranking_metric``; see the function signature for type and default.
+        Primary ranking metric name used for selection or reporting (for example NDCG@k).
     groups:
-        Controls ``groups``; see the function signature for type and default.
+        Group labels for group-aware splitting so entities do not leak across partitions.
     preprocess:
-        Controls ``preprocess``; see the function signature for type and default.
+        Optional preprocess recipe/key composed before the estimator. Fit on train only.
     allow_session_global_preprocess:
-        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
     refit:
-        Controls ``refit``; see the function signature for type and default.
+        When True, refit the winning estimator on the full train partition after search.
 
     Returns
     -------
@@ -681,29 +681,29 @@ def randomized_search(
     estimator:
         Unfitted sklearn-compatible estimator instance.
     param_distributions:
-        Controls ``param_distributions``; see the function signature for type and default.
+        Distributions over estimator hyperparameters for randomized / Optuna search.
     recipe_distributions:
-        Controls ``recipe_distributions``; see the function signature for type and default.
+        Distributions over preprocess/model recipes for randomized recipe search.
     n_iter:
-        Controls ``n_iter``; see the function signature for type and default.
+        Number of random-search / iterative trials. More iterations explore more of the space at linear cost.
     random_state:
-        Controls ``random_state``; see the function signature for type and default.
+        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
     task:
         Task type (``classification``, ``regression``, or ``auto``).
     cv:
-        Controls ``cv``; see the function signature for type and default.
+        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
     cv_strategy:
-        Controls ``cv_strategy``; see the function signature for type and default.
+        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
     ranking_metric:
-        Controls ``ranking_metric``; see the function signature for type and default.
+        Primary ranking metric name used for selection or reporting (for example NDCG@k).
     groups:
-        Controls ``groups``; see the function signature for type and default.
+        Group labels for group-aware splitting so entities do not leak across partitions.
     preprocess:
-        Controls ``preprocess``; see the function signature for type and default.
+        Optional preprocess recipe/key composed before the estimator. Fit on train only.
     allow_session_global_preprocess:
-        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
     refit:
-        Controls ``refit``; see the function signature for type and default.
+        When True, refit the winning estimator on the full train partition after search.
 
     Returns
     -------
@@ -796,29 +796,29 @@ def optuna_search(
     estimator:
         Unfitted sklearn-compatible estimator instance.
     param_space:
-        Controls ``param_space``; see the function signature for type and default.
+        Hyperparameter search space mapping for Optuna/random/grid style searches.
     recipe_space:
-        Controls ``recipe_space``; see the function signature for type and default.
+        Search space over preprocess/model recipes for AutoML-style exploration.
     n_trials:
-        Controls ``n_trials``; see the function signature for type and default.
+        Number of Optuna/search trials to run. More trials explore more of the space at linear cost.
     random_state:
-        Controls ``random_state``; see the function signature for type and default.
+        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
     task:
         Task type (``classification``, ``regression``, or ``auto``).
     cv:
-        Controls ``cv``; see the function signature for type and default.
+        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
     cv_strategy:
-        Controls ``cv_strategy``; see the function signature for type and default.
+        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
     ranking_metric:
-        Controls ``ranking_metric``; see the function signature for type and default.
+        Primary ranking metric name used for selection or reporting (for example NDCG@k).
     groups:
-        Controls ``groups``; see the function signature for type and default.
+        Group labels for group-aware splitting so entities do not leak across partitions.
     preprocess:
-        Controls ``preprocess``; see the function signature for type and default.
+        Optional preprocess recipe/key composed before the estimator. Fit on train only.
     allow_session_global_preprocess:
-        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
     refit:
-        Controls ``refit``; see the function signature for type and default.
+        When True, refit the winning estimator on the full train partition after search.
 
     Returns
     -------
@@ -913,41 +913,41 @@ def evolutionary_search(
     estimator:
         Unfitted sklearn-compatible estimator instance.
     param_space:
-        Controls ``param_space``; see the function signature for type and default.
+        Hyperparameter search space mapping for Optuna/random/grid style searches.
     recipe_space:
-        Controls ``recipe_space``; see the function signature for type and default.
+        Search space over preprocess/model recipes for AutoML-style exploration.
     population_size:
-        Controls ``population_size``; see the function signature for type and default.
+        Population size for evolutionary / genetic search strategies.
     n_generations:
-        Controls ``n_generations``; see the function signature for type and default.
+        Number of generations for evolutionary / genetic search strategies.
     elite_size:
-        Controls ``elite_size``; see the function signature for type and default.
+        How many top individuals are carried unchanged into the next generation.
     crossover_rate:
-        Controls ``crossover_rate``; see the function signature for type and default.
+        Probability of crossover when combining parent individuals in evolutionary search.
     mutation_rate:
-        Controls ``mutation_rate``; see the function signature for type and default.
+        Probability of mutating an individual parameter during evolutionary search.
     tournament_size:
-        Controls ``tournament_size``; see the function signature for type and default.
+        Number of individuals sampled in each tournament selection step.
     max_evaluations:
-        Controls ``max_evaluations``; see the function signature for type and default.
+        Hard cap on model evaluations for search strategies that are not trial-count based.
     random_state:
-        Controls ``random_state``; see the function signature for type and default.
+        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
     task:
         Task type (``classification``, ``regression``, or ``auto``).
     cv:
-        Controls ``cv``; see the function signature for type and default.
+        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
     cv_strategy:
-        Controls ``cv_strategy``; see the function signature for type and default.
+        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
     ranking_metric:
-        Controls ``ranking_metric``; see the function signature for type and default.
+        Primary ranking metric name used for selection or reporting (for example NDCG@k).
     groups:
-        Controls ``groups``; see the function signature for type and default.
+        Group labels for group-aware splitting so entities do not leak across partitions.
     preprocess:
-        Controls ``preprocess``; see the function signature for type and default.
+        Optional preprocess recipe/key composed before the estimator. Fit on train only.
     allow_session_global_preprocess:
-        Controls ``allow_session_global_preprocess``; see the function signature for type and default.
+        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
     refit:
-        Controls ``refit``; see the function signature for type and default.
+        When True, refit the winning estimator on the full train partition after search.
 
     Returns
     -------
@@ -1356,9 +1356,9 @@ def prepare_design_matrix(
     columns:
         Column names to include or transform.
     sample_rows:
-        Controls ``sample_rows``; see the function signature for type and default.
+        How many example rows to include in reports or egress payloads (privacy settings still apply).
     random_state:
-        Controls ``random_state``; see the function signature for type and default.
+        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
 
     Returns
     -------
@@ -1416,9 +1416,9 @@ def calibration(
     partition:
         Split partition to read or score.
     export_figures:
-        Controls ``export_figures``; see the function signature for type and default.
+        When True, export plot figures alongside the report (may require viz extras).
     export_html:
-        Controls ``export_html``; see the function signature for type and default.
+        When True, write an HTML report artifact for the operation result.
 
     Returns
     -------
@@ -1477,9 +1477,9 @@ def tune_threshold(
     session:
         Active Session with dataset and optional split plan attached.
     export_figures:
-        Controls ``export_figures``; see the function signature for type and default.
+        When True, export plot figures alongside the report (may require viz extras).
     export_html:
-        Controls ``export_html``; see the function signature for type and default.
+        When True, write an HTML report artifact for the operation result.
 
     Returns
     -------
@@ -1544,11 +1544,11 @@ def learning_curve(
     task:
         Task type (``classification``, ``regression``, or ``auto``).
     cv:
-        Controls ``cv``; see the function signature for type and default.
+        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
     export_figures:
-        Controls ``export_figures``; see the function signature for type and default.
+        When True, export plot figures alongside the report (may require viz extras).
     export_html:
-        Controls ``export_html``; see the function signature for type and default.
+        When True, write an HTML report artifact for the operation result.
 
     Returns
     -------
@@ -1598,11 +1598,11 @@ def feature_importance(
     partition:
         Split partition to read or score.
     n_repeats:
-        Controls ``n_repeats``; see the function signature for type and default.
+        How many times to repeat a CV/search procedure for stabler estimates.
     export_figures:
-        Controls ``export_figures``; see the function signature for type and default.
+        When True, export plot figures alongside the report (may require viz extras).
     export_html:
-        Controls ``export_html``; see the function signature for type and default.
+        When True, write an HTML report artifact for the operation result.
 
     Returns
     -------
@@ -1661,11 +1661,11 @@ def error_slices(
     partition:
         Split partition to read or score.
     max_segments:
-        Controls ``max_segments``; see the function signature for type and default.
+        Maximum segments retained by segment/changepoint helpers.
     min_segment_n:
-        Controls ``min_segment_n``; see the function signature for type and default.
+        Minimum rows required in a segment before it is kept.
     export_html:
-        Controls ``export_html``; see the function signature for type and default.
+        When True, write an HTML report artifact for the operation result.
 
     Returns
     -------

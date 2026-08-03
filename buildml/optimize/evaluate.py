@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 
@@ -14,6 +16,7 @@ from buildml.optimize.features import multiclass_realized_cost, require_split
 from buildml.optimize.policies import evaluate_threshold_policy
 from buildml.optimize.results import DecisionEvalResult, DecisionPlan
 
+logger = logging.getLogger(__name__)
 
 def evaluate_decisions(
     dataset: Dataset,
@@ -162,7 +165,8 @@ def evaluate_decisions(
                     pos = classes[1]
                     metrics["selected_positive_rate"] = float((sel == pos).mean())
         except Exception:
-            pass
+            # Supplemental positive-rate metric only; core eval result still returns.
+            logger.debug("optimize: selected_positive_rate unavailable", exc_info=True)
 
     return DecisionEvalResult(
         partition=partition,

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import importlib.util
+import logging
 from typing import Any, Literal
 
-import importlib.util
-
 from buildml.dl.extras import torch_available
+
+logger = logging.getLogger(__name__)
 
 Modality = Literal["tabular", "text", "vision"]
 
@@ -97,7 +99,8 @@ def resolve_default_tabular_method() -> str:
         if torch_available():
             return DEFAULT_TABULAR_METHOD
     except Exception:
-        pass
+        # Torch probe failed; fall back to the non-torch tabular method.
+        logger.debug("selfsupervised: torch availability probe failed", exc_info=True)
     return LEGACY_FALLBACK_METHOD
 
 

@@ -402,7 +402,7 @@ def to_engine(session, engine: EngineName | str | None = None) -> Any:
     Returns
     -------
     Any
-        Domain result object from the underlying ``buildml`` module.
+        Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
     """
     native = session.dataset.to_engine(engine)
     selected = session.dataset.engine if engine is None else EngineName(engine)
@@ -543,7 +543,7 @@ def reattach(session, path: str | Path, *, data_only: bool = False) -> Session:
     path:
         Filesystem path for load or save.
     data_only:
-        Controls ``data_only``; see the function signature for type and default.
+        When True, operate on data artifacts only and skip model/bundle payloads.
 
     Returns
     -------
@@ -755,7 +755,7 @@ def metadata(session) -> dict[str, Any]:
     Returns
     -------
     dict[str, Any]
-        Domain result object from the underlying ``buildml`` module.
+        Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
     """
     payload: dict[str, Any] = {
         "has_dataset": session._dataset is not None,

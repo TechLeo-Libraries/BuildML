@@ -340,7 +340,9 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             assumptions=("Meaningful distance metric after scaling.",),
             failure_modes=("Curse of dimensionality with too many weak features.",),
             anti_patterns=("Using LOF on unscaled mixed-scale columns.",),
-            worked_example_pattern="fit_anomaly(method='lof') → score_anomalies(partition='test').",
+            worked_example_pattern=(
+                "fit_anomaly(method='lof') → score_anomalies(partition='test').",
+            ),
             related_concepts=("anomaly-isolation-forest", "anomaly-threshold-alert-rate"),
         ),
         _note(
@@ -362,7 +364,9 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             assumptions=("Scaled numeric features; reasonable ν or contamination prior.",),
             failure_modes=("Slow on large n; poor with high-dimensional sparse text.",),
             anti_patterns=("Using default RBF without scaling.",),
-            worked_example_pattern="fit_anomaly(method='one_class_svm', nu=0.05) → evaluate_anomaly.",
+            worked_example_pattern=(
+                "fit_anomaly(method='one_class_svm', nu=0.05) → evaluate_anomaly.",
+            ),
             related_concepts=("anomaly-novelty-vs-unsupervised", "anomaly-threshold-alert-rate"),
         ),
         _note(
@@ -384,7 +388,9 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             assumptions=("Numeric matrix; PyOD installed.",),
             failure_modes=("Missing buildml[anomaly-industry] raises MissingExtraError.",),
             anti_patterns=("Claiming PyOD path without the extra installed.",),
-            worked_example_pattern="pip install 'buildml[anomaly-industry]'; fit_anomaly(method='copod').",
+            worked_example_pattern=(
+                "pip install 'buildml[anomaly-industry]'; fit_anomaly(method='copod').",
+            ),
             related_concepts=("anomaly-isolation-forest", "anomaly-train-fit-holdout-score"),
         ),
         _note(
@@ -404,7 +410,9 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             assumptions=("Scaled numeric features; torch installed.",),
             failure_modes=("Under-trained AE; tiny train sets.",),
             anti_patterns=("Scoring before scaling or with mismatched feature columns.",),
-            worked_example_pattern="fit_anomaly(backend='torch', method='autoencoder') → score_anomalies.",
+            worked_example_pattern=(
+                "fit_anomaly(backend='torch', method='autoencoder') → score_anomalies.",
+            ),
             related_concepts=("anomaly-novelty-vs-unsupervised", "anomaly-threshold-alert-rate"),
         ),
     )

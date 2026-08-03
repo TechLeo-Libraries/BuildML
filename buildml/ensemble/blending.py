@@ -31,6 +31,7 @@ sklearn.ensemble.StackingClassifier : Out-of-fold meta-features instead.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Literal
 
 import numpy as np
@@ -39,6 +40,7 @@ from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.model_selection import train_test_split
 from sklearn.utils.validation import check_is_fitted
 
+logger = logging.getLogger(__name__)
 
 def _as_estimator_list(estimators: list[tuple[str, Any]] | dict[str, Any]) -> list[tuple[str, Any]]:
     if isinstance(estimators, dict):
@@ -81,7 +83,11 @@ def _fit_one(est: Any, X: Any, y: Any, sample_weight: Any | None) -> Any:
             model.fit(X, y, sample_weight=sample_weight)
             return model
         except TypeError:
-            pass
+            # Estimator rejects sample_weight; refit without it (sklearn-compatible fallback).
+            logger.debug(
+                "blending: estimator rejected sample_weight; fitting without weights",
+                exc_info=True,
+            )
     model.fit(X, y)
     return model
 

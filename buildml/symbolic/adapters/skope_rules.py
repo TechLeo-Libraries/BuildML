@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
@@ -12,6 +13,7 @@ from buildml.core.errors import ValidationError
 from buildml.symbolic.extras import require_skope_rules
 from buildml.symbolic.rules import Predicate, Rule, RuleKnowledgeBase
 
+logger = logging.getLogger(__name__)
 
 def induce_skope_rules(
     frame: pd.DataFrame,
@@ -165,7 +167,12 @@ def _class_label(val: Any, class_names: tuple[Any, ...] | None) -> Any:
         if 0 <= idx < len(class_names):
             return class_names[idx]
     except (TypeError, ValueError):
-        pass
+        # Value is not an integer class index; return the raw label.
+        logger.debug(
+            "skope: class_names index mapping failed for val=%r",
+            val,
+            exc_info=True,
+        )
     return val
 
 

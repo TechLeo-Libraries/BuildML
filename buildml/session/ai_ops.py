@@ -56,11 +56,11 @@ def ai_configure(
     egress_level:
         Default data egress level sent to the provider.
     max_iterations:
-        Controls ``max_iterations``; see the function signature for type and default.
+        Hard cap on iterative algorithm loops (search, autonomy, clustering refinements, …).
     max_tokens:
-        Controls ``max_tokens``; see the function signature for type and default.
+        Maximum generation length for provider calls.
     max_cost_usd:
-        Controls ``max_cost_usd``; see the function signature for type and default.
+        Soft dollar budget for provider-backed AI autonomy loops.
 
     Returns
     -------
@@ -511,13 +511,13 @@ def ai_run_plan(
     confirmations:
         Step index to confirmation flag for plan execution.
     auto_confirm_read_only:
-        Controls ``auto_confirm_read_only``; see the function signature for type and default.
+        When True, auto-approve read-only AI tool calls without interactive confirmation.
     stop_on_error:
-        Controls ``stop_on_error``; see the function signature for type and default.
+        When True, abort a multi-step plan/search at the first error instead of continuing.
     stop_on_unconfirmed:
-        Controls ``stop_on_unconfirmed``; see the function signature for type and default.
+        When True, stop plan execution when a mutating step lacks confirmation.
     max_steps:
-        Controls ``max_steps``; see the function signature for type and default.
+        Hard cap on advisor/planner tool-calling rounds to bound cost and loops.
 
     Returns
     -------
@@ -605,20 +605,20 @@ def ai_run_autonomous(
     plan:
         Structured plan object from a prior planning call.
     confirm_autonomy:
-        Controls ``confirm_autonomy``; see the function signature for type and default.
+        When True, require an explicit confirmation token before autonomous mutating AI actions.
     max_steps:
-        Controls ``max_steps``; see the function signature for type and default.
+        Hard cap on advisor/planner tool-calling rounds to bound cost and loops.
     tool_allowlist:
-        Controls ``tool_allowlist``; see the function signature for type and default.
+        Allowlist of AI tool names the planner/advisor may invoke for this call.
     allow_destructive:
-        Controls ``allow_destructive``; see the function signature for type and default.
+        When True, permit destructive Session mutations (drops/overwrites) from AI plan execution.
     provider_plan:
-        Controls ``provider_plan``; see the function signature for type and default.
+        Provider-side plan/config object used when executing a structured AI plan.
 
     Returns
     -------
     Any
-        Domain result object from the underlying ``buildml`` module.
+        Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
     """
     from buildml.ai.autonomous import AutonomyConfig, run_autonomous
 

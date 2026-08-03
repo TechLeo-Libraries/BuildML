@@ -2,26 +2,25 @@
 
 from __future__ import annotations
 
-from collections import Counter
+import logging
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 from sklearn.cluster import (
-    AgglomerativeClustering,
     DBSCAN,
+    OPTICS,
+    AgglomerativeClustering,
     KMeans,
     MeanShift,
-    OPTICS,
     SpectralClustering,
 )
-from sklearn.metrics import pairwise_distances_argmin_min
 from sklearn.mixture import GaussianMixture
 
 from buildml.core.errors import MissingExtraError, ValidationError
-from buildml.unsupervised.catalog import method_assign_strategy
 from buildml.unsupervised.types import ClusterConfig
 
+logger = logging.getLogger(__name__)
 
 @dataclass(slots=True)
 class FitOutcome:
@@ -475,7 +474,11 @@ ValidationError
                 labels, _ = hdb.approximate_predict(plan.estimator_, x)
                 return np.asarray(labels, dtype=int)
             except Exception:
-                pass
+                # approximate_predict unsupported or failed; use nearest-core fallback below.
+                logger.debug(
+                    "unsupervised: hdbscan.approximate_predict failed; using assign fallback",
+                    exc_info=True,
+                )
         # fall through to centroid/core logic
     if plan.assign_strategy == "nearest_core":
         return _dbscan_like_assign(plan, x)

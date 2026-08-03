@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
@@ -12,6 +13,7 @@ from buildml.core.errors import ValidationError
 from buildml.symbolic.extras import require_imodels
 from buildml.symbolic.rules import Predicate, Rule, RuleKnowledgeBase
 
+logger = logging.getLogger(__name__)
 
 def induce_imodels_rules(
     frame: pd.DataFrame,
@@ -207,5 +209,10 @@ def _majority_class(y: np.ndarray, class_names: tuple[Any, ...] | None) -> Any:
             if 0 <= idx < len(class_names):
                 return class_names[idx]
         except (TypeError, ValueError):
-            pass
+            # Winner is not an integer class index; return the raw label.
+            logger.debug(
+                "imodels: class_names index mapping failed for winner=%r",
+                winner,
+                exc_info=True,
+            )
     return winner

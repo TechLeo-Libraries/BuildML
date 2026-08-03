@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import numpy as np
-import pandas as pd
 
 from buildml.causal.extras import require_dowhy
 from buildml.causal.features import (
@@ -20,6 +20,8 @@ from buildml.causal.types import CausalAssumptions, CausalConfig
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+
+logger = logging.getLogger(__name__)
 
 DOWHY_METHOD_MAP = {
     "backdoor_linear": "backdoor.linear_regression",
@@ -149,7 +151,11 @@ def fit_dowhy(
                 ate_ci_low = float(ci_arr[0])
                 ate_ci_high = float(ci_arr[1])
         except (TypeError, ValueError):
-            pass
+            # CI payload shape/dtype unexpected; leave bounds unset rather than fail the estimate.
+            logger.debug(
+                "dowhy: could not parse ATE confidence interval payload",
+                exc_info=True,
+            )
 
     disclosures: list[str] = list(t_disc)
     disclosures.extend(

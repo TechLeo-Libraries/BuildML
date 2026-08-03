@@ -171,9 +171,9 @@ def handle_outliers(
     columns:
         Column names to include or transform.
     iqr_multiplier:
-        Controls ``iqr_multiplier``; see the function signature for type and default.
+        IQR multiplier for boxplot-style outlier fences (typical defaults are around 1.5).
     zscore_threshold:
-        Controls ``zscore_threshold``; see the function signature for type and default.
+        Absolute z-score cutoff used by z-score outlier detectors.
 
     Returns
     -------
@@ -228,11 +228,11 @@ def bin(
     columns:
         Column names to include or transform.
     strategy:
-        Controls ``strategy``; see the function signature for type and default.
+        Named strategy key for the operation (imputation, encoding, resampling, …).
     n_bins:
-        Controls ``n_bins``; see the function signature for type and default.
+        Number of bins for discretizers / histogram features.
     encode_as:
-        Controls ``encode_as``; see the function signature for type and default.
+        Target encoding representation for categorical helpers (one-hot, ordinal, …).
 
     Returns
     -------
@@ -381,7 +381,7 @@ def text_features(
     columns:
         Column names to include or transform.
     drop_input_columns:
-        Controls ``drop_input_columns``; see the function signature for type and default.
+        When True, drop the raw input columns after engineered features are created.
 
     Returns
     -------
@@ -439,21 +439,21 @@ def reduce_dimensions(
     method:
         Algorithm or method identifier for the resolved backend.
     n_components:
-        Controls ``n_components``; see the function signature for type and default.
+        Target dimensionality for decomposition / embedding steps.
     drop_input_columns:
-        Controls ``drop_input_columns``; see the function signature for type and default.
+        When True, drop the raw input columns after engineered features are created.
     prefix:
-        Controls ``prefix``; see the function signature for type and default.
+        String prefix applied to generated feature names.
     random_state:
-        Controls ``random_state``; see the function signature for type and default.
+        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
     umap_n_neighbors:
-        Controls ``umap_n_neighbors``; see the function signature for type and default.
+        UMAP local neighborhood size. Smaller preserves local structure; larger preserves global.
     umap_min_dist:
-        Controls ``umap_min_dist``; see the function signature for type and default.
+        UMAP minimum distance between embedded points. Lower values create tighter clusters.
     tsne_perplexity:
-        Controls ``tsne_perplexity``; see the function signature for type and default.
+        t-SNE perplexity. Reasonable defaults are 5–50; must be less than ``n_samples``.
     tsne_learning_rate:
-        Controls ``tsne_learning_rate``; see the function signature for type and default.
+        Optimization learning rate for t-SNE embeddings.
 
     Returns
     -------
@@ -512,19 +512,19 @@ def register_transform(
     name:
         Registered transform or bundle identifier.
     fit:
-        Controls ``fit``; see the function signature for type and default.
+        When True, fit the step on the train partition before transforming.
     transform:
-        Controls ``transform``; see the function signature for type and default.
+        When True, apply the fitted step to the requested partitions.
     description:
-        Controls ``description``; see the function signature for type and default.
+        Human-readable description stored on the artifact, history record, or report.
     output_columns:
-        Controls ``output_columns``; see the function signature for type and default.
+        Names for generated output columns when the transform creates new fields.
     drop_input_columns:
-        Controls ``drop_input_columns``; see the function signature for type and default.
+        When True, drop the raw input columns after engineered features are created.
     serializable:
-        Controls ``serializable``; see the function signature for type and default.
+        When True, prefer checkpoint-safe serializable artifacts over live non-pickle handles.
     overwrite:
-        Controls ``overwrite``; see the function signature for type and default.
+        When True, replace an existing file/directory at ``path``; when False, refuse to clobber.
 
     Returns
     -------
@@ -623,9 +623,9 @@ def extract_dates(
     columns:
         Column names to include or transform.
     include_time:
-        Controls ``include_time``; see the function signature for type and default.
+        When True, include time-derived features/fields in the operation output.
     drop_original:
-        Controls ``drop_original``; see the function signature for type and default.
+        When True, drop the original source columns after engineered columns are created.
 
     Returns
     -------
@@ -732,11 +732,11 @@ def resample(
     session:
         Active Session with dataset and optional split plan attached.
     sampler:
-        Controls ``sampler``; see the function signature for type and default.
+        Optuna sampler key/config (TPE, random, …).
     random_state:
-        Controls ``random_state``; see the function signature for type and default.
+        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
     sampling_strategy:
-        Controls ``sampling_strategy``; see the function signature for type and default.
+        Imbalance sampler target (``"auto"``, float, or per-class dict).
 
     Returns
     -------
@@ -770,6 +770,6 @@ def resample_strategies(session) -> list[dict[str, Any]]:
     Returns
     -------
     list[dict[str, Any]]
-        Domain result object from the underlying ``buildml`` module.
+        Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
     """
     return list_resample_strategies()

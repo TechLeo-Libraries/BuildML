@@ -10,6 +10,21 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Changed
 
+- **Quality / hygiene ratchet pass (critical-evaluation follow-up).** Deleted
+  stale root ``audit_session2.txt`` (outdated docstring residue). Added
+  ``[tool.coverage.report] fail_under = 20`` (measured classical-smoke floor
+  ~26%; full CI suite higher). Widened scoped CI mypy to
+  ``buildml/_version.py`` plus ``explain`` capability/glossary/prerequisites
+  (and fixed ``worked_example_pattern`` typing in anomaly concept notes). Added
+  GitHub Actions ``windows-classical`` job (core+dev, import smoke, ruff,
+  classical alpha smoke; Torch/PyG remain Linux-only). Replaced silent
+  ``except: pass`` blocks under ``buildml/`` with ``logger.debug(...,
+  exc_info=True)`` + intent comments. Replaced all 259 Session/ops
+  ``Controls …; see the function signature`` template Parameter blurbs with
+  pedagogical text (docstring audit still 0). Aligned
+  ``requirements.txt`` / ``requirements-dev.txt`` to ``pyproject.toml`` ranges
+  with install-honesty notes; CONTRIBUTING documents coverage/mypy/Windows CI.
+
 - **Fourth adversarial trust-recovery pass (remaining High/Medium polish).**
   Graph beginner examples aligned to real ``fit_graph`` kwargs (``mode``,
   ``pyg_model``, ``include_graph_metrics``, ``classical_estimator``); added

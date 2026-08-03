@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -42,6 +43,8 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.explain.history import HISTORY_SCHEMA_VERSION, normalize_history
 from buildml.ingest.detect import schema_from_dataframe
+
+logger = logging.getLogger(__name__)
 
 SidecarLayout = Literal["auto", "single", "partitioned"]
 
@@ -507,7 +510,12 @@ def _write_native_sidecar(
         try:
             part_dir.rmdir()
         except OSError:
-            pass
+            # Directory may still hold non-parquet sidecars; leave it for the next write.
+            logger.debug(
+                "checkpoint: could not remove empty part dir %s",
+                part_dir,
+                exc_info=True,
+            )
 
     lazy_intent = bool(dataset.has_lazy_native or dataset.mode == DataMode.LAZY)
     n_rows = int(dataset.n_rows)

@@ -16,12 +16,14 @@ buildml.eda.profile.explore_dataset : What produces this.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from buildml.explain import Finding, Recommendation
 
+logger = logging.getLogger(__name__)
 
 @dataclass(slots=True)
 class EDAReport:
@@ -268,7 +270,11 @@ class EDAReport:
                 self.html_path = str(destination)
                 return destination
             except Exception:
-                pass
+                # Studio export is best-effort; fall back to the plain EDA HTML path.
+                logger.debug(
+                    "eda: studio HTML export failed; falling back to export_eda_html",
+                    exc_info=True,
+                )
         from buildml.eda.html_report import export_eda_html
 
         destination = export_eda_html(self.to_dict(), path, figures=self.figures)

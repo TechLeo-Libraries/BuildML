@@ -26,6 +26,7 @@ For gaps that depend on other columns, see
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -38,6 +39,8 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.ingest.detect import schema_from_dataframe
 from buildml.preprocess.columns import resolve_transform_columns
+
+logger = logging.getLogger(__name__)
 
 Strategy = Literal["mean", "median", "most_frequent", "constant"]
 
@@ -263,7 +266,12 @@ def _jsonable_stat(value: Any) -> Any:
         if pd.isna(value):
             return None
     except (TypeError, ValueError):
-        pass
+        # Non-scalar / exotic values are not NA-checkable; continue with typed branches.
+        logger.debug(
+            "impute: pd.isna could not classify value type %s",
+            type(value).__name__,
+            exc_info=True,
+        )
     if isinstance(value, (np.floating, float)):
         return float(value)
     if isinstance(value, (np.integer, int)):

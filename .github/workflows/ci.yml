@@ -43,15 +43,23 @@ jobs:
       - name: Docstring standard
         run: python scripts/audit_docstrings.py --check
 
+      # Scoped typing ratchet. Widen only with intentional cleanup — Session /
+      # dashboard / explain overlays still use warn_return_any=false overlays.
       - name: Mypy (scoped)
         run: >
           mypy --follow-imports=silent
           buildml/core
+          buildml/_version.py
           buildml/explain/schemas.py
           buildml/explain/history.py
           buildml/explain/sync.py
           buildml/explain/concepts
+          buildml/explain/capability_status.py
+          buildml/explain/glossary.py
+          buildml/explain/prerequisites.py
 
+      # Coverage fail_under comes from pyproject.toml [tool.coverage.report]
+      # (currently 20 — ratchet measured against classical smoke floor).
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 
@@ -63,6 +71,38 @@ jobs:
 
       - name: Build wheel
         run: python -m build
+
+  # Classical-only Windows gate. Core + dev install (no Torch / industry extras).
+  # Torch, PyG, and several industry wheels stay Linux-only in CI — see the
+  # torch/rag/benchmarks jobs and README install honesty.
+  windows-classical:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package (core + dev; no Torch/industry)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Import smoke
+        run: python -c "import buildml; print(buildml.__version__); assert hasattr(buildml, 'Session')"
+
+      - name: Ruff
+        run: ruff check buildml tests scripts docs/conf.py
+
+      - name: Classical alpha-gate smoke
+        run: pytest tests/integration/test_classical_alpha_smoke.py -q
 
   engines:
     runs-on: ubuntu-latest

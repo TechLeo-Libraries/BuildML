@@ -13,6 +13,7 @@ mean the same thing whichever surface produced it.
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from typing import Any, Literal
 
@@ -23,6 +24,8 @@ from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
+
+logger = logging.getLogger(__name__)
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -466,7 +469,11 @@ def classification_metrics(
     try:
         metrics["log_loss"] = float(log_loss(true_list, matrix, labels=labels))
     except ValueError:
-        pass
+        # Optional metric — omit when probabilities are degenerate or labels mismatch.
+        logger.debug(
+            "nlp: log_loss unavailable for this prediction matrix",
+            exc_info=True,
+        )
     if len(labels) == 2 and len(observed) == 2:
         positive = matrix[:, 1]
         try:
@@ -474,7 +481,11 @@ def classification_metrics(
                 roc_auc_score([1 if item == labels[1] else 0 for item in true_list], positive)
             )
         except ValueError:
-            pass
+            # Optional binary AUC — omit when a class is absent or scores are invalid.
+            logger.debug(
+                "nlp: binary roc_auc unavailable for this prediction matrix",
+                exc_info=True,
+            )
     elif len(labels) > 2 and len(observed) == len(labels):
         try:
             metrics["roc_auc"] = float(
@@ -487,7 +498,11 @@ def classification_metrics(
                 )
             )
         except ValueError:
-            pass
+            # Optional multiclass AUC — omit when OvR cannot be computed.
+            logger.debug(
+                "nlp: multiclass roc_auc unavailable for this prediction matrix",
+                exc_info=True,
+            )
     return metrics
 
 

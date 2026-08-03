@@ -33,6 +33,7 @@ buildml.ai.privacy : What the model is allowed to see.
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -41,6 +42,8 @@ from buildml.ai.provider import ProviderProtocol
 from buildml.ai.results import PlanResult, PlanStep
 from buildml.ai.tools import ToolRegistry, mark_untrusted_data, sanitize_tool_result
 from buildml.ai.types import EgressLevel, Message, StateDigest, ToolCall
+
+logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = """\
 You are an AI assistant helping a user with BuildML, a Python library for \
@@ -232,7 +235,11 @@ def build_state_digest(session: Any) -> StateDigest:
             roles = dict(getattr(dataset, "roles", {}) or {})
             row_count = len(dataset)
         except Exception:
-            pass
+            # Best-effort digest only — advisor must still answer without dataset metadata.
+            logger.debug(
+                "advisor: could not read dataset columns/roles for context",
+                exc_info=True,
+            )
 
     history_summary = tuple(
         f"{r.get('operation_id', r.get('action', 'unknown'))}"
@@ -800,7 +807,11 @@ def run_advisor_with_rag(
                 session, question, top_k=top_k
             )
         except Exception:
-            pass
+            # RAG enrichment is optional; proceed with non-RAG advisor context.
+            logger.debug(
+                "advisor: RAG context retrieval failed; continuing without it",
+                exc_info=True,
+            )
 
     messages, manifest = build_advisor_context(session, egress_config, question, registry)
 

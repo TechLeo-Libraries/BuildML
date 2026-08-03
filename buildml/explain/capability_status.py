@@ -207,8 +207,12 @@ def load_capability_matrix(operation: str) -> dict[str, Any]:
     payload = getattr(module, attr)()
     if isinstance(payload, dict):
         return payload
-    if hasattr(payload, "to_dict"):
-        return payload.to_dict()
+    to_dict = getattr(payload, "to_dict", None)
+    if callable(to_dict):
+        as_dict = to_dict()
+        if isinstance(as_dict, dict):
+            return as_dict
+        return {"operation": operation, "payload": as_dict}
     return {"operation": operation, "payload": payload}
 
 

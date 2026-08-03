@@ -24,8 +24,20 @@ ruff check buildml tests scripts docs/conf.py
 python scripts/lint_user_copy.py
 python scripts/sync_teaching_surface.py --check
 python scripts/audit_docstrings.py --check
-pytest -q
+mypy --follow-imports=silent buildml/core buildml/_version.py \
+  buildml/explain/schemas.py buildml/explain/history.py buildml/explain/sync.py \
+  buildml/explain/concepts buildml/explain/capability_status.py \
+  buildml/explain/glossary.py buildml/explain/prerequisites.py
+pytest -q --cov=buildml --cov-report=term-missing
 ```
+
+Coverage `fail_under` lives in `pyproject.toml` (`[tool.coverage.report]`) and is a
+ratchet — raise it when classical/core coverage improves; do not lower it to
+silence a regression. `requirements.txt` / `requirements-dev.txt` are convenience
+mirrors of `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
+
+CI also runs a **Windows classical-only** job (`windows-classical`: import smoke,
+ruff, classical alpha smoke). Torch / PyG / industry extras stay Linux-only.
 
 After Session / AI tool / overlay changes, regenerate teaching surfaces:
 
@@ -90,8 +102,8 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 1. Bump `pyproject.toml` + `buildml/_version.py` together.
 2. Move `[Unreleased]` notes into a dated CHANGELOG section.
 3. Keep install honesty accurate (GitHub vs PyPI) until 2.x is published.
-4. Ensure remote CI is green (`test`, `engines`, `optuna`, `torch`, `rag`, `ai`,
-   `extras`).
+4. Ensure remote CI is green (`test`, `windows-classical`, `engines`, `optuna`,
+   `torch`, `rag`, `ai`, `extras`, `benchmarks`).
 5. Publish to PyPI only when credentials are available and intentional; otherwise
    document the gap and leave the honesty banner.
 6. Refresh Read the Docs after the tag / docs change.

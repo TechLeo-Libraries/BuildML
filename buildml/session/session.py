@@ -8178,7 +8178,7 @@ class Session:
         Returns
         -------
         dict[str, Any]
-            Domain result object from the underlying ``buildml`` module.
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.nlp_capability_matrix_op()
 
@@ -8201,18 +8201,18 @@ class Session:
         text_column:
             Text column name; defaults to the sole text-role column.
         top_tokens:
-            Controls ``top_tokens``; see the function signature for type and default.
+            How many highest-frequency tokens to surface in the corpus profile. Raise it for a broader vocabulary snapshot; lower it for a short health check.
         near_duplicate_threshold:
-            Controls ``near_duplicate_threshold``; see the function signature for type and default.
+            Similarity cutoff above which two documents are flagged as near-duplicates. Closer to 1.0 is stricter; lower values catch paraphrases but add noise.
         detect_languages:
-            Controls ``detect_languages``; see the function signature for type and default.
+            When True, run language identification during profiling and report per-language counts. Turn off for monolingual corpora to skip that cost.
         stopword_language:
-            Controls ``stopword_language``; see the function signature for type and default.
+            Language key for the stopword list used in token stats (for example ``"english"``). ``None`` skips stopword filtering.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpCorpusProfile
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.profile_text_corpus_op(
             self,
@@ -8245,12 +8245,12 @@ class Session:
         text_column:
             Text column name; defaults to the sole text-role column.
         min_characters:
-            Controls ``min_characters``; see the function signature for type and default.
+            Minimum character length before a document is language-classified. Short strings are skipped because language ID is unreliable on tiny text.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpLanguageResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.detect_language_op(
             self,
@@ -8304,56 +8304,56 @@ class Session:
         text_column:
             Text column name; defaults to the sole text-role column.
         vectorizer:
-            Controls ``vectorizer``; see the function signature for type and default.
+            Bag vectorizer family for bag-of-n-grams paths (for example ``"tfidf"`` or ``"count"``). TF-IDF down-weights corpus-wide tokens; count keeps raw frequencies.
         analyzer:
-            Controls ``analyzer``; see the function signature for type and default.
+            Tokenization unit for the vectorizer: ``"word"`` (default) or ``"char"`` / ``"char_wb"`` for character n-grams when morphology or misspellings matter.
         ngram_range:
-            Controls ``ngram_range``; see the function signature for type and default.
+            Inclusive ``(min_n, max_n)`` n-gram window. ``(1, 1)`` is unigrams only; ``(1, 2)`` adds bigrams and usually helps short-text classification at higher sparsity cost.
         max_features:
-            Controls ``max_features``; see the function signature for type and default.
+            Cap on vocabulary size after frequency ranking. ``None`` keeps all terms above ``min_df``; a finite cap controls memory and noise from rare tokens.
         min_df:
-            Controls ``min_df``; see the function signature for type and default.
+            Minimum document frequency for a term to enter the vocabulary (integer count or fraction of documents). Higher values drop rare/noisy tokens.
         max_df:
-            Controls ``max_df``; see the function signature for type and default.
+            Maximum document frequency for a term (count or fraction). Lower it to strip overly common tokens that behave like stopwords.
         sublinear_tf:
-            Controls ``sublinear_tf``; see the function signature for type and default.
+            When True (TF-IDF), replace raw term frequency with ``1 + log(tf)`` to dampen very frequent tokens.
         binary:
-            Controls ``binary``; see the function signature for type and default.
+            When True, term values become 0/1 presence indicators instead of counts or TF-IDF weights.
         n_hash_features:
-            Controls ``n_hash_features``; see the function signature for type and default.
+            Number of feature-hashing buckets for high-cardinality text/categorical hashing encoders.
         normalize_steps:
-            Controls ``normalize_steps``; see the function signature for type and default.
+            Ordered text-normalization steps to apply before vectorization (lowercase, unicode cleanup, whitespace collapse, …).
         stopwords:
-            Controls ``stopwords``; see the function signature for type and default.
+            Stopword list name, custom iterable, or ``None``. Removing common function words often helps bag-of-words models.
         stopword_language:
-            Controls ``stopword_language``; see the function signature for type and default.
+            Language key for the stopword list used in token stats (for example ``"english"``). ``None`` skips stopword filtering.
         min_token_length:
-            Controls ``min_token_length``; see the function signature for type and default.
+            Minimum token length retained after tokenization. Shorter tokens are discarded as noise.
         max_token_length:
-            Controls ``max_token_length``; see the function signature for type and default.
+            Maximum token length retained after tokenization. Longer tokens are discarded or truncated.
         stem:
-            Controls ``stem``; see the function signature for type and default.
+            When True, apply stemming after tokenization. Useful for bag-of-words; usually off for embeddings.
         lemmatize:
-            Controls ``lemmatize``; see the function signature for type and default.
+            When True, lemmatize tokens (requires the NLP morphology extra/backend). Usually preferable to crude stemming when available.
         class_weight:
-            Controls ``class_weight``; see the function signature for type and default.
+            Class reweighting strategy (``"balanced"``, a per-class dict, or ``None``). Use ``"balanced"`` when minority classes are underrepresented in train.
         C:
-            Controls ``C``; see the function signature for type and default.
+            Inverse regularization strength for linear / SVM-style models. Larger ``C`` fits training data more tightly; smaller ``C`` prefers simpler boundaries.
         alpha:
-            Controls ``alpha``; see the function signature for type and default.
+            Regularization strength for penalized linear models (larger = stronger penalty).
         embedding_model_name:
-            Controls ``embedding_model_name``; see the function signature for type and default.
+            Sentence-transformer / embedding model id used to encode documents.
         max_seq_tokens:
-            Controls ``max_seq_tokens``; see the function signature for type and default.
+            Maximum tokens per document for transformer encode/fit loops. Longer inputs are truncated.
         device:
-            Controls ``device``; see the function signature for type and default.
+            Compute device string (``"cpu"``, ``"cuda"``, ``"mps"``, …) for torch-backed paths.
         random_state:
-            Controls ``random_state``; see the function signature for type and default.
+            Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpFitResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
 
         Notes
         -----
@@ -8407,12 +8407,12 @@ class Session:
         partition:
             Split partition to read or score.
         return_probabilities:
-            Controls ``return_probabilities``; see the function signature for type and default.
+            When True, include class probabilities in the prediction/result payload.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpPredictResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.predict_text_op(
             self,
@@ -8437,8 +8437,8 @@ class Session:
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpEvalResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.evaluate_text_classifier_op(self, partition=partition)
 
@@ -8461,18 +8461,18 @@ class Session:
         partition:
             Split partition to read or score.
         target_class:
-            Controls ``target_class``; see the function signature for type and default.
+            Class label treated as the positive / focus class for binary metrics or explanations.
         top_k:
-            Controls ``top_k``; see the function signature for type and default.
+            How many retrieved chunks / candidates to keep. Higher recall costs more context and noise.
         max_documents:
-            Controls ``max_documents``; see the function signature for type and default.
+            Maximum documents to profile or process in one call. Lower it for a cheap health check on huge corpora.
         include_global:
-            Controls ``include_global``; see the function signature for type and default.
+            When True, attach global explanation summaries in addition to local ones.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpInterpretResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.interpret_text_prediction_op(
             self,
@@ -8511,36 +8511,36 @@ class Session:
         method:
             Algorithm or method identifier for the resolved backend.
         n_topics:
-            Controls ``n_topics``; see the function signature for type and default.
+            Number of topics for topic-model fits. Too many fragments themes; too few collapses them.
         text_column:
             Text column name; defaults to the sole text-role column.
         top_terms:
-            Controls ``top_terms``; see the function signature for type and default.
+            How many top terms/features to surface in explanations or topic summaries.
         max_features:
-            Controls ``max_features``; see the function signature for type and default.
+            Cap on vocabulary size after frequency ranking. ``None`` keeps all terms above ``min_df``; a finite cap controls memory and noise from rare tokens.
         min_df:
-            Controls ``min_df``; see the function signature for type and default.
+            Minimum document frequency for a term to enter the vocabulary (integer count or fraction of documents). Higher values drop rare/noisy tokens.
         max_df:
-            Controls ``max_df``; see the function signature for type and default.
+            Maximum document frequency for a term (count or fraction). Lower it to strip overly common tokens that behave like stopwords.
         ngram_range:
-            Controls ``ngram_range``; see the function signature for type and default.
+            Inclusive ``(min_n, max_n)`` n-gram window. ``(1, 1)`` is unigrams only; ``(1, 2)`` adds bigrams and usually helps short-text classification at higher sparsity cost.
         normalize_steps:
-            Controls ``normalize_steps``; see the function signature for type and default.
+            Ordered text-normalization steps to apply before vectorization (lowercase, unicode cleanup, whitespace collapse, …).
         stopwords:
-            Controls ``stopwords``; see the function signature for type and default.
+            Stopword list name, custom iterable, or ``None``. Removing common function words often helps bag-of-words models.
         stopword_language:
-            Controls ``stopword_language``; see the function signature for type and default.
+            Language key for the stopword list used in token stats (for example ``"english"``). ``None`` skips stopword filtering.
         stem:
-            Controls ``stem``; see the function signature for type and default.
+            When True, apply stemming after tokenization. Useful for bag-of-words; usually off for embeddings.
         max_iter:
-            Controls ``max_iter``; see the function signature for type and default.
+            Hard cap on solver iterations or boosting rounds. Raise it when fits do not converge.
         random_state:
-            Controls ``random_state``; see the function signature for type and default.
+            Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpTopicResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
 
         Notes
         -----
@@ -8582,8 +8582,8 @@ class Session:
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpTopicAssignResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.assign_topics_op(self, partition=partition)
 
@@ -8618,30 +8618,31 @@ class Session:
         text_column:
             Text column name; defaults to the sole text-role column.
         top_n:
-            Controls ``top_n``; see the function signature for type and default.
+            How many top items/rows/terms to keep in the result table.
         max_phrase_words:
-            Controls ``max_phrase_words``; see the function signature for type and default.
+            Maximum words allowed in extracted keyphrases.
         per_document:
-            Controls ``per_document``; see the function signature for type and default.
+            When True, return per-document outputs instead of a corpus-level aggregate.
         max_documents:
-            Controls ``max_documents``; see the function signature for type and default.
+            Maximum documents to profile or process in one call. Lower it for a cheap health check on huge corpora.
         stopword_language:
-            Controls ``stopword_language``; see the function signature for type and default.
+            Language key for the stopword list used in token stats (for example ``"english"``). ``None`` skips stopword filtering.
         stopwords:
-            Controls ``stopwords``; see the function signature for type and default.
+            Stopword list name, custom iterable, or ``None``. Removing common function words often helps bag-of-words models.
         min_df:
-            Controls ``min_df``; see the function signature for type and default.
+            Minimum document frequency for a term to enter the vocabulary (integer count or fraction of documents). Higher values drop rare/noisy tokens.
         max_df:
-            Controls ``max_df``; see the function signature for type and default.
+            Maximum document frequency for a term (count or fraction). Lower it to strip overly common tokens that behave like stopwords.
         window:
-            Controls ``window``; see the function signature for type and default.
+            Sliding window size (in tokens/characters as documented by the NLP backend)
+            used when scoring local keyphrase or co-occurrence context.
         random_state:
-            Controls ``random_state``; see the function signature for type and default.
+            Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpKeyphraseResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.extract_keyphrases_op(
             self,
@@ -8685,18 +8686,18 @@ class Session:
         text_column:
             Text column name; defaults to the sole text-role column.
         threshold:
-            Controls ``threshold``; see the function signature for type and default.
+            Decision cutoff on scores or probabilities. Raise it to flag fewer positives.
         compare_to_target:
-            Controls ``compare_to_target``; see the function signature for type and default.
+            When True, compare predictions or retrieved labels against the Session target for metrics.
         transformer_model:
-            Controls ``transformer_model``; see the function signature for type and default.
+            Hugging Face transformer model id for sequence-classification / NER / generative NLP paths.
         device:
-            Controls ``device``; see the function signature for type and default.
+            Compute device string (``"cpu"``, ``"cuda"``, ``"mps"``, …) for torch-backed paths.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpSentimentResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.analyze_sentiment_op(
             self,
@@ -8735,20 +8736,20 @@ class Session:
         text_column:
             Text column name; defaults to the sole text-role column.
         labels:
-            Controls ``labels``; see the function signature for type and default.
+            Explicit label order for metrics/confusion matrices. ``None`` uses labels observed in the scored partition.
         gazetteers:
-            Controls ``gazetteers``; see the function signature for type and default.
+            Optional gazetteer dictionaries used by rule/NER backends to boost entity matches.
         spacy_model:
-            Controls ``spacy_model``; see the function signature for type and default.
+            spaCy pipeline name for industry NLP backends. Must be installed separately from BuildML.
         max_documents:
-            Controls ``max_documents``; see the function signature for type and default.
+            Maximum documents to profile or process in one call. Lower it for a cheap health check on huge corpora.
         batch_size:
-            Controls ``batch_size``; see the function signature for type and default.
+            Mini-batch size for transformer/embedding encode or train loops.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpEntityResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.extract_entities_op(
             self,
@@ -8788,20 +8789,20 @@ class Session:
         text_column:
             Text column name; defaults to the sole text-role column.
         n_sentences:
-            Controls ``n_sentences``; see the function signature for type and default.
+            Number of sentences to keep in extractive summaries.
         max_documents:
-            Controls ``max_documents``; see the function signature for type and default.
+            Maximum documents to profile or process in one call. Lower it for a cheap health check on huge corpora.
         max_input_sentences:
-            Controls ``max_input_sentences``; see the function signature for type and default.
+            Maximum sentences considered from each document before summarization.
         stopword_language:
-            Controls ``stopword_language``; see the function signature for type and default.
+            Language key for the stopword list used in token stats (for example ``"english"``). ``None`` skips stopword filtering.
         stopwords:
-            Controls ``stopwords``; see the function signature for type and default.
+            Stopword list name, custom iterable, or ``None``. Removing common function words often helps bag-of-words models.
 
         Returns
         -------
-        Any
-            Domain result object from the underlying ``buildml`` module.
+        NlpSummaryResult
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps.
         """
         return nlp_ops.summarize_text_op(
             self,
@@ -14963,20 +14964,20 @@ class Session:
         plan:
             Structured plan object from a prior planning call.
         confirm_autonomy:
-            Controls ``confirm_autonomy``; see the function signature for type and default.
+            When True, require an explicit confirmation token before autonomous mutating AI actions.
         max_steps:
-            Controls ``max_steps``; see the function signature for type and default.
+            Hard cap on advisor/planner tool-calling rounds to bound cost and loops.
         tool_allowlist:
-            Controls ``tool_allowlist``; see the function signature for type and default.
+            Allowlist of AI tool names the planner/advisor may invoke for this call.
         allow_destructive:
-            Controls ``allow_destructive``; see the function signature for type and default.
+            When True, permit destructive Session mutations (drops/overwrites) from AI plan execution.
         provider_plan:
-            Controls ``provider_plan``; see the function signature for type and default.
+            Provider-side plan/config object used when executing a structured AI plan.
 
         Returns
         -------
         Any
-            Domain result object from the underlying ``buildml`` module."""
+            Structured domain result recorded on the Session for follow-up evaluate/explain/export steps."""
         return ai_ops.ai_run_autonomous(
             self,
             goal,

@@ -1,32 +1,18 @@
-ast_serialize==0.6.0
-build==1.5.0
-colorama==0.4.6
-coverage==7.15.2
-duckdb==1.5.5
-iniconfig==2.3.0
-joblib==1.5.3
-librt==0.13.0
-mypy==2.3.0
-mypy_extensions==1.1.0
-narwhals==2.24.0
-numpy==2.5.1
-packaging==26.2
-pandas==3.0.5
-pandas-stubs==3.0.5.260730
-pathspec==1.1.1
-pluggy==1.6.0
-polars==1.43.2
-polars-runtime-32==1.43.2
-pyarrow==25.0.0
-Pygments==2.20.0
-pyproject_hooks==1.2.0
-pytest==9.1.1
-pytest-cov==7.1.0
-python-dateutil==2.9.0.post0
-ruff==0.16.1
-scikit-learn==1.9.0
-scipy==1.18.0
-six==1.17.0
-threadpoolctl==3.6.0
-typing_extensions==4.16.0
-tzdata==2026.3
+# Dev / classical tooling lock aligned to pyproject.toml extras.
+# Source of truth: pyproject.toml [project.optional-dependencies] `dev` (+ core).
+# Prefer `pip install -e ".[dev]"` so extras stay in sync with packaging metadata.
+# Pins below are range-aligned (not inventing tighter pins than pyproject).
+-r requirements.txt
+pytest>=7.4
+pytest-cov>=4.1
+ruff>=0.4
+mypy>=1.8
+build>=1.0
+pandas-stubs>=2.0
+httpx>=0.27
+sphinx
+sphinx-rtd-theme
+myst-parser
+# Engines commonly used in local classical work (also in pyproject engines extra).
+polars>=0.20
+duckdb>=0.10

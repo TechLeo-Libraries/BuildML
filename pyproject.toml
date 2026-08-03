@@ -273,6 +273,28 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "--basetemp=tests/.pytest_tmp"
 
+# Coverage ratchet: measured 26.2% TOTAL on classical smoke alone (2026-08,
+# Python 3.12); full CI pytest suite sits higher. Floor is intentionally
+# conservative so industry-extra skips cannot flake the gate; raise when
+# classical/core coverage improves. Omit legacy and generated teaching artifacts.
+[tool.coverage.run]
+branch = false
+source = ["buildml"]
+omit = [
+  "buildml/_legacy/*",
+  "buildml/explain/generated/*",
+]
+
+[tool.coverage.report]
+fail_under = 20
+precision = 1
+skip_empty = true
+show_missing = true
+omit = [
+  "buildml/_legacy/*",
+  "buildml/explain/generated/*",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
