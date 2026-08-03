@@ -141,7 +141,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Treating recommendations as labels to refit without disclosure.",),
         state_changes=("Stores recommender_recommend_result.",),
         result_reading=("Inspect recommendations per user and cold_start_users.",),
-        next_steps=("evaluate_recommender; save_recommender_bundle."),
+        next_steps=("evaluate_recommender; save_recommender_bundle.",),
         concepts=("recommender-collaborative-filtering", "recommender-cold-start"),
     ),
     _operation(
@@ -199,7 +199,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Expecting checkpoint_save to include RecommenderPlan.",),
         state_changes=("None beyond history record.",),
         result_reading=("Confirm format buildml.recommender_bundle.v1 in meta.json.",),
-        next_steps=("load_recommender_bundle in another Session."),
+        next_steps=("load_recommender_bundle in another Session.",),
         concepts=("recommender-bundle-boundary",),
     ),
     _operation(
@@ -222,7 +222,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Loading a recommender bundle into a mismatched schema Session.",),
         state_changes=("Sets recommender_plan; clears fit/eval/recommend results.",),
         result_reading=("Inspect Session.recommender_plan.to_dict().",),
-        next_steps=("recommend; evaluate_recommender."),
+        next_steps=("recommend; evaluate_recommender.",),
         concepts=("recommender-bundle-boundary",),
     ),
 )

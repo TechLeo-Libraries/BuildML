@@ -23,10 +23,72 @@ def export_studio_html(
     title: str = "BuildML EDA Studio",
     session_meta: dict[str, Any] | None = None,
 ) -> Path:
-    """Write a self-contained offline snapshot of the Teaching Studio SPA.
+    """Save the whole interactive studio as one HTML file that needs no server.
 
-    Embeds Plotly, CSS, JS, chart JSON (light + dark), teaching studios, and
-    Concept Academy notes so the file opens without a local server or network.
+    The dashboard, frozen. Same boards, same charts, same teaching panels, same
+    interactivity — hovering, zooming, switching boards, toggling theme — with
+    the entire application inlined into a single file. No Python, no server, no
+    network.
+
+    Everything goes in: the Plotly library, the stylesheet, the application
+    script, both light and dark chart catalogues, the teaching studios, and the
+    concept notes. Both themes are embedded because the toggle has to work
+    offline, which means the charts exist twice.
+
+    This is what you send to someone who needs to explore the analysis rather
+    than read a summary of it, and who is not going to install anything.
+
+    Parameters
+    ----------
+    report:
+        The report as a dict, from
+        :meth:`~buildml.eda.report.EDAReport.to_dict`.
+    path:
+        Where to write. Parent directories are created.
+    title:
+        Header and window title.
+    session_meta:
+        Extra Session facts for the cockpit board.
+
+    Returns
+    -------
+    Path
+        The file written.
+
+    Raises
+    ------
+    MissingExtraError
+        If Plotly is not installed. Install with
+        ``pip install 'buildml[dashboard]'``.
+    OSError
+        If the file cannot be written.
+
+    Notes
+    -----
+    **These files are large.** Plotly alone is several megabytes, and the chart
+    catalogues are embedded twice for the theme toggle. Ten to twenty megabytes
+    is typical, which is fine for a shared drive and often too large for email.
+
+    **Everything in the report is in the file.** Column names, distributions,
+    example values, findings. Treat it with the same care as the data.
+
+    **No live data.** It is a snapshot; regenerate it when the analysis changes.
+
+    Examples
+    --------
+    ::
+
+        report = session.eda()
+        export_studio_html(
+            report.to_dict(),
+            "artifacts/studio.html",
+            title="Churn dataset · 2026-08",
+        )
+
+    See Also
+    --------
+    buildml.dashboard.launch.launch_eda_app : The live version.
+    buildml.eda.html_report.export_eda_html : Smaller, static, no Plotly.
     """
     try:
         import plotly  # noqa: F401
@@ -47,7 +109,48 @@ def build_offline_bundle(
     title: str = "BuildML EDA Studio",
     session_meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Assemble the JSON payload consumed by the offline SPA shim."""
+    """Gather everything the offline app needs into one serialisable payload.
+
+    The data half of the export, separated from the HTML half. It collects the
+    boards, the chart catalogues for both themes, the teaching studios, the
+    concept notes, the findings with their severity counts, and the export
+    manifest.
+
+    Splitting build from render is what makes this testable. The bundle can be
+    inspected and asserted against without generating a ten-megabyte document,
+    and a caller who wants to feed the same data into a different shell can.
+
+    Parameters
+    ----------
+    report:
+        The report as a dict.
+    title:
+        Title carried into the bundle.
+    session_meta:
+        Extra Session facts for the cockpit.
+
+    Returns
+    -------
+    dict
+        JSON-safe throughout — every value passed through
+        :func:`~buildml.dashboard.serialize.json_safe`, since analyzer output is
+        full of NumPy scalars that would otherwise fail at serialisation time,
+        after the whole payload has been assembled.
+
+    Raises
+    ------
+    MissingExtraError
+        If Plotly is not installed; the chart catalogues need it.
+
+    Notes
+    -----
+    **Both theme catalogues are built**, so this does roughly twice the chart
+    work of a single-theme render.
+
+    See Also
+    --------
+    render_offline_html : Turning this into the document.
+    """
     meta = session_meta or {}
     overview = report.get("overview") or {}
     studios = build_teaching_studios(report)
@@ -185,7 +288,45 @@ def build_offline_bundle(
 
 
 def render_offline_html(bundle: dict[str, Any]) -> str:
-    """Render the offline SPA document from a prebuilt bundle."""
+    """Inline the application's own assets around a bundle to make one document.
+
+    Reads the same CSS and JavaScript the live dashboard serves and embeds them
+    with the data. Using the identical assets is what guarantees the offline
+    file behaves like the served app — a separate offline template would drift,
+    and the drift would only show up in the artifact you handed to someone else.
+
+    One adjustment is needed. The application script imports its icon module by
+    relative path, which requires a server to resolve; that import is rewritten
+    to an import map entry pointing at the icons inlined in the same document.
+
+    Parameters
+    ----------
+    bundle:
+        The payload from :func:`build_offline_bundle`.
+
+    Returns
+    -------
+    str
+        A complete HTML document with the stylesheet, the scripts, Plotly, and
+        the bundle all inlined.
+
+    Raises
+    ------
+    OSError
+        If the static assets cannot be read from the package.
+
+    Notes
+    -----
+    **The whole document is assembled in memory** before being returned, so peak
+    memory is roughly the file size — tens of megabytes.
+
+    **Plotly is embedded in full.** It is the largest single component and the
+    reason these files are what they are.
+
+    See Also
+    --------
+    export_studio_html : Build and write in one call.
+    """
     root = Path(__file__).resolve().parent
     tokens = (root / "static" / "css" / "tokens.css").read_text(encoding="utf-8")
     app_css = (root / "static" / "css" / "app.css").read_text(encoding="utf-8")

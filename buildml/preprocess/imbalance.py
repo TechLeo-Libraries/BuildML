@@ -139,7 +139,31 @@ def _strategy_registry() -> dict[str, SamplerStrategy]:
 
 
 def list_resample_strategies() -> list[dict[str, Any]]:
-    """Return public metadata for available resampling strategies."""
+    """Describe every resampling strategy available, so you can pick one.
+
+    Use this before :func:`resample_train` to see what exists and what each
+    approach is suited to, rather than guessing at a name.
+
+    Returns
+    -------
+    list of dict
+        One entry per strategy, each with ``name`` (the value to pass as
+        ``sampler``), ``family`` (whether it adds minority rows, removes
+        majority rows, or does both), ``requires_numeric_features`` (synthetic
+        samplers interpolate between rows and so cannot work on text or raw
+        categories), ``description``, ``when_to_use``, and ``extra`` naming the
+        optional dependency group needed.
+
+    Notes
+    -----
+    The list is static — it describes what the library supports, not what your
+    environment has installed. Every strategy here needs
+    ``pip install 'buildml[imbalanced]'`` before it can actually run.
+
+    See Also
+    --------
+    resample_train : Applies one of these strategies.
+    """
     return [
         {
             "name": s.name,
@@ -155,7 +179,39 @@ def list_resample_strategies() -> list[dict[str, Any]]:
 
 @dataclass(slots=True)
 class ResamplePlan:
-    """Structured outcome of a train-only resample operation."""
+    """What resampling did to the training rows, and what it deliberately left alone.
+
+    Unlike the other plans in this package, this one is a record rather than a
+    replayable transform. Resampling changes the training set to help the model
+    learn; it is never applied at inference time, when you want the real class
+    distribution.
+
+    Attributes
+    ----------
+    sampler:
+        Which strategy ran.
+    n_train_before:
+        Training rows before resampling.
+    n_train_after:
+        Training rows after. Compare the two — oversampling to balance a
+        1-in-1000 class means roughly a 500-fold increase in rows, which is
+        both a memory concern and a sign that the balance you asked for may be
+        too aggressive.
+    class_counts_before:
+        Rows per class before, which is the honest picture of your data.
+    class_counts_after:
+        Rows per class after, which is what the model will see.
+    n_validation_unchanged:
+        Validation rows, confirmed untouched.
+    n_test_unchanged:
+        Test rows, confirmed untouched. These two fields exist so the record
+        itself proves the holdout still reflects reality.
+    feature_columns:
+        The feature columns the sampler operated over.
+    notes:
+        Observations recorded during resampling, such as a class with too few
+        examples to synthesise from safely.
+    """
 
     sampler: SamplerName
     n_train_before: int
@@ -168,6 +224,18 @@ class ResamplePlan:
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the resampling record as plain JSON-safe values.
+
+        Belongs in a model card: a reader needs to know the training
+        distribution was altered before they can interpret the model's
+        behaviour.
+
+        Returns
+        -------
+        dict
+            Every attribute in plain-data form, plus ``delta_train_rows``
+            giving the net change in training row count.
+        """
         return {
             "sampler": self.sampler,
             "n_train_before": self.n_train_before,
@@ -190,42 +258,102 @@ def resample_train(
     random_state: int = 42,
     sampling_strategy: str | float | dict[str, float] = "auto",
 ) -> tuple[Dataset, SplitPlan, ResamplePlan]:
-    """Resample **train rows only**, then rebuild dataset/split membership.
+    """Rebalance the training classes, leaving validation and test untouched.
+
+    When one class is rare — fraud, equipment failure, disease — a model can
+    reach 99% accuracy by never predicting it, and gradient descent will
+    happily settle there because the rare class contributes so little to the
+    loss. Resampling changes the training distribution so the rare class
+    carries real weight: either by duplicating or synthesising minority rows,
+    by discarding majority rows, or by doing both.
+
+    Only the training rows are altered. Validation and test rows keep the true
+    distribution, because those are what tell you how the model will behave in
+    a world where the rare class really is rare. Balancing them would produce a
+    score describing a world that does not exist.
+
+    Because rows are added or removed, positions shift, so a rebuilt split plan
+    comes back alongside the new dataset. Use it in place of your old one.
 
     Parameters
     ----------
     dataset:
-        Dataset with a target role assigned.
+        The dataset, which must have a target role assigned — there is no class
+        balance without knowing which column holds the class.
     split_plan:
-        Required split; fit-scope must be train.
+        The split defining the training rows. Required: resampling before
+        splitting puts synthesised copies of training rows into your test set,
+        which is one of the more spectacular ways to produce a meaningless
+        score.
     sampler:
-        Strategy name from :func:`list_resample_strategies`.
+        Which strategy to use, named from :func:`list_resample_strategies`.
+        ``'smote'`` is the common default: it synthesises new minority rows by
+        interpolating between existing ones, which avoids the exact-duplicate
+        overfitting that naive oversampling causes. Undersampling strategies
+        discard majority rows instead — faster and lighter, but you are
+        throwing away real data.
     random_state:
-        Sampler RNG seed.
+        Seed for the sampler, so the synthesised rows reproduce.
     sampling_strategy:
-        Forwarded to imbalanced-learn (``"auto"`` balances classes).
+        How far to rebalance, forwarded to imbalanced-learn. ``'auto'``
+        equalises the classes. A float sets the desired minority-to-majority
+        ratio, and partial rebalancing to something like ``0.3`` is often
+        better than full equality — it gives the rare class weight without
+        flooding the training set with synthetic rows. A dict specifies target
+        counts per class.
 
     Returns
     -------
-    tuple[Dataset, SplitPlan, ResamplePlan]
-        New dataset, rebuilt split plan, and before/after class-count report.
-
-    Notes
-    -----
-    **Leakage:** Validation/test rows are never resampled or used to fit the
-    sampler. Call only after :meth:`Session.split`.
-
-    **Extra:** Requires ``pip install 'buildml[imbalanced]'``.
+    tuple of (~buildml.data.dataset.Dataset, ~buildml.data.splits.SplitPlan, ResamplePlan)
+        The resampled dataset; the rebuilt split plan you must use from here
+        on; and the before-and-after record.
 
     Raises
     ------
-    LeakageError
-        If no split exists or fit partition is not train.
-    MissingExtraError
-        If imbalanced-learn is not installed.
-    ValidationError
-        For unknown strategies, non-numeric features with synthetic samplers,
-        or insufficient minority support.
+    ~buildml.core.errors.LeakageError
+        No split exists, or the fit partition is not the training set.
+    ~buildml.core.errors.MissingExtraError
+        imbalanced-learn is not installed. Run
+        ``pip install 'buildml[imbalanced]'``.
+    ~buildml.core.errors.ValidationError
+        The strategy name is unknown, a synthetic sampler was given
+        non-numeric features, or a class has too few examples to synthesise
+        from.
+
+    Notes
+    -----
+    **Consider the alternatives first.** Most estimators accept
+    ``class_weight='balanced'``, which achieves much the same effect by
+    reweighting the loss rather than fabricating rows — cheaper, and it does
+    not invent data. Adjusting the decision threshold with
+    :meth:`~buildml.session.Session.tune_threshold` is often better still,
+    since it addresses the real problem, which is usually that the default
+    0.5 cutoff is wrong for your cost structure.
+
+    **Synthetic rows are interpolations, not observations.** SMOTE creates a
+    row partway between two real minority rows. If the minority class is
+    genuinely multi-modal, the midpoint between two clusters may be a
+    combination that could never occur.
+
+    **Order matters.** Resample after encoding and imputing, since synthetic
+    samplers need complete numeric input, and after splitting, always.
+
+    **Your probabilities will be miscalibrated.** A model trained on a balanced
+    set predicts probabilities for a balanced world. Check with
+    :meth:`~buildml.session.Session.calibration` before using the numbers as
+    probabilities rather than as a ranking.
+
+    Examples
+    --------
+    >>> data, split, plan = resample_train(  # doctest: +SKIP
+    ...     dataset, split_plan, sampler="smote", sampling_strategy=0.3
+    ... )
+    >>> plan.class_counts_after  # doctest: +SKIP
+    {'0': 9500, '1': 2850}
+
+    See Also
+    --------
+    list_resample_strategies : What is available and when to use each.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

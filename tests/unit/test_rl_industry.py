@@ -24,8 +24,14 @@ def test_capability_matrix_shape() -> None:
     assert "rl_backends" in matrix
     assert matrix["imitation_backends"]["sklearn"]["available"] is True
     assert matrix["rl_backends"]["sklearn"]["available"] is True
+    assert "tabular_q" in matrix["rl_backends"]["native"]["modes"]
     assert list_imitation_methods(backend="sklearn")
     assert list_rl_algorithms(backend="sklearn")
+
+
+def test_session_rl_capability_matrix() -> None:
+    matrix = Session.rl_capability_matrix()
+    assert matrix["rl_backends"]["native"]["algorithms_by_mode"]["tabular_q"]
 
 
 def test_resolve_sklearn_defaults() -> None:

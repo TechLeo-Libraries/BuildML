@@ -1,5 +1,31 @@
 # ruff: noqa: E501
-"""Layered, evidence-linked, self-contained HTML export for EDA."""
+"""Lay an EDA report out so a reader can stop at any depth and be satisfied.
+
+The research shell. It orders the report by how much a reader needs rather than
+by which analyzer produced what: orientation first, then data quality, features,
+relationships, target and validation, figures, next steps, methods, and finally
+the raw appendix.
+
+That ordering is the design. Someone who reads only the first section should
+come away with an accurate impression; someone who reads everything should find
+the evidence for it. The reverse order — analyzer dumps first, conclusions
+buried — is what most generated reports do, and it is why most generated reports
+go unread.
+
+Each section uses the shared five-part reading frame from
+:mod:`buildml.reporting`, so a claim always arrives with what was examined, what
+was found, why it matters, what it cannot tell you, and what to do next.
+
+A size budget applies. Every figure is base64-inlined, and a report with three
+dozen of them can reach tens of megabytes — past which browsers struggle and
+mail gateways refuse. The budget drops figures rather than producing a file
+nobody can open, and says in the document that it did.
+
+See Also
+--------
+buildml.reporting.html : The components and the document shell.
+buildml.dashboard.offline : The studio alternative.
+"""
 
 from __future__ import annotations
 
@@ -34,7 +60,76 @@ def export_eda_html(
     max_figures: int = 36,
     max_html_bytes: int = DEFAULT_MAX_HTML_BYTES,
 ) -> Path:
-    """Write one network-free HTML file with embedded data and plot assets."""
+    """Write the whole report as one HTML file with nothing left outside it.
+
+    Assembles the layered sections, inlines every figure, and writes a single
+    self-contained document. No CDN, no sidecar images, no server: the file
+    opens from a USB stick on a machine that has never heard of Python.
+
+    Sections run from orientation to appendix, each in the five-part reading
+    frame, so the document can be read to any depth and still make sense.
+
+    Parameters
+    ----------
+    report_dict:
+        The report as plain data, from
+        :meth:`~buildml.eda.report.EDAReport.to_dict`. Missing sections are
+        skipped rather than erroring, so a partial pass still exports.
+    path:
+        Where to write. Parent directories are created.
+    title:
+        The document title. Worth setting to something identifying — the dataset
+        and the date — since these files accumulate.
+    figures:
+        Rendered figures to embed. Error entries are handled and reported in the
+        document rather than skipped silently.
+    include_raw_appendix:
+        Append the full analyzer output as formatted JSON. Makes the file
+        larger and makes every number checkable.
+    max_figures:
+        Ceiling on embedded figures.
+    max_html_bytes:
+        Size budget, 12 MiB by default. Figures are dropped to stay under it,
+        and the document states what was dropped.
+
+    Returns
+    -------
+    Path
+        The file written.
+
+    Raises
+    ------
+    ValueError
+        If ``max_figures`` is negative or ``max_html_bytes`` is not positive.
+    OSError
+        If the file cannot be written.
+
+    Notes
+    -----
+    **Check the degraded section in the output.** It lists figures that failed
+    to render and figures dropped for the size budget, so a report that is
+    missing charts says why in the document rather than only in a log.
+
+    **Figures are the size driver.** Base64 costs a third over the raw bytes,
+    and it is all in one file. Fewer, smaller figures export better than many
+    large ones.
+
+    Examples
+    --------
+    ::
+
+        report = explore_dataset(dataset, include_plots=True)
+        export_eda_html(
+            report.to_dict(),
+            "artifacts/eda.html",
+            title="Churn dataset · 2026-08",
+            figures=report.figures,
+        )
+
+    See Also
+    --------
+    buildml.eda.report.EDAReport.save_html : The usual way to call this.
+    """
     if max_figures < 0:
         raise ValueError("max_figures must be non-negative")
     if max_html_bytes < 1:

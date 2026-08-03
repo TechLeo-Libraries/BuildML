@@ -1,4 +1,25 @@
-"""Exploratory data analysis orchestration."""
+"""Run every analyzer in the right order and assemble one report.
+
+The conductor. Samples if the frame is large, bounds the columns if it is wide,
+works out which columns are eligible as features, runs the analyzers, builds
+findings and recommendations, plans the plots, and optionally renders and
+exports.
+
+Two budgets exist because unbounded EDA does not finish. Rows are capped at
+100,000 for the expensive sections, since a Kolmogorov-Smirnov test on ten
+million rows tells you nothing a sample would not. Columns are capped at 100,
+since pairwise analysis is quadratic and a thousand columns is half a million
+pairs. Both caps are recorded in the report's warnings, so a reader always knows
+what was and was not examined.
+
+Ordering matters in one place: bivariate runs before multivariate, which reuses
+its correlation pairs for clustering rather than recomputing them.
+
+See Also
+--------
+buildml.eda.report.EDAReport : What comes back.
+buildml.eda.findings : The interpretation layer.
+"""
 
 from __future__ import annotations
 
@@ -47,17 +68,101 @@ def explore_dataset(
     export_figures: str | Path | None = None,
     html_format: HtmlFormat = "studio",
 ) -> EDAReport:
-    """Run the exploratory analysis pipeline.
+    """Explore a dataset end to end and return everything that was found.
 
-    Includes quality, univariate diagnostics, bivariate/MI associations,
-    multicollinearity/PCA, target-aware tests, outlier screens, train/test
-    drift (when split exists), adaptive visualization planning, narrative
-    generation, and optional HTML/figure export.
+    One call covering data quality, per-column distributions, pairwise
+    associations, collinearity and PCA, target-aware tests, outlier screens,
+    train/test drift when a split exists, a plot plan, and the findings and
+    recommendations derived from all of it.
 
-    ``html_format="studio"`` (default) writes an offline Teaching Studio
-    snapshot (same product surface as ``session.eda_app()``). Use
-    ``html_format="research"`` for the layered research HTML shell with
-    matplotlib figure embeds.
+    Feature eligibility is computed once and threaded through every analyzer, so
+    the target does not appear as its own best predictor, identifiers do not top
+    the association rankings, and constants do not get histograms. The
+    exclusions and the reason for each are recorded in the overview — including
+    which were excluded by an explicit role and which by a heuristic, since the
+    second kind is the one you might want to overrule.
+
+    Parameters
+    ----------
+    dataset:
+        The data. Roles matter a great deal: without a target, the target
+        analysis is skipped, and without identifier roles the heuristics have to
+        guess.
+    split_plan:
+        Partition membership. Supplying it enables the drift analysis, which is
+        worth having before you trust any evaluation score.
+    sample_rows:
+        Row cap for the expensive sections. ``None`` uses 100,000. Quality
+        checks always run on the full frame — you cannot count duplicates in a
+        sample.
+    max_columns:
+        Column cap for the detailed analyzers. Columns beyond it are still
+        covered by the dataset-wide quality checks.
+    max_plots:
+        Ceiling on planned charts.
+    include_plots:
+        Render the plan into figures. Requires Matplotlib and takes real time;
+        off by default so the numeric pass stays fast.
+    show:
+        Print the report after building it.
+    random_state:
+        Seed for the row sample, so a report is reproducible.
+    export_html:
+        Write an HTML report here.
+    export_figures:
+        Write the rendered figures to this directory. Needs ``include_plots``.
+    html_format:
+        ``'studio'`` for the offline Teaching Studio snapshot — the same surface
+        as ``session.eda_app()`` — or ``'research'`` for the layered shell with
+        embedded Matplotlib figures.
+
+    Returns
+    -------
+    EDAReport
+        Every section, plus the findings, recommendations, narrative, plot plan,
+        and any figures.
+
+    Raises
+    ------
+    ValueError
+        If ``sample_rows`` is not positive, ``max_columns`` is below 1, or
+        ``max_plots`` is negative.
+    MissingExtraError
+        If plotting or HTML export was requested without the required extra
+        installed.
+
+    Notes
+    -----
+    **Check ``report.warnings`` first.** They say whether the rows were sampled
+    and whether columns were dropped from the detailed pass, which changes how
+    much weight the rest deserves.
+
+    **Quality runs on everything; the rest may run on a sample.** So a missing
+    value count is exact while a correlation is an estimate.
+
+    **This can be slow on wide frames.** The pairwise sections are quadratic in
+    columns; lower ``max_columns`` if it drags.
+
+    Examples
+    --------
+    A quick numeric pass::
+
+        report = explore_dataset(dataset)
+        for finding in report.findings:
+            print(finding.severity, finding.title)
+
+    A full report with drift and figures::
+
+        report = explore_dataset(
+            dataset,
+            split_plan=split_plan,
+            include_plots=True,
+            export_html="artifacts/eda.html",
+        )
+
+    See Also
+    --------
+    summarize_dataset : A much smaller subset of this.
     """
     full = dataset._ensure_pandas()
     warnings: list[str] = []
@@ -238,7 +343,48 @@ def _export_eda_html_path(
 
 
 def summarize_dataset(dataset: Dataset) -> dict[str, Any]:
-    """Compact summary subset of :func:`explore_dataset`."""
+    """Return the handful of facts you would want at a glance.
+
+    Shape, dtypes, missingness, roles, numeric summary, category counts, plus
+    the narrative and recommendations. Suitable for logging, or for the top of
+    a notebook where a full report would be too much.
+
+    Note that it is a smaller *output*, not a cheaper *computation*: the whole
+    pass runs underneath, with plots off. Call :func:`explore_dataset` directly
+    if you also want anything else from it, rather than running both.
+
+    Parameters
+    ----------
+    dataset:
+        The data. Defaults apply throughout — no split, so no drift analysis.
+
+    Returns
+    -------
+    dict
+        ``n_rows``, ``n_columns``, ``columns``, ``dtypes``, ``roles``,
+        ``missing_counts`` and ``missing_rates`` (with ``missing`` as a
+        compatibility alias for the counts), ``numeric_describe``,
+        ``categorical_uniques``, ``recommendations``, ``narrative``,
+        ``adaptive_plan_count``, and ``completeness_score``.
+
+    Raises
+    ------
+    ValueError
+        Propagated from :func:`explore_dataset`.
+
+    Notes
+    -----
+    **The warnings are dropped.** If the underlying pass sampled rows or capped
+    columns, this summary does not say so. Use ``explore_dataset`` when that
+    matters.
+
+    **``missing`` is a legacy alias for ``missing_counts``.** New code should
+    read ``missing_counts`` and ``missing_rates`` by name.
+
+    See Also
+    --------
+    explore_dataset : The full report.
+    """
     report = explore_dataset(dataset, include_plots=False, show=False)
     return {
         "n_rows": report.overview["n_rows"],

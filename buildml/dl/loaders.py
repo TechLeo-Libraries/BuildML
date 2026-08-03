@@ -1,4 +1,29 @@
-"""Session / Dataset partitions → Torch DataLoaders."""
+"""Turn a split Dataset into DataLoaders, checking the split as it goes.
+
+A DataLoader is the thing a Torch training loop iterates: it batches rows,
+optionally shuffles them, and hands tensors to the model. Building one from a
+BuildML Dataset is mostly mechanical, and this module does that work — but it
+also verifies the split before creating anything, which is the part worth
+knowing about.
+
+Three checks run here. Group splits are verified to have no group appearing in
+more than one partition, because a customer whose rows straddle train and test
+lets the model memorise that customer and score well on them. Time splits are
+verified to be chronologically ordered, because training on rows dated after the
+test rows is predicting the past from the future. And every partition's tensor
+count is compared against the split plan's index count, since a mismatch means
+rows moved somewhere between the plan and the tensors.
+
+Each of these raises rather than warns. They are all forms of leakage, and
+leakage produces a good score and a bad model — the failure mode most worth
+stopping early.
+
+See Also
+--------
+buildml.dl.dataset : Building the arrays these loaders wrap.
+buildml.data.splits : Where the partitions come from.
+buildml.dl.train : What consumes the result.
+"""
 
 from __future__ import annotations
 
@@ -109,19 +134,76 @@ def make_loaders(
     task: TaskSpec = "auto",
     classical_plans: dict[str, Any] | None = None,
 ) -> TorchLoaderBundle:
-    """Build train / validation / test DataLoaders from a split Dataset.
+    """Build the DataLoaders a training loop needs, verifying the split first.
 
-    Shuffle is applied to the **train** loader only. Normalize statistics, when
-    enabled, are fit on train and frozen for validation/test.
+    Materialises each partition as tensors, wraps them as DataLoaders, and
+    returns them alongside the feature contract and a report of what was built.
+    Before any of that, the split is checked for the leakage patterns its kind
+    is prone to.
 
-    Group and time :class:`~buildml.data.splits.SplitPlan` kinds are honored via
-    partition index membership. Group splits are checked for cross-partition
-    group leakage; time splits are checked for chronological boundary order.
+    Parameters
+    ----------
+    dataset:
+        The data, with roles and a target assigned.
+    split_plan:
+        Which rows belong to which partition. Must include a train partition.
+    config:
+        Batching and normalisation settings. Defaults are reasonable for
+        tabular work.
+    task:
+        ``'auto'`` to infer classification versus regression from the training
+        targets, or an explicit choice.
+    classical_plans:
+        Preprocessing plans already applied to the Session frame. Passing them
+        does not change what is built; it adds a disclosure to the report
+        recording that Torch normalisation sits on top of transforms that
+        already ran.
 
-    When ``classical_plans`` is provided (plan name → object/summary), the
-    report discloses that loaders read the **current** frame. Session impute /
-    encode / scale already mutate that frame with train-fitted transforms;
-    this bridge records the relationship rather than silently refitting.
+    Returns
+    -------
+    TorchLoaderBundle
+        The loaders keyed by partition, the feature contract, and the report.
+        Partitions with no rows are absent from the loaders rather than present
+        and empty.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed. Install with ``pip install buildml[dl]``.
+    ValidationError
+        If there is no train partition or it is empty, if ``batch_size`` is
+        below 1, if a group or time split lacks the column it needs, if group
+        membership crosses partitions, if time boundaries are out of order, or
+        if a partition's row count disagrees with the split plan.
+
+    Notes
+    -----
+    **Only the train loader shuffles.** Shuffling changes the order gradients
+    arrive in, which matters for learning and not at all for scoring — so
+    validation and test iterate in a fixed order, keeping their metrics
+    reproducible.
+
+    **Shuffling a time split is safe but may not be what you want.** It reorders
+    rows within the training window and never pulls future rows in, so there is
+    no leakage. But a sequence model that expects consecutive batches to be
+    consecutive in time will be fed nonsense; set ``shuffle_train=False`` for
+    those.
+
+    **Read ``bundle.report.warnings``.** Empty partitions and the classical-plan
+    disclosure appear there and nowhere else.
+
+    Examples
+    --------
+    Build loaders and inspect what was created::
+
+        bundle = make_loaders(dataset, split_plan)
+        bundle.report.n_train
+        bundle.report.groups_disjoint  # None unless this is a group split
+
+    See Also
+    --------
+    buildml.dl.train.train_supervised_module : Consumes the bundle.
+    buildml.dl.types.LoaderConfig : The settings.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

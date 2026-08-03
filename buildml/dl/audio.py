@@ -1,20 +1,31 @@
-"""Audio decode + train-only waveform normalize helpers for multimodal DL.
+"""Turn audio cells into uniform waveform tensors a network can batch.
 
-Supports:
-- path cells (str / Path) via ``soundfile`` (included in ``buildml[torch]``)
-- waveform array cells (``numpy.ndarray`` / nested lists) without soundfile
+Audio arrives in inconsistent shapes: files on disk at whatever sample rate they
+were recorded at, arrays already in memory, stereo or mono, of varying lengths.
+Batching requires all of it to become one fixed shape, and this module does that
+conversion — decode, mix down to mono, resample to a common rate, and pad or
+truncate to a fixed length. The output is always ``(1, T)`` float32.
 
-Tensors are mono ``(1, T)`` float32. Short clips are **repeat-padded** to
-``max_samples`` (not zero-filled) so global pooling remains informative.
-Amplitude mean/std are fit on train only (optionally length-aware).
+Two decisions here are worth understanding.
 
-Repeat-pad (not length-masked pooling) is the alpha choice: the fusion
-``AdaptiveAvgPool1d`` keeps a single fixed-length audio tensor for
-train/export/ONNX, and tiling preserves amplitude so short clips are not
-wiped by a large default window. Length-masked pooling would need lengths in
-``forward`` and a wider batch/export contract.
+**Short clips are repeat-padded, not zero-padded.** The fusion audio branch ends
+in global average pooling, so a half-second clip zero-padded into a five-second
+window would have four and a half seconds of silence averaged into its
+representation — the model would mostly learn how long each clip was. Tiling the
+content keeps the pooled statistics about the audio. The alternative, masked
+pooling, would require passing lengths through ``forward``, which complicates
+both the batch contract and ONNX export.
 
-This is an honest alpha fusion branch — not a speech foundation-model stack.
+**Amplitude statistics are fitted on training data only**, and optionally
+length-aware so padding does not skew them.
+
+This is an honest fusion branch, not a speech stack. For transcription or
+pretrained speech representations, see :mod:`buildml.dl.speech`.
+
+See Also
+--------
+buildml.dl.multimodal : Where these tensors are consumed.
+buildml.dl.speech : Transcription and pretrained speech models.
 """
 
 from __future__ import annotations
@@ -28,7 +39,27 @@ from buildml.core.errors import MissingExtraError, ValidationError
 
 
 def require_soundfile(*, feature: str = "Audio path loading") -> Any:
-    """Import and return ``soundfile``, or raise :class:`MissingExtraError`."""
+    """Import soundfile, or explain how to install it.
+
+    Only needed for decoding audio files. Waveforms already in memory as arrays
+    or lists go through without it, which is why the import is lazy rather than
+    at module level.
+
+    Parameters
+    ----------
+    feature:
+        What the caller was doing. Appears in the error message.
+
+    Returns
+    -------
+    module
+        The ``soundfile`` module.
+
+    Raises
+    ------
+    MissingExtraError
+        If soundfile is absent. It ships with ``pip install buildml[dl]``.
+    """
     try:
         import soundfile as sf
     except ImportError as exc:
@@ -43,11 +74,54 @@ def decode_audio_cell(
     max_samples: int = 16_000,
     source_sample_rate: int | None = None,
 ) -> np.ndarray:
-    """Decode one cell to a mono ``(1, T)`` float32 waveform.
+    """Turn one audio cell into a fixed-length mono waveform.
 
-    Accepts file paths, ``Path`` objects, ``numpy`` arrays, or nested lists.
-    Arrays may be ``(T,)``, ``(1, T)``, ``(C, T)``, or ``(T, C)`` with small C.
-    Short clips are repeat-padded to ``max_samples`` (not zero-filled).
+    Handles the whole conversion: read the file or accept the array, mix
+    channels down to mono, resample to the target rate, and pad or truncate to
+    the required length.
+
+    Parameters
+    ----------
+    value:
+        A path string, ``Path``, NumPy array, or nested list. Arrays may be
+        ``(T,)``, ``(C, T)``, or ``(T, C)``.
+    sample_rate:
+        Target rate in Hz. Files are resampled from whatever rate they carry.
+    max_samples:
+        Output length. At 16 kHz, 16000 is one second.
+    source_sample_rate:
+        The rate of an incoming array, which cannot be inferred the way a
+        file's can. Ignored for paths.
+
+    Returns
+    -------
+    numpy.ndarray
+        A ``(1, max_samples)`` float32 waveform.
+
+    Raises
+    ------
+    MissingExtraError
+        If a path is given and soundfile is not installed.
+    ValidationError
+        If the file does not exist or cannot be read, if the array shape is
+        ambiguous, if the cell type is unsupported, or if ``sample_rate`` or
+        ``max_samples`` is not positive.
+
+    Notes
+    -----
+    **Ambiguous 2-D shapes are refused rather than guessed.** Channel-first and
+    channel-last are distinguished by assuming channels are few and time is
+    many. A ``(2, 1000)`` array is clearly stereo; a ``(1000, 1000)`` array
+    could be either, and picking wrong would silently produce a waveform that is
+    not the recording. Reshape explicitly in that case.
+
+    **Resampling is linear interpolation.** Adequate for feature extraction, and
+    not the band-limited resampling a high-fidelity pipeline would use. Supply
+    audio already at your target rate when quality matters.
+
+    See Also
+    --------
+    stack_audio_column : The batched version.
     """
     cell, _length = _decode_audio_cell_with_length(
         value,
@@ -132,10 +206,50 @@ def stack_audio_column(
     source_sample_rate: int | None = None,
     return_lengths: bool = False,
 ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
-    """Decode a Series/list of audio cells → ``(N, 1, T)`` float32.
+    """Decode a whole column of audio into one batched array.
 
-    When ``return_lengths=True``, also returns pre-pad/truncation lengths
-    ``(N,)`` (clamped to ``max_samples``) for length-aware normalize stats.
+    Applies :func:`decode_audio_cell` to every cell and stacks the results.
+
+    Parameters
+    ----------
+    values:
+        An iterable of audio cells — a pandas Series or a list.
+    sample_rate:
+        Target rate in Hz.
+    max_samples:
+        Output length per clip.
+    source_sample_rate:
+        The rate of incoming arrays.
+    return_lengths:
+        Also return each clip's real length before padding.
+
+    Returns
+    -------
+    numpy.ndarray
+        An ``(N, 1, max_samples)`` float32 array.
+    numpy.ndarray
+        Only when ``return_lengths=True``: an ``(N,)`` int64 array of real
+        lengths, clamped to ``max_samples``.
+
+    Raises
+    ------
+    MissingExtraError
+        If any cell is a path and soundfile is not installed.
+    ValidationError
+        Propagated from any cell that cannot be decoded.
+
+    Notes
+    -----
+    **The lengths are what make normalisation statistics honest.** Without
+    them, a corpus of short clips tiled into a long window would have its
+    statistics computed over repeated content, weighting the shortest clips
+    most heavily. :func:`fit_audio_waveform_stats` uses the lengths to measure
+    only real audio.
+
+    See Also
+    --------
+    decode_audio_cell : The single-cell version.
+    fit_audio_waveform_stats : The consumer of the lengths.
     """
     decoded: list[np.ndarray] = []
     lengths: list[int] = []
@@ -208,10 +322,51 @@ def fit_audio_waveform_stats(
     audio: np.ndarray,
     lengths: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Fit amplitude mean/std on a train batch ``(N, 1, T)``.
+    """Learn the amplitude scale of the training audio.
 
-    When ``lengths`` is provided, stats use only the pre-pad/truncation region
-    of each clip (avoids zero-pad domination if a caller still zero-fills).
+    Computes a single mean and standard deviation across all training samples.
+    Audio amplitude varies enormously with recording conditions — the same words
+    at different distances from a microphone differ by orders of magnitude —
+    and standardising removes that so the network learns from structure rather
+    than volume.
+
+    Parameters
+    ----------
+    audio:
+        Training waveforms, shaped ``(N, 1, T)``.
+    lengths:
+        Real length of each clip before padding. When supplied, only that
+        region contributes.
+
+    Returns
+    -------
+    numpy.ndarray
+        A one-element mean.
+    numpy.ndarray
+        A one-element standard deviation, floored at 1.0 when near zero.
+
+    Raises
+    ------
+    ValidationError
+        If the shape is not ``(N, 1, T)``, if the batch is empty, if the
+        lengths do not align with the batch, or if every clip is empty.
+
+    Notes
+    -----
+    **One statistic for all samples, not one per time step.** A per-position
+    mean would encode where in the clip loud moments tend to fall, which is an
+    artefact of how the corpus was recorded rather than anything about the
+    audio.
+
+    **Passing ``lengths`` matters when clip durations vary widely.** Without
+    them the statistics are computed over padded content, which over-weights
+    whatever was tiled to fill the window.
+
+    **Silent audio would divide by zero, so a near-zero deviation becomes 1.0.**
+
+    See Also
+    --------
+    apply_audio_waveform_stats : Applying what this learned.
     """
     if audio.ndim != 3 or audio.shape[1] != 1:
         raise ValidationError(f"Expected N1T audio; got shape {audio.shape}")
@@ -241,7 +396,31 @@ def fit_audio_waveform_stats(
 def apply_audio_waveform_stats(
     audio: np.ndarray, mean: np.ndarray, std: np.ndarray
 ) -> np.ndarray:
-    """Apply frozen amplitude mean/std to ``(N, 1, T)`` audio."""
+    """Rescale waveforms using statistics learned from training audio.
+
+    Subtracts the training mean and divides by the training deviation. The same
+    constants are used for every partition and at inference, which is what keeps
+    a deployed model hearing what it was trained on.
+
+    Parameters
+    ----------
+    audio:
+        Waveforms shaped ``(N, 1, T)``.
+    mean:
+        The training mean from :func:`fit_audio_waveform_stats`.
+    std:
+        The training deviation.
+
+    Returns
+    -------
+    numpy.ndarray
+        Rescaled float32 waveforms, same shape as the input.
+
+    Notes
+    -----
+    A near-zero deviation is replaced by 1.0 here as well as at fit time, so a
+    hand-constructed statistic cannot produce infinities.
+    """
     mean_b = float(np.asarray(mean).reshape(-1)[0])
     std_b = float(np.asarray(std).reshape(-1)[0])
     if abs(std_b) < 1e-6:

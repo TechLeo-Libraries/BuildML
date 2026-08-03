@@ -255,6 +255,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         parameters=(
             _p("operation", "str | None", "Catalog operation ID, or None for the workflow."),
             _p("moment", "before | after", "Explanation perspective.", "before"),
+            _p(
+                "level",
+                "beginner | intermediate | advanced",
+                "How much teaching depth to render around the expert sections.",
+                "beginner",
+                choices=("beginner", "intermediate", "advanced"),
+            ),
         ),
         inputs=("Operation catalog, concept notes, Session state, and normalized history.",),
         outputs=("BeforeOperationExplanation, AfterOperationExplanation, or WorkflowStep tuple.",),
@@ -262,13 +269,111 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         alternatives=("Use workflow for status-only navigation or get_operation for static guidance.",),
         rationale=("Prefer contextual explanation when prerequisites, choices, or limitations matter.",),
         assumptions=("Recorded parameters summarize the public call without retaining opaque objects.",),
-        failures=("Unknown operation ID or invalid moment value.",),
+        failures=("Unknown operation ID, invalid moment value, or unknown reading level.",),
         leakage=("Explanation identifies leakage risks but cannot prove data provenance or independence.",),
         anti_patterns=("Reading after guidance as evidence when the operation has not actually run.",),
         state_changes=("None; explanation never appends history or changes Session state.",),
         result_reading=("Distinguish observed record fields from catalog interpretation and limitations.",),
         next_steps=("Choose only among valid operations whose assumptions fit the data-generating process.",),
-        concepts=("reproducibility", "diagnostic-uncertainty"),
+        concepts=("reproducibility", "diagnostic-uncertainty", "explain-learning-levels"),
+        plain=(
+            "Ask BuildML what a step does before you run it, and what actually happened after. "
+            "The 'before' answer is grounded in your session: it knows whether you have loaded data, "
+            "assigned roles, or split yet, so it tells you what is still missing rather than reciting "
+            "a manual page."
+        ),
+        analogy=(
+            "A recipe step read aloud by someone standing in your kitchen. They can see you have not "
+            "preheated the oven yet, so that is the part they mention."
+        ),
+        beginner_steps=(
+            "Name the operation you are curious about, or pass nothing to see the whole workflow.",
+            "Read the plain-language primer first: what it is, why it exists, and the steps in order.",
+            "Check the prerequisites section for anything not yet satisfied in this session.",
+            "Run the operation, then call explain again with moment='after' to interpret the result.",
+        ),
+        when_to_use=(
+            "You are about to call something and want to know what it will change.",
+            "A result came back and you are not sure how to read it.",
+            "An operation is blocked and you want the exact reason.",
+        ),
+        when_not_to_use=(
+            "You want the concept behind the operation rather than its effect here — use learn instead.",
+            "You want to see the effect on real rows without committing — use dry_run.",
+        ),
+        mini_example=(
+            "before = session.explain('split')",
+            "print(before.beginner.plain_summary)",
+            "for step in before.beginner.steps: print('-', step)",
+            "session.split()",
+            "print(session.explain('split', moment='after').what_happened)",
+        ),
+    ),
+    _operation(
+        "learn",
+        OperationKind.INSPECT,
+        "Resolve a concept key, operation name, or glossary term into layered teaching material.",
+        "Answer 'what is this and what should I understand first' independently of session state.",
+        "Read-only teaching entry point over concept notes, the operation catalog, and the glossary.",
+        (
+            "Match the topic against concept keys, catalog operation names, and glossary aliases in that order.",
+            "Render the resolved subject at the requested reading level.",
+            "Attach prerequisite concepts as read_first and follow-on concepts as read_next.",
+        ),
+        parameters=(
+            _p("topic", "str | None", "Concept key, operation name, or glossary term; None returns the foundation reading list."),
+            _p(
+                "level",
+                "beginner | intermediate | advanced",
+                "How much depth to render.",
+                "beginner",
+                choices=("beginner", "intermediate", "advanced"),
+            ),
+        ),
+        inputs=("Concept notes, operation catalog, and the BuildML glossary.",),
+        outputs=("LearningBrief with the subject, a reading order, and related operations.",),
+        ordering=("Use before explain when the vocabulary itself is unfamiliar; use at any time.",),
+        alternatives=("Use explain for state-aware guidance about a specific call, or workflow for status.",),
+        rationale=("Prefer learn when the question is conceptual rather than about this session's state.",),
+        assumptions=("Concept notes and the glossary are the single source of teaching truth.",),
+        failures=("No concept, operation, or term matches the topic; close matches are suggested.",),
+        leakage=("Teaching material describes leakage risks generally; it inspects no data.",),
+        anti_patterns=("Treating a concept note as a substitute for checking assumptions against your own data.",),
+        state_changes=("None; learn reads static teaching content and never touches the session.",),
+        result_reading=("Read read_first before the subject itself when a topic depends on earlier ideas.",),
+        next_steps=("Follow read_next, or explain one of the related operations in your session.",),
+        concepts=("explain-learning-levels", "reproducibility"),
+        plain=(
+            "A dictionary that knows what order things should be learned in. Give it a word you did not "
+            "understand — 'leakage', 'stratified', 'ROC AUC' — or the name of an operation, and it "
+            "explains the idea from scratch, then tells you which two or three ideas come before it and "
+            "which come after."
+        ),
+        analogy=(
+            "A textbook index that also says 'you will want to read chapter 3 first'. An index alone "
+            "tells you where a topic is; this tells you whether you are ready for it."
+        ),
+        beginner_steps=(
+            "Call learn() with no topic to see where to start.",
+            "Read the plain-language summary and the analogy for the topic itself.",
+            "If read_first is not empty, read those concepts before going further.",
+            "Follow read_next when the idea has settled, or explain a related operation to see it applied.",
+        ),
+        when_to_use=(
+            "A word in an explanation or an error message meant nothing to you.",
+            "You are new to machine learning and want a reading order rather than an index.",
+            "You want the idea behind an operation, separate from your current session.",
+        ),
+        when_not_to_use=(
+            "You want to know why an operation is blocked right now — that is explain or workflow.",
+            "You need to see the effect on your actual rows — that is dry_run.",
+        ),
+        mini_example=(
+            "brief = session.learn('leakage-boundary')",
+            "print(brief.concept.plain_summary)",
+            "print([note.key for note in brief.read_first])",
+            "session.learn('stratified')  # a glossary term resolves to its concept",
+        ),
     ),
     _operation(
         "dry_run",

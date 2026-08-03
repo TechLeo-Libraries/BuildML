@@ -1,4 +1,25 @@
-"""History / catalog / walkthrough helpers for RAG operations."""
+"""Condense RAG results into the small payloads history and walkthroughs record.
+
+A full :class:`~buildml.rag.results.RetrieveResult` carries the text of every
+retrieved passage, and a Session that ran fifty retrievals would carry fifty
+copies of it. History needs the shape of what happened — the mode, the counts,
+the top document IDs — not the payload. These functions extract that shape.
+
+Everything here is defensive by design. Each summariser accepts ``None``, a
+result object, or a plain dict, and reads through ``.get`` so a missing field
+becomes ``None`` rather than an exception. Explanation must never be the thing
+that breaks a working session.
+
+The status builder goes further and states what is *not* known: that no index is
+attached, that no evaluation has been run, that a Session checkpoint does not
+contain the vector index. Silence there gets read as reassurance, which is
+exactly the wrong inference.
+
+See Also
+--------
+buildml.rag.results : The result objects being summarised.
+buildml.rag.catalog.rag_capability_matrix : What the install can do.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +27,30 @@ from typing import Any
 
 
 def index_result_summary(index_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``rag_embed_and_index`` history."""
+    """Reduce an index result to the few facts worth keeping in history.
+
+    Enough to answer later "what was indexed, and with what?" without storing
+    chunks or vectors.
+
+    Parameters
+    ----------
+    index_result:
+        An :class:`~buildml.rag.results.IndexResult`, an equivalent dict, or
+        ``None``.
+
+    Returns
+    -------
+    dict
+        ``n_chunks``, ``n_documents``, ``embedder_id``, ``dim``, and
+        ``store_backend``. Empty when the input is ``None``; individual values
+        are ``None`` when absent.
+
+    Notes
+    -----
+    **The embedder ID is the important one.** An index built with hashing
+    embeddings behaves quite differently from a semantic one, and this is where
+    that gets recorded.
+    """
     if index_result is None:
         return {}
     if hasattr(index_result, "to_dict"):
@@ -23,7 +67,33 @@ def index_result_summary(index_result: Any) -> dict[str, Any]:
 
 
 def retrieve_result_summary(retrieve_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``rag_retrieve`` history."""
+    """Reduce a retrieval result to a history-sized record.
+
+    Keeps the query, the settings that were actually used, and the top document
+    IDs — enough to see later that a query returned the wrong sources, without
+    storing their text.
+
+    Parameters
+    ----------
+    retrieve_result:
+        A :class:`~buildml.rag.results.RetrieveResult`, an equivalent dict, or
+        ``None``.
+
+    Returns
+    -------
+    dict
+        ``query``, ``k``, ``n_hits``, ``top_doc_ids`` (at most five),
+        ``embedder_id``, ``mode``, and ``rerank``. Empty when the input is
+        ``None``.
+
+    Notes
+    -----
+    **``mode`` is what ran, not what was requested**, so a hybrid request that
+    fell back to dense is visible here.
+
+    **Only the first five document IDs are kept**, which is enough to recognise
+    a retrieval and bounded regardless of ``k``.
+    """
     if retrieve_result is None:
         return {}
     if hasattr(retrieve_result, "to_dict"):
@@ -43,7 +113,30 @@ def retrieve_result_summary(retrieve_result: Any) -> dict[str, Any]:
 
 
 def eval_result_summary(eval_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``rag_evaluate`` history."""
+    """Reduce an evaluation result to its headline metrics.
+
+    Drops the per-query breakdown, which is the bulk of the result and the part
+    you read once while debugging rather than needing in history.
+
+    Parameters
+    ----------
+    eval_result:
+        A :class:`~buildml.rag.results.RagEvalResult`, an equivalent dict, or
+        ``None``.
+
+    Returns
+    -------
+    dict
+        ``n_queries``, ``k``, ``recall_at_k``, ``mrr``, ``ndcg_at_k``,
+        ``hit_rate_at_k``, ``relevance_mode``, and ``retrieve_mode``. Empty when
+        the input is ``None``.
+
+    Notes
+    -----
+    **The two modes are kept alongside the numbers on purpose.** Metrics from
+    document-mode and chunk-mode evaluations are not comparable, and neither are
+    metrics from different retrieval modes.
+    """
     if eval_result is None:
         return {}
     if hasattr(eval_result, "to_dict"):
@@ -63,7 +156,32 @@ def eval_result_summary(eval_result: Any) -> dict[str, Any]:
 
 
 def generate_result_summary(generate_result: Any) -> dict[str, Any]:
-    """Compact result_summary for ``rag_generate`` history."""
+    """Reduce a generation result to a history-sized record.
+
+    Records that an answer was produced, how long it was, which model produced
+    it, and what it was allowed to cite — without storing the answer text.
+
+    Parameters
+    ----------
+    generate_result:
+        A :class:`~buildml.rag.results.GenerateResult`, an equivalent dict, or
+        ``None``.
+
+    Returns
+    -------
+    dict
+        ``query``, ``n_citations``, ``provider_model``, ``citation_doc_ids`` (at
+        most five), and ``answer_chars``. Empty when the input is ``None``.
+
+    Notes
+    -----
+    **The answer itself is deliberately not kept**, only its length. Generated
+    text can be long and may contain material that should not be retained in a
+    session log.
+
+    **``citation_doc_ids`` lists what was available to cite**, not what the
+    answer cited. The faithfulness report on the full result has that.
+    """
     if generate_result is None:
         return {}
     if hasattr(generate_result, "to_dict"):
@@ -89,10 +207,55 @@ def rag_status(
     corpus: Any | None = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for RAG index / retrieve / generate.
+    """Describe the state of a RAG workflow, including what is missing from it.
 
-    Does not imply Session checkpoint holds the vector index, and does not
-    treat catalog availability as production readiness.
+    Assembles a factual picture across all four stages for walkthroughs and
+    status displays: what was indexed and with what, whether it has been
+    evaluated, what the last retrieval and generation did.
+
+    The absences are as informative as the presences, and are reported
+    explicitly. An index with no evaluation attached says so. RAG operations in
+    history with no live index says so. The fact that a Session checkpoint does
+    not contain the vector index is stated every time, because that is the
+    assumption people make and it costs them their index.
+
+    Parameters
+    ----------
+    index_result:
+        The current index result, or ``None`` if nothing is indexed.
+    eval_result:
+        The last evaluation, or ``None``.
+    retrieve_result:
+        The last retrieval, or ``None``.
+    generate_result:
+        The last generation, or ``None``.
+    corpus:
+        The corpus handle, or ``None``.
+    history:
+        Session history records, scanned for past RAG operations.
+
+    Returns
+    -------
+    dict
+        ``enabled`` (an index is attached), ``present`` (RAG has been used at
+        all), ``disclosures`` (plain-language statements), and per-stage
+        sections ``index``, ``eval``, ``retrieve``, ``generate``, ``corpus`` —
+        each ``None`` when that stage has not run.
+
+    Notes
+    -----
+    **``enabled`` and ``present`` differ, and the difference matters.** A
+    session restored from a checkpoint has ``present=True`` from history but
+    ``enabled=False``, because the index did not travel with the checkpoint and
+    must be rebuilt or loaded from a bundle.
+
+    **Nothing here is a readiness verdict.** It reports facts; whether they
+    constitute a system worth deploying is a judgement this cannot make.
+
+    See Also
+    --------
+    rag_status_for_session : The Session-facing wrapper.
+    buildml.rag.checkpoint.save_rag_bundle : Persisting the index properly.
     """
     records = list(history or [])
     saw_rag = any(
@@ -251,7 +414,28 @@ def rag_status(
 
 
 def rag_status_for_session(session: Any) -> dict[str, Any]:
-    """Build walkthrough ``rag_status`` from a Session."""
+    """Read a Session's RAG state and describe it.
+
+    Pulls the four result attributes, the corpus, and the history off a Session
+    and hands them to :func:`rag_status`. Every read uses ``getattr`` with a
+    default, so this works on a Session that has never touched RAG and on
+    partially-constructed or mock objects.
+
+    Parameters
+    ----------
+    session:
+        A :class:`~buildml.session.Session`, or anything with the same
+        attributes.
+
+    Returns
+    -------
+    dict
+        The status payload from :func:`rag_status`.
+
+    See Also
+    --------
+    rag_status : The underlying builder and its return shape.
+    """
     return rag_status(
         index_result=getattr(session, "rag_index_result", None),
         eval_result=getattr(session, "rag_eval_result", None),

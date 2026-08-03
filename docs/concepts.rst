@@ -175,8 +175,8 @@ provenance and does not prove that methodological choices were valid.
 
 Canonical catalog keys: ``checkpoint-integrity`` and ``reproducibility``.
 
-Teaching surfaces: explain, workflow, walkthrough, dry_run
-----------------------------------------------------------
+Teaching surfaces: explain, learn, workflow, walkthrough, dry_run
+-----------------------------------------------------------------
 
 BuildML maintains a versioned **operation catalog** for every public Session
 callable. Each entry covers definition, purpose, pipeline role, mechanism,
@@ -191,6 +191,40 @@ and what could go wrong. An ``after`` explanation adds the latest recorded
 call, parameters, and state transition. Explanations report what BuildML
 knows; they cannot prove that a partition matches deployment or that roles
 exclude target proxies.
+
+Reading levels
+~~~~~~~~~~~~~~
+
+``explain`` and ``learn`` both accept ``level="beginner"`` (the default),
+``"intermediate"``, or ``"advanced"``. Every operation explanation carries a
+``beginner`` **operation primer**: a plain-language summary, an analogy, the
+steps in order, prerequisites stated in ordinary words, what each key parameter
+means in practice, the common pitfalls, an in-line glossary of the jargon the
+answer itself used, and a worked example. The primer is derived from the same
+catalog entry and concept notes as the expert sections, so the two cannot drift;
+an operation may override any section with hand-written prose.
+
+The level controls how much scaffolding is rendered, never which facts are
+true. Assumptions, leakage risks, and failure modes appear at every level;
+``advanced`` drops the analogy and glossary and widens the parameter and pitfall
+lists.
+
+Learning a concept rather than a call
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``Session.learn(topic, level=...)`` answers the question that comes before
+``explain``: what *is* this, and what should be understood first. The topic may
+be a concept key (``"leakage-boundary"``), an operation name (``"split"``), or a
+piece of jargon (``"stratified"``), with spacing and hyphenation forgiven.
+Called with no topic it returns the foundation concepts in reading order.
+
+The returned ``LearningBrief`` carries the resolved subject plus ``read_first``
+and ``read_next`` concept notes, so a newcomer gets a reading order rather than
+an index. Concept notes themselves are layered: plain summary, analogy,
+beginner steps, when to use and when not to, misconceptions with corrections, a
+worked example, self-check questions, and the technical material. Teaching
+content is static — it explains ideas and BuildML's contract, and inspects none
+of your data.
 
 ``Session.workflow()`` resolves every cataloged operation to one of:
 

@@ -7,6 +7,51 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class DomainSpec:
+    """One board in the studio: what it shows, teaches, and exports.
+
+    The dashboard is organised by question rather than by analyzer — "is my data
+    clean", "what predicts the target", "will this generalise" — because that is
+    how someone arrives at a report. Each spec maps one of those questions onto
+    the report sections that answer it, the concepts a reader might need
+    explained, and the tables they can export.
+
+    Declaring this as data rather than building it in code is what keeps the
+    studio, the offline export, and the CSV endpoints consistent. Adding a board
+    is adding a spec; there is no second place to update.
+
+    Attributes
+    ----------
+    key:
+        Stable identifier, used in URLs and element ids. Not renamed once
+        published, since links into a report are shared.
+    title:
+        The board's heading.
+    short:
+        A phrase saying what is on it, shown in navigation.
+    icon:
+        Icon name for the navigation entry.
+    report_keys:
+        Which report sections feed this board. A board whose sections are all
+        empty renders as empty rather than being hidden — an absent board would
+        look like an omission.
+    concept_keys:
+        Glossary entries offered alongside, from :mod:`buildml.explain`. This is
+        the teaching half of the studio: the analysis and its explanation on the
+        same screen.
+    csv_sections:
+        Which tables can be downloaded from this board.
+
+    Notes
+    -----
+    **Frozen and slotted.** These are module-level constants shared across
+    requests; immutability means a handler cannot corrupt the registry.
+
+    See Also
+    --------
+    buildml.dashboard.teaching : Where ``concept_keys`` are resolved.
+    buildml.dashboard.exports : Where ``csv_sections`` are resolved.
+    """
+
     key: str
     title: str
     short: str

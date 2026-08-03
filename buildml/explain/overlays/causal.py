@@ -225,7 +225,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         assumptions=("Treatment levels match the plan encoding.",),
         failures=("No plan; empty/single-arm partition; missing columns.",),
         leakage=("Do not refit nuisances on the scored holdout.",),
-        anti_patterns=("Treating holdout ATE as proof of identification."),
+        anti_patterns=("Treating holdout ATE as proof of identification.",),
         state_changes=("Stores causal_estimate_result.",),
         result_reading=("Read ate / CI / n_treated / disclosures.",),
         next_steps=("evaluate_causal; save_causal_bundle.",),
@@ -261,7 +261,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         assumptions=("Feature/treatment/outcome columns match the plan.",),
         failures=("No plan; empty partition; single treatment class.",),
-        leakage=("Tuning clip bounds against locked test repeatedly without protocol."),
+        leakage=("Tuning clip bounds against locked test repeatedly without protocol.",),
         anti_patterns=(
             "Advertising evaluate_causal as assumption validation.",
             "Equating propensity AUC with true confounding control.",
@@ -310,7 +310,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Surface fragile estimates with cheap sensitivity checks.",),
         assumptions=("Train partition still available and aligned.",),
         failures=("No plan; degenerate placebo arms.",),
-        leakage=("Refutation refits on train only — never on holdout."),
+        leakage=("Refutation refits on train only — never on holdout.",),
         anti_patterns=(
             "Calling this a complete DoWhy suite.",
             "Treating a near-zero placebo as proof of identification.",
@@ -363,7 +363,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         assumptions=("Columns still match the plan contract.",),
         failures=("Incomplete or wrong-format bundle.",),
         leakage=("Do not treat load as permission to train on holdout rows.",),
-        anti_patterns=("Loading a probabilistic bundle as causal."),
+        anti_patterns=("Loading a probabilistic bundle as causal.",),
         state_changes=(
             "Sets causal_plan + causal_assumptions; clears fit/estimate/eval/refute slots.",
         ),

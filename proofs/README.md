@@ -6,9 +6,9 @@ artifacts where applicable, and JSON metrics under `results/` (gitignored).
 
 | Tier | Count | What it proves |
 | --- | ---: | --- |
-| **A** | **25/25** | One named product scenario per major Session domain |
+| **A** | **26/26** | One named product scenario per major Session domain |
 | **B** | **6/6** | Cross-domain products composing multiple Session surfaces |
-| **C** | **25/25** | Same-split industry twin + `comparison.json` per Tier A |
+| **C** | **26/26** | Same-split industry twin + `comparison.json` per Tier A |
 
 **Status:** proof program **complete**. Optional deepeners (not failures):
 `gymnasium` via `buildml[rl]` enables the CartPole REINFORCE path (BC core
@@ -104,6 +104,7 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 | Semi / AL / SSL | matching quickstarts | → Tier A + Tier B `atlas-label-studio` |
 | Online / Decisions | matching quickstarts | → Tier A + Tier B `aegis` / `harbor` / `ledger` |
 | Federated / Multi-task / Meta / Symbolic / CBR / Synthetic / IL+RL | matching quickstarts | → matching Tier A (+ Tier B where listed) |
+| NLP (text) | `quickstart-nlp.md`, `nlp-deep.md` | → `ticket-routing-nlp` |
 | Sphinx | `docs/index.rst`, `docs/features.rst`, `docs/guide-index.rst` | Mirror Markdown proof pointers |
 
 ---
@@ -137,6 +138,7 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 | 23 | [graph-fraud-rings](graph-fraud-rings/) | Graph | **completed** | Tier C networkx+LR twin |
 | 24 | [prob-interval-risk](prob-interval-risk/) | Probabilistic | **completed** | Tier C BayesianRidge+quantile |
 | 25 | [imitation-cartpole-control](imitation-cartpole-control/) | IL + RL | **completed** | Tier C sklearn BC twin; gym REINFORCE when `gymnasium` installed |
+| 26 | [ticket-routing-nlp](ticket-routing-nlp/) | NLP (text) | **completed** | Tier C `TfidfVectorizer`+`LogisticRegression` Pipeline twin |
 
 Each Tier A README includes: business purpose, data source, leakage controls,
 BuildML API steps, metrics, limitations, and an **Industry comparison** section.
@@ -188,6 +190,7 @@ in `script.py` on the **same split**, writing `results/comparison.json`.
 | synthetic-privacy-utility | **filled** (independent column bootstrap) |
 | federated-hospital-sim | **filled** (pooled centralized SGD) |
 | imitation-cartpole-control | **filled** (sklearn BC; gym disclosed when present) |
+| ticket-routing-nlp | **filled** (`Pipeline(TfidfVectorizer + LogisticRegression)`) |
 
 ---
 

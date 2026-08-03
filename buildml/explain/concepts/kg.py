@@ -98,8 +98,8 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "Read disclosures for backend, neg_ratio, and scoring formula.",
                 "Loss alone is not ranking quality — use evaluate_kg.",
             ),
-            assumptions=("Dense embeddings fit in memory for the train catalog."),
-            failure_modes=("Too few epochs; collapsed embeddings; tiny entity sets."),
+            assumptions=("Dense embeddings fit in memory for the train catalog.",),
+            failure_modes=("Too few epochs; collapsed embeddings; tiny entity sets.",),
             anti_patterns=(
                 "Requiring Neo4j or PyG for this Session path.",
                 "Training negatives from test triples.",
@@ -107,7 +107,7 @@ KG_NOTES: dict[str, ConceptNote] = {
             worked_example_pattern=(
                 "fit_kg(backend='pykeen', method='rotate', epochs=50) → "
                 "predict_links(mode='tail')."
-            ),
+            ,),
             related_concepts=("kg-triples", "kg-link-prediction"),
         ),
         _note(
@@ -141,12 +141,12 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "OOV holdout entities/relations are skipped and disclosed.",
                 "Do not equate with Graph ML node accuracy or RAG nDCG.",
             ),
-            assumptions=("Holdout triples mostly in train vocab (known-entity protocol)."),
-            failure_modes=("All-OOV holdout; k larger than catalog."),
-            anti_patterns=("Reporting raw loss as link-prediction quality."),
+            assumptions=("Holdout triples mostly in train vocab (known-entity protocol).",),
+            failure_modes=("All-OOV holdout; k larger than catalog.",),
+            anti_patterns=("Reporting raw loss as link-prediction quality.",),
             worked_example_pattern=(
                 "evaluate_kg(k=10) → inspect metrics['mrr'] / hits_at_10."
-            ),
+            ,),
             related_concepts=("kg-triples", "kg-transe-distmult", "leakage-boundary"),
         ),
         _note(
@@ -178,14 +178,14 @@ KG_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Empty path means no train path within max_hops — not model failure.",
             ),
-            assumptions=("KgPlan with train adjacency from fit_kg."),
-            failure_modes=("OOV entities; disconnected train graphs."),
+            assumptions=("KgPlan with train adjacency from fit_kg.",),
+            failure_modes=("OOV entities; disconnected train graphs.",),
             anti_patterns=(
                 "Treating query_kg as Cypher/Neo4j or as RAG retrieve.",
             ),
             worked_example_pattern=(
                 "query_kg(mode='typed', entity='Alice', relation='works_at')."
-            ),
+            ,),
             related_concepts=("kg-triples", "kg-link-prediction"),
         ),
         _note(
@@ -205,19 +205,19 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "with load_kg_bundle."
             ),
             formal_idea=("buildml.kg_bundle.v1 = meta.json + kg_plan.joblib."),
-            why_it_matters=("Prevents silent mixing of artifact types."),
-            how_buildml_uses=("Session.save_kg_bundle / load_kg_bundle."),
+            why_it_matters=("Prevents silent mixing of artifact types.",),
+            how_buildml_uses=("Session.save_kg_bundle / load_kg_bundle.",),
             interpretation_rules=(
                 "Bundles are complementary to checkpoints, not interchangeable.",
             ),
-            assumptions=("A KgPlan exists."),
-            failure_modes=("Expecting Neo4j dump semantics inside the bundle."),
+            assumptions=("A KgPlan exists.",),
+            failure_modes=("Expecting Neo4j dump semantics inside the bundle.",),
             anti_patterns=(
                 "Loading a Graph ML or RAG bundle via load_kg_bundle.",
             ),
             worked_example_pattern=(
                 "save_kg_bundle(path) → load_kg_bundle(path) → evaluate_kg()."
-            ),
+            ,),
             related_concepts=("kg-triples", "checkpoint-boundary"),
         ),
     )

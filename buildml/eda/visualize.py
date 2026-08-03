@@ -1,4 +1,23 @@
-"""Adaptive high-impact visualization rendering for EDA."""
+"""Draw the charts an EDA plan asked for, and never fail the whole report.
+
+The rendering half of the plan-then-render split. The planner in
+:mod:`buildml.eda.adaptive` decided what is worth drawing; this draws it.
+
+Two things shape the implementation. Matplotlib is forced onto the ``Agg``
+backend, because a report generated on a server or in CI must not try to open a
+window — that hangs, or crashes, depending on the environment. And every plot is
+wrapped: a figure that fails records its error and the rest still render. A
+report missing one chart is useful; an exception on chart nineteen of
+twenty-four wastes everything before it.
+
+Matplotlib and Seaborn are optional extras, imported at call time so the numeric
+EDA path never pays for them.
+
+See Also
+--------
+buildml.eda.adaptive : Deciding what to draw.
+buildml.eda.html_report : Embedding the results.
+"""
 
 from __future__ import annotations
 
@@ -31,16 +50,52 @@ def render_adaptive_plots(
     *,
     dataset: Dataset | None = None,
 ) -> dict[str, Any]:
-    """Render adaptive plot specs into matplotlib figure objects.
+    """Execute a plot plan, keeping going when an individual chart fails.
+
+    Walks the plan and draws each specification. A chart that raises is recorded
+    as an error entry in the results rather than propagating, so one awkward
+    column cannot cost you the whole report.
 
     Parameters
     ----------
     frame:
-        Analysis frame (possibly sampled).
+        The analysis frame — the same one the plan was built against, usually
+        sampled. Plotting a different frame will not match the plan's
+        assumptions about cardinality and dtype.
     plan:
-        Specs from :func:`buildml.eda.adaptive.build_adaptive_plan`.
+        Specifications from
+        :func:`~buildml.eda.adaptive.build_adaptive_plan`.
     dataset:
-        Optional dataset for role-aware titles.
+        Supplies roles for chart titles, so a target is labelled as one.
+
+    Returns
+    -------
+    dict
+        Keyed by plot identifier. Each value is a Matplotlib figure, or a dict
+        with ``error`` and ``spec`` when that chart failed.
+
+    Raises
+    ------
+    MissingExtraError
+        If Matplotlib or Seaborn is not installed. Install with
+        ``pip install 'buildml[viz]'``.
+
+    Notes
+    -----
+    **Check for error entries.** ``isinstance(value, dict)`` distinguishes a
+    failure from a figure, and the entry carries both the message and the spec
+    that produced it.
+
+    **The figures are open and hold memory.** Save them with
+    :func:`save_figures` or close them; a few dozen open figures is a warning
+    from Matplotlib and a real allocation.
+
+    **The backend is forced to Agg**, so nothing tries to display. Figures are
+    returned as objects for you to save or show deliberately.
+
+    See Also
+    --------
+    save_figures : Writing them out.
     """
     plt, sns = _require_viz()
     figures: dict[str, Any] = {}
@@ -108,7 +163,45 @@ def render_adaptive_plots(
 
 
 def render_analysis_plots(sections: dict[str, Any]) -> dict[str, Any]:
-    """Render plots that use retained analyzer statistics rather than raw rows."""
+    """Draw the charts that need the analysis, not the data.
+
+    Some charts visualise results rather than rows — a PCA scree plot, a
+    correlation heatmap, a drift summary. They are built from the analyzer
+    sections, which means they can be produced without the frame at all.
+
+    That matters more than it sounds. The analyzer output is small and
+    serialisable, so these charts can be regenerated from a saved report long
+    after the data has gone, or on a machine that never had access to it.
+
+    Parameters
+    ----------
+    sections:
+        The analyzer outputs, as held on an
+        :class:`~buildml.eda.report.EDAReport`. Sections that are absent simply
+        produce no chart.
+
+    Returns
+    -------
+    dict
+        Keyed by chart identifier, holding Matplotlib figures. Charts whose
+        input section was missing or empty are absent from the result.
+
+    Raises
+    ------
+    MissingExtraError
+        If Matplotlib or Seaborn is not installed.
+
+    Notes
+    -----
+    **A missing key means the section was empty**, not that the chart failed.
+    No PCA in the multivariate section, no scree plot.
+
+    **The figures are open.** Save or close them.
+
+    See Also
+    --------
+    render_adaptive_plots : Charts drawn from the rows themselves.
+    """
     plt, sns = _require_viz()
     figures: dict[str, Any] = {}
     pca = (sections.get("multivariate") or {}).get("pca") or {}
@@ -384,7 +477,50 @@ def _plot_outlier_board(frame: pd.DataFrame, plt: Any, sns: Any, title: str | No
 
 
 def save_figures(figures: dict[str, Any], directory: str | Path) -> Path:
-    """Save rendered figures to a directory as PNG files."""
+    """Write figures to a directory as PNGs, skipping whatever cannot be saved.
+
+    Each figure becomes ``{key}.png`` at 140 DPI with tight bounding boxes —
+    sharp enough to read on a high-resolution screen and in print, without the
+    file sizes that come from going higher.
+
+    Error entries from a failed render are skipped, as is anything that fails to
+    save. Consistent with the rest of the visualization path: a partial set of
+    figures beats an exception that loses all of them.
+
+    Parameters
+    ----------
+    figures:
+        The figures, as returned by :func:`render_adaptive_plots` or
+        :func:`render_analysis_plots`. Error entries are ignored.
+    directory:
+        Where to write. Created if absent, including parents.
+
+    Returns
+    -------
+    Path
+        The directory written to.
+
+    Raises
+    ------
+    OSError
+        If the directory itself cannot be created. Individual file failures are
+        skipped rather than raised.
+
+    Notes
+    -----
+    **Existing files with the same names are overwritten.**
+
+    **Figures are not closed afterwards.** They remain open and holding memory;
+    close them if you are rendering many in a loop.
+
+    **Silent skips are possible.** A figure that fails to save produces no file
+    and no error, so compare the directory contents against the keys you passed
+    if completeness matters.
+
+    See Also
+    --------
+    render_adaptive_plots : Producing the figures.
+    """
     root = Path(directory)
     root.mkdir(parents=True, exist_ok=True)
     for key, fig in figures.items():

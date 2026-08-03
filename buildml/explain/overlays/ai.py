@@ -381,7 +381,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         alternatives=("ai_run_plan with explicit confirmations (default safer path).",),
         rationale=(
             "Use only when an operator intentionally wants allowlisted automation with audit."
-        ),
+        ,),
         assumptions=("Allowlist is tight; workspace is not production-irreplaceable.",),
         failures=("confirm_autonomy missing, sample egress configured, or empty allowlist.",),
         leakage=(
@@ -392,9 +392,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Treating autonomy as unconstrained agency or production autopilot.",
             "Widening the allowlist to include destructive tools without review.",
         ),
-        state_changes=("Executes allowlisted steps; stores ai_autonomy_result and transcript entries."),
-        result_reading=("Read completed_steps, stop_reason, residual_risks, and step audit."),
-        next_steps=("save_ai_transcript; tighten allowlist; prefer confirm path for prod."),
+        state_changes=("Executes allowlisted steps; stores ai_autonomy_result and transcript entries.",),
+        result_reading=("Read completed_steps, stop_reason, residual_risks, and step audit.",),
+        next_steps=("save_ai_transcript; tighten allowlist; prefer confirm path for prod.",),
         concepts=("ai-tool-trust", "ai-egress-privacy"),
     ),
     _operation(
@@ -422,7 +422,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         anti_patterns=("Treating ai_status as proof of production readiness.",),
         state_changes=("No state changes (read-only).",),
-        result_reading=("Inspect enabled, provider, egress, budget, autonomy, and registry_tools."),
+        result_reading=("Inspect enabled, provider, egress, budget, autonomy, and registry_tools.",),
         next_steps=("ai_configure if not enabled; ai_advisor for guidance.",),
         concepts=("ai-egress-privacy", "ai-tool-trust"),
     ),

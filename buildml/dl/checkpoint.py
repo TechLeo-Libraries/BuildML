@@ -1,4 +1,30 @@
-"""Torch trainer bundle persistence (distinct from Session checkpoints)."""
+"""Save and reload a Torch training run, weights and all.
+
+BuildML has two kinds of persistence and confusing them wastes an afternoon. A
+**Session checkpoint** stores data, roles, splits, history, and classical
+preprocessing plans — the state of your analysis. A **trainer bundle**, which is
+what this module writes, stores module weights, optimiser state, the training
+configuration, the epoch history, and the feature contract — the state of your
+model. Neither contains the other, and a full restore usually needs both.
+
+A bundle is a directory with two files. ``meta.json`` is human-readable and
+holds everything that serialises to JSON, so you can inspect what a bundle
+contains without loading Torch at all. ``trainer.pt`` holds the tensors.
+
+Loading requires you to supply the module instance. The bundle stores weights,
+not architecture — reconstructing a class from a file would mean executing code
+from that file, and a model bundle is exactly the sort of artifact that gets
+passed around. You build the module; the bundle fills it in.
+
+Optimiser and scheduler state are saved because resuming without them is worse
+than it sounds. Adam's momentum estimates take many steps to rebuild, so a
+resume that drops them stumbles for several epochs before recovering.
+
+See Also
+--------
+buildml.dl.train : Producing the result this saves.
+buildml.dl.export : Deployment artifacts, a different job.
+"""
 
 from __future__ import annotations
 
@@ -38,7 +64,27 @@ _MULTIMODAL_LOAD_WARNING = (
 
 @dataclass(slots=True)
 class TorchBundle:
-    """Loaded trainer artifact (module must be supplied by the caller on load)."""
+    """A loaded trainer bundle: the restored run plus its metadata.
+
+    Attributes
+    ----------
+    train_result:
+        The reconstructed run, with weights already loaded into the module you
+        supplied.
+    meta:
+        The parsed ``meta.json`` — format version, BuildML version, module
+        class name, and the JSON-safe view of everything the bundle holds.
+
+    Notes
+    -----
+    ``meta`` is worth reading before trusting a restore. The recorded module
+    class name tells you whether the shell you supplied matches what was saved,
+    and the BuildML version tells you which release wrote it.
+
+    See Also
+    --------
+    load_torch_bundle : Produces this.
+    """
 
     train_result: TrainResult
     meta: dict[str, Any]
@@ -66,11 +112,55 @@ def _meta_from_result(result: TrainResult) -> dict[str, Any]:
 
 
 def save_torch_bundle(path: str | Path, train_result: TrainResult) -> Path:
-    """Write a trainer bundle directory.
+    """Write a training run to disk so it can be resumed or reloaded.
 
-    Layout
+    Creates the directory if needed and writes two files: ``trainer.pt`` with
+    the tensors, and ``meta.json`` with everything readable without Torch.
+
+    Parameters
+    ----------
+    path:
+        Directory to write to. Created if absent; existing files are
+        overwritten.
+    train_result:
+        The run to save.
+
+    Returns
+    -------
+    pathlib.Path
+        The directory written.
+
+    Raises
     ------
-    ``meta.json`` (``buildml.torch_bundle.v1``) and ``trainer.pt`` (torch.save dict).
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If no result was supplied.
+
+    Notes
+    -----
+    **The architecture is not saved — only its weights.** Reloading needs the
+    same module class, constructed the same way. Keep the code that builds it
+    alongside the bundle, or the weights are a directory of numbers with no
+    shape to fit.
+
+    **``meta.json`` is designed to be read directly.** Checking which columns a
+    saved model expects, or how many epochs it ran, does not require loading
+    Torch or the weights.
+
+    Examples
+    --------
+    Save after training, then inspect without Torch::
+
+        save_torch_bundle("artifacts/run-01", train_result)
+
+        import json
+        meta = json.loads(open("artifacts/run-01/meta.json").read())
+        meta["contract"]["feature_columns"]
+
+    See Also
+    --------
+    load_torch_bundle : The other half.
     """
     torch = require_torch(feature="Torch trainer bundle save")
     if train_result is None:
@@ -112,17 +202,70 @@ def load_torch_bundle(
     *,
     map_location: str | None = None,
 ) -> TrainResult:
-    """Load weights/config into a caller-supplied module shell.
+    """Restore a saved run into a module you construct.
+
+    Reads the bundle, loads the weights into your module, and rebuilds the
+    surrounding :class:`~buildml.dl.results.TrainResult` — configuration,
+    device record, contract, history, early-stop record, and optimiser and
+    scheduler state, so training can resume where it left off.
 
     Parameters
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``trainer.pt``.
     module:
-        Uninitialized or compatible ``nn.Module`` instance that will receive
-        ``load_state_dict``.
+        A freshly constructed module of the same architecture. Its weights are
+        replaced by the saved ones, so however it was initialised does not
+        matter — but its shape must match.
     map_location:
-        Optional torch device string for deserialization (defaults to CPU).
+        Where to deserialise tensors. Defaults to CPU, which loads correctly
+        regardless of what the run trained on; move the module afterwards if
+        you want it elsewhere.
+
+    Returns
+    -------
+    TrainResult
+        The restored run, with the training curve rebuilt from the history.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If either file is missing, or if the format marker is not
+        ``buildml.torch_bundle.v1`` — which normally means the path points at a
+        Session checkpoint or a classical pipeline bundle instead.
+
+    Notes
+    -----
+    **A shape mismatch surfaces as a Torch error from ``load_state_dict``**,
+    naming the layers that disagree. That is usually enough to identify the
+    constructor argument that changed since the bundle was written.
+
+    **Multimodal preprocessing metadata is restored for inspection only.**
+    Frozen image and audio statistics, sample rates, and layout come back on the
+    result, but no DataLoaders are rebuilt and no media transforms are applied.
+    Rebuild loaders explicitly before fitting, evaluating, or exporting — and
+    note that doing so re-fits train-only statistics from the current frame,
+    which is why the difference is disclosed in ``warnings`` rather than left
+    implicit.
+
+    **Defaulting to CPU is deliberate.** A bundle saved from CUDA loads fine on
+    a CPU-only machine this way; mapping straight to a device that is not there
+    would fail instead.
+
+    Examples
+    --------
+    Reconstruct and resume::
+
+        module = MyNetwork(n_features=12, n_classes=3)
+        result = load_torch_bundle("artifacts/run-01", module)
+        result.n_epochs_ran
+
+    See Also
+    --------
+    save_torch_bundle : The other half.
+    buildml.dl.train.train_supervised_module : Resuming with ``resume=True``.
     """
     torch = require_torch(feature="Torch trainer bundle load")
     root = Path(path)

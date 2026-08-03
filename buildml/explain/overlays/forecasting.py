@@ -220,7 +220,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use when the fitted forecast plan must travel independently of Session data.",),
         assumptions=("Destination is writable.",),
         failures=("Missing plan; incomplete write permissions.",),
-        leakage=(),
+        leakage=(
+            "Persistence only — the plan is written as fitted, so a plan fitted with temporal leakage stays leaky after reload.",
+        ),
         anti_patterns=(
             "Treating a forecast bundle as a Session checkpoint or digital-twin state dump.",
         ),
@@ -248,7 +250,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use to reuse a previously fitted forecast plan.",),
         assumptions=("Bundle format matches buildml.forecast_bundle.v1.",),
         failures=("Missing files; wrong format tag.",),
-        leakage=(),
+        leakage=(
+            "Loading fits nothing, but it does not re-validate the plan against this Session's split; a shuffled split still makes evaluate_forecast dishonest.",
+        ),
         anti_patterns=("Loading into a shuffled-split Session and trusting evaluate_forecast.",),
         state_changes=("Sets forecast_plan; clears fit/generate/eval result caches.",),
         result_reading=("Inspect Session.forecast_plan.to_dict().",),

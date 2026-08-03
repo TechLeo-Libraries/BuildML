@@ -1,4 +1,27 @@
-"""Reattach validation for checkpoint bundles."""
+"""Decide whether saved roles and splits still apply to the data on disk.
+
+A checkpoint records what the data looked like when it was written. When it is
+loaded, the data may have changed — a column dropped, rows appended, a dtype
+altered upstream. Reusing the old split membership across such a change is the
+quiet failure this module exists to prevent: partition indices are positions,
+so appending rows or reordering them assigns rows to partitions they were never
+in, and the holdout stops being a holdout.
+
+The verdict is graded rather than binary, because most changes do not invalidate
+everything. A new column means roles need attention but the split is fine. A
+changed row count means the split is gone but the data is still usable. Only a
+*missing* column blocks the resume outright, since nothing downstream can
+proceed without it.
+
+The statuses, in decreasing order of trust: ``resume`` (everything holds),
+``resume_roles_needed`` (new columns need roles), ``splits_invalidated`` (the
+partitions no longer apply), ``fresh_ingest`` (no metadata at all), and
+``blocked`` (a required column is gone).
+
+See Also
+--------
+buildml.checkpoint.bundle.load_checkpoint : Where this verdict is consumed.
+"""
 
 from __future__ import annotations
 
@@ -19,7 +42,37 @@ ReattachStatus = Literal[
 
 @dataclass(slots=True)
 class ReattachResult:
-    """Outcome of validating a reattached dataset against checkpoint metadata."""
+    """How much of a checkpoint survived contact with the current data.
+
+    Attributes
+    ----------
+    status:
+        The verdict, from ``'resume'`` down to ``'blocked'``.
+    messages:
+        Plain-language explanations naming the specific columns or counts that
+        caused the verdict. These are what a user needs in order to fix the
+        problem or accept it.
+    split_plan:
+        The restored partition membership, or ``None`` when it could not be
+        trusted. Deliberately cleared rather than returned with a warning.
+    details:
+        The structured facts behind the verdict — added and removed columns,
+        saved and current row counts — for programmatic handling.
+
+    Notes
+    -----
+    **A ``None`` split plan is a real result, not an error case.** It means the
+    saved partitions no longer describe the current rows, and continuing
+    requires either a new split or explicitly injected partitions.
+
+    **Dtype drift is reported but never blocks.** A column that changed from
+    integer to float is usually harmless and occasionally not, so it appears in
+    ``messages`` for a human to weigh.
+
+    See Also
+    --------
+    validate_reattach : Producing this.
+    """
 
     status: ReattachStatus
     messages: list[str] = field(default_factory=list)
@@ -35,21 +88,55 @@ def validate_reattach(
     meta: dict[str, Any] | None,
     splits_payload: dict[str, Any] | None,
 ) -> ReattachResult:
-    """Validate reattached data against optional checkpoint metadata.
+    """Compare the data as it is now against the data as it was when saved.
+
+    Works down from the most damaging change to the least. A column that is gone
+    blocks the resume, because nothing downstream can be recomputed without it.
+    A row count that no longer matches, or a split index pointing past the end of
+    the frame, invalidates the partitions — the split is dropped rather than
+    applied to the wrong rows. A new column allows the resume but flags that it
+    has no role yet. Anything else passes, with dtype changes noted for the
+    record.
 
     Parameters
     ----------
-    current_schema / current_columns / current_n_rows:
-        Freshly loaded data characteristics.
+    current_schema:
+        The schema inferred from the data just loaded, used for dtype
+        comparison.
+    current_columns:
+        The column names present now.
+    current_n_rows:
+        The row count now, checked against the saved count because split
+        membership is positional.
     meta:
-        Parsed ``meta.json`` or ``None`` if missing (data-only import).
+        The parsed ``meta.json``, or ``None`` for a data-only import — in which
+        case there is nothing to validate against and the result is a fresh
+        ingest.
     splits_payload:
-        Parsed ``splits.json`` or ``None``.
+        The parsed ``splits.json``, or ``None`` when the checkpoint saved no
+        split.
 
     Returns
     -------
     ReattachResult
-        Status and guidance for the session.
+        The verdict, the messages explaining it, the split plan if it survived,
+        and the structured details.
+
+    Notes
+    -----
+    **Row count equality is a proxy for row identity, and an imperfect one.**
+    Replacing the data with a different frame of the same length passes this
+    check and produces partitions that are silently wrong. The check catches
+    appends, filters, and truncations, which are the common cases; it cannot
+    catch a substitution.
+
+    **The order of checks is the order of severity**, so a checkpoint with both
+    a removed column and a changed row count reports the removal, which is the
+    one that has to be fixed first.
+
+    See Also
+    --------
+    ReattachResult : What the fields of the verdict mean.
     """
     if meta is None:
         return ReattachResult(

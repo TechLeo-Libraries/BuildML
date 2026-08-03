@@ -1,4 +1,35 @@
-"""Supervised estimator helpers with leakage-safe fit scope and deep evaluation."""
+"""Fit, predict, and evaluate a supervised model without leaking the holdout.
+
+This is the classical machine-learning core: give it a dataset with a target, a
+split, and any scikit-learn-compatible estimator, and it trains on the train
+partition and scores on whichever partition you name.
+
+The value it adds over calling scikit-learn directly is that the boundaries are
+enforced rather than remembered. :func:`fit_estimator` refuses to run on
+anything but the train partition, so the holdout cannot be trained on by
+accident. Feature columns come from the dataset's roles, so an ID or a group key
+cannot drift into the model as a feature — a leak that produces excellent scores
+and a worthless model. A weight column that the estimator cannot accept raises
+instead of being silently dropped.
+
+Evaluation is deliberately broad. A single number hides the failure that matters:
+accuracy looks fine on imbalanced data while the model predicts the majority
+class throughout, and R² looks respectable while the residuals fan out at the
+top of the range. :func:`evaluate_estimator` therefore returns a card — several
+metrics, per-class or residual diagnostics, and recommendations pointing at what
+the numbers suggest is wrong.
+
+Nothing here selects a model for you. Fitting one estimator and reading its score
+tells you how that estimator did, not whether it was a good choice; see
+:mod:`buildml.model.compare` and :mod:`buildml.model.selection` for that.
+
+See Also
+--------
+buildml.model.selection : Cross-validation and hyperparameter search.
+buildml.model.compare : Scoring several estimators against each other.
+buildml.model.diagnostics : Deeper analysis of a fitted model.
+buildml.data.splits : Building the split this module fits within.
+"""
 
 from __future__ import annotations
 
@@ -39,7 +70,44 @@ TaskType = Literal["classification", "regression", "auto"]
 
 @dataclass(slots=True)
 class FitResult:
-    """Outcome of fitting an estimator on the train partition."""
+    """A trained model together with the contract it was trained under.
+
+    The estimator alone is not enough to use safely later. Prediction needs the
+    feature columns in the order the model saw them, and interpreting a score
+    needs to know which task was inferred and how much data it was trained on.
+    Keeping all of it together is what lets :func:`predict_estimator` detect a
+    mismatched frame instead of producing quiet nonsense.
+
+    Attributes
+    ----------
+    estimator:
+        The fitted model. A clone of what you passed in, so your original is
+        left untouched and can be reused.
+    task:
+        ``'classification'`` or ``'regression'``, as resolved at fit time. This
+        determines which metrics evaluation computes.
+    feature_columns:
+        The columns used, in order. Prediction reindexes to exactly these, which
+        is what catches a frame whose columns arrived in a different order.
+    target_column:
+        The column that was predicted.
+    n_train_rows:
+        How many rows the fit actually saw — after any sampling, so this is the
+        real training size rather than the partition size.
+    weight_column:
+        The weight-role column, or ``None``. Kept so evaluation can weight its
+        metrics the same way the fit weighted its loss.
+
+    Notes
+    -----
+    **``n_train_rows`` is worth reading.** A model trained on a few hundred rows
+    with many features will score erratically across resplits, and the row count
+    is the quickest way to notice that before trusting a single holdout number.
+
+    See Also
+    --------
+    EvaluateResult : What scoring this model produces.
+    """
 
     estimator: Any
     task: Literal["classification", "regression"]
@@ -49,6 +117,22 @@ class FitResult:
     weight_column: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise the fit as plain data for history and logs.
+
+        The estimator is reduced to its class name, since the fitted object
+        itself is neither serialisable to JSON nor meaningful in a log.
+
+        Returns
+        -------
+        dict
+            The estimator's class name, task, feature columns, target, training
+            row count, and weight column.
+
+        Notes
+        -----
+        **This is a record, not a checkpoint.** Nothing here can rebuild the
+        model; use the pipeline and checkpoint machinery to persist one.
+        """
         return {
             "estimator": type(self.estimator).__name__,
             "task": self.task,
@@ -61,7 +145,58 @@ class FitResult:
 
 @dataclass(slots=True)
 class EvaluateResult:
-    """Deep evaluation card for a fitted estimator on a partition."""
+    """Several metrics, supporting diagnostics, and what they seem to say.
+
+    A card rather than a score, because one number is where model evaluation
+    usually goes wrong. Accuracy of 0.97 on data that is 97% one class describes
+    a model that has learned to say "no"; an R² of 0.85 says nothing about
+    whether the errors are evenly spread or concentrated in the range you care
+    about. Reading several metrics against each other is what surfaces those,
+    and the diagnostics are there to confirm what the divergence implies.
+
+    Attributes
+    ----------
+    partition:
+        Which partition was scored. The single most important field here: a
+        train score and a test score are different kinds of statement, and only
+        one of them estimates future performance.
+    task:
+        ``'classification'`` or ``'regression'``, deciding which metrics appear.
+    metrics:
+        The headline numbers. For regression: MAE, MSE, RMSE, median absolute
+        error, R², and MAPE where the target allows it. For classification:
+        accuracy, balanced accuracy, weighted precision, recall and F1, macro
+        F1, and — when the estimator gives probabilities — log loss, ROC AUC,
+        and average precision.
+    diagnostics:
+        The detail behind the metrics: a confusion matrix, per-class scores and
+        a full classification report, or a residual summary with quantiles.
+    n_rows:
+        How many rows were scored. Small partitions produce noisy metrics, and
+        per-class figures on a rare class can rest on a handful of rows.
+    recommendations:
+        Plain-language observations drawn from the numbers — a negative R², an
+        accuracy far above balanced accuracy, metrics that could not be
+        computed. Prompts to investigate, not conclusions.
+
+    Notes
+    -----
+    **Accuracy far above balanced accuracy means the model is riding class
+    imbalance.** Balanced accuracy averages recall over classes, so it drops
+    when a minority class is being missed while accuracy stays high.
+
+    **A negative R² is not an error.** It means the predictions are worse than
+    always guessing the training mean.
+
+    **RMSE much larger than MAE means the errors are lopsided.** Squaring
+    magnifies large misses, so the gap says a minority of predictions are badly
+    wrong — worth finding individually rather than averaging away.
+
+    See Also
+    --------
+    show : Printing this card.
+    buildml.model.diagnostics : Going further than these summary numbers.
+    """
 
     partition: str
     task: Literal["classification", "regression"]
@@ -71,6 +206,23 @@ class EvaluateResult:
     recommendations: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the card to plain data for history, logs, and reports.
+
+        Everything is copied rather than referenced, so a caller mutating the
+        returned dictionary cannot alter the recorded result.
+
+        Returns
+        -------
+        dict
+            ``partition``, ``task``, ``metrics``, ``diagnostics``, ``n_rows``,
+            and ``recommendations``.
+
+        Notes
+        -----
+        **``diagnostics`` can be large.** A classification report over many
+        classes carries a nested entry per class, which is worth trimming before
+        writing this into a compact log.
+        """
         return {
             "partition": self.partition,
             "task": self.task,
@@ -81,7 +233,20 @@ class EvaluateResult:
         }
 
     def show(self) -> None:
-        """Print a high-signal evaluation digest."""
+        """Print the metrics and the first ten recommendations.
+
+        For reading a result at a prompt. Prints the task, partition, and row
+        count on one line, then every metric, then the recommendations.
+
+        Notes
+        -----
+        **The diagnostics are not printed**, since a confusion matrix and a
+        per-class report do not fit a terminal digest. Read ``diagnostics``
+        directly for those.
+
+        **Recommendations are truncated at ten**, which in practice is all of
+        them.
+        """
         print(f"Evaluate · {self.task} · partition={self.partition} · n={self.n_rows}")
         for key, value in self.metrics.items():
             print(f"  {key}: {value:.6f}" if isinstance(value, float) else f"  {key}: {value}")
@@ -90,7 +255,34 @@ class EvaluateResult:
 
 
 def weight_column(dataset: Dataset) -> str | None:
-    """Return the single weight-role column, or None when unset."""
+    """Find the column marked as sample weights, if there is one.
+
+    Sample weights let some rows count for more than others during fitting —
+    useful when rows represent different numbers of underlying events, when a
+    rare class needs amplifying, or when recent observations should dominate
+    older ones.
+
+    Parameters
+    ----------
+    dataset:
+        The dataset whose roles are inspected.
+
+    Returns
+    -------
+    str or None
+        The weight column's name, or ``None`` when no weight role is set.
+
+    Raises
+    ------
+    ValidationError
+        If more than one column carries the weight role. Two weight columns has
+        no defined meaning, so this is a configuration error rather than
+        something to resolve by picking one.
+
+    See Also
+    --------
+    validate_sample_weights : Checking the values are usable.
+    """
     cols = dataset.role_columns(ColumnRole.WEIGHT)
     if not cols:
         return None
@@ -102,7 +294,50 @@ def weight_column(dataset: Dataset) -> str | None:
 
 
 def resolve_feature_columns(dataset: Dataset) -> list[str]:
-    """Resolve modeling feature columns, always excluding weight/id/group/time roles."""
+    """Decide which columns the model may see, excluding the ones that leak.
+
+    Roles exist largely for this moment. When features are declared explicitly,
+    those are used. Otherwise every column is a feature *except* the target and
+    the roles that must never be modelled: IDs, group keys, time columns,
+    weights, and anything explicitly ignored.
+
+    Those exclusions are the point. A customer ID is often the strongest
+    "predictor" in a dataset and predicts nothing at all — it memorises which
+    row is which, scoring beautifully in training and collapsing on new
+    customers. A group key leaks the same way. Time columns invite the model to
+    learn "later rows are positive", which holds until the day you deploy.
+
+    Parameters
+    ----------
+    dataset:
+        The dataset whose roles decide the feature set.
+
+    Returns
+    -------
+    list of str
+        Feature column names, in dataset order.
+
+    Raises
+    ------
+    ValidationError
+        If no target is set, if no features remain after exclusions, or if the
+        weight column is also declared a feature.
+
+    Notes
+    -----
+    **A weight column cannot also be a feature.** Weights encode how much a row
+    counts, and letting the model read that as a predictor lets it learn the
+    weighting scheme rather than the target. This raises rather than resolving
+    the ambiguity quietly.
+
+    **Automatic selection is a fallback, not a recommendation.** It cannot know
+    that a column recording the outcome under a different name is a leak. Set
+    feature roles explicitly for anything you intend to deploy.
+
+    See Also
+    --------
+    buildml.core.types.ColumnRole : The roles consulted here.
+    """
     target = dataset.require_target()
     feature_cols = dataset.role_columns(ColumnRole.FEATURE)
     if not feature_cols:
@@ -127,7 +362,45 @@ def resolve_feature_columns(dataset: Dataset) -> list[str]:
 
 
 def validate_sample_weights(weights: pd.Series, *, column: str) -> pd.Series:
-    """Validate a weight series for sklearn sample_weight use."""
+    """Check that a weight column is usable before it silently distorts the fit.
+
+    Bad weights do not usually raise inside scikit-learn; they change the answer.
+    A missing value coerced to zero drops a row from training. A negative weight
+    asks the optimiser to make a row *more* wrong. All-zero weights make the
+    fit degenerate. Each is caught here, where the message can name the column.
+
+    Parameters
+    ----------
+    weights:
+        The raw weight values, which may be any dtype.
+    column:
+        The column's name, used only so the error says which column is wrong.
+
+    Returns
+    -------
+    pandas.Series
+        The weights as floats, ready to pass to scikit-learn.
+
+    Raises
+    ------
+    ValidationError
+        If any value is missing or non-numeric, if any is negative, or if none
+        is positive.
+
+    Notes
+    -----
+    **Weights are not normalised.** Only their ratios matter to most estimators,
+    so doubling every weight generally changes nothing — but weighted metrics
+    and any absolute-scale interpretation do shift.
+
+    **A zero weight excludes a row rather than erroring**, which is a legitimate
+    way to mask rows. Only an entirely zero column is refused.
+
+    See Also
+    --------
+    weight_column : Finding the column.
+    fit_kwargs_for_sample_weight : Passing weights to an estimator.
+    """
     numeric = pd.to_numeric(weights, errors="coerce")
     if numeric.isna().any():
         raise ValidationError(
@@ -142,7 +415,69 @@ def validate_sample_weights(weights: pd.Series, *, column: str) -> pd.Series:
 
 
 def fit_kwargs_for_sample_weight(estimator: Any, sample_weight: pd.Series | None) -> dict[str, Any]:
-    """Build fit kwargs, failing clearly when weights are set but unsupported."""
+    """Pass weights to the estimator, or refuse if it cannot accept them.
+
+    Not every scikit-learn estimator supports ``sample_weight``. The dangerous
+    outcome is not an error but a success: weights configured, quietly ignored,
+    and a model trained as though every row counted equally while the results
+    are read as though they did not.
+
+    Parameters
+    ----------
+    estimator:
+        The estimator about to be fitted. Its ``fit`` signature is inspected.
+    sample_weight:
+        Validated weights, or ``None`` when no weight role is set.
+
+    Returns
+    -------
+    dict
+        ``{'sample_weight': array}``, or an empty dict when there are no
+        weights, suitable for splatting into ``fit``.
+
+    Raises
+    ------
+    ValidationError
+        If weights were supplied but the estimator's ``fit`` does not accept
+        ``sample_weight``. Choose an estimator that does, or clear the weight
+        role — the error should not be worked around.
+
+    Notes
+    -----
+    **Support is detected from the signature**, so an estimator that declares
+    the parameter and ignores it cannot be caught here.
+
+    **Pipelines need the step-prefixed spelling** that scikit-learn requires, so
+    a bare pipeline is reported as unsupported rather than silently mis-routed.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> fit_kwargs_for_sample_weight(RandomForestClassifier(), None)
+    {}
+    >>> kwargs = fit_kwargs_for_sample_weight(
+    ...     RandomForestClassifier(), pd.Series([1.0, 2.0, 0.5])
+    ... )
+    >>> kwargs["sample_weight"].tolist()
+    [1.0, 2.0, 0.5]
+
+    An estimator that cannot weight refuses rather than ignoring them:
+
+    >>> from sklearn.neighbors import KNeighborsClassifier
+    >>> from buildml.core.errors import ValidationError
+    >>> try:
+    ...     fit_kwargs_for_sample_weight(
+    ...         KNeighborsClassifier(), pd.Series([1.0, 2.0])
+    ...     )
+    ... except ValidationError:
+    ...     print("refused")
+    refused
+
+    See Also
+    --------
+    validate_sample_weights : Producing the weights this consumes.
+    """
     if sample_weight is None:
         return {}
     if not has_fit_parameter(estimator, "sample_weight"):
@@ -163,6 +498,47 @@ def _feature_target_frames(
     random_state: int | None = 0,
     materialize_prep: bool = True,
 ) -> tuple[pd.DataFrame, pd.Series, list[str], str, pd.Series | None]:
+    """Build the X, y, and weights for one partition.
+
+    The single place partition data becomes a design matrix, which is what keeps
+    fit, predict, and evaluate consistent: all three resolve features from the
+    same roles and validate weights the same way, so a column set that trains
+    cannot fail to score.
+
+    Parameters
+    ----------
+    dataset:
+        The source data.
+    split_plan:
+        Partition membership.
+    partition:
+        Which partition to build.
+    sample_rows:
+        Cap on rows, applied by the engine before materialising. ``None`` takes
+        everything.
+    random_state:
+        Seed for that sampling.
+    materialize_prep:
+        Whether to route through the engine's projection and sampling. ``False``
+        slices the partition frame directly, skipping the engine path.
+
+    Returns
+    -------
+    tuple
+        ``(x, y, feature_columns, target_column, sample_weight)``.
+
+    Raises
+    ------
+    ValidationError
+        If no target is set, no features remain, or the weight column is absent
+        or contains unusable values.
+
+    Notes
+    -----
+    **Sampling changes what the numbers describe.** A sampled fit is trained on
+    a subset, and a sampled evaluation scores one — neither is wrong, but both
+    describe the sample rather than the partition.
+    """
     target = dataset.require_target()
     feature_cols = resolve_feature_columns(dataset)
     weight = weight_column(dataset)
@@ -218,7 +594,51 @@ def materialize_partition_design(
     sample_rows: int | None = None,
     random_state: int | None = 0,
 ) -> MaterializePrepResult:
-    """Project/sample partition columns via the active engine, then materialize."""
+    """Narrow a partition to the modelling columns using the dataset's engine.
+
+    scikit-learn needs a Pandas frame in memory, but the data may live in Polars
+    or DuckDB. Doing the column projection and any row sampling in the engine
+    first means only the needed columns cross that boundary, which on a wide
+    table is the difference between materialising a few columns and all of them.
+
+    Parameters
+    ----------
+    dataset:
+        The source data.
+    split_plan:
+        Partition membership.
+    partition:
+        Which partition to materialise.
+    sample_rows:
+        Cap on rows. ``None`` takes the whole partition.
+    random_state:
+        Seed for the sampling, so a sampled run reproduces.
+
+    Returns
+    -------
+    MaterializePrepResult
+        The Pandas frame plus a record of what the engine did, including whether
+        sampling occurred.
+
+    Raises
+    ------
+    ValidationError
+        If no target is set, no features remain, or the weight column is absent.
+
+    Notes
+    -----
+    **This is not out-of-core training.** The projected frame still has to fit
+    in memory; projection reduces its width, and sampling reduces its height.
+    Neither lets you train on data larger than RAM.
+
+    **Sampling is disclosed in the result** precisely because a model trained on
+    a sample and reported without that context looks like a model trained on
+    everything.
+
+    See Also
+    --------
+    buildml.data.engines.prep.prepare_design_frame : The engine-side work.
+    """
     target = dataset.require_target()
     feature_cols = resolve_feature_columns(dataset)
     weight = weight_column(dataset)
@@ -248,6 +668,58 @@ def _infer_task(
     task: TaskType,
     estimator: Any,
 ) -> Literal["classification", "regression"]:
+    """Work out whether this is a classification or a regression problem.
+
+    Tried in order of reliability. An explicit ``task`` wins. Otherwise the
+    estimator itself usually settles it, since scikit-learn classifiers and
+    regressors are distinguishable by their base classes. Only when neither is
+    available does the target's shape get a vote: numeric with many distinct
+    values is treated as regression, and anything else as classification.
+
+    Parameters
+    ----------
+    y:
+        The training target.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'`` to infer.
+    estimator:
+        The estimator, inspected for the scikit-learn mixins.
+
+    Returns
+    -------
+    str
+        ``'classification'`` or ``'regression'``.
+
+    Notes
+    -----
+    **The value-count heuristic can be wrong, and quietly.** The threshold is
+    more than ten distinct values or more than 20% of rows distinct. An integer
+    target with many levels that is genuinely categorical — a product code, a
+    postcode — reads as regression, and the metrics that follow are meaningless
+    for it. Pass ``task`` explicitly when the target is not obviously one or the
+    other.
+
+    **The heuristic only runs for estimators that are neither mixin**, which in
+    practice means custom or wrapped estimators.
+
+    Examples
+    --------
+    The estimator settles it, whatever the target looks like:
+
+    >>> import pandas as pd
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> _infer_task(pd.Series([1.5, 2.5, 3.5]), "auto", LogisticRegression())
+    'classification'
+
+    With no mixin to consult, the target's shape decides — and here it decides
+    wrongly, which is why ``task`` exists:
+
+    >>> codes = pd.Series(range(50))
+    >>> _infer_task(codes, "auto", object())
+    'regression'
+    >>> _infer_task(codes, "classification", object())
+    'classification'
+    """
     if task != "auto":
         return task
     if isinstance(estimator, ClassifierMixin):
@@ -268,17 +740,86 @@ def fit_estimator(
     sample_rows: int | None = None,
     random_state: int | None = 0,
 ) -> FitResult:
-    """Fit a sklearn-compatible estimator on the train partition only.
+    """Train an estimator on the train partition, and only the train partition.
 
-    When a ``ColumnRole.WEIGHT`` column is set, it is passed as
-    ``sample_weight`` when the estimator accepts it. Estimators that reject
-    ``sample_weight`` raise :class:`~buildml.core.errors.ValidationError`
-    instead of silently ignoring weights.
+    The central operation of classical supervised learning: show the model
+    labelled examples so it can learn the mapping from features to target. What
+    this adds over calling ``estimator.fit`` yourself is that the boundaries are
+    enforced. The train partition is the only data the model can see, features
+    come from roles rather than from whatever columns happen to be present, and
+    a weight column that cannot be honoured stops the run.
 
-    When the dataset engine is Polars or DuckDB, column projection (and optional
-    row sampling) runs on the native engine before the Pandas design matrix is
-    materialized for sklearn. Sampling is disclosed and does not enable
-    out-of-core training.
+    The estimator is cloned before fitting, so the object you pass in stays
+    unfitted and can be reused across several runs.
+
+    Parameters
+    ----------
+    dataset:
+        The data, with a target role set.
+    split_plan:
+        The split. Required — fitting without one would mean training on
+        everything, leaving nothing to score honestly against.
+    estimator:
+        Any scikit-learn-compatible estimator: anything with ``fit`` and
+        ``predict`` and cloneable parameters. Pipelines, ensembles, and
+        third-party estimators following the API all work.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'`` to infer from the
+        estimator and target.
+    sample_rows:
+        Train on at most this many rows. For iterating quickly on a large
+        dataset; the resulting model is weaker than one trained on everything.
+    random_state:
+        Seed for that sampling.
+
+    Returns
+    -------
+    FitResult
+        The fitted estimator with the feature columns, task, target, training
+        row count, and weight column it was trained under.
+
+    Raises
+    ------
+    ValidationError
+        If ``split_plan`` is ``None``, if no target or features are resolvable,
+        if the weight column is unusable, or if weights are set and the
+        estimator cannot accept them.
+
+    Notes
+    -----
+    **Train is the only partition that can be fitted on, by construction.** This
+    is the guard that makes a later holdout score mean something: a model that
+    has seen the test rows scores well on them regardless of whether it learned
+    anything general.
+
+    **The estimator is cloned, so its learned state does not persist here.**
+    Read the fitted model from the returned ``FitResult``, not from the object
+    you passed in.
+
+    **Preprocess before fitting, not after.** Scaling, encoding, and imputation
+    must be fitted on train and applied to holdout; doing it across the whole
+    dataset leaks the holdout's distribution into training. The preprocessing
+    module handles this.
+
+    **A fitted model is not a validated one.** This produces a model; whether it
+    is any good is what evaluation and cross-validation are for.
+
+    Examples
+    --------
+    Fit a gradient-boosted classifier::
+
+        from sklearn.ensemble import HistGradientBoostingClassifier
+
+        fit = fit_estimator(
+            dataset, split_plan, HistGradientBoostingClassifier(random_state=0)
+        )
+        print(fit.task, fit.n_train_rows, fit.feature_columns)
+
+    See Also
+    --------
+    evaluate_estimator : Scoring the result.
+    predict_estimator : Generating predictions.
+    buildml.model.selection.cross_validate_estimator : A more stable estimate.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -311,7 +852,59 @@ def predict_estimator(
     partition: Literal["train", "validation", "test"] = "test",
     return_proba: bool = False,
 ) -> pd.Series | pd.DataFrame:
-    """Predict labels (and optionally probabilities) on a partition."""
+    """Generate predictions for a partition, as labels or as probabilities.
+
+    Rebuilds the partition's design matrix, reindexes it to exactly the columns
+    the model was trained on, and predicts. That reindexing matters: a frame
+    with the right columns in the wrong order predicts confidently and wrongly
+    if handed straight to scikit-learn, and here it cannot.
+
+    Parameters
+    ----------
+    dataset:
+        The data to predict on.
+    split_plan:
+        Partition membership.
+    fit_result:
+        The trained model and its column contract.
+    partition:
+        Which partition to predict for. Defaults to test.
+    return_proba:
+        Return class probabilities rather than labels. Ignored when the
+        estimator has no ``predict_proba``, in which case labels come back.
+
+    Returns
+    -------
+    pandas.Series or pandas.DataFrame
+        Labels as a Series named ``prediction``, or one probability column per
+        class named ``proba_<class>``. Either way indexed like the input rows,
+        so predictions can be joined back to their source.
+
+    Raises
+    ------
+    ValidationError
+        If ``split_plan`` is ``None``, or if any training feature column is
+        missing from the partition.
+
+    Notes
+    -----
+    **``return_proba`` degrades silently.** An estimator without
+    ``predict_proba`` returns labels instead of raising, so check the return
+    type rather than assuming probabilities arrived.
+
+    **Predicted probabilities are usually not calibrated.** A model's 0.8 rarely
+    means "correct 80% of the time" — tree ensembles in particular tend to be
+    over-confident. Calibrate before using probabilities as probabilities rather
+    than as a ranking.
+
+    **The default 0.5 threshold is a convention, not a decision.** On imbalanced
+    data or when false positives and false negatives cost differently, choose a
+    threshold from the probabilities instead of accepting the labels.
+
+    See Also
+    --------
+    evaluate_estimator : Scoring predictions against the truth.
+    """
     if split_plan is None:
         raise ValidationError("A split is required for partitioned prediction")
     x, _, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
@@ -335,9 +928,74 @@ def evaluate_estimator(
     *,
     partition: Literal["train", "validation", "test"] = "test",
 ) -> EvaluateResult:
-    """Evaluate a fitted estimator on a partition.
+    """Score a fitted model on a partition and explain what the numbers imply.
 
-    When a weight role is set, metrics that accept ``sample_weight`` use it.
+    Predicts, computes a spread of metrics appropriate to the task, gathers the
+    diagnostics behind them, and adds plain-language observations about what the
+    combination suggests.
+
+    The spread is the point. One metric can only mislead: accuracy hides a
+    majority-class predictor, R² hides heteroscedastic residuals, and precision
+    hides a model that achieves it by almost never predicting positive. Metrics
+    that disagree are the signal worth acting on, and the diagnostics are there
+    to confirm what the disagreement means.
+
+    Parameters
+    ----------
+    dataset:
+        The data to score against.
+    split_plan:
+        Partition membership.
+    fit_result:
+        The trained model and its column contract.
+    partition:
+        Which partition to score. Defaults to test.
+
+    Returns
+    -------
+    EvaluateResult
+        Metrics, diagnostics, row count, and recommendations.
+
+    Raises
+    ------
+    ValidationError
+        If ``split_plan`` is ``None``, or if a training feature column is
+        missing from the partition.
+
+    Notes
+    -----
+    **Which partition you score decides what the number means.** Train tells you
+    how well the model memorised. Validation is what you may tune against, and
+    it stops being an unbiased estimate the moment you do. Test estimates future
+    performance, and only while it stays untouched — score it once, at the end.
+
+    **Metrics are weighted when a weight role is set.** A weighted metric answers
+    a different question from an unweighted one, so weighted and unweighted runs
+    are not comparable.
+
+    **Some metrics are omitted rather than faked.** MAPE is skipped when the
+    target contains zeros, and probability metrics when the estimator offers no
+    probabilities; each absence appears in ``recommendations``.
+
+    **Per-class figures on a rare class rest on very few rows.** Check
+    ``support`` in the per-class diagnostics before reading a class F1 of 0.4 as
+    a measurement rather than noise.
+
+    Examples
+    --------
+    Score on validation while iterating, and keep test for the end::
+
+        result = evaluate_estimator(
+            dataset, split_plan, fit, partition="validation"
+        )
+        result.show()
+        print(result.diagnostics["confusion_matrix"])
+
+    See Also
+    --------
+    fit_estimator : Producing the model being scored.
+    buildml.model.compare : Scoring several models on equal terms.
+    buildml.model.diagnostics : Going beyond summary metrics.
     """
     if split_plan is None:
         raise ValidationError("A split is required for partitioned evaluation")

@@ -25,6 +25,7 @@ from buildml.rl.explain_hooks import (
     rl_eval_summary,
     rl_fit_summary,
 )
+from buildml.rl.catalog import rl_capability_matrix
 from buildml.rl.fit import fit_rl
 from buildml.rl.imitation import (
     evaluate_imitation,
@@ -217,14 +218,17 @@ def fit_rl_op(
     learning_rate: float = 0.01,
     gamma: float = 0.99,
     total_timesteps: int = 20_000,
+    n_bins: int = 8,
+    epsilon_min: float = 0.01,
+    epsilon_decay: float = 0.995,
 ) -> Any:
-    """Fit a contextual bandit (core) or Gymnasium REINFORCE-lite (``buildml[rl]``).
+    """Fit a contextual bandit (core) or a Gymnasium env policy (``buildml[rl]``).
 
     Notes
     -----
     **Leakage (bandit):** Requires a split; updates use train logged data only.
-    **gym_reinforce / gym_sb3:** Env loop; does not fit on Session tabular partitions.
-    Honesty: not MuJoCo / robotics / multi-agent.
+    **gym_reinforce / tabular_q / gym_sb3:** Env loop; does not fit on Session
+    tabular partitions. Honesty: not MuJoCo / robotics / multi-agent.
     """
     from buildml.rl.catalog import resolve_rl_backend_mode_algorithm
 
@@ -263,8 +267,12 @@ def fit_rl_op(
             max_steps=max_steps,
             learning_rate=learning_rate,
             gamma=gamma,
+            epsilon=epsilon,
             random_state=random_state,
             total_timesteps=total_timesteps,
+            n_bins=n_bins,
+            epsilon_min=epsilon_min,
+            epsilon_decay=epsilon_decay,
         )
     session._rl_plan = plan
     session._rl_fit_result = result
@@ -290,6 +298,9 @@ def fit_rl_op(
             "learning_rate": learning_rate,
             "gamma": gamma,
             "total_timesteps": total_timesteps,
+            "n_bins": n_bins,
+            "epsilon_min": epsilon_min,
+            "epsilon_decay": epsilon_decay,
         },
         warnings=tuple(result.warnings),
         result_summary=rl_fit_summary(result),
@@ -416,3 +427,8 @@ def load_rl_bundle_op(session, path: str | Path):
         },
     )
     return session
+
+
+def rl_capability_matrix_op() -> dict[str, Any]:
+    """Return the RL / imitation capability matrix for this installation."""
+    return rl_capability_matrix()

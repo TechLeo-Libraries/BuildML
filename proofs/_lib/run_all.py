@@ -36,6 +36,7 @@ TIER_A = [
     "few-shot-domain-adapt",
     "policy-rules-neuro-symbolic",
     "case-memory-claims",
+    "ticket-routing-nlp",
     "cost-sensitive-collections",
     "synthetic-privacy-utility",
     "cluster-customer-segments",
@@ -45,6 +46,7 @@ TIER_A = [
     "graph-fraud-rings",
     "prob-interval-risk",
     "imitation-cartpole-control",
+    "tabular-q-frozenlake",
 ]
 
 TIER_B = [

@@ -1,4 +1,36 @@
-"""Optional Gymnasium REINFORCE-lite (linear softmax policy) — behind buildml[rl]."""
+"""Learn a policy directly, by making good actions more likely.
+
+REINFORCE is the simplest thing that could possibly work in sequential
+reinforcement learning, and understanding it makes every fancier method easier
+to read.
+
+The idea: run an episode, see what it earned, then adjust the policy so that the
+actions taken in a good episode become more likely and those in a bad one become
+less. There is no value function and no model of the environment — just the
+policy, nudged by outcomes.
+
+Two refinements make it usable. **Returns-to-go** credit each action with the
+reward that came *after* it, not the whole episode's reward, since an action
+cannot have caused what preceded it. **A mean baseline** subtracts the average
+return before updating, so what matters is whether an action did better than
+typical rather than whether the reward was positive. Without the baseline, an
+environment where all rewards are positive reinforces every action, including
+the bad ones.
+
+The policy here is linear: action scores are a matrix times the observation,
+passed through a softmax. That is deliberately modest. It cannot represent
+anything a linear model cannot, and it will not solve a hard control problem —
+but it needs no deep learning framework, it trains in seconds, and every
+parameter is inspectable. Use ``'gym_sb3'`` when you need PPO or DQN on a real
+task; use this to see the mechanism.
+
+Requires ``buildml[rl]``. The imitation and bandit paths do not.
+
+See Also
+--------
+buildml.rl.tabular : Value-based control, the other classical approach.
+buildml.rl.adapters.stable_baselines3 : Deep RL, when linear is not enough.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +46,43 @@ from buildml.rl.features import softmax
 
 @dataclass
 class LinearSoftmaxPolicy:
-    """Linear softmax policy π(a|s) = softmax(W s) for discrete-action envs."""
+    """A policy that scores actions linearly and picks among them by chance.
+
+    Holds one weight vector per action. Scoring an observation is a matrix
+    multiply; turning the scores into a distribution is a softmax. Sampling from
+    that distribution is how the policy acts, and it is also where exploration
+    comes from — nothing else in REINFORCE explores, so a policy that becomes
+    confident too early stops learning.
+
+    Attributes
+    ----------
+    n_actions:
+        How many discrete actions the environment offers.
+    obs_dim:
+        The flattened observation width.
+    learning_rate:
+        Step size for policy updates. Too large and the policy swings between
+        extremes; too small and it never leaves its initialisation. This is the
+        setting most worth trying twice.
+    gamma:
+        Discount factor for returns-to-go. Near 1.0 credits an action with
+        reward far in its future; lower values keep credit local, which is
+        easier to learn from but short-sighted.
+    weights:
+        The ``(n_actions, obs_dim)`` parameter matrix, initialised to small
+        random values. Exact zeros would make every action equiprobable and
+        every gradient identical, so the policy would never differentiate.
+
+    Notes
+    -----
+    **Linear means linear.** If the best action depends on an interaction
+    between observation dimensions, this policy cannot represent it, however
+    long it trains. That is a property of the model, not of the training run.
+
+    See Also
+    --------
+    train_gym_reinforce : Fit one of these against an environment.
+    """
 
     n_actions: int
     obs_dim: int
@@ -31,15 +99,69 @@ class LinearSoftmaxPolicy:
             ).astype(float)
 
     def logits(self, obs: np.ndarray) -> np.ndarray:
+        """Score each action for an observation, before normalising.
+
+        The raw linear scores. Useful for inspection; :meth:`probs` is what
+        acting uses.
+
+        Parameters
+        ----------
+        obs:
+            An observation, flattened to length ``obs_dim``.
+
+        Returns
+        -------
+        numpy.ndarray
+            One unnormalised score per action. These are on an arbitrary scale
+            — only their differences matter.
+        """
         x = np.asarray(obs, dtype=float).reshape(-1)
         return self.weights @ x
 
     def probs(self, obs: np.ndarray) -> np.ndarray:
+        """Give the probability of choosing each action in this state.
+
+        The policy itself, ``π(a|s)``. How spread out this distribution is tells
+        you how much the policy is still exploring: near-uniform means it has
+        not committed, near-one-hot means it has.
+
+        Parameters
+        ----------
+        obs:
+            An observation, flattened to length ``obs_dim``.
+
+        Returns
+        -------
+        numpy.ndarray
+            One probability per action, summing to 1.0.
+        """
         return softmax(self.logits(obs))
 
     def act(
         self, obs: np.ndarray, *, rng: np.random.Generator, deterministic: bool = False
     ) -> int:
+        """Choose one action for this observation.
+
+        Samples from :meth:`probs` by default, which is what makes training
+        work: a policy that always took its current best action would never
+        discover a better one.
+
+        Parameters
+        ----------
+        obs:
+            An observation, flattened to length ``obs_dim``.
+        rng:
+            The generator to sample from. Required, so that the caller controls
+            reproducibility across a whole rollout rather than per call.
+        deterministic:
+            ``True`` takes the most probable action instead of sampling. Use it
+            when evaluating or serving; leave it ``False`` while training.
+
+        Returns
+        -------
+        int
+            The chosen action index.
+        """
         probs = self.probs(obs)
         if deterministic:
             return int(np.argmax(probs))
@@ -51,7 +173,41 @@ class LinearSoftmaxPolicy:
         actions: list[int],
         rewards: list[float],
     ) -> float:
-        """REINFORCE with returns-to-go; returns episode return."""
+        """Learn from one finished episode.
+
+        Where REINFORCE actually happens. Each action is credited with the
+        discounted reward that followed it, the episode's mean is subtracted as
+        a baseline, and the weights move so that better-than-average actions
+        become more probable in the states they were taken in.
+
+        Parameters
+        ----------
+        observations:
+            The states visited, in order.
+        actions:
+            The action taken in each.
+        rewards:
+            The reward received at each step.
+
+        Returns
+        -------
+        float
+            The undiscounted total reward for the episode — what you plot to
+            see whether learning is happening.
+
+        Notes
+        -----
+        **The baseline is what makes this stable.** Subtracting the mean return
+        means an action is reinforced only if it did better than the episode's
+        average, rather than merely earning positive reward. In an environment
+        where every step pays +1, without a baseline every action is reinforced
+        and the policy learns nothing useful.
+
+        **Nothing is learned until the episode ends**, because returns-to-go
+        cannot be computed before then. This is what makes REINFORCE
+        high-variance: one lucky episode moves the weights as confidently as a
+        genuinely good one.
+        """
         if not rewards:
             return 0.0
         returns: list[float] = []
@@ -83,7 +239,66 @@ def train_gym_reinforce(
     gamma: float = 0.99,
     random_state: int | None = 0,
 ) -> tuple[LinearSoftmaxPolicy, dict[str, float], list[str], list[str]]:
-    """Train a linear REINFORCE policy on a discrete Gymnasium env."""
+    """Run episodes against an environment and improve the policy after each.
+
+    The training loop: reset, act until the episode ends or the step cap is
+    reached, then update the policy from what happened. Repeated ``n_episodes``
+    times.
+
+    Parameters
+    ----------
+    env_id:
+        The Gymnasium environment. Must have a discrete action space and a
+        shaped observation space.
+    n_episodes:
+        How many episodes to train for. REINFORCE is sample-hungry; a few
+        hundred is a starting point, not a guarantee.
+    max_steps:
+        Per-episode step cap, so an episode that never terminates cannot hang
+        the run.
+    learning_rate:
+        Policy step size.
+    gamma:
+        Discount factor for returns-to-go.
+    random_state:
+        Seeds weight initialisation, action sampling, and each episode's
+        environment reset.
+
+    Returns
+    -------
+    LinearSoftmaxPolicy
+        The trained policy.
+    dict
+        ``n_episodes``, ``mean_return`` over all episodes, ``last_return``, and
+        ``mean_return_last_20``.
+    list of str
+        Disclosures describing the run and its scope.
+    list of str
+        Warnings, including a note when returns look too low to indicate
+        learning.
+
+    Raises
+    ------
+    MissingExtraError
+        If ``buildml[rl]`` is not installed.
+    ValidationError
+        If the environment cannot be created, its action space is not discrete,
+        or its observation space has no shape.
+
+    Notes
+    -----
+    **Read ``mean_return_last_20``, not ``mean_return``.** The overall mean
+    includes the early episodes when the policy was random, so it understates a
+    policy that did learn. The trailing mean is where it ended up.
+
+    **Training returns are not an evaluation.** They come from a policy that was
+    still sampling and still changing. Use :func:`evaluate_gym_policy` for a
+    clean measurement of the finished policy.
+
+    See Also
+    --------
+    evaluate_gym_policy : Roll out the trained policy without learning.
+    """
     gymnasium = require_gymnasium(feature="fit_rl(mode='gym_reinforce')")
     disclosures = [
         "Gymnasium REINFORCE-lite trains a linear softmax policy in an env loop.",
@@ -175,7 +390,53 @@ def evaluate_gym_policy(
     random_state: int | None = 0,
     deterministic: bool = True,
 ) -> dict[str, float]:
-    """Roll out a fitted Gymnasium policy; return mean episode return."""
+    """Run a trained policy for a few episodes and see what it earns.
+
+    Unlike training, nothing is updated: the policy is fixed and simply
+    executed, so the returns measure what it does rather than what it was doing
+    while learning.
+
+    Parameters
+    ----------
+    policy:
+        The trained policy.
+    env_id:
+        The environment to roll out in. Normally the one it was trained on —
+        a different environment measures transfer, not performance.
+    n_episodes:
+        How many episodes to run. Returns vary a great deal episode to episode,
+        so a handful gives a noisy mean.
+    max_steps:
+        Per-episode step cap.
+    random_state:
+        Seeds the rollouts. Offset from the training seeds, so evaluation does
+        not replay the exact episodes the policy trained on.
+    deterministic:
+        ``True`` (default) always takes the most probable action, which is what
+        you would deploy. ``False`` samples, which is what training looked like.
+
+    Returns
+    -------
+    dict
+        ``n_eval_episodes``, ``mean_return``, ``std_return``, ``min_return``,
+        and ``max_return``.
+
+    Raises
+    ------
+    MissingExtraError
+        If ``buildml[rl]`` is not installed.
+
+    Notes
+    -----
+    **Read ``std_return`` alongside the mean.** A policy averaging 200 with a
+    standard deviation of 10 is reliable; one averaging 200 with a standard
+    deviation of 150 succeeds sometimes and fails badly otherwise, and the two
+    are indistinguishable from the mean alone.
+
+    See Also
+    --------
+    train_gym_reinforce : Produce the policy.
+    """
     gymnasium = require_gymnasium(feature="evaluate_rl(mode='gym_reinforce')")
     env = gymnasium.make(env_id)
     rng = np.random.default_rng(random_state)
@@ -218,7 +479,46 @@ def act_gym_observation(
     random_state: int | None = 0,
     deterministic: bool = True,
 ) -> tuple[int, tuple[float, ...]]:
-    """Choose an action for a single observation vector."""
+    """Ask the policy what to do in one state, and how sure it is.
+
+    The single-step form used when serving a policy outside an environment
+    loop. Returns the action probabilities alongside the choice, so a caller can
+    see whether the decision was clear-cut.
+
+    Parameters
+    ----------
+    policy:
+        The trained policy.
+    observation:
+        One observation. Flattened, and its size must match ``policy.obs_dim``.
+    random_state:
+        Seed, used only when sampling.
+    deterministic:
+        ``True`` (default) takes the most probable action.
+
+    Returns
+    -------
+    int
+        The chosen action index.
+    tuple of float
+        The action probabilities, summing to 1.0.
+
+    Raises
+    ------
+    ValidationError
+        If the observation's size does not match the policy's. This normally
+        means the observation came from a different environment.
+
+    Notes
+    -----
+    **The probabilities are the interesting part.** ``(0.26, 0.25, 0.25, 0.24)``
+    means the policy has essentially no opinion and the returned action is close
+    to arbitrary — worth knowing before acting on it.
+
+    See Also
+    --------
+    buildml.rl.act.act_rl : The Session-level entry point.
+    """
     rng = np.random.default_rng(random_state)
     flat = np.asarray(observation, dtype=float).reshape(-1)
     if flat.size != policy.obs_dim:

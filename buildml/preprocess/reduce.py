@@ -1,4 +1,39 @@
-"""Train-fitted dimensionality reduction (PCA) with explained-variance reporting."""
+"""Compress many correlated columns into a few, learning the compression from train.
+
+When features are highly correlated they are, in a real sense, measuring the
+same thing several times. Thirty sensor readings from the same machine, or
+hundreds of TF-IDF columns from the same corpus, occupy far fewer genuinely
+independent directions than their count suggests. Reduction finds those
+directions and rewrites each row in terms of them.
+
+The payoff is fewer columns for the model to overfit against, no
+multicollinearity to destabilise a linear model's coefficients, and — at two or
+three components — a plot you can actually look at. The price is
+interpretability: a component is a weighted blend of your original columns, so
+"component 1 increased" is not a sentence anyone outside the analysis can act
+on.
+
+Three methods, and they are not interchangeable.
+
+**PCA** finds the directions of greatest variance using a linear transform. It
+is the only one of the three that produces a genuine reusable mapping: new data
+goes through the same matrix multiplication, which is what makes it the only
+sound choice for a production pipeline. It also reports how much variance each
+component retains, so you can see what you gave up.
+
+**UMAP** captures curved structure that PCA misses and is excellent for
+visualisation and clustering. It needs ``buildml[unsupervised]``.
+
+**t-SNE** produces the clearest visual separation of clusters but is
+*transductive*: it embeds the points it was fitted on and has no formula for a
+new point. Holdout rows here are placed at their nearest training neighbour's
+position, which is an approximation, not a transform. Use t-SNE to look at your
+data, not to feed a model.
+
+For all three, scale first — reduction operates on variance, and an unscaled
+column with large units will dominate the first component purely through its
+units.
+"""
 
 from __future__ import annotations
 
@@ -33,7 +68,43 @@ ReduceMethod = Literal["pca", "umap", "tsne"]
 
 @dataclass(slots=True)
 class ReducePlan:
-    """Train-fitted dimensionality-reduction plan."""
+    """The compression learned from training rows, and what it cost.
+
+    Attributes
+    ----------
+    columns:
+        The source numeric columns that were compressed.
+    method:
+        ``'pca'``, ``'umap'``, or ``'tsne'``.
+    n_components:
+        How many output columns the compression produces.
+    feature_names_:
+        The output column names, ``<prefix>_1`` upward.
+    explained_variance_ratio_:
+        For PCA, the share of total variance each component retains. The first
+        component always captures the most; watch for where the values flatten
+        out, since components past that point are mostly noise. Empty for UMAP
+        and t-SNE, which have no equivalent measure.
+    cumulative_explained_variance_:
+        The running total of the above. The last value is the headline number:
+        how much of the original variation survived. Below about 0.8 you have
+        thrown away a lot.
+    reducer_:
+        The fitted object. A PCA or UMAP model for those methods; for t-SNE it
+        is a nearest-neighbour index, since t-SNE itself cannot transform new
+        points.
+    drop_input_columns:
+        Whether the source columns were removed after reduction.
+    prefix:
+        The naming stem for the output columns.
+    disclosures:
+        Method-specific caveats recorded at fit time and surfaced in the
+        result — most importantly the warning that t-SNE holdout positions are
+        approximated by nearest neighbour rather than computed.
+    train_embedding_:
+        For t-SNE only, the training-row coordinates. This is what holdout
+        rows are matched against, so it must be kept.
+    """
 
     columns: tuple[str, ...]
     method: ReduceMethod
@@ -48,6 +119,18 @@ class ReducePlan:
     train_embedding_: np.ndarray | None = field(default=None, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the plan's settings and variance accounting as JSON-safe values.
+
+        The fitted reducer and the stored t-SNE embedding are omitted, since
+        neither serialises to JSON — save a pipeline to round-trip those.
+
+        Returns
+        -------
+        dict
+            The settings, both variance sequences, the recorded disclosures,
+            and a convenience ``total_explained_variance`` holding the final
+            cumulative value (0.0 when the method reports none).
+        """
         return {
             "columns": list(self.columns),
             "method": self.method,
@@ -81,7 +164,108 @@ def fit_reducer(
     tsne_perplexity: float = 30.0,
     tsne_learning_rate: str | float = "auto",
 ) -> ReducePlan:
-    """Fit a dimensionality reducer on the train partition only."""
+    """Learn a compression of the numeric columns from the training rows.
+
+    Nothing is transformed here — pass the plan to :func:`transform_reducer` to
+    apply it.
+
+    Parameters
+    ----------
+    dataset:
+        The full dataset. Only rows the split assigns to ``train`` are read.
+    split_plan:
+        The split defining the training rows. Required, because components
+        derived from all rows are oriented partly by the test data, and every
+        subsequent score is compromised.
+    columns:
+        Which numeric columns to compress. Defaults to the numeric ``feature``
+        columns. Naming a subset is common — you might reduce a block of
+        correlated sensor readings while leaving your interpretable business
+        features intact.
+    method:
+        ``'pca'`` (the default) for anything feeding a model; ``'umap'`` or
+        ``'tsne'`` for visualisation. See the module docstring before choosing
+        either of the latter for a pipeline.
+    n_components:
+        How many dimensions to keep. An integer is a literal count. A float
+        between 0 and 1 asks PCA to keep however many components are needed to
+        retain that share of variance, which is usually the better way to
+        express the intent — ``0.95`` says "lose no more than 5% of the
+        variation" and lets the data decide the count. ``None`` picks a
+        sensible default: full rank for PCA, two dimensions for UMAP and
+        t-SNE.
+    drop_input_columns:
+        Remove the source columns after reduction. Usually correct, since
+        keeping both the originals and their compression reintroduces the
+        collinearity you were removing.
+    prefix:
+        Naming stem for the output columns, giving ``pc_1``, ``pc_2``, and so
+        on. Change it when reducing several column blocks separately so the
+        names stay distinguishable.
+    random_state:
+        Seed for the stochastic parts of PCA's solver and for UMAP and t-SNE,
+        both of which are genuinely random and will produce visibly different
+        embeddings run to run without it.
+    umap_n_neighbors:
+        For UMAP, how many neighbours define the local neighbourhood. Small
+        values preserve fine local structure; large values preserve the broad
+        shape. The default of 15 is a middle setting.
+    umap_min_dist:
+        For UMAP, how tightly points may pack together in the output. Low
+        values produce dense, clearly separated clumps; higher values spread
+        points out and show relative density better.
+    tsne_perplexity:
+        For t-SNE, roughly how many neighbours each point balances against.
+        Automatically reduced when the training set is too small to support the
+        value you asked for. Results change substantially with this setting, so
+        try a few before drawing conclusions from a t-SNE plot.
+    tsne_learning_rate:
+        For t-SNE, the optimisation step size. ``'auto'`` scales it to the
+        dataset and is almost always the right choice.
+
+    Returns
+    -------
+    ReducePlan
+        The fitted compression, its variance accounting, and any method
+        disclosures.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        No split plan was supplied.
+    ~buildml.core.errors.ValidationError
+        ``method`` is unrecognised, ``prefix`` is not alphanumeric, training
+        features contain missing values, or there are too few training rows or
+        columns to reduce.
+    ~buildml.core.errors.MissingExtraError
+        UMAP was requested without ``buildml[unsupervised]`` installed.
+
+    Notes
+    -----
+    **Scale first.** Every method here works on variance, so an unscaled column
+    measured in thousands will dominate the leading component through its units
+    alone. Run :func:`~buildml.preprocess.scale.fit_scaler` before this.
+
+    **Impute first.** Reduction cannot proceed with gaps and will raise rather
+    than guess.
+
+    **Read the variance you kept.** ``cumulative_explained_variance_[-1]`` is
+    the honest summary of what survived. Compressing forty columns into three
+    that retain 60% of the variance has discarded a great deal, and the model
+    will feel it.
+
+    Examples
+    --------
+    >>> plan = fit_reducer(  # doctest: +SKIP
+    ...     dataset, split_plan, method="pca", n_components=0.95
+    ... )
+    >>> plan.n_components  # doctest: +SKIP
+    12
+
+    See Also
+    --------
+    transform_reducer : Applies the plan produced here.
+    """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
     if method not in {"pca", "umap", "tsne"}:
@@ -115,7 +299,7 @@ def fit_reducer(
         )
 
     if method == "umap":
-        from buildml.unsupervised.extras import umap_available, require_umap
+        from buildml.unsupervised.extras import require_umap, umap_available
 
         if not umap_available():
             raise MissingExtraError(
@@ -245,7 +429,49 @@ def transform_reducer(
     dataset: Dataset,
     plan: ReducePlan,
 ) -> tuple[Dataset, PreprocessResult]:
-    """Apply a train-fitted reduction plan to the full dataset."""
+    """Project every row into the reduced space using an already-fitted plan.
+
+    The source columns are replaced by the component columns. Because the
+    mapping was learned from training rows, every partition lands in the same
+    coordinate system without the test rows having helped define it.
+
+    Parameters
+    ----------
+    dataset:
+        The dataset to compress. Every column the plan names must be present.
+    plan:
+        A plan from :func:`fit_reducer`.
+
+    Returns
+    -------
+    tuple of (~buildml.data.dataset.Dataset, ~buildml.preprocess.result.PreprocessResult)
+        The dataset with the source columns replaced by components, and a
+        narrated record covering how much variance was retained, what was lost,
+        and any method caveats that apply.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        A column the plan expects is missing, or the frame still contains
+        missing values in those columns.
+
+    Notes
+    -----
+    **PCA and UMAP genuinely transform; t-SNE approximates.** For a t-SNE plan,
+    rows outside the training set are given the coordinates of their nearest
+    training neighbour, because t-SNE has no out-of-sample formula. Those
+    positions are a stand-in, not a projection, and the plan's ``disclosures``
+    say so in the returned result. Do not build a production feature on them.
+
+    **Components are unnamed blends.** After this step your model's feature
+    importances refer to ``pc_1``, not to anything a stakeholder recognises.
+    For PCA you can recover the mixture from the reducer's ``components_``
+    attribute; keep that mapping if you will need to explain the model.
+
+    See Also
+    --------
+    fit_reducer : Produces the plan this consumes.
+    """
     missing = [c for c in plan.columns if c not in dataset.columns]
     if missing:
         raise ValidationError(f"Reduce plan columns missing from dataset: {missing}")

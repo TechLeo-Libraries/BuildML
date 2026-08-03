@@ -193,11 +193,13 @@ cross-validation folds respect row dependencies.
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
 ``workflow`` shows every cataloged operation as done, available, blocked, or
-skipped. ``explain`` gives operation-level choices, prerequisites, and limits.
-``dry_run`` previews calls without mutating state. ``summarize_history`` lists
-operation counts and heuristic unresolved risks. ``walkthrough`` joins statuses
-to history and unresolved catalog risks in offline HTML. Available operations
-are possibilities, not recommendations.
+skipped. ``explain`` gives operation-level choices, prerequisites, and limits,
+led by a plain-language primer unless you ask for ``level="advanced"``.
+``learn`` teaches the concept behind a call, or any term you did not recognise,
+and says what to read first. ``dry_run`` previews calls without mutating state.
+``summarize_history`` lists operation counts and heuristic unresolved risks.
+``walkthrough`` joins statuses to history and unresolved catalog risks in
+offline HTML. Available operations are possibilities, not recommendations.
 
 10. Persist the right artifact
 ------------------------------

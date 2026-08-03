@@ -1,4 +1,21 @@
-"""Corpus ingest for the RAG path."""
+"""Get documents in, and keep the answers out of the index.
+
+Three ways in — a directory of text files, a list of in-memory documents, or a
+column of a DataFrame — all producing the same
+:class:`~buildml.rag.results.CorpusHandle`.
+
+The part worth understanding is the ``role`` on each document. RAG has its own
+version of the leakage problem that splitting solves for supervised learning: if
+the documents you evaluate against are also in the index, retrieval finds them
+trivially and every metric looks excellent. Marking a document ``'eval_only'``
+keeps it out of the index while leaving it available for evaluation, and the
+guards here refuse rather than warn when that boundary would be crossed.
+
+See Also
+--------
+buildml.rag.chunk : What happens to documents next.
+buildml.rag.evaluate : Where eval-only documents are used.
+"""
 
 from __future__ import annotations
 
@@ -53,18 +70,59 @@ def load_text_corpus(
     encoding: str = "utf-8",
     role: str = "index",
 ) -> CorpusHandle:
-    """Load UTF-8 text files from a path or directory into a :class:`CorpusHandle`.
+    """Read text files from disk into a corpus.
+
+    The quickest way to get started: point at a folder of documents and get back
+    something indexable. Each file becomes one document, named after the file,
+    with its path kept as metadata so a retrieved passage can be traced back to
+    where it came from.
 
     Parameters
     ----------
     path:
-        File or directory. Directories are scanned with ``glob`` (non-recursive).
+        A single file, or a directory to scan.
     glob:
-        Filename pattern when ``path`` is a directory.
+        Which files to take from a directory. **Not recursive** — subdirectories
+        are skipped.
     encoding:
-        Text encoding (default UTF-8). Decode errors raise :class:`ValidationError`.
+        Text encoding. A file that does not decode raises rather than being
+        skipped, because a silently missing document is a silently missing
+        answer.
     role:
-        Corpus role for all loaded files (``index`` or ``eval_only``).
+        ``'index'`` for documents to search, ``'eval_only'`` for held-out
+        documents. Applied to every file loaded.
+
+    Returns
+    -------
+    CorpusHandle
+        The documents, in sorted filename order.
+
+    Raises
+    ------
+    ValidationError
+        If the path does not exist, nothing matches the pattern, or a file
+        cannot be decoded.
+
+    Notes
+    -----
+    **Whole files become whole documents**, however large. A book-length file is
+    one document until :mod:`buildml.rag.chunk` divides it.
+
+    **Everything is read into memory.** A large corpus is held in full.
+
+    **Document IDs are filename stems**, so ``a/notes.txt`` and ``b/notes.txt``
+    both become ``notes``. Duplicate IDs make citations ambiguous.
+
+    Examples
+    --------
+    Load a folder of Markdown files::
+
+        corpus = load_text_corpus("docs/", glob="*.md")
+
+    See Also
+    --------
+    corpus_from_frame : When the text is in a DataFrame.
+    corpus_from_documents : When it is already in memory.
     """
     root = Path(path)
     if root.is_file():
@@ -102,7 +160,56 @@ def corpus_from_documents(
     source: str = "memory",
     default_role: str = "index",
 ) -> CorpusHandle:
-    """Build a :class:`CorpusHandle` from in-memory documents."""
+    """Build a corpus from documents you already have.
+
+    Accepts three shapes and normalises them: a plain string becomes a document
+    with a generated ID, a mapping supplies its own ID, metadata, and role, and
+    a :class:`~buildml.rag.results.Document` passes through unchanged. Use this
+    when documents come from a database, an API, or a script rather than files.
+
+    Parameters
+    ----------
+    documents:
+        Strings, mappings with a ``'text'`` key, or ``Document`` objects, mixed
+        freely.
+    source:
+        Provenance label recorded on the handle.
+    default_role:
+        Role for items that do not specify one.
+
+    Returns
+    -------
+    CorpusHandle
+        The documents in the order given.
+
+    Raises
+    ------
+    ValidationError
+        If the sequence is empty, an item is an unsupported type, a mapping has
+        no ``'text'``, or a role is neither ``'index'`` nor ``'eval_only'``.
+
+    Notes
+    -----
+    **Generated IDs are positional**, so a document supplied as a bare string
+    gets an ID that changes if the list order changes. Supply real IDs when
+    citations need to be stable.
+
+    **Mappings can set their own role**, which is how a mixed batch of index and
+    eval-only documents is loaded in one call.
+
+    Examples
+    --------
+    Mixed roles in one corpus::
+
+        corpus = corpus_from_documents([
+            {"doc_id": "faq-1", "text": "..."},
+            {"doc_id": "gold-1", "text": "...", "role": "eval_only"},
+        ])
+
+    See Also
+    --------
+    load_text_corpus : When the documents are files.
+    """
     return CorpusHandle(
         documents=tuple(_as_documents(documents, default_role=default_role)),
         source=source,
@@ -117,9 +224,61 @@ def corpus_from_frame(
     role: str = "index",
     source: str = "dataframe",
 ) -> CorpusHandle:
-    """Bridge a tabular text column into a :class:`CorpusHandle`.
+    """Turn one column of a DataFrame into a corpus.
 
-    Explicit column selection only — never silently indexes every column.
+    The bridge between tabular work and retrieval: support tickets, product
+    descriptions, review text. You name the column explicitly — the function
+    will never guess which column holds the text, because indexing the wrong one
+    produces a system that returns results and answers nothing.
+
+    Parameters
+    ----------
+    frame:
+        The data.
+    text_column:
+        Which column holds the document text.
+    id_column:
+        Which column holds a stable identifier. Without one, IDs are row
+        positions, which change when the frame is re-sorted.
+    role:
+        ``'index'`` or ``'eval_only'``, applied to every row.
+    source:
+        Provenance label recorded on the handle.
+
+    Returns
+    -------
+    CorpusHandle
+        One document per row with usable text.
+
+    Raises
+    ------
+    ValidationError
+        If a named column is missing, or every row's text is null. Both
+        messages list the available columns.
+
+    Notes
+    -----
+    **Null text rows are skipped silently.** The result can be shorter than the
+    frame; compare the counts if that matters.
+
+    **Only the text column is carried over.** Other columns are not attached as
+    metadata, so they cannot be used as retrieval filters — build documents
+    through :func:`corpus_from_documents` when you need that.
+
+    **Positional IDs are fragile.** Pass ``id_column`` whenever the frame has a
+    key, so citations survive a re-sort.
+
+    Examples
+    --------
+    Index a ticket description column::
+
+        corpus = corpus_from_frame(
+            tickets, text_column="description", id_column="ticket_id",
+        )
+
+    See Also
+    --------
+    corpus_from_documents : When metadata should travel too.
     """
     if text_column not in frame.columns:
         raise ValidationError(
@@ -149,7 +308,42 @@ def corpus_from_frame(
 
 
 def indexable_documents(corpus: CorpusHandle) -> tuple[Document, ...]:
-    """Return documents allowed in the index; refuse silent eval contamination."""
+    """Select the documents that may be indexed, and refuse if none may.
+
+    The gate between a mixed corpus and the index. Documents marked
+    ``'eval_only'`` are dropped rather than indexed, so a handle can carry both
+    kinds and the indexing path still cannot reach the held-out ones.
+
+    Parameters
+    ----------
+    corpus:
+        The corpus, possibly mixed.
+
+    Returns
+    -------
+    tuple of Document
+        Only the index-role documents, in corpus order.
+
+    Raises
+    ------
+    LeakageError
+        If the corpus is entirely eval-only. Indexing it would mean evaluating
+        retrieval against documents retrieval was built from, which measures
+        nothing.
+    ValidationError
+        If there are no index-role documents for another reason.
+
+    Notes
+    -----
+    **Filtering is silent by design.** Dropping eval-only documents is the
+    intended behaviour, so it does not warn — but the returned tuple can be much
+    shorter than the corpus, and that is worth checking when an index seems
+    small.
+
+    See Also
+    --------
+    refuse_eval_only_index : The stricter check.
+    """
     index_docs = tuple(d for d in corpus.documents if d.role == "index")
     eval_docs = [d for d in corpus.documents if d.role == "eval_only"]
     if not index_docs and eval_docs:
@@ -168,7 +362,39 @@ def indexable_documents(corpus: CorpusHandle) -> tuple[Document, ...]:
 
 
 def refuse_eval_only_index(corpus: CorpusHandle) -> None:
-    """Raise :class:`LeakageError` when any eval_only document would be indexed."""
+    """Refuse outright if the corpus contains any held-out document.
+
+    The strict counterpart to :func:`indexable_documents`. Where that one
+    filters, this one raises — for callers that intend to index a whole corpus
+    and want to be told, rather than quietly given a subset, if it is not clean.
+
+    Parameters
+    ----------
+    corpus:
+        The corpus to check.
+
+    Returns
+    -------
+    None
+        Returns nothing when the corpus is clean; the value is the absence of
+        an exception.
+
+    Raises
+    ------
+    LeakageError
+        If any document is ``'eval_only'``. The message names up to five of
+        them.
+
+    Notes
+    -----
+    **Roles are declared, not detected.** This checks the label. A document
+    duplicated across an index corpus and an evaluation set under different IDs
+    passes here and still contaminates the measurement.
+
+    See Also
+    --------
+    indexable_documents : The filtering alternative.
+    """
     bad = [d.doc_id for d in corpus.documents if d.role == "eval_only"]
     if bad:
         raise LeakageError(

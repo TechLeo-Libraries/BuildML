@@ -1,4 +1,33 @@
-"""Train-fitted feature selection utilities."""
+"""Keep the columns that carry signal and drop the ones that only add noise.
+
+More features is not better. Each one adds a dimension the model must estimate
+in, and with limited rows that means more parameters fitted on the same
+evidence — the model starts learning the quirks of your training set instead of
+the pattern underneath. Irrelevant columns also give a tree somewhere to make a
+spurious split, and they slow everything down.
+
+Three strategies are available, in increasing order of cost and of how much
+they know about your target.
+
+**Variance** drops columns that barely change. A column that is the same value
+for 99% of rows cannot help distinguish those rows, whatever the target is.
+This is the cheapest check and the only one that does not look at the target at
+all, so it is a safe first pass.
+
+**Univariate** scores each column against the target independently and keeps
+the top *k*. Fast and often effective, but it judges each column alone: it will
+discard a feature that is useless by itself and decisive in combination with
+another, and it will keep several columns that all say the same thing.
+
+**Model-based** fits an estimator and keeps the features it relied on. This one
+sees interactions and redundancy, which is what makes it the most accurate — at
+the cost of fitting a model, and of inheriting that model's biases about what
+matters.
+
+All three learn from training rows only. Choosing which columns to keep by
+looking at test performance is leakage of exactly the kind that produces a
+model which scores beautifully and then fails.
+"""
 
 from __future__ import annotations
 
@@ -41,7 +70,37 @@ SelectStrategy = Literal["variance", "univariate", "model"]
 
 @dataclass(slots=True)
 class FeatureSelectPlan:
-    """Train-fitted feature selection plan."""
+    """Which columns survived selection, which did not, and why.
+
+    Attributes
+    ----------
+    strategy:
+        Which selection method produced this — ``'variance'``,
+        ``'univariate'``, or ``'model'``.
+    selected_features_:
+        The features kept, and therefore the exact set the model will be
+        trained on and will expect at inference time.
+    dropped_features_:
+        The features removed. Read this before trusting the result: a column
+        you know to be important appearing here usually means it needed
+        encoding, scaling, or a different strategy rather than that it is
+        genuinely useless.
+    scores_:
+        The score each candidate received. Interpretation depends on the
+        strategy — variance for ``'variance'``, the test statistic for
+        ``'univariate'``, the estimator's importance for ``'model'``. Look at
+        the gap between the last kept and first dropped feature; if it is
+        tiny, the cutoff is arbitrary.
+    threshold:
+        The variance cutoff, when the strategy is ``'variance'``.
+    k:
+        How many features were requested, when the strategy is
+        ``'univariate'``.
+    score_func:
+        The scoring function used for univariate selection.
+    estimator_name:
+        The estimator whose importances drove model-based selection.
+    """
 
     strategy: SelectStrategy
     selected_features_: tuple[str, ...]
@@ -53,6 +112,16 @@ class FeatureSelectPlan:
     estimator_name: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the selection outcome as plain JSON-safe values.
+
+        Used by model cards and checkpoints. Worth recording: which features a
+        model was allowed to see is part of what makes a result reproducible.
+
+        Returns
+        -------
+        dict
+            Every attribute in plain-data form, including the full score map.
+        """
         return {
             "strategy": self.strategy,
             "selected_features_": list(self.selected_features_),
@@ -76,7 +145,92 @@ def fit_feature_selector(
     score_func: Literal["f_classif", "f_regression", "mutual_info"] = "f_classif",
     estimator: Any | None = None,
 ) -> FeatureSelectPlan:
-    """Learn which feature columns to keep using train rows only."""
+    """Decide which feature columns to keep, judging only by the training rows.
+
+    Nothing is removed here — pass the plan to
+    :func:`transform_feature_selector` to apply it. The separation matters:
+    you should read ``dropped_features_`` before acting on it.
+
+    Parameters
+    ----------
+    dataset:
+        The full dataset. Only rows the split assigns to ``train`` are read.
+    split_plan:
+        The split defining the training rows. Required, because a feature set
+        chosen with any knowledge of the test rows makes the eventual test
+        score meaningless.
+    strategy:
+        ``'variance'``, ``'univariate'``, or ``'model'``. See the module
+        docstring for what each one can and cannot see.
+    columns:
+        Candidate features. Defaults to the ``feature``-role columns. Columns
+        holding protected roles are never dropped regardless of score, so your
+        target and identifiers survive.
+    threshold:
+        Minimum variance a column must have to survive, for the ``'variance'``
+        strategy. The default of 0.0 removes only genuinely constant columns,
+        which is nearly always safe. Raising it starts removing
+        low-variability columns, and since variance depends on scale, a raised
+        threshold behaves very differently before and after scaling.
+    k:
+        How many top-scoring features to keep, for the ``'univariate'``
+        strategy. Capped at the number of candidates.
+    score_func:
+        How univariate relevance is measured. ``'f_classif'`` and
+        ``'f_regression'`` test for a *linear* relationship and are fast but
+        blind to curved ones. ``'mutual_info'`` detects any dependence
+        including non-linear, at more computational cost and with more variance
+        in its estimates — usually the better choice when you have the rows to
+        support it.
+    estimator:
+        The model whose importances drive ``'model'`` selection. Left as
+        ``None``, a logistic regression is used for classification and a random
+        forest for regression. Supply your own when you want the selection to
+        reflect the model you actually intend to deploy — a linear model and a
+        gradient booster disagree substantially about which features matter.
+
+    Returns
+    -------
+    FeatureSelectPlan
+        The kept and dropped sets with their scores.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        No split plan was supplied.
+    ~buildml.core.errors.ValidationError
+        The strategy is unrecognised, the training features contain missing
+        values, or any candidate is non-numeric. Both of the latter are
+        actionable: impute first, and encode categoricals first.
+
+    Notes
+    -----
+    **Order in the pipeline matters.** Selection needs complete numeric data,
+    so it comes after imputation and encoding. It generally belongs before
+    scaling, since a variance threshold means something different once every
+    column has unit variance.
+
+    **Univariate selection misses interactions.** Two columns that predict
+    nothing alone but everything together will both be dropped. If you suspect
+    that structure, use the model strategy.
+
+    **Selection is a modelling decision, not a cleanup step.** It changes what
+    the model can learn. When you tune the feature count, tune it inside cross
+    validation via :class:`~buildml.preprocess.fold.PreprocessRecipe` rather
+    than choosing it once against a holdout.
+
+    Examples
+    --------
+    >>> plan = fit_feature_selector(  # doctest: +SKIP
+    ...     dataset, split_plan, strategy="univariate", k=20
+    ... )
+    >>> len(plan.selected_features_)  # doctest: +SKIP
+    20
+
+    See Also
+    --------
+    transform_feature_selector : Applies the plan produced here.
+    """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
     if strategy not in {"variance", "univariate", "model"}:
@@ -189,7 +343,42 @@ def transform_feature_selector(
     dataset: Dataset,
     plan: FeatureSelectPlan,
 ) -> tuple[Dataset, PreprocessResult]:
-    """Drop features not selected by a train-fitted plan; keep target/id/group/time/weight."""
+    """Narrow the dataset to the features the plan selected.
+
+    Removes the dropped columns from every partition, so training and test rows
+    carry the same feature set. Columns holding protected roles — target, id,
+    group, time, weight — are retained regardless of the plan, since dropping
+    them would break the split and the evaluation.
+
+    Parameters
+    ----------
+    dataset:
+        The dataset to narrow.
+    plan:
+        A plan from :func:`fit_feature_selector`.
+
+    Returns
+    -------
+    tuple of (~buildml.data.dataset.Dataset, ~buildml.preprocess.result.PreprocessResult)
+        The narrowed dataset, and a narrated record of what was kept, what was
+        dropped, and how close to the cutoff the marginal features fell.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        A feature the plan selected is missing from the dataset.
+
+    Notes
+    -----
+    The dropped columns are gone from the returned dataset, so widen by
+    re-running selection from the original data rather than by undoing this.
+    The plan itself is preserved, which is what lets the same narrowing be
+    replayed at inference time.
+
+    See Also
+    --------
+    fit_feature_selector : Produces the plan this consumes.
+    """
     keep = list(plan.selected_features_)
     protected = _protected_columns(dataset)
     for column in protected:

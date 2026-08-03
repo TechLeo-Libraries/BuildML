@@ -1,4 +1,25 @@
-"""Versioned, JSON-safe operation history records."""
+"""Record what each operation did, as data that outlives the objects involved.
+
+A Session's history is its audit trail: what was called, with what arguments,
+and what changed as a result. Reconstructing that from a fitted model afterwards
+is impossible, so it is recorded as it happens.
+
+Two constraints shape the format. Records must be JSON-safe, because history
+travels in checkpoints and reports where a live object cannot go — so
+:func:`json_safe` converts everything and falls back to ``repr`` rather than
+failing. And records must stay readable across versions, because a checkpoint
+written months ago should still load: v1 keys are kept alongside their v2
+replacements, and :func:`normalize_history` upgrades old records on read.
+
+The distinctive part is the state transition. Each record holds the workflow
+state before and after, plus the differences between them, which is what turns
+"impute was called" into "impute was called and this is what it changed".
+
+See Also
+--------
+buildml.explain.sync : Keeping operation metadata aligned with the real API.
+buildml.checkpoint.bundle : Where history is persisted.
+"""
 
 from __future__ import annotations
 
@@ -40,7 +61,49 @@ _EMPTY_STATE: dict[str, Any] = {
 
 
 def json_safe(value: Any) -> Any:
-    """Return a compact JSON-compatible representation of runtime values."""
+    """Convert a value into something JSON can hold, whatever it started as.
+
+    Operation parameters are whatever the caller passed: enums, ``Path``
+    objects, fitted estimators, nested config dicts. All of that has to survive
+    into a checkpoint as JSON.
+
+    Handled in a deliberate order. Primitives pass through. Enums become their
+    values, so ``ColumnRole.TARGET`` reads as ``'target'`` rather than as a
+    repr. Paths become strings. Mappings and sequences recurse. Anything with
+    ``to_dict`` uses it, which covers BuildML's own result objects. Everything
+    else becomes its ``repr``.
+
+    Parameters
+    ----------
+    value:
+        Anything.
+
+    Returns
+    -------
+    Any
+        A structure of dicts, lists, strings, numbers, booleans, and ``None``.
+
+    Notes
+    -----
+    **The ``repr`` fallback never fails, which is the point.** History recording
+    must not break the operation it is recording. The cost is that an
+    unrecognised object lands as text — informative for a human, useless for
+    reloading.
+
+    **Strings and bytes are not treated as sequences**, which would otherwise
+    explode them into lists of characters.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> json_safe({"path": Path("x.csv"), "n": 5})
+    {'path': 'x.csv', 'n': 5}
+    >>> from buildml.core.types import ColumnRole
+    >>> json_safe(ColumnRole.TARGET)
+    'target'
+    >>> json_safe(["a", 1, None])
+    ['a', 1, None]
+    """
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
     if isinstance(value, Enum):
@@ -57,7 +120,42 @@ def json_safe(value: Any) -> Any:
 
 
 def session_state(session: Any) -> dict[str, Any]:
-    """Capture the workflow state relevant to explanations."""
+    """Take a flat snapshot of what a Session currently has.
+
+    Not the Session's data — a set of booleans and small values saying what
+    exists: is there a dataset, a split, a fit, an imputation plan. Comparing two
+    of these before and after an operation is what produces the change list in a
+    history record.
+
+    Everything is read with ``getattr`` and a default, so this works against a
+    Session in any state, including one restored from an older checkpoint that
+    predates half these attributes.
+
+    Parameters
+    ----------
+    session:
+        A :class:`~buildml.session.Session`, or anything shaped like one.
+
+    Returns
+    -------
+    dict
+        ``has_dataset``, ``columns``, ``roles``, ``has_split``, ``split_kind``,
+        ``has_fit``, and a ``has_*`` flag for each domain result and
+        preprocessing plan.
+
+    Notes
+    -----
+    **Presence, not content.** ``has_impute_plan`` says a plan exists, not what
+    it does. That keeps the snapshot small enough to store twice in every
+    history record.
+
+    **Columns and roles are the exceptions**, carried in full because a change
+    to either is exactly what a reader wants to see in a transition.
+
+    See Also
+    --------
+    state_changes : Diffing two of these.
+    """
     dataset = getattr(session, "_dataset", None)
     split = getattr(session, "_split_plan", None)
     return {
@@ -92,7 +190,48 @@ def session_state(session: Any) -> dict[str, Any]:
 
 
 def state_changes(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[str]:
-    """Describe changed state keys precisely and without domain speculation."""
+    """List what differs between two snapshots, as literal before-and-after.
+
+    Produces lines like ``has_split: False -> True``. Deliberately mechanical:
+    it reports the keys that changed and their values, and infers nothing about
+    what the change means. Interpretation belongs in the walkthrough, which can
+    be revised; a history record should be able to state what happened without
+    committing to a reading of it.
+
+    Keys are sorted, so the same change always produces the same line in the
+    same position — which is what makes two runs comparable.
+
+    Parameters
+    ----------
+    before:
+        The snapshot before the operation.
+    after:
+        The snapshot after.
+
+    Returns
+    -------
+    list of str
+        One ``key: old -> new`` line per difference, sorted by key. Empty when
+        nothing changed, which is itself informative: an operation that altered
+        no state either did nothing or did something this snapshot does not
+        capture.
+
+    Notes
+    -----
+    **Keys missing from one side compare against ``None``**, so a snapshot from
+    an older version produces sensible lines rather than an error.
+
+    Examples
+    --------
+    >>> state_changes({"has_split": False}, {"has_split": True})
+    ['has_split: False -> True']
+    >>> state_changes({"has_fit": True}, {"has_fit": True})
+    []
+
+    See Also
+    --------
+    session_state : Producing the snapshots.
+    """
     changes: list[str] = []
     for key in sorted(set(before) | set(after)):
         old, new = before.get(key), after.get(key)
@@ -113,7 +252,60 @@ def make_operation_record(
     result_summary: Mapping[str, Any] | None = None,
     timestamp: str | None = None,
 ) -> dict[str, Any]:
-    """Build one backward-compatible v2 history record."""
+    """Assemble one history record, readable by both old and new consumers.
+
+    The single constructor for history entries, so every record has the same
+    shape. Parameters and both state snapshots are passed through
+    :func:`json_safe`, making the result immediately serialisable.
+
+    Some fields are duplicated on purpose. ``action`` repeats ``operation_id``
+    and ``details`` repeats ``parameters``, because v1 consumers read the old
+    names. The cost is a slightly larger record; the benefit is that a report or
+    script written against the old format keeps working.
+
+    Parameters
+    ----------
+    sequence:
+        Position in the history, from 1. Ordering does not depend on timestamps,
+        which can collide at this resolution.
+    operation_id:
+        What was called — ``'impute'``, ``'fit'``, ``'split'``.
+    parameters:
+        The arguments, converted for storage.
+    decision_origin:
+        Who decided. ``'explicit'`` for a user's choice, ``'auto'`` for one
+        BuildML made. **This is the field that keeps automation honest** — it is
+        how a reader tells their own decisions from the library's.
+    before:
+        State snapshot before.
+    after:
+        State snapshot after.
+    warnings:
+        Anything the operation surfaced. Stringified.
+    result_summary:
+        A compact description of what came out. Falls back to the parameters
+        when omitted.
+    timestamp:
+        ISO 8601. Defaults to now, in UTC.
+
+    Returns
+    -------
+    dict
+        A v2 record with the schema version, identity, parameters, the state
+        transition and its change list, warnings, and the result summary.
+
+    Notes
+    -----
+    **Timestamps are UTC.** Comparing across machines in different timezones is
+    otherwise a source of confusion in a shared history.
+
+    **The record is a snapshot, not a reference.** Nothing here points at live
+    objects, so it stays valid after the Session is gone.
+
+    See Also
+    --------
+    normalize_history : Upgrading older records to this shape.
+    """
     safe_parameters = json_safe(dict(parameters or {}))
     safe_before = json_safe(dict(before))
     safe_after = json_safe(dict(after))
@@ -138,7 +330,47 @@ def make_operation_record(
 
 
 def normalize_history(history: Sequence[Mapping[str, Any]] | None) -> list[dict[str, Any]]:
-    """Normalize v1/v2 checkpoint history into ordered v2 records."""
+    """Upgrade a history of any vintage into uniform v2 records.
+
+    A checkpoint written by an older BuildML holds records in the old shape:
+    ``action`` instead of ``operation_id``, ``details`` instead of
+    ``parameters``, and no state transitions at all. Rather than making every
+    consumer handle both, they are converted once on read.
+
+    The interesting case is a v1 record with no transition. Since v1 did not
+    record state, the previous record's "after" is carried forward as this
+    record's "before" and "after" — which produces an empty change list. That is
+    the honest answer: the change was not recorded, and inventing one would be
+    worse than reporting none.
+
+    Parameters
+    ----------
+    history:
+        Records in v1 shape, v2 shape, or a mixture. ``None`` yields an empty
+        list.
+
+    Returns
+    -------
+    list of dict
+        v2 records, resequenced from 1 in the order given.
+
+    Notes
+    -----
+    **Sequence numbers are reassigned**, so gaps or duplicates in a stored
+    history come out contiguous.
+
+    **Malformed records are coerced rather than rejected.** Non-mapping
+    parameters get wrapped as ``{'value': ...}``, a non-sequence warnings field
+    becomes a one-element tuple. A corrupt entry should not make a checkpoint
+    unloadable.
+
+    **Missing timestamps are filled with the current time**, which will look
+    misleading in an old history. The sequence number is the reliable ordering.
+
+    See Also
+    --------
+    make_operation_record : The target shape.
+    """
     normalized: list[dict[str, Any]] = []
     previous = dict(_EMPTY_STATE)
     for index, raw in enumerate(history or (), start=1):
@@ -179,7 +411,36 @@ def normalize_history(history: Sequence[Mapping[str, Any]] | None) -> list[dict[
 
 
 def prior_state(history: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-    """Return the state after the latest record, or the empty workflow state."""
+    """Recover the current workflow state from the end of the history.
+
+    The state after the last recorded operation is the state now, so the next
+    record's "before" can be read off the history rather than recomputed from
+    the Session. That matters after a checkpoint restore, when the history has
+    been reloaded and the Session may not yet hold everything it describes.
+
+    Parameters
+    ----------
+    history:
+        The records, in order.
+
+    Returns
+    -------
+    dict
+        The last record's "after" snapshot. The empty workflow state — every
+        flag ``False`` — when the history is empty or the last record has no
+        usable transition.
+
+    Notes
+    -----
+    **A copy is returned**, so a caller cannot mutate the record through it.
+
+    **The fallback is a full empty state, not an empty dict**, so every key a
+    consumer expects is present.
+
+    See Also
+    --------
+    session_state : Reading the state off a live Session instead.
+    """
     if history:
         transition = history[-1].get("state_transition", {})
         after = transition.get("after", {}) if isinstance(transition, Mapping) else {}

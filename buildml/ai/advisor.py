@@ -1,4 +1,34 @@
-"""Advisory Q&A for AI operator (read-only path)."""
+"""Ask a model about your Session without letting it change anything.
+
+Advisor mode is the read-only half of the AI domain. The model can inspect,
+explain, and recommend; it is given only tools that read, so there is no path
+from a bad suggestion to a modified Session. That is structural rather than
+procedural — nothing depends on the model choosing well.
+
+Two entry points. :func:`run_advisor` answers a question, calling read-only
+tools as it needs them. :func:`run_plan` produces a structured
+:class:`~buildml.ai.results.PlanResult` — a sequence of recommended operations
+with their reasoning, ready for :mod:`buildml.ai.planner` to execute under
+confirmation. :func:`run_advisor_with_rag` adds retrieval when the Session has
+an index attached.
+
+Everything reaching the model is treated as hostile. Column names, cell values,
+your question, and retrieved documents are all wrapped as untrusted data, and
+tool results are sanitised before being fed back. The system prompt states the
+rule explicitly, because a model that has been told is more likely to comply.
+
+Notes
+-----
+**The advice is not verified against anything.** It is a model's reading of a
+state digest and whatever the egress level allowed. Read
+``current_state_summary`` on a plan and the evidence on an answer to judge
+whether the reasoning actually engaged with your data.
+
+See Also
+--------
+buildml.ai.planner : Executing a plan.
+buildml.ai.privacy : What the model is allowed to see.
+"""
 
 from __future__ import annotations
 
@@ -82,7 +112,41 @@ Respond with valid JSON matching this schema:
 
 @dataclass(slots=True)
 class AdvisorResult:
-    """Result from ai_advisor: advisory Q&A response."""
+    """An answer, with the reasoning and the disclosure attached.
+
+    Attributes
+    ----------
+    question:
+        What was asked, echoed back.
+    answer:
+        The model's reply, as prose.
+    evidence:
+        Specifics it cited — columns, counts, metrics. **The field that
+        separates a grounded answer from a generic one.** Empty means it cited
+        nothing.
+    recommendations:
+        Actions it suggested. Nothing has been done about them.
+    limitations:
+        Caveats, always including that this is AI-generated advice.
+    egress_manifest:
+        What was sent to produce it.
+    tool_calls_made:
+        Which read-only tools ran. Shows whether the model looked at your data
+        or answered from the digest alone.
+    usage:
+        Token counts across every turn.
+
+    Notes
+    -----
+    **An answer with no evidence and no tool calls came from the state digest
+    and the model's priors.** That can still be useful, but it is general
+    knowledge rather than a reading of your situation, and it is worth
+    distinguishing.
+
+    See Also
+    --------
+    run_advisor : Produces this.
+    """
 
     question: str
     answer: str
@@ -94,6 +158,18 @@ class AdvisorResult:
     usage: dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the advisory response as JSON-safe values.
+
+        Keeps the egress manifest and the tool calls alongside the answer, so a
+        logged response records what was disclosed and what was inspected to
+        produce it.
+
+        Returns
+        -------
+        dict
+            Question, answer, evidence, recommendations, limitations, egress
+            manifest, tool calls, and token usage.
+        """
         return {
             "question": self.question,
             "answer": self.answer,
@@ -107,7 +183,39 @@ class AdvisorResult:
 
 
 def build_state_digest(session: Any) -> StateDigest:
-    """Build a compact state digest from a Session."""
+    """Summarise where a Session has got to, without reading any values.
+
+    Collects shape, columns, roles, which stages have completed, and a short
+    history of operations. This is what orients the model: advice about
+    splitting is wrong if the data is already split, and advice about fitting
+    is wrong if it is not.
+
+    Parameters
+    ----------
+    session:
+        The Session to inspect. Anything satisfying
+        :class:`~buildml.ai.types.SessionLike` works.
+
+    Returns
+    -------
+    StateDigest
+        The summary, with anything unreadable noted in its warnings.
+
+    Notes
+    -----
+    **Reading is best-effort.** A Session in an unusual state — a dataset that
+    cannot report its length, a metadata call that raises — yields a partial
+    digest rather than an exception. A digest missing information produces
+    vaguer advice; a raised exception produces none.
+
+    **No values are read.** Columns, roles, counts, and flags only. Values
+    reach the model through the egress payload, if the level permits.
+
+    See Also
+    --------
+    build_advisor_context : Where this becomes a prompt.
+    buildml.ai.types.StateDigest : The fields.
+    """
     metadata = session.metadata() if hasattr(session, "metadata") else {}
     history = getattr(session, "history", []) or []
     dataset = getattr(session, "dataset", None)
@@ -156,7 +264,44 @@ def build_advisor_context(
     question: str,
     registry: ToolRegistry,
 ) -> tuple[list[Message], EgressManifest]:
-    """Build the advisor conversation context."""
+    """Assemble the prompt, and the record of what it discloses.
+
+    Combines the security-focused system prompt, the read-only tool
+    descriptions, the state digest, an egress payload at the configured level,
+    and your question. Column names and the question are wrapped as untrusted
+    data before they go in.
+
+    Parameters
+    ----------
+    session:
+        The Session to describe.
+    egress_config:
+        How much of the data may be included.
+    question:
+        What to ask. Wrapped, never interpolated bare.
+    registry:
+        The allowlist. Only its read-only tools are described.
+
+    Returns
+    -------
+    tuple of (list of Message, EgressManifest)
+        The system and user messages, and the record of what they disclose.
+
+    Notes
+    -----
+    **The manifest covers the data payload, not the prompt.** The state digest
+    — including every column name — goes in regardless of level, because
+    without it the model has nothing to reason about. The manifest accounts for
+    the values.
+
+    **Only read-only tools are described.** The model is not told that write
+    tools exist, which removes the temptation before the enforcement is needed.
+
+    See Also
+    --------
+    run_advisor : The loop this feeds.
+    buildml.ai.privacy.build_egress_payload : The payload half.
+    """
     digest = build_state_digest(session)
     dataset = getattr(session, "dataset", None)
 
@@ -219,9 +364,68 @@ def run_advisor(
     registry: ToolRegistry | None = None,
     max_iterations: int = 10,
 ) -> AdvisorResult:
-    """Run the advisor Q&A flow.
+    """Answer a question about the Session, reading but never writing.
 
-    This is a read-only path that does not execute tools.
+    Runs a conversation loop: the model may call read-only tools, their results
+    are sanitised and fed back, and the loop ends when it answers in prose.
+    Write tools are refused with an error message the model can read and
+    recover from.
+
+    Parameters
+    ----------
+    session:
+        The Session to ask about.
+    question:
+        What to ask. Wrapped as untrusted data.
+    provider:
+        The model to ask. :class:`~buildml.ai.provider.MockProvider` works here
+        and is how this path is tested.
+    egress_config:
+        How much data may be sent. Defaults to statistics only.
+    registry:
+        The allowlist. Defaults to the conservative built-in set. Only its
+        read-only tools are offered.
+    max_iterations:
+        Turn ceiling, bounding a loop that never settles on an answer.
+
+    Returns
+    -------
+    AdvisorResult
+        The answer, its evidence and recommendations, the egress manifest, the
+        tools called, and total token usage.
+
+    Raises
+    ------
+    ValidationError
+        If a provider request fails.
+
+    Notes
+    -----
+    **Hitting ``max_iterations`` returns a result, not an exception.** The
+    answer says the limit was reached and ``limitations`` records it — a
+    partial account of what happened beats losing the tool calls already made.
+
+    **Nothing here can modify the Session.** A write tool is never offered, and
+    is refused if requested anyway.
+
+    **The advice is unverified.** ``limitations`` always says so.
+
+    Examples
+    --------
+    Ask, disclosing only the schema::
+
+        result = run_advisor(
+            session,
+            "which columns look like identifiers?",
+            provider,
+            egress_config=EgressConfig(level=EgressLevel.SCHEMA_ONLY),
+        )
+        result.answer
+
+    See Also
+    --------
+    run_plan : Structured steps rather than prose.
+    run_advisor_with_rag : With document grounding.
     """
     if egress_config is None:
         egress_config = EgressConfig(level=EgressLevel.STATS_ONLY)
@@ -295,7 +499,61 @@ def run_plan(
     *,
     egress_config: EgressConfig | None = None,
 ) -> PlanResult:
-    """Run the planning flow to generate a structured workflow plan."""
+    """Ask the model for a sequence of steps toward a goal.
+
+    Unlike :func:`run_advisor`, this asks for JSON rather than prose: an
+    ordered list of operations, each with its rationale, prerequisites, and
+    expected effects. The result is machine-readable, so
+    :func:`buildml.ai.planner.run_plan` can execute it under confirmation.
+
+    Parameters
+    ----------
+    session:
+        The Session to plan for.
+    goal:
+        What you want to achieve.
+    provider:
+        The model to ask.
+    egress_config:
+        How much data may be sent. Defaults to statistics only.
+
+    Returns
+    -------
+    PlanResult
+        The steps, the model's reading of your state, its assumptions,
+        limitations, alternatives, and the egress manifest.
+
+    Raises
+    ------
+    ValidationError
+        If a provider request fails.
+
+    Notes
+    -----
+    **A malformed response degrades rather than raises.** When the model
+    returns something that is not the requested JSON, the raw text is kept in
+    ``raw_response`` and the structured fields come back thin. Check
+    ``steps`` before relying on them.
+
+    **No tools are called.** The plan comes from the state digest and the
+    egress payload alone; nothing is inspected beyond that.
+
+    **Steps can name operations that do not exist.** Matching against the tool
+    registry happens at execution, where an unmatched step is skipped and
+    reported.
+
+    Examples
+    --------
+    Plan, then execute under confirmation::
+
+        plan = run_plan(session, "predict churn from these columns", provider)
+        outcome = planner.run_plan(session, plan, build_default_registry())
+
+    See Also
+    --------
+    buildml.ai.planner.run_plan : Executing the result.
+    buildml.ai.results.PlanResult : Reading it.
+    """
     if egress_config is None:
         egress_config = EgressConfig(level=EgressLevel.STATS_ONLY)
 
@@ -391,12 +649,23 @@ def _execute_read_only_tool(session: Any, call: ToolCall) -> str:
 
         elif call.tool_name == "explain_operation":
             op = call.arguments.get("operation", "")
+            level = call.arguments.get("level", "beginner")
             if hasattr(session, "explain"):
-                result = session.explain(op)
+                result = session.explain(op, level=level)
                 if hasattr(result, "to_dict"):
                     return json.dumps(result.to_dict(), indent=2, default=str)
                 return str(result)
             return f"Explain not available for '{op}'."
+
+        elif call.tool_name == "learn_concept":
+            topic = call.arguments.get("topic")
+            level = call.arguments.get("level", "beginner")
+            if hasattr(session, "learn"):
+                brief = session.learn(topic, level=level)
+                if hasattr(brief, "to_dict"):
+                    return json.dumps(brief.to_dict(), indent=2, default=str)
+                return str(brief)
+            return f"Teaching material not available for '{topic}'."
 
         elif call.tool_name == "workflow_status":
             if hasattr(session, "workflow"):
@@ -464,32 +733,57 @@ def run_advisor_with_rag(
     max_iterations: int = 10,
     top_k: int = 5,
 ) -> AdvisorResult:
-    """Run the advisor Q&A flow with optional RAG grounding.
+    """Answer a question, grounded in retrieved documents when an index exists.
 
-    When a RAG index is attached to the session, retrieves relevant chunks
-    and grounds the answer in them. Chunks are treated as untrusted data.
+    When the Session has a RAG index attached, the most relevant chunks are
+    retrieved and included in the prompt, so the answer can draw on your
+    documents rather than the model's training data. Without an index, this
+    behaves exactly as :func:`run_advisor`.
 
     Parameters
     ----------
-    session
-        Session object with optional rag_index.
-    question
-        The question to ask.
-    provider
-        LLM provider.
-    egress_config
-        Egress configuration.
-    registry
-        Tool registry.
-    max_iterations
-        Maximum iterations.
-    top_k
-        Number of RAG chunks to retrieve.
+    session:
+        The Session, optionally carrying a RAG index.
+    question:
+        What to ask. Used both as the retrieval query and as the question.
+    provider:
+        The model to ask.
+    egress_config:
+        How much data may be sent. Defaults to statistics only.
+    registry:
+        The allowlist. Read-only tools only.
+    max_iterations:
+        Turn ceiling.
+    top_k:
+        How many chunks to retrieve. More context is not always better — it
+        costs tokens and dilutes the relevant passage.
 
     Returns
     -------
     AdvisorResult
-        Advisory response, optionally grounded in RAG chunks.
+        The answer, with retrieved sources noted in its evidence.
+
+    Raises
+    ------
+    ValidationError
+        If a provider request fails.
+
+    Notes
+    -----
+    **Retrieved chunks are untrusted input.** A document in your corpus can
+    contain text aimed at the model, and a corpus assembled from external
+    sources is a realistic injection route. Chunks are wrapped accordingly.
+
+    **Retrieval failure is not fatal.** If the index cannot be queried, the
+    question is answered without grounding rather than refused.
+
+    **Grounding is not verification.** The model is given relevant passages; it
+    can still misread them or answer past them. Check the cited sources.
+
+    See Also
+    --------
+    run_advisor : Without retrieval.
+    buildml.rag : Building the index.
     """
     if egress_config is None:
         egress_config = EgressConfig(level=EgressLevel.STATS_ONLY)

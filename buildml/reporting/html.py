@@ -1,5 +1,28 @@
 # ruff: noqa: E501
-"""Dependency-free HTML components and an offline BuildML report shell."""
+"""HTML components with no dependencies, and the document shell around them.
+
+String concatenation, not a template engine. That sounds like a shortcut and is
+a deliberate choice: a reporting layer that pulls in Jinja makes the dependency
+mandatory for anyone who wants an HTML export, and the markup here is simple
+enough that the templates would not earn their cost.
+
+The choice does put the burden of escaping on this module rather than on a
+framework, so :func:`escape` is applied at every point where a caller's value
+reaches the output. A dataset column named ``<script>`` is a real thing that
+happens, and a report that executes it is a report that cannot be shared.
+
+Three ideas run through the components. Everything is escaped unless a field is
+explicitly documented as trusted HTML. Everything is bounded, so a frame with a
+hundred thousand rows produces a readable report rather than a browser that
+stops responding. And everything carries the accessibility attributes that make
+a report usable with a screen reader or a keyboard — captions, scopes, landmark
+roles, skip links — because reports get read by people who did not run the
+analysis.
+
+See Also
+--------
+buildml.reporting : The public surface re-exported from here.
+"""
 
 from __future__ import annotations
 
@@ -18,12 +41,98 @@ DEFAULT_MAX_TABLE_COLUMNS = 50
 
 
 def escape(value: object, *, quote: bool = True) -> str:
-    """Escape untrusted text for HTML text or attribute contexts."""
+    """Make any value safe to drop into markup, whatever it turns out to be.
+
+    The single point where caller data becomes HTML. Applied everywhere in this
+    module, on the assumption that any value reaching a report might contain
+    markup — a column named ``<b>total</b>``, a category value with an
+    apostrophe, an error message quoting user input.
+
+    Non-strings are stringified rather than rejected, since report values are
+    routinely numbers, enums, and ``None``. ``None`` becomes the empty string
+    rather than the word "None", because a missing value should read as absent.
+
+    Parameters
+    ----------
+    value:
+        Anything. Converted with ``str`` unless it is ``None``.
+    quote:
+        Also escape quotes, which is required inside an attribute and harmless
+        in body text. Defaults to on, so forgetting it cannot open a hole.
+
+    Returns
+    -------
+    str
+        The escaped text.
+
+    Notes
+    -----
+    **This is safe for text and attributes, and not for anything else.** Values
+    placed inside a ``<script>`` block, a ``<style>`` block, or a URL need their
+    own encoding, and none of the components here put caller data in those
+    positions.
+
+    Examples
+    --------
+    >>> escape("<script>alert(1)</script>")
+    '&lt;script&gt;alert(1)&lt;/script&gt;'
+    >>> escape(None)
+    ''
+    >>> escape(0.5)
+    '0.5'
+    >>> escape('a "quoted" value')
+    'a &quot;quoted&quot; value'
+    >>> escape('a "quoted" value', quote=False)
+    'a "quoted" value'
+    """
     return html.escape("" if value is None else str(value), quote=quote)
 
 
 def element_id(value: object, *, prefix: str = "section") -> str:
-    """Return a stable, conservative HTML id."""
+    """Turn a human label into an id that is safe in a URL fragment.
+
+    Section keys come from analysis names — ``"Missing Values"``, ``"ROC / PR
+    curves"`` — and those cannot be used directly as ids, because a fragment
+    link containing a space or a slash breaks navigation.
+
+    Everything outside lowercase letters, digits, hyphens, and underscores
+    collapses to a hyphen, and leading and trailing separators are trimmed. The
+    mapping is deterministic, so the same key produces the same id every time —
+    which is what lets a table of contents link to a section rendered
+    separately.
+
+    Parameters
+    ----------
+    value:
+        The label to convert.
+    prefix:
+        The fallback when nothing survives the transformation, for a key that is
+        entirely punctuation or whitespace. An empty id would produce a link to
+        nowhere.
+
+    Returns
+    -------
+    str
+        A lowercase, hyphen-separated identifier.
+
+    Notes
+    -----
+    **The mapping is not injective.** ``"ROC/PR"`` and ``"ROC PR"`` both become
+    ``'roc-pr'``, so distinct sections can collide.
+    :func:`render_report` checks for that and refuses rather than producing a
+    document where one link reaches the wrong section.
+
+    Examples
+    --------
+    >>> element_id("Missing Values")
+    'missing-values'
+    >>> element_id("ROC / PR curves")
+    'roc-pr-curves'
+    >>> element_id("   ")
+    'section'
+    >>> element_id("!!!", prefix="chart")
+    'chart'
+    """
     identifier = _ID_PATTERN.sub("-", str(value).strip().lower()).strip("-_")
     return identifier or prefix
 
@@ -33,7 +142,53 @@ def encode_asset(
     *,
     media_type: str | None = None,
 ) -> str:
-    """Encode local bytes as a data URI for a network-free report."""
+    """Inline an image or file into the document, so nothing is fetched later.
+
+    This is what makes a report portable. A ``<img src="figure.png">`` is a
+    promise that the file will still be beside the HTML when someone opens it,
+    and reports get emailed, copied to shared drives, and attached to tickets —
+    the promise does not survive. Base64 into a data URI, and the image is part
+    of the document.
+
+    Parameters
+    ----------
+    source:
+        A path to read, or the bytes themselves when the content was generated
+        in memory — a Matplotlib figure saved to a buffer, for instance.
+    media_type:
+        The MIME type. Guessed from the file extension when a path was given;
+        required for bytes if the browser is to render rather than download
+        them.
+
+    Returns
+    -------
+    str
+        A ``data:`` URI, usable directly as an ``src`` or ``href``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If a path is given that does not exist.
+    OSError
+        If the file cannot be read.
+
+    Notes
+    -----
+    **Base64 costs about a third more bytes than the original**, and the whole
+    thing lands in a single HTML file. A report with fifty high-resolution
+    figures becomes tens of megabytes, which browsers handle but email gateways
+    often do not. Prefer fewer, smaller figures over many large ones.
+
+    **An unguessable type falls back to ``application/octet-stream``**, which
+    browsers download rather than display. If a figure appears as a download
+    prompt instead of an image, pass ``media_type`` explicitly.
+
+    Examples
+    --------
+    >>> uri = encode_asset(b"\\x89PNG...", media_type="image/png")
+    >>> uri.startswith("data:image/png;base64,")
+    True
+    """
     if isinstance(source, bytes):
         payload = source
         resolved_type = media_type or "application/octet-stream"
@@ -47,13 +202,91 @@ def encode_asset(
 
 
 def render_badge(label: object, *, tone: str = "neutral") -> str:
-    """Render a compact status label."""
+    """Render a small coloured label for a status or count.
+
+    Used for the short signals that would be noise as full sentences — a
+    severity, a pass or fail, a count of affected columns.
+
+    Parameters
+    ----------
+    label:
+        The text. Escaped.
+    tone:
+        One of ``'neutral'``, ``'info'``, ``'good'``, ``'warn'``, or
+        ``'danger'``, which selects the colour.
+
+    Returns
+    -------
+    str
+        A ``<span>`` carrying the tone class.
+
+    Notes
+    -----
+    **An unrecognised tone silently becomes ``'neutral'``.** The alternative is
+    a report that fails to render over a typo in a colour name, which is a bad
+    trade — but it does mean a misspelled tone shows up as a missing colour
+    rather than an error.
+
+    **Colour is never the only signal.** The label text carries the meaning, so
+    the badge still reads correctly in greyscale, in print, and to a screen
+    reader.
+
+    Examples
+    --------
+    >>> render_badge("high", tone="danger")
+    '<span class="bml-badge bml-badge--danger">high</span>'
+    >>> render_badge("ok", tone="nonsense")
+    '<span class="bml-badge bml-badge--neutral">ok</span>'
+
+    See Also
+    --------
+    severity_tone : Choosing the tone from a severity label.
+    """
     allowed_tone = tone if tone in {"neutral", "info", "good", "warn", "danger"} else "neutral"
     return f'<span class="bml-badge bml-badge--{allowed_tone}">{escape(label)}</span>'
 
 
 def severity_tone(severity: object) -> str:
-    """Map editorial severity labels onto badge/card tone tokens."""
+    """Translate a finding's severity into the tone that renders it.
+
+    Findings across BuildML carry severities like ``'critical'`` or
+    ``'medium'``; components take tones like ``'danger'`` or ``'warn'``. Mapping
+    in one place keeps a critical finding the same colour in every report,
+    rather than each caller picking its own.
+
+    Critical and high both map to danger, because the visual distinction between
+    two shades of alarming is not one a reader reliably picks up — the severity
+    text carries that difference.
+
+    Parameters
+    ----------
+    severity:
+        The label. Lowercased before matching, so casing does not matter.
+
+    Returns
+    -------
+    str
+        A tone token for :func:`render_badge` or :func:`render_card`.
+
+    Notes
+    -----
+    **Unknown severities become ``'neutral'``**, so a new severity introduced
+    elsewhere renders uncoloured rather than breaking the report — and looks
+    plain enough to notice.
+
+    Examples
+    --------
+    >>> severity_tone("critical"), severity_tone("HIGH")
+    ('danger', 'danger')
+    >>> severity_tone("medium"), severity_tone("low")
+    ('warn', 'info')
+    >>> severity_tone("unheard-of")
+    'neutral'
+
+    See Also
+    --------
+    render_badge : The usual consumer.
+    """
     return {
         "critical": "danger",
         "high": "danger",
@@ -72,7 +305,49 @@ def render_reading_frame(
     limits: object,
     next_step: object,
 ) -> str:
-    """Render the shared five-part reading frame used by offline reports."""
+    """Render the five questions every BuildML result should answer.
+
+    A number without a frame around it invites the reader to supply their own
+    interpretation, which is where most misreadings start. The frame is a fixed
+    structure — what was examined, what came out, why it matters, what it cannot
+    tell you, and what to do next — and its value comes from being the same
+    everywhere. A reader learns the shape once and then knows where to look in
+    every report.
+
+    The ``limits`` slot is the one that earns the structure. It is the part
+    authors omit when writing prose freely, and the part a reader most needs in
+    order not to over-claim.
+
+    Parameters
+    ----------
+    examined:
+        What the analysis looked at — which data, which partition, which
+        columns.
+    observed:
+        What came out, stated as a result rather than an interpretation.
+    why:
+        Why the result matters for a decision.
+    limits:
+        What this cannot tell you. Assumptions, sample sizes, checks that were
+        skipped.
+    next_step:
+        The concrete action the result suggests.
+
+    Returns
+    -------
+    str
+        A ``<dl>`` with the five terms. All values escaped.
+
+    Notes
+    -----
+    **All five are required, deliberately.** An optional ``limits`` would be
+    omitted precisely when it is most needed. If a slot genuinely has nothing to
+    say, saying so is more useful than leaving it out.
+
+    See Also
+    --------
+    render_card : For narrower observations that do not need the full frame.
+    """
     return (
         '<dl class="bml-reading-frame">'
         f"<div><dt>What was examined</dt><dd>{escape(examined)}</dd></div>"
@@ -91,7 +366,50 @@ def render_card(
     heading_level: int = 3,
     tone: str = "neutral",
 ) -> str:
-    """Render an escaped text card."""
+    """Render a titled block of text with a coloured edge for its tone.
+
+    The workhorse for a single observation — a finding, a recommendation, a
+    caveat. Both title and body are escaped, so this is the safe choice for
+    anything containing values from the data.
+
+    Parameters
+    ----------
+    title:
+        The heading text.
+    body:
+        The paragraph text. Plain text only; markup would be escaped and shown
+        literally.
+    heading_level:
+        Which heading tag to use, clamped to 2–6. Getting this right matters
+        more than it looks: screen readers navigate by heading structure, and a
+        card nested under a section heading should be one level deeper, not
+        whatever looks right visually.
+    tone:
+        One of ``'neutral'``, ``'info'``, ``'good'``, ``'warn'``, ``'danger'``.
+
+    Returns
+    -------
+    str
+        An ``<article>`` with a heading and a paragraph.
+
+    Notes
+    -----
+    **The level is clamped rather than validated**, so a caller computing
+    ``heading_level=section_depth + 1`` cannot produce an ``<h7>`` or an
+    ``<h1>`` that competes with the report title.
+
+    **The body is one paragraph.** For lists use :func:`render_list`, and for a
+    full result use :func:`render_reading_frame`.
+
+    Examples
+    --------
+    >>> render_card("Class imbalance", "Positives are 3% of rows.", tone="warn")
+    '<article class="bml-card bml-card--warn"><h3>Class imbalance</h3><p>Positives are 3% of rows.</p></article>'
+
+    See Also
+    --------
+    severity_tone : Deriving the tone from a finding.
+    """
     level = min(6, max(2, heading_level))
     allowed_tone = tone if tone in {"neutral", "info", "good", "warn", "danger"} else "neutral"
     return (
@@ -103,7 +421,42 @@ def render_card(
 
 
 def render_list(items: Iterable[object], *, ordered: bool = False) -> str:
-    """Render an escaped ordered or unordered list."""
+    """Render items as a list, escaping each one.
+
+    Use an ordered list when the sequence carries meaning — ranked features,
+    steps to follow — and an unordered one otherwise. The distinction is not
+    cosmetic: a screen reader announces an ordered list's positions, which tells
+    the listener the order matters.
+
+    Parameters
+    ----------
+    items:
+        The entries. Each is stringified and escaped, so numbers, enums, and
+        ``None`` are all acceptable.
+    ordered:
+        Render as ``<ol>`` rather than ``<ul>``.
+
+    Returns
+    -------
+    str
+        A ``<ul>`` or ``<ol>``. An empty iterable yields an empty list element,
+        which renders as nothing.
+
+    Notes
+    -----
+    **There is no length bound here.** A list built from an unbounded source —
+    every distinct category, say — should be truncated by the caller, which
+    knows what "the rest" means well enough to say so.
+
+    Examples
+    --------
+    >>> render_list(["age", "income"])
+    '<ul><li>age</li><li>income</li></ul>'
+    >>> render_list(["first", "second"], ordered=True)
+    '<ol><li>first</li><li>second</li></ol>'
+    >>> render_list([])
+    '<ul></ul>'
+    """
     tag = "ol" if ordered else "ul"
     content = "".join(f"<li>{escape(item)}</li>" for item in items)
     return f"<{tag}>{content}</{tag}>"
@@ -118,7 +471,71 @@ def render_table(
     max_rows: int | None = DEFAULT_MAX_TABLE_ROWS,
     max_columns: int | None = DEFAULT_MAX_TABLE_COLUMNS,
 ) -> str:
-    """Render a bounded accessible table with escaped headings and cells."""
+    """Render rows as a table, bounded in both directions and stated when cut.
+
+    The bounds are the point. Rendering a frame straight to HTML works fine on
+    the developer's thousand-row sample and produces an unopenable file on the
+    real data. Defaults of 500 rows and 50 columns keep a report readable, and
+    when anything is dropped a note above the table says how much — a silently
+    truncated table is worse than no table, because it looks complete.
+
+    Cells are formatted before escaping, so floats get six significant figures
+    rather than seventeen, collections become comma-separated text, and ``None``
+    becomes empty.
+
+    Parameters
+    ----------
+    rows:
+        The data, as mappings. Missing keys render as empty cells, so rows need
+        not be uniform.
+    columns:
+        Which columns to show, in order. Defaults to first-seen order across all
+        rows, which keeps output stable for a given input.
+    caption:
+        A caption, rendered as ``<caption>`` and reused as the scroll region's
+        accessible label. Worth supplying — it is what tells a screen-reader
+        user what the table contains before they enter it.
+    empty_message:
+        Shown instead of the table when there are no rows. A sentence saying
+        nothing was found is more informative than an empty grid.
+    max_rows:
+        Row budget, or ``None`` for no limit. Removing the limit on data of
+        unknown size is how a report becomes unopenable.
+    max_columns:
+        Column budget, or ``None`` for no limit.
+
+    Returns
+    -------
+    str
+        A scrollable, labelled table, preceded by a truncation note when the
+        budget was applied. Or the empty message when there are no rows.
+
+    Raises
+    ------
+    ValueError
+        If either budget is set to zero or a negative number. ``None`` is the
+        way to say "no limit"; zero would render a table with no content and no
+        indication why.
+
+    Notes
+    -----
+    **Truncation takes the first N, not a sample.** Sort the rows so that the
+    interesting ones come first — largest effect, worst error — because the tail
+    is what disappears.
+
+    **Floats use six significant figures.** Enough to distinguish values,
+    without implying precision a metric on a finite sample does not have.
+
+    Examples
+    --------
+    >>> rows = [{"feature": "age", "importance": 0.42}]
+    >>> "0.42" in render_table(rows, caption="Top features")
+    True
+    >>> render_table([])
+    '<p class="bml-empty">No rows to display.</p>'
+    >>> render_table([], empty_message="No leakage detected.")
+    '<p class="bml-empty">No leakage detected.</p>'
+    """
     if not rows:
         return f'<p class="bml-empty">{escape(empty_message)}</p>'
     selected = list(columns or _column_order(rows))
@@ -167,7 +584,42 @@ def render_table(
 
 @dataclass(frozen=True, slots=True)
 class ReportSection:
-    """One navigable report section; ``body_html`` must be trusted HTML."""
+    """One section of a report: a heading, a body, and a link target.
+
+    The only place in this module where a caller supplies raw HTML. That is
+    necessary — a section body is assembled from the render helpers, and
+    escaping it again would show the markup as text — and it means the
+    responsibility for safety moves to the caller.
+
+    Attributes
+    ----------
+    key:
+        A stable identifier, converted to the id and fragment link. Keep it
+        constant across runs so a bookmark into a report keeps working.
+    title:
+        The heading text. Escaped.
+    body_html:
+        **Trusted HTML.** Built from :func:`render_table`, :func:`render_card`,
+        and the rest, which escape their own inputs. Never interpolate a raw
+        value here.
+    summary:
+        An optional sentence under the heading, saying what the section is for.
+        Escaped.
+
+    Notes
+    -----
+    **Assemble ``body_html`` from the render helpers only.** They escape their
+    inputs; an f-string does not. This is the one place in the reporting layer
+    where a mistake can put caller data into the document unescaped.
+
+    **Keys must produce distinct ids.** :func:`render_report` rejects
+    collisions, which are easy to create accidentally since ``"ROC/PR"`` and
+    ``"ROC PR"`` reduce to the same thing.
+
+    See Also
+    --------
+    render_report : Assembling sections into a document.
+    """
 
     key: str
     title: str
@@ -176,7 +628,34 @@ class ReportSection:
 
 
 def render_navigation(sections: Sequence[ReportSection]) -> str:
-    """Render landmark navigation linked to report sections."""
+    """Render a table of contents linking to each section.
+
+    Called by :func:`render_report`, and available separately for a custom
+    shell. The ``<nav>`` element with a label is what lets assistive technology
+    treat this as a navigation landmark and jump straight to it, rather than
+    reading it as an ordinary list of links.
+
+    Parameters
+    ----------
+    sections:
+        The sections, in the order they appear. Each key becomes a fragment link
+        to that section's id.
+
+    Returns
+    -------
+    str
+        A labelled ``<nav>`` containing the links.
+
+    Notes
+    -----
+    **Links resolve only if the sections are rendered in the same document.**
+    Building navigation for one set of sections and a body from another produces
+    links that go nowhere.
+
+    See Also
+    --------
+    element_id : How keys become fragment targets.
+    """
     links = "".join(
         f'<li><a href="#{escape(element_id(section.key))}">{escape(section.title)}</a></li>'
         for section in sections
@@ -196,7 +675,78 @@ def render_report(
     metadata: Mapping[str, object] | None = None,
     lang: str = "en",
 ) -> str:
-    """Return a complete, self-contained HTML report document."""
+    """Assemble sections into one HTML file that depends on nothing.
+
+    The document shell. Everything is inlined — the stylesheet, the JavaScript,
+    and whatever assets the sections encoded — so the result opens on a machine
+    with no network, no BuildML, and no Python.
+
+    What the shell adds beyond the sections: a skip link and landmark roles for
+    keyboard and screen-reader navigation, a table of contents, a live section
+    filter, a dark-theme toggle, per-table sorting and filtering, and print
+    styles that drop the interactive furniture. All of it degrades to readable
+    static HTML if JavaScript is disabled.
+
+    Parameters
+    ----------
+    title:
+        The document title, used in the ``<title>`` and the page heading.
+        Escaped.
+    sections:
+        The content, in order. At least one is required.
+    subtitle:
+        A sentence under the title. The place for run context — which dataset,
+        which date, which model version.
+    metadata:
+        Key-value pairs shown in the header. Rows, columns, target, split
+        strategy: the facts a reader needs before the first section.
+    lang:
+        The document language, used by screen readers to pick pronunciation.
+
+    Returns
+    -------
+    str
+        A complete HTML document, ready to write.
+
+    Raises
+    ------
+    ValueError
+        If ``sections`` is empty, or if two section keys reduce to the same id.
+        The second is refused rather than tolerated because a duplicate id makes
+        one navigation link silently reach the wrong section, which is the kind
+        of fault nobody notices in review.
+
+    Notes
+    -----
+    **Section bodies are inserted unescaped.** They are trusted HTML by
+    contract; see :class:`ReportSection`.
+
+    **The whole report is one string in memory** before it is written. Large
+    inlined figures push memory up accordingly.
+
+    Examples
+    --------
+    A minimal report::
+
+        sections = [
+            ReportSection(
+                key="overview",
+                title="Overview",
+                summary="What this dataset contains.",
+                body_html=render_table(rows, caption="Column summary"),
+            )
+        ]
+        html_text = render_report(
+            "Churn dataset review",
+            sections,
+            subtitle="Snapshot taken 2026-08-01",
+            metadata={"Rows": 48_120, "Target": "churned"},
+        )
+
+    See Also
+    --------
+    write_report : Rendering and writing in one call.
+    """
     if not sections:
         raise ValueError("A report requires at least one section")
     seen: set[str] = set()
@@ -254,7 +804,55 @@ def write_report(
     sections: Sequence[ReportSection],
     **kwargs: Any,
 ) -> Path:
-    """Render and write a self-contained report as UTF-8."""
+    """Render a report and write it to disk, creating the directory if needed.
+
+    The usual entry point, behind every ``export_html`` in BuildML. Parent
+    directories are created, so a path into a fresh ``artifacts/`` tree works
+    without a preceding ``mkdir``.
+
+    UTF-8 explicitly, not the platform default. On Windows that default is
+    still often cp1252, which cannot encode the arrows and symbols the report
+    uses — and the failure appears as an encoding error partway through writing,
+    on one machine and not another.
+
+    Parameters
+    ----------
+    path:
+        Where to write. Overwritten if it exists.
+    title:
+        The report title.
+    sections:
+        The content, in order.
+    **kwargs:
+        Passed to :func:`render_report` — ``subtitle``, ``metadata``, ``lang``.
+
+    Returns
+    -------
+    Path
+        The file written, so the location can be logged or opened.
+
+    Raises
+    ------
+    ValueError
+        If there are no sections, or two section ids collide.
+    OSError
+        If the directory cannot be created or the file written.
+
+    Examples
+    --------
+    ::
+
+        path = write_report(
+            "artifacts/reports/eda.html",
+            "Churn dataset review",
+            sections,
+            metadata={"Rows": 48_120},
+        )
+
+    See Also
+    --------
+    render_report : Getting the HTML without writing it.
+    """
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(render_report(title, sections, **kwargs), encoding="utf-8")

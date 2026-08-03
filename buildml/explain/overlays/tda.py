@@ -151,7 +151,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Treating predictions as labels for refitting TDA without disclosure.",),
         state_changes=("Stores tda_predict_result.",),
         result_reading=("Inspect predictions length vs partition size.",),
-        next_steps=("evaluate_tda; save_tda_bundle."),
+        next_steps=("evaluate_tda; save_tda_bundle.",),
         concepts=("tda-supervised-head",),
     ),
     _operation(
@@ -208,7 +208,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Expecting checkpoint_save to include TdaPlan.",),
         state_changes=("None beyond history record.",),
         result_reading=("Confirm format buildml.tda_bundle.v2 in meta.json.",),
-        next_steps=("load_tda_bundle in another Session."),
+        next_steps=("load_tda_bundle in another Session.",),
         concepts=("tda-bundle-boundary",),
     ),
     _operation(
@@ -231,7 +231,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Loading a TDA bundle into a Session with mismatched feature columns.",),
         state_changes=("Sets tda_plan; clears fit/eval/transform/predict results.",),
         result_reading=("Inspect Session.tda_plan.to_dict().",),
-        next_steps=("transform_tda; evaluate_tda."),
+        next_steps=("transform_tda; evaluate_tda.",),
         concepts=("tda-bundle-boundary",),
     ),
 )

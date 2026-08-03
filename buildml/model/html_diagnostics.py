@@ -1,5 +1,24 @@
 # ruff: noqa: E501
-"""Offline HTML export for evaluation / diagnostic reports."""
+"""Render a diagnostic report as a single HTML file that works offline.
+
+Model results usually have to leave the notebook — to a reviewer, a stakeholder,
+an audit trail, a pull request. A screenshot loses the numbers and a JSON dump
+loses the reading.
+
+This renders the whole report as one self-contained file. Figures are embedded
+as data URIs rather than referenced, so nothing breaks when the file is emailed
+or committed, and it opens with no network access at all.
+
+The output keeps the structure that makes a report reviewable: findings with
+their evidence, recommendations with the findings they rest on, methods, and
+limitations. A dashboard of numbers without its caveats is how a qualified
+result becomes an unqualified claim on the way to someone else's desk.
+
+See Also
+--------
+buildml.model.diagnostics.DiagnosticReport.export_html : The usual entry point.
+buildml.reporting.html : The shared report shell.
+"""
 
 from __future__ import annotations
 
@@ -40,11 +59,49 @@ def export_diagnostics_html(
     title: str = "BuildML Diagnostics Dashboard",
     figures: Mapping[str, Any] | None = None,
 ) -> Path:
-    """Write a structured, self-contained HTML diagnostics report.
+    """Write the report to one HTML file with everything embedded.
 
-    Uses the shared BuildML research report shell (typography, sticky nav,
-    reading frames, severity badges, theme toggle, print CSS). Figure assets
-    are embedded as data URIs so the file has no network dependency.
+    Builds the standard sections — summary, metrics, evidence, interpretation,
+    visuals, actions, methods, and anything skipped — using the shared BuildML
+    report shell, so diagnostics look the same wherever they come from.
+
+    Figures are encoded into the document rather than linked, which is what
+    makes the file portable: one attachment, no directory of images travelling
+    beside it.
+
+    Parameters
+    ----------
+    report_dict:
+        The report as plain data, typically from
+        :meth:`~buildml.model.diagnostics.DiagnosticReport.to_dict`.
+    path:
+        Where to write. Parent directories are created as needed.
+    title:
+        Page title and heading.
+    figures:
+        Matplotlib figures to embed, keyed by panel name. Figures already
+        recorded in the report are picked up automatically.
+
+    Returns
+    -------
+    pathlib.Path
+        The file written.
+
+    Notes
+    -----
+    **Embedding makes the file large.** Several figures can push a report into
+    the megabytes, which is the price of it working anywhere.
+
+    **Skipped panels are rendered, not omitted.** An analysis that could not run
+    appears with its reason, so the reader can tell the difference between "this
+    was fine" and "this was never measured".
+
+    **Missing sections are dropped rather than shown empty**, so a report with
+    no figures does not carry a blank visuals heading.
+
+    See Also
+    --------
+    buildml.model.diagnostics.DiagnosticReport.export_html : The wrapper.
     """
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)

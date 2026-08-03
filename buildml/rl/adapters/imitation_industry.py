@@ -1,4 +1,33 @@
-"""Industry imitation adapters — BC MLP + GAIL-lite via imitation / SB3."""
+"""Bridge to the ``imitation`` library for neural cloning.
+
+The scikit-learn cloning path fits a logistic regression or a boosted tree,
+which is enough for most tabular demonstration data. This adapter offers two
+alternatives for when it is not.
+
+**``bc_mlp``** is the same idea with a neural policy: a multi-layer network
+mapping state to action, trained by supervised learning on the demonstrations.
+Worth reaching for when the mapping is genuinely non-linear and there are enough
+demonstrations to fit a network without memorising them. On ordinary tabular
+data, the boosted-tree default is usually competitive and far cheaper.
+
+**``gail_lite``** is a different thing entirely. Rather than matching actions
+row by row, generative adversarial imitation learning trains a discriminator to
+tell the demonstrator's behaviour from the policy's, and trains the policy to
+fool it. It needs a live environment, because the policy must act to be judged —
+and that is what lets it address the compounding-error problem that plain
+cloning cannot: the policy is evaluated in the states it actually reaches, not
+only in the states the demonstrator visited.
+
+The ``lite`` is meant literally. GAIL is adversarial training, which is unstable
+at the best of times, and the budgets here are small. Expect more variance than
+from cloning, and treat a good result as encouraging rather than settled.
+
+Requires ``buildml[rl-industry]``.
+
+See Also
+--------
+buildml.rl.imitation : The always-available scikit-learn path.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +42,31 @@ from buildml.rl.extras import require_gymnasium, require_imitation, require_stab
 
 @dataclass
 class TabularMlpPolicy:
-    """Tabular BC / GAIL MLP policy trained via imitation + SB3."""
+    """Make a neural policy look like the estimator the rest of the code expects.
+
+    Both methods here produce a Stable-Baselines3 policy, whose ``predict``
+    signature and return shape differ from scikit-learn's. This wrapper adapts
+    it, so that :mod:`buildml.rl.imitation` can treat a neural policy and a
+    boosted tree identically.
+
+    Attributes
+    ----------
+    model:
+        The trained Stable-Baselines3 policy.
+    obs_dim:
+        The state-feature width.
+    n_actions:
+        How many discrete actions the policy can produce.
+    method:
+        ``'bc_mlp'`` or ``'gail_lite'``.
+    classes_:
+        The action vocabulary, when one was carried through.
+
+    See Also
+    --------
+    fit_tabular_bc_mlp : Produce one by supervised cloning.
+    fit_tabular_gail_lite : Produce one adversarially.
+    """
 
     model: Any
     obs_dim: int
@@ -22,6 +75,26 @@ class TabularMlpPolicy:
     classes_: tuple[Any, ...] | None = None
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Choose an action for each row of a state matrix.
+
+        The scikit-learn-shaped entry point: a 2-D array in, a 1-D array of
+        action codes out. Acting is always deterministic here, since a cloned
+        policy is being asked what the demonstrator would do rather than
+        exploring.
+
+        Parameters
+        ----------
+        x:
+            A ``(n_rows, obs_dim)`` state matrix, or a single 1-D state, which
+            is treated as one row.
+
+        Returns
+        -------
+        numpy.ndarray
+            One integer action code per row. Decode these with
+            :func:`~buildml.rl.features.decode_discrete_actions` to recover the
+            original action labels.
+        """
         obs = np.asarray(x, dtype=float)
         if obs.ndim == 1:
             obs = obs.reshape(1, -1)
@@ -52,7 +125,62 @@ def fit_tabular_bc_mlp(
     learning_rate: float = 3e-4,
     random_state: int | None = 0,
 ) -> tuple[TabularMlpPolicy, float, list[str], list[str]]:
-    """Train an MLP BC policy on tabular (state, action) demonstrations."""
+    """Clone demonstrations with a neural policy instead of a linear one.
+
+    Wraps the demonstrations as single-step transitions and trains a
+    multi-layer policy on them. Supervised learning throughout — there is no
+    environment and no reward, just states paired with the actions taken in
+    them.
+
+    Parameters
+    ----------
+    x:
+        The state matrix, one row per demonstration.
+    y_codes:
+        Integer action codes, aligned with the rows.
+    n_actions:
+        How many distinct actions exist. Defines the policy's output width.
+    n_epochs:
+        Passes over the demonstrations. Too many and the network memorises
+        rather than generalises.
+    batch_size:
+        Rows per gradient step.
+    learning_rate:
+        Optimiser step size.
+    random_state:
+        Seed for initialisation and shuffling.
+
+    Returns
+    -------
+    TabularMlpPolicy
+        The trained policy, wrapped for the scikit-learn-shaped interface.
+    float
+        In-sample agreement with the demonstrator.
+    list of str
+        Disclosures describing the run and its scope.
+    list of str
+        Warnings. Empty in practice for this path.
+
+    Raises
+    ------
+    MissingExtraError
+        If ``buildml[rl-industry]`` is not installed.
+
+    Notes
+    -----
+    **The demonstrations are presented as one-step episodes**, each marked
+    ``done``. That is accurate for tabular data, where rows are independent
+    situations rather than a trajectory — but it also means no sequential
+    structure is available to learn from, even if your rows happen to have some.
+
+    **The returned score is in-sample and will be high.** A network with enough
+    capacity can fit almost any set of demonstrations. Judge the policy with
+    :func:`~buildml.rl.imitation.evaluate_imitation` on holdout rows.
+
+    See Also
+    --------
+    fit_tabular_gail_lite : The adversarial alternative.
+    """
     require_imitation(feature="fit_imitation(backend='industry')")
     require_stable_baselines3(feature="fit_imitation(backend='industry')")
     from imitation.algorithms import bc
@@ -114,7 +242,74 @@ def fit_tabular_gail_lite(
     total_timesteps: int = 8_000,
     random_state: int | None = 0,
 ) -> tuple[TabularMlpPolicy, float, list[str], list[str]]:
-    """GAIL-lite: adversarial imitation with very small budgets (honest lite path)."""
+    """Imitate by learning to be indistinguishable from the demonstrator.
+
+    Trains a discriminator to separate demonstrated behaviour from the policy's,
+    and a PPO policy to fool it. Because the policy must act in an environment
+    to be judged, it is evaluated in the states it actually reaches — which is
+    what lets adversarial imitation address the compounding-error problem that
+    plain cloning cannot.
+
+    The demonstrations must therefore be environment-compatible: same
+    observation width, same action count. Both are checked before training
+    starts.
+
+    Parameters
+    ----------
+    x:
+        The state matrix, one row per demonstration. Its width must match the
+        environment's observation space.
+    y_codes:
+        Integer action codes, aligned with the rows.
+    env_id:
+        The Gymnasium environment the policy will act in. Required — without
+        one there is nothing for the discriminator to judge.
+    n_actions:
+        How many distinct actions exist. Must match the environment's action
+        space.
+    total_timesteps:
+        The interaction budget. Small by deliberate default; GAIL normally
+        wants far more.
+    random_state:
+        Seed for the generator policy.
+
+    Returns
+    -------
+    TabularMlpPolicy
+        The trained policy.
+    float
+        In-sample agreement with the demonstrator.
+    list of str
+        Disclosures describing the run and its scope.
+    list of str
+        Warnings, always including a note about the small budget.
+
+    Raises
+    ------
+    MissingExtraError
+        If ``buildml[rl-industry]`` is not installed.
+    ValidationError
+        If the environment cannot be created, its action space is not discrete,
+        or its observation width or action count disagrees with the
+        demonstrations.
+
+    Notes
+    -----
+    **Adversarial training is unstable, and this budget is small.** Two runs with
+    different seeds can differ substantially, and a run may end mid-oscillation
+    between generator and discriminator. Compare against
+    :func:`fit_tabular_bc_mlp` before concluding that GAIL helped.
+
+    **The score measures action agreement, which is not what GAIL optimises.**
+    GAIL matches the *distribution* of behaviour, so a policy that reaches
+    demonstrator-like states by a different route is a success by its own
+    objective and scores poorly here. A low score is not necessarily a failure —
+    but it does mean this number is the wrong one to judge it by.
+
+    See Also
+    --------
+    fit_tabular_bc_mlp : Supervised cloning, stabler and much cheaper.
+    """
     require_imitation(feature="fit_imitation(method='gail_lite')")
     sb3 = require_stable_baselines3(feature="fit_imitation(method='gail_lite')")
     gymnasium = require_gymnasium(feature="fit_imitation(method='gail_lite')")

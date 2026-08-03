@@ -792,7 +792,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=(
             "Use for local/demo managed serving of BuildML artifacts. "
             "Not registered in the AI tool allowlist (network listener / CLI-primary)."
-        ),
+        ,),
         assumptions=(
             "Optional API-key middleware is library-local auth — not managed IAM/cloud identity.",
             "Prefer TLS termination at a reverse proxy for non-local exposure.",

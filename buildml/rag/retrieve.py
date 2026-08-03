@@ -1,4 +1,24 @@
-"""Dense, BM25, and hybrid top-k retrieval with optional rerank."""
+"""Find the passages most likely to answer a question.
+
+The step everything downstream depends on. A language model cannot answer from a
+passage it was never given, so retrieval quality is a hard ceiling on answer
+quality — and when answers are poor, this is where to look first.
+
+The pipeline is: pick a mode, pull candidates, optionally rerank, truncate to
+``k``. Reranking is why the candidate pool is wider than ``k`` — a cross-encoder
+that only ever saw the top five could not promote the passage that placed
+twentieth, which is precisely the kind of rescue it is for.
+
+Every result records what actually ran, including any fallback. A hybrid request
+in an environment without the optional dependencies quietly becomes dense, and
+that shows up in the result's ``mode`` rather than as an error.
+
+See Also
+--------
+buildml.rag.types.RetrieveConfig : The settings.
+buildml.rag.hybrid : Keyword search and fusion.
+buildml.rag.rerank : The cross-encoder pass.
+"""
 
 from __future__ import annotations
 
@@ -103,12 +123,75 @@ def retrieve(
     rerank: bool | str | None = None,
     fusion: str | None = None,
 ) -> RetrieveResult:
-    """Retrieve ranked chunks for ``query``.
+    """Return the ``k`` passages most likely to answer the query.
 
-    Defaults (``RetrieveConfig``): ``mode="hybrid"`` when ``buildml[rag]`` is installed
-    (BM25 + dense RRF), else ``"dense"``. No filters; rerank off unless requested.
-    Hybrid mode fuses dense + BM25 with ``fusion="rrf"`` (``rrf_k=60``) unless
-    ``fusion="weighted"`` is set. Cross-encoder rerank requires ``buildml[rag]``.
+    The main retrieval entry point. Defaults come from the environment — hybrid
+    where the optional dependencies allow it, dense otherwise — and any argument
+    given here overrides them.
+
+    Parameters
+    ----------
+    index:
+        The index to search.
+    query:
+        The question. Must be non-empty.
+    k:
+        How many passages to return.
+    config:
+        Full retrieval settings. Individual arguments override its fields.
+    mode:
+        ``'dense'``, ``'bm25'``, or ``'hybrid'``.
+    filters:
+        Metadata equality constraints, applied before scoring.
+    rerank:
+        Run a cross-encoder over the candidates.
+    fusion:
+        ``'rrf'`` or ``'weighted'``, for hybrid mode.
+
+    Returns
+    -------
+    RetrieveResult
+        The ranked passages, plus what mode actually ran and why.
+
+    Raises
+    ------
+    ValidationError
+        If there is no index, the query is empty, ``k`` is not positive, or the
+        mode or fusion name is unrecognised.
+
+    Notes
+    -----
+    **Something always comes back.** There is no relevance threshold, so a
+    question the corpus cannot answer still produces ``k`` confidently ranked
+    passages. Judging whether they are relevant is the caller's job.
+
+    **Hybrid pulls a wider pool from each method before fusing**, so a passage
+    ranked tenth by both can still surface — which is where fusion earns its
+    keep.
+
+    **Reranking is the largest single quality gain available**, and it costs a
+    model forward pass per candidate. Raise ``rerank_candidates`` to give it more
+    to work with.
+
+    **Read ``result.mode``, not the request.** A hybrid request falls back to
+    dense without the dependencies, and the fallback is recorded rather than
+    raised.
+
+    Examples
+    --------
+    Retrieve with reranking, restricted to one document version::
+
+        result = retrieve(
+            index, "how do I cancel?", k=5, rerank=True,
+            filters={"version": "2024"},
+        )
+        print(result.mode, [h.doc_id for h in result.hits])
+
+    See Also
+    --------
+    buildml.rag.results.RetrieveResult : What comes back.
+    buildml.rag.generate.generate_grounded : Answering from these passages.
+    buildml.rag.evaluate : Measuring whether this works.
     """
     if index is None:
         raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")

@@ -66,7 +66,27 @@ PLAN_KEY_ALIASES = {
 
 @dataclass(slots=True)
 class ApplyPlansResult:
-    """Outcome of replaying fitted preprocess plans on a frame or dataset."""
+    """What came out of replaying a set of plans, and what did not run.
+
+    Attributes
+    ----------
+    dataset:
+        The transformed data, ready for prediction.
+    applied:
+        The steps that ran, in execution order.
+    skipped:
+        Steps that were not supplied. Check this against what training did:
+        a step present at training time and absent here means the model is
+        being fed features in a different representation than it learned on.
+    warnings:
+        Conditions that did not stop the replay but change how to read it —
+        a resample plan ignored, a drop action rewritten as capping, an unusual
+        rate of unseen categories.
+    split_plan:
+        Row membership after the replay. Rebuilt when an outlier plan removed
+        rows; otherwise the one passed in, or ``None`` when scoring a frame
+        that has no partitions.
+    """
 
     dataset: Dataset
     applied: tuple[str, ...]
@@ -75,6 +95,17 @@ class ApplyPlansResult:
     split_plan: SplitPlan | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise the replay as plain JSON-safe values.
+
+        Intended for logs and serving telemetry, so the transformed dataset is
+        summarised by its shape rather than embedded.
+
+        Returns
+        -------
+        dict
+            Keys ``applied``, ``skipped``, ``warnings``, ``n_rows``,
+            ``columns``, and ``has_split_plan``.
+        """
         return {
             "applied": list(self.applied),
             "skipped": list(self.skipped),
@@ -103,41 +134,100 @@ def apply_preprocess_plans(
     split_plan: SplitPlan | None = None,
     roles: dict[str, ColumnRole | str] | None = None,
 ) -> ApplyPlansResult:
-    """Re-apply fitted preprocess plans in score-time order.
+    """Replay a set of fitted plans over new data, in the order training used.
+
+    This is the bridge between training and serving. A model trained through a
+    session saw its features after a specific sequence of transformations, and
+    new data must go through exactly that sequence, with exactly those learned
+    constants, or the numbers reaching the model mean something different from
+    what it learned on. Getting the order or the constants wrong is the classic
+    cause of a model that scored well in a notebook and fails in production.
+
+    Nothing is fitted here. Every plan you pass must already carry its
+    training-fitted state.
+
     Parameters
     ----------
     data:
-        A :class:`~buildml.data.dataset.Dataset` or Pandas DataFrame.
+        A :class:`~buildml.data.dataset.Dataset` or a plain
+        :class:`~pandas.DataFrame` of rows to transform.
     plans:
-        Mapping of plan objects (checkpoint/pipeline ``plans.joblib`` payload
-        or short keys such as ``impute`` / ``scale``). Keyword plan arguments
-        override matching keys.
-    impute_plan / encode_plan / scale_plan / date_plan / outlier_plan /
-    binning_plan / feature_select_plan / text_plan / reduce_plan /
-    custom_plan / resample_plan:
-        Explicit plan objects.
+        A mapping of plans, such as the payload loaded from a saved pipeline or
+        checkpoint. Both long keys like ``impute_plan`` and short ones like
+        ``impute`` are accepted. Any keyword argument below overrides the
+        matching entry.
+    impute_plan:
+        Fill values to apply.
+    encode_plan:
+        Category vocabulary and output layout to apply.
+    scale_plan:
+        Scaling constants to apply.
+    date_plan:
+        Timestamp expansion to replay.
+    outlier_plan:
+        Fences to apply. See the notes on how ``'drop'`` is handled.
+    binning_plan:
+        Band edges to apply.
+    feature_select_plan:
+        The feature subset to narrow to.
+    text_plan:
+        Text vocabulary to apply.
+    reduce_plan:
+        Dimensionality reduction to project through.
+    custom_plan:
+        A registered custom transform to replay. Its name must still be
+        registered in this process.
+    resample_plan:
+        Accepted for lineage only, never replayed. See the notes.
     split_plan:
-        Optional split membership. Required when target encoding must write
-        out-of-fold values on train rows, and when outlier ``action='drop'``
-        must rebuild partitions. For pure score frames (no train membership),
-        omit the split and target encoding uses frozen full-train maps on every
-        row; outlier ``drop`` is rewritten to fence capping.
+        Row membership, needed only in two cases: target encoding writing
+        out-of-fold values onto training rows, and an outlier plan that drops
+        rows and therefore has to rebuild partitions. Omit it for a pure
+        scoring frame, where there is no training membership to respect —
+        target encoding then applies the frozen full-training means to every
+        row, which is the correct behaviour at inference time.
     roles:
-        Optional column roles when ``data`` is a bare DataFrame.
+        Column roles to attach when ``data`` is a bare DataFrame. Without them,
+        steps that consult roles fall back to dtype inference.
+
     Returns
     -------
     ApplyPlansResult
-        Transformed dataset, applied/skipped step names, and warnings.
+        The transformed dataset, which steps ran, which were skipped, and any
+        warnings raised along the way.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        A plan expects a column the data does not have, a plan object is of an
+        unexpected type, or a custom transform is no longer registered.
+
     Notes
     -----
-    **Order:** dates → impute → outliers → encode → text → binning → scale →
-    reduce → feature_select → custom. Date expansion runs first when a date
-    plan is present so created columns participate in later numeric steps.
-    **Resample:** ``resample_plan`` is lineage metadata only. It is never
-    reapplied at score time; a warning is recorded when the plan is present.
-    **Custom:** ``custom_plan`` requires the transform name to remain registered
-    in-process for score-time replay.
-    **Leakage:** Plans must already be train-fitted. This helper does not fit.
+    **Order is fixed:** dates, impute, outliers, encode, text, binning, scale,
+    reduce, feature selection, custom. It matches the order a session applies
+    them, and it is not configurable — dates expand first so the columns they
+    create can take part in later numeric steps, and selection comes last so it
+    sees the finished matrix.
+
+    **Missing plans are skipped, not defaulted.** Only the plans you supply
+    run, and the rest are reported in ``skipped``. Compare that list against
+    what training actually did; a plan quietly absent at serving time is a
+    silent correctness bug.
+
+    **Resampling is never replayed.** It rebalanced the training set to help
+    the model learn; applying it at scoring time would fabricate rows. Passing
+    the plan records it in the lineage and adds a warning, nothing more.
+
+    **A dropping outlier plan becomes a capping one.** Removing rows during
+    scoring would mean refusing to predict for them, which is almost never what
+    a caller wants, so the fences are applied by clipping instead. This is
+    recorded as a warning.
+
+    See Also
+    --------
+    buildml.session.Session.apply_preprocess_plans : The session-level entry point.
+    buildml.session.Session.predict_from_pipeline : Replay and score in one call.
     """
     resolved = _resolve_plans(
         plans,

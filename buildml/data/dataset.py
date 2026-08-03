@@ -1,4 +1,29 @@
-"""Dataset handle with optional engine-native Polars/DuckDB backing."""
+"""Hold a table, and postpone loading all of it for as long as possible.
+
+Scikit-learn needs a NumPy array in memory. That is not negotiable, and it sets
+a hard ceiling on what can be fitted. But most of what happens before fitting —
+selecting columns, filtering rows, aggregating, sampling — does not need
+everything in memory, and doing it in Polars or DuckDB first can mean the array
+that eventually gets built is a fraction of the size.
+
+A :class:`Dataset` therefore holds up to two views of the same table: a pandas
+frame for anything sklearn-facing, and optionally an engine-native handle for
+work that can stay out of pandas. Operations prefer the native path and leave
+the pandas cache marked stale, promoting only when something actually asks for
+a frame. A Polars ``LazyFrame`` goes further and does not execute at all until
+that moment.
+
+Two things follow from this design and are worth stating plainly. **Native
+handles do not enable out-of-core fitting** — they narrow what must be
+materialised, and the estimator boundary is still a hard limit. And **DuckDB
+connections need closing**: a Dataset that opened one owns it, derived Datasets
+share it, and ``with dataset:`` releases it on the way out.
+
+See Also
+--------
+buildml.data.engines : The engine adapters.
+buildml.data.splits : Partitioning a dataset.
+"""
 
 from __future__ import annotations
 
@@ -89,13 +114,59 @@ class Dataset:
         native: Any | None = None,
         attach_native: bool = False,
     ) -> Dataset:
-        """Create a Dataset from a Pandas DataFrame.
+        """Wrap an in-memory DataFrame as a Dataset.
+
+        The ordinary entry point when the data is already loaded. The schema is
+        inferred from dtypes unless supplied.
 
         Parameters
         ----------
+        frame:
+            The data. **Copied**, so later edits to the original do not reach
+            into the Dataset.
+        schema:
+            Column types. Inferred when omitted.
+        mode:
+            How the data is held. Defaults to in-memory.
+        engine:
+            Which engine backs prep operations. Defaults to pandas.
+        source:
+            Where it came from, for provenance.
+        roles:
+            Column to semantic role. Can be set later with :meth:`set_roles`.
+        native:
+            An engine-native handle for this same data, when one already
+            exists.
         attach_native:
-            When True and ``engine`` is Polars or DuckDB, also build and store
-            a native handle from ``frame``.
+            Build a native handle from the frame. Only meaningful when
+            ``engine`` is Polars or DuckDB.
+
+        Returns
+        -------
+        Dataset
+            The wrapped data.
+
+        Notes
+        -----
+        **The copy is deliberate.** A Dataset that aliased its input would
+        change underneath you when the original was modified, which is a
+        confusing class of bug in a pipeline.
+
+        **Attaching a native handle is an eager conversion.** It costs a full
+        pass over the data, and pays off only when the operations that follow
+        can stay native.
+
+        Examples
+        --------
+        Load into a Polars-backed Dataset::
+
+            dataset = Dataset.from_pandas(
+                frame, engine=EngineName.POLARS, attach_native=True,
+            )
+
+        See Also
+        --------
+        from_native : When the engine already loaded it.
         """
         resolved_schema = schema or schema_from_dataframe(frame)
         owns = False
@@ -128,25 +199,58 @@ class Dataset:
         roles: dict[str, ColumnRole] | None = None,
         materialize_pandas: bool = False,
     ) -> Dataset:
-        """Create a Dataset from an engine-native table without a Pandas-first load.
+        """Wrap a table the engine already loaded, skipping pandas entirely.
+
+        The path that avoids a full-width pandas load on ingest. Polars or
+        DuckDB reads the file, and the Dataset holds that handle; a pandas frame
+        is built only when something needs one.
 
         Parameters
         ----------
         native:
-            Polars DataFrame/LazyFrame or DuckDB relation already loaded by the
-            engine.
+            A Polars DataFrame or LazyFrame, or a DuckDB relation.
         engine:
-            ``polars`` or ``duckdb``.
+            ``'polars'`` or ``'duckdb'``. Pandas is rejected — there would be
+            nothing native about it.
+        schema:
+            Column types. Inferred when the pandas cache is built.
+        mode:
+            How the data is held. Defaults to lazy.
+        source:
+            Where it came from.
+        roles:
+            Column to semantic role.
         materialize_pandas:
-            When True, immediately promote a Pandas cache (collecting a
-            LazyFrame if needed). When False (default), the Pandas ``frame`` is
-            a column stub and ``_pandas_stale`` is True until :meth:`to_pandas`
-            / preprocess / sklearn boundaries promote it.
+            Build the pandas cache immediately, collecting a LazyFrame if
+            needed. Leaving this false is the point of the method.
+
+        Returns
+        -------
+        Dataset
+            Backed by the native handle.
+
+        Raises
+        ------
+        ValidationError
+            If ``engine`` is pandas.
 
         Notes
         -----
-        This is not an out-of-core fit path. Sklearn and train-fitted preprocess
-        still promote to Pandas when they need a design matrix.
+        **Without ``materialize_pandas``, the pandas frame is an empty stub with
+        the right column names**, and the schema records every column as
+        ``object``. Both are replaced the first time the frame is promoted. Do
+        not read dtypes off a Dataset in this state.
+
+        **A DuckDB relation brings a connection that must be closed.** This
+        Dataset owns it; call :meth:`close_native` or use ``with``.
+
+        **Still not an out-of-core fit path.** Fitting materialises, and the
+        estimator boundary is the same limit it always was.
+
+        See Also
+        --------
+        from_pandas : When the data is already a DataFrame.
+        close_native : Releasing the connection.
         """
         chosen = EngineName(engine)
         if chosen == EngineName.PANDAS:
@@ -196,24 +300,46 @@ class Dataset:
         roles: dict[str, ColumnRole] | None = None,
         sync_native: bool = True,
     ) -> Dataset:
-        """Build a Dataset after a Pandas/sklearn transform.
+        """Wrap a transformed frame, carrying the original's context forward.
+
+        Preprocessing runs on pandas and hands back a new frame. This rebuilds a
+        Dataset around it while preserving mode, engine, source, and roles — so
+        a transform does not silently drop the fact that the data came from
+        Parquet, or that it was Polars-backed.
 
         Parameters
         ----------
         source:
-            Dataset that produced ``frame`` (provides mode/engine/source).
+            The Dataset the frame came from. Supplies the context.
         frame:
-            Transformed Pandas frame.
+            The transformed data.
+        schema:
+            Column types. Inferred from the new frame when omitted, which is
+            usually right since a transform can change dtypes.
+        roles:
+            Column to role. Inherited from ``source`` when omitted.
         sync_native:
-            When True and ``source.engine`` is Polars/DuckDB, rebuild an eager
-            native handle from ``frame`` so later ``project`` /
-            ``prepare_design_frame`` paths keep using engine ops.
+            Rebuild a native handle from the transformed frame, so subsequent
+            prep can go back to using engine operations.
+
+        Returns
+        -------
+        Dataset
+            The transformed data, in context.
 
         Notes
         -----
-        Preprocess transforms themselves still run on Pandas. A synced native
-        handle is an explicit post-transform rebuild, not a lazy plan of the
-        transform steps.
+        **Roles are inherited wholesale, including for columns that no longer
+        exist.** A transform that drops or renames a column should pass
+        ``roles`` explicitly.
+
+        **Syncing the native handle is a rebuild, not a replay.** It converts
+        the transformed frame into a fresh native table; it does not express
+        the transform as engine operations, and it costs a full pass.
+
+        See Also
+        --------
+        sync_native : Rebuilding on an existing Dataset.
         """
         resolved_roles = dict(source.roles) if roles is None else dict(roles)
         resolved_schema = schema or schema_from_dataframe(frame)
@@ -250,18 +376,36 @@ class Dataset:
         return bool(self._pandas_stale)
 
     def attach_native(self, *, rebuild: bool = False) -> Any:
-        """Ensure a native engine table is attached for the configured engine.
+        """Build a native engine handle from the current pandas frame.
+
+        Converts eagerly — a full pass over the data — so that subsequent
+        projection, filtering, and aggregation can run in the engine rather
+        than in pandas.
 
         Parameters
         ----------
         rebuild:
-            When True, rebuild from the current Pandas frame even if a native
-            handle already exists. This is an eager conversion, not a lazy plan.
-            DuckDB rebuilds reuse the existing connection when present.
+            Rebuild even when a handle already exists. Needed after mutating the
+            pandas frame, since the existing handle then describes stale data.
 
         Returns
         -------
-        The native table object.
+        Any
+            The native table. For the pandas engine, the frame itself.
+
+        Notes
+        -----
+        **DuckDB rebuilds reuse the existing connection** where one is present,
+        so repeated rebuilds do not accumulate connections. The first build
+        opens one and this Dataset takes ownership of it.
+
+        **Calling this on the pandas engine clears any handle and returns the
+        frame.** There is no native table to build.
+
+        See Also
+        --------
+        sync_native : Rebuild, spelled for the post-transform case.
+        close_native : Releasing what this acquired.
         """
         if self.engine == EngineName.PANDAS:
             self.native = None
@@ -289,10 +433,29 @@ class Dataset:
         return self.native
 
     def sync_native(self) -> Any:
-        """Rebuild the native handle from the current Pandas frame (eager).
+        """Bring the native handle back into agreement with the pandas frame.
 
-        Use after a sequence of Pandas-backed transforms when ``engine`` is
-        Polars/DuckDB. Does nothing meaningful for the Pandas engine.
+        Call this after pandas-side transforms on a Polars or DuckDB-backed
+        Dataset. Without it, the native handle still describes the data as it
+        was before the transform, and later native operations would silently
+        act on the old table.
+
+        Returns
+        -------
+        Any
+            The rebuilt native table.
+
+        Notes
+        -----
+        **This costs a full conversion.** Batch pandas transforms and sync once
+        at the end rather than after each step.
+
+        No effect for the pandas engine.
+
+        See Also
+        --------
+        attach_native : The general form.
+        invalidate_native : Dropping the handle instead of rebuilding it.
         """
         return self.attach_native(rebuild=True)
 
@@ -318,7 +481,21 @@ class Dataset:
         self._pandas_stale = False
 
     def __enter__(self) -> Dataset:
-        """Return ``self`` for ``with dataset:`` ownership scopes."""
+        """Enter a scope that releases native resources on the way out.
+
+        Makes ``with dataset:`` release an owned DuckDB connection even when
+        the block raises, which is the difference between a leaked connection
+        and a closed one.
+
+        Returns
+        -------
+        Dataset
+            This Dataset.
+
+        See Also
+        --------
+        close_native : What the exit performs.
+        """
         return self
 
     def __exit__(
@@ -327,7 +504,25 @@ class Dataset:
         exc: BaseException | None,
         tb: Any,
     ) -> None:
-        """Release owned native resources via :meth:`close_native`."""
+        """Release owned native resources, whether or not the block succeeded.
+
+        Closes an owned DuckDB connection and drops the native handle on the way
+        out of ``with dataset:``.
+
+        Parameters
+        ----------
+        exc_type:
+            The exception type, if one is propagating.
+        exc:
+            The exception.
+        tb:
+            The traceback.
+
+        Notes
+        -----
+        Nothing is suppressed — an exception from the block propagates after
+        the connection is closed.
+        """
         self.close_native()
 
     def clear_native(self) -> None:
@@ -364,6 +559,21 @@ class Dataset:
 
     @property
     def columns(self) -> list[str]:
+        """Return the column names, in order.
+
+        Read from the native handle when one is attached, so this stays correct
+        even while the pandas cache is a stub.
+
+        Returns
+        -------
+        list of str
+            Column names.
+
+        Notes
+        -----
+        **Cheap on every backing.** Even a LazyFrame knows its schema without
+        executing anything, so this never triggers a collect.
+        """
         if self.has_native:
             from buildml.data.engines import get_engine
 
@@ -372,6 +582,22 @@ class Dataset:
 
     @property
     def n_rows(self) -> int:
+        """Return the number of rows.
+
+        Counted through the native handle when one is attached, rather than by
+        materialising the frame.
+
+        Returns
+        -------
+        int
+            The row count.
+
+        Notes
+        -----
+        **A LazyFrame must execute its plan to be counted.** On a lazy Polars
+        Dataset this is not free, and on an expensive plan it is not fast
+        either. Prefer :attr:`columns` when only the schema is needed.
+        """
         if self.has_native:
             from buildml.data.engines import get_engine
 
@@ -379,7 +605,31 @@ class Dataset:
         return int(len(self.frame))
 
     def head(self, n: int = 5) -> pd.DataFrame:
-        """Return the first ``n`` rows as a DataFrame copy."""
+        """Return the first few rows, for looking at the data.
+
+        Pulled through the native handle when there is one, so peeking at a
+        large table does not materialise it.
+
+        Parameters
+        ----------
+        n:
+            How many rows.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The first ``n`` rows.
+
+        Notes
+        -----
+        **The first rows are not a sample.** Sorted or grouped data shows one
+        corner of itself here. Use :meth:`sample` when you want something
+        representative.
+
+        See Also
+        --------
+        sample : A random draw.
+        """
         if self.has_native:
             from buildml.data.engines import get_engine
 
@@ -387,9 +637,34 @@ class Dataset:
         return self.frame.head(n).copy()
 
     def sample(self, n: int = 5, *, random_state: int | None = None) -> pd.DataFrame:
-        """Return a random sample of rows (materialized Pandas copy).
+        """Return a random draw of rows.
 
-        Prefers the native engine when attached; sklearn still receives Pandas.
+        Sampled in the engine when a native handle is attached, so a
+        representative look at a large table does not require loading it.
+
+        Parameters
+        ----------
+        n:
+            How many rows. Clamped to the row count.
+        random_state:
+            Seed, for a reproducible draw.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The sampled rows.
+
+        Notes
+        -----
+        **Without a seed, every call returns something different.** Fine for
+        exploration, and a problem for anything that gets compared across runs.
+
+        **Sampling counts rows, so a LazyFrame executes.** The plan runs to
+        determine how many rows exist before the draw can be clamped.
+
+        See Also
+        --------
+        head : The first rows, without a count.
         """
         n = min(int(n), self.n_rows)
         if n <= 0:
@@ -403,21 +678,54 @@ class Dataset:
         return self.frame.sample(n=n, random_state=random_state).copy()
 
     def project(self, columns: Sequence[str], *, materialize: bool = False) -> Dataset:
-        """Return a column-projected Dataset, preferring native engine ops.
+        """Keep only the named columns, dropping the rest in the engine.
+
+        **The single most effective way to reduce what eventually gets
+        materialised.** A table with three hundred columns of which twelve are
+        modelled costs twenty-five times more to load than it needs to.
+        Projecting first means the engine never reads the rest.
 
         Parameters
         ----------
         columns:
-            Columns to keep (order preserved).
+            Which to keep. Order is preserved as given, so this reorders as well
+            as selects.
         materialize:
-            When True, force a Pandas frame on the result and clear ``native``.
-            When False (default) and a native handle exists, keep a projected
-            native table and mark the Pandas cache stale until ``to_pandas``.
+            Force a pandas result and drop the native handle. Leave false to
+            keep the projection native.
+
+        Returns
+        -------
+        Dataset
+            A new Dataset with only those columns. Roles are carried across for
+            the columns that survive.
+
+        Raises
+        ------
+        ValidationError
+            If any named column does not exist. The message lists the missing
+            ones.
 
         Notes
         -----
-        Prefer ``project`` before ``to_pandas`` / sklearn materialization so
-        Polars and DuckDB can drop unused columns natively.
+        **The result shares the parent's DuckDB connection without owning it.**
+        Closing the parent closes it for the projection too. Keep the owner
+        alive for as long as anything derived from it is in use.
+
+        **Project before materialising, not after.** Projecting a frame that
+        has already been loaded saves nothing that matters.
+
+        Examples
+        --------
+        Narrow before materialising::
+
+            narrow = dataset.project(["age", "region", "outcome"])
+            frame = narrow.to_pandas()
+
+        See Also
+        --------
+        filter_rows : Narrowing rows instead.
+        to_pandas : The materialisation this defers.
         """
         cols = [str(c) for c in columns]
         missing = [c for c in cols if c not in self.columns]
@@ -462,7 +770,11 @@ class Dataset:
         by: Sequence[str] | None = None,
         materialize: bool = False,
     ) -> Dataset:
-        """Return grouped or global aggregations, preferring native engine ops.
+        """Summarise columns, optionally grouped, in the engine.
+
+        Turns a large table into a small one — counts per category, means per
+        group, a global summary row. Runs natively where possible, which is what
+        makes it usable on data that would not fit in memory.
 
         Parameters
         ----------
@@ -476,18 +788,38 @@ class Dataset:
         by:
             Optional group-by columns. When omitted, returns one summary row.
         materialize:
-            When True, force a Pandas-only result.
+            Force a pandas result.
+
+        Returns
+        -------
+        Dataset
+            The summary table. Roles are cleared, since the columns are new.
 
         Notes
         -----
-        Aggregation is a tabular prep helper, not a modeling transform. It does
-        not learn fold-local statistics and is not part of
-        :class:`~buildml.preprocess.fold.PreprocessRecipe`. Roles are cleared
-        on the result because the schema is a new summary table.
+        **This is a reporting helper, not a modelling transform.** It is not
+        fold-local and not part of
+        :class:`~buildml.preprocess.fold.PreprocessRecipe`. Aggregating over the
+        whole table and feeding the result back in as a feature is a leak —
+        target encoding and similar group statistics belong in preprocessing,
+        where they are fitted on train only.
 
-        Quantiles use continuous/linear interpolation on Pandas and Polars, and
-        ``quantile_cont`` on DuckDB. Cross-engine values can differ slightly on
-        ties; pass ``materialize=True`` when exact Pandas semantics are required.
+        **Quantiles can differ slightly across engines.** Pandas and Polars
+        interpolate linearly; DuckDB uses ``quantile_cont``. Ties are where they
+        diverge. Pass ``materialize=True`` when the pandas value is the one that
+        matters.
+
+        Examples
+        --------
+        Mean and count per region::
+
+            summary = dataset.aggregate(
+                {"revenue": ["mean", "sum"], "*": "count"}, by=["region"],
+            )
+
+        See Also
+        --------
+        buildml.preprocess : Where fold-local statistics belong.
         """
         from buildml.data.engines import get_engine
         from buildml.data.engines.aggregate import (
@@ -533,14 +865,44 @@ class Dataset:
         )
 
     def filter_rows(self, mask: Sequence[bool], *, materialize: bool = False) -> Dataset:
-        """Return a row-filtered Dataset, preferring native engine ops.
+        """Keep the rows where the mask is true.
+
+        The Python-side filter: you supply one boolean per row and the engine
+        keeps the true ones. Use it when the condition is easier to express in
+        Python than as an engine expression.
 
         Parameters
         ----------
         mask:
-            Boolean mask aligned to current row order.
+            One boolean per row, aligned to current order. Must be exactly as
+            long as the table.
         materialize:
-            When True, result is Pandas-only.
+            Force a pandas result.
+
+        Returns
+        -------
+        Dataset
+            The surviving rows, with roles preserved.
+
+        Raises
+        ------
+        ValidationError
+            If the mask length does not match the row count. A mismatch means
+            the mask was built against different data, so filtering by it would
+            silently keep the wrong rows.
+
+        Notes
+        -----
+        **Building the mask usually requires reading the column it tests**, so
+        the saving here is smaller than with :meth:`filter_expr`, where the
+        predicate runs inside the engine and the source is never fully read.
+
+        **The result shares the parent's DuckDB connection without owning it.**
+
+        See Also
+        --------
+        filter_expr : Pushing the predicate into the engine.
+        project : Narrowing columns instead.
         """
         mask_list = [bool(v) for v in mask]
         if len(mask_list) != self.n_rows:
@@ -579,7 +941,12 @@ class Dataset:
         )
 
     def filter_expr(self, expression: str, *, materialize: bool = False) -> Dataset:
-        """Filter rows with an engine-native SQL/expression predicate when supported.
+        """Keep rows matching a predicate evaluated inside the engine.
+
+        The efficient filter. Because the condition is a string the engine
+        understands, it is applied during the scan — rows that fail are never
+        read into memory at all, and on a LazyFrame nothing executes until
+        something asks for the result.
 
         Parameters
         ----------
@@ -593,14 +960,39 @@ class Dataset:
             Engines without ``filter_expr`` raise
             :class:`~buildml.core.errors.ValidationError`.
         materialize:
-            When True, force a Pandas-only result.
+            Force a pandas result.
+
+        Returns
+        -------
+        Dataset
+            The matching rows, with roles preserved.
+
+        Raises
+        ------
+        ValidationError
+            If no native handle is attached, or if the engine has no
+            expression-filter support. There is no pandas fallback — silently
+            evaluating engine SQL in pandas would mean two different dialects
+            answering the same question.
 
         Notes
         -----
-        Prefer this over a Python boolean mask when the predicate can run as a
-        native engine expression so the source table is not fully collected
-        first. Complex SQL (joins, window functions, engine-only builtins)
-        remains engine-specific.
+        **Dialects are not portable.** DuckDB takes SQL; Polars takes SQL-style
+        predicates through ``sql_expr``. Simple comparisons written through
+        :func:`~buildml.data.filter_syntax.portable_filter_expr` work on both.
+        Joins, window functions, and engine-specific builtins do not.
+
+        Examples
+        --------
+        Filter during the scan::
+
+            recent = dataset.filter_expr("year >= 2020")
+
+        See Also
+        --------
+        filter_rows : When the condition is easier in Python.
+        buildml.data.filter_syntax.portable_filter_expr : Cross-engine
+            predicates.
         """
         if self.has_native and not materialize:
             from buildml.data.engines import get_engine
@@ -638,12 +1030,47 @@ class Dataset:
         *,
         hard_limit_bytes: int | None = None,
     ) -> pd.DataFrame:
-        """Materialize a Pandas copy for sklearn or other in-memory consumers.
+        """Load everything into a pandas DataFrame.
 
-        Soft gates disclose when the frame exceeds ~250 MiB. Hard gates refuse
-        when ``hard_limit_bytes`` or ``BUILDML_MATERIALIZATION_HARD_LIMIT_BYTES``
-        is set. Prefer native project/filter/sample first, then materialize only
-        the design matrix needed at the estimator boundary.
+        The moment the deferral ends. A LazyFrame executes, a DuckDB relation is
+        read, and the whole result lands in memory. Everything sklearn touches
+        goes through here.
+
+        Parameters
+        ----------
+        hard_limit_bytes:
+            Refuse above this estimated size. Falls back to
+            ``BUILDML_MATERIALIZATION_HARD_LIMIT_BYTES`` when omitted.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A copy of the data. Editing it does not affect the Dataset.
+
+        Raises
+        ------
+        ValidationError
+            If the estimated size exceeds a configured hard limit. No hard limit
+            is set by default, so this only fires when one is asked for.
+
+        Notes
+        -----
+        **Above roughly 250 MiB you get a disclosure**, because the difference
+        between a fast pipeline and one that swaps is usually a materialisation
+        that nobody meant to perform.
+
+        **The size estimate is of the frame, and pandas is not the peak.** The
+        conversion holds both representations briefly, and sklearn then copies
+        again into a float array. Budget several times the reported figure.
+
+        **Narrow first.** :meth:`project`, :meth:`filter_expr`, and
+        :meth:`aggregate` all reduce what has to be loaded, and all of them are
+        only useful before this call.
+
+        See Also
+        --------
+        project : Dropping columns first.
+        filter_expr : Dropping rows first.
         """
         from buildml.ingest.detect import MEMORY_HARD_LIMIT, check_materialization
 
@@ -656,11 +1083,39 @@ class Dataset:
         return frame.copy()
 
     def to_engine(self, engine: EngineName | str | None = None) -> Any:
-        """Convert the current data into a native engine table.
+        """Hand back the data as a native engine table.
 
-        When ``engine`` matches the attached native handle, returns that handle
-        without a Pandas round-trip. DuckDB conversions reuse an existing
-        ``DuckDBTable`` connection when present.
+        The escape hatch for doing something in Polars or DuckDB that BuildML
+        does not wrap — a join, a window function, engine-specific SQL.
+
+        Parameters
+        ----------
+        engine:
+            Which engine to convert to. Defaults to the Dataset's own, in which
+            case an attached handle is returned as-is with no conversion.
+
+        Returns
+        -------
+        Any
+            A Polars DataFrame or LazyFrame, a DuckDB relation, or a pandas
+            frame, depending on the target.
+
+        Notes
+        -----
+        **Converting to a different engine round-trips through pandas**, and
+        materialises everything on the way. Converting to the attached engine
+        does not.
+
+        **DuckDB conversions reuse an existing connection** rather than opening
+        another.
+
+        **The returned handle is outside BuildML's tracking.** Whatever you do
+        with it does not update the Dataset, and results have to come back
+        through :meth:`from_native` or :meth:`from_pandas`.
+
+        See Also
+        --------
+        from_native : Bringing the result back.
         """
         from buildml.data.engines import get_engine
 
@@ -677,12 +1132,33 @@ class Dataset:
         return adapter.from_pandas(frame)
 
     def to_parquet(self, path: str | Path) -> Path:
-        """Write the dataset to a Parquet file.
+        """Write the data to a Parquet file.
+
+        Parquet keeps dtypes, compresses columnwise, and can be read back
+        column-at-a-time — which is what makes the lazy paths in this module
+        worthwhile on the next run. CSV throws all three away.
 
         Parameters
         ----------
         path:
-            Destination path.
+            Where to write. Parent directories are created.
+
+        Returns
+        -------
+        pathlib.Path
+            The path written.
+
+        Notes
+        -----
+        **The frame is materialised first**, so the same memory considerations
+        as :meth:`to_pandas` apply. This is not a streaming write.
+
+        **The index is not written.** Anything meaningful in it should be a
+        column before saving.
+
+        See Also
+        --------
+        to_pandas : The materialisation this performs.
         """
         destination = Path(path)
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -690,17 +1166,43 @@ class Dataset:
         return destination
 
     def set_roles(self, mapping: dict[str, str | ColumnRole]) -> None:
-        """Assign semantic roles to columns.
+        """Tell BuildML what each column means.
+
+        Roles are how the rest of the library knows which column to predict,
+        which to group by when splitting, and which to leave out of the feature
+        matrix. Without a target role, modelling cannot start; without a group
+        role, a grouped split cannot be built.
 
         Parameters
         ----------
         mapping:
-            Column name → role.
+            Column name to role, either as a
+            :class:`~buildml.core.types.ColumnRole` or its string name.
 
         Raises
         ------
         ValidationError
-            If a column or role is invalid.
+            If a column does not exist, or a role name is not recognised.
+
+        Notes
+        -----
+        **Merges rather than replaces.** Columns not mentioned keep the roles
+        they had, so roles can be assigned across several calls.
+
+        **A column named as an identifier is excluded from features.** Leaving
+        a row ID or account number unmarked lets the model memorise it, which
+        scores well and generalises to nothing.
+
+        Examples
+        --------
+        Mark the target and an ID::
+
+            dataset.set_roles({"churned": "target", "customer_id": "id"})
+
+        See Also
+        --------
+        role_columns : Reading roles back.
+        require_target : Asserting exactly one target.
         """
         validate_column_names(mapping.keys(), self.columns)
         resolved: dict[str, ColumnRole] = {}
@@ -710,12 +1212,65 @@ class Dataset:
         self.roles.update(resolved)
 
     def role_columns(self, role: str | ColumnRole) -> list[str]:
-        """Return columns assigned to a role."""
+        """Return the columns carrying a given role.
+
+        The reverse lookup over :meth:`set_roles`: given a role, which columns
+        were marked with it.
+
+        Parameters
+        ----------
+        role:
+            The role to look up, as an enum member or its string name.
+
+        Returns
+        -------
+        list of str
+            Matching column names. Empty when nothing carries that role.
+
+        Raises
+        ------
+        ValidationError
+            If the role name is not recognised.
+
+        Notes
+        -----
+        **An empty list is not an error here.** Callers that need a role to be
+        present must say so — see :meth:`require_target`.
+
+        See Also
+        --------
+        set_roles : Assigning them.
+        """
         target = validate_role_name(role)
         return [name for name, value in self.roles.items() if value == target]
 
     def require_target(self) -> str:
-        """Return the single target column or raise."""
+        """Return the target column, insisting there is exactly one.
+
+        Supervised learning predicts one thing. This is the assertion that says
+        so, called by every path that needs a label.
+
+        Returns
+        -------
+        str
+            The target column name.
+
+        Raises
+        ------
+        ValidationError
+            If there is no target, or more than one. The message reports what
+            was found.
+
+        Notes
+        -----
+        **Two targets usually means a leak.** The second column is often
+        something derived from the label — a flag, a bucketed version — which
+        would be in the feature matrix if it were not caught here.
+
+        See Also
+        --------
+        set_roles : Assigning the target.
+        """
         targets = self.role_columns(ColumnRole.TARGET)
         if len(targets) != 1:
             raise ValidationError(
@@ -724,7 +1279,30 @@ class Dataset:
         return targets[0]
 
     def metadata(self) -> dict[str, Any]:
-        """Serializable dataset metadata (no row payload)."""
+        """Describe the dataset without including any of its data.
+
+        Shape, schema, roles, engine, and provenance — everything needed to
+        record what was used in a run, and nothing that would put row values
+        into a log.
+
+        Returns
+        -------
+        dict
+            JSON-safe metadata: source, mode, engine, schema, roles, row count,
+            column names, and whether native handles are attached.
+
+        Notes
+        -----
+        **Column names are included.** They are not values, but in a narrow
+        schema they can still be revealing.
+
+        **The row count may execute a lazy plan**, since counting rows requires
+        it. Calling this on a lazy Dataset is not always free.
+
+        See Also
+        --------
+        n_rows : The count this includes.
+        """
         return {
             "source": self.source,
             "mode": self.mode.value,

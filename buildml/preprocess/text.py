@@ -1,4 +1,35 @@
-"""Train-fitted text feature utilities (count / hashing / TF-IDF)."""
+"""Turn free text into numeric columns a classical model can use.
+
+A review, a description, a support ticket — none of it means anything to a
+gradient booster. Vectorising converts each document into a row of numbers, one
+per term, so text can sit alongside your other features in the same frame.
+
+All three methods here are "bag of words": they count what appears and discard
+the order it appeared in. "The film was good, not bad" and "the film was bad,
+not good" produce identical features. That is a real limitation, and it is the
+reason these methods lose to transformer models on tasks where nuance matters.
+What they offer instead is speed, transparency — you can read which word drove
+a prediction — and the fact that they work on a few thousand rows, where a
+fine-tuned transformer would not.
+
+**Count** records how many times each term occurs. Simple, and the raw numbers
+mean something, but common words dominate purely by being common.
+
+**TF-IDF** weighs each count down by how many documents the term appears in, so
+a word appearing in every document contributes almost nothing while a
+distinctive one stands out. It is the default and usually the best of the three.
+
+**Hashing** maps terms into a fixed number of buckets with a hash function
+instead of building a vocabulary. It uses constant memory regardless of corpus
+size and handles unseen words without any special case, but two different words
+can collide into the same bucket, and you cannot recover which word a feature
+came from.
+
+Count and TF-IDF learn their vocabulary from training documents only — a term
+that appears only in test documents has no column, which is correct, since the
+model could not have learned anything about it. For dense embeddings and
+transformer models, see :mod:`buildml.nlp`.
+"""
 
 from __future__ import annotations
 
@@ -35,10 +66,36 @@ TextMethod = Literal["count", "tfidf", "hashing"]
 
 @dataclass(slots=True)
 class TextFeaturePlan:
-    """Train-fitted text vectorization plan.
+    """The vocabulary learned from training documents, and the columns it produces.
 
-    Hashing does not store a vocabulary; count/TF-IDF store sklearn vectorizers
-    that are joblib-serializable for pipeline/checkpoint replay.
+    Fixing the vocabulary is what makes text features reproducible. A model
+    trained with ``review_excellent`` in column 41 needs that same term in that
+    same position forever after; re-deriving the vocabulary from a new batch
+    would shuffle every column.
+
+    Attributes
+    ----------
+    columns:
+        The source text columns this plan vectorises.
+    method:
+        ``'count'``, ``'tfidf'``, or ``'hashing'``.
+    max_features:
+        The cap on vocabulary size per column, or ``None`` for uncapped.
+    ngram_range:
+        The ``(min_n, max_n)`` term lengths that were extracted.
+    feature_names_:
+        Every output column, in order, prefixed by its source column. This is
+        the contract with the model.
+    vectorizers_:
+        The fitted scikit-learn vectorizer per column. Count and TF-IDF
+        vectorizers carry the vocabulary and serialise with joblib for
+        checkpoint and pipeline replay; a hashing vectorizer is stateless and
+        needs nothing stored.
+    n_features_per_column_:
+        How many features each source column produced. Worth checking — this is
+        where a frame unexpectedly grows by thousands of columns.
+    drop_input_columns:
+        Whether the original text columns were removed after vectorising.
     """
 
     columns: tuple[str, ...]
@@ -51,6 +108,18 @@ class TextFeaturePlan:
     drop_input_columns: bool = True
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the plan's settings and output layout as JSON-safe values.
+
+        The fitted vectorizers are omitted, since they do not serialise to
+        JSON — save a pipeline to round-trip those.
+
+        Returns
+        -------
+        dict
+            Keys ``columns``, ``method``, ``max_features``, ``ngram_range``,
+            ``feature_names_``, ``n_features_per_column_``, and
+            ``drop_input_columns``.
+        """
         return {
             "columns": list(self.columns),
             "method": self.method,
@@ -72,7 +141,84 @@ def fit_text_features(
     ngram_range: tuple[int, int] = (1, 1),
     drop_input_columns: bool = True,
 ) -> TextFeaturePlan:
-    """Fit text vectorizers on the train partition only."""
+    """Learn a term vocabulary from the training documents.
+
+    Nothing is transformed here — pass the plan to
+    :func:`transform_text_features` to apply it.
+
+    Parameters
+    ----------
+    dataset:
+        The full dataset. Only rows the split assigns to ``train`` are read.
+    split_plan:
+        The split defining the training documents. Required, because a
+        vocabulary built from all documents tells the model which words the
+        test set contains.
+    columns:
+        Which text columns to vectorise. Defaults to the text-typed
+        ``feature`` columns. Each column gets its own independent vocabulary,
+        so a term means something different depending on which field it came
+        from — which is usually right, since "urgent" in a subject line is not
+        "urgent" in a signature.
+    method:
+        ``'tfidf'`` (the default), ``'count'``, or ``'hashing'``. See the
+        module docstring for the trade-offs.
+    max_features:
+        Keep only this many terms per column, chosen by frequency. This is the
+        main defence against a frame that explodes: real text easily yields
+        tens of thousands of distinct terms, most appearing once. The default
+        of 128 is deliberately conservative — raise it into the low thousands
+        when text is your primary signal. ``None`` keeps everything, which is
+        rarely wise. Ignored by hashing, which is bounded by construction.
+    ngram_range:
+        The term lengths to extract, as ``(min_n, max_n)``. ``(1, 1)`` takes
+        single words. ``(1, 2)`` adds adjacent pairs, which recovers a little
+        of the word order that bag-of-words discards — "not good" becomes its
+        own term — at a large cost in vocabulary size. Going beyond pairs
+        rarely pays for itself.
+    drop_input_columns:
+        Remove the source text after vectorising. Usually correct, since the
+        raw strings cannot be modelled. Keep them when you want to read the
+        original text during error analysis.
+
+    Returns
+    -------
+    TextFeaturePlan
+        The learned vocabulary and output layout, ready to apply.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        No split plan was supplied.
+    ~buildml.core.errors.ValidationError
+        ``method`` is unrecognised, ``max_features`` is below 1,
+        ``ngram_range`` is malformed, or no text columns resolved.
+
+    Notes
+    -----
+    **Check the resulting width.** Vectorising three text columns at 128
+    features each adds 384 columns. Multiply by ``ngram_range`` and it grows
+    quickly. ``n_features_per_column_`` on the returned plan tells you exactly
+    what you are about to add.
+
+    **The output is dense.** Text features are naturally sparse — most
+    documents contain almost none of the vocabulary — but they are materialised
+    as ordinary columns here so they can join the rest of the frame. Budget
+    memory accordingly, and consider dimensionality reduction afterwards via
+    :mod:`buildml.preprocess.reduce`.
+
+    Examples
+    --------
+    >>> plan = fit_text_features(  # doctest: +SKIP
+    ...     dataset, split_plan, columns=["review"], max_features=500
+    ... )
+    >>> plan.n_features_per_column_["review"]  # doctest: +SKIP
+    500
+
+    See Also
+    --------
+    transform_text_features : Applies the plan produced here.
+    """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
     if method not in {"count", "tfidf", "hashing"}:
@@ -114,7 +260,46 @@ def transform_text_features(
     dataset: Dataset,
     plan: TextFeaturePlan,
 ) -> tuple[Dataset, PreprocessResult]:
-    """Apply a train-fitted text plan to the full dataset."""
+    """Convert text to numeric columns using an already-learned vocabulary.
+
+    Runs across all partitions. Terms absent from the training vocabulary are
+    simply not counted, which is the honest behaviour — the model has no
+    parameter for a word it never saw.
+
+    Parameters
+    ----------
+    dataset:
+        The dataset to vectorise. Every column the plan names must be present.
+    plan:
+        A plan from :func:`fit_text_features`, or one restored from a saved
+        pipeline.
+
+    Returns
+    -------
+    tuple of (~buildml.data.dataset.Dataset, ~buildml.preprocess.result.PreprocessResult)
+        The dataset with text replaced by numeric features, and a narrated
+        record covering how many columns were added and how sparse they are.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        A column the plan expects is missing from the dataset.
+
+    Notes
+    -----
+    **Out-of-vocabulary text yields an all-zero row.** A document made entirely
+    of unseen terms produces zeros across every text feature, and the model
+    will fall back to whatever it predicts in the absence of evidence. A high
+    rate of this means the training text and the incoming text are drawn from
+    different populations.
+
+    **Missing values are treated as empty documents** rather than propagating
+    as gaps, so they also produce zeros.
+
+    See Also
+    --------
+    fit_text_features : Produces the plan this consumes.
+    """
     missing = [c for c in plan.columns if c not in dataset.columns]
     if missing:
         raise ValidationError(f"Text plan columns missing from dataset: {missing}")

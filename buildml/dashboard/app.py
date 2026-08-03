@@ -33,7 +33,45 @@ except ImportError:  # pragma: no cover - exercised when dashboard extra missing
 
 
 def create_app() -> Any:
-    """Create the ASGI app bound to the process-local dashboard state."""
+    """Build the ASGI app, wiring routes to whatever report is installed.
+
+    A factory rather than a module-level app, because routes read from
+    process-local state that has to be installed first. Building the app at
+    import time would create routes with nothing behind them.
+
+    The app serves the studio page, JSON endpoints for boards and chart
+    catalogues, the teaching content, and the CSV, PDF, and offline-HTML export
+    routes. Static assets and the vendored Plotly are mounted from the package.
+
+    Returns
+    -------
+    Any
+        A FastAPI application, ready for uvicorn. Typed loosely so this module
+        imports cleanly when FastAPI is absent.
+
+    Raises
+    ------
+    MissingExtraError
+        If FastAPI, Jinja2, or the static-files support is unavailable. Install
+        with ``pip install 'buildml[dashboard]'``.
+
+    Notes
+    -----
+    **The state must be installed first.** Every route calls
+    :func:`~buildml.dashboard.state.get_state`, which raises without it. Use
+    :func:`~buildml.dashboard.launch.launch_eda_app`, which does this in the
+    right order.
+
+    **No authentication, and the API docs are disabled.** This is meant for
+    ``127.0.0.1`` and nothing else; anyone who can reach the port can read the
+    whole report.
+
+    **One report per process.** The state is a single global slot.
+
+    See Also
+    --------
+    buildml.dashboard.launch.launch_eda_app : The supported way to start this.
+    """
     if FastAPI is None or Jinja2Templates is None or StaticFiles is None:
         raise MissingExtraError("dashboard", "EDA Teaching Studio app")
 

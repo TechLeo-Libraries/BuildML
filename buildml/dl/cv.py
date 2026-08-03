@@ -1,8 +1,27 @@
-"""Fold-local Torch cross-validation utilities.
+"""Cross-validate a Torch model, re-fitting everything inside each fold.
 
-Fits transforms / train loops inside each fold to honor leakage rules. For
-nested Torch hyperparameter search (outer estimate after inner selection), use
-:func:`buildml.dl.search.nested_cv_torch` / ``Session.nested_cv_torch``.
+A single train/test split gives one number, and that number depends on which
+rows happened to land where. Cross-validation runs the whole thing several times
+over different partitions and reports the spread as well as the average, which
+tells you whether the score is a property of the model or of the split.
+
+The word "fold-local" carries the important part. Normalisation statistics, the
+class-label vocabulary, and the model itself are all rebuilt from scratch inside
+each fold, using only that fold's training rows. Fitting any of them once
+outside the loop would leak information from every fold's holdout into every
+fold's training — inflating all the scores by an amount the output gives no way
+to detect.
+
+This is plain cross-validation, not nested. There is no inner loop selecting
+hyperparameters, so using these scores to choose between configurations and then
+reporting the winning score overstates it. Use
+:func:`buildml.dl.search.nested_cv_torch` when you need selection and an honest
+estimate from the same run.
+
+See Also
+--------
+buildml.dl.search.nested_cv_torch : Selection with an unbiased outer estimate.
+buildml.dl.train : The per-fold training loop.
 """
 
 from __future__ import annotations
@@ -28,7 +47,30 @@ ModuleFactory = Callable[[int, str, int], Any]
 
 @dataclass(slots=True)
 class TorchFoldScore:
-    """Metrics for one outer fold."""
+    """What one fold produced.
+
+    Attributes
+    ----------
+    fold:
+        Zero-based fold index.
+    train_size, val_size:
+        Row counts on each side of the split. Worth checking when a fold's
+        metrics look unusual — an unexpectedly small fold explains a lot.
+    metrics:
+        Loss, plus accuracy for classification or MSE for regression.
+    n_epochs_ran:
+        How long this fold trained. Varies between folds when early stopping is
+        active.
+    device:
+        Where this fold ran.
+    warnings:
+        Anything notable, including whether a caller-supplied fold-local
+        transform was applied.
+
+    See Also
+    --------
+    TorchCVResult : The aggregate across folds.
+    """
 
     fold: int
     train_size: int
@@ -39,6 +81,16 @@ class TorchFoldScore:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Return this fold's record as JSON-safe values.
+
+        Everything the fold produced, suitable for logging or comparing runs.
+
+        Returns
+        -------
+        dict
+            Fold index, both row counts, metrics, epochs run, device, and
+            warnings.
+        """
         return {
             "fold": self.fold,
             "train_size": self.train_size,
@@ -52,7 +104,40 @@ class TorchFoldScore:
 
 @dataclass(slots=True)
 class TorchCVResult:
-    """Aggregate fold-local Torch CV outcome."""
+    """The cross-validation outcome across every fold.
+
+    Attributes
+    ----------
+    n_folds:
+        How many folds ran.
+    task:
+        The resolved task.
+    fold_scores:
+        Each fold's record, in order.
+    mean_metrics:
+        The average of each metric across folds. The headline number.
+    std_metrics:
+        The spread of each metric across folds — the more informative half.
+    disclosures:
+        The conditions the run happened under.
+    limitations:
+        What this cross-validation does not establish.
+    warnings:
+        Anything notable at the run level.
+    config:
+        The settings used, for reproducing the run.
+
+    Notes
+    -----
+    **Read ``std_metrics`` alongside ``mean_metrics``.** A mean accuracy of 0.85
+    with a standard deviation of 0.02 is a model you can rely on; the same mean
+    with a deviation of 0.15 is a model whose behaviour depends heavily on which
+    rows it happened to see, and reporting only the mean hides that entirely.
+
+    See Also
+    --------
+    cross_validate_torch : Produces this.
+    """
 
     n_folds: int
     task: str
@@ -65,6 +150,18 @@ class TorchCVResult:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the whole cross-validation as JSON-safe values.
+
+        Includes every fold's record, not just the aggregates — the spread
+        across folds is part of the finding, and a summary that discards it
+        overstates what the run established.
+
+        Returns
+        -------
+        dict
+            Fold count, task, per-fold records, mean and standard-deviation
+            metrics, disclosures, limitations, warnings, and config.
+        """
         return {
             "n_folds": self.n_folds,
             "task": self.task,
@@ -176,21 +273,90 @@ def cross_validate_torch(
     train_config: TrainConfig | None = None,
     apply_session_plans: Callable[[pd.DataFrame, np.ndarray], pd.DataFrame] | None = None,
 ) -> TorchCVResult:
-    """Run fold-local supervised Torch CV on numeric tabular features.
+    """Estimate how a Torch model performs, across several different splits.
 
-    For each fold:
-    1. Split train/val indices (optionally stratified).
-    2. Optionally apply a caller-supplied fold-local plan transform on train rows.
-    3. Fit normalize stats on train only when ``normalize=True``.
-    4. Train a fresh module from ``module_factory`` (default tabular MLP).
-    5. Score the held-out fold.
+    Partitions the rows into folds, then for each fold: optionally applies a
+    caller-supplied transform, fits normalisation on that fold's training rows,
+    builds a fresh module, trains it, and scores the held-out rows. Reports the
+    mean and spread across folds.
 
-    Limitations (encoded in the result):
-    - Not nested CV: no inner hyperparameter search loop (see
-      :func:`buildml.dl.search.nested_cv_torch`).
-    - Classical Session plans are not auto-refit per fold unless
-      ``apply_session_plans`` is provided (receives train frame + train indices).
-    - Text modality is not covered; use :func:`make_text_loaders` separately.
+    Parameters
+    ----------
+    dataset:
+        The data, with roles and a numeric target.
+    n_folds:
+        How many folds. More folds means more training data per fold and more
+        runs; three is a fast default, five or ten is more usual.
+    epochs / batch_size / learning_rate:
+        Training settings, used when ``train_config`` is not supplied.
+    device:
+        Where to run. ``'auto'`` prefers an accelerator.
+    normalize:
+        Standardise features using each fold's training statistics.
+    seed:
+        Controls fold assignment and shuffling, so the same seed reproduces the
+        same folds.
+    stratify:
+        Keep class proportions roughly equal across folds. Applies to
+        classification only, and matters most when a class is rare — without
+        it, a fold can end up with none of that class at all.
+    task:
+        ``'auto'`` to infer, or an explicit choice.
+    module_factory:
+        Called as ``factory(in_features, task, n_classes)`` to build each
+        fold's module. Defaults to a small tabular MLP. **Must return a fresh
+        module every call** — returning the same object would carry the
+        previous fold's learned weights into the next fold's training, which is
+        leakage that looks like unusually good scores.
+    train_config:
+        Full training settings, overriding the individual arguments above.
+    apply_session_plans:
+        Called as ``fn(frame, train_indices)`` before each fold's arrays are
+        built, for re-fitting classical preprocessing per fold. Given the
+        training indices so the transform can fit on training rows only.
+
+    Returns
+    -------
+    TorchCVResult
+        Per-fold scores plus mean and standard deviation, with disclosures and
+        limitations attached.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If ``n_folds`` is below 2, if there are fewer rows than folds, if the
+        target is non-numeric or contains ``NaN``, or if a feature column is
+        non-numeric.
+
+    Notes
+    -----
+    **The standard deviation is the part worth reading.** It says how much the
+    score depends on which rows the model happened to train on, and a large
+    spread is a warning that the single number from any one split — including
+    the one you would otherwise have reported — is not reliable.
+
+    **Classical Session preprocessing is not re-fitted per fold by default.**
+    If you imputed or encoded before calling this, those transforms were fitted
+    on the whole frame, and every fold's holdout has already influenced them.
+    Pass ``apply_session_plans`` to re-fit inside the loop when this matters.
+
+    **Text and sequence data are out of scope.** This path expects numeric
+    tabular features; use :mod:`buildml.dl.text` for token loaders.
+
+    Examples
+    --------
+    Check both the level and the stability::
+
+        cv = cross_validate_torch(dataset, n_folds=5, epochs=10)
+        cv.mean_metrics["accuracy"]
+        cv.std_metrics["accuracy"]  # large means the split matters more than the model
+
+    See Also
+    --------
+    buildml.dl.search.nested_cv_torch : When hyperparameters need selecting too.
+    buildml.dl.models.build_tabular_mlp : The default module factory.
     """
     from buildml.dl.metrics import resolve_device
     from buildml.dl.results import TorchLoaderBundle

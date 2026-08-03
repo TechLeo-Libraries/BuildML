@@ -1,5 +1,31 @@
 # ruff: noqa: E501
-"""Evidence-linked editorial records for model diagnostics."""
+"""Turn diagnostic numbers into claims that carry their own supporting evidence.
+
+A diagnostic that says "the model is poorly calibrated" is an assertion. One that
+says "the model is poorly calibrated, ECE is 0.14, measured on the validation
+partition, and this describes validation only" is a claim you can check, argue
+with, or overrule.
+
+This module builds the second kind. Every :class:`~buildml.explain.schemas.Finding`
+carries the measurements it rests on; every
+:class:`~buildml.explain.schemas.Recommendation` names the findings that motivate
+it and the actual BuildML operation that would act on it. The chain runs
+measurement to observation to advice to executable action, and nothing in it is
+implicit.
+
+The structure exists because advice separated from its evidence ages badly. Six
+months on, "consider recalibrating" tells nobody what was measured, on which
+data, or whether the reason still holds. Advice bound to its numbers stays
+auditable.
+
+Everything is JSON-safe, so a report survives serialisation into a session log
+or an HTML export without losing the links.
+
+See Also
+--------
+buildml.explain.schemas : The Finding, Evidence, and Recommendation types.
+buildml.model.diagnostics : The reports these records are built from.
+"""
 
 from __future__ import annotations
 
@@ -25,7 +51,43 @@ def diagnostic_finding(
     evidence: Sequence[Evidence],
     severity: FindingSeverity = FindingSeverity.INFO,
 ) -> Finding:
-    """Create a finding whose interpretation is backed by explicit evidence."""
+    """State something observed, with the measurements that support it attached.
+
+    A finding is an interpretation, and interpretations are only as good as what
+    backs them. Binding the evidence to the claim means a reader can check
+    whether the conclusion follows, rather than taking it on trust.
+
+    Parameters
+    ----------
+    key:
+        Stable identifier. Recommendations refer to findings by this, so it must
+        not drift between runs.
+    title:
+        One line, readable on its own.
+    detail:
+        The observation, including the numbers and what they indicate.
+    evidence:
+        The measurements or observations this rests on. Not optional in
+        practice — a finding without evidence is just an opinion.
+    severity:
+        How much attention this warrants, from ``INFO`` up.
+
+    Returns
+    -------
+    Finding
+        The finding with its evidence attached.
+
+    Notes
+    -----
+    **Severity is a prompt, not a verdict.** A ``HIGH`` on a metric your
+    application does not care about is noise; a ``LOW`` on one it depends on is
+    not.
+
+    See Also
+    --------
+    metric_evidence, observation_evidence : Building the evidence.
+    diagnostic_recommendation : Advice that cites findings.
+    """
     return Finding(
         key=key,
         title=title,
@@ -43,7 +105,44 @@ def metric_evidence(
     source: str,
     limitations: Sequence[str] = (),
 ) -> Evidence:
-    """Create JSON-safe metric evidence."""
+    """Record a measured number as evidence, with where it came from.
+
+    Metric evidence is a computed quantity — an ECE, an AUC, a fold spread. The
+    ``source`` is what makes it auditable: the same value measured on train and
+    on validation supports very different conclusions, and without the source
+    a reader cannot tell which they are looking at.
+
+    Parameters
+    ----------
+    key:
+        Stable identifier for this measurement.
+    summary:
+        One line describing what was measured.
+    value:
+        The measurement. Coerced to something JSON-safe, so NumPy scalars and
+        arrays are converted rather than rejected.
+    source:
+        Where it came from — which report, which partition. The context that
+        makes the number interpretable.
+    limitations:
+        What this measurement cannot support. A binary-only metric on multiclass
+        data belongs here rather than in a footnote nobody reads.
+
+    Returns
+    -------
+    Evidence
+        JSON-safe metric evidence.
+
+    Notes
+    -----
+    **Limitations travel with the value.** They survive serialisation into a
+    report, which is the point — the caveat is useless if it is lost the moment
+    the number is copied elsewhere.
+
+    See Also
+    --------
+    observation_evidence : For qualitative evidence.
+    """
     return Evidence(
         key=key,
         kind=EvidenceKind.METRIC,
@@ -62,7 +161,43 @@ def observation_evidence(
     source: str,
     limitations: Sequence[str] = (),
 ) -> Evidence:
-    """Create JSON-safe observational evidence."""
+    """Record something observed that is not a single measured number.
+
+    The counterpart to :func:`metric_evidence`, for facts that carry weight
+    without being a scalar: which panels were skipped and why, which segments
+    were too small to score, what the estimator does not support. These are
+    frequently the most useful evidence in a report, because they explain
+    absences — and an absence with no explanation reads as an oversight.
+
+    Parameters
+    ----------
+    key:
+        Stable identifier for this observation.
+    summary:
+        One line describing what was observed.
+    value:
+        The observation — a list, a mapping, whatever holds it. Coerced to
+        something JSON-safe.
+    source:
+        Where it came from.
+    limitations:
+        What this observation cannot support.
+
+    Returns
+    -------
+    Evidence
+        JSON-safe observational evidence.
+
+    Notes
+    -----
+    **This is how a skipped analysis stays visible.** Recording that a panel was
+    omitted, and why, is the difference between a report that is honest about
+    its gaps and one that appears complete.
+
+    See Also
+    --------
+    metric_evidence : For measured quantities.
+    """
     return Evidence(
         key=key,
         kind=EvidenceKind.OBSERVATION,
@@ -84,7 +219,61 @@ def diagnostic_recommendation(
     priority: ActionPriority = ActionPriority.NEXT,
     caveats: Sequence[str] = (),
 ) -> Recommendation:
-    """Create advice linked to both observed findings and a public API action."""
+    """Give advice that names both its reasons and the operation to run.
+
+    Two links are required, and both are deliberate. ``finding_keys`` ties the
+    advice to what was actually observed, so a reader can judge whether the
+    reasoning holds. ``operation`` names a real BuildML operation, so the advice
+    is actionable rather than a suggestion to go and work out how.
+
+    Recommendations without observed findings are refused. Advice that is not
+    grounded in a measurement is a default dressed as a diagnosis.
+
+    Parameters
+    ----------
+    key:
+        Stable identifier for this recommendation.
+    title:
+        The advice in one line.
+    rationale:
+        Why, referring to what was observed.
+    finding_keys:
+        Which findings motivate this. Must be non-empty.
+    operation:
+        The BuildML operation that would act on it, such as ``'tune_threshold'``.
+    parameters:
+        Arguments for that operation. Coerced to JSON-safe values.
+    priority:
+        How urgent, relative to other recommendations.
+    caveats:
+        What could go wrong following this, or when it does not apply.
+
+    Returns
+    -------
+    Recommendation
+        The advice with its evidence links and executable action.
+
+    Raises
+    ------
+    ValueError
+        If ``finding_keys`` is empty.
+
+    Notes
+    -----
+    **Caveats matter most on the most tempting advice.** "Tune the threshold for
+    peak F1" is easy to follow and frequently wrong, because peak F1 assumes
+    false positives and false negatives cost the same. That belongs in
+    ``caveats``, next to the advice.
+
+    **The action is a suggestion, not a plan.** Nothing executes it, and the
+    parameters are a reasonable starting point rather than a tuned
+    configuration.
+
+    See Also
+    --------
+    diagnostic_finding : The findings this cites.
+    compatibility_recommendations : Flattening these to plain strings.
+    """
     if not finding_keys:
         raise ValueError("Diagnostic recommendations require observed finding keys")
     return Recommendation(
@@ -106,7 +295,33 @@ def diagnostic_recommendation(
 def compatibility_recommendations(
     recommendations: Sequence[Recommendation],
 ) -> list[str]:
-    """Retain the original list-of-strings view for public compatibility."""
+    """Flatten structured recommendations into the plain strings older code expects.
+
+    Recommendations used to be a list of strings, and callers and reports still
+    consume that shape. Rather than breaking them, each recommendation is
+    rendered to a line that keeps the links inline — the title, the rationale,
+    the finding keys, and the action label all survive in readable form.
+
+    Parameters
+    ----------
+    recommendations:
+        The structured recommendations.
+
+    Returns
+    -------
+    list of str
+        One line each, with evidence keys and the action in brackets.
+
+    Notes
+    -----
+    **The caveats are dropped.** A flattened line carries the advice and its
+    provenance but not its qualifications, so prefer the structured
+    recommendations wherever the consumer can take them.
+
+    See Also
+    --------
+    diagnostic_recommendation : The structured form.
+    """
     return [
         (
             f"{item.title}: {item.rationale} "
@@ -121,7 +336,50 @@ def evidence_for_diagnostic(
     kind: str,
     payload: Mapping[str, Any],
 ) -> tuple[list[Finding], list[Recommendation], list[str], list[str]]:
-    """Translate a diagnostic payload into auditable editorial records."""
+    """Read a diagnostic's numbers and write down what they mean.
+
+    The editorial layer for :mod:`buildml.model.diagnostics`. Each report kind —
+    calibration, threshold, learning curve, permutation importance, segment
+    error — has its own thresholds and its own way of going wrong, so each is
+    interpreted on its own terms rather than through a generic rule.
+
+    Every produced record is linked back to a value in the payload, which means
+    the interpretation can always be checked against the measurement that
+    prompted it.
+
+    Parameters
+    ----------
+    kind:
+        Which diagnostic this is: ``'calibration'``, ``'threshold'``,
+        ``'learning_curve'``, ``'permutation_importance'``, or ``'segment_error'``.
+    payload:
+        The report's computed values.
+
+    Returns
+    -------
+    tuple
+        ``(findings, recommendations, limitations, methods)`` — what was
+        observed, what to do, what the results cannot support, and how they were
+        computed.
+
+    Notes
+    -----
+    **Limitations always name the partition.** Every diagnostic describes the
+    rows it ran on, and results on validation need not transfer to production
+    traffic.
+
+    **The thresholds are review triggers, not standards.** An ECE above 0.1 is
+    flagged as worth a look, and whether it is acceptable depends entirely on
+    whether the probabilities drive a decision.
+
+    **An unrecognised ``kind`` returns empty records rather than raising**, so a
+    new diagnostic can ship before its editorial rules do.
+
+    See Also
+    --------
+    buildml.model.diagnostics : The reports interpreted here.
+    evidence_for_plot_board : The same treatment for plot boards.
+    """
     source = f"DiagnosticReport.payload ({kind})"
     partition = str(payload.get("partition", "training cross-validation"))
     limits = [f"Results describe {partition}; they may not transfer to another population."]
@@ -371,7 +629,49 @@ def evidence_for_plot_board(
     metrics: Mapping[str, Any],
     skipped: Sequence[Mapping[str, str]],
 ) -> tuple[list[Finding], list[Recommendation], list[str]]:
-    """Create evidence-linked findings for a classification/regression board."""
+    """Interpret a plot board's numbers, including the panels it could not draw.
+
+    A board of plots invites reading by eye, which is exactly where confirmation
+    bias lives. This attaches the numbers behind the pictures so the impression
+    can be checked against them.
+
+    Skipped panels get equal treatment. When an estimator offers no
+    probabilities, the ROC, precision-recall, calibration, and threshold panels
+    cannot be drawn — and a board with four missing panels and no explanation
+    looks like something failed. Recording the reasons turns an apparent gap
+    into a stated limitation.
+
+    Parameters
+    ----------
+    task:
+        ``'classification'`` or ``'regression'``, selecting which
+        interpretations apply.
+    partition:
+        Which partition the board describes, recorded as the evidence source.
+    metrics:
+        The board's computed values.
+    skipped:
+        Panels that were not drawn, each with a reason.
+
+    Returns
+    -------
+    tuple
+        ``(findings, recommendations, limitations)``.
+
+    Notes
+    -----
+    **Probability panels are binary-only.** Multiclass problems get the
+    confusion structure and not the ranking and calibration panels, and that
+    absence is recorded as a limitation rather than left to be noticed.
+
+    **Threshold advice always carries a cost caveat.** Peak F1 is a defensible
+    default and assumes the two error types cost the same, which is rarely true
+    of anything worth building a model for.
+
+    See Also
+    --------
+    buildml.model.plot_boards : The boards interpreted here.
+    """
     source = f"PlotBoardReport.metrics ({partition})"
     findings: list[Finding] = []
     recommendations: list[Recommendation] = []

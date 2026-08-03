@@ -40,6 +40,24 @@ class EDAAppHandle:
 
     @property
     def is_running(self) -> bool:
+        """Whether the server thread is still alive.
+
+        Reads the thread rather than asking the server, because a server that
+        crashed on startup leaves a dead thread and no other outward sign. This
+        is the reliable check.
+
+        Returns
+        -------
+        bool
+            ``True`` while the thread is running. ``False`` after
+            :meth:`stop`, or if the server died on its own.
+
+        Notes
+        -----
+        **Alive is not the same as serving.** There is a brief window during
+        startup where the thread exists and the port is not yet accepting; a
+        handle returned from a non-blocking launch is past that window.
+        """
         return self._thread.is_alive()
 
 
@@ -53,31 +71,80 @@ def launch_eda_app(
     session_meta: dict[str, Any] | None = None,
     blocking: bool = False,
 ) -> EDAAppHandle:
-    """Serve the EDA Teaching Studio for an existing :class:`EDAReport`.
+    """Start a local web server showing the studio for a report.
+
+    Turns a report you already have into an interactive dashboard on
+    ``localhost``. Non-blocking by default, so a notebook cell returns
+    immediately and the server keeps running in the background — call
+    :meth:`EDAAppHandle.stop` when done.
+
+    The port is checked before the server starts. That check exists because
+    uvicorn's own bind failure surfaces from a background thread as an obscure
+    traceback with no obvious remedy; failing early gives a message that names
+    the port and says what to do.
 
     Parameters
     ----------
     report:
-        Structured EDA result from ``session.eda(...)``.
-    host, port:
-        Local bind address.
+        The EDA result, from ``session.eda(...)`` or
+        :func:`~buildml.eda.profile.explore_dataset`.
+    host:
+        Bind address. **Keep this at ``127.0.0.1``.** Binding to ``0.0.0.0``
+        exposes the dashboard — and your data — to everything that can reach the
+        machine, with no authentication of any kind.
+    port:
+        Bind port.
     open_browser:
-        Open the default browser when the server accepts connections.
+        Open the default browser once the server is accepting connections.
     title:
-        Window/header title.
+        Header and window title.
     session_meta:
-        Optional lightweight Session facts for the cockpit.
+        Extra Session facts for the cockpit board.
     blocking:
-        If True, run the server on the current thread (useful for scripts).
+        Run on the calling thread and do not return until the server stops.
+        Right for a script whose only job is to serve; wrong for a notebook,
+        where it would hang the kernel.
+
+    Returns
+    -------
+    EDAAppHandle
+        The URL and the controls to stop it. Under ``blocking=True`` this is
+        returned only after the server has already stopped.
 
     Raises
     ------
     MissingExtraError
-        When ``buildml[dashboard]`` dependencies are not installed.
+        If the dashboard dependencies are not installed. Install with
+        ``pip install 'buildml[dashboard]'``.
     DashboardLaunchError
-        When the requested port is already in use or the server fails to start.
+        If the port is occupied or the server fails to start within 15 seconds.
     ValidationError
-        When host/port values are invalid.
+        If the host is empty or the port is outside 1–65535.
+
+    Notes
+    -----
+    **There is no authentication.** Anyone who can reach the address can read
+    the report, which includes column names, distributions, and example values.
+    Local-only binding is the entire protection.
+
+    **One dashboard per process.** State is process-global, so a second launch
+    replaces the first one's data.
+
+    **State is cleared on stop**, releasing the report and its figures.
+
+    Examples
+    --------
+    ::
+
+        report = session.eda()
+        handle = launch_eda_app(report)
+        print(handle.url)
+        ...
+        handle.stop()
+
+    See Also
+    --------
+    buildml.dashboard.offline.export_studio_html : A file instead of a server.
     """
     try:
         import uvicorn
@@ -166,7 +233,38 @@ def open_eda_dashboard(
     report: EDAReport,
     **kwargs: Any,
 ) -> EDAAppHandle:
-    """Alias for :func:`launch_eda_app`."""
+    """Launch the studio, under the name people reach for first.
+
+    An alias for :func:`launch_eda_app`, kept because "open the dashboard" is
+    how the action is usually described. Identical behaviour; every argument is
+    forwarded.
+
+    Parameters
+    ----------
+    report:
+        The EDA result to serve.
+    **kwargs:
+        Passed through — ``host``, ``port``, ``open_browser``, ``title``,
+        ``session_meta``, ``blocking``.
+
+    Returns
+    -------
+    EDAAppHandle
+        The URL and controls for the running server.
+
+    Raises
+    ------
+    MissingExtraError
+        If the dashboard dependencies are missing.
+    DashboardLaunchError
+        If the port is occupied or startup fails.
+    ValidationError
+        If the host or port is invalid.
+
+    See Also
+    --------
+    launch_eda_app : The same function, with the full documentation.
+    """
     return launch_eda_app(report, **kwargs)
 
 

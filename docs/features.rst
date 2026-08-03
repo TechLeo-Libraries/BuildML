@@ -152,9 +152,10 @@ Models and diagnostics
   ``retain_cbr``). Train-only case memory; distinct from RAG. Persist via
   ``buildml.cbr_bundle.v1``.
 * Fit imitation / RL policies (``fit_imitation`` / ``fit_rl``): behavioral
-  cloning and contextual bandits in core; optional Gymnasium REINFORCE-lite
-  via ``buildml[rl]``. Persist via imitation/RL bundles. Not a robotics /
-  multi-agent world-sim product.
+  cloning and contextual bandits in core; optional Gymnasium tabular TD control
+  (Q-learning / SARSA / Expected SARSA / Double Q-learning) and REINFORCE-lite
+  via ``buildml[rl]``; SB3 PPO/DQN/A2C via ``buildml[rl-industry]``. Persist via
+  imitation/RL bundles. Not a robotics / multi-agent world-sim product.
 * Fit TDA pipelines (``fit_tda`` → ``transform_tda`` / ``predict_tda``): local
   Vietoris–Rips + vectorization → sklearn head (``buildml[tda]``). Persist via
   ``buildml.tda_bundle.v1``.
@@ -173,6 +174,21 @@ Models and diagnostics
 * Fit synthetic-data generators (``fit_synthesizer`` → ``sample_synthetic`` /
   ``evaluate_synthetic``): bootstrap / Gaussian copula / SMOTE with fidelity +
   TSTR. Persist via ``buildml.synthetic_bundle.v1``. Not DP synthesis.
+* Model and analyse a text column on the Session dataset
+  (``profile_text_corpus`` → ``fit_text_classifier`` → ``predict_text`` /
+  ``evaluate_text_classifier`` / ``interpret_text_prediction``), plus
+  unsupervised description on the same split (``fit_topics`` /
+  ``assign_topics``, ``extract_keyphrases``, ``analyze_sentiment``,
+  ``extract_entities``, ``summarize_text``, ``detect_language``). Bag-of-n-grams
+  is the always-available default; frozen sentence-transformer and transformer
+  encoders come with ``buildml[nlp]``, spaCy NER with
+  ``buildml[nlp-industry]``. Normalization is deterministic; vocabulary,
+  document frequencies, topic components, and heads are train-only. Persist via
+  ``buildml.nlp_bundle.v1``. Honesty: single-label document classification and
+  analysis — not multi-label, not span/sequence labelling, not generation or
+  abstractive summarization, not translation, not transformer fine-tuning
+  (Torch text path), and not document retrieval for generation
+  (``buildml.rag``).
 
 Explanation, audit, and reports
 --------------------------------
@@ -294,6 +310,7 @@ Markdown under ``guides/``, also rendered here):
 * Recommenders / LTR / KG / decisions / synthetic: :doc:`quickstart-recommenders`,
   :doc:`quickstart-ranking`, :doc:`quickstart-kg`, :doc:`quickstart-optimize`,
   :doc:`quickstart-synthetic`
+* NLP (text column on the Session dataset): :doc:`quickstart-nlp`, :doc:`nlp-deep`
 * Engines / EDA / artifacts: :doc:`engines-polars-duckdb`,
   :doc:`eda-teaching-studio`, :doc:`artifacts-checkpoints-bundles`
 * Torch / speech / serve: :doc:`torch-deep`, :doc:`speech-asr-finetune`,
@@ -307,9 +324,9 @@ Proof suite (Tier A/B/C)
 End-to-end evidence that Session domains work with honest splits and holdout
 metrics lives in the repository ``proofs/`` directory (not thin smoke):
 
-* **Tier A — 25/25:** one deep project per major domain (classical through IL/RL)
+* **Tier A — 26/26:** one deep project per major domain (classical through NLP)
 * **Tier B — 6/6:** Aegis, Harbor, Atlas, Pulse, Ledger, Nexus cross-domain products
-* **Tier C — 25/25:** same-split industry twins writing ``comparison.json``
+* **Tier C — 26/26:** same-split industry twins writing ``comparison.json``
   (qualitative competitive bar 5-B — workflow parity over tiny metric gaps)
 
 Re-run from a source checkout::

@@ -1,4 +1,24 @@
-"""Adaptive visualization planning from data characteristics."""
+"""Decide which charts are worth drawing before drawing any of them.
+
+Plotting every column of a fifty-column frame produces a report nobody reads.
+Worse, it produces charts that actively mislead: a bar chart of a column with
+2,000 categories, a scatter plot of an identifier, a histogram of a constant.
+
+So the plan is computed first, as data, and rendering happens afterwards.
+Separating the two means the decisions can be inspected and tested without
+importing Matplotlib or generating a single image — and a caller who wants
+different charts can edit the plan rather than the renderer.
+
+The choices follow from what each column is. A numeric column with a long tail
+wants a log-scaled histogram. A categorical with 30 levels wants a bar chart; one
+with 3,000 wants nothing. A pair of numerics against a target wants a scatter.
+Roles matter too: identifiers, ignored columns, and the target itself are
+excluded from feature plots, because a chart of a row ID is noise on the page.
+
+See Also
+--------
+buildml.eda.visualize : Rendering a plan.
+"""
 
 from __future__ import annotations
 
@@ -17,10 +37,49 @@ def build_adaptive_plan(
     feature_columns: list[str] | None = None,
     max_plots: int = 24,
 ) -> list[dict[str, Any]]:
-    """Choose high-impact plot specs from dtypes, cardinality, roles, and scale.
+    """Work out which charts this particular dataset warrants.
 
-    The planner prefers revealing charts over decorative ones and caps volume
-    so large schemas remain usable.
+    Filters to columns worth plotting, then matches each to a chart type that
+    suits it. Columns are excluded when their role makes them meaningless as
+    features — target, identifier, ignored, group, time, weight — or when they
+    hold a single distinct value, since a chart of a constant is a rectangle.
+
+    The cap is what keeps a report readable. Beyond a couple of dozen charts,
+    each additional one reduces the chance any of them is looked at, so the plan
+    is truncated at the most informative ones rather than extended.
+
+    Parameters
+    ----------
+    dataset:
+        The data, with roles assigned. Roles drive most of the exclusions, so a
+        dataset without them will plan charts for identifiers.
+    frame:
+        The frame to plan against — usually a sample. Dtypes and cardinality are
+        read from here.
+    feature_columns:
+        Restrict to these columns. Defaults to everything, filtered by role.
+    max_plots:
+        Ceiling on the plan length. Twenty-four fills a scrollable report
+        without exhausting the reader.
+
+    Returns
+    -------
+    list of dict
+        Plot specifications, each naming a chart type and the columns it uses.
+        Consumed by :func:`~buildml.eda.visualize.render_adaptive_plots`.
+
+    Notes
+    -----
+    **This renders nothing.** No Matplotlib import, no images. Inspect or edit
+    the plan before rendering when you want different charts.
+
+    **Roles are load-bearing here.** Without them, the planner cannot tell an
+    identifier from a feature, and the resulting report is mostly charts of
+    unique values.
+
+    See Also
+    --------
+    buildml.eda.visualize.render_adaptive_plots : Executing the plan.
     """
     plan: list[dict[str, Any]] = []
     invalid_feature_roles = {

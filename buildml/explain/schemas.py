@@ -36,6 +36,23 @@ def _json_value(value: Any) -> JsonValue:
     raise TypeError(f"{type(value).__name__} is not JSON serializable")
 
 
+def _normalize_prose_tuples(instance: Any, names: frozenset[str]) -> None:
+    """Wrap a lone authored sentence into the one-item tuple it was meant to be.
+
+    Catalog and concept entries are hand-written literals, and a single-item
+    tuple needs a trailing comma that is easy to forget. Left alone, the string
+    survives every type checker that only sees the annotation and then renders
+    one bullet per character the first time a reader asks for an explanation.
+    Normalizing at construction keeps that authoring slip out of the output.
+    """
+    for name in names:
+        value = getattr(instance, name)
+        if isinstance(value, str):
+            object.__setattr__(instance, name, (value,) if value else ())
+        elif not isinstance(value, tuple):
+            object.__setattr__(instance, name, tuple(value))
+
+
 class DecisionOrigin(str, Enum):
     """Where a workflow choice came from."""
 
@@ -107,11 +124,137 @@ class ActionPriority(str, Enum):
     BEFORE_RELEASE = "before_release"
 
 
+class LearningLevel(str, Enum):
+    """Reader experience tier a rendered explanation is written for.
+
+    BuildML explanations are layered rather than duplicated: one note carries
+    beginner, intermediate, and advanced material, and the renderer chooses how
+    much to show. ``BEGINNER`` never assumes prior machine-learning vocabulary.
+    """
+
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+
+    @classmethod
+    def coerce(cls, value: LearningLevel | str | None) -> LearningLevel:
+        """Normalize whatever a caller passed into a reading level.
+
+        Public methods accept plain strings so users never have to import an
+        enum to ask for a level. Every entry point routes through here, which is
+        also where an unrecognised level is rejected — quietly falling back to a
+        default would leave someone believing they had asked for more depth than
+        they received.
+
+        Parameters
+        ----------
+        value:
+            An enum member, one of ``'beginner'`` / ``'intermediate'`` /
+            ``'advanced'`` in any case, or ``None`` for the default.
+
+        Returns
+        -------
+        LearningLevel
+            The matching member; ``BEGINNER`` when ``value`` is ``None``.
+
+        Raises
+        ------
+        ValueError
+            The string does not name a reading level. The message lists the
+            valid ones.
+        """
+        if value is None:
+            return cls.BEGINNER
+        if isinstance(value, cls):
+            return value
+        text = str(value).strip().lower()
+        for member in cls:
+            if member.value == text:
+                return member
+        valid = ", ".join(member.value for member in cls)
+        raise ValueError(f"Unknown learning level {value!r}; expected one of: {valid}")
+
+    @property
+    def rank(self) -> int:
+        """Ordinal depth so renderers can compare tiers."""
+        return _LEARNING_LEVEL_ORDER[self]
+
+    def includes(self, other: LearningLevel) -> bool:
+        """Decide whether material written for another level belongs at this one.
+
+        Levels are cumulative in one direction: an advanced reader can be shown
+        anything, while a beginner should not be handed material that assumes
+        vocabulary they have not met.
+
+        Parameters
+        ----------
+        other:
+            The level the material was authored for.
+
+        Returns
+        -------
+        bool
+            ``True`` when this level is at least as deep as ``other``.
+        """
+        return other.rank <= self.rank
+
+
+_LEARNING_LEVEL_ORDER: dict[LearningLevel, int] = {
+    LearningLevel.BEGINNER: 0,
+    LearningLevel.INTERMEDIATE: 1,
+    LearningLevel.ADVANCED: 2,
+}
+
+
+class ConceptDifficulty(str, Enum):
+    """Where a concept sits on the BuildML learning ladder.
+
+    ``FOUNDATION`` concepts are safe first reads for a complete beginner.
+    ``CORE`` concepts assume the foundations. ``ADVANCED`` concepts assume both
+    and usually describe a specialized domain surface.
+    """
+
+    FOUNDATION = "foundation"
+    CORE = "core"
+    ADVANCED = "advanced"
+
+    @property
+    def rank(self) -> int:
+        """Ordinal depth, so rungs can be compared and sorted."""
+        return _CONCEPT_DIFFICULTY_ORDER[self]
+
+
+_CONCEPT_DIFFICULTY_ORDER: dict[ConceptDifficulty, int] = {
+    ConceptDifficulty.FOUNDATION: 0,
+    ConceptDifficulty.CORE: 1,
+    ConceptDifficulty.ADVANCED: 2,
+}
+
+
 @dataclass(frozen=True, slots=True)
 class SerializableSchema:
     """Mixin providing a strict JSON-compatible representation."""
 
     def to_dict(self) -> dict[str, JsonValue]:
+        """Render the schema as plain JSON-compatible Python.
+
+        Explanations travel: into transcripts, HTML reports, AI tool results,
+        and generated indexes. Conversion is strict rather than best-effort, so
+        a value that cannot round-trip raises here instead of producing an
+        artifact that silently lost a field.
+
+        Returns
+        -------
+        dict
+            Field name mapped to a value built only from ``None``, ``bool``,
+            ``int``, ``float``, ``str``, ``list``, and ``dict``. Enums become
+            their values, paths become strings, and nested schemas recurse.
+
+        Raises
+        ------
+        TypeError
+            A field holds something with no JSON representation.
+        """
         return {item.name: _json_value(getattr(self, item.name)) for item in fields(self)}
 
 
@@ -125,6 +268,39 @@ class ParameterSpec(SerializableSchema):
     required: bool = False
     default: JsonValue = None
     choices: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class GlossaryTerm(SerializableSchema):
+    """One piece of jargon translated into everyday language.
+
+    Glossary entries are what make an explanation readable without prior
+    training: any term a beginner is unlikely to know should appear here with a
+    plain meaning, so the reader never has to leave the explanation to decode it.
+    """
+
+    term: str
+    plain_meaning: str
+    also_called: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class Misconception(SerializableSchema):
+    """A belief many learners arrive with, paired with what is actually true."""
+
+    myth: str
+    reality: str
+
+
+@dataclass(frozen=True, slots=True)
+class ParameterMeaning(SerializableSchema):
+    """Plain-language reading of one knob: what it controls and how to move it."""
+
+    name: str
+    plain_meaning: str
+    effect_of_increase: str = ""
+    effect_of_decrease: str = ""
+    typical_choice: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,10 +367,20 @@ class Recommendation(SerializableSchema):
 
 @dataclass(frozen=True, slots=True)
 class ConceptNote(SerializableSchema):
-    """Reusable technical note linked from operation specifications.
+    """Reusable teaching note linked from operation specifications.
 
-    ``details`` remains the searchable flat paragraph list. Optional section
-    fields power Concept Academy long-form teaching when present.
+    A note is written in three layers so one artifact serves every reader:
+
+    * **Beginner layer** — ``plain_summary``, ``analogy``, ``beginner_steps``,
+      ``when_to_use`` / ``when_not_to_use``, ``misconceptions``, ``glossary``,
+      ``mini_example``, ``check_yourself``. No prior ML vocabulary assumed.
+    * **Intermediate layer** — ``definition``, ``why_it_matters``,
+      ``how_buildml_uses``, ``interpretation_rules``, ``buildml_tools``.
+    * **Advanced layer** — ``formal_idea``, ``assumptions``, ``failure_modes``,
+      ``anti_patterns``, ``worked_example_pattern``.
+
+    ``details`` remains the searchable flat paragraph list and is rebuilt to
+    include beginner prose so search never returns only the expert phrasing.
     """
 
     key: str
@@ -213,6 +399,62 @@ class ConceptNote(SerializableSchema):
     failure_modes: tuple[str, ...] = ()
     anti_patterns: tuple[str, ...] = ()
     worked_example_pattern: tuple[str, ...] = ()
+    # --- beginner layer -------------------------------------------------
+    plain_summary: str = ""
+    analogy: str = ""
+    beginner_steps: tuple[str, ...] = ()
+    when_to_use: tuple[str, ...] = ()
+    when_not_to_use: tuple[str, ...] = ()
+    misconceptions: tuple[Misconception, ...] = ()
+    glossary: tuple[GlossaryTerm, ...] = ()
+    mini_example: tuple[str, ...] = ()
+    check_yourself: tuple[str, ...] = ()
+    # --- navigation -----------------------------------------------------
+    buildml_tools: tuple[str, ...] = ()
+    prerequisite_concepts: tuple[str, ...] = ()
+    next_concepts: tuple[str, ...] = ()
+    difficulty: ConceptDifficulty = ConceptDifficulty.CORE
+
+    def __post_init__(self) -> None:
+        _normalize_prose_tuples(self, _CONCEPT_NOTE_SEQUENCES)
+
+    @property
+    def has_beginner_layer(self) -> bool:
+        """True when the note satisfies the beginner content standard."""
+        return bool(
+            self.plain_summary
+            and self.analogy
+            and self.beginner_steps
+            and self.when_to_use
+            and self.when_not_to_use
+            and self.misconceptions
+            and self.mini_example
+        )
+
+
+#: Prose-sequence fields of :class:`ConceptNote`, normalized on construction.
+_CONCEPT_NOTE_SEQUENCES = frozenset(
+    {
+        "details",
+        "related_concepts",
+        "references",
+        "why_it_matters",
+        "how_buildml_uses",
+        "interpretation_rules",
+        "assumptions",
+        "failure_modes",
+        "anti_patterns",
+        "worked_example_pattern",
+        "beginner_steps",
+        "when_to_use",
+        "when_not_to_use",
+        "mini_example",
+        "check_yourself",
+        "buildml_tools",
+        "prerequisite_concepts",
+        "next_concepts",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -258,6 +500,7 @@ class BeforeOperationExplanation(SerializableSchema):
     risks: tuple[str, ...]
     likely_state_changes: tuple[str, ...]
     concept_notes: tuple[ConceptNote, ...]
+    beginner: OperationPrimer | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -275,11 +518,18 @@ class AfterOperationExplanation(SerializableSchema):
     limitations: tuple[str, ...]
     next_valid_choices: tuple[str, ...]
     concept_notes: tuple[ConceptNote, ...]
+    beginner: OperationPrimer | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class OperationSpec(SerializableSchema):
-    """Editorial contract for one public :class:`buildml.Session` operation."""
+    """Editorial contract for one public :class:`buildml.Session` operation.
+
+    Beginner-facing fields (``plain_summary`` through ``mini_example``) are
+    optional at authoring time: :mod:`buildml.explain.pedagogy` derives them
+    from the operation kind, prerequisites, parameters, and linked concept notes
+    so no operation can ship without a plain-language layer.
+    """
 
     name: str
     kind: OperationKind
@@ -302,4 +552,66 @@ class OperationSpec(SerializableSchema):
     result_reading: tuple[str, ...]
     next_considerations: tuple[str, ...]
     concept_links: tuple[str, ...]
+    plain_summary: str = ""
+    analogy: str = ""
+    beginner_steps: tuple[str, ...] = ()
+    when_to_use: tuple[str, ...] = ()
+    when_not_to_use: tuple[str, ...] = ()
+    mini_example: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        _normalize_prose_tuples(self, _OPERATION_SPEC_SEQUENCES)
+
+
+#: Prose-sequence fields of :class:`OperationSpec`, normalized on construction.
+_OPERATION_SPEC_SEQUENCES = frozenset(
+    {
+        "mechanism",
+        "inputs",
+        "outputs",
+        "usual_ordering",
+        "alternatives",
+        "selection_rationale",
+        "assumptions",
+        "failure_modes",
+        "leakage_risks",
+        "anti_patterns",
+        "state_changes",
+        "result_reading",
+        "next_considerations",
+        "concept_links",
+        "beginner_steps",
+        "when_to_use",
+        "when_not_to_use",
+        "mini_example",
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class OperationPrimer(SerializableSchema):
+    """Beginner-first briefing attached to every operation explanation.
+
+    The primer answers the questions a newcomer actually asks — *what is this,
+    why would I run it, what has to be true first, what will change, what words
+    am I looking at* — before any expert prose appears.
+    """
+
+    operation: str
+    level: LearningLevel
+    plain_summary: str
+    analogy: str
+    why_it_exists: str
+    steps: tuple[str, ...]
+    prerequisites_in_plain_words: tuple[str, ...]
+    when_to_use: tuple[str, ...]
+    when_not_to_use: tuple[str, ...]
+    key_parameters: tuple[ParameterMeaning, ...]
+    what_changes: tuple[str, ...]
+    how_to_read_the_result: tuple[str, ...]
+    common_pitfalls: tuple[str, ...]
+    glossary: tuple[GlossaryTerm, ...]
+    mini_example: tuple[str, ...]
+    related_tools: tuple[str, ...]
+    learn_next: tuple[str, ...]
 

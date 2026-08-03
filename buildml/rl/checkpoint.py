@@ -1,4 +1,29 @@
-"""Imitation + RL bundle persistence (distinct from Session checkpoints)."""
+"""Save a fitted policy so it outlives the session that produced it.
+
+A Session checkpoint and a policy bundle answer different questions, and
+conflating them is the mistake this module exists to prevent. **A checkpoint
+resumes your work** — data, roles, splits, history, classical preprocessing —
+and it does not embed IL or RL policies. **A bundle deploys a policy** — the
+fitted model, its columns, its action vocabulary — and it carries none of your
+data.
+
+Fitted a bandit and want to score new rows next week? Save a bundle. Stopped
+mid-analysis and want to pick up where you left off? Save a checkpoint. Doing
+both is normal.
+
+Each bundle is a directory of two files. ``meta.json`` is human-readable and
+holds the configuration, the fit report, and any evaluation, so you can tell
+what a bundle contains without loading it. The ``.joblib`` file holds the live
+model objects.
+
+Loading validates the format string before unpickling, which catches a wrong
+directory early. It is not a security boundary: joblib executes code on load, so
+only load bundles you produced or trust.
+
+See Also
+--------
+buildml.rl.results : The plans these bundles carry.
+"""
 
 from __future__ import annotations
 
@@ -41,7 +66,49 @@ def save_imitation_bundle(
     fit_result: ImitationFitResult | None = None,
     eval_result: ImitationEvalResult | None = None,
 ) -> Path:
-    """Write an imitation bundle directory (``buildml.imitation_bundle.v1``)."""
+    """Save a cloned policy to disk, with its provenance beside it.
+
+    Writes a two-file directory: the live model in joblib form, and a readable
+    ``meta.json`` recording what the policy is, how it was fitted, and how it
+    scored.
+
+    Parameters
+    ----------
+    path:
+        The destination directory. Created if absent; an existing bundle at the
+        same path is overwritten.
+    plan:
+        The fitted policy from
+        :func:`~buildml.rl.imitation.fit_imitation`.
+    fit_result:
+        The fit report, recorded in the metadata. Optional but worth passing —
+        it is the record of what the policy was trained on, and a bundle
+        without it cannot answer that later.
+    eval_result:
+        The holdout evaluation, recorded in the metadata. Also worth passing:
+        a deployed policy with no recorded score is a policy nobody can defend.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory.
+
+    Raises
+    ------
+    ValidationError
+        If ``plan`` is ``None``.
+
+    Notes
+    -----
+    **This is not a Session checkpoint.** It holds the policy and no data, no
+    splits, and no history. Save a checkpoint as well if you want to resume the
+    analysis.
+
+    See Also
+    --------
+    load_imitation_bundle : Read one back.
+    save_rl_bundle : The RL counterpart.
+    """
     if plan is None:
         raise ValidationError("No ImitationPlan to save.")
     destination = Path(path)
@@ -60,7 +127,43 @@ def save_imitation_bundle(
 
 
 def load_imitation_bundle(path: str | Path) -> ImitationPlan:
-    """Load an imitation bundle into an :class:`ImitationPlan`."""
+    """Read a saved cloning policy back into memory.
+
+    Checks that both files are present and that the format string matches
+    before unpickling, so a wrong path fails with a clear message rather than a
+    confusing deserialisation error.
+
+    Parameters
+    ----------
+    path:
+        The bundle directory written by :func:`save_imitation_bundle`.
+
+    Returns
+    -------
+    ImitationPlan
+        The policy, ready for
+        :func:`~buildml.rl.imitation.predict_imitation_action` and
+        :func:`~buildml.rl.imitation.evaluate_imitation`.
+
+    Raises
+    ------
+    ValidationError
+        If either file is missing, if the format string is not
+        ``buildml.imitation_bundle.v1``, or if the payload does not contain an
+        :class:`~buildml.rl.results.ImitationPlan`.
+
+    Notes
+    -----
+    **The bundle carries no data.** The reloaded policy expects the same state
+    columns, in the same order, that it was fitted on — read them from
+    ``plan.columns``.
+
+    **Loading executes pickled code.** Only load bundles you produced or trust.
+
+    See Also
+    --------
+    save_imitation_bundle : Write one.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "imitation_plan.joblib"
@@ -95,7 +198,48 @@ def save_rl_bundle(
     fit_result: RlFitResult | None = None,
     eval_result: RlEvalResult | None = None,
 ) -> Path:
-    """Write an RL bundle directory (``buildml.rl_bundle.v1``)."""
+    """Save an RL policy to disk, with its provenance beside it.
+
+    Writes a two-file directory: the live policy in joblib form, and a readable
+    ``meta.json`` recording the mode, algorithm, configuration, and any results.
+    Works for all four modes — a bandit's columns and encoder, or an
+    environment policy's weights, are carried the same way.
+
+    Parameters
+    ----------
+    path:
+        The destination directory. Created if absent; an existing bundle at the
+        same path is overwritten.
+    plan:
+        The fitted policy from :func:`~buildml.rl.fit.fit_rl`.
+    fit_result:
+        The fit report, recorded in the metadata.
+    eval_result:
+        The evaluation, recorded in the metadata. Particularly worth passing
+        here, because it carries the ``offline`` flag — a saved bandit metric
+        that has lost track of whether it was estimated or measured is a metric
+        that will eventually be over-read.
+
+    Returns
+    -------
+    pathlib.Path
+        The bundle directory.
+
+    Raises
+    ------
+    ValidationError
+        If ``plan`` is ``None``.
+
+    Notes
+    -----
+    **This is not a Session checkpoint.** It holds the policy and none of your
+    data or history.
+
+    See Also
+    --------
+    load_rl_bundle : Read one back.
+    save_imitation_bundle : The imitation counterpart.
+    """
     if plan is None:
         raise ValidationError("No RlPlan to save.")
     destination = Path(path)
@@ -114,7 +258,41 @@ def save_rl_bundle(
 
 
 def load_rl_bundle(path: str | Path) -> RlPlan:
-    """Load an RL bundle into an :class:`RlPlan`."""
+    """Read a saved RL policy back into memory.
+
+    Checks that both files are present and that the format string matches
+    before unpickling.
+
+    Parameters
+    ----------
+    path:
+        The bundle directory written by :func:`save_rl_bundle`.
+
+    Returns
+    -------
+    RlPlan
+        The policy, ready for :func:`~buildml.rl.act.act_rl` and
+        :func:`~buildml.rl.evaluate.evaluate_rl`.
+
+    Raises
+    ------
+    ValidationError
+        If either file is missing, if the format string is not
+        ``buildml.rl_bundle.v1``, or if the payload does not contain an
+        :class:`~buildml.rl.results.RlPlan`.
+
+    Notes
+    -----
+    **An environment policy needs its environment back.** The bundle carries the
+    ``env_id`` but not the environment itself, so reloading on a machine without
+    ``buildml[rl]`` succeeds and then fails at the first rollout.
+
+    **Loading executes pickled code.** Only load bundles you produced or trust.
+
+    See Also
+    --------
+    save_rl_bundle : Write one.
+    """
     root = Path(path)
     meta_path = root / "meta.json"
     plan_path = root / "rl_plan.joblib"

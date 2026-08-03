@@ -233,6 +233,91 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
     ),
     _operation(
+        "tune_anomaly_threshold",
+        OperationKind.DIAGNOSTIC,
+        "Choose the alert threshold that maximizes a labeled metric on a holdout partition.",
+        "Turn a raw anomaly score into an operating point you can defend, using labels rather than a guessed contamination rate.",
+        "Anomaly threshold selection step, between fit and evaluation.",
+        (
+            "Require an active AnomalyPlan and a label column.",
+            "Score the tuning partition with the frozen plan (no refit).",
+            "Sweep candidate thresholds and pick the one that maximizes the requested metric.",
+            "Refuse Session test unless allow_test_tuning is explicitly set.",
+            "Optionally write the chosen threshold back onto the plan.",
+        ),
+        parameters=(
+            _p(
+                "partition",
+                "train | validation | test",
+                "Tuning partition; validation is the honest default.",
+                "validation",
+            ),
+            _p(
+                "label_column",
+                "str | None",
+                "Labels used for tuning; defaults to the target role.",
+                None,
+            ),
+            _p("positive_label", "Any | None", "Positive / anomaly class value.", None),
+            _p(
+                "metric",
+                "f1 | fbeta | precision | recall | youden",
+                "Objective maximized over candidate thresholds.",
+                "f1",
+            ),
+            _p("fbeta", "float", "Beta for metric='fbeta'; above 1 favours recall.", 2.0),
+            _p(
+                "allow_test_tuning",
+                "bool",
+                "Dangerous opt-in to tune on Session test.",
+                False,
+            ),
+            _p(
+                "update_plan",
+                "bool",
+                "Write the chosen threshold back onto the active plan.",
+                True,
+            ),
+        ),
+        inputs=("Active AnomalyPlan plus labeled rows from the tuning partition.",),
+        outputs=("AnomalyThresholdTuneResult with the chosen threshold and its metric curve.",),
+        prerequisites=(DATASET, SPLIT, ANOMALY_PLAN),
+        ordering=("After fit_anomaly; before evaluate_anomaly on test.",),
+        alternatives=(
+            "Setting threshold_policy at fit time when no labels exist to tune against.",
+        ),
+        rationale=(
+            "A contamination guess is a prior, not a decision; when labels exist the operating point should be chosen against them.",
+        ),
+        assumptions=(
+            "Tuning labels are honestly scoped and reflect the deployment cost balance.",
+        ),
+        failures=(
+            "No plan; missing or null labels; a single label class in the partition.",
+        ),
+        leakage=(
+            "Tuning on test contaminates the final estimate, which is why it requires allow_test_tuning.",
+        ),
+        anti_patterns=(
+            "Tuning on test and then reporting test performance.",
+            "Maximizing F1 when the real cost of a missed anomaly is far higher than a false alert.",
+        ),
+        state_changes=(
+            "Stores the tuning result and, when update_plan is true, the plan's threshold.",
+        ),
+        result_reading=(
+            "Read the chosen threshold together with its alert rate, not the metric alone.",
+            "Inspect the metric curve for a plateau: a sharp peak usually means the threshold is fitted to noise.",
+        ),
+        next_steps=("evaluate_anomaly on test; save_anomaly_bundle.",),
+        concepts=(
+            "anomaly-threshold-alert-rate",
+            "anomaly-imbalance-metrics",
+            "thresholds",
+            "leakage-boundary",
+        ),
+    ),
+    _operation(
         "save_anomaly_bundle",
         OperationKind.PERSIST,
         "Persist the active AnomalyPlan as buildml.anomaly_bundle.v1.",

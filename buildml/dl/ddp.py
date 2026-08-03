@@ -1,18 +1,31 @@
-"""DistributedDataParallel training utilities (single-node + multi-node alpha).
+"""Train one model across several GPUs or machines.
 
-Modes
------
-* **Single-node** (default): spawn ``world_size`` local processes (NCCL when
-  ``cuda.device_count() >= 2``; CPU ``gloo`` only with ``allow_cpu_ddp=True``).
-* **Multi-node**: join an existing ``torchrun`` / ``torch.distributed``
-  rendezvous using ``WORLD_SIZE``, ``RANK``, ``LOCAL_RANK``, ``MASTER_ADDR``,
-  ``MASTER_PORT``. Launch with::
+DistributedDataParallel is the standard way to scale Torch training. Each
+process holds a full copy of the model and a distinct slice of the data. After
+every backward pass the processes average their gradients, which keeps the
+copies identical while spreading the work — so N processes get through an epoch
+in roughly a fraction of the time, at the cost of an effective batch size N
+times larger.
 
-      torchrun --nnodes=2 --nproc_per_node=2 --rdzv_backend=c10d \\
-        --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT your_train_script.py
+Two ways in. **Single-node** spawns the processes for you, one per visible GPU,
+and is the simpler path when everything fits on one machine. **Multi-node**
+joins a rendezvous that ``torchrun`` set up, reading its placement from the
+environment.
 
-Does **not** provide Kubernetes multi-cluster orchestration or elastic
-auto-scaling. Clear misconfig errors when env is incomplete.
+The scope is deliberately narrow. This joins or spawns a process group and
+trains; it does not schedule Kubernetes pods, handle nodes joining and leaving
+mid-run, or manage a cluster. When the environment is incomplete it says which
+variable is missing rather than hanging at the rendezvous, which is the failure
+mode most worth avoiding.
+
+Treat the whole module as alpha. Single-process training handles most datasets,
+and the operational surface here — NCCL connectivity, firewall rules, pickling
+across the spawn boundary — is genuinely more than it appears.
+
+See Also
+--------
+buildml.dl.train : Single-process training.
+buildml.dl.k8s : Manifests for running this under Kubernetes.
 """
 
 from __future__ import annotations
@@ -32,7 +45,31 @@ ModuleFactory = Callable[[], Any]
 
 @dataclass(slots=True)
 class DistributedEnv:
-    """Parsed torchrun / torch.distributed environment variables."""
+    """Where this process sits in a distributed run.
+
+    Attributes
+    ----------
+    world_size:
+        Total processes across all nodes.
+    rank:
+        This process's global index, ``0`` to ``world_size - 1``. Rank 0 is
+        conventionally the one that reports results and saves checkpoints.
+    local_rank:
+        This process's index **on this machine**, which is also its GPU index.
+    master_addr, master_port:
+        Where the processes find each other to coordinate.
+
+    Notes
+    -----
+    **``rank`` and ``local_rank`` differ across nodes, and confusing them is the
+    classic multi-node bug.** On the second node of a two-GPU-per-node run,
+    ranks 2 and 3 have local ranks 0 and 1. Using the global rank as a CUDA
+    device index there asks for ``cuda:2`` on a machine with two GPUs.
+
+    See Also
+    --------
+    parse_torchrun_env : Builds this from the environment.
+    """
 
     world_size: int
     rank: int
@@ -41,6 +78,16 @@ class DistributedEnv:
     master_port: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the distributed placement as JSON-safe values.
+
+        Useful in logs when diagnosing a multi-node run, where knowing which
+        process produced which line is most of the work.
+
+        Returns
+        -------
+        dict
+            World size, global rank, local rank, master address, master port.
+        """
         return {
             "world_size": self.world_size,
             "rank": self.rank,
@@ -52,7 +99,35 @@ class DistributedEnv:
 
 @dataclass(slots=True)
 class DDPConfig:
-    """DDP launch knobs for single-node spawn or multi-node torchrun join."""
+    """How to launch a distributed run.
+
+    Attributes
+    ----------
+    backend:
+        How processes communicate. ``'nccl'`` for NVIDIA GPUs, ``'gloo'`` for
+        CPU, ``'auto'`` to pick by whether CUDA is in use. NCCL is dramatically
+        faster on GPUs and does not work without them.
+    world_size:
+        How many processes to spawn. ``None`` uses the visible GPU count.
+        Single-node only; multi-node reads this from the environment.
+    master_addr, master_port:
+        Rendezvous point for single-node spawn. Change the port if it is
+        already taken.
+    find_unused_parameters:
+        Let DDP tolerate parameters that receive no gradient. Costs an extra
+        pass over the graph each step, so leave off unless your model has
+        conditional branches that skip layers — DDP will otherwise hang waiting
+        for gradients that never arrive.
+    allow_cpu_ddp:
+        Permit the CPU gloo path. This is for testing distributed code without
+        GPUs; it is slower than single-process training, not faster.
+    multi_node:
+        Join an existing torchrun rendezvous instead of spawning locally.
+
+    See Also
+    --------
+    train_supervised_module_ddp : Consumes this.
+    """
 
     backend: Literal["gloo", "nccl", "auto"] = "auto"
     world_size: int | None = None
@@ -63,6 +138,17 @@ class DDPConfig:
     multi_node: bool = False
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the launch settings as JSON-safe values.
+
+        Records how a distributed run was configured, so a later run can be
+        arranged the same way.
+
+        Returns
+        -------
+        dict
+            Backend, world size, master address and port, and the three
+            boolean flags.
+        """
         return {
             "backend": self.backend,
             "world_size": self.world_size,
@@ -76,7 +162,41 @@ class DDPConfig:
 
 @dataclass(slots=True)
 class DDPTrainResult:
-    """Rank-0 outcome from a DDP training run."""
+    """What a distributed run produced, as seen from rank 0.
+
+    Attributes
+    ----------
+    train_result:
+        The trained model and its history, with the DDP wrapper removed and the
+        module moved to CPU. ``None`` on non-zero ranks, which train but do not
+        report.
+    world_size:
+        How many processes participated.
+    backend:
+        Which communication backend was used.
+    device_ids:
+        The CUDA devices involved. Empty on the CPU path.
+    disclosures:
+        How the run was arranged.
+    limitations:
+        What this path does not cover.
+    warnings:
+        Notably, whether the run fell back to the CPU gloo path.
+    meta:
+        Whether CUDA was used, how many devices were visible, the mode, and the
+        parsed environment for multi-node runs.
+
+    Notes
+    -----
+    **The returned module is unwrapped and on CPU.** DDP wraps your module in a
+    layer that only makes sense inside the process group, so the wrapper is
+    stripped before returning. Optimiser state is cleared for the same reason —
+    it refers to distributed parameters and would not restore meaningfully.
+
+    See Also
+    --------
+    train_supervised_module_ddp : Produces this.
+    """
 
     train_result: TrainResult | None
     world_size: int
@@ -88,6 +208,17 @@ class DDPTrainResult:
     meta: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the distributed run as JSON-safe values.
+
+        The nested training result is summarised through its own ``to_dict``,
+        so weights and optimiser state are described rather than embedded.
+
+        Returns
+        -------
+        dict
+            The nested training result (or ``None``), world size, backend,
+            device ids, disclosures, limitations, warnings, and metadata.
+        """
         return {
             "train_result": None if self.train_result is None else self.train_result.to_dict(),
             "world_size": self.world_size,
@@ -101,7 +232,22 @@ class DDPTrainResult:
 
 
 def ddp_cuda_device_count() -> int:
-    """Return ``torch.cuda.device_count()`` or 0 when Torch/CUDA unavailable."""
+    """Count usable CUDA devices, returning 0 rather than failing.
+
+    A probe for capability checks and launch decisions. Any failure — Torch
+    absent, CUDA absent, a broken driver — reports zero devices, because from
+    the caller's point of view all of those mean the same thing.
+
+    Returns
+    -------
+    int
+        Number of visible CUDA devices, or 0.
+
+    Notes
+    -----
+    Respects ``CUDA_VISIBLE_DEVICES``, so this counts what the process can
+    actually use rather than what is physically installed.
+    """
     try:
         torch = require_torch(feature="DDP device probe")
     except Exception:
@@ -112,6 +258,35 @@ def ddp_cuda_device_count() -> int:
 
 
 def resolve_ddp_backend(requested: str, *, use_cuda: bool) -> str:
+    """Choose the communication backend, refusing impossible combinations.
+
+    Processes in a distributed run exchange gradients every step, and the
+    backend is how. NCCL uses direct GPU-to-GPU transfers and is the only
+    sensible choice with CUDA; gloo goes through the CPU and works anywhere.
+
+    Parameters
+    ----------
+    requested:
+        ``'nccl'``, ``'gloo'``, or ``'auto'``.
+    use_cuda:
+        Whether the run will use GPUs.
+
+    Returns
+    -------
+    str
+        The resolved backend name.
+
+    Raises
+    ------
+    ValidationError
+        If the name is unrecognised, or if NCCL is requested without CUDA.
+
+    Notes
+    -----
+    **NCCL without CUDA raises rather than falling back.** Someone asking for
+    NCCL expects GPU throughput, and silently giving them a slower CPU path
+    would turn a configuration error into a mysterious performance problem.
+    """
     if requested == "auto":
         return "nccl" if use_cuda else "gloo"
     if requested not in {"gloo", "nccl"}:
@@ -126,13 +301,53 @@ def parse_torchrun_env(
     *,
     require_local_rank: bool = False,
 ) -> DistributedEnv:
-    """Parse torchrun-compatible distributed environment variables.
+    """Read this process's distributed placement from the environment.
 
-    Required: ``WORLD_SIZE``, ``RANK``, ``MASTER_ADDR``, ``MASTER_PORT``.
-    ``LOCAL_RANK`` defaults to ``RANK`` when unset (single-node multi-proc
-    convenience). Multi-node join paths must pass ``require_local_rank=True``
-    so a missing ``LOCAL_RANK`` cannot silently map global rank onto the wrong
-    local CUDA device.
+    ``torchrun`` communicates placement through environment variables. This
+    parses them, validates them against each other, and returns a typed record
+    — so a misconfigured launch fails with a clear message rather than a
+    confusing hang or a wrong-device error deep in training.
+
+    Parameters
+    ----------
+    environ:
+        The mapping to read. Defaults to ``os.environ``. Supplying one is
+        useful for testing.
+    require_local_rank:
+        Insist that ``LOCAL_RANK`` is present. Multi-node paths must set this.
+
+    Returns
+    -------
+    DistributedEnv
+        The parsed placement.
+
+    Raises
+    ------
+    ValidationError
+        If ``WORLD_SIZE``, ``RANK``, ``MASTER_ADDR``, or ``MASTER_PORT`` is
+        missing or empty; if ``LOCAL_RANK`` is required and absent; if any rank
+        value is not an integer; or if the ranks are inconsistent with the world
+        size.
+
+    Notes
+    -----
+    **``LOCAL_RANK`` defaults to ``RANK``, which is correct on one node and
+    wrong on several.** Single-node runs have identical global and local ranks,
+    so the default is safe and convenient. On multiple nodes the two diverge,
+    and using the global rank as a CUDA device index selects a device that does
+    not exist — hence ``require_local_rank=True`` on the multi-node path, which
+    turns that silent misplacement into an explicit error.
+
+    Examples
+    --------
+    Read a torchrun launch::
+
+        env = parse_torchrun_env(require_local_rank=True)
+        env.rank, env.local_rank
+
+    See Also
+    --------
+    DistributedEnv : The returned record.
     """
     env = dict(os.environ if environ is None else environ)
     missing = [
@@ -497,20 +712,89 @@ def train_supervised_module_ddp(
     ddp_config: DDPConfig | None = None,
     environ: Mapping[str, str] | None = None,
 ) -> DDPTrainResult:
-    """Run DDP training (single-node spawn or multi-node torchrun join).
+    """Train one model across several processes, each holding a slice of data.
+
+    Every process builds its own copy of the module and trains on a distinct
+    shard of the training rows. After each backward pass the processes average
+    their gradients, so all copies stay identical and the effective batch is
+    the per-process batch times the world size.
+
+    Two modes. Single-node spawns the processes for you. Multi-node joins a
+    rendezvous that ``torchrun`` already established, which is how you span
+    machines::
+
+        torchrun --nnodes=2 --nproc_per_node=2 --rdzv_backend=c10d \\
+          --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT your_train_script.py
 
     Parameters
     ----------
     module_factory:
-        Zero-arg callable that builds a **fresh** ``nn.Module`` in each process.
+        A zero-argument callable returning a **fresh** module. Called once per
+        process. It must construct rather than return a shared object — under
+        the spawn start method the factory is pickled and re-executed, and a
+        captured module would not survive that meaningfully.
     loader_bundle:
-        Shared in-memory loaders (datasets must be picklable for single-node spawn).
+        The loaders. The training loader is re-wrapped with a distributed
+        sampler so each rank sees a different shard. Datasets must be picklable
+        for single-node spawn.
     config:
-        Train loop knobs. ``device`` is overridden per-rank.
+        Training settings. ``device`` is overridden per rank.
     ddp_config:
-        Backend / world-size / rendezvous / ``multi_node`` knobs.
+        Backend, world size, rendezvous, and mode.
     environ:
-        Optional env mapping for multi-node parsing (defaults to ``os.environ``).
+        Environment mapping for multi-node parsing. Defaults to ``os.environ``.
+
+    Returns
+    -------
+    DDPTrainResult
+        Rank 0's outcome, with the module unwrapped and on CPU. Other ranks
+        return a result whose ``train_result`` is ``None``.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If single-node DDP is attempted with fewer than two GPUs and
+        ``allow_cpu_ddp`` is not set; if the world size is below 2 or exceeds
+        the GPU count; if the multi-node environment is incomplete; if
+        ``LOCAL_RANK`` exceeds this node's GPU count; if there is no training
+        loader; or if rank 0 produces no result.
+
+    Notes
+    -----
+    **The effective batch size is multiplied by the world size**, and this
+    changes training. Four processes at batch 32 apply gradients averaged over
+    128 rows, which usually means fewer, smoother updates per epoch — often
+    worth raising the learning rate to compensate.
+
+    **Validation runs on rank 0 only.** Every rank evaluating the same
+    validation set would produce identical numbers logged four times, so the
+    other ranks skip it.
+
+    **This path is alpha.** Single-process ``fit_torch`` is better tested and
+    fast enough for most datasets; reach for DDP when a model genuinely does not
+    fit or train in reasonable time on one GPU.
+
+    **Kubernetes orchestration and elastic scaling are out of scope.** This
+    joins a rendezvous you arranged; it does not schedule pods or handle nodes
+    joining and leaving mid-run.
+
+    Examples
+    --------
+    Single-node across the visible GPUs::
+
+        result = train_supervised_module_ddp(
+            lambda: build_tabular_mlp(12, n_classes=3),
+            bundle,
+            config=TrainConfig(epochs=20),
+        )
+        result.train_result.n_epochs_ran
+
+    See Also
+    --------
+    buildml.dl.train.train_supervised_module : The single-process loop.
+    parse_torchrun_env : How multi-node placement is read.
     """
     require_torch(feature="DDP training")
     cfg = config or TrainConfig()

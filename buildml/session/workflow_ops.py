@@ -59,7 +59,22 @@ def walkthrough(session, *, export_html: str | Path | None = None) -> WorkflowWa
 
 
 def explain(
-    session, operation: str | None = None, *, moment: Literal['before', 'after'] = "before"
+    session,
+    operation: str | None = None,
+    *,
+    moment: Literal['before', 'after'] = "before",
+    level: str = "beginner",
 ) -> Any:
     """Explain an operation before/after execution, or return the workflow."""
-    return explain_session(session, operation, moment=moment)
+    return explain_session(session, operation, moment=moment, level=level)
+
+
+def learn(session, topic: str | None = None, *, level: str = "beginner") -> LearningBrief:
+    """Return teaching material for a concept, an operation, or a term.
+
+    Read-only and session-independent: the material comes from the catalog and
+    concept notes, so the answer does not depend on how far along the workflow
+    is. The session argument keeps the call available where every other
+    operation lives.
+    """
+    return academy_learn(topic, level=level)

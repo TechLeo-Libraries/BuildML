@@ -12,9 +12,11 @@ A Session records:
 * operation parameters and state transitions.
 
 ``Session.explain`` connects an operation's static catalog entry to live Session
-state. ``Session.workflow`` resolves prerequisites for every cataloged operation.
-``Session.walkthrough`` combines that state with history and can write a local,
-self-contained HTML report.
+state, leading with a plain-language primer unless a higher reading level is
+requested. ``Session.learn`` teaches the concept, operation, or term behind the
+call and says what to read first. ``Session.workflow`` resolves prerequisites for
+every cataloged operation. ``Session.walkthrough`` combines that state with
+history and can write a local, self-contained HTML report.
 
 BuildML requires a split before fit-capable preprocessing and fits those plans
 on training rows only. Those checks do not establish that a random split matches

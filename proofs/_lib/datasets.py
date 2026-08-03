@@ -295,3 +295,185 @@ def load_support_kb_corpus() -> tuple[list[dict[str, Any]], dict[str, list[str]]
         "evaluation contamination indexed answers": ["leakage-eval"],
     }
     return docs, judgments
+
+
+# Per-queue sentence pools. Each queue has vocabulary that overlaps the others
+# (dates, ids, "team", "support") so a text classifier has to learn a real
+# discriminative signal instead of latching onto one giveaway keyword.
+_TICKET_QUEUES: dict[str, dict[str, tuple[str, ...]]] = {
+    "billing": {
+        "opening": (
+            "Invoice INV-{ref} charged {amount} twice on the same card.",
+            "The renewal quote said {amount} but the invoice came to almost double.",
+            "We were billed {amount} for seats that were removed last cycle.",
+            "A proration credit of {amount} never appeared on invoice INV-{ref}.",
+        ),
+        "detail": (
+            "Finance has already flagged the discrepancy in their reconciliation.",
+            "The line item has no description, so nobody here can approve it.",
+            "Our purchase order caps monthly spend well below that figure.",
+            "The same charge was disputed in the previous quarter as well.",
+        ),
+        "ask": (
+            "Please reverse the duplicate and reissue a corrected invoice.",
+            "We need a written breakdown before the payment run on the 28th.",
+            "Can you confirm the refund amount and the expected posting date?",
+        ),
+    },
+    "shipping": {
+        "opening": (
+            "Order ORD-{ref} was promised for the 3rd and arrived nine days late.",
+            "The courier marked shipment ORD-{ref} as delivered but nothing arrived.",
+            "Two of the four cartons in shipment ORD-{ref} were crushed in transit.",
+            "Tracking for ORD-{ref} has not updated since it left the depot.",
+        ),
+        "detail": (
+            "The packaging was soaked and the outer seal was already broken.",
+            "A customs hold added four days that nobody notified us about.",
+            "The warehouse signature on the manifest does not match anyone here.",
+            "The replacement carton shipped to a previous address on file.",
+        ),
+        "ask": (
+            "Please send a replacement on an expedited service at your cost.",
+            "We need a revised delivery date we can give the site team today.",
+            "Can you open a carrier claim and share the reference with us?",
+        ),
+    },
+    "account": {
+        "opening": (
+            "Single sign-on stopped working for the whole workspace this morning.",
+            "The onboarding portal rejects the invite link for every new hire.",
+            "Two-factor codes are refused even though the clock is synced.",
+            "An admin was removed from the workspace and cannot be restored.",
+        ),
+        "detail": (
+            "The error page shows no code, only a generic try again later message.",
+            "Password resets arrive but the link has already expired on arrival.",
+            "The identity provider logs show the assertion being accepted.",
+            "Role permissions reverted to read-only after the last release.",
+        ),
+        "ask": (
+            "Please restore access for the affected users before the audit.",
+            "Can you confirm whether the change came from a release on your side?",
+            "We need a workaround today; the team is blocked from every project.",
+        ),
+    },
+    "hardware": {
+        "opening": (
+            "The hinge on unit HW-{ref} snapped within a week of light use.",
+            "Unit HW-{ref} overheats and shuts down under a normal workload.",
+            "The display on unit HW-{ref} flickers whenever the lid is moved.",
+            "Battery life on unit HW-{ref} dropped to under an hour after a month.",
+        ),
+        "detail": (
+            "The plastic around the mount was already stressed out of the box.",
+            "Diagnostics report no fault, yet the device powers off regardless.",
+            "A second identical unit shows exactly the same behaviour.",
+            "The firmware update did not change anything measurable.",
+        ),
+        "ask": (
+            "Please advise on a warranty replacement rather than another repair.",
+            "Can you confirm whether this is a known batch defect?",
+            "We need a loan unit while the assessment is in progress.",
+        ),
+    },
+}
+
+# Queue-agnostic sentences. A share of rows is built only from these, so those
+# tickets genuinely do not say which queue they belong to. That gives the corpus
+# an irreducible error floor and keeps the proof from reporting a perfect score
+# that no real routing problem would ever produce.
+_TICKET_GENERIC: dict[str, tuple[str, ...]] = {
+    "opening": (
+        "Following up on the case raised by our team earlier this week.",
+        "We opened a ticket about this on the 12th and have had no reply.",
+        "This is the third time we are writing about the same problem.",
+        "Reference REF-{ref}: the situation has not changed since Monday.",
+    ),
+    "detail": (
+        "Nobody on your side has confirmed who owns this now.",
+        "The account manager suggested we escalate through support instead.",
+        "The last update we received simply asked us to wait.",
+        "Our team has already sent the details twice.",
+    ),
+    "ask": (
+        "Please confirm who is handling this and by when.",
+        "We need an update today so the team can plan around it.",
+        "Can you escalate this to whoever is responsible?",
+    ),
+}
+
+_TICKET_CHANNELS: tuple[str, ...] = ("web", "email", "phone", "chat")
+
+
+def load_support_tickets_synthetic(
+    *,
+    n: int = 900,
+    seed: int = 11,
+    ambiguous_rate: float = 0.18,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Synthetic labeled support tickets for document classification.
+
+    Each row is a short multi-sentence ticket plus the queue it was routed to,
+    which makes it a single-label document-classification problem with an honest
+    amount of vocabulary overlap between classes.
+
+    Parameters
+    ----------
+    n:
+        Number of tickets, balanced across the four queues.
+    seed:
+        RNG seed. The frame is shuffled with the same seed.
+    ambiguous_rate:
+        Share of tickets composed entirely from queue-agnostic sentences. Those
+        rows carry a label no reader could recover from the text, which puts a
+        deliberate ceiling on achievable accuracy — roughly
+        ``1 - ambiguous_rate * 3/4`` for four balanced queues.
+    """
+    if not 0.0 <= float(ambiguous_rate) < 1.0:
+        raise ValueError("ambiguous_rate must be in [0.0, 1.0).")
+    rng = np.random.default_rng(seed)
+    queues = list(_TICKET_QUEUES)
+    rows: list[dict[str, Any]] = []
+    n_ambiguous = 0
+    for index in range(n):
+        queue = queues[index % len(queues)]
+        ambiguous = bool(rng.random() < float(ambiguous_rate))
+        pools = _TICKET_GENERIC if ambiguous else _TICKET_QUEUES[queue]
+        n_ambiguous += int(ambiguous)
+        ref = int(rng.integers(10_000, 99_999))
+        amount = f"${int(rng.integers(2, 40)) * 50:,}"
+        opening = str(rng.choice(pools["opening"])).format(ref=ref, amount=amount)
+        detail = str(rng.choice(pools["detail"]))
+        ask = str(rng.choice(pools["ask"]))
+        parts = [opening, detail, ask]
+        if rng.random() < 0.35:
+            parts.insert(2, str(rng.choice(pools["detail"])))
+        rows.append(
+            {
+                "ticket_id": f"T{100_000 + index}",
+                "body": " ".join(parts),
+                "channel": str(rng.choice(_TICKET_CHANNELS)),
+                "queue": queue,
+            }
+        )
+    frame = pd.DataFrame(rows).sample(frac=1.0, random_state=seed).reset_index(drop=True)
+    meta = {
+        "name": "support_tickets_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(len(frame)),
+        "target": "queue",
+        "text_column": "body",
+        "classes": sorted(queues),
+        "ambiguous_rate_requested": float(ambiguous_rate),
+        "ambiguous_rows": int(n_ambiguous),
+        "expected_accuracy_ceiling": round(
+            1.0 - (n_ambiguous / max(1, n)) * (1.0 - 1.0 / len(queues)), 4
+        ),
+        "notes": (
+            "Synthetic support tickets composed from per-queue sentence pools, "
+            "plus a share of deliberately queue-agnostic tickets that no reader "
+            "could route from the text alone. Not a real customer-support corpus."
+        ),
+    }
+    return frame, meta

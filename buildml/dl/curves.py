@@ -1,4 +1,27 @@
-"""Training-curve structured data and teaching interpretation (Torch-free)."""
+"""Turn a training history into curves that come with their own reading.
+
+Loss curves are the standard diagnostic for a training run, and they are also
+routinely over-read. A falling training loss with a rising validation loss means
+overfitting; a flat training loss means the learning rate or the labels need
+attention; a validation curve that improved says nothing at all about test
+performance. This module extracts the series and attaches that reading, so the
+numbers arrive with their interpretation rather than requiring you to supply it.
+
+Three lists come back alongside the data. ``interpretation`` says what the shape
+suggests. ``limitations`` says what the curves cannot tell you — chiefly that
+they describe one run under one configuration, not deployment risk.
+``disclosures`` records the conditions: which device, which scheduler, whether
+early stopping was active, whether the run resumed from a checkpoint.
+
+Nothing here imports Torch. Curves are plain numbers, and keeping this module
+Torch-free means a saved history can be read on a machine that has no deep
+learning stack installed.
+
+See Also
+--------
+buildml.dl.results.TrainingCurveReport : The structure returned.
+buildml.dl.train : Where the history comes from.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +31,43 @@ from buildml.dl.results import EarlyStopInfo, TrainingCurveReport, TrainResult
 
 
 def build_training_curve(result: TrainResult) -> TrainingCurveReport:
-    """Derive curve series, disclosures, and limits from a :class:`TrainResult`."""
+    """Extract plottable series from a run, along with how to read them.
+
+    Pulls epoch numbers, training loss, validation loss, and learning rates out
+    of the history, identifies which series early stopping was watching, and
+    generates the interpretation, limitations, and disclosures that give the
+    numbers context.
+
+    Parameters
+    ----------
+    result:
+        A completed training run.
+
+    Returns
+    -------
+    TrainingCurveReport
+        The series, the monitored metric and its values, the early-stop epoch
+        when one occurred, and the three prose lists.
+
+    Notes
+    -----
+    **Validation entries are ``None`` where no validation ran**, rather than
+    zero or interpolated. Plotting libraries skip ``None``, and a gap in a curve
+    is honest in a way that an invented point is not.
+
+    **The monitored series is chosen to match what early stopping used**, so the
+    curve you look at is the curve the stopping decision was made on. Without
+    early stopping it falls back to validation loss when present, otherwise
+    training loss.
+
+    **Interpretation is heuristic.** It flags a rising training loss and a
+    validation loss sitting well above training, both of which are usually worth
+    investigating — but they are prompts to look, not diagnoses.
+
+    See Also
+    --------
+    buildml.dl.results.TrainingCurveReport : The returned structure.
+    """
     history = list(result.history)
     epochs = [int(row.get("epoch", 0)) for row in history]
     train_loss = [float(row["train_loss"]) for row in history if "train_loss" in row]
@@ -106,7 +165,39 @@ def torch_training_status(
     train_result: TrainResult | None = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Walkthrough / Teaching Studio disclosure for Torch training curves."""
+    """Summarise Torch training state for walkthroughs and the Teaching Studio.
+
+    Answers "was a Torch model trained here, and what happened?" for the
+    explain surfaces. Works from a live result when one is available, and falls
+    back to scanning Session history when it is not.
+
+    Parameters
+    ----------
+    train_result:
+        The live training outcome, when the Session still holds one.
+    history:
+        Session history records, used only when ``train_result`` is ``None``.
+
+    Returns
+    -------
+    dict
+        With a live result: ``enabled`` and ``present`` true, plus the curve,
+        its three prose lists, early-stop record, device, epoch count,
+        scheduler name, and resume offset. Without one: ``enabled`` false, and
+        ``present`` reflecting whether ``fit_torch`` appears in the history.
+
+    Notes
+    -----
+    **``present`` without ``enabled`` is the interesting case.** It means
+    training happened but the result is no longer attached — usually after
+    reloading a Session from a checkpoint that did not carry the live object.
+    The returned disclosure says exactly that, which is more useful than
+    reporting no training at all.
+
+    See Also
+    --------
+    build_training_curve : Produces the curve this reports.
+    """
     if train_result is None:
         # Fallback: detect fit_torch in Session history without a live result.
         records = list(history or [])

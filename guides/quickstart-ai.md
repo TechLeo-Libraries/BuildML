@@ -181,8 +181,9 @@ print(list(registry.keys()))  # available tools
 ```
 
 Available tools include:
-- **Read-only:** `describe_dataset`, `explain_operation`, `workflow_status`,
-  `eda_summary`, `head`, `ai_status`, `evaluate`, `walkthrough`
+- **Read-only:** `describe_dataset`, `explain_operation`, `learn_concept`,
+  `workflow_status`, `eda_summary`, `head`, `ai_status`, `evaluate`,
+  `walkthrough`
 - **Write (confirm required):** `set_roles`, `split`, `impute`, `encode`,
   `scale`, `fit`, `checkpoint_save`
 - **Destructive (always confirm):** `drop_columns`

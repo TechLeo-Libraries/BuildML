@@ -1,4 +1,25 @@
-"""Outlier analyzer: IQR, z-score, isolation-forest screen."""
+"""Find unusual values, per column and in combination, without judging them.
+
+"Outlier" is not a property of a data point. It is a statement about a
+distribution, and whether a given point is an error, a rare event, or the whole
+reason the project exists depends entirely on context. A transaction ten times
+the median is an outlier in a spending model and the entire target in a fraud
+model.
+
+So this reports and does not act. Three methods, because each sees something the
+others miss. The IQR rule is distribution-free and robust — it uses quartiles, so
+extreme values cannot drag the boundaries out to include themselves. Z-scores
+assume roughly normal data and are pulled around by the very points they are
+meant to find, which is why they are reported alongside rather than alone.
+Isolation Forest looks at rows rather than values, and catches the combination
+that is strange while every individual field is ordinary: a 19-year-old with 30
+years of driving experience.
+
+See Also
+--------
+buildml.eda.analyzers.univariate : The distributions these are unusual against.
+buildml.preprocess.outliers : Acting on what is found here.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +34,65 @@ def analyze_outliers(
     *,
     feature_columns: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Screen numeric feature values without scoring targets or identifiers."""
+    """Count unusual values per column, and unusual rows across columns.
+
+    Per column, two counts. The IQR rule flags values more than 1.5 interquartile
+    ranges beyond the quartiles — the same rule that draws the whiskers on a box
+    plot, and robust because quartiles are not moved by extreme values.
+    Z-scores flag values more than three standard deviations from the mean,
+    which is less robust for exactly the opposite reason: a single extreme value
+    inflates the standard deviation and can hide itself.
+
+    Across columns, Isolation Forest scores whole rows. It finds combinations
+    that are individually plausible and jointly strange, which no per-column
+    method can see.
+
+    Restricting to feature columns matters here. An identifier is uniformly
+    distributed and will produce nonsense bounds; a target's extremes are often
+    the cases you most want to predict, not errors to remove.
+
+    Parameters
+    ----------
+    frame:
+        The data.
+    feature_columns:
+        Which columns to screen. Defaults to all, which will happily report
+        outliers in your row IDs.
+
+    Returns
+    -------
+    dict
+        ``per_column`` — for each numeric column, the IQR count, rate, and
+        bounds, plus the count and rate beyond three standard deviations.
+        ``multivariate`` — the Isolation Forest result, or empty when there was
+        not enough data. ``feature_columns_analyzed`` for provenance.
+
+    Notes
+    -----
+    **Nothing here says a point is wrong.** For a skewed distribution — income,
+    duration, transaction size — the IQR rule flags a large fraction of the
+    upper tail as a matter of arithmetic, not because anything is amiss. Read
+    the flags together with the skew from the univariate analysis.
+
+    **Compare the two per-column counts.** When the IQR count is much larger
+    than the z-score count, the distribution is skewed. When the z-score count
+    is larger, there are extremes so severe they have inflated the standard
+    deviation, and both numbers understate the problem.
+
+    **Isolation Forest needs complete rows.** Any row with a missing value in
+    any screened column is excluded, so a frame with scattered gaps can leave
+    very few rows scored. Check ``n_rows_scored``.
+
+    **``contamination='auto'`` is a threshold, not a measurement.** The
+    ``anomaly_rate`` reflects that setting as much as the data. Use it to find
+    rows worth inspecting, not as an estimate of how much of your data is bad.
+
+    **Rows are sampled above 20,000** for the multivariate screen.
+
+    See Also
+    --------
+    buildml.preprocess.outliers : Winsorising or removing what is found.
+    """
     selected = [
         str(column)
         for column in (feature_columns if feature_columns is not None else frame.columns)

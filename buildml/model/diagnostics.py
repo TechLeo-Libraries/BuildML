@@ -1,4 +1,43 @@
-"""Deep model diagnostics: calibration, thresholds, learning curves, importance."""
+"""Ask the questions a single score cannot answer.
+
+Accuracy tells you how often the model is right. It does not tell you whether
+its confidence means anything, where to set the decision boundary, whether more
+data would help, which features are carrying the result, or which slice of your
+users it quietly fails. Each of those is a different question, and each has its
+own diagnostic here.
+
+:func:`calibration_report` asks whether predicted probabilities are honest —
+whether among the cases the model calls 70% likely, roughly 70% actually happen.
+A model can rank perfectly and still be badly calibrated, which matters the
+moment a probability feeds a decision rather than a sort order.
+
+:func:`threshold_report` asks where to draw the line. The default 0.5 is a
+convention with no claim to being right; the correct threshold depends on what a
+false positive costs relative to a false negative, and this shows the trade-off
+across the range.
+
+:func:`learning_curve_report` asks whether the constraint is data or model.
+Training and validation scores converging at a disappointing level means the
+model is too simple; a persistent gap means it is overfitting and more data
+would help.
+
+:func:`permutation_importance_report` asks which features the model is actually
+using, by measuring how much performance drops when each is shuffled.
+
+:func:`segment_error_report` asks who the model fails. Aggregate metrics average
+over everyone, and an overall accuracy of 0.90 is compatible with 0.95 for most
+users and 0.55 for a subgroup — the kind of failure that only appears when you
+look for it.
+
+Every report returns findings and recommendations linked to the numbers behind
+them, so the interpretation can be checked rather than trusted.
+
+See Also
+--------
+buildml.model.supervised.evaluate_estimator : The summary these go beyond.
+buildml.model.plot_boards : Visual counterparts.
+buildml.model.evidence : How findings stay linked to measurements.
+"""
 
 from __future__ import annotations
 
@@ -36,7 +75,53 @@ from buildml.model.supervised import FitResult, _feature_target_frames
 
 @dataclass(slots=True)
 class DiagnosticReport:
-    """Container for advanced model diagnostics with interpretation tips."""
+    """A diagnostic's numbers, what they appear to mean, and what they cannot say.
+
+    Every diagnostic returns this shape, so a report can be read, serialised, or
+    exported without knowing which kind it is. The numbers live in ``payload``;
+    the interpretation is derived from them automatically, which is what keeps
+    the advice tied to the measurement rather than floating free of it.
+
+    Attributes
+    ----------
+    kind:
+        Which diagnostic this is: ``'calibration'``, ``'threshold'``,
+        ``'learning_curve'``, ``'permutation_importance'``, or
+        ``'segment_error'``.
+    payload:
+        The computed values — curve points, per-threshold metrics, importance
+        scores, per-segment errors. The primary content.
+    recommendations:
+        Advice as plain strings, for display.
+    interpretation:
+        What the numbers appear to say.
+    figure_dir, html_path, figure_paths:
+        Where any exported figures and HTML landed.
+    findings:
+        Structured observations, each carrying its supporting evidence.
+    recommendation_details:
+        Structured advice, each naming the findings behind it and an operation
+        to run.
+    limitations:
+        What this report cannot support — always including the partition it
+        describes.
+    methods:
+        How the numbers were computed.
+
+    Notes
+    -----
+    **Read ``limitations`` before acting on ``recommendations``.** Every
+    diagnostic describes one partition, and a threshold tuned on validation is
+    not automatically right for production traffic.
+
+    **``findings`` and ``recommendations`` are two views of the same thing.** The
+    strings are for reading; the structured records keep the evidence links, and
+    are what a report or an agent should consume.
+
+    See Also
+    --------
+    buildml.model.evidence.evidence_for_diagnostic : The interpretation layer.
+    """
 
     kind: str
     payload: dict[str, Any] = field(default_factory=dict)
@@ -63,6 +148,22 @@ class DiagnosticReport:
         self.methods = methods
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the report to plain data for history, HTML, and logs.
+
+        Findings and structured recommendations are converted too, so the
+        evidence links survive into whatever consumes this.
+
+        Returns
+        -------
+        dict
+            Every field, with the structured records converted to dictionaries.
+
+        Notes
+        -----
+        **``payload`` can be large.** A threshold report carries a row per
+        candidate threshold and a segment report a row per segment; trim before
+        writing this into a compact log.
+        """
         return {
             "kind": self.kind,
             "payload": self.payload,
@@ -80,6 +181,17 @@ class DiagnosticReport:
         }
 
     def show(self) -> None:
+        """Print the interpretation, the recommendations, and any export paths.
+
+        For reading a report at a prompt. Interpretation lines are marked ``*``
+        and recommendations ``-``.
+
+        Notes
+        -----
+        **Limitations are not printed.** They are the part most worth reading
+        before acting, so consult ``limitations`` directly rather than treating
+        this digest as the whole report.
+        """
         print(f"Diagnostic · {self.kind}")
         for tip in self.interpretation[:8]:
             print(f"* {tip}")
@@ -91,7 +203,31 @@ class DiagnosticReport:
             print(f"HTML: {self.html_path}")
 
     def export_html(self, path: str | Path) -> Path:
-        """Export this diagnostic report as a structured HTML dashboard."""
+        """Write the report as a self-contained HTML dashboard.
+
+        For sharing a diagnostic with someone who will not be running Python.
+        The findings, evidence, recommendations, and limitations all carry over,
+        so the reader gets the caveats along with the numbers.
+
+        Parameters
+        ----------
+        path:
+            Where to write. Parent directories are created as needed.
+
+        Returns
+        -------
+        pathlib.Path
+            The file written. Also recorded on ``html_path``.
+
+        Notes
+        -----
+        **Any figures are referenced, not embedded.** Move the HTML without its
+        figure directory and the images break.
+
+        See Also
+        --------
+        buildml.model.html_diagnostics.export_diagnostics_html : The renderer.
+        """
         from buildml.model.html_diagnostics import export_diagnostics_html
 
         destination = export_diagnostics_html(self.to_dict(), path)
@@ -109,11 +245,76 @@ def calibration_report(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Binary/multiclass probability calibration diagnostics.
+    """Check whether the model's stated confidence is worth anything.
 
-    Returns structured curve points, Brier score, ECE estimate, and
-    interpretation tips tied to those numbers. Optionally exports a reliability
-    diagram via the eval plot board subset.
+    A well-calibrated model that says 70% is right about 70% of the time. Many
+    models are not: tree ensembles push probabilities toward the extremes, and a
+    model that ranks cases perfectly can still report confidences that are
+    systematically too high or too low.
+
+    Whether that matters depends on what you do with the number. If the
+    probability only sorts a queue, calibration is irrelevant. If it feeds an
+    expected-value calculation, a threshold with real costs, or a figure shown to
+    a human, an uncalibrated probability is actively misleading.
+
+    Predictions are bucketed by confidence and each bucket's predicted rate is
+    compared with its observed rate. Perfect calibration is the diagonal;
+    departures from it are the finding.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        Partition membership.
+    fit_result:
+        A fitted classifier that provides probabilities.
+    partition:
+        Which partition to assess. Defaults to test.
+    n_bins:
+        Confidence buckets. More bins resolve the curve finely and put fewer
+        rows in each, making every point noisier.
+    export_figures:
+        Directory for a reliability diagram, if wanted.
+    export_html:
+        Path for an HTML report, if wanted.
+
+    Returns
+    -------
+    DiagnosticReport
+        Curve points, Brier score, and an ECE estimate for binary problems;
+        per-class Brier scores for multiclass.
+
+    Raises
+    ------
+    ValidationError
+        If the model is not a classifier, offers no ``predict_proba``, or if the
+        split is missing.
+
+    Notes
+    -----
+    **Calibration and discrimination are independent.** A model can rank cases
+    perfectly and be badly calibrated, or be beautifully calibrated and rank
+    poorly. AUC measures one; this measures the other.
+
+    **ECE depends on the binning.** The number is not comparable across
+    different ``n_bins`` values, so hold it fixed when tracking calibration over
+    time. Above roughly 0.1 is worth investigating.
+
+    **Assess on held-out data.** Calibration on training rows is meaningless —
+    the model has seen the answers.
+
+    **The multiclass path is per-class Brier only.** A single reliability
+    diagram does not generalise beyond binary, so the report gives one score per
+    class and points at the worst.
+
+    **Fixing calibration does not require a new model.** Wrapping the existing
+    one in Platt scaling or isotonic regression, fitted on held-out data, is
+    usually enough.
+
+    See Also
+    --------
+    threshold_report : Choosing a decision boundary from these probabilities.
     """
     if fit_result.task != "classification":
         raise ValidationError("Calibration report requires a classification model")
@@ -250,14 +451,99 @@ def threshold_report(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Sweep decision thresholds for binary classifiers.
+    """Find where to draw the line between predicting yes and predicting no.
 
-    Returns precision/recall/F1 rows, ROC/PR samples, named operating points,
-    and optional expected-cost minimization when ``fp_cost``/``fn_cost`` are set.
+    A classifier outputs a probability; turning that into a decision requires a
+    threshold, and 0.5 is a convention rather than an answer. The right value
+    depends entirely on what the two mistakes cost. Missing a fraudulent
+    transaction and wrongly blocking a legitimate one are not equally bad, and
+    no default can know which way.
 
-    Cost model (per predicted row):
-    ``fp_cost * FP + fn_cost * FN - tp_benefit * TP - tn_benefit * TN``,
-    reported as total and mean expected cost on the scored partition.
+    Every candidate threshold is swept and its precision, recall, and F1
+    recorded, so the trade-off is visible rather than assumed. Raising the
+    threshold buys precision at the cost of recall; lowering it does the
+    reverse. There is no setting that improves both.
+
+    When ``fp_cost`` and ``fn_cost`` are supplied the guesswork disappears: the
+    threshold that minimises expected cost is computed directly. This is the
+    right way to use the function whenever the costs can be estimated at all,
+    even roughly — a rough ratio beats an arbitrary 0.5.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        Partition membership.
+    fit_result:
+        A fitted binary classifier that provides probabilities.
+    partition:
+        Which partition to sweep on. Use validation: a threshold tuned on test
+        is a threshold fitted to test.
+    fp_cost:
+        Cost of one false positive. Must be given together with ``fn_cost``.
+    fn_cost:
+        Cost of one false negative.
+    tp_benefit:
+        Benefit of a true positive, subtracted from cost.
+    tn_benefit:
+        Benefit of a true negative, subtracted from cost.
+    export_figures:
+        Directory for ROC, precision-recall, and trade-off plots.
+    export_html:
+        Path for an HTML report.
+
+    Returns
+    -------
+    DiagnosticReport
+        Per-threshold metrics, ROC and precision-recall samples, named operating
+        points (best F1, high recall, high precision), and — in cost mode — the
+        minimum-expected-cost threshold with its total and mean cost.
+
+    Raises
+    ------
+    ValidationError
+        If the model is not a probabilistic classifier, if the split is missing,
+        if only one of ``fp_cost`` and ``fn_cost`` is given, or if a cost or
+        benefit is negative or not finite.
+
+    Notes
+    -----
+    **Only the ratio of the costs matters, not their units.** Setting them to 1
+    and 10 gives the same threshold as 100 and 1000. That makes the input far
+    easier to supply than it first appears — you need the relative severity, not
+    a currency figure.
+
+    **Peak F1 is the most tempting operating point and often the wrong one.** It
+    treats both errors as equally costly, which is exactly the assumption you
+    came here to avoid.
+
+    **Tune on validation, confirm on test.** The best threshold on a partition
+    is partly fitted to that partition's noise, and the effect is larger than
+    people expect on small partitions.
+
+    **A threshold does not fix a poorly ranked model.** If AUC is near 0.5, no
+    threshold helps; the sweep only redistributes the errors.
+
+    **Prevalence drift invalidates the choice.** A threshold tuned when 2% of
+    cases were positive is wrong once that becomes 10%. Re-tune when the base
+    rate moves.
+
+    Examples
+    --------
+    Tune with explicit costs on validation::
+
+        report = threshold_report(
+            dataset, split_plan, fit,
+            partition="validation",
+            fp_cost=1.0,
+            fn_cost=20.0,
+        )
+        print(report.payload["recommended_threshold"])
+
+    See Also
+    --------
+    calibration_report : Whether the probabilities behind this are honest.
     """
     if fit_result.task != "classification" or not hasattr(fit_result.estimator, "predict_proba"):
         raise ValidationError(
@@ -491,7 +777,71 @@ def learning_curve_report(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Compute learning curves on the training partition."""
+    """Find out whether more data would help, or whether the model is the limit.
+
+    Answers a question worth asking before spending months collecting more data.
+    The estimator is trained on progressively larger subsets and scored at each
+    size, and the shape of the two resulting curves says which constraint you
+    are actually up against.
+
+    Both curves converging at a disappointing level is **underfitting**: the
+    model is too simple to capture the pattern, and more rows of the same data
+    will change nothing. Try a more expressive model or better features.
+
+    A large persistent gap — training score high, validation score well below —
+    is **overfitting**: the model is memorising. Here more data genuinely helps,
+    and so does regularisation or a simpler model.
+
+    A validation curve still climbing at the largest size means you have not yet
+    saturated; more data is likely to pay. One that flattened long ago means it
+    will not.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        The split. Curves are computed within the train partition.
+    estimator:
+        The estimator to profile. Refitted at every size, so this is expensive.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'``, choosing the
+        scoring metric.
+    cv:
+        Folds at each size. Reduced automatically when the data is small.
+    export_figures:
+        Directory for the curve plot.
+    export_html:
+        Path for an HTML report.
+
+    Returns
+    -------
+    DiagnosticReport
+        Training sizes with mean and standard deviation of train and validation
+        scores at each, plus the gap that indicates over- or underfitting.
+
+    Notes
+    -----
+    **This costs roughly five cross-validations.** Five training sizes each
+    cross-validated is a lot of fitting; use a smaller ``cv`` or a faster
+    estimator when iterating.
+
+    **The curves describe this estimator at these settings.** A different model
+    or different hyperparameters can have a completely different shape, so do
+    not conclude "more data will not help" in general from one curve.
+
+    **Watch the bands, not just the lines.** Wide standard deviations at small
+    sizes are expected; wide ones at the largest size mean the estimate itself
+    is unstable.
+
+    **The largest size is the whole train partition**, so the rightmost point is
+    what you already have. Extrapolating past it is a judgement about the trend,
+    not a measurement.
+
+    See Also
+    --------
+    buildml.model.selection.cv_score : Scoring at the full training size.
+    """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
     x, y, _, _, _ = _feature_target_frames(dataset, split_plan, "train")
@@ -602,7 +952,77 @@ def permutation_importance_report(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Permutation feature importance on a holdout partition."""
+    """Measure what each feature is worth by taking it away.
+
+    Shuffle one column's values so it keeps its distribution and loses its
+    relationship to the target, then re-score. However much performance drops is
+    what that feature was contributing. Repeat for every column.
+
+    The appeal over a model's built-in ``feature_importances_`` is that this
+    measures contribution to *predictive performance* on held-out data, not to
+    the model's internal splitting decisions. Tree impurity importance is
+    notoriously biased toward high-cardinality features, which look important
+    because they offer many places to split rather than because they predict
+    anything. Permutation importance is model-agnostic and does not have that
+    flaw.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        Partition membership.
+    fit_result:
+        The fitted model to probe.
+    partition:
+        Which partition to measure on. Use held-out data — importance measured
+        on training rows describes what the model memorised.
+    n_repeats:
+        Shuffles per feature. More gives a tighter estimate at proportional
+        cost; the standard deviation across repeats is reported so you can tell
+        whether a ranking is stable.
+    export_figures:
+        Directory for the importance plot.
+    export_html:
+        Path for an HTML report.
+
+    Returns
+    -------
+    DiagnosticReport
+        Features ranked by mean importance, each with its standard deviation and
+        coefficient of variation, plus the near-zero features.
+
+    Raises
+    ------
+    ValidationError
+        If the split is missing, or if a feature column the model needs is
+        absent from the partition.
+
+    Notes
+    -----
+    **Correlated features share the blame and both look unimportant.** Shuffling
+    one leaves the other carrying the same information, so the drop is small for
+    each — even when the pair is jointly essential. Two features you expected to
+    matter both scoring near zero is a signal to check their correlation, not to
+    drop them.
+
+    **Importance is a property of this model, not of the data.** A feature
+    unimportant to a linear model can be central to a tree. This says what *this*
+    model uses.
+
+    **The cost is roughly ``n_features × n_repeats`` scoring passes**, which on a
+    wide dataset is substantial.
+
+    **Near-zero importance is a candidate for removal, not a verdict.** Check
+    correlation first, then confirm by refitting without the feature.
+
+    **Negative importance means shuffling helped**, which is noise — the feature
+    contributes nothing and the estimate moved the wrong way by chance.
+
+    See Also
+    --------
+    segment_error_report : Where the model fails rather than what it uses.
+    """
     if split_plan is None:
         raise ValidationError("Split required")
     x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
@@ -711,12 +1131,93 @@ def segment_error_report(
     min_segment_n: int = 5,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Slice prediction errors by one or more columns on a partition.
+    """Find out who the model fails, rather than how often it fails overall.
 
-    Classification reports accuracy, error rate, precision/recall/F1 (binary),
-    and predicted-positive rate. Regression reports MAE, RMSE, median absolute
-    error, and residual summary. Segments below ``min_segment_n`` are retained
-    separately so small-n rates are not ranked as primary findings.
+    An aggregate metric averages over everyone, and averages hide exactly the
+    failures that matter most. An overall accuracy of 0.90 is entirely
+    compatible with 0.95 for the bulk of your users and 0.55 for a subgroup —
+    and the aggregate will never show it, because the subgroup is small enough
+    to be swamped.
+
+    This slices predictions by columns you name and scores each slice
+    separately. It is the basic tool for fairness review, for finding the
+    segment where a deployment will embarrass you, and for noticing that the
+    model's good average rests on being excellent at the easy cases.
+
+    Segments smaller than ``min_segment_n`` are kept separately rather than
+    ranked, because a 40% error rate over five rows is not a finding — it is two
+    mistakes.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        Partition membership.
+    fit_result:
+        The fitted model to assess.
+    by:
+        Column or columns to slice on. Several columns produce the cross
+        product, which grows quickly and thins each segment.
+    partition:
+        Which partition to assess. Defaults to test.
+    max_segments:
+        Cap on segments reported, keeping the largest.
+    min_segment_n:
+        Below this many rows, a segment is held aside as too small to rank.
+    export_html:
+        Path for an HTML report, if wanted.
+
+    Returns
+    -------
+    DiagnosticReport
+        Per-segment metrics with row counts, the small segments kept separately,
+        and the spread between the best and worst segment. Classification gets
+        accuracy, error rate, per-class precision, recall and F1 for binary
+        problems, and the predicted-positive rate; regression gets MAE, RMSE,
+        median absolute error, and a residual summary.
+
+    Raises
+    ------
+    ValidationError
+        If the split is missing, or if a column named in ``by`` is not in the
+        dataset.
+
+    Notes
+    -----
+    **Slice by columns the model did not see, too.** Segmenting on a protected
+    attribute that was deliberately excluded from the features is the whole
+    point of a fairness check — a model can reproduce a disparity perfectly well
+    through proxies.
+
+    **Small segments produce large apparent differences.** Check the row count
+    beside every rate before believing it; that is why the small ones are
+    separated rather than mixed in.
+
+    **The predicted-positive rate is worth as much as the accuracy.** Two
+    segments can have identical accuracy while one is flagged far more often,
+    which is a real difference in treatment that accuracy alone conceals.
+
+    **Slicing many ways will eventually find a bad segment by chance.** Treat a
+    surprising segment as a hypothesis to confirm on other data, not a
+    conclusion.
+
+    Examples
+    --------
+    Check for disparity across a protected attribute::
+
+        report = segment_error_report(
+            dataset, split_plan, fit,
+            by="age_band",
+            partition="test",
+            min_segment_n=30,
+        )
+        for row in report.payload["segments"]:
+            print(row)
+
+    See Also
+    --------
+    permutation_importance_report : What the model uses, rather than who it fails.
     """
     if split_plan is None:
         raise ValidationError("Split required for segment error analysis")

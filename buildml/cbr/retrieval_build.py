@@ -1,4 +1,24 @@
-"""Build retrieval artifacts (search matrix, ANN index, encoders) at fit time."""
+"""Build, once at fit time, whatever the chosen backend needs to search.
+
+Exact search over raw features needs nothing; the numeric matrix is already the
+search space. The other backends need something constructed first — text
+embedded into vectors, a metric encoder trained, an approximate index built —
+and all of it belongs here, at fit time, on training rows.
+
+Doing it once is not only an optimisation. These artefacts define the space
+queries are compared in, so building them per query would mean each query was
+compared in a slightly different space. Fitting once and reusing is what makes
+distances comparable at all.
+
+The build degrades rather than fails. If an approximate index cannot be built,
+the search matrix is still produced and retrieval falls back to an exact scan
+over it — same answers, less speed — and the fallback is recorded in the notes.
+
+See Also
+--------
+buildml.cbr.retrieval_engine.retrieve_neighbor_batches : Using these artefacts.
+buildml.cbr.catalog.cbr_capability_matrix : Which backends are available.
+"""
 
 from __future__ import annotations
 
@@ -31,7 +51,75 @@ def build_search_artifacts(
     random_state: int | None,
     n_classes: int,
 ) -> tuple[np.ndarray, Any, str | None, str | None, Any, list[str]]:
-    """Return search_matrix, ann_index, ann_library, embedder_id, torch_encoder, notes."""
+    """Construct the search space and index the chosen backend needs.
+
+    Produces the matrix that will actually be searched — raw features, text
+    embeddings, or a learned encoding depending on the backend — and, where
+    possible, an approximate index over it.
+
+    Parameters
+    ----------
+    backend:
+        ``'sklearn'``, ``'industry'``, ``'embedding'``, or ``'torch'``.
+    train_frame:
+        The training rows, needed by the embedding backend for text columns.
+    numeric_matrix:
+        Train numeric features, already standardised.
+    task:
+        ``'classification'`` or ``'regression'``, shaping the torch encoder's
+        objective.
+    metric:
+        The distance function, which the approximate index must be built for.
+    text_columns:
+        Columns to embed. Required by the embedding backend.
+    text_model_name:
+        The sentence-transformer to use.
+    y_fit:
+        Encoded targets, supervising the torch encoder.
+    torch_epochs:
+        Training passes for the metric encoder. Ignored by other backends.
+    torch_learning_rate:
+        Adam step size for the metric encoder.
+    torch_hidden_dim:
+        Hidden layer width of the metric encoder.
+    torch_embed_dim:
+        Width of the learned space that retrieval will search.
+    device:
+        Where the torch encoder trains.
+    random_state:
+        Seed for reproducible index construction and training.
+    n_classes:
+        Class count for the torch encoder's output layer.
+
+    Returns
+    -------
+    tuple
+        ``(search_matrix, ann_index, ann_library, embedder_id, torch_encoder,
+        notes)``. Everything but the matrix and notes may be ``None``, depending
+        on the backend and what is installed.
+
+    Raises
+    ------
+    ValidationError
+        If the embedding backend was requested with no text columns, or an
+        artefact could not be built for the chosen backend.
+    MissingExtraError
+        If a backend's dependency is absent.
+
+    Notes
+    -----
+    **A failed index build is a warning, not an error.** The search matrix
+    stands on its own and retrieval scans it exactly, which returns the same
+    neighbours more slowly. The note records what happened.
+
+    **This is the expensive part of fitting.** Embedding a corpus or training an
+    encoder can take minutes, against near-zero for exact search — which is why
+    persisting the plan is worth doing.
+
+    **The learned backends produce a space nobody can read.** Neighbours are
+    still correct in that space, but "why is this case similar?" no longer has
+    an answer in terms of your columns.
+    """
     notes: list[str] = []
     backend_key = str(backend).lower()
     search = np.asarray(numeric_matrix, dtype=float)

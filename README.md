@@ -166,6 +166,53 @@ prerequisites; it does not judge domain fit.
 
 ---
 
+## Learning while you work
+
+Every operation and concept is written for three reading levels. `beginner` is
+the default and assumes **no** prior machine-learning vocabulary: plain-language
+summary, an analogy, the steps in order, what each parameter means in practice,
+the pitfalls, and a glossary of the terms the answer itself used.
+
+```python
+before = session.explain("split")          # level="beginner" by default
+print(before.beginner.plain_summary)
+print(before.beginner.analogy)
+for step in before.beginner.steps:
+    print("-", step)
+for knob in before.beginner.key_parameters:
+    print(knob.name, "→", knob.plain_meaning, "|", knob.typical_choice)
+
+session.explain("split", moment="after")   # what it did, in this session
+session.explain("split", level="advanced") # same facts, no hand-holding
+```
+
+`explain` is about **this session right now** — what is missing, what changed,
+how to read the result. When the question is conceptual instead, use `learn`,
+which takes a concept key, an operation name, or whatever word tripped you up:
+
+```python
+session.learn()                    # where to start, in reading order
+session.learn("leakage")           # a term → the concept that teaches it
+session.learn("stratified")        # spelling/punctuation is forgiving
+brief = session.learn("data-splitting")
+[note.key for note in brief.read_first]   # read these before this one
+[note.key for note in brief.read_next]    # read these once it lands
+```
+
+| Level | Shows |
+| --- | --- |
+| `beginner` | Analogy, plain steps, in-line glossary, worked example |
+| `intermediate` | Same facts, less scaffolding, more parameters |
+| `advanced` | Full assumptions / leakage / failure lists, no glossary |
+
+The same material backs `Session.explain`, `Session.learn`, `workflow()`,
+`walkthrough()`, and the AI operator's `explain_operation` / `learn_concept`
+tools, so no surface can drift from another. Teaching content explains ideas and
+BuildML's contract; it does not inspect your data or certify that a choice is
+appropriate for it.
+
+---
+
 ## EDA and reports
 
 ```python
@@ -209,8 +256,9 @@ are installed.
 | Probabilistic / Causal | matching quickstarts | Conformal; assumption-declared ATE |
 | Graph / Symbolic / CBR | matching quickstarts | NetworkX/Torch/PyG; rules; case memory |
 | Recommenders / LTR / KG | matching quickstarts | CF + content; GBDT rankers; TransE-style |
-| Optimize / Synthetic / IL+RL | matching quickstarts | Thresholds/knapsack; SDV optional; BC + bandits |
+| Optimize / Synthetic / IL+RL | matching quickstarts | Thresholds/knapsack; SDV optional; BC + bandits + tabular Q-learning/SARSA |
 | TDA | [tda](guides/quickstart-tda.md) | ripser/persim (`buildml[tda]`) |
+| NLP | [nlp](guides/quickstart-nlp.md) | Document classify + token attribution, topics, keyphrases, summaries, entities, sentiment, language, corpus profile; `buildml[nlp]` adds encoders |
 | Torch | [torch](guides/quickstart-torch.md) | Tabular / text / image / audio fusion |
 | RAG | [rag](guides/quickstart-rag.md) | Hashing default; sentence-transformers optional |
 | AI operator | [ai](guides/quickstart-ai.md) | Propose→confirm→execute; allowlisted autonomy |
@@ -218,7 +266,9 @@ are installed.
 Torch covers tabular MLP, text/sequence, and multimodal fusion; speech
 (`buildml[speech]`) is ASR + finetune-lite — not Whisper-scale FM training from
 scratch. RAG defaults to lexical hashing; semantic embeddings and grounded
-`rag_generate` are first-class when extras resolve. The AI operator defaults to
+`rag_generate` are first-class when extras resolve. NLP models a text column that
+lives on the dataset — document classification and analysis, distinct from RAG
+retrieval and from Torch fine-tuning. The AI operator defaults to
 propose→confirm→execute — not unconstrained agency.
 
 Full guide index: [`guides/README.md`](guides/README.md).
@@ -232,9 +282,9 @@ metrics lives under [`proofs/`](proofs/README.md) — **not** smoke tests.
 
 | Tier | Status | Meaning |
 | --- | --- | --- |
-| A | **25/25** | One deep project per major domain |
+| A | **26/26** | One deep project per major domain |
 | B | **6/6** | Named products composing multiple Session surfaces |
-| C | **25/25** | Same-split industry twin + `comparison.json` (qualitative bar 5-B) |
+| C | **26/26** | Same-split industry twin + `comparison.json` (qualitative bar 5-B) |
 
 ```bash
 # Full harness from repo root
@@ -267,7 +317,8 @@ This is pre-release software. Bundle schema version strings, report layouts,
 and method signatures may change. There is no out-of-core sklearn training,
 first-class SHAP or fairness reporting, or unconstrained LLM agency.
 See [CHANGELOG.md](CHANGELOG.md) for release notes and
-[guides/glossary.md](guides/glossary.md) for terminology.
+[guides/glossary.md](guides/glossary.md) for BuildML terminology —
+`session.learn(term)` covers general machine-learning vocabulary.
 
 ---
 

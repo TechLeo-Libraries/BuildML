@@ -137,13 +137,83 @@ DOMAIN_CHART_IDS: dict[str, list[str]] = {
 
 
 def charts_for_domain(domain_key: str) -> list[str]:
-    """Return chart ids for a Teaching Studio domain or PDF briefing view."""
+    """Look up which charts belong on a board.
+
+    The board-to-chart mapping lives in one table, so the web studio, the
+    offline export, and the PDF briefing all show the same charts on the same
+    board. Three separate lists would eventually disagree.
+
+    Parameters
+    ----------
+    domain_key:
+        The board key, from :mod:`buildml.dashboard.domains`.
+
+    Returns
+    -------
+    list of str
+        Chart ids in display order. Empty for an unknown key, which lets a board
+        exist before its charts do.
+
+    Notes
+    -----
+    **A fresh list every call**, so a caller can reorder or filter it without
+    editing the registry.
+
+    **A chart can appear on several boards.** Correlation heatmaps show up under
+    both relationships and multivariate, because both questions want them.
+
+    Examples
+    --------
+    >>> isinstance(charts_for_domain("quality"), list)
+    True
+    >>> charts_for_domain("no-such-board")
+    []
+
+    See Also
+    --------
+    build_chart_figures : Rendering them.
+    """
     return list(DOMAIN_CHART_IDS.get(domain_key, []))
 
 
 @contextmanager
 def theme_palette(theme: ThemeName | str = "light") -> Iterator[dict[str, Any]]:
-    """Temporarily activate a light/dark chart palette."""
+    """Swap the chart palette for the duration of a block, then put it back.
+
+    Plotly figures bake their colours in at construction, so the palette has to
+    be active while the figures are built rather than when they are displayed.
+    A context manager makes that lifetime explicit and guarantees the previous
+    palette is restored even if building raises.
+
+    Parameters
+    ----------
+    theme:
+        ``'light'`` or ``'dark'``. An unrecognised name falls back to light
+        rather than raising, so a typo produces a readable chart.
+
+    Yields
+    ------
+    dict
+        The active palette, for a caller that needs a colour outside the chart
+        builders.
+
+    Notes
+    -----
+    **The palette is module-global, so this is not thread-safe.** Two threads
+    building charts in different themes at once will interfere. The dashboard
+    builds charts on one thread; if you parallelise, do not mix themes.
+
+    Examples
+    --------
+    ::
+
+        with theme_palette("dark"):
+            figures = build_chart_figures(report)
+
+    See Also
+    --------
+    build_chart_figures : The usual caller, which handles this for you.
+    """
     global PALETTE
     previous = PALETTE
     PALETTE = _PALETTES.get(str(theme), _PALETTE_LIGHT)
@@ -221,7 +291,48 @@ def build_chart_figures(
     *,
     theme: ThemeName | str = "light",
 ) -> dict[str, Any]:
-    """Return live Plotly Figure objects keyed for export/SPA."""
+    """Build every dashboard chart from the report, in one theme.
+
+    Renders the full catalogue in a single pass, all under one palette, so the
+    set is visually consistent. Each chart reads only the report sections it
+    needs and produces an empty-state figure when they are absent — a chart that
+    says "no drift analysis was run" rather than a hole in the layout.
+
+    Parameters
+    ----------
+    report:
+        The report as a dict, from
+        :meth:`~buildml.eda.report.EDAReport.to_dict`.
+    theme:
+        ``'light'`` or ``'dark'``.
+
+    Returns
+    -------
+    dict
+        Plotly ``Figure`` objects by chart id. Every id in the catalogue is
+        present, including the ones that rendered as empty states.
+
+    Raises
+    ------
+    MissingExtraError
+        If Plotly is not installed. Install with
+        ``pip install 'buildml[dashboard]'``.
+
+    Notes
+    -----
+    **All charts are built, not just the ones you are about to show.** That is
+    the right trade for the studio, which navigates between boards without a
+    round trip, and wasteful if you want one chart. There is no per-chart entry
+    point today.
+
+    **Figure objects are live and mutable** — adjust a title or an axis before
+    display if you need to.
+
+    See Also
+    --------
+    build_chart_catalog : The same charts as JSON.
+    render_chart_png : Rasterising one.
+    """
     go, make_subplots = _require_plotly()
     with theme_palette(theme):
         figures: dict[str, Any] = {
@@ -254,7 +365,41 @@ def build_chart_catalog(
     *,
     theme: ThemeName | str = "light",
 ) -> dict[str, dict[str, Any]]:
-    """Return Plotly JSON figures keyed for the SPA."""
+    """Build the charts and serialise them for the browser.
+
+    Plotly renders in the browser from a JSON description, so the server's job
+    is to produce that description rather than an image. The charts stay
+    interactive — hover, zoom, legend toggling — and no rasterisation happens
+    server-side.
+
+    Parameters
+    ----------
+    report:
+        The report as a dict.
+    theme:
+        ``'light'`` or ``'dark'``.
+
+    Returns
+    -------
+    dict
+        Chart id to Plotly JSON, ready to embed in a page or return from an
+        endpoint.
+
+    Raises
+    ------
+    MissingExtraError
+        If Plotly is not installed.
+
+    Notes
+    -----
+    **This is not small.** A heatmap over 50 columns carries 2,500 values, and
+    the whole catalogue can run to several megabytes — which is what makes the
+    offline export a large file.
+
+    See Also
+    --------
+    build_chart_figures : The figure objects instead.
+    """
     return {key: _as_json(fig) for key, fig in build_chart_figures(report, theme=theme).items()}
 
 
@@ -265,7 +410,47 @@ def render_chart_png(
     height: int | None = None,
     scale: float = 2.0,
 ) -> bytes | None:
-    """Rasterize a Plotly figure with kaleido. Returns None if unavailable."""
+    """Turn a figure into PNG bytes, or return ``None`` and let the caller cope.
+
+    PDF export needs raster images, which means Kaleido — a headless browser
+    that renders Plotly figures server-side. It is a heavy optional dependency
+    and it fails in ways that are hard to predict: missing system libraries,
+    sandboxed environments, containers without the right shared objects.
+
+    So this never raises. A missing or broken Kaleido yields ``None``, and the
+    PDF builder emits a placeholder instead of a chart. A briefing with one
+    missing figure is worth more than an exception.
+
+    Parameters
+    ----------
+    fig:
+        A Plotly figure.
+    width:
+        Output width in pixels before scaling.
+    height:
+        Output height. Defaults to the figure's own layout height, or 420.
+    scale:
+        Resolution multiplier. 2.0 gives a sharp image on high-density displays
+        and in print, at four times the bytes.
+
+    Returns
+    -------
+    bytes or None
+        PNG data, or ``None`` if Kaleido is unavailable or rendering failed.
+
+    Notes
+    -----
+    **A ``None`` return hides the reason.** Both "not installed" and "installed
+    but crashed" look identical here. If figures are silently missing from a
+    PDF, test Kaleido directly.
+
+    **Rasterising is slow** — a browser process per figure. A full catalogue
+    takes seconds to tens of seconds.
+
+    See Also
+    --------
+    buildml.dashboard.exports.export_pdf : The consumer.
+    """
     try:
         import kaleido  # noqa: F401
     except ImportError:

@@ -56,6 +56,7 @@ class WorkflowWalkthroughReport:
     graph_status: dict[str, Any] = field(default_factory=dict)
     symbolic_status: dict[str, Any] = field(default_factory=dict)
     cbr_status: dict[str, Any] = field(default_factory=dict)
+    nlp_status: dict[str, Any] = field(default_factory=dict)
     imitation_status: dict[str, Any] = field(default_factory=dict)
     rl_status: dict[str, Any] = field(default_factory=dict)
     tda_status: dict[str, Any] = field(default_factory=dict)
@@ -99,6 +100,7 @@ class WorkflowWalkthroughReport:
             "graph_status": dict(self.graph_status),
             "symbolic_status": dict(self.symbolic_status),
             "cbr_status": dict(self.cbr_status),
+            "nlp_status": dict(self.nlp_status),
             "imitation_status": dict(self.imitation_status),
             "rl_status": dict(self.rl_status),
             "tda_status": dict(self.tda_status),
@@ -182,6 +184,7 @@ def build_walkthrough(session: Any) -> WorkflowWalkthroughReport:
         graph_status=graph_status_for_walkthrough(session),
         symbolic_status=symbolic_status_for_walkthrough(session),
         cbr_status=cbr_status_for_walkthrough(session),
+        nlp_status=nlp_status_for_walkthrough(session),
         imitation_status=imitation_status_for_walkthrough(session),
         rl_status=rl_status_for_walkthrough(session),
         tda_status=tda_status_for_walkthrough(session),
@@ -343,6 +346,13 @@ def cbr_status_for_walkthrough(session: Any) -> dict[str, Any]:
     from buildml.cbr.explain_hooks import cbr_status_for_session
 
     return cbr_status_for_session(session)
+
+
+def nlp_status_for_walkthrough(session: Any) -> dict[str, Any]:
+    """Factual NlpTextPlan / NlpTopicPlan disclosure for walkthrough."""
+    from buildml.nlp.explain_hooks import nlp_status_for_session
+
+    return nlp_status_for_session(session)
 
 
 def imitation_status_for_walkthrough(session: Any) -> dict[str, Any]:

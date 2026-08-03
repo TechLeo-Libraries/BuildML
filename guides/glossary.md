@@ -3,6 +3,10 @@
 Terms here describe the current BuildML 2.x API. They are not interchangeable with similarly named
 objects in every machine-learning library.
 
+For general machine-learning vocabulary rather than BuildML's own objects — leakage, stratification,
+calibration, ROC-AUC — call `session.learn("<term>")`, which returns a plain-language definition plus
+the concept note that teaches it and what to read first.
+
 **Action**  
 A concrete, optionally executable response attached to a recommendation. An action names a Session
 operation and parameters but does not run it from a report.
@@ -43,8 +47,10 @@ A resumable directory containing data, roles/metadata, split membership, operati
 integrity manifest. It is not a fitted-model artifact.
 
 **Concept note**  
-A reusable technical explanation linked by operation catalog entries. Concept notes hold shared
-material such as leakage boundaries; they do not replace operation-specific guidance.
+A reusable explanation linked by operation catalog entries. Concept notes hold shared material such
+as leakage boundaries; they do not replace operation-specific guidance. Each note is layered: a
+plain-language summary, an analogy, beginner steps, misconceptions, a worked example, and the
+technical sections, plus prerequisite and follow-on notes that give a reading order.
 
 **Data mode**  
 The policy describing how BuildML intends to handle dataset scale, including memory-oriented modes.
@@ -226,6 +232,25 @@ transforms.
 The Python registry of explanation specifications for every public callable Session operation.
 Catalog entries document mechanics, ordering, risks, alternatives, state changes, and result use.
 
+**Operation primer**  
+The beginner-facing briefing attached to every operation explanation: plain summary, analogy, why it
+exists, ordered steps, prerequisites in plain words, what each key parameter means in practice,
+pitfalls, an in-line glossary, and a worked example. Derived from the catalog entry and its linked
+concept notes, so it cannot drift from the expert sections it fronts. An operation may override any
+section with hand-written prose.
+
+**Learning level**  
+`beginner` (default), `intermediate`, or `advanced`, accepted by `Session.explain` and
+`Session.learn`. The level controls how much scaffolding is rendered — analogy, glossary, step
+detail — never which facts are true. Assumptions, leakage risks, and failure modes are present at
+every level.
+
+**Learning brief**  
+What `Session.learn` returns: the resolved subject (a concept note, an operation primer, or a
+glossary term), plus `read_first` and `read_next` concept notes giving a reading order rather than an
+index. Topic lookup accepts concept keys, operation names, and jargon, and tolerates spacing and
+hyphenation differences.
+
 **Operation history**  
 A list of Session calls and selected details. It supports audit and checkpoint resumption but is not
 complete source-data provenance and does not prove that choices were valid.
@@ -286,9 +311,19 @@ checkpoints and from RAG / recommender bundles.
 
 **Reinforcement learning (Session)**  
 `fit_rl` covers contextual bandits on logged train tables (LinUCB / ε-greedy /
-softmax) and optional Gymnasium REINFORCE-lite behind `buildml[rl]`. Bandit
-holdout metrics are offline (DM/IPS). Not a MuJoCo / robotics / multi-agent
-platform.
+softmax) plus optional Gymnasium env loops behind `buildml[rl]`: tabular TD
+control (`tabular_q` — Q-learning / SARSA / Expected SARSA / Double Q-learning)
+and REINFORCE-lite (`gym_reinforce`); SB3 PPO/DQN/A2C behind
+`buildml[rl-industry]`. Bandit holdout metrics are offline (DM/IPS); env-loop
+metrics are online returns. Not a MuJoCo / robotics / multi-agent platform.
+
+**Tabular TD control**  
+Value-based RL that stores one action-value per (state, action) pair and
+bootstraps: `Q(s,a) ← Q(s,a) + α[target − Q(s,a)]`. Q-learning uses the
+off-policy target `r + γ max_a' Q(s',a')`; SARSA uses the on-policy
+`r + γ Q(s',a')`. DQN is the same idea with a neural network replacing the
+table. Continuous observations are discretized first; see
+`RlPlan.config["discretizer"]`.
 
 **RL bundle**  
 Directory schema `buildml.rl_bundle.v1` (`meta.json` + `rl_plan.joblib`) holding
@@ -307,6 +342,49 @@ silhouettes), and optionally fits a sklearn head — all on train only. Requires
 **TDA bundle**  
 Directory schema `buildml.tda_bundle.v1` (`meta.json` + `tda_plan.joblib`) holding
 a `TdaPlan` (frozen PH vectorizer ± head). Distinct from Session checkpoints.
+
+**Natural language processing (Session)**  
+The `buildml.nlp` surface for one text column that lives on the Session dataset:
+`profile_text_corpus`, `fit_text_classifier` → `predict_text` /
+`evaluate_text_classifier` / `interpret_text_prediction`, plus `fit_topics` /
+`assign_topics`, `extract_keyphrases`, `analyze_sentiment`, `extract_entities`,
+`summarize_text`, and `detect_language`. Single-label document classification and
+analysis — not multi-label, not span labelling, not generation, and not document
+retrieval for generation (that is RAG).
+
+**Text normalization plan**  
+The deterministic, stateless part of a text pipeline — the normalization steps,
+tokenizer settings, stopword list, and stemming or lemmatization choice — stored
+on an `NlpTextPlan`. Because it learns nothing from the corpus it cannot leak, so
+it replays freely on holdout rows. The vocabulary, document frequencies, and IDF
+weights beside it are train-only.
+
+**Token attribution (NLP)**  
+`interpret_text_prediction` output: per token, the model's coefficient, the
+token's value in this document, and their product. For a linear head on an
+invertible vocabulary the products plus the intercept reconstruct the decision
+score exactly, so this is an identity rather than an approximation. Refused for
+hashing (no invertible vocabulary) and for dense backends (features are latent
+dimensions).
+
+**NPMI coherence (NLP topics)**  
+Normalized pointwise mutual information over a topic's top terms, computed on the
+train partition and bounded in [-1, 1]. The usual proxy for "are these topics
+real" and the usual way to choose `n_topics`. Reconstruction error always falls as
+topics are added, so it cannot serve the same purpose.
+
+**Corpus contamination screen**  
+The part of `profile_text_corpus` that counts holdout documents which are exact
+duplicates of a train document, and those above a stated cosine similarity
+threshold on character n-grams. It reports what it finds; it never silently drops
+rows.
+
+**NLP bundle**  
+Directory schema `buildml.nlp_bundle.v1` (`meta.json` + `nlp_text_plan.joblib`
+± `nlp_topic_plan.joblib`) holding the normalization plan, the train-fitted
+representation, and the fitted head. Because the normalization plan travels with
+the representation, a reload reproduces a holdout score exactly. Not a Session
+checkpoint, not a `buildml.rag_bundle.v1`, and not a Torch trainer bundle.
 
 **Reattach**  
 Loading checkpoint state and validating that its data and metadata remain compatible. A `data_only`

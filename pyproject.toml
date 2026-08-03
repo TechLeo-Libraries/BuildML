@@ -148,6 +148,20 @@ symbolic-industry = [
 cbr-industry = [
     "hnswlib>=0.8",
 ]
+# NLP core (bag-of-n-grams, lexicon sentiment, rule NER, graph summarization,
+# native language ID) needs nothing beyond scikit-learn. These extras add the
+# optional paths: NLTK morphology, langdetect, sentence embeddings, and
+# transformer encoders.
+nlp = [
+    "nltk>=3.8",
+    "langdetect>=1.0.9",
+    "sentence-transformers>=2.2",
+    "transformers>=4.36",
+]
+nlp-industry = [
+    "buildml[nlp]",
+    "spacy>=3.7",
+]
 optimize-industry = [
   "pulp>=2.7",
   "ortools>=9.8",
@@ -193,6 +207,8 @@ production = [
   "buildml[probabilistic-industry]",
   "buildml[symbolic-industry]",
   "buildml[cbr-industry]",
+  "buildml[nlp]",
+  "buildml[nlp-industry]",
   "buildml[optimize-industry]",
   "buildml[synthetic-industry]",
   "buildml[rl]",

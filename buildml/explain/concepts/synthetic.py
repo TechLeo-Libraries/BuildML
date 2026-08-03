@@ -228,7 +228,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             ),
             assumptions=("Writable path; compatible BuildML version.",),
             failure_modes=("Incomplete bundle missing synthetic_plan.joblib.",),
-            anti_patterns=("Assuming checkpoint_save includes the synthesizer."),
+            anti_patterns=("Assuming checkpoint_save includes the synthesizer.",),
             worked_example_pattern=(
                 "fit_synthesizer → save_synthetic_bundle → load_synthetic_bundle → sample.",
             ),

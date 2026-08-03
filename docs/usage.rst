@@ -191,8 +191,8 @@ Typical failure modes:
 ``session.explain("impute", moment="before")`` lists prerequisites, leakage
 risks, and alternatives from the operation catalog before you mutate state.
 
-Teaching surfaces: explain, workflow, walkthrough, dry_run
-----------------------------------------------------------
+Teaching surfaces: explain, learn, workflow, walkthrough, dry_run
+-----------------------------------------------------------------
 
 BuildML ships a versioned operation catalog (``buildml.explain``) linked to
 every public Session method. These APIs expose what the library knows; they
@@ -216,6 +216,35 @@ do not certify that your split or model suits the domain.
 call and its state transition. ``workflow()`` resolves prerequisites for all
 public operations. ``available`` means API prerequisites pass, not that the
 step is recommended.
+
+Explanations are written for three reading levels, and ``beginner`` is the
+default. It assumes no prior machine-learning vocabulary:
+
+.. code-block:: python
+
+   primer = session.explain("feature_importance").beginner
+   print(primer.plain_summary, primer.analogy, sep="\n")
+   for knob in primer.key_parameters:
+       print(knob.name, knob.plain_meaning, knob.typical_choice)
+   primer.common_pitfalls
+   primer.glossary          # the jargon this answer used, defined in place
+
+   session.explain("feature_importance", level="advanced")   # no scaffolding
+
+When the question is conceptual rather than about the current session, use
+``learn``. It accepts a concept key, an operation name, or a term, and returns
+a reading order rather than an index:
+
+.. code-block:: python
+
+   session.learn()                       # foundation concepts, in order
+   brief = session.learn("leakage")      # a term resolves to its concept
+   brief.concept.misconceptions          # wrong belief → correction
+   [note.key for note in brief.read_first]
+   [note.key for note in brief.read_next]
+
+The level changes how much is shown, never what is true; assumptions, leakage
+risks, and failure modes are present at every level.
 
 Preview without mutation:
 

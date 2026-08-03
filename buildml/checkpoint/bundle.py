@@ -1,4 +1,26 @@
-"""Checkpoint bundle save/load (directory layout)."""
+"""Save a session mid-analysis and pick it up later, or on another machine.
+
+A checkpoint is a directory holding everything needed to resume: the data, the
+column roles, the split membership, the operation history, and any preprocessing
+plans fitted so far. It exists because analysis is rarely finished in one
+sitting, and because the split is the one thing that must not be regenerated —
+a fresh split reshuffles which rows are held out, and every score computed
+before and after becomes incomparable.
+
+What a checkpoint deliberately does *not* contain is a fitted estimator. That is
+the job of a pipeline bundle, and the distinction matters: a checkpoint is for
+resuming work, a pipeline bundle is for serving predictions. Save both when you
+need both — neither embeds the other.
+
+The layout is a plain directory of Parquet and JSON, readable without BuildML.
+Engine-native query plans cannot be serialised, so a Polars or DuckDB table is
+snapshotted to Parquet and reattached on load.
+
+See Also
+--------
+buildml.pipeline : Bundles that carry a fitted model for inference.
+buildml.checkpoint.validate : Deciding whether a checkpoint may be reattached.
+"""
 
 from __future__ import annotations
 
@@ -52,7 +74,45 @@ SIDECAR_DEFAULT_COMPRESSION = "zstd"
 
 @dataclass(slots=True)
 class LoadedCheckpoint:
-    """Materialized checkpoint contents."""
+    """Everything a checkpoint restored, including how far it could be trusted.
+
+    The important field is ``reattach``. A checkpoint can load cleanly and still
+    not be safe to continue from, because the data on disk may no longer match
+    what the checkpoint was written against. That verdict travels with the
+    contents rather than being raised as an error, so the caller can decide
+    whether a downgrade to fresh ingest is acceptable.
+
+    Attributes
+    ----------
+    dataset:
+        The restored data with its roles and engine reattached where possible.
+    split_plan:
+        The original partition membership, or ``None`` if reattach refused it.
+        This is the field a resume exists to preserve.
+    history:
+        The operation log, normalised to the current schema version.
+    reattach:
+        The verdict — clean resume, degraded, fresh ingest, or blocked — with the
+        messages explaining it.
+    meta, manifest:
+        The saved metadata and integrity record, or ``None`` under
+        ``data_only``.
+    plans:
+        Fitted preprocessing plans, so imputation values and encodings carry
+        over instead of being refitted on different data.
+
+    Notes
+    -----
+    **A ``None`` split plan after a successful load is the case to handle.** It
+    means the checkpoint's partitions could not be applied to the current data,
+    so any new split will be a different one and scores will not be comparable
+    with those from before the save.
+
+    See Also
+    --------
+    load_checkpoint : Producing this.
+    buildml.checkpoint.validate.ReattachResult : The verdict in detail.
+    """
 
     dataset: Dataset
     split_plan: SplitPlan | None
@@ -74,7 +134,12 @@ def save_checkpoint(
     sidecar_compression: str | None = None,
     sidecar_layout: SidecarLayout | str | None = None,
 ) -> Path:
-    """Save a resumable checkpoint bundle to a directory.
+    """Write the session to a directory so the same work can be resumed later.
+
+    Saves the data, roles, split membership, history, and any fitted
+    preprocessing plans. The split is the reason to bother: regenerating one
+    reshuffles the holdout, and scores from before and after a resume then
+    describe different experiments.
 
     Layout
     ------
@@ -111,15 +176,58 @@ def save_checkpoint(
         above that threshold. ``'single'`` / ``'partitioned'`` force the
         layout. ``None`` means ``'auto'``.
 
+    Returns
+    -------
+    Path
+        The checkpoint directory, so the call can be chained or logged.
+
+    Raises
+    ------
+    ValidationError
+        If ``sidecar_partition_rows`` is not a positive integer, or
+        ``sidecar_layout`` is not one of the three accepted values. Checked
+        before any writing, including when no sidecar will be produced, so a
+        typo fails immediately rather than on the one dataset large enough to
+        trigger the partitioned path.
+
     Notes
     -----
-    Canonical ``frame.parquet`` remains the interchange source of truth and keeps
-    older loaders working. When a Polars/DuckDB native handle is attached, an
-    optional sidecar is written so restore can reattach without always rebuilding
-    eagerly from the Pandas-exported frame alone. Sidecar knobs are optional and
-    backward compatible — omitting them preserves prior defaults. LazyFrame
-    *plans* are not persisted — only a Parquet snapshot plus a ``lazy_intent``
-    flag. Older single-file sidecars still load.
+    **No estimator is saved here.** Loading a checkpoint gives back data, roles,
+    splits, history, and plans — not a model. Use a pipeline bundle for that,
+    and save both when a run needs to be both resumable and deployable.
+
+    **The split is what makes a resume honest.** Everything else could be
+    recomputed; the exact partition membership could not.
+
+    **A query plan cannot be saved, only its result.** Canonical
+    ``frame.parquet`` stays the interchange source of truth and keeps older
+    loaders working. When a Polars or DuckDB handle is attached, a sidecar
+    snapshot is written so restore can reattach without rebuilding eagerly from
+    the exported Pandas frame. A LazyFrame's *plan* is not persisted — only the
+    Parquet bytes and a ``lazy_intent`` flag, so a restored lazy frame is a new
+    scan over the snapshot rather than the original pipeline.
+
+    **The sidecar knobs are optional and backward compatible.** Omitting them
+    preserves prior defaults, and older single-file sidecars still load.
+
+    Examples
+    --------
+    Save mid-loop, resume later, and confirm the split survived::
+
+        save_checkpoint(
+            "artifacts/run-01",
+            dataset=dataset,
+            split_plan=split_plan,
+            history=session.history(),
+            plans=session.plans(),
+        )
+
+        restored = load_checkpoint("artifacts/run-01")
+        assert restored.split_plan is not None
+
+    See Also
+    --------
+    load_checkpoint : The other half of this pair.
     """
     # Validate public knobs even when no native sidecar will be written.
     _resolve_sidecar_options(
@@ -198,21 +306,60 @@ def save_checkpoint(
 
 
 def load_checkpoint(path: str | Path, *, data_only: bool = False) -> LoadedCheckpoint:
-    """Load a checkpoint directory and validate reattach conditions.
+    """Restore a checkpoint, and say how much of it could safely be trusted.
+
+    Reading the files back is the easy part. The question this answers is
+    whether the saved roles and split still apply — if the data on disk has
+    changed since the save, reusing the old partition membership would assign
+    rows to partitions they were never in, and every score from before and after
+    the resume would describe different experiments.
+
+    Rather than choosing for you, the verdict is returned alongside the
+    contents, downgrading what cannot be trusted and blocking only when nothing
+    can.
 
     Parameters
     ----------
     path:
-        Checkpoint directory.
+        The checkpoint directory. A bare ``.parquet`` path is also accepted and
+        treated as data alone.
     data_only:
-        If True, ignore metadata and treat as fresh ingest of the data file.
+        Ignore all metadata and treat the checkpoint as a fresh ingest of its
+        data file. Useful when the roles or splits are known to be stale and you
+        intend to redefine them, but it discards the split, so scores after this
+        are not comparable with scores from before.
+
+    Returns
+    -------
+    LoadedCheckpoint
+        The dataset, split plan, history, plans, and the reattach verdict.
+
+    Raises
+    ------
+    ValidationError
+        If no data file is found at the path, or if reattach is blocked —
+        meaning the current data is incompatible enough that resuming would be
+        misleading. The messages name the specific mismatches.
 
     Notes
     -----
-    Prefer an optional native sidecar (single-file or partitioned directory)
-    when present and the target engine extra is installed. Older checkpoints
-    with only ``data/frame.parquet`` or a legacy single-file sidecar still
-    restore; partitioned layouts are detected from ``meta.native_sidecar``.
+    **Check ``reattach.status`` before trusting the split.** A clean load with a
+    degraded status means some of what you saved did not survive, and the split
+    is usually the casualty.
+
+    **The native engine is reattached when it can be.** A sidecar, single-file
+    or partitioned, is preferred when present and the engine extra is installed.
+    Checkpoints holding only ``data/frame.parquet``, or a legacy single-file
+    sidecar, still restore; the layout is detected from ``meta.native_sidecar``.
+
+    **A restored lazy frame is not the original plan.** It is a new scan over
+    the snapshot taken at save time, so anything that depended on the upstream
+    query is gone.
+
+    See Also
+    --------
+    save_checkpoint : Writing what this reads.
+    buildml.checkpoint.validate.validate_reattach : How the verdict is decided.
     """
     root = Path(path)
     data_path = root / "data" / "frame.parquet"

@@ -27,6 +27,8 @@ from buildml.data.splits import (
 )
 from buildml.eda.profile import explore_dataset
 from buildml.eda.report import EDAReport
+from buildml.explain.academy import LearningBrief
+from buildml.explain.academy import learn as academy_learn
 from buildml.explain.history import (
     make_operation_record,
     normalize_history,

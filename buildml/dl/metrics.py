@@ -1,4 +1,28 @@
-"""Partition evaluation metrics for Torch modules."""
+"""Score a trained Torch module, and work out where it should run.
+
+Two jobs live here. The first is device resolution: deciding whether a run uses
+CUDA, Apple's MPS, or the CPU, and saying so plainly when the answer is not what
+was asked for. A silent fall back from GPU to CPU is one of the more frustrating
+things that can happen to a long training run, so every fallback carries a
+warning.
+
+The second is evaluation: running the module over a partition in inference mode
+and turning its outputs into metrics. Classification gets accuracy, balanced
+accuracy, and both weighted and macro F1, plus a confusion matrix in the caller's
+original labels rather than the internal integer codes. Regression gets MAE,
+MSE, RMSE, and R², plus a residual distribution — because a single error number
+cannot distinguish a model that is uniformly slightly wrong from one that is
+usually right and occasionally catastrophic.
+
+Both paths attach recommendations, including a standing reminder that tuning
+against the test partition turns it into a second validation set and quietly
+removes the honest estimate you were relying on.
+
+See Also
+--------
+buildml.dl.results.DLEvaluateResult : What evaluation returns.
+buildml.dl.train : Producing the module to score.
+"""
 
 from __future__ import annotations
 
@@ -22,7 +46,58 @@ from buildml.dl.types import DeviceSpec
 
 
 def resolve_device(requested: str = "auto") -> DeviceSpec:
-    """Resolve a device string with explicit CPU fallback warnings."""
+    """Decide which device to use, and say so when it is not the one asked for.
+
+    Accepts a device request and returns what will actually be used. An
+    unavailable accelerator falls back to CPU with a warning attached rather
+    than raising — training on CPU is slow but correct, and stopping the run
+    would be worse than continuing with a note.
+
+    Parameters
+    ----------
+    requested:
+        ``'auto'``, ``'cpu'``, ``'cuda'``, ``'cuda:N'``, or ``'mps'``.
+        ``'auto'`` prefers CUDA, then MPS, then CPU.
+
+    Returns
+    -------
+    DeviceSpec
+        What was requested, what resolved, and a fallback warning when the two
+        differ.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If the device string is not one of the recognised forms, or if ``N`` in
+        ``cuda:N`` is not an integer. A typo should be an error, not a silent
+        CPU run.
+
+    Notes
+    -----
+    **``auto`` never warns; an explicit request that cannot be honoured
+    always does.** Asking for ``auto`` means you accept whatever is present, so
+    landing on CPU is the expected outcome. Asking for ``cuda`` and landing on
+    CPU is a surprise worth surfacing, and the warning propagates through
+    ``TrainResult.warnings``.
+
+    **A ``cuda:N`` index beyond the visible device count falls back to CPU with
+    a warning** rather than raising, since it usually means the same script is
+    running on a machine with fewer GPUs than the one it was written for.
+
+    Examples
+    --------
+    Resolve and check whether the request was honoured::
+
+        spec = resolve_device("cuda")
+        spec.resolved          # 'cuda' or 'cpu'
+        spec.fallback_warning  # None when honoured
+
+    See Also
+    --------
+    buildml.dl.types.DeviceSpec : The returned record.
+    """
     torch = require_torch(feature="Torch device selection")
     want = (requested or "auto").lower()
     warning: str | None = None
@@ -120,7 +195,73 @@ def evaluate_module(
     partition: Literal["train", "validation", "test"] = "test",
     device: str | None = None,
 ) -> DLEvaluateResult:
-    """Score a trained module on one loader partition."""
+    """Run a trained module over one partition and report how it did.
+
+    Puts the module in evaluation mode, iterates the partition's loader without
+    tracking gradients, and turns predictions into metrics appropriate to the
+    task. Classification also gets a confusion matrix in original labels;
+    regression also gets a residual distribution.
+
+    Parameters
+    ----------
+    train_result:
+        The training outcome, carrying the module, task, contract, and device.
+    loader_bundle:
+        The loaders. Must contain the requested partition.
+    partition:
+        Which data to score. Defaults to ``'test'``.
+    device:
+        Override where evaluation runs. Defaults to the training device.
+
+    Returns
+    -------
+    DLEvaluateResult
+        Metrics, row count, device, recommendations, and the task-appropriate
+        detail. An empty partition returns empty metrics with a note rather
+        than raising.
+
+    Raises
+    ------
+    ValidationError
+        If the partition has no loader, or if a loader batch is not shaped as
+        ``(inputs..., y)``.
+
+    Notes
+    -----
+    **The confusion matrix uses your labels, not the internal codes.** Loaders
+    encode classes to ``0..K-1`` for the loss function, and this maps them back
+    — a matrix indexed by integers you never chose is difficult to read and easy
+    to misread.
+
+    **Balanced accuracy is the one to check on imbalanced data.** Plain accuracy
+    on a 95%-negative problem is 0.95 for a model that predicts negative every
+    time; balanced accuracy averages per-class recall, so the same model scores
+    0.5 and the failure becomes visible.
+
+    **The residual summary is where regression failures show up.** Percentiles
+    and maximum absolute error distinguish uniformly-small errors from mostly-
+    small errors with rare large ones — two very different models that can share
+    an RMSE.
+
+    **Score the test partition once.** Repeatedly evaluating on test and
+    adjusting in response makes it a second validation set, and the honest
+    estimate is gone.
+
+    Examples
+    --------
+    Score on validation while iterating, on test at the end::
+
+        val = evaluate_module(train_result, bundle, partition="validation")
+        val.metrics["balanced_accuracy"]
+
+        test = evaluate_module(train_result, bundle, partition="test")
+        test.confusion_matrix
+
+    See Also
+    --------
+    buildml.dl.results.DLEvaluateResult : The returned record.
+    resolve_device : How the default device was chosen.
+    """
     if partition not in loader_bundle.loaders:
         raise ValidationError(
             f"No DataLoader for partition '{partition}'. "

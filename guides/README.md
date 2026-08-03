@@ -27,6 +27,7 @@ and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
 | Stage | Read | Outcome |
 | --- | --- | --- |
 | 0 | [Installation](../docs/installation.rst), [concepts](../docs/concepts.rst), [workflow guide](../docs/workflow-guide.rst) | Vocabulary, install honesty, stage decisions |
+| 0b | New to machine learning? `session.learn()` then `session.explain("<step>")` — see [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough) | Plain-language concepts and operations, in reading order |
 | 1 | [Classical quickstart](quickstart-classical.md) → [Classical end-to-end](classical-end-to-end.md) | Dirty data → roles → split → prep → fit → evaluate |
 | 2 | [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Why BuildML refuses poisoned CV; good vs bad patterns |
 | 3 | [Engines](engines-polars-duckdb.md), [EDA / Teaching Studio](eda-teaching-studio.md) | Prep at scale; explore before mutating |
@@ -44,9 +45,10 @@ and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
 | 15 | Optional: [Multi-task](quickstart-multi-task.md) → [Multi-task deep](multi-task-deep.md) | sklearn / industry GBDT / torch multi-head → per-task eval → bundle |
 | 16 | Optional: [Meta-learning](quickstart-meta-learning.md) → [Meta-learning deep](meta-learning-deep.md) | Episodic few-shot → adapt → eval → bundle |
 | 17 | Optional: [Federated](quickstart-federated.md) → [Federated deep](federated-deep.md) | Local FedAvg/FedProx → eval → bundle |
-| 18 | Optional: [RAG](quickstart-rag.md) → [RAG deep](rag-deep.md) | Retrieve, grounded generate, eval, bundle |
-| 19 | Optional: [AI](quickstart-ai.md) → [AI safety](ai-operator-safety.md) → [AI tools](ai-tools-operator-patterns.md) | Advisor → confirm → execute; autonomy caps |
-| 20 | Optional: [Serve & deploy recipes](serve-deploy.md) | Local FastAPI, TorchServe/TRT/K8s templates |
+| 18 | Optional: [NLP](quickstart-nlp.md) → [NLP deep](nlp-deep.md) | Profile a corpus → classify documents → attribute tokens → topics/keyphrases/summaries/entities/sentiment → bundle |
+| 19 | Optional: [RAG](quickstart-rag.md) → [RAG deep](rag-deep.md) | Retrieve, grounded generate, eval, bundle |
+| 20 | Optional: [AI](quickstart-ai.md) → [AI safety](ai-operator-safety.md) → [AI tools](ai-tools-operator-patterns.md) | Advisor → confirm → execute; autonomy caps |
+| 21 | Optional: [Serve & deploy recipes](serve-deploy.md) | Local FastAPI, TorchServe/TRT/K8s templates |
 | ∞ | [Glossary](glossary.md), [features](../docs/features.rst) | Terms and capability boundaries |
 
 ---
@@ -65,7 +67,7 @@ cross-links.
 | CV / search / nested | `cv_score`, `grid_search`, `randomized_search`, `optuna_search`, `evolutionary_search`, `nested_cv_score`, `PreprocessRecipe` | [Leakage](leakage-cv-recipes.md), [Diagnostics & search](classical-diagnostics-search.md) |
 | Diagnostics | `calibration`, `tune_threshold`, `feature_importance`, `error_slices`, `learning_curve`, `eval_plots` | [Diagnostics & search](classical-diagnostics-search.md) |
 | Engines | `with_engine`, `to_engine`, `dataset.filter_expr` / `project` / `aggregate`, DuckDB lifecycle | [Engines](engines-polars-duckdb.md) |
-| EDA / teaching | `eda`, `eda_app`, `explain`, `workflow`, `walkthrough`, `dry_run` | [EDA / Teaching Studio](eda-teaching-studio.md) |
+| EDA / teaching | `eda`, `eda_app`, `explain`, `learn`, `workflow`, `walkthrough`, `dry_run` | [EDA / Teaching Studio](eda-teaching-studio.md) |
 | Artifacts | `checkpoint_*`, `save_model`, `save_pipeline`, `predict_from_pipeline`, torch/rag/unsupervised/ensemble/automl/forecast/anomaly/semisupervised/ssl/activelearning/online/multitask/metalearning/federated/symbolic/cbr/imitation/rl/ai artifacts | [Artifacts](artifacts-checkpoints-bundles.md) |
 | Unsupervised | `fit_clusters`, `assign_clusters`, `evaluate_clusters`, unsupervised bundle (+ `reduce_dimensions` for PCA) | [Unsupervised quickstart](quickstart-unsupervised.md), [Unsupervised deep](unsupervised-deep.md) |
 | Ensembles | `fit_voting`, `fit_stacking`, `fit_blending`, `evaluate_ensemble`, ensemble bundle | [Ensemble quickstart](quickstart-ensemble.md), [Ensemble deep](ensemble-deep.md) |
@@ -92,6 +94,7 @@ cross-links.
 | Knowledge graphs | `fit_kg`, `score_triples`, `predict_links`, `query_kg`, `evaluate_kg`, KG bundle | [KG quickstart](quickstart-kg.md), [KG deep](kg-deep.md) |
 | Optimisation / decisions | `fit_decision_policy`, `apply_decisions`, `evaluate_decisions`, decision bundle | [Decisions quickstart](quickstart-optimize.md), [Decisions deep](optimize-deep.md) |
 | Synthetic data | `fit_synthesizer`, `sample_synthetic`, `evaluate_synthetic`, `synthetic_capability_matrix`, synthetic bundle | [Synthetic quickstart](quickstart-synthetic.md), [Synthetic deep](synthetic-deep.md) |
+| NLP (text column) | `nlp_capability_matrix`, `profile_text_corpus`, `detect_language`, `fit_text_classifier`, `predict_text`, `evaluate_text_classifier`, `interpret_text_prediction`, `fit_topics`, `assign_topics`, `extract_keyphrases`, `analyze_sentiment`, `extract_entities`, `summarize_text`, NLP bundle | [NLP quickstart](quickstart-nlp.md), [NLP deep](nlp-deep.md) |
 | Torch tabular / text | `make_torch_loaders`, `make_text_torch_loaders`, `fit_torch`, `evaluate_torch` | [Torch quickstart](quickstart-torch.md), [Torch deep](torch-deep.md) |
 | Torch multimodal | `make_multimodal_*`, image/audio loaders, concat/gated fusion, frozen `multimodal_preprocess` restore | [Torch deep](torch-deep.md) |
 | Torch CV / HPO / AMP / DDP / export | `cross_validate_torch`, `search_torch`, `nested_cv_torch`, `fit_torch_ddp`, `export_torch` | [Torch deep](torch-deep.md) |
@@ -125,13 +128,14 @@ cross-links.
 | [Graph ML](quickstart-graph.md) | `buildml[graph]` (+ `torch` for GCN; `graph-pyg` for PyG) | Node classify: NetworkX classical + pure-Torch GCN + PyG GCN/SAGE/GAT; ≠ KG / Neo4j |
 | [Symbolic / neuro-symbolic](quickstart-symbolic.md) | core | Declared/tree/list rules → traces; sklearn hybrid → symbolic bundle |
 | [Case-based reasoning](quickstart-cbr.md) | core + `cbr-industry` | Train case memory → kNN retrieve/reuse (ANN when installed) → traces → CBR bundle (≠ RAG) |
-| [Imitation + RL](quickstart-imitation-rl.md) | core (+ `rl`, `rl-industry`) | BC; contextual bandit; REINFORCE-lite; SB3 PPO/DQN/A2C + imitation BC/GAIL |
+| [Imitation + RL](quickstart-imitation-rl.md) | core (+ `rl`, `rl-industry`) | BC; contextual bandit; tabular Q-learning/SARSA; REINFORCE-lite; SB3 PPO/DQN/A2C + imitation BC/GAIL |
 | [TDA](quickstart-tda.md) | `buildml[tda]` | Local VR persistence → images/landscapes/silhouettes → sklearn head |
 | [Recommenders](quickstart-recommenders.md) | core | User/item CF (kNN, SVD/NMF) + content; ranking metrics; ≠ RAG / EDA Findings |
 | [Search / LTR](quickstart-ranking.md) | core + `ranking-industry` | Query–item feature rows + relevance; sklearn fallback + GBDT rankers; ≠ RAG / recommenders |
 | [Knowledge graphs](quickstart-kg.md) | core | (h,r,t) TransE/DistMult + symbolic query; ≠ Graph ML / Neo4j / RAG |
 | [Optimisation / decisions](quickstart-optimize.md) | core | Thresholds / cost matrices / top-K / knapsack / LP; ≠ general OR |
 | [Synthetic data](quickstart-synthetic.md) | core native; `smote` → `imbalanced`; SDV → `synthetic-industry` | Bootstrap / copula / SMOTE + optional CTGAN/TVAE/CopulaGAN; fidelity/TSTR/SDMetrics; ≠ DP / resample |
+| [NLP](quickstart-nlp.md) | core; `nlp` (embeddings, langdetect, NLTK); `nlp-industry` (spaCy NER) | Corpus profile → document classify → exact token attribution → topics/keyphrases/summaries/entities/sentiment/language → NLP bundle; ≠ RAG / generation / fine-tuning |
 | [Torch](quickstart-torch.md) | `buildml[torch]` | Tabular + text + multimodal + speech pointers |
 | [RAG](quickstart-rag.md) | `buildml[rag]` | Ingest → retrieve → generate → evaluate → bundle |
 | [AI operator](quickstart-ai.md) | `buildml[ai]` | Advisor, plan, confirmed execute, autonomy caps |
@@ -166,13 +170,14 @@ cross-links.
 | [Graph deep](graph-deep.md) | Node classify: NetworkX classical + pure-Torch GCN + PyG GCN/SAGE/GAT, inductive/transductive, graph bundles |
 | [Symbolic deep](symbolic-deep.md) | Declared/tree/list rules, traces, neuro-symbolic overlay/features/repair, symbolic bundles |
 | [CBR deep](cbr-deep.md) | Train-only case memory, metrics/reuse/retain, CBR≠RAG, CBR bundles |
-| [Imitation + RL deep](imitation-rl-deep.md) | BC, bandits, offline DM/IPS, REINFORCE-lite, SB3 industry, capability matrix |
+| [Imitation + RL deep](imitation-rl-deep.md) | BC, bandits, offline DM/IPS, tabular TD control, REINFORCE-lite, SB3 industry, capability matrix |
 | [TDA deep](tda-deep.md) | Local VR (ripser), images/landscapes/silhouettes, train-only head, TDA bundles |
 | [Recommenders deep](recommenders-deep.md) | Train-only CF/content, known-item protocol, Precision@K/Recall@K/nDCG@K/MAP@K, bundles |
 | [LTR deep](ranking-deep.md) | Train-only tabular LTR, group_split queries, nDCG@K/MAP@K/MRR@K, sklearn/industry/torch backends, bundles |
 | [KG deep](kg-deep.md) | Train-only triples, TransE/DistMult, filtered MRR/Hits@K, symbolic query, KG bundles |
 | [Decisions deep](optimize-deep.md) | Cost-sensitive thresholds, cost matrices, top-K/knapsack/LP, decision bundles; ≠ OR platform |
 | [Synthetic deep](synthetic-deep.md) | Train-only native + SDV backends, capability matrix, fidelity/TSTR/SDMetrics, validate_synthetic, merge provenance, privacy limits |
+| [NLP deep](nlp-deep.md) | Deterministic normalization vs train-only vocabulary, contamination screening, exact token attribution and when it is refused, NPMI topics, unsupervised description limits, NLP≠RAG, NLP bundles |
 | [Torch deep](torch-deep.md) | Tabular, text, multimodal (gated fusion + preprocess restore), CV/search/nested, AMP/DDP, export |
 | [Speech ASR + classify](speech-asr-finetune.md) | Stub/transformers ASR, WER/CER, SpeechContract, finetune-lite, FM refuse |
 | [Pretrained backbones](pretrained-backbones.md) | Expanded catalog, `attach_backbone_head`, mock vs pretrained |
@@ -211,8 +216,8 @@ Guides cover **public Session surfaces** and common operator patterns. They do
   (classical lag/baseline Session path is the shipped forecast surface)
 - Neuromorphic/SNN, swarm zoo, digital twins, AV/robotics stacks, TTS, full
   COCO detection/segmentation suite
-- Exhaustive parameter tables for every knob (use `session.explain(...)` and
-  the generated operation catalog kept in sync by CI)
+- Exhaustive parameter tables for every knob (use `session.explain(...)`,
+  `session.learn(...)`, and the generated operation catalog kept in sync by CI)
 
 When an API is alpha, guides say so and show the honest limit next to the example.
 
@@ -221,7 +226,7 @@ When an API is alpha, guides say so and show the honest limit next to the exampl
 ## Proof suite deep-links
 
 Industry-standard Tier A/B/C projects live under
-[`proofs/`](../proofs/README.md) (**25/25** Tier A, **6/6** Tier B, **25/25**
+[`proofs/`](../proofs/README.md) (**26/26** Tier A, **6/6** Tier B, **26/26**
 Tier C — not smoke). Re-run: `python -m proofs._lib.run_all --tier all`.
 
 | Domain | Proof project |
@@ -246,5 +251,6 @@ Tier C — not smoke). Re-run: `python -m proofs._lib.run_all --tier all`.
 | Symbolic / CBR | [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/), [case-memory-claims](../proofs/case-memory-claims/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/) |
 | Synthetic | [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/) |
 | Imitation + RL | [imitation-cartpole-control](../proofs/imitation-cartpole-control/) |
+| NLP (text) | [ticket-routing-nlp](../proofs/ticket-routing-nlp/) |
 
 Full inventory and Tier C comparison status: [proofs/README.md](../proofs/README.md).

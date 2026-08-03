@@ -206,6 +206,18 @@ class PreprocessRecipe:
     target_smoothing: float = 10.0
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the recipe's settings as plain JSON-safe values.
+
+        Belongs in a model card and in search results: the recipe is part of
+        what produced a score, so a score quoted without it is not
+        reproducible.
+
+        Returns
+        -------
+        dict
+            Every setting in plain-data form. ``select_estimator`` is reduced
+            to its class name, since an estimator instance does not serialise.
+        """
         estimator_name = None
         if self.select_estimator is not None:
             estimator_name = type(self.select_estimator).__name__
@@ -255,6 +267,19 @@ class PreprocessRecipe:
         }
 
     def is_empty(self) -> bool:
+        """Report whether this recipe would do anything at all.
+
+        Callers use this to skip building a preprocessor when every step is
+        switched off, which avoids wrapping the estimator in a pipeline that
+        only passes data through.
+
+        Returns
+        -------
+        bool
+            ``True`` when no step is enabled. Column lists and tuning knobs do
+            not count — a recipe naming ``scale_columns`` but leaving ``scale``
+            as ``None`` is still empty.
+        """
         return (
             self.impute is None
             and self.scale is None
@@ -268,22 +293,62 @@ class PreprocessRecipe:
         )
 
     def requires_target(self) -> bool:
+        """Report whether fitting this recipe needs the labels.
+
+        Most preprocessing looks only at the features, but target encoding and
+        the supervised selection strategies read the labels — which is exactly
+        why they must be fitted per fold rather than once up front. Callers
+        check this before fitting so a missing label vector produces a clear
+        error rather than a confusing one deeper in.
+
+        Returns
+        -------
+        bool
+            ``True`` when the recipe uses target encoding or univariate or
+            model-based selection.
+        """
         return self.encode == "target" or self.select in {"univariate", "model"}
 
     def with_knobs(self, knobs: dict[str, Any]) -> PreprocessRecipe:
-        """Return a copy with fold-local search knobs applied.
+        """Return a copy with tuning knobs overridden, leaving this one unchanged.
+
+        This is how a hyperparameter search explores preprocessing settings.
+        Each candidate configuration produces a fresh recipe, so the search can
+        try ``select_k=10`` and ``select_k=30`` without the two runs
+        interfering — and, because the copy is made per fold, the choice stays
+        fold-local and does not leak across the search.
 
         Parameters
         ----------
         knobs:
-            Mapping of :data:`SAFE_RECIPE_KNOBS` names to values. Unknown keys
-            raise :class:`~buildml.core.errors.ValidationError`.
+            Settings to override, named from :data:`SAFE_RECIPE_KNOBS`. Only
+            numeric and categorical knobs are permitted, not the strategy
+            fields themselves — you can search over ``n_bins``, but switching
+            ``binning`` from quantile to uniform is a change to the base recipe.
+            An unknown key raises rather than being ignored, so a typo in a
+            search space is caught immediately instead of silently doing
+            nothing.
 
-        Notes
-        -----
-        Use inside nested CV / search so knob choice stays fold-local. Strategy
-        fields (``impute``, ``select``, ``binning``, …) are not overridden here;
-        set them on the base recipe.
+        Returns
+        -------
+        PreprocessRecipe
+            A new recipe with the overrides applied. This instance is
+            unmodified; the same base recipe is reused across every fold and
+            candidate.
+
+        Raises
+        ------
+        ~buildml.core.errors.ValidationError
+            A key is not in :data:`SAFE_RECIPE_KNOBS`. The message lists what
+            is allowed.
+
+        Examples
+        --------
+        >>> tuned = recipe.with_knobs({"select_k": 25, "n_bins": 8})  # doctest: +SKIP
+
+        See Also
+        --------
+        buildml.session.Session.nested_cv_score : Searches over these knobs honestly.
         """
         if not knobs:
             return self
@@ -299,9 +364,56 @@ class PreprocessRecipe:
 
 
 class FoldLocalPreprocessor:
-    """Sklearn-compatible preprocessor fitted on one CV fold's training rows."""
+    """A whole preprocessing sequence, refitted from scratch inside a single fold.
+
+    This is what makes cross-validated scores honest. If you impute, encode,
+    and scale once over the training set and *then* cross-validate, every fold's
+    evaluation rows contributed to the medians, vocabularies, and standard
+    deviations that shaped the fold's training rows. The score comes out
+    optimistic, and the effect is largest exactly when your dataset is
+    small — when you most needed cross-validation to be trustworthy.
+
+    An instance of this class is fitted separately for each fold, seeing only
+    that fold's training rows, and then applied to both halves. It follows the
+    scikit-learn fit-and-transform convention, so it drops into a
+    :class:`~sklearn.pipeline.Pipeline` alongside the estimator.
+
+    The steps run in a fixed order chosen so each one gets input it can handle:
+    dates expand first, then text vectorises, outliers are fenced, values are
+    imputed, numbers are binned, categories are encoded, features are scaled,
+    dimensions are reduced, and selection happens last on the finished numeric
+    matrix.
+
+    Parameters
+    ----------
+    recipe:
+        Which steps to run and how to configure them.
+
+    Notes
+    -----
+    Not every session-level operation can be made fold-local. Resampling
+    rewrites the row set, and registered custom transforms are arbitrary
+    callables, so both remain session-wide. Everything else belongs in the
+    recipe if you intend to cross-validate.
+
+    See Also
+    --------
+    PreprocessRecipe : Describes the steps this executes.
+    build_fold_preprocessor : Constructs and fits one in a single call.
+    """
 
     def __init__(self, recipe: PreprocessRecipe) -> None:
+        """Prepare an unfitted preprocessor for the given recipe.
+
+        Nothing is learned here; every fitted attribute stays empty until
+        :meth:`fit` runs. Construct one of these per fold rather than reusing a
+        fitted instance, which would carry another fold's statistics.
+
+        Parameters
+        ----------
+        recipe:
+            The steps and settings to apply.
+        """
         self.recipe = recipe
         self._imputer: Any | None = None
         self._scaler: Any | None = None
@@ -333,6 +445,44 @@ class FoldLocalPreprocessor:
         self._reducer: Any | None = None
 
     def fit(self, x_train: pd.DataFrame, y_train: pd.Series | None = None) -> FoldLocalPreprocessor:
+        """Learn every step's parameters from this fold's training rows.
+
+        Runs the recipe's steps in order, each fitting on the output of the
+        last, and stores what each one learned. Only the rows passed here are
+        seen, which is the whole point — the fold's evaluation rows must not
+        influence any of it.
+
+        Parameters
+        ----------
+        x_train:
+            Feature rows for this fold's training half.
+        y_train:
+            Labels for those rows. Required when the recipe uses target
+            encoding or supervised selection, and unused otherwise. Passing
+            labels that include the evaluation rows would defeat the entire
+            arrangement.
+
+        Returns
+        -------
+        FoldLocalPreprocessor
+            This instance, fitted, so calls can chain in the scikit-learn
+            style.
+
+        Raises
+        ------
+        ~buildml.core.errors.ValidationError
+            Labels are needed but absent; an outlier action of ``'drop'`` was
+            requested, which cannot work inside a fold because removing rows
+            would change fold membership; ``n_bins`` is below 2; text settings
+            are malformed; or the reduce method or prefix is unsupported.
+
+        Notes
+        -----
+        Fitting is per fold, so its cost multiplies by the fold count. A recipe
+        with text vectorisation and model-based selection can dominate the
+        runtime of a search — worth knowing before setting fifty candidates
+        against ten folds.
+        """
         recipe = self.recipe
         if recipe.requires_target() and y_train is None:
             raise ValidationError(
@@ -459,6 +609,32 @@ class FoldLocalPreprocessor:
         return self
 
     def transform(self, x: pd.DataFrame) -> pd.DataFrame:
+        """Apply the fitted steps to a frame, in the order they were fitted.
+
+        Called on both halves of the fold: the training rows so the estimator
+        can be fitted, and the evaluation rows so it can be scored. Both go
+        through the same frozen parameters, which is what makes the comparison
+        meaningful.
+
+        Parameters
+        ----------
+        x:
+            Rows to transform. Must carry the columns the recipe expects; the
+            fitted steps decide what happens to each.
+
+        Returns
+        -------
+        ~pandas.DataFrame
+            A numeric frame with the fitted column layout, indexed as the input
+            was so predictions can be joined back to their rows.
+
+        Raises
+        ------
+        ~buildml.core.errors.ValidationError
+            :meth:`fit` has not run, or selection retained no column that
+            exists in this frame — which means the frame does not match what
+            was fitted.
+        """
         if not self._feature_names_ and self._selector is None:
             raise ValidationError("FoldLocalPreprocessor must be fitted before transform")
         base = self._transform_pipeline(x)
@@ -931,7 +1107,37 @@ def build_fold_preprocessor(
     recipe: PreprocessRecipe,
     y_train: pd.Series | None = None,
 ) -> FoldLocalPreprocessor:
-    """Fit a sklearn-compatible preprocessor on fold-train features only."""
+    """Build and fit a fold-local preprocessor in one call.
+
+    The convenience entry point used by cross-validation and the search
+    methods: construct a :class:`FoldLocalPreprocessor` for the recipe and fit
+    it to this fold's training rows.
+
+    Parameters
+    ----------
+    x_train:
+        Feature rows for this fold's training half.
+    recipe:
+        The steps to run.
+    y_train:
+        Labels for those rows, required when the recipe uses target encoding or
+        supervised selection.
+
+    Returns
+    -------
+    FoldLocalPreprocessor
+        A fitted preprocessor, ready to transform both halves of the fold.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        The recipe has no steps enabled, or fitting failed — see
+        :meth:`FoldLocalPreprocessor.fit` for the specific conditions.
+
+    See Also
+    --------
+    transform_fold_features : Applies the result to a frame.
+    """
     if recipe.is_empty():
         raise ValidationError("PreprocessRecipe has no steps to fit")
     preprocessor = FoldLocalPreprocessor(recipe)
@@ -940,7 +1146,33 @@ def build_fold_preprocessor(
 
 
 def transform_fold_features(preprocessor: Any, x: pd.DataFrame) -> pd.DataFrame:
-    """Apply a fold-fitted preprocessor and return a dense feature frame."""
+    """Transform a frame and guarantee the result is a labelled DataFrame.
+
+    A :class:`FoldLocalPreprocessor` already returns a DataFrame, but a
+    user-supplied scikit-learn transformer may hand back a bare NumPy array
+    with no column names. This normalises both cases, recovering names from
+    ``get_feature_names_out`` when the transformer offers it, so downstream
+    code — feature importance, error analysis, explanations — always has
+    something to refer to columns by.
+
+    Parameters
+    ----------
+    preprocessor:
+        Any fitted object with a ``transform`` method.
+    x:
+        The frame to transform. Its index is carried onto the output so
+        predictions stay joinable to their source rows.
+
+    Returns
+    -------
+    ~pandas.DataFrame
+        The transformed features. Column names come from the transformer when
+        it provides them, and are positional integers otherwise.
+
+    See Also
+    --------
+    build_fold_preprocessor : Produces the preprocessor this consumes.
+    """
     transformed = preprocessor.transform(x)
     if isinstance(transformed, pd.DataFrame):
         return transformed

@@ -1,5 +1,5 @@
 {
-  "n_operations": 255,
+  "n_operations": 301,
   "operations": {
     "act_rl": {
       "doc_summary": "Choose actions under the fitted RL policy.",
@@ -37,6 +37,14 @@
         }
       ],
       "qualname": "Session.act_rl"
+    },
+    "activelearning_capability_matrix": {
+      "doc_summary": "Honest capability matrix for active-learning query strategies.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "activelearning_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.activelearning_capability_matrix"
     },
     "adapt_to_task": {
       "doc_summary": "Fast-adapt the meta-learner to one task's labeled support set.",
@@ -407,8 +415,174 @@
       "parameters": [],
       "qualname": "Session.ai_status"
     },
+    "analyze_sentiment": {
+      "doc_summary": "Score a partition's documents for sentiment.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "analyze_sentiment",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'lexicon'",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.05",
+          "kind": "KEYWORD_ONLY",
+          "name": "threshold",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "compare_to_target",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'distilbert-base-uncased-finetuned-sst-2-english'",
+          "kind": "KEYWORD_ONLY",
+          "name": "transformer_model",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
+        }
+      ],
+      "qualname": "Session.analyze_sentiment"
+    },
+    "analyze_timeseries": {
+      "doc_summary": "Run time-series analysis (decompose, diagnostics, changepoints, features).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "analyze_timeseries",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "target_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "time_column",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'train'",
+          "kind": "KEYWORD_ONLY",
+          "name": "scope",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "seasonal_period",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "decompose_method",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_decompose",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_diagnostics",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_changepoints",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_features",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "acf_lags",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "pacf_lags",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "10.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "changepoint_penalty",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "7",
+          "kind": "KEYWORD_ONLY",
+          "name": "rolling_window",
+          "required": false
+        }
+      ],
+      "qualname": "Session.analyze_timeseries"
+    },
+    "anomaly_capability_matrix": {
+      "doc_summary": "Honest capability matrix for anomaly backends and extras.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "anomaly_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.anomaly_capability_matrix"
+    },
     "apply_custom_transform": {
-      "doc_summary": "Fit a registered custom transform on train and apply it to all rows.",
+      "doc_summary": "Run a transform you registered, with the same leakage guarantees.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "apply_custom_transform",
@@ -461,7 +635,7 @@
       "qualname": "Session.apply_decisions"
     },
     "apply_preprocess_plans": {
-      "doc_summary": "Re-apply fitted preprocess plans in score-time order.",
+      "doc_summary": "Replay fitted preprocessing on new rows, in the original order.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "apply_preprocess_plans",
@@ -498,7 +672,7 @@
       "qualname": "Session.apply_preprocess_plans"
     },
     "assert_can_fit": {
-      "doc_summary": "Enforce leakage-safe fit scope.",
+      "doc_summary": "Refuse to continue unless fitting is confined to the train rows.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "assert_can_fit",
@@ -536,6 +710,22 @@
       ],
       "qualname": "Session.assign_clusters"
     },
+    "assign_topics": {
+      "doc_summary": "Transform a partition into per-document topic weights.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "assign_topics",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.assign_topics"
+    },
     "attach_backbone_head": {
       "doc_summary": "Attach a classification head to the last :meth:`load_pretrained_backbone` result.",
       "is_classmethod": false,
@@ -559,8 +749,16 @@
       ],
       "qualname": "Session.attach_backbone_head"
     },
+    "automl_capability_matrix": {
+      "doc_summary": "Honest capability matrix for AutoML search backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "automl_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.automl_capability_matrix"
+    },
     "bin": {
-      "doc_summary": "Discretize numeric columns with train-fitted bin edges.",
+      "doc_summary": "Group a continuous column into bands, trading detail for shape.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "bin",
@@ -597,7 +795,7 @@
       "qualname": "Session.bin"
     },
     "calibration": {
-      "doc_summary": "Probability calibration diagnostics for the fitted classifier.",
+      "doc_summary": "Check whether predicted probabilities mean what they claim.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "calibration",
@@ -626,8 +824,24 @@
       ],
       "qualname": "Session.calibration"
     },
+    "causal_capability_matrix": {
+      "doc_summary": "Honest capability matrix for causal inference backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "causal_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.causal_capability_matrix"
+    },
+    "cbr_capability_matrix": {
+      "doc_summary": "Honest capability matrix for CBR retrieval backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "cbr_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.cbr_capability_matrix"
+    },
     "checkpoint_load": {
-      "doc_summary": "Load a checkpoint bundle and validate reattach conditions.",
+      "doc_summary": "Restore a saved session and check the data still matches.",
       "is_classmethod": true,
       "is_staticmethod": false,
       "name": "checkpoint_load",
@@ -650,7 +864,7 @@
       "qualname": "Session.checkpoint_load"
     },
     "checkpoint_save": {
-      "doc_summary": "Save a resumable checkpoint bundle for mid-loop exit.",
+      "doc_summary": "Save the whole session so you can stop and pick up where you left off.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "checkpoint_save",
@@ -687,7 +901,7 @@
       "qualname": "Session.checkpoint_save"
     },
     "close_native": {
-      "doc_summary": "Close an owned DuckDB connection on the session dataset, if any.",
+      "doc_summary": "Close the DuckDB connection this session owns, if it has one.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "close_native",
@@ -695,7 +909,7 @@
       "qualname": "Session.close_native"
     },
     "compare_models": {
-      "doc_summary": "Fit/evaluate multiple estimators and return a ranked comparison card.",
+      "doc_summary": "Try several models on the same data and rank what you get.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "compare_models",
@@ -811,7 +1025,7 @@
       "qualname": "Session.cross_validate_torch"
     },
     "cv_score": {
-      "doc_summary": "Cross-validate an estimator on the train partition only.",
+      "doc_summary": "Score a model across several rotating holdouts, not just one.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "cv_score",
@@ -874,6 +1088,14 @@
         }
       ],
       "qualname": "Session.cv_score"
+    },
+    "decision_capability_matrix": {
+      "doc_summary": "Honest capability matrix for decision-policy backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "decision_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.decision_capability_matrix"
     },
     "declare_causal_assumptions": {
       "doc_summary": "Declare identification assumptions required for causal estimation.",
@@ -946,6 +1168,43 @@
         }
       ],
       "qualname": "Session.declare_causal_assumptions"
+    },
+    "detect_language": {
+      "doc_summary": "Identify the language of every document in a partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "detect_language",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'all'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "'native'",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "12",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_characters",
+          "required": false
+        }
+      ],
+      "qualname": "Session.detect_language"
     },
     "domain_adapt_speech_torch": {
       "doc_summary": "Domain-adapt speech classify (finetune-lite; not FM continued pretrain).",
@@ -1041,7 +1300,7 @@
       "qualname": "Session.domain_adapt_speech_torch"
     },
     "drop_columns": {
-      "doc_summary": "Drop columns from the current dataset.",
+      "doc_summary": "Remove columns you do not want the model to see.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "drop_columns",
@@ -1057,7 +1316,7 @@
       "qualname": "Session.drop_columns"
     },
     "dry_run": {
-      "doc_summary": "Preview intended operations without mutating Session state.",
+      "doc_summary": "See what an operation would do, without doing it.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "dry_run",
@@ -1080,7 +1339,7 @@
       "qualname": "Session.dry_run"
     },
     "eda": {
-      "doc_summary": "Run exploratory analysis.",
+      "doc_summary": "Understand the data before you model it.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "eda",
@@ -1145,7 +1404,7 @@
       "qualname": "Session.eda"
     },
     "eda_app": {
-      "doc_summary": "Launch the local EDA Teaching Studio web app.",
+      "doc_summary": "Explore the data interactively in a browser instead of on paper.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "eda_app",
@@ -1389,7 +1648,7 @@
       "qualname": "Session.emit_k8s_serve_deployment"
     },
     "encode": {
-      "doc_summary": "Fit categorical encoding on train and transform the full dataset.",
+      "doc_summary": "Turn category labels into numbers a model can work with.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "encode",
@@ -1440,7 +1699,7 @@
       "qualname": "Session.encode"
     },
     "error_slices": {
-      "doc_summary": "Slice prediction errors by one or more columns on a partition.",
+      "doc_summary": "Break performance down by subgroup, to find where the model fails.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "error_slices",
@@ -1514,7 +1773,7 @@
       "qualname": "Session.estimate_causal"
     },
     "eval_plots": {
-      "doc_summary": "Build an evaluation plot board for the fitted estimator.",
+      "doc_summary": "Draw the standard diagnostic charts for a fitted model, in one call.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "eval_plots",
@@ -1579,7 +1838,7 @@
       "qualname": "Session.eval_plots"
     },
     "evaluate": {
-      "doc_summary": "Evaluate the last fitted estimator on a partition.",
+      "doc_summary": "Measure the fitted model, and explain what the measurement means.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate",
@@ -1807,6 +2066,48 @@
           "kind": "KEYWORD_ONLY",
           "name": "random_state",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "compute_stability",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "stability_runs",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.8",
+          "kind": "KEYWORD_ONLY",
+          "name": "stability_sample_fraction",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "compute_elbow",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "elbow_k_min",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "elbow_k_max",
+          "required": false
         }
       ],
       "qualname": "Session.evaluate_clusters"
@@ -1849,6 +2150,13 @@
       "is_staticmethod": false,
       "name": "evaluate_federated",
       "parameters": [
+        {
+          "annotation": "FederatedBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "PartitionName | Literal['all']",
           "default": "'validation'",
@@ -2039,6 +2347,13 @@
           "kind": "KEYWORD_ONLY",
           "name": "partition",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "drift_check",
+          "required": false
         }
       ],
       "qualname": "Session.evaluate_online"
@@ -2084,6 +2399,13 @@
           "default": "10",
           "kind": "KEYWORD_ONLY",
           "name": "k",
+          "required": false
+        },
+        {
+          "annotation": "RankerBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
           "required": false
         }
       ],
@@ -2232,6 +2554,13 @@
           "required": false
         },
         {
+          "annotation": "EvalBackend",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "eval_backend",
+          "required": false
+        },
+        {
           "annotation": "PartitionName",
           "default": "'test'",
           "kind": "KEYWORD_ONLY",
@@ -2274,9 +2603,53 @@
           "kind": "KEYWORD_ONLY",
           "name": "partition",
           "required": false
+        },
+        {
+          "annotation": "TdaBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "compare_diagram_distances",
+          "required": false
+        },
+        {
+          "annotation": "DiagramDistanceMetric",
+          "default": "'wasserstein'",
+          "kind": "KEYWORD_ONLY",
+          "name": "diagram_distance_metric",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "diagram_distance_dim",
+          "required": false
         }
       ],
       "qualname": "Session.evaluate_tda"
+    },
+    "evaluate_text_classifier": {
+      "doc_summary": "Evaluate the text classifier on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_text_classifier",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "Session.evaluate_text_classifier"
     },
     "evaluate_torch": {
       "doc_summary": "Evaluate the last Torch trainer on a named partition.",
@@ -2302,7 +2675,7 @@
       "qualname": "Session.evaluate_torch"
     },
     "evolutionary_search": {
-      "doc_summary": "Genetic-algorithm HPO with leakage-safe train-fold CV.",
+      "doc_summary": "Evolve a population of configurations across generations.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evolutionary_search",
@@ -2444,7 +2817,7 @@
       "qualname": "Session.evolutionary_search"
     },
     "explain": {
-      "doc_summary": "Explain an operation before/after execution, or return the workflow.",
+      "doc_summary": "Ask what an operation does, in plain language, at any point.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "explain",
@@ -2461,6 +2834,13 @@
           "default": "'before'",
           "kind": "KEYWORD_ONLY",
           "name": "moment",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'beginner'",
+          "kind": "KEYWORD_ONLY",
+          "name": "level",
           "required": false
         }
       ],
@@ -2511,7 +2891,7 @@
       "qualname": "Session.export_torch"
     },
     "extract_dates": {
-      "doc_summary": "Expand datetime columns into calendar/time parts (``.dt``-correct).",
+      "doc_summary": "Break timestamps apart into the calendar parts a model can use.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "extract_dates",
@@ -2540,8 +2920,173 @@
       ],
       "qualname": "Session.extract_dates"
     },
+    "extract_entities": {
+      "doc_summary": "Extract entity mentions from a partition's documents.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "extract_entities",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "'rules'",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "labels",
+          "required": false
+        },
+        {
+          "annotation": "dict[str, list[str]] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "gazetteers",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'en_core_web_sm'",
+          "kind": "KEYWORD_ONLY",
+          "name": "spacy_model",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "25",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_documents",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "32",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        }
+      ],
+      "qualname": "Session.extract_entities"
+    },
+    "extract_keyphrases": {
+      "doc_summary": "Rank keyphrases for a partition with an unsupervised scorer.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "extract_keyphrases",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'train'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'tfidf'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "15",
+          "kind": "KEYWORD_ONLY",
+          "name": "top_n",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_phrase_words",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "per_document",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "25",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_documents",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "'en'",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopword_language",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopwords",
+          "required": false
+        },
+        {
+          "annotation": "int | float",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_df",
+          "required": false
+        },
+        {
+          "annotation": "int | float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_df",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "4",
+          "kind": "KEYWORD_ONLY",
+          "name": "window",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.extract_keyphrases"
+    },
     "feature_importance": {
-      "doc_summary": "Permutation feature importance on a holdout partition.",
+      "doc_summary": "Measure which features the model genuinely depends on.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "feature_importance",
@@ -2577,6 +3122,14 @@
       ],
       "qualname": "Session.feature_importance"
     },
+    "federated_capability_matrix": {
+      "doc_summary": "Honest capability matrix for federated learning backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "federated_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.federated_capability_matrix"
+    },
     "finetune_ssl_head": {
       "doc_summary": "Fit a supervised head on frozen SSL embeddings (labeled train only).",
       "is_classmethod": false,
@@ -2608,7 +3161,7 @@
       "qualname": "Session.finetune_ssl_head"
     },
     "fit": {
-      "doc_summary": "Fit a sklearn-compatible estimator on the train partition.",
+      "doc_summary": "Train a model on the training rows.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit",
@@ -2636,6 +3189,13 @@
       "is_staticmethod": false,
       "name": "fit_active_learner",
       "parameters": [
+        {
+          "annotation": "ActiveLearningBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "ActiveLearningStrategy",
           "default": "'margin'",
@@ -2705,6 +3265,34 @@
           "kind": "KEYWORD_ONLY",
           "name": "auto_refit",
           "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "60",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "20",
+          "kind": "KEYWORD_ONLY",
+          "name": "mc_samples",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
         }
       ],
       "qualname": "Session.fit_active_learner"
@@ -2715,6 +3303,13 @@
       "is_staticmethod": false,
       "name": "fit_anomaly",
       "parameters": [
+        {
+          "annotation": "AnomalyBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "AnomalyMethod",
           "default": "'isolation_forest'",
@@ -2811,6 +3406,27 @@
           "default": "'scale'",
           "kind": "KEYWORD_ONLY",
           "name": "gamma",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8",
+          "kind": "KEYWORD_ONLY",
+          "name": "latent_dim",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "ae_epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "ae_batch_size",
           "required": false
         },
         {
@@ -2924,11 +3540,18 @@
       "qualname": "Session.fit_blending"
     },
     "fit_causal": {
-      "doc_summary": "Fit causal nuisance models (train-only) and estimate backdoor ATE.",
+      "doc_summary": "Fit causal models (train-only) and estimate backdoor ATE.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_causal",
       "parameters": [
+        {
+          "annotation": "CausalBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "CausalMethod",
           "default": "'aipw'",
@@ -2988,6 +3611,13 @@
       "name": "fit_cbr",
       "parameters": [
         {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
           "annotation": "CbrTask | None",
           "default": "None",
           "kind": "KEYWORD_ONLY",
@@ -3037,6 +3667,20 @@
           "required": false
         },
         {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_columns",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'sentence-transformers/all-MiniLM-L6-v2'",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_model_name",
+          "required": false
+        },
+        {
           "annotation": "bool",
           "default": "True",
           "kind": "KEYWORD_ONLY",
@@ -3062,6 +3706,20 @@
           "default": "True",
           "kind": "KEYWORD_ONLY",
           "name": "prefer_reduce_components",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "torch_epochs",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
           "required": false
         }
       ],
@@ -3137,6 +3795,118 @@
           "required": false
         },
         {
+          "annotation": "str",
+          "default": "'full'",
+          "kind": "KEYWORD_ONLY",
+          "name": "gmm_covariance_type",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "gmm_max_components",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'bic'",
+          "kind": "KEYWORD_ONLY",
+          "name": "gmm_select_by",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "hdbscan_min_cluster_size",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "hdbscan_min_samples",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'nearest_neighbors'",
+          "kind": "KEYWORD_ONLY",
+          "name": "spectral_affinity",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "spectral_n_neighbors",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "optics_min_samples",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.05",
+          "kind": "KEYWORD_ONLY",
+          "name": "optics_xi",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "optics_min_cluster_size",
+          "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "bandwidth",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "latent_dim",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "50",
+          "kind": "KEYWORD_ONLY",
+          "name": "pretrain_epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "100",
+          "kind": "KEYWORD_ONLY",
+          "name": "finetune_epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "256",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
           "annotation": "bool",
           "default": "True",
           "kind": "KEYWORD_ONLY",
@@ -3148,6 +3918,27 @@
           "default": "'cluster_id'",
           "kind": "KEYWORD_ONLY",
           "name": "label_column",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "auto_k",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "auto_k_min",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "auto_k_max",
           "required": false
         }
       ],
@@ -3164,6 +3955,13 @@
           "default": "'threshold'",
           "kind": "KEYWORD_ONLY",
           "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
           "required": false
         },
         {
@@ -3309,6 +4107,13 @@
       "name": "fit_federated",
       "parameters": [
         {
+          "annotation": "FederatedBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
           "annotation": "FederatedMethod",
           "default": "'fedavg'",
           "kind": "KEYWORD_ONLY",
@@ -3396,14 +4201,14 @@
       "qualname": "Session.fit_federated"
     },
     "fit_forecast": {
-      "doc_summary": "Fit a classical forecaster on the train partition only.",
+      "doc_summary": "Fit a forecaster on the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_forecast",
       "parameters": [
         {
           "annotation": "ForecastMethod",
-          "default": "'lag_ridge'",
+          "default": "'auto'",
           "kind": "KEYWORD_ONLY",
           "name": "method",
           "required": false
@@ -3484,12 +4289,40 @@
           "kind": "KEYWORD_ONLY",
           "name": "learning_rate",
           "required": false
+        },
+        {
+          "annotation": "tuple[int, int, int] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "order",
+          "required": false
+        },
+        {
+          "annotation": "tuple[int, int, int, int] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "seasonal_order",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "24",
+          "kind": "KEYWORD_ONLY",
+          "name": "nbeats_input_size",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "nbeats_horizon",
+          "required": false
         }
       ],
       "qualname": "Session.fit_forecast"
     },
     "fit_graph": {
-      "doc_summary": "Fit graph node classification (classical or pure-Torch GCN).",
+      "doc_summary": "Fit graph node classification (classical, pure-Torch GCN, or PyG).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_graph",
@@ -3584,6 +4417,20 @@
           "kind": "KEYWORD_ONLY",
           "name": "include_graph_metrics",
           "required": false
+        },
+        {
+          "annotation": "PyGModel",
+          "default": "'gcn'",
+          "kind": "KEYWORD_ONLY",
+          "name": "pyg_model",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "4",
+          "kind": "KEYWORD_ONLY",
+          "name": "heads",
+          "required": false
         }
       ],
       "qualname": "Session.fit_graph"
@@ -3594,6 +4441,13 @@
       "is_staticmethod": false,
       "name": "fit_imitation",
       "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "ImitationTask | None",
           "default": "None",
@@ -3609,6 +4463,13 @@
           "required": false
         },
         {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
           "annotation": "list[str] | None",
           "default": "None",
           "kind": "KEYWORD_ONLY",
@@ -3620,6 +4481,20 @@
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "action_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "env_id",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_epochs",
           "required": false
         },
         {
@@ -3645,6 +4520,13 @@
       "is_staticmethod": false,
       "name": "fit_kg",
       "parameters": [
+        {
+          "annotation": "KgBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "KgMethod",
           "default": "'transe'",
@@ -3739,6 +4621,13 @@
       "name": "fit_metalearning",
       "parameters": [
         {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
           "annotation": "MetaLearningMethod",
           "default": "'prototypical'",
           "kind": "KEYWORD_ONLY",
@@ -3814,16 +4703,72 @@
           "kind": "KEYWORD_ONLY",
           "name": "task_holdout_fraction",
           "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "meta_epochs",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.05",
+          "kind": "KEYWORD_ONLY",
+          "name": "inner_lr",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "inner_steps",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "meta_lr",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "32",
+          "kind": "KEYWORD_ONLY",
+          "name": "embed_dim",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "hidden_dim",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
         }
       ],
       "qualname": "Session.fit_metalearning"
     },
     "fit_multitask": {
-      "doc_summary": "Fit a multi-target MultiOutput / Chain estimator on train only.",
+      "doc_summary": "Fit a multi-target estimator on train only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_multitask",
       "parameters": [
+        {
+          "annotation": "MultiTaskBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "MultiTaskMethod",
           "default": "'multi_output'",
@@ -3886,16 +4831,51 @@
           "kind": "KEYWORD_ONLY",
           "name": "prediction_prefix",
           "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "60",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
         }
       ],
       "qualname": "Session.fit_multitask"
     },
     "fit_neuro_symbolic": {
-      "doc_summary": "Fit a sklearn + symbolic hybrid in one Session API.",
+      "doc_summary": "Fit a base model + symbolic hybrid in one Session API.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_neuro_symbolic",
       "parameters": [
+        {
+          "annotation": "NeuroSymbolicBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "NeuroSymbolicMode",
           "default": "'constraint_overlay'",
@@ -3908,6 +4888,13 @@
           "default": "'logistic_regression'",
           "kind": "KEYWORD_ONLY",
           "name": "base_estimator",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "torch_method",
           "required": false
         },
         {
@@ -3979,6 +4966,20 @@
           "kind": "KEYWORD_ONLY",
           "name": "prefer_reduce_components",
           "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "60",
+          "kind": "KEYWORD_ONLY",
+          "name": "torch_epochs",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
         }
       ],
       "qualname": "Session.fit_neuro_symbolic"
@@ -3990,7 +4991,14 @@
       "name": "fit_online",
       "parameters": [
         {
-          "annotation": "OnlineEstimator",
+          "annotation": "OnlineBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "OnlineEstimator | str",
           "default": "'sgd_classifier'",
           "kind": "KEYWORD_ONLY",
           "name": "estimator",
@@ -4065,6 +5073,62 @@
           "kind": "KEYWORD_ONLY",
           "name": "drift_disclose",
           "required": false
+        },
+        {
+          "annotation": "OnlineDriftDetector | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "drift_detector",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "512",
+          "kind": "KEYWORD_ONLY",
+          "name": "buffer_size",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "5",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs_per_update",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "100.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "ewc_lambda",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "hidden_dim",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
         }
       ],
       "qualname": "Session.fit_online"
@@ -4075,6 +5139,13 @@
       "is_staticmethod": false,
       "name": "fit_probabilistic",
       "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "ProbabilisticEstimator",
           "default": "'bayesian_ridge'",
@@ -4144,6 +5215,20 @@
           "kind": "KEYWORD_ONLY",
           "name": "n_restarts_optimizer",
           "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "100",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_estimators",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.05",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
         }
       ],
       "qualname": "Session.fit_probabilistic"
@@ -4155,8 +5240,15 @@
       "name": "fit_ranker",
       "parameters": [
         {
-          "annotation": "RankerMethod",
-          "default": "'pointwise'",
+          "annotation": "RankerBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "RankerMethod | str | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "method",
           "required": false
@@ -4232,6 +5324,41 @@
           "required": false
         },
         {
+          "annotation": "int",
+          "default": "120",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_estimators",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.08",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "hidden_dim",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
+        },
+        {
           "annotation": "int | None",
           "default": "0",
           "kind": "KEYWORD_ONLY",
@@ -4248,10 +5375,17 @@
       "name": "fit_recommender",
       "parameters": [
         {
-          "annotation": "RecommenderMethod",
-          "default": "'item_knn'",
+          "annotation": "RecommenderMethod | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "RecommenderBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
           "required": false
         },
         {
@@ -4311,6 +5445,13 @@
           "required": false
         },
         {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "user_feature_columns",
+          "required": false
+        },
+        {
           "annotation": "ColdStartPolicy",
           "default": "'popularity'",
           "kind": "KEYWORD_ONLY",
@@ -4323,25 +5464,46 @@
           "kind": "KEYWORD_ONLY",
           "name": "random_state",
           "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "15",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_iterations",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "lightfm_epochs",
+          "required": false
         }
       ],
       "qualname": "Session.fit_recommender"
     },
     "fit_rl": {
-      "doc_summary": "Fit a contextual bandit (core) or Gymnasium REINFORCE-lite.",
+      "doc_summary": "Fit a contextual bandit (core) or a Gymnasium env policy.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_rl",
       "parameters": [
         {
-          "annotation": "RlMode",
-          "default": "'contextual_bandit'",
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "RlMode | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "mode",
           "required": false
         },
         {
-          "annotation": "BanditAlgorithm",
+          "annotation": "BanditAlgorithm | str",
           "default": "'linucb'",
           "kind": "KEYWORD_ONLY",
           "name": "algorithm",
@@ -4437,6 +5599,34 @@
           "kind": "KEYWORD_ONLY",
           "name": "gamma",
           "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "20000",
+          "kind": "KEYWORD_ONLY",
+          "name": "total_timesteps",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "8",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_bins",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.01",
+          "kind": "KEYWORD_ONLY",
+          "name": "epsilon_min",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.995",
+          "kind": "KEYWORD_ONLY",
+          "name": "epsilon_decay",
+          "required": false
         }
       ],
       "qualname": "Session.fit_rl"
@@ -4447,6 +5637,13 @@
       "is_staticmethod": false,
       "name": "fit_semisupervised",
       "parameters": [
+        {
+          "annotation": "SemiSupervisedBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "SemiSupervisedMethod",
           "default": "'label_propagation'",
@@ -4529,6 +5726,62 @@
           "default": "10",
           "kind": "KEYWORD_ONLY",
           "name": "max_self_train_iter",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "consistency_weight",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.75",
+          "kind": "KEYWORD_ONLY",
+          "name": "mixup_alpha",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'sentence-transformers/all-MiniLM-L6-v2'",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_model_name",
           "required": false
         },
         {
@@ -4642,14 +5895,14 @@
       "qualname": "Session.fit_speech_torch"
     },
     "fit_ssl_pretext": {
-      "doc_summary": "Fit a self-supervised tabular pretext on the train partition only.",
+      "doc_summary": "Fit a self-supervised pretext on the train partition only.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "fit_ssl_pretext",
       "parameters": [
         {
-          "annotation": "SelfSupervisedMethod",
-          "default": "'masked_tabular'",
+          "annotation": "SelfSupervisedMethod | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "method",
           "required": false
@@ -4659,6 +5912,20 @@
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "columns",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "image_column",
           "required": false
         },
         {
@@ -4704,6 +5971,48 @@
           "required": false
         },
         {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "64",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.001",
+          "kind": "KEYWORD_ONLY",
+          "name": "learning_rate",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.5",
+          "kind": "KEYWORD_ONLY",
+          "name": "temperature",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "32",
+          "kind": "KEYWORD_ONLY",
+          "name": "projector_dim",
+          "required": false
+        },
+        {
+          "annotation": "tuple[int, ...] | list[int]",
+          "default": "(64,)",
+          "kind": "KEYWORD_ONLY",
+          "name": "projector_hidden",
+          "required": false
+        },
+        {
           "annotation": "bool",
           "default": "True",
           "kind": "KEYWORD_ONLY",
@@ -4715,6 +6024,34 @@
           "default": "'ssl_emb'",
           "kind": "KEYWORD_ONLY",
           "name": "representation_prefix",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'resnet18'",
+          "kind": "KEYWORD_ONLY",
+          "name": "backbone",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'mock'",
+          "kind": "KEYWORD_ONLY",
+          "name": "weight_mode",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'sentence-transformers/all-MiniLM-L6-v2'",
+          "kind": "KEYWORD_ONLY",
+          "name": "hf_model_name",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
           "required": false
         }
       ],
@@ -4778,10 +6115,24 @@
       "name": "fit_symbolic",
       "parameters": [
         {
+          "annotation": "SymbolicBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
           "annotation": "SymbolicSource",
           "default": "'decision_tree'",
           "kind": "KEYWORD_ONLY",
           "name": "source",
+          "required": false
+        },
+        {
+          "annotation": "IndustrySymbolicMethod | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
           "required": false
         },
         {
@@ -4846,6 +6197,13 @@
           "kind": "KEYWORD_ONLY",
           "name": "prefer_reduce_components",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "verify_constraints",
+          "required": false
         }
       ],
       "qualname": "Session.fit_symbolic"
@@ -4856,6 +6214,13 @@
       "is_staticmethod": false,
       "name": "fit_synthesizer",
       "parameters": [
+        {
+          "annotation": "SyntheticBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "SynthesizerMethod",
           "default": "'gaussian_copula'",
@@ -4911,6 +6276,20 @@
           "kind": "KEYWORD_ONLY",
           "name": "sampling_strategy",
           "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "300",
+          "kind": "KEYWORD_ONLY",
+          "name": "epochs",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "500",
+          "kind": "KEYWORD_ONLY",
+          "name": "batch_size",
+          "required": false
         }
       ],
       "qualname": "Session.fit_synthesizer"
@@ -4921,6 +6300,13 @@
       "is_staticmethod": false,
       "name": "fit_tda",
       "parameters": [
+        {
+          "annotation": "TdaBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "Vectorization",
           "default": "'persistence_image'",
@@ -5025,9 +6411,321 @@
           "kind": "KEYWORD_ONLY",
           "name": "max_points_guard",
           "required": false
+        },
+        {
+          "annotation": "SubsampleStrategy",
+          "default": "'error'",
+          "kind": "KEYWORD_ONLY",
+          "name": "subsample_strategy",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "mapper",
+          "required": false
         }
       ],
       "qualname": "Session.fit_tda"
+    },
+    "fit_text_classifier": {
+      "doc_summary": "Fit a single-label document classifier on Session train.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_text_classifier",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "estimator",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'tfidf'",
+          "kind": "KEYWORD_ONLY",
+          "name": "vectorizer",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'word'",
+          "kind": "KEYWORD_ONLY",
+          "name": "analyzer",
+          "required": false
+        },
+        {
+          "annotation": "tuple[int, int]",
+          "default": "(1, 2)",
+          "kind": "KEYWORD_ONLY",
+          "name": "ngram_range",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "20000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_features",
+          "required": false
+        },
+        {
+          "annotation": "int | float",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_df",
+          "required": false
+        },
+        {
+          "annotation": "int | float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_df",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "sublinear_tf",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "binary",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "262144",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_hash_features",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize_steps",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopwords",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopword_language",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_token_length",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_token_length",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "stem",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "lemmatize",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "class_weight",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "C",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "1.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "alpha",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'sentence-transformers/all-MiniLM-L6-v2'",
+          "kind": "KEYWORD_ONLY",
+          "name": "embedding_model_name",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "256",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_seq_tokens",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'cpu'",
+          "kind": "KEYWORD_ONLY",
+          "name": "device",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_text_classifier"
+    },
+    "fit_topics": {
+      "doc_summary": "Fit an unsupervised topic model on Session train documents.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "fit_topics",
+      "parameters": [
+        {
+          "annotation": "str",
+          "default": "'nmf'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "6",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_topics",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "top_terms",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "20000",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_features",
+          "required": false
+        },
+        {
+          "annotation": "int | float",
+          "default": "2",
+          "kind": "KEYWORD_ONLY",
+          "name": "min_df",
+          "required": false
+        },
+        {
+          "annotation": "int | float",
+          "default": "0.95",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_df",
+          "required": false
+        },
+        {
+          "annotation": "tuple[int, int]",
+          "default": "(1, 1)",
+          "kind": "KEYWORD_ONLY",
+          "name": "ngram_range",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "normalize_steps",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopwords",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "'en'",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopword_language",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "stem",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "300",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_iter",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "Session.fit_topics"
     },
     "fit_torch": {
       "doc_summary": "Train an ``nn.Module`` on the train Torch loader.",
@@ -5252,6 +6950,14 @@
       ],
       "qualname": "Session.fit_voting"
     },
+    "forecast_capability_matrix": {
+      "doc_summary": "Honest capability matrix for forecasting backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "forecast_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.forecast_capability_matrix"
+    },
     "generate_forecast": {
       "doc_summary": "Generate an H-step forecast from the train-fitted plan (no refit).",
       "is_classmethod": false,
@@ -5282,8 +6988,16 @@
       ],
       "qualname": "Session.generate_forecast"
     },
+    "graph_capability_matrix": {
+      "doc_summary": "Honest capability matrix for graph ML backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "graph_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.graph_capability_matrix"
+    },
     "grid_search": {
-      "doc_summary": "Grid-search estimator params and/or fold-local recipe knobs.",
+      "doc_summary": "Try every combination of the settings you list, and keep the best.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "grid_search",
@@ -5369,7 +7083,7 @@
       "qualname": "Session.grid_search"
     },
     "group_split": {
-      "doc_summary": "Create a group-aware train/test(/validation) split.",
+      "doc_summary": "Split by entity, so no customer appears on both sides.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "group_split",
@@ -5406,7 +7120,7 @@
       "qualname": "Session.group_split"
     },
     "handle_outliers": {
-      "doc_summary": "Screen or treat numeric outliers using train-fitted fences.",
+      "doc_summary": "Find extreme numeric values, and decide what to do about them.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "handle_outliers",
@@ -5450,7 +7164,7 @@
       "qualname": "Session.handle_outliers"
     },
     "head": {
-      "doc_summary": "Preview the first rows.",
+      "doc_summary": "Look at the first few rows.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "head",
@@ -5466,7 +7180,7 @@
       "qualname": "Session.head"
     },
     "impute": {
-      "doc_summary": "Fit imputation on train and transform the full dataset.",
+      "doc_summary": "Fill in missing values, using only what the training rows reveal.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "impute",
@@ -5496,7 +7210,7 @@
       "qualname": "Session.impute"
     },
     "ingest": {
-      "doc_summary": "Create a session by ingesting a tabular source.",
+      "doc_summary": "Create a session by loading a table, and inspect it while loading.",
       "is_classmethod": true,
       "is_staticmethod": false,
       "name": "ingest",
@@ -5547,7 +7261,7 @@
       "qualname": "Session.ingest"
     },
     "inject_split": {
-      "doc_summary": "Inject externally defined partition indices.",
+      "doc_summary": "Adopt a split that was decided outside BuildML.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "inject_split",
@@ -5575,6 +7289,58 @@
         }
       ],
       "qualname": "Session.inject_split"
+    },
+    "interpret_text_prediction": {
+      "doc_summary": "Explain document decisions with per-token contributions.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "interpret_text_prediction",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "target_class",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "12",
+          "kind": "KEYWORD_ONLY",
+          "name": "top_k",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "10",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_documents",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_global",
+          "required": false
+        }
+      ],
+      "qualname": "Session.interpret_text_prediction"
+    },
+    "kg_capability_matrix": {
+      "doc_summary": "Honest capability matrix for knowledge-graph backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "kg_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.kg_capability_matrix"
     },
     "label_rows": {
       "doc_summary": "Incorporate user-provided labels on train-pool rows; optionally refit.",
@@ -5606,8 +7372,31 @@
       ],
       "qualname": "Session.label_rows"
     },
+    "learn": {
+      "doc_summary": "Teach a concept, an operation, or a term \u2014 and say what to read first.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "learn",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "topic",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'beginner'",
+          "kind": "KEYWORD_ONLY",
+          "name": "level",
+          "required": false
+        }
+      ],
+      "qualname": "Session.learn"
+    },
     "learning_curve": {
-      "doc_summary": "Compute learning curves on the training partition.",
+      "doc_summary": "Find out whether more data would help, before you go and get it.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "learning_curve",
@@ -5651,7 +7440,7 @@
       "qualname": "Session.learning_curve"
     },
     "list_transforms": {
-      "doc_summary": "Return registered custom transforms in name order.",
+      "doc_summary": "List the custom transforms currently registered.",
       "is_classmethod": true,
       "is_staticmethod": false,
       "name": "list_transforms",
@@ -5883,7 +7672,7 @@
       "qualname": "Session.load_metalearning_bundle"
     },
     "load_model": {
-      "doc_summary": "Load a previously saved fitted estimator bundle into this session.",
+      "doc_summary": "Load an estimator bundle written by :meth:`save_model`.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "load_model",
@@ -5914,6 +7703,22 @@
       ],
       "qualname": "Session.load_multitask_bundle"
     },
+    "load_nlp_bundle": {
+      "doc_summary": "Restore a saved text plan, and topic plan, into this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "load_nlp_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.load_nlp_bundle"
+    },
     "load_online_bundle": {
       "doc_summary": "Load an online-learning bundle into this Session.",
       "is_classmethod": false,
@@ -5931,7 +7736,7 @@
       "qualname": "Session.load_online_bundle"
     },
     "load_pipeline": {
-      "doc_summary": "Load a pipeline bundle (estimator + preprocess plans + model card).",
+      "doc_summary": "Restore a saved model together with its preprocessing.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "load_pipeline",
@@ -6846,15 +8651,31 @@
       "qualname": "Session.make_torch_loaders"
     },
     "metadata": {
-      "doc_summary": "Session/dataset metadata snapshot.",
+      "doc_summary": "Take a serialisable snapshot of everything the session knows.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "metadata",
       "parameters": [],
       "qualname": "Session.metadata"
     },
+    "metalearning_capability_matrix": {
+      "doc_summary": "Honest capability matrix for meta-learning backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "metalearning_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.metalearning_capability_matrix"
+    },
+    "multitask_capability_matrix": {
+      "doc_summary": "Honest capability matrix for multi-task learning backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "multitask_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.multitask_capability_matrix"
+    },
     "nested_cv_score": {
-      "doc_summary": "Outer-loop estimate after inner hyperparameter / recipe-knob search.",
+      "doc_summary": "Estimate how well your *tuning procedure* generalises, not just one model.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "nested_cv_score",
@@ -7137,8 +8958,24 @@
       ],
       "qualname": "Session.nested_cv_torch"
     },
+    "nlp_capability_matrix": {
+      "doc_summary": "Honest capability matrix for NLP backends and task surfaces.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "nlp_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.nlp_capability_matrix"
+    },
+    "online_capability_matrix": {
+      "doc_summary": "Honest capability matrix for online / incremental learning backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "online_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.online_capability_matrix"
+    },
     "open_eda_dashboard": {
-      "doc_summary": "Alias for :meth:`eda_app`.",
+      "doc_summary": "Open the interactive EDA studio \u2014 an alias for :meth:`eda_app`.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "open_eda_dashboard",
@@ -7202,8 +9039,16 @@
       ],
       "qualname": "Session.open_eda_dashboard"
     },
+    "optimize_capability_matrix": {
+      "doc_summary": "Alias for :meth:`decision_capability_matrix`.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "optimize_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.optimize_capability_matrix"
+    },
     "optuna_search": {
-      "doc_summary": "Optuna TPE search with leakage-safe train-fold CV.",
+      "doc_summary": "Search adaptively, letting each trial learn from the ones before it.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "optuna_search",
@@ -7363,7 +9208,7 @@
       "qualname": "Session.partial_fit_online"
     },
     "partition": {
-      "doc_summary": "Return a copy of rows for a named partition.",
+      "doc_summary": "Pull out the rows belonging to one partition, as a DataFrame.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "partition",
@@ -7379,7 +9224,7 @@
       "qualname": "Session.partition"
     },
     "predict": {
-      "doc_summary": "Predict labels or probabilities on a partition.",
+      "doc_summary": "Run the fitted model over one partition and return its predictions.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict",
@@ -7427,6 +9272,13 @@
           "kind": "KEYWORD_ONLY",
           "name": "return_traces",
           "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
         }
       ],
       "qualname": "Session.predict_cbr"
@@ -7438,6 +9290,13 @@
       "name": "predict_federated",
       "parameters": [
         {
+          "annotation": "FederatedBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
+        {
           "annotation": "PartitionName | Literal['all']",
           "default": "'test'",
           "kind": "KEYWORD_ONLY",
@@ -7448,7 +9307,7 @@
       "qualname": "Session.predict_federated"
     },
     "predict_from_pipeline": {
-      "doc_summary": "Score a frame through a saved pipeline bundle in one call.",
+      "doc_summary": "Score new rows through a saved bundle, in one call.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "predict_from_pipeline",
@@ -7772,8 +9631,31 @@
       ],
       "qualname": "Session.predict_tda"
     },
+    "predict_text": {
+      "doc_summary": "Score a partition with the train-fitted text plan.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "predict_text",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "return_probabilities",
+          "required": false
+        }
+      ],
+      "qualname": "Session.predict_text"
+    },
     "prepare_design_matrix": {
-      "doc_summary": "Project/sample columns via the active engine before sklearn materialize.",
+      "doc_summary": "Narrow the data in the engine before pulling it into memory.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "prepare_design_matrix",
@@ -7846,6 +9728,58 @@
       ],
       "qualname": "Session.prepare_tensorrt_export"
     },
+    "probabilistic_capability_matrix": {
+      "doc_summary": "Honest capability matrix for probabilistic prediction backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "probabilistic_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.probabilistic_capability_matrix"
+    },
+    "profile_text_corpus": {
+      "doc_summary": "Profile a text column and screen the split for text contamination.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "profile_text_corpus",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "25",
+          "kind": "KEYWORD_ONLY",
+          "name": "top_tokens",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.9",
+          "kind": "KEYWORD_ONLY",
+          "name": "near_duplicate_threshold",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "detect_languages",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopword_language",
+          "required": false
+        }
+      ],
+      "qualname": "Session.profile_text_corpus"
+    },
     "query_kg": {
       "doc_summary": "Symbolic neighbors / path / typed query over the train KG.",
       "is_classmethod": false,
@@ -7904,8 +9838,16 @@
       ],
       "qualname": "Session.query_kg"
     },
+    "rag_capability_matrix": {
+      "doc_summary": "Honest capability matrix for RAG embed / retrieve stacks.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "rag_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.rag_capability_matrix"
+    },
     "rag_chunk": {
-      "doc_summary": "Chunk the active RAG corpus with size + overlap (requires ``buildml[rag]``).",
+      "doc_summary": "Chunk the active RAG corpus (fixed or recursive strategy).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "rag_chunk",
@@ -7922,6 +9864,13 @@
           "default": "64",
           "kind": "KEYWORD_ONLY",
           "name": "overlap",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'fixed'",
+          "kind": "KEYWORD_ONLY",
+          "name": "strategy",
           "required": false
         }
       ],
@@ -7951,14 +9900,14 @@
       "qualname": "Session.rag_delete"
     },
     "rag_embed_and_index": {
-      "doc_summary": "Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).",
+      "doc_summary": "Embed chunks and build the default NumPy cosine index.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "rag_embed_and_index",
       "parameters": [
         {
           "annotation": "Any | None",
-          "default": "None",
+          "default": "'auto'",
           "kind": "KEYWORD_ONLY",
           "name": "embedder",
           "required": false
@@ -7975,6 +9924,13 @@
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "chunk_overlap",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "chunk_strategy",
           "required": false
         },
         {
@@ -8250,7 +10206,7 @@
       "qualname": "Session.rag_upsert"
     },
     "randomized_search": {
-      "doc_summary": "Randomized search over estimator params and/or recipe knobs.",
+      "doc_summary": "Sample settings at random, which usually beats an exhaustive grid.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "randomized_search",
@@ -8375,12 +10331,27 @@
           "kind": "KEYWORD_ONLY",
           "name": "k",
           "required": false
+        },
+        {
+          "annotation": "RankerBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
         }
       ],
       "qualname": "Session.rank"
     },
+    "ranking_capability_matrix": {
+      "doc_summary": "Honest capability matrix for tabular LTR backends and methods.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "ranking_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.ranking_capability_matrix"
+    },
     "reattach": {
-      "doc_summary": "Replace this session state from a checkpoint path (instance helper).",
+      "doc_summary": "Replace this session's state from a checkpoint, in place.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "reattach",
@@ -8439,8 +10410,16 @@
       ],
       "qualname": "Session.recommend"
     },
+    "recommender_capability_matrix": {
+      "doc_summary": "Honest capability matrix for recommender-system backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "recommender_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.recommender_capability_matrix"
+    },
     "reduce_dimensions": {
-      "doc_summary": "Fit dimensionality reduction on train and replace numeric columns.",
+      "doc_summary": "Compress many numeric columns into a few informative ones.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "reduce_dimensions",
@@ -8453,7 +10432,7 @@
           "required": false
         },
         {
-          "annotation": "Literal['pca']",
+          "annotation": "Literal['pca', 'umap', 'tsne']",
           "default": "'pca'",
           "kind": "KEYWORD_ONLY",
           "name": "method",
@@ -8478,6 +10457,41 @@
           "default": "'pc'",
           "kind": "KEYWORD_ONLY",
           "name": "prefix",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "15",
+          "kind": "KEYWORD_ONLY",
+          "name": "umap_n_neighbors",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.1",
+          "kind": "KEYWORD_ONLY",
+          "name": "umap_min_dist",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "30.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "tsne_perplexity",
+          "required": false
+        },
+        {
+          "annotation": "str | float",
+          "default": "'auto'",
+          "kind": "KEYWORD_ONLY",
+          "name": "tsne_learning_rate",
           "required": false
         }
       ],
@@ -8515,7 +10529,7 @@
       "qualname": "Session.refute_causal"
     },
     "register_transform": {
-      "doc_summary": "Register a custom train-fit transform for :meth:`apply_custom_transform`.",
+      "doc_summary": "Teach BuildML a preprocessing step of your own.",
       "is_classmethod": true,
       "is_staticmethod": false,
       "name": "register_transform",
@@ -8580,7 +10594,7 @@
       "qualname": "Session.register_transform"
     },
     "resample": {
-      "doc_summary": "Resample the **train** partition only (requires ``buildml[imbalanced]``).",
+      "doc_summary": "Rebalance the training classes so the rare one is not ignored.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "resample",
@@ -8610,7 +10624,7 @@
       "qualname": "Session.resample"
     },
     "resample_strategies": {
-      "doc_summary": "List imbalance resampling strategies and when to use them.",
+      "doc_summary": "List the available resampling methods and when each one fits.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "resample_strategies",
@@ -8680,9 +10694,24 @@
           "kind": "KEYWORD_ONLY",
           "name": "k",
           "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
         }
       ],
       "qualname": "Session.retrieve_cases"
+    },
+    "rl_capability_matrix": {
+      "doc_summary": "Honest capability matrix for imitation + RL backends and algorithms.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "rl_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.rl_capability_matrix"
     },
     "run_automl": {
       "doc_summary": "Search model families and fold-local preprocess strategies on train.",
@@ -8690,6 +10719,13 @@
       "is_staticmethod": false,
       "name": "run_automl",
       "parameters": [
+        {
+          "annotation": "AutoMLBackend",
+          "default": "'native'",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
+        },
         {
           "annotation": "Literal['classification', 'regression', 'auto']",
           "default": "'auto'",
@@ -8762,9 +10798,23 @@
         },
         {
           "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_industry_families",
+          "required": false
+        },
+        {
+          "annotation": "bool",
           "default": "False",
           "kind": "KEYWORD_ONLY",
           "name": "include_ensembles",
+          "required": false
+        },
+        {
+          "annotation": "EnsembleMode",
+          "default": "'voting'",
+          "kind": "KEYWORD_ONLY",
+          "name": "ensemble_mode",
           "required": false
         },
         {
@@ -8815,6 +10865,13 @@
           "kind": "KEYWORD_ONLY",
           "name": "budget",
           "required": false
+        },
+        {
+          "annotation": "float | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "time_budget",
+          "required": false
         }
       ],
       "qualname": "Session.run_automl"
@@ -8858,6 +10915,13 @@
           "default": "'_synthetic'",
           "kind": "KEYWORD_ONLY",
           "name": "provenance_column",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "validate",
           "required": false
         }
       ],
@@ -9095,7 +11159,7 @@
       "qualname": "Session.save_metalearning_bundle"
     },
     "save_model": {
-      "doc_summary": "Persist the last fitted estimator bundle.",
+      "doc_summary": "Save the fitted estimator and the feature contract it expects.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_model",
@@ -9126,6 +11190,22 @@
       ],
       "qualname": "Session.save_multitask_bundle"
     },
+    "save_nlp_bundle": {
+      "doc_summary": "Persist the active NLP plan(s) as ``buildml.nlp_bundle.v1``.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "save_nlp_bundle",
+      "parameters": [
+        {
+          "annotation": "str | Path",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "path",
+          "required": true
+        }
+      ],
+      "qualname": "Session.save_nlp_bundle"
+    },
     "save_online_bundle": {
       "doc_summary": "Persist the active plan as ``buildml.online_bundle.v1``.",
       "is_classmethod": false,
@@ -9143,7 +11223,7 @@
       "qualname": "Session.save_online_bundle"
     },
     "save_pipeline": {
-      "doc_summary": "Persist fitted preprocess plans, estimator, and a model card.",
+      "doc_summary": "Save everything needed to score new data: model, prep, and card.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_pipeline",
@@ -9269,7 +11349,7 @@
       "qualname": "Session.save_semisupervised_bundle"
     },
     "save_ssl_bundle": {
-      "doc_summary": "Persist the active SSL plan as ``buildml.selfsupervised_bundle.v1``.",
+      "doc_summary": "Persist the active SSL plan as ``buildml.ssl_bundle.v2``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_ssl_bundle",
@@ -9317,7 +11397,7 @@
       "qualname": "Session.save_synthetic_bundle"
     },
     "save_tda_bundle": {
-      "doc_summary": "Persist the active plan as ``buildml.tda_bundle.v1``.",
+      "doc_summary": "Persist the active plan as ``buildml.tda_bundle.v2``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_tda_bundle",
@@ -9349,7 +11429,7 @@
       "qualname": "Session.save_torch_bundle"
     },
     "save_unsupervised_bundle": {
-      "doc_summary": "Persist the active cluster plan as ``buildml.unsupervised_bundle.v1``.",
+      "doc_summary": "Persist the active cluster plan as ``buildml.unsupervised_bundle.v2``.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "save_unsupervised_bundle",
@@ -9365,7 +11445,7 @@
       "qualname": "Session.save_unsupervised_bundle"
     },
     "scale": {
-      "doc_summary": "Fit scaling on train and transform the full dataset.",
+      "doc_summary": "Put numeric columns on a comparable footing.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "scale",
@@ -9555,7 +11635,7 @@
       "qualname": "Session.search_torch"
     },
     "select_features": {
-      "doc_summary": "Select a feature subset using train-only scores or model reliance.",
+      "doc_summary": "Keep the columns that carry signal and drop the rest.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "select_features",
@@ -9604,6 +11684,14 @@
         }
       ],
       "qualname": "Session.select_features"
+    },
+    "semisupervised_capability_matrix": {
+      "doc_summary": "Honest capability matrix for semi-supervised backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "semisupervised_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.semisupervised_capability_matrix"
     },
     "serve_bundle": {
       "doc_summary": "Launch managed local serving (``buildml[serve]``; optional API-key auth).",
@@ -9729,7 +11817,7 @@
       "qualname": "Session.set_graph"
     },
     "set_roles": {
-      "doc_summary": "Assign column roles on the current dataset.",
+      "doc_summary": "Declare what each column means, so later steps can act on it.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "set_roles",
@@ -9745,7 +11833,7 @@
       "qualname": "Session.set_roles"
     },
     "split": {
-      "doc_summary": "Create a train/test (optional validation) split.",
+      "doc_summary": "Randomly hold back rows so you can measure honest performance.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "split",
@@ -9781,6 +11869,14 @@
       ],
       "qualname": "Session.split"
     },
+    "ssl_capability_matrix": {
+      "doc_summary": "Honest capability matrix for self-supervised backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "ssl_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.ssl_capability_matrix"
+    },
     "suggest_query": {
       "doc_summary": "Suggest unlabeled *train* indices for human labeling (no oracle).",
       "is_classmethod": false,
@@ -9805,23 +11901,112 @@
       "qualname": "Session.suggest_query"
     },
     "summarize_history": {
-      "doc_summary": "Summarize operation history and list unresolved risks.",
+      "doc_summary": "Condense what this session did, and flag what looks risky.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "summarize_history",
       "parameters": [],
       "qualname": "Session.summarize_history"
     },
+    "summarize_text": {
+      "doc_summary": "Build extractive summaries for a partition's documents.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "summarize_text",
+      "parameters": [
+        {
+          "annotation": "PartitionName | Literal['all']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'textrank'",
+          "kind": "KEYWORD_ONLY",
+          "name": "method",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "text_column",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "3",
+          "kind": "KEYWORD_ONLY",
+          "name": "n_sentences",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "25",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_documents",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "200",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_input_sentences",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "'en'",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopword_language",
+          "required": false
+        },
+        {
+          "annotation": "list[str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "stopwords",
+          "required": false
+        }
+      ],
+      "qualname": "Session.summarize_text"
+    },
+    "symbolic_capability_matrix": {
+      "doc_summary": "Honest capability matrix for symbolic / neuro-symbolic backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "symbolic_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.symbolic_capability_matrix"
+    },
     "sync_native": {
-      "doc_summary": "Rebuild ``Dataset.native`` from the current Pandas frame (eager).",
+      "doc_summary": "Rebuild the engine's table from the current Pandas frame.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "sync_native",
       "parameters": [],
       "qualname": "Session.sync_native"
     },
+    "synthetic_capability_matrix": {
+      "doc_summary": "Honest capability matrix for synthetic backends and eval paths.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "synthetic_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.synthetic_capability_matrix"
+    },
+    "tda_capability_matrix": {
+      "doc_summary": "Honest capability matrix for native vs giotto TDA backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "tda_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.tda_capability_matrix"
+    },
     "text_features": {
-      "doc_summary": "Fit text vectorizers on train and expand columns into numeric features.",
+      "doc_summary": "Turn free-text columns into numeric features.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "text_features",
@@ -9865,7 +12050,7 @@
       "qualname": "Session.text_features"
     },
     "time_split": {
-      "doc_summary": "Create a chronological train/test(/validation) split.",
+      "doc_summary": "Train on the past and test on the future, as deployment will.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "time_split",
@@ -9894,8 +12079,16 @@
       ],
       "qualname": "Session.time_split"
     },
+    "timeseries_capability_matrix": {
+      "doc_summary": "Honest capability matrix for time-series analysis backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "timeseries_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.timeseries_capability_matrix"
+    },
     "to_engine": {
-      "doc_summary": "Materialize the current dataset in a selected engine's native type.",
+      "doc_summary": "Hand back the data as the chosen engine's own object.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "to_engine",
@@ -9911,7 +12104,7 @@
       "qualname": "Session.to_engine"
     },
     "to_pandas": {
-      "doc_summary": "Escape hatch: copy the current dataset as a Pandas DataFrame.",
+      "doc_summary": "Take the data out as a plain Pandas DataFrame.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "to_pandas",
@@ -9919,7 +12112,7 @@
       "qualname": "Session.to_pandas"
     },
     "to_parquet": {
-      "doc_summary": "Write the current dataset to Parquet.",
+      "doc_summary": "Write the current data to a Parquet file.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "to_parquet",
@@ -10035,12 +12228,165 @@
           "kind": "KEYWORD_ONLY",
           "name": "partition",
           "required": false
+        },
+        {
+          "annotation": "TdaBackend | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "backend",
+          "required": false
         }
       ],
       "qualname": "Session.transform_tda"
     },
+    "ts_decompose": {
+      "doc_summary": "STL/classical decomposition on train-only scope (default).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "ts_decompose",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "target_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "time_column",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'train'",
+          "kind": "KEYWORD_ONLY",
+          "name": "scope",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "seasonal_period",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "decompose_method",
+          "required": false
+        }
+      ],
+      "qualname": "Session.ts_decompose"
+    },
+    "ts_diagnostics": {
+      "doc_summary": "ACF/PACF and ADF/KPSS stationarity tests.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "ts_diagnostics",
+      "parameters": [
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "target_column",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "time_column",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'train'",
+          "kind": "KEYWORD_ONLY",
+          "name": "scope",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "acf_lags",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "40",
+          "kind": "KEYWORD_ONLY",
+          "name": "pacf_lags",
+          "required": false
+        }
+      ],
+      "qualname": "Session.ts_diagnostics"
+    },
+    "tune_anomaly_threshold": {
+      "doc_summary": "Tune anomaly threshold on validation labels (never test by default).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "tune_anomaly_threshold",
+      "parameters": [
+        {
+          "annotation": "PartitionName",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "label_column",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "positive_label",
+          "required": false
+        },
+        {
+          "annotation": "ThresholdTuningMetric",
+          "default": "'f1'",
+          "kind": "KEYWORD_ONLY",
+          "name": "metric",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "2.0",
+          "kind": "KEYWORD_ONLY",
+          "name": "fbeta",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_test_tuning",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "update_plan",
+          "required": false
+        }
+      ],
+      "qualname": "Session.tune_anomaly_threshold"
+    },
     "tune_threshold": {
-      "doc_summary": "Sweep binary decision thresholds with precision/recall/F1 and optional costs.",
+      "doc_summary": "Choose the cut-off that turns a probability into a decision.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "tune_threshold",
@@ -10097,8 +12443,16 @@
       ],
       "qualname": "Session.tune_threshold"
     },
+    "unsupervised_capability_matrix": {
+      "doc_summary": "Honest capability matrix for clustering / reduction backends.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "unsupervised_capability_matrix",
+      "parameters": [],
+      "qualname": "Session.unsupervised_capability_matrix"
+    },
     "walkthrough": {
-      "doc_summary": "Build a workflow walkthrough from resolver state and history.",
+      "doc_summary": "Narrate everything this session did, and why.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "walkthrough",
@@ -10114,7 +12468,7 @@
       "qualname": "Session.walkthrough"
     },
     "with_engine": {
-      "doc_summary": "Select a compute engine and attach a native handle when applicable.",
+      "doc_summary": "Switch the compute engine backing the data.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "with_engine",
@@ -10130,7 +12484,7 @@
       "qualname": "Session.with_engine"
     },
     "with_mode": {
-      "doc_summary": "Record a mode override on the dataset metadata.",
+      "doc_summary": "Set whether data is held in memory or kept lazy.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "with_mode",
@@ -10146,7 +12500,7 @@
       "qualname": "Session.with_mode"
     },
     "workflow": {
-      "doc_summary": "Resolve every public operation against current workflow state.",
+      "doc_summary": "List every operation, with what it needs and whether it can run now.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "workflow",

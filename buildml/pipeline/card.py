@@ -1,4 +1,23 @@
-"""Model cards summarizing fitted pipeline artifacts."""
+"""Record what a model is, so the artifact can be understood without you.
+
+A saved estimator is opaque. Six months later, nobody can tell from the file
+what it was trained on, what it scored, which transforms it assumes, or whether
+the number it returns is a probability or a count. The questions get asked
+anyway, usually urgently, and the usual answer is to retrain from scratch.
+
+A model card is written at save time and answers them: the task, the estimator,
+the features and target, the metrics that were attached, a digest of the
+operations that produced it, and explicit notes about what the artifact is not.
+
+Cards are written twice, as JSON for tooling and Markdown for people. The
+Markdown is not decoration — the audience for a model card is frequently someone
+without a Python environment, and a card nobody can open explains nothing.
+
+See Also
+--------
+buildml.pipeline.bundle : Where cards are written and read.
+buildml.pipeline.contract : The machine-checkable half of the same idea.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +33,15 @@ from buildml.core.errors import ValidationError
 
 @dataclass(slots=True)
 class ModelCard:
-    """Structured card for a persisted preprocess+estimator bundle.
+    """What a saved model is, what it scored, and what it does not cover.
+
+    Descriptive, not enforcing — nothing here is checked at score time, which is
+    the schema contract's job. The card is for the human trying to decide
+    whether an artifact can be trusted for a purpose.
+
+    The ``notes`` field is the part people skip and should not. It is where the
+    limitations live: that a bundle is not a checkpoint, that resample plans are
+    not replayed, that reload needs a compatible feature contract.
 
     Parameters
     ----------
@@ -40,6 +67,21 @@ class ModelCard:
         Save metadata.
     notes:
         Free-form limitations or operator notes.
+
+    Notes
+    -----
+    **An empty ``metrics`` is a real signal.** It means nothing was attached at
+    save time, so the artifact carries no stated performance at all — worth
+    treating as a reason to re-evaluate before deploying, not as an oversight to
+    ignore.
+
+    **``history_summary`` is a digest, not provenance.** It keeps the last forty
+    operations with their identifiers, enough to see the shape of the workflow
+    and not enough to reproduce it. The full history belongs in a checkpoint.
+
+    See Also
+    --------
+    build_model_card : Producing one from a fit result.
     """
 
     title: str
@@ -58,6 +100,20 @@ class ModelCard:
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the card to JSON-safe plain data for ``model_card.json``.
+
+        Every collection is copied rather than referenced, so the written record
+        cannot change if the card is mutated afterwards.
+
+        Returns
+        -------
+        dict
+            All fields, with tuples as lists and nested mappings copied.
+
+        See Also
+        --------
+        from_dict : The inverse.
+        """
         return {
             "title": self.title,
             "task": self.task,
@@ -77,6 +133,36 @@ class ModelCard:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> ModelCard:
+        """Rebuild a card from stored JSON, tolerating older or partial records.
+
+        Deliberately forgiving about the descriptive fields — a card written by
+        an earlier version may lack ``lineage`` or ``notes``, and refusing to
+        read it would lose the information it does carry.
+
+        Parameters
+        ----------
+        payload:
+            The parsed contents of ``model_card.json``.
+
+        Returns
+        -------
+        ModelCard
+            The reconstructed card, with absent optional fields defaulted empty.
+
+        Raises
+        ------
+        KeyError
+            If ``task``, ``estimator_name``, or ``target_column`` is missing.
+            These identify what the model does; a card without them describes
+            nothing and is better rejected than half-read.
+        ValueError
+            If ``n_train_rows`` or a metric value cannot be converted to a
+            number.
+
+        See Also
+        --------
+        to_dict : The inverse.
+        """
         return cls(
             title=str(payload.get("title", "model-card")),
             task=str(payload["task"]),
@@ -98,6 +184,33 @@ class ModelCard:
         )
 
     def to_markdown(self) -> str:
+        """Render the card as Markdown, stating absences as plainly as contents.
+
+        Where a section has nothing to show, it says so — "No evaluation metrics
+        were attached at save time" rather than an empty heading. A blank
+        section reads like a formatting glitch; a sentence reads like a fact,
+        and in this file the absences are facts worth knowing.
+
+        The preprocessing section lists which plans are present *and* which are
+        absent, for the same reason: knowing a model was trained without scaling
+        is as useful as knowing it was trained with it.
+
+        Returns
+        -------
+        str
+            The card as Markdown, suitable for ``model_card.md``, a pull request
+            comment, or a wiki page.
+
+        Notes
+        -----
+        **Metrics are formatted to six decimal places.** Enough to distinguish
+        close models without implying more precision than a metric on a finite
+        test set actually has.
+
+        See Also
+        --------
+        save_model_card : Writing this alongside the JSON.
+        """
         lines = [
             f"# {self.title}",
             "",
@@ -170,7 +283,61 @@ def build_model_card(
     notes: list[str] | None = None,
     lineage: dict[str, Any] | None = None,
 ) -> ModelCard:
-    """Construct a model card from a fitted result and optional Session context."""
+    """Assemble a card from a fit result and whatever context is available.
+
+    Called automatically by :func:`~buildml.pipeline.bundle.save_pipeline_bundle`
+    when no card is supplied, so every bundle carries one even if nothing was
+    passed. Call it directly to add notes or a lineage record.
+
+    Two details are handled for you. A scikit-learn ``Pipeline`` is named by its
+    steps rather than reported as the useless ``'Pipeline'``, so the card says
+    what is actually inside it. And the default notes state the limitations that
+    matter — a bundle is not a checkpoint, reload needs a compatible contract,
+    resample plans are not replayed at inference.
+
+    Parameters
+    ----------
+    fit_result:
+        The fitted result, read for its estimator, task, feature columns,
+        target, and training row count. Typed loosely to avoid a circular
+        import.
+    dataset_schema:
+        Column types at training time.
+    preprocess_summary:
+        Which plans were included, as dictionaries keyed by step name. Both
+        present and absent entries are rendered.
+    history:
+        The operation log. The last forty entries are digested.
+    metrics:
+        Scores by partition. Worth supplying — a card without metrics states no
+        performance at all.
+    title:
+        A display name. Defaults to one derived from the estimator.
+    notes:
+        Replaces the default limitations entirely, so include them yourself if
+        you override. Add deployment caveats here: the population the model was
+        trained on, known blind spots, the date the data ends.
+    lineage:
+        Replaces the default artifact relationships.
+
+    Returns
+    -------
+    ModelCard
+        The card, stamped with the current UTC time and BuildML version.
+
+    Notes
+    -----
+    **``notes`` and ``lineage`` replace rather than extend the defaults.** If
+    you pass notes, the standard limitations disappear from the card unless you
+    repeat them.
+
+    **The timestamp is UTC and ISO 8601**, so cards from different machines sort
+    and compare correctly.
+
+    See Also
+    --------
+    ModelCard : What ends up on the card.
+    """
     estimator = fit_result.estimator
     estimator_name = type(estimator).__name__
     if hasattr(estimator, "named_steps"):
@@ -209,7 +376,34 @@ def build_model_card(
 
 
 def save_model_card(path: str | Path, card: ModelCard) -> Path:
-    """Write ``model_card.json`` and ``model_card.md`` under ``path``."""
+    """Write the card twice, as JSON for tooling and Markdown for people.
+
+    Both files come from the same object, so they cannot disagree. The JSON is
+    sorted and indented, which keeps a card diffable — two versions of a model
+    can be compared line by line in review.
+
+    Parameters
+    ----------
+    path:
+        The directory to write into, created if missing. Normally the bundle
+        root, so the card sits beside the model.
+    card:
+        The card to write.
+
+    Returns
+    -------
+    Path
+        The directory written to.
+
+    Raises
+    ------
+    OSError
+        If the directory cannot be created or either file written.
+
+    See Also
+    --------
+    load_model_card : Reading the JSON back.
+    """
     root = Path(path)
     root.mkdir(parents=True, exist_ok=True)
     json_path = root / "model_card.json"
@@ -220,7 +414,42 @@ def save_model_card(path: str | Path, card: ModelCard) -> Path:
 
 
 def load_model_card(path: str | Path) -> ModelCard:
-    """Load a model card from a bundle directory or JSON file."""
+    """Read a card, given either the bundle directory or the JSON file itself.
+
+    Accepting both saves callers a join. A path ending in ``.json`` is read
+    directly; anything else is treated as a directory containing
+    ``model_card.json``.
+
+    Parameters
+    ----------
+    path:
+        The bundle directory, or the card file.
+
+    Returns
+    -------
+    ModelCard
+        The loaded card.
+
+    Raises
+    ------
+    ValidationError
+        If no card file exists at the resolved location. Named explicitly in the
+        message, since the two accepted forms make it easy to point at the
+        wrong one.
+    json.JSONDecodeError
+        If the file is not valid JSON.
+    KeyError
+        If the payload is missing a field the card cannot do without.
+
+    Notes
+    -----
+    **Only the JSON is read.** The Markdown is a rendering, not a source, and is
+    regenerated from the object on the next save.
+
+    See Also
+    --------
+    save_model_card : Writing it.
+    """
     root = Path(path)
     json_path = root if root.suffix.lower() == ".json" else root / "model_card.json"
     if not json_path.exists():

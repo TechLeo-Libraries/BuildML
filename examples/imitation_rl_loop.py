@@ -78,8 +78,41 @@ def main() -> None:
         print("gym", gfit.train_metrics)
         print("gym_eval", gym_session.evaluate_rl(n_episodes=10).metrics)
         gym_session.save_rl_bundle(Path("artifacts") / "rl_gym_demo_bundle")
+
+        tab_session = (
+            Session.ingest(frame)
+            .set_roles(
+                {
+                    "s0": "feature",
+                    "s1": "feature",
+                    "action": "target",
+                    "reward": "feature",
+                }
+            )
+            .split(test_size=0.2, validation_size=0.2, random_state=0)
+        )
+        tfit = tab_session.fit_rl(
+            mode="tabular_q",
+            algorithm="q_learning",
+            env_id="FrozenLake-v1",
+            n_episodes=2_000,
+            max_steps=100,
+            learning_rate=0.2,
+            gamma=0.99,
+            epsilon=1.0,
+            epsilon_min=0.05,
+            epsilon_decay=0.999,
+            random_state=0,
+        )
+        print("tabular_q", tfit.algorithm, tfit.train_metrics)
+        print("tabular_q_eval", tab_session.evaluate_rl(n_episodes=50).metrics)
+        print("tabular_q_scores", tab_session.act_rl(observations=[0, 1]).scores)
+        tab_session.save_rl_bundle(Path("artifacts") / "rl_tabular_demo_bundle")
     else:
-        print("gymnasium not installed; skip gym_reinforce (pip install 'buildml[rl]')")
+        print(
+            "gymnasium not installed; skip gym_reinforce / tabular_q "
+            "(pip install 'buildml[rl]')"
+        )
 
 
 if __name__ == "__main__":

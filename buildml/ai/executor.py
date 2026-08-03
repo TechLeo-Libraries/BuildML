@@ -1,4 +1,31 @@
-"""Propose-confirm-execute flow for AI operator."""
+"""Turn a proposed action into a real one, with a checkpoint in between.
+
+Nothing a model asks for runs immediately. A request becomes an
+:class:`ExecutorProposal` first — validated against the registry, annotated with
+what it will change and what to be careful about — and only then, if it is
+confirmed, does :func:`execute_tool` call the Session method and return an
+:class:`ExecutorResult`.
+
+The gap between the two is the point. It is where a person reads what is about
+to happen, and where the confirmation policy is enforced.
+
+Dispatch is also constrained. When a tool takes an estimator by name, the name
+is resolved through a fixed table of known scikit-learn classes rather than
+imported dynamically — a model naming an arbitrary import path gets an error,
+not an import.
+
+Notes
+-----
+**Failures come back as results, not exceptions.** An
+:class:`ExecutorResult` with ``executed=False`` and a populated ``error`` keeps
+an agent loop running and lets the model see what went wrong, which is usually
+enough for it to correct itself.
+
+See Also
+--------
+buildml.ai.tools : The allowlist and the policies.
+buildml.ai.planner : Executing many of these in sequence.
+"""
 
 from __future__ import annotations
 
@@ -127,7 +154,40 @@ def _resolve_estimator(estimator_arg: Any, hyperparameters: dict[str, Any]) -> A
 
 @dataclass(slots=True)
 class ExecutorProposal:
-    """A proposed tool execution awaiting confirmation."""
+    """A validated action, described, and waiting for a decision.
+
+    The call is real and permitted; nothing has run. This is what a person
+    reads before saying yes.
+
+    Attributes
+    ----------
+    tool_call:
+        What will run, exactly.
+    description:
+        The tool's own description of itself.
+    rationale:
+        Why this is being proposed.
+    expected_changes:
+        What will differ afterwards. **The field to read before confirming.**
+    requires_confirmation:
+        Whether approval is needed.
+    confirm_policy:
+        The tool's declared policy.
+    warnings:
+        Risks — that the operation is destructive, or that it will modify
+        Session state.
+
+    Notes
+    -----
+    **Validated does not mean advisable.** The tool is registered and the
+    arguments fit its schema; whether running it is a good idea is what the
+    confirmation step is for.
+
+    See Also
+    --------
+    propose_tool_execution : Produces this.
+    execute_tool : Consumes it.
+    """
 
     tool_call: ToolCall
     description: str
@@ -138,6 +198,17 @@ class ExecutorProposal:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the proposal as JSON-safe values.
+
+        For rendering a confirmation prompt, and for recording what an agent
+        asked to do whether or not it was allowed to.
+
+        Returns
+        -------
+        dict
+            The call, description, rationale, expected changes, confirmation
+            requirement, policy, and warnings.
+        """
         return {
             "tool_call": self.tool_call.to_dict(),
             "description": self.description,
@@ -151,7 +222,39 @@ class ExecutorProposal:
 
 @dataclass(slots=True)
 class ExecutorResult:
-    """Result from ai_execute: confirmed tool execution."""
+    """What came of a proposal: refused, failed, or done.
+
+    Attributes
+    ----------
+    tool_call:
+        What was attempted.
+    confirmed:
+        Whether approval was given.
+    executed:
+        Whether it ran. **The only field that means the Session changed.**
+    result:
+        Whatever the Session method returned. Held live, not serialised.
+    result_summary:
+        A short text form, safe to show a model or write to a log.
+    error:
+        What went wrong, or why it was refused.
+    egress_manifest:
+        What was disclosed, when the tool sent anything.
+    state_changes:
+        What changed, in words.
+
+    Notes
+    -----
+    **``confirmed`` without ``executed`` means it was approved and then
+    failed.** Neither flag set means it was refused before being attempted.
+
+    **``result`` can be a large live object** — a fitted model, a frame. Use
+    ``result_summary`` for anything that gets logged or sent onward.
+
+    See Also
+    --------
+    execute_tool : Produces this.
+    """
 
     tool_call: ToolCall
     confirmed: bool
@@ -163,6 +266,17 @@ class ExecutorResult:
     state_changes: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the outcome as JSON-safe values.
+
+        Carries the summary rather than ``result``, since the live object can
+        be a fitted model or a frame and has no business in a log.
+
+        Returns
+        -------
+        dict
+            The call, confirmation and execution flags, result summary, error,
+            egress manifest, and state changes.
+        """
         return {
             "tool_call": self.tool_call.to_dict(),
             "confirmed": self.confirmed,
@@ -179,9 +293,48 @@ def propose_tool_execution(
     arguments: dict[str, Any],
     registry: ToolRegistry,
 ) -> ExecutorProposal:
-    """Create a proposal for a tool execution.
+    """Validate a requested action and describe what it would do.
 
-    Validates the tool is in the registry and determines confirmation requirements.
+    The first half of propose-confirm-execute. Checks the tool is registered,
+    works out whether approval is needed, and attaches warnings for anything
+    destructive or state-changing. Nothing runs.
+
+    Parameters
+    ----------
+    tool_name:
+        Which tool. Rejected if unregistered.
+    arguments:
+        Its arguments.
+    registry:
+        The allowlist.
+
+    Returns
+    -------
+    ExecutorProposal
+        The validated call, described and annotated.
+
+    Raises
+    ------
+    ValidationError
+        If the tool is not in the registry. The message lists what is.
+
+    Notes
+    -----
+    **A destructive tool always requires confirmation**, whatever its declared
+    policy says.
+
+    Examples
+    --------
+    Propose, review, then decide::
+
+        proposal = propose_tool_execution("split", {"test_size": 0.2}, registry)
+        proposal.expected_changes
+        result = execute_tool(session, proposal, True, registry)
+
+    See Also
+    --------
+    execute_tool : The second half.
+    buildml.ai.tools.ToolRegistry.validate_tool_call : The check itself.
     """
     call = ToolCall(
         tool_name=tool_name,
@@ -218,9 +371,48 @@ def execute_tool(
     confirmed: bool,
     registry: ToolRegistry,
 ) -> ExecutorResult:
-    """Execute a proposed tool if confirmed.
+    """Run a proposal, if it is confirmed and still permitted.
 
-    Validates the tool is still in the registry and calls the Session method.
+    Re-validates against the registry before doing anything — the registry
+    could have changed between proposal and execution, and the check is cheap
+    relative to the consequence of skipping it. Then dispatches to the Session
+    method and summarises what came back.
+
+    Parameters
+    ----------
+    session:
+        What to execute against.
+    proposal:
+        The validated call.
+    confirmed:
+        Whether approval was given.
+    registry:
+        The allowlist, re-checked here.
+
+    Returns
+    -------
+    ExecutorResult
+        The outcome, whether it ran, and any error.
+
+    Raises
+    ------
+    ValidationError
+        If the tool is no longer registered.
+
+    Notes
+    -----
+    **Refusals and failures come back as results.** Only a call that has left
+    the registry raises; everything else — unconfirmed, destructive without
+    approval, failed mid-execution — is reported in the result so an agent
+    loop can continue and the model can see why.
+
+    **Destructive tools are checked twice**, at proposal and again here, so a
+    proposal built under different conditions cannot slip one through.
+
+    See Also
+    --------
+    propose_tool_execution : Building the proposal.
+    buildml.ai.planner.run_plan_step : This inside a plan.
     """
     call = proposal.tool_call
 
@@ -312,7 +504,14 @@ def _dispatch_tool(
 
     elif call.tool_name == "explain_operation":
         op = call.arguments.get("operation", "")
-        result = session.explain(op)
+        level = call.arguments.get("level", "beginner")
+        result = session.explain(op, level=level)
+        return result, ()
+
+    elif call.tool_name == "learn_concept":
+        topic = call.arguments.get("topic")
+        level = call.arguments.get("level", "beginner")
+        result = session.learn(topic, level=level)
         return result, ()
 
     elif call.tool_name == "workflow_status":
@@ -1544,6 +1743,205 @@ def _dispatch_tool(
         state_changes.append(f"Loaded CBR bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
+    elif call.tool_name == "nlp_capability_matrix":
+        return session.nlp_capability_matrix(), ()
+
+    elif call.tool_name == "profile_text_corpus":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "text_column",
+                "top_tokens",
+                "near_duplicate_threshold",
+                "detect_languages",
+                "stopword_language",
+            )
+            if key in call.arguments
+        }
+        result = session.profile_text_corpus(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "detect_language":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "backend", "text_column", "min_characters")
+            if key in call.arguments
+        }
+        result = session.detect_language(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "fit_text_classifier":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "backend",
+                "estimator",
+                "text_column",
+                "vectorizer",
+                "analyzer",
+                "max_features",
+                "min_df",
+                "max_df",
+                "stopword_language",
+                "stem",
+                "class_weight",
+                "C",
+                "alpha",
+                "random_state",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_text_classifier(**kwargs)
+        return (
+            f"Fitted text classifier backend={result.backend} "
+            f"estimator={result.estimator} n_train_rows={result.n_train_rows} "
+            f"vocabulary_size={result.vocabulary_size} "
+            f"classes={list(result.classes)}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "predict_text":
+        kwargs = {
+            key: call.arguments[key]
+            for key in ("partition", "return_probabilities")
+            if key in call.arguments
+        }
+        result = session.predict_text(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "evaluate_text_classifier":
+        kwargs = {
+            key: call.arguments[key] for key in ("partition",) if key in call.arguments
+        }
+        result = session.evaluate_text_classifier(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "interpret_text_prediction":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "partition",
+                "target_class",
+                "top_k",
+                "max_documents",
+                "include_global",
+            )
+            if key in call.arguments
+        }
+        result = session.interpret_text_prediction(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "fit_topics":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "method",
+                "n_topics",
+                "text_column",
+                "top_terms",
+                "min_df",
+                "max_df",
+                "stopword_language",
+                "random_state",
+            )
+            if key in call.arguments
+        }
+        result = session.fit_topics(**kwargs)
+        return (
+            f"Fitted topics method={result.method} n_topics={result.n_topics} "
+            f"n_train_rows={result.n_train_rows} "
+            f"mean_npmi_coherence={result.mean_coherence}",
+            tuple(state_changes),
+        )
+
+    elif call.tool_name == "assign_topics":
+        kwargs = {
+            key: call.arguments[key] for key in ("partition",) if key in call.arguments
+        }
+        result = session.assign_topics(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "extract_keyphrases":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "partition",
+                "method",
+                "text_column",
+                "top_n",
+                "max_phrase_words",
+                "per_document",
+                "max_documents",
+                "stopword_language",
+            )
+            if key in call.arguments
+        }
+        result = session.extract_keyphrases(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "analyze_sentiment":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "partition",
+                "backend",
+                "text_column",
+                "threshold",
+                "compare_to_target",
+            )
+            if key in call.arguments
+        }
+        result = session.analyze_sentiment(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "extract_entities":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "partition",
+                "backend",
+                "text_column",
+                "labels",
+                "spacy_model",
+                "max_documents",
+            )
+            if key in call.arguments
+        }
+        result = session.extract_entities(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "summarize_text":
+        kwargs = {
+            key: call.arguments[key]
+            for key in (
+                "partition",
+                "method",
+                "text_column",
+                "n_sentences",
+                "max_documents",
+                "stopword_language",
+            )
+            if key in call.arguments
+        }
+        result = session.summarize_text(**kwargs)
+        return result, ()
+
+    elif call.tool_name == "save_nlp_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("save_nlp_bundle requires a path argument.")
+        result = session.save_nlp_bundle(path)
+        state_changes.append(f"Saved NLP bundle to: {path}")
+        return {"path": str(result)}, tuple(state_changes)
+
+    elif call.tool_name == "load_nlp_bundle":
+        path = call.arguments.get("path")
+        if not path:
+            raise ValidationError("load_nlp_bundle requires a path argument.")
+        session.load_nlp_bundle(path)
+        state_changes.append(f"Loaded NLP bundle from: {path}")
+        return {"loaded": True}, tuple(state_changes)
+
     elif call.tool_name == "fit_imitation":
         kwargs = {
             key: call.arguments[key]
@@ -1601,6 +1999,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "mode",
                 "algorithm",
                 "action_column",
@@ -1615,6 +2014,10 @@ def _dispatch_tool(
                 "max_steps",
                 "learning_rate",
                 "gamma",
+                "total_timesteps",
+                "n_bins",
+                "epsilon_min",
+                "epsilon_decay",
             )
             if key in call.arguments
         }
@@ -2456,6 +2859,16 @@ def _dispatch_tool(
         return result, tuple(state_changes)
 
     else:
+        if getattr(spec, "read_only", False) and getattr(spec, "session_method", None):
+            method = getattr(session, spec.session_method, None)
+            if method is None:
+                method = getattr(type(session), spec.session_method, None)
+            if callable(method):
+                if call.arguments:
+                    result = method(**call.arguments)
+                else:
+                    result = method()
+                return result, tuple(state_changes)
         raise ValidationError(f"No dispatch handler for tool: {call.tool_name}")
 
 
@@ -2471,6 +2884,7 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
     elif tool_name in (
         "describe_dataset",
         "explain_operation",
+        "learn_concept",
         "workflow_status",
         "eda_summary",
         "dry_run_plan",
@@ -2821,6 +3235,33 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         path = arguments.get("path", "")
         changes.append(f"Will load CBR bundle from {path}.")
 
+    elif tool_name == "fit_text_classifier":
+        vectorizer = arguments.get("vectorizer", "tfidf")
+        estimator = arguments.get("estimator", "logistic")
+        changes.append(
+            f"Will fit a document classifier vectorizer={vectorizer} "
+            f"estimator={estimator} on train only (vocabulary, document "
+            "frequencies, and head fitted on train; single-label document "
+            "classification, not sequence labelling or generation)."
+        )
+
+    elif tool_name == "fit_topics":
+        method = arguments.get("method", "nmf")
+        n_topics = arguments.get("n_topics", 10)
+        changes.append(
+            f"Will fit {method} topics n_topics={n_topics} on train only "
+            "(topics are ranked term lists with NPMI coherence, not validated "
+            "categories)."
+        )
+
+    elif tool_name == "save_nlp_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will save NLP bundle to {path}.")
+
+    elif tool_name == "load_nlp_bundle":
+        path = arguments.get("path", "")
+        changes.append(f"Will load NLP bundle from {path}.")
+
     elif tool_name == "fit_imitation":
         changes.append(
             "Will fit behavioral cloning on train demonstrations "
@@ -2839,7 +3280,8 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         mode = arguments.get("mode", "contextual_bandit")
         changes.append(
             f"Will fit RL mode={mode} "
-            "(bandit train-only or optional gym_reinforce; not MuJoCo/robotics)."
+            "(bandit train-only, or an optional gymnasium env loop: "
+            "gym_reinforce / tabular_q / gym_sb3; not MuJoCo/robotics)."
         )
 
     elif tool_name == "save_rl_bundle":
@@ -3060,9 +3502,36 @@ def _summarize_result(result: Any) -> str:
 
 
 class IterationLimitExceeded(ValidationError):
-    """Raised when max tool iterations is exceeded."""
+    """Raised when a tool loop has run too many times.
+
+    Attributes
+    ----------
+    limit:
+        The ceiling that was reached.
+
+    Notes
+    -----
+    :class:`buildml.ai.security.MaxIterationsExceeded` covers the same ground
+    and additionally records the last tool attempted, which is usually the
+    thing you want to know. Prefer it for new code.
+
+    See Also
+    --------
+    buildml.ai.security.MaxIterationsExceeded : The fuller version.
+    """
 
     def __init__(self, limit: int) -> None:
+        """Build the error from the ceiling that was reached.
+
+        The limit is kept as an attribute as well as formatted into the
+        message, and the message explains that the ceiling exists to prevent
+        runaway loops.
+
+        Parameters
+        ----------
+        limit:
+            The maximum number of iterations allowed.
+        """
         self.limit = limit
         super().__init__(
             f"Maximum tool iterations ({limit}) exceeded. "

@@ -34,7 +34,35 @@ _CSV_BUILDERS = {
 
 
 def list_csv_sections(report: dict[str, Any]) -> list[dict[str, str]]:
-    """Return downloadable tabular sections present for this report."""
+    """List the tables this report can actually produce, with their row counts.
+
+    Builds each section to see whether it has rows, and reports only the ones
+    that do. So the download menu offers a drift table when drift was analysed
+    and does not when it was not — rather than offering everything and returning
+    an empty file for half of it.
+
+    Parameters
+    ----------
+    report:
+        The report as a dict.
+
+    Returns
+    -------
+    list of dict
+        One entry per non-empty section, with ``key`` for the download call,
+        ``label`` for display, and ``rows`` as a string count. Row counts are
+        strings because this feeds straight into JSON responses and templates
+        where everything is text anyway.
+
+    Notes
+    -----
+    **Every section is built to answer this.** Cheap for tabular sections, and
+    it does mean the work is repeated when the download actually happens.
+
+    See Also
+    --------
+    export_csv : Downloading one.
+    """
     available = []
     for key, builder in _CSV_BUILDERS.items():
         rows = builder(report)
@@ -50,7 +78,45 @@ def list_csv_sections(report: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def export_csv(report: dict[str, Any], section: str) -> tuple[str, str]:
-    """Return (filename, csv_text) for a named section."""
+    """Render one section as CSV text, with a filename to offer it under.
+
+    The escape hatch from the studio. Every table shown on a board can be pulled
+    out as CSV, because at some point everyone wants the numbers in a
+    spreadsheet, and a dashboard that traps its data is a dashboard people work
+    around.
+
+    Parameters
+    ----------
+    report:
+        The report as a dict.
+    section:
+        The section key, from :func:`list_csv_sections`.
+
+    Returns
+    -------
+    tuple
+        ``(filename, csv_text)``. The filename is prefixed ``buildml_eda_`` so
+        downloads stay identifiable in a downloads folder.
+
+    Raises
+    ------
+    KeyError
+        If the section is unknown, or known but empty for this report. Empty is
+        an error rather than a zero-row file, because a zero-row CSV looks like
+        a finding — "no problems found" — when it actually means the analysis
+        never ran.
+
+    Notes
+    -----
+    **Columns come from the first row.** Sections build uniform rows, so this
+    holds; a section whose later rows carried extra keys would lose them.
+
+    **The text is returned, not written.** The caller decides where it goes.
+
+    See Also
+    --------
+    list_csv_sections : What is available.
+    """
     if section not in _CSV_BUILDERS:
         raise KeyError(f"Unknown CSV section: {section}")
     rows = _CSV_BUILDERS[section](report)
@@ -70,11 +136,57 @@ def export_pdf(
     title: str = "BuildML EDA Studio",
     include_charts: bool = True,
 ) -> bytes:
-    """Render a structured PDF briefing with cover, TOC, findings, charts, teaching.
+    """Produce a PDF briefing: cover, contents, findings, charts, teaching notes.
 
-    Charts are static PNG embeds of the same Plotly Teaching Studio figures
-    (via kaleido when installed). Interactive drill-down remains in the local
-    app / offline Studio HTML. Associations do not establish causality.
+    For the audience that wants a document — a reviewer, a regulator, an
+    attachment to a ticket. Same content as the studio, laid out for reading
+    linearly and printing.
+
+    Charts become static PNGs of the same Plotly figures, via Kaleido. When
+    Kaleido is unavailable, each chart is replaced by a placeholder and the rest
+    of the briefing still renders; a document missing its figures is worth more
+    than no document. The interactive versions stay in the local app and the
+    offline HTML.
+
+    Parameters
+    ----------
+    report:
+        The report as a dict.
+    view:
+        Which layout. ``'briefing'`` is the full document.
+    title:
+        Cover title. Set it to something identifying — these get filed.
+    include_charts:
+        Embed rasterised charts. Turning this off is much faster and produces a
+        far smaller file, which is often what you want for a findings-only
+        summary.
+
+    Returns
+    -------
+    bytes
+        The PDF, for writing to disk or returning from an endpoint.
+
+    Raises
+    ------
+    MissingExtraError
+        If ReportLab is not installed. Install with
+        ``pip install 'buildml[dashboard]'``.
+
+    Notes
+    -----
+    **Chart rendering is the slow part** — a headless browser per figure, so
+    seconds to tens of seconds. ``include_charts=False`` is near-instant.
+
+    **A PDF is a snapshot.** It cannot be filtered or drilled into; pair it with
+    the offline HTML when the reader may want to explore.
+
+    **Associations are not causation**, and the briefing says so where it
+    reports them. Worth remembering when a PDF is circulated to people who did
+    not run the analysis.
+
+    See Also
+    --------
+    buildml.dashboard.offline.export_studio_html : Interactive and offline.
     """
     try:
         from reportlab.lib import colors
@@ -557,6 +669,44 @@ def _teaching_story_blocks(
 
 
 def escape_xml(text: Any) -> str:
+    """Escape a value for ReportLab's markup, which is XML-ish and unforgiving.
+
+    ReportLab paragraphs accept a small markup dialect — ``<b>``, ``<i>``,
+    ``<font>`` — parsed as XML. So a column literally named ``a<b`` produces a
+    parse error and takes the whole PDF with it, and a value containing ``&``
+    does the same.
+
+    Separate from :func:`buildml.reporting.html.escape` because the targets
+    differ: this escapes for ReportLab's parser, that one for a browser.
+
+    Parameters
+    ----------
+    text:
+        Anything. Stringified unless ``None``.
+
+    Returns
+    -------
+    str
+        With ``&``, ``<``, ``>``, and ``"`` replaced by entities. ``None``
+        becomes empty, since a missing value should read as absent rather than
+        as the word "None".
+
+    Notes
+    -----
+    **``&`` is replaced first**, deliberately. Doing it later would re-escape
+    the ampersands introduced by the other replacements, turning ``<`` into
+    ``&amp;lt;``.
+
+    **Apostrophes are left alone**, which is safe in element content and in the
+    double-quoted attributes ReportLab uses.
+
+    Examples
+    --------
+    >>> escape_xml("a < b & c")
+    'a &lt; b &amp; c'
+    >>> escape_xml(None)
+    ''
+    """
     value = "" if text is None else str(text)
     return (
         value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")

@@ -1,8 +1,25 @@
-"""Evaluation plot boards for classification and regression.
+"""Draw the picture of a model's behaviour that metrics only summarise.
 
-Adaptive: panels that need ``predict_proba``, binary targets, or numeric
-features degrade gracefully with structured skip reasons rather than failing
-the whole board.
+Some failures are far easier to see than to read. A residual plot that fans out
+toward the high end says "the errors grow with the prediction" in a glance; the
+same fact in an RMSE says nothing at all. A confusion matrix shows *which*
+classes are being confused, where a macro F1 only shows that something is. A
+reliability curve shows a model that is confidently wrong in a specific band.
+
+A board is a set of panels chosen for the task, drawn from one fitted model on
+one partition, so everything you are looking at is comparable.
+
+The panels adapt to what is available. An estimator with no probabilities cannot
+support ROC, precision-recall, calibration, or threshold panels; a multiclass
+target cannot support the binary ones. Rather than failing the board or quietly
+dropping them, each omission is recorded with its reason — a board with four
+panels missing and no explanation looks like a bug, and the reason is usually
+something you need to know anyway.
+
+See Also
+--------
+buildml.model.diagnostics : The numeric counterparts to these panels.
+buildml.model.supervised.evaluate_estimator : The metrics behind them.
 """
 
 from __future__ import annotations
@@ -56,7 +73,53 @@ def _require_viz() -> tuple[Any, Any]:
 
 @dataclass(slots=True)
 class PlotBoardReport:
-    """Collection of evaluation figures plus skip/interpretation metadata."""
+    """The panels that were drawn, the ones that were not, and why.
+
+    Keeping the skipped panels alongside the drawn ones is deliberate. A board
+    showing three panels where you expected seven raises the question of what
+    went wrong, and the answer — no probabilities, multiclass target, no numeric
+    features — is usually informative in its own right.
+
+    Attributes
+    ----------
+    task:
+        ``'classification'`` or ``'regression'``, which decides the panel set.
+    partition:
+        Which partition the board describes.
+    figures:
+        The Matplotlib figures by panel name.
+    skipped:
+        Panels not drawn, each with the reason.
+    interpretation:
+        What the panels appear to show.
+    recommendations:
+        Advice as plain strings.
+    figure_dir, html_path, figure_paths:
+        Where exports landed, if any.
+    metrics:
+        The numbers behind the panels, so an impression from a plot can be
+        checked against a value.
+    findings:
+        Structured observations with their supporting evidence.
+    recommendation_details:
+        Structured advice naming the findings behind it.
+    limitations:
+        What the board cannot show, including the effect of the skipped panels.
+    methods:
+        How the panels were computed.
+
+    Notes
+    -----
+    **Figures are live Matplotlib objects until exported.** They hold memory and
+    do not survive serialisation; ``to_dict`` replaces them with placeholders.
+
+    **Read ``skipped`` before concluding anything from an absence.** A missing
+    calibration panel means calibration was not measured, not that it is fine.
+
+    See Also
+    --------
+    build_eval_plot_board : Producing this report.
+    """
 
     task: Literal["classification", "regression"]
     partition: str
@@ -74,6 +137,24 @@ class PlotBoardReport:
     methods: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the board to plain data, replacing figures with placeholders.
+
+        Matplotlib figures cannot be serialised, so each becomes the marker
+        ``'figure'``. Everything else — metrics, findings, skip reasons,
+        limitations — carries over intact.
+
+        Returns
+        -------
+        dict
+            Every field, with figures reduced to placeholders and the structured
+            records converted to dictionaries.
+
+        Notes
+        -----
+        **Export the figures before serialising** if the images are wanted. Use
+        ``export_figures`` on :func:`build_eval_plot_board`, which records real
+        paths in ``figure_paths``.
+        """
         return {
             "task": self.task,
             "partition": self.partition,
@@ -97,6 +178,17 @@ class PlotBoardReport:
         }
 
     def show(self) -> None:
+        """Print how many panels were drawn and skipped, then the notes.
+
+        The counts come first because the gap between them is the first thing
+        worth noticing about a board.
+
+        Notes
+        -----
+        **Only the counts of skipped panels appear here.** Read ``skipped``
+        directly for the reasons, which are the part that explains what the
+        board cannot tell you.
+        """
         print(
             f"Eval plot board · {self.task} · partition={self.partition} · "
             f"figures={len(self.figure_paths) or len(self.figures)} · "
@@ -126,22 +218,103 @@ def build_eval_plot_board(
     export_html: str | Path | None = None,
     show: bool = False,
 ) -> PlotBoardReport:
-    """Build a rich visual diagnostic board after fit/evaluate.
+    """Draw every panel the model and data can support, and record the rest.
 
-    Panels (adaptive)
-    -----------------
-    Classification:
-      confusion matrix, ROC, PR, calibration reliability, threshold tradeoffs,
-      learning curve, permutation importance bars.
-    Regression:
-      residual scatter, residual histogram, predicted-vs-actual, learning curve,
-      permutation importance bars.
+    The visual counterpart to :func:`~buildml.model.supervised.evaluate_estimator`.
+    Where that returns numbers, this draws the panels that show *how* the model
+    behaves rather than how well it scores.
+
+    For classification: a confusion matrix showing which classes get mistaken
+    for which, ROC and precision-recall curves showing the ranking quality, a
+    reliability curve showing whether the probabilities are honest, a threshold
+    trade-off panel, a learning curve, and permutation importance bars.
+
+    For regression: residuals against predictions, which is where
+    heteroscedasticity and systematic bias become obvious; a residual histogram;
+    predicted against actual; a learning curve; and importance bars.
+
+    Panels that cannot be drawn are recorded with reasons instead of being
+    dropped or crashing the board.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        Partition membership.
+    fit_result:
+        The fitted model to visualise.
+    partition:
+        Which partition to draw. Defaults to test.
+    include_learning_curve:
+        Draw the learning curve. The most expensive panel, since it refits the
+        estimator at several training sizes.
+    include_importance:
+        Draw permutation importance. Cost grows with feature count.
+    n_importance_repeats:
+        Shuffles per feature. Lower than the standalone diagnostic's default,
+        since a board is meant to be quick.
+    learning_curve_cv:
+        Folds at each learning-curve size.
+    export_figures:
+        Directory to save the panels as PNGs.
+    export_html:
+        Path for a self-contained HTML report.
+    show:
+        Display the figures interactively.
+
+    Returns
+    -------
+    PlotBoardReport
+        The figures, the skipped panels with reasons, the metrics behind the
+        panels, and findings and recommendations linked to them.
+
+    Raises
+    ------
+    MissingExtraError
+        If Matplotlib and seaborn are unavailable. Install with ``pip install
+        'buildml[viz]'``.
+    ValidationError
+        If the split is missing, or a feature column the model needs is absent.
 
     Notes
     -----
-    **Leakage:** Learning curves refit clones on the train partition only.
-    Importance / calibration / threshold panels score the requested partition.
-    Requires ``pip install 'buildml[viz]'`` for figure rendering.
+    **The learning curve always uses train, whatever ``partition`` says.** It
+    has to refit at several sizes, and refitting on the partition being scored
+    would defeat the purpose. Every other panel scores the requested partition.
+
+    **The residual plot is the highest-value regression panel.** A funnel shape
+    means the error grows with the prediction, so a single RMSE describes
+    neither end well. A curve means the model is missing something non-linear.
+    Neither is visible in any summary metric.
+
+    **Turn off the learning curve and importance while iterating.** Together
+    they dominate the runtime; the diagnostic panels alone are fast.
+
+    **Figures stay open until exported or closed.** Building many boards in a
+    loop without closing them will consume memory.
+
+    Examples
+    --------
+    A fast board while iterating, then a full one to share::
+
+        quick = build_eval_plot_board(
+            dataset, split_plan, fit,
+            partition="validation",
+            include_learning_curve=False,
+            include_importance=False,
+        )
+        quick.show()
+
+        full = build_eval_plot_board(
+            dataset, split_plan, fit,
+            export_figures="artifacts/figures",
+            export_html="artifacts/eval.html",
+        )
+
+    See Also
+    --------
+    buildml.model.diagnostics : The same questions answered numerically.
     """
     if split_plan is None:
         raise ValidationError("Split required for evaluation plot boards")

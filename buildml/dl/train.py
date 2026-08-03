@@ -1,4 +1,41 @@
-"""CPU-first supervised train loop for caller-supplied modules."""
+"""Run the epoch loop that turns an untrained module into a trained one.
+
+The loop itself is the standard one: for each epoch, pass over the training
+data computing loss and stepping the optimiser, then optionally pass over the
+validation data computing loss without stepping. What surrounds it is where the
+care is.
+
+**Validation is measured, never learned from.** The validation pass runs with no
+optimiser, so no gradient reaches the weights. Early stopping reads that loss
+and it alone — stopping on training loss would only detect that the model
+stopped memorising, which tells you nothing about generalisation, and it is the
+reason a validation partition is required rather than optional.
+
+**Stopping early keeps the best epoch, not the last.** An early-stopped run
+ends, by construction, on a run of epochs that were not improvements. Returning
+those weights would hand back a model worse than one already seen, so the best
+monitored epoch is snapshotted and restored.
+
+**Resuming is checked, not assumed.** Continuing a run with different feature
+columns, a different target, or a different task would produce a model that
+trains without complaint and means nothing. All three are compared against the
+saved contract and refused on mismatch. Optimiser and scheduler state are
+restored too — Adam's momentum estimates are part of where training had reached,
+and discarding them makes a resumed run stumble for several epochs.
+
+Anything that changes silently is recorded as a warning rather than left
+implicit: a device fallback, mixed precision disabled on non-CUDA hardware, a
+scheduler that could not be restored.
+
+The module is yours. This loop trains what you pass it and does not care how it
+was built.
+
+See Also
+--------
+buildml.dl.types.TrainConfig : Every setting the loop honours.
+buildml.dl.results.TrainResult : What it hands back.
+buildml.dl.zoo : Prebuilt modules to train.
+"""
 
 from __future__ import annotations
 
@@ -197,14 +234,90 @@ def train_supervised_module(
     optimizer_factory: OptimizerFactory | None = None,
     resume_from: TrainResult | None = None,
 ) -> TrainResult:
-    """Run a supervised epoch loop on the train loader; optional val metrics / early stop.
+    """Train a module for a number of epochs, watching validation as it goes.
+
+    Moves the module to the resolved device, builds an optimiser and any
+    scheduler, then runs the epoch loop — training pass, optional validation
+    pass, early-stopping check, scheduler step — until the epochs are exhausted
+    or patience runs out.
 
     Parameters
     ----------
+    module:
+        Any ``torch.nn.Module``. Built by :mod:`buildml.dl.zoo` or by you; this
+        loop does not care which.
+    loader_bundle:
+        The data loaders plus the feature contract that describes them. Must
+        contain a ``'train'`` loader; a ``'validation'`` loader enables
+        validation loss and early stopping.
+    config:
+        Training settings. Defaults to a plain :class:`~buildml.dl.types.TrainConfig`.
+    loss_fn:
+        A callable ``(module, inputs, targets) -> loss``. Defaults to cross
+        entropy for classification and mean squared error for regression. Pass
+        your own for a custom objective — the signature takes the module rather
+        than its output so that multi-output or auxiliary-loss models are
+        expressible.
+    optimizer_factory:
+        A callable taking parameters and returning an optimiser. Defaults to
+        Adam at ``config.learning_rate``.
     resume_from:
-        Optional prior :class:`TrainResult` (e.g. from ``load_torch_bundle``). Restores
-        module weights, optimizer state, scheduler state when present, and appends
-        history. ``config.epochs`` is treated as **additional** epochs to run.
+        A prior result to continue from, typically loaded from a bundle. Weights,
+        optimiser state, and scheduler state are restored, and history is
+        appended rather than replaced. ``config.epochs`` then means *additional*
+        epochs.
+
+    Returns
+    -------
+    TrainResult
+        The trained module together with its history, device, contract,
+        optimiser and scheduler state, early-stopping record, and any warnings.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If the bundle has no train loader, if ``epochs`` is below 1, if early
+        stopping is requested without a validation loader or with patience
+        below 1, if the monitored metric is not among the recorded ones, if the
+        scheduler name is unknown, or if a resume disagrees with the saved
+        contract.
+
+    Notes
+    -----
+    **Early stopping requires a validation partition, and that is not a
+    technicality.** Training loss almost always keeps falling; stopping on it
+    would fire only once the model stopped memorising. Validation loss is what
+    turns upward when generalisation starts to degrade, which is the moment
+    early stopping exists to catch.
+
+    **Resuming compares contracts before it restores anything.** Different
+    feature columns, a different target, or a different task all mean the saved
+    weights no longer describe the problem, and continuing would train happily
+    while meaning nothing. Each is refused with a message naming the mismatch.
+
+    **``mixed_precision=True`` off CUDA is a no-op with a warning.** It is not
+    an error — the same configuration should run on a laptop and a GPU box — but
+    the speedup will not be there, and silence about that would be misleading.
+
+    Examples
+    --------
+    >>> result = train_supervised_module(  # doctest: +SKIP
+    ...     module,
+    ...     bundle,
+    ...     config=TrainConfig(epochs=20, early_stopping_patience=3),
+    ... )
+    >>> result.early_stop.triggered, result.early_stop.best_epoch  # doctest: +SKIP
+    (True, 12)
+    >>> more = train_supervised_module(  # doctest: +SKIP
+    ...     result.module, bundle, config=TrainConfig(epochs=5), resume_from=result
+    ... )
+
+    See Also
+    --------
+    buildml.dl.types.TrainConfig : Every setting, and when to change it.
+    buildml.dl.checkpoint : Saving a result so it can be resumed later.
     """
     torch = require_torch(feature="Torch training")
     if "train" not in loader_bundle.loaders:

@@ -36,6 +36,7 @@ DEFAULT_AUTONOMY_ALLOWLIST = (
     "describe_dataset",
     "workflow_status",
     "explain_operation",
+    "learn_concept",
     "ai_status",
     "eda_summary",
     "set_roles",
@@ -75,7 +76,53 @@ DEFAULT_AUTONOMY_ALLOWLIST = (
 
 @dataclass(slots=True)
 class AutonomyConfig:
-    """Hard controls for :func:`run_autonomous`."""
+    """The bounds an autonomous run may not exceed.
+
+    Every field narrows what can happen. The defaults are deliberately
+    restrictive, and widening any of them is a decision worth making
+    explicitly.
+
+    Attributes
+    ----------
+    max_steps:
+        How many operations may execute. Bounds both cost and how far a wrong
+        plan gets before you see it.
+    tool_allowlist:
+        Which tools may run unattended. A subset of the registry, and the
+        primary control — a tool absent from this list cannot be
+        auto-confirmed however the plan is phrased.
+    allow_destructive:
+        Whether destructive tools may run at all. **Off by default, and
+        deliberately awkward to turn on.**
+    stop_on_error:
+        Halt at the first failure. Usually right: a plan's later steps assume
+        the earlier ones worked.
+    require_explicit:
+        Require ``confirm_autonomy=True`` at the call site. Leave on — it is
+        what stops autonomy from being entered by accident.
+    egress_levels_blocked:
+        Levels under which autonomy refuses to run. Sample levels are blocked
+        by default, since unattended execution and raw-row disclosure are a bad
+        combination.
+
+    Notes
+    -----
+    **The allowlist is the control that matters most.** Step caps limit how
+    much happens; the allowlist limits what can happen at all.
+
+    Examples
+    --------
+    Read-only exploration, unattended::
+
+        config = AutonomyConfig(
+            max_steps=4,
+            tool_allowlist=("describe_dataset", "eda_summary", "workflow_status"),
+        )
+
+    See Also
+    --------
+    run_autonomous : What enforces this.
+    """
 
     max_steps: int = DEFAULT_AUTONOMY_MAX_STEPS
     tool_allowlist: tuple[str, ...] = DEFAULT_AUTONOMY_ALLOWLIST
@@ -88,6 +135,18 @@ class AutonomyConfig:
     )
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the autonomy bounds as JSON-safe values.
+
+        Records the constraints a run operated under, which is what makes the
+        audit trail meaningful — the record of what happened means little
+        without the record of what was permitted.
+
+        Returns
+        -------
+        dict
+            Step cap, allowlist, the destructive and explicit-confirmation
+            flags, error behaviour, and blocked egress levels.
+        """
         return {
             "max_steps": self.max_steps,
             "tool_allowlist": list(self.tool_allowlist),
@@ -100,7 +159,42 @@ class AutonomyConfig:
 
 @dataclass(slots=True)
 class AutonomyStepRecord:
-    """Audit record for one autonomous step."""
+    """What one unattended step did, recorded for later review.
+
+    Nobody watched this happen, so the record has to be complete enough to
+    reconstruct it afterwards.
+
+    Attributes
+    ----------
+    step_index:
+        Position in the plan.
+    tool_name:
+        Which tool ran, or would have.
+    arguments:
+        With what arguments. **Kept in full** — a summary would defeat the
+        purpose of an audit record.
+    auto_confirmed:
+        Whether it was approved without a person.
+    executed:
+        Whether it ran.
+    skipped:
+        Whether it was passed over.
+    skip_reason:
+        Why — unmapped operation, or not on the allowlist.
+    error:
+        What went wrong.
+    result_summary:
+        A short form of what came back.
+    safety_warnings:
+        What the safety checks noticed. **Worth reviewing even on steps that
+        succeeded.**
+    timestamp:
+        When, as an ISO 8601 UTC string.
+
+    See Also
+    --------
+    AutonomyResult : The containing run.
+    """
 
     step_index: int
     tool_name: str
@@ -115,6 +209,19 @@ class AutonomyStepRecord:
     timestamp: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the step record as JSON-safe values.
+
+        Complete: arguments and safety warnings are kept in full, because a
+        record of unattended execution that omits details is not much of a
+        record.
+
+        Returns
+        -------
+        dict
+            Index, tool, arguments, the confirmation and execution flags, skip
+            state and reason, error, result summary, safety warnings, and
+            timestamp.
+        """
         return {
             "step_index": self.step_index,
             "tool_name": self.tool_name,
@@ -132,7 +239,50 @@ class AutonomyStepRecord:
 
 @dataclass(slots=True)
 class AutonomyResult:
-    """Outcome of an autonomous plan-and-execute run."""
+    """What an unattended run did, and what it leaves you responsible for.
+
+    Attributes
+    ----------
+    goal:
+        What was asked for.
+    plan:
+        The plan executed, whether supplied or generated.
+    steps:
+        A record per step.
+    completed_steps:
+        How many ran.
+    total_steps:
+        How many the plan had.
+    stopped_at_step:
+        Where it halted. ``None`` when it reached the end.
+    stop_reason:
+        Why.
+    config:
+        The bounds it ran under.
+    disclosures:
+        What the mode does.
+    limitations:
+        What it does not do.
+    residual_risks:
+        **What remains your responsibility.** Operations ran without review;
+        this is the list of what that means and is the part to read.
+    egress_manifest:
+        What was disclosed producing the plan.
+    usage:
+        Token counts.
+
+    Notes
+    -----
+    **Completing every step is not evidence of a good outcome.** It means the
+    operations were valid and their preconditions held. Whether the resulting
+    pipeline is sound is a separate question, and unattended execution means
+    nobody has looked at it yet.
+
+    See Also
+    --------
+    run_autonomous : Produces this.
+    AutonomyStepRecord : One step.
+    """
 
     goal: str
     plan: PlanResult | None
@@ -149,6 +299,17 @@ class AutonomyResult:
     usage: dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the autonomous run as JSON-safe values.
+
+        Includes the plan, every step record, and the configuration, so the
+        stored account says what was permitted as well as what happened.
+
+        Returns
+        -------
+        dict
+            Goal, plan, step records, completion counts, stop position and
+            reason, configuration, the three prose lists, and token usage.
+        """
         return {
             "goal": self.goal,
             "plan": None if self.plan is None else self.plan.to_dict(),
@@ -201,19 +362,91 @@ def run_autonomous(
     confirm_autonomy: bool = False,
     provider_plan: bool = True,
 ) -> AutonomyResult:
-    """Plan (optional) and auto-execute allowlisted tools under hard safety caps.
+    """Execute a plan without stopping to ask, inside hard limits.
+
+    The one path where operations run unattended. It exists because a long
+    sequence of routine steps is tedious to confirm one at a time, and it is
+    fenced accordingly: an explicit opt-in at the call site, a tool allowlist,
+    a step cap, destructive tools off, sample egress levels refused, and a full
+    audit record of everything that happened.
+
+    Every step still passes the safety checks and still goes through the
+    executor. What changes is who says yes.
 
     Parameters
     ----------
+    session:
+        What to execute against.
     goal:
-        Operator goal string (recorded in the audit transcript).
+        What you want done. Recorded in the audit trail, and used to generate a
+        plan when none is supplied.
     plan:
-        Optional precomputed :class:`PlanResult`. When omitted and
-        ``provider_plan=True``, calls the advisor planner once.
-    confirm_autonomy:
-        **Required True** — explicit opt-in. Default False refuses to run.
+        A plan to execute. When omitted and ``provider_plan`` is true, one is
+        generated by calling the planner once.
     config:
-        Caps and allowlist. Defaults are conservative.
+        The bounds. Conservative by default.
+    registry:
+        The tool set, narrowed to the allowlist before anything runs.
+    confirm_autonomy:
+        **Must be true.** The opt-in that stops this mode being entered by
+        accident.
+    provider_plan:
+        Allow generating a plan when none was supplied. Set false to require a
+        plan you have already reviewed.
+
+    Returns
+    -------
+    AutonomyResult
+        Per-step records, how far it got, why it stopped, and the residual
+        risks.
+
+    Raises
+    ------
+    ValidationError
+        If ``confirm_autonomy`` is false, if ``max_steps`` is below 1, if the
+        egress level is one autonomy refuses to run under, if the allowlist
+        matches no registered tool, or if no plan is available and generation
+        is disabled.
+    MaxIterationsExceeded
+        If the step cap is reached mid-run.
+
+    Notes
+    -----
+    **Reviewing the plan first is the safer pattern.** Generate it with
+    :func:`buildml.ai.advisor.run_plan`, read it, then pass it here with
+    ``provider_plan=False``. A plan generated inside the same call is executed
+    without anyone having seen it.
+
+    **Sample egress levels are refused outright.** Unattended execution and
+    raw-row disclosure compound each other, so the combination is blocked
+    rather than warned about.
+
+    **Every step is recorded, including the skipped ones.** A run that
+    completed few steps because most were off the allowlist looks successful
+    until you read the records.
+
+    **The residual risks are real.** Operations ran without review, and
+    ``residual_risks`` says what that leaves you responsible for.
+
+    Examples
+    --------
+    Review the plan, then run it unattended::
+
+        plan = advisor.run_plan(session, "prepare the data for fitting", provider)
+        result = run_autonomous(
+            session,
+            "prepare the data for fitting",
+            plan=plan,
+            provider_plan=False,
+            confirm_autonomy=True,
+            config=AutonomyConfig(max_steps=5),
+        )
+        result.residual_risks
+
+    See Also
+    --------
+    buildml.ai.planner.run_plan : The confirmed alternative.
+    AutonomyConfig : The bounds.
     """
     cfg = config or AutonomyConfig()
     if cfg.require_explicit and not confirm_autonomy:
@@ -413,7 +646,33 @@ def run_autonomous(
 
 
 def autonomy_status_dict(result: AutonomyResult | None) -> dict[str, Any]:
-    """Compact status fragment for ``ai_status`` disclosures."""
+    """Summarise whether autonomy was used, for status surfaces.
+
+    Folded into the walkthrough status so a Session that ran unattended says so
+    prominently, rather than leaving it buried in a transcript.
+
+    Parameters
+    ----------
+    result:
+        The most recent autonomous run, or ``None`` when there was none.
+
+    Returns
+    -------
+    dict
+        When there was no run, a flag and a note that the default path requires
+        confirmation. Otherwise the completion counts, the stop reason, and the
+        residual risks.
+
+    Notes
+    -----
+    **The residual risks are carried through deliberately.** They are the part
+    of an autonomous run a reader most needs to see, and burying them in a
+    result object nobody opens would defeat the purpose.
+
+    See Also
+    --------
+    buildml.ai.explain_hooks.ai_status : Where this appears.
+    """
     if result is None:
         return {
             "autonomy_enabled_last_run": False,

@@ -1,4 +1,46 @@
-"""Evaluate RL policies (offline bandit metrics or Gymnasium rollouts)."""
+"""Estimate what a policy would earn, and be clear about how good the estimate is.
+
+Evaluating a policy is harder than evaluating a classifier, and the reason is
+worth understanding before reading any number this module produces.
+
+A classifier can be checked against holdout labels because the right answer was
+recorded. A policy cannot: your log records what reward followed the action that
+*was* taken, and says nothing about the reward that would have followed the
+action your new policy would take instead. That missing quantity — the
+counterfactual — is the whole difficulty.
+
+Two estimators approach it from opposite directions, which is why both are
+reported.
+
+**The direct method** fits a model of reward given context and action, then asks
+it what the new policy's choices would have earned. It uses every row, so it is
+low-variance, but it inherits every error in the reward model — and the reward
+model is least reliable precisely for the context-action pairs the log rarely
+contains, which are often the ones a new policy favours.
+
+**Inverse propensity scoring** takes the opposite tack. It keeps only rows where
+the new policy agrees with the log, and reweights each by how unlikely the
+logging policy was to have taken that action. It is unbiased when the propensity
+estimates are right, but a rare action produces a large weight, and a handful of
+large weights can dominate the estimate.
+
+**When the two disagree, believe neither.** Agreement is weak evidence the
+estimate is sound; disagreement is strong evidence it is not.
+
+``action_match_rate`` is the sanity check to read first. If the new policy picks
+the logged action almost every time, it has barely changed anything and the
+estimates are trivially reliable. If it almost never agrees, both estimates rest
+on very little overlapping data and should not drive a decision.
+
+None of this applies to the environment modes. There the policy is actually run,
+so the returns are measured rather than estimated — ``offline`` on the result is
+``False``, and the number means what it says.
+
+See Also
+--------
+buildml.rl.bandit : The estimator implementations.
+buildml.rl.fit : Fitting the policy and its propensity model.
+"""
 
 from __future__ import annotations
 
@@ -16,6 +58,7 @@ from buildml.rl.bandit import LinUCBPolicy, RewardModelBandit, offline_bandit_me
 from buildml.rl.features import encode_discrete_actions, matrix_from_frame
 from buildml.rl.gym_reinforce import LinearSoftmaxPolicy, evaluate_gym_policy
 from buildml.rl.results import RlEvalResult, RlPlan
+from buildml.rl.tabular import TabularValuePolicy, evaluate_tabular_policy
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -31,15 +74,90 @@ def evaluate_rl(
     random_state: int | None = 0,
     deterministic: bool = True,
 ) -> RlEvalResult:
-    """Evaluate a fitted RL policy.
+    """Score a fitted policy, offline for bandits and by rollout otherwise.
 
-    contextual_bandit:
-        Offline DM / IPS / match-rate on a holdout partition (disclosed offline).
-    gym_reinforce:
-        Online env rollouts (mean return); not offline.
+    Bandit plans are scored against a holdout partition using the two offline
+    estimators described in the module docstring. Environment plans are scored
+    by actually running the policy for a number of episodes.
+
+    Parameters
+    ----------
+    dataset:
+        The holdout table, for ``'contextual_bandit'``. Not used by the
+        environment modes.
+    plan:
+        The fitted policy from :func:`~buildml.rl.fit.fit_rl`.
+    split_plan:
+        Required when a bandit plan is scored on a partition other than
+        ``'all'``.
+    partition:
+        Which rows to score, for bandit plans. Defaults to ``'validation'``.
+    n_episodes:
+        Rollout episodes for the environment modes. Defaults to 20. Returns
+        vary substantially between episodes, so a small number gives a noisy
+        mean.
+    max_steps:
+        Per-episode step cap. Falls back to the value the plan was fitted with.
+    random_state:
+        Seed for rollouts and for stochastic acting.
+    deterministic:
+        Score the greedy policy (default) or the exploring one. Greedy is what
+        you would deploy; stochastic is what generated the training data.
+
+    Returns
+    -------
+    RlEvalResult
+        For bandits: ``direct_method``, ``ips``, ``action_match_rate``, and the
+        logged-reward baseline, with ``offline=True``. For environment modes:
+        mean and standard deviation of episode return, with ``offline=False``.
+
+    Raises
+    ------
+    ValidationError
+        If the mode is unsupported, if a bandit plan lacks its dataset, split
+        plan, action column, reward column, or context columns, if an
+        environment plan lacks its ``env_id``, or if the stored policy does not
+        match the declared mode.
+    MissingExtraError
+        If an environment rollout is requested without ``buildml[rl]`` or
+        ``buildml[rl-industry]``.
+
+    Notes
+    -----
+    **Compare every bandit estimate against ``mean_logged_reward``.** A direct
+    method of 14.2 means nothing on its own; against a logged baseline of 12.7
+    it suggests an improvement, and against 15.1 it suggests the new policy is
+    worse than what you already run.
+
+    **``ips`` is ``NaN`` when no propensity model could be fitted**, and a
+    warning says so. That leaves the direct method unchecked, which is exactly
+    the situation where a single estimate should not be trusted alone.
+
+    **Tabular evaluation reports ``unseen_state_rate``.** A tabular policy has no
+    way to generalise to a state it never visited, so its action there comes
+    from an untouched Q-row — effectively arbitrary. Above 20% a warning is
+    raised, because the mean return is then substantially a measure of luck.
+
+    Examples
+    --------
+    >>> result = evaluate_rl(dataset, plan, split_plan)  # doctest: +SKIP
+    >>> result.offline, result.metrics["action_match_rate"]  # doctest: +SKIP
+    (True, 0.34)
+
+    See Also
+    --------
+    buildml.rl.act.act_rl : Run the policy rather than score it.
     """
     if plan.mode == "gym_reinforce":
         return _eval_gym(
+            plan,
+            n_episodes=n_episodes,
+            max_steps=max_steps,
+            random_state=random_state,
+            deterministic=deterministic,
+        )
+    if plan.mode == "tabular_q":
+        return _eval_tabular(
             plan,
             n_episodes=n_episodes,
             max_steps=max_steps,
@@ -202,6 +320,53 @@ def _eval_gym(
             "Requires buildml[rl] (gymnasium).",
             "Honesty: small-env teaching loop — not MuJoCo/robotics.",
         ),
+    )
+
+
+def _eval_tabular(
+    plan: RlPlan,
+    *,
+    n_episodes: int | None,
+    max_steps: int | None,
+    random_state: int | None,
+    deterministic: bool,
+) -> RlEvalResult:
+    policy = plan.policy_
+    if not isinstance(policy, TabularValuePolicy):
+        raise ValidationError("tabular_q plan is missing a TabularValuePolicy.")
+    if plan.env_id is None:
+        raise ValidationError("tabular_q plan is missing env_id.")
+    cfg = plan.config or {}
+    metrics = evaluate_tabular_policy(
+        policy,
+        env_id=plan.env_id,
+        n_episodes=int(n_episodes if n_episodes is not None else 20),
+        max_steps=int(max_steps if max_steps is not None else cfg.get("max_steps", 200)),
+        random_state=random_state,
+        deterministic=deterministic,
+    )
+    warnings: list[str] = []
+    unseen = float(metrics.get("unseen_state_rate", float("nan")))
+    if np.isfinite(unseen) and unseen > 0.2:
+        warnings.append(
+            f"{unseen:.0%} of evaluation steps landed in states never visited "
+            "during training; those actions come from an untrained Q-row."
+        )
+    return RlEvalResult(
+        partition=None,
+        mode=plan.mode,
+        n_rows=int(metrics.get("n_eval_episodes", 0)),
+        metrics=metrics,
+        offline=False,
+        disclosures=(
+            "Tabular evaluation rolls out the greedy Q-table policy in the env "
+            "(online returns).",
+            "Requires buildml[rl] (gymnasium).",
+            "unseen_state_rate reports how often evaluation reached a state the "
+            "Q-table never updated — the honest generalization limit of tabular RL.",
+            "Honesty: small discrete-control teaching loop — not MuJoCo/robotics.",
+        ),
+        warnings=tuple(warnings),
     )
 
 

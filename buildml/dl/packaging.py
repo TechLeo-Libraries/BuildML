@@ -1,7 +1,25 @@
-"""TorchServe packaging and TensorRT export-plan helpers (library recipes).
+"""Write the files a serving stack expects, and stop there.
 
-These helpers write on-disk layouts and validation reports. They do **not**
-run a managed cloud, operate a TorchServe cluster, or ship a TensorRT runtime.
+Getting a trained model into TorchServe or TensorRT involves a directory with
+particular contents in particular places, plus a handler that knows how to turn
+an HTTP body into a tensor. Assembling that by hand is fiddly and easy to get
+subtly wrong. These helpers assemble it.
+
+What they do not do is run anything. BuildML does not install TorchServe, build
+TensorRT engines, provision GPUs, or host a managed inference service. It writes
+files that a serving stack you operate can consume. Every result says so in its
+``limitations``, because a directory that looks deployment-ready is exactly the
+kind of thing that gets mistaken for a deployment.
+
+The generated handler and ``trtexec`` recipe are starting points that work for
+the common case. Validate them against your platform's major version before
+relying on them — serving APIs change between releases, and a handler written
+for one is not guaranteed to work on the next.
+
+See Also
+--------
+buildml.dl.export : Producing the TorchScript or ONNX artifact to package.
+buildml.dl.k8s : Kubernetes manifests, the same philosophy.
 """
 
 from __future__ import annotations
@@ -26,7 +44,33 @@ TORCHSERVE_COMPOSE_EXAMPLE = (
 
 @dataclass(slots=True)
 class PackagingResult:
-    """Outcome of a packaging / export-plan helper."""
+    """What a packaging helper wrote, and what it deliberately did not do.
+
+    Attributes
+    ----------
+    kind:
+        ``'torchserve'`` or ``'tensorrt_plan'``.
+    path:
+        The directory written.
+    files:
+        The file names created inside it.
+    disclosures:
+        What was produced.
+    limitations:
+        What remains yours to do. Always populated, because the gap between
+        "files that describe a deployment" and "a running deployment" is the
+        thing most easily assumed away.
+    warnings:
+        Problems found along the way — a skipped ONNX validation, a checker
+        complaint.
+    meta:
+        Helper-specific details such as the model name or source path.
+
+    See Also
+    --------
+    pack_torchserve_model : Produces the TorchServe layout.
+    prepare_tensorrt_export_plan : Produces the TensorRT recipe.
+    """
 
     kind: PackKind
     path: Path
@@ -37,6 +81,17 @@ class PackagingResult:
     meta: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the packaging outcome as JSON-safe values.
+
+        Includes the limitations, which is the point — a deployment record that
+        drops them reads as a claim that deployment is finished.
+
+        Returns
+        -------
+        dict
+            Kind, path as a string, file names, disclosures, limitations,
+            warnings, and metadata.
+        """
         return {
             "kind": self.kind,
             "path": str(self.path),
@@ -106,11 +161,59 @@ def pack_torchserve_model(
     model_name: str = "buildml_model",
     handler_name: str = "handler.py",
 ) -> PackagingResult:
-    """Pack a TorchScript file into a TorchServe-ready model directory.
+    """Assemble the directory TorchServe expects around a TorchScript model.
 
-    Writes ``model.pt``, ``handler.py``, ``config.properties``, and
-    ``manifest.json``. Optionally reminds the operator to run
-    ``torch-model-archiver`` if installed — BuildML does not bundle TorchServe.
+    Copies the model, writes a handler that accepts JSON and returns
+    predictions, and adds the configuration and manifest files TorchServe reads.
+    Also writes ``ARCHIVE.txt`` with the exact ``torch-model-archiver`` and
+    ``torchserve`` commands to run next.
+
+    Parameters
+    ----------
+    torchscript_path:
+        A TorchScript file, typically from :mod:`buildml.dl.export`.
+    output_dir:
+        Where to write. Created if absent.
+    model_name:
+        The name TorchServe will serve under. Appears in the config and the
+        archiver command.
+    handler_name:
+        Filename for the generated handler.
+
+    Returns
+    -------
+    PackagingResult
+        The directory, the files written, and the limitations.
+
+    Raises
+    ------
+    ValidationError
+        If the TorchScript file does not exist.
+
+    Notes
+    -----
+    **The handler expects a JSON body with ``instances`` or ``inputs``**, each a
+    row of floats matching the model's input width. It converts them to a
+    ``float32`` tensor and returns raw model output — no softmax, no label
+    mapping, no feature preprocessing. If your model was trained on standardised
+    features, the caller must standardise before sending, using the constants
+    from the feature contract.
+
+    **The model is copied, not linked.** The output directory is self-contained
+    and can be moved or archived on its own.
+
+    **Nothing is started.** Running the archiver and the server is yours; the
+    commands are in ``ARCHIVE.txt``.
+
+    Examples
+    --------
+    Export then package::
+
+        pack_torchserve_model("artifacts/model.pt", "serve/buildml_model")
+
+    See Also
+    --------
+    buildml.dl.export : Producing the TorchScript input.
     """
     src = Path(torchscript_path)
     if not src.is_file():
@@ -199,10 +302,69 @@ def prepare_tensorrt_export_plan(
     fp16: bool = True,
     workspace_mib: int = 1024,
 ) -> PackagingResult:
-    """Validate an ONNX artifact and write a TensorRT ``trtexec`` recipe.
+    """Check an ONNX file and write the TensorRT build command for it.
 
-    Does **not** invoke TensorRT. Operators run ``trtexec`` (or their platform
-    builder) themselves.
+    Validates the ONNX model when the ``onnx`` package is available, copies it
+    into a self-contained folder, and writes both a machine-readable plan and a
+    short README containing the ``trtexec`` invocation.
+
+    Parameters
+    ----------
+    onnx_path:
+        The ONNX model to plan for.
+    output_dir:
+        Where to write. Created if absent.
+    engine_name:
+        Filename the built engine should take.
+    fp16:
+        Include the half-precision flag in the recipe. Usually a large speedup
+        on modern NVIDIA hardware with a small accuracy cost — but "small"
+        depends on your model, so measure rather than assume.
+    workspace_mib:
+        Memory budget TensorRT may use while searching for fast kernels. More
+        allows more aggressive optimisation; too much can exhaust GPU memory
+        during the build.
+
+    Returns
+    -------
+    PackagingResult
+        The directory, the files written, and any validation complaints in
+        ``warnings``.
+
+    Raises
+    ------
+    ValidationError
+        If the ONNX file does not exist.
+
+    Notes
+    -----
+    **No engine is built here.** TensorRT engines are hardware-specific — an
+    engine built for one GPU architecture will not load on another — so they
+    must be built on, or for, the machine that will serve them. That is
+    fundamentally an operator step, not something a library can do on your
+    behalf.
+
+    **Validation is best-effort.** Without the ``onnx`` package the check is
+    skipped and a warning says so; a failing check also produces a warning
+    rather than an error, since some models that the strict checker complains
+    about convert successfully anyway.
+
+    **Verify accuracy after conversion, especially with ``fp16``.** Reduced
+    precision changes numerical behaviour, and a model can look fine on a
+    handful of examples while having drifted on the tail.
+
+    Examples
+    --------
+    Plan a half-precision engine::
+
+        result = prepare_tensorrt_export_plan(
+            "artifacts/model.onnx", "serve/trt", fp16=True
+        )
+        result.warnings  # empty when the ONNX checker passed
+
+    See Also
+    --------
+    buildml.dl.export : Producing the ONNX input.
     """
     onnx_file = Path(onnx_path)
     if not onnx_file.is_file():

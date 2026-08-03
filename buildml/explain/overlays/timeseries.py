@@ -48,7 +48,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         state_changes=("Stores ts_analysis_result.",),
         result_reading=("Read decompose, diagnostics, changepoints, features sub-results.",),
         next_steps=("fit_forecast with method informed by diagnostics.",),
-        concepts=("forecast-temporal-leakage", "leakage-boundary"),
+        concepts=(
+            "ts-analysis-before-forecast",
+            "ts-decomposition",
+            "forecast-temporal-leakage",
+            "leakage-boundary",
+        ),
     ),
     _operation(
         "ts_decompose",
@@ -70,8 +75,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use when only trend/seasonal/residual views are needed.",),
         assumptions=("Numeric target.",),
         failures=("Missing statsmodels for stl without fallback acceptance.",),
-        leakage=(),
-        anti_patterns=(),
+        leakage=(
+            "scope='train' is the honest default; scope='all' decomposes holdout rows too, and anything you learn from that shape has informed you.",
+        ),
+        anti_patterns=(
+            "Reading a scope='all' decomposition and then choosing a seasonal period for the forecaster.",
+        ),
         state_changes=("Stores ts_analysis_result.",),
         result_reading=("Inspect trend, seasonal, residual tuples.",),
         next_steps=("ts_diagnostics or fit_forecast.",),
@@ -96,8 +105,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         rationale=("Use to choose ARIMA orders or differencing.",),
         assumptions=("Numeric target.",),
         failures=("ADF/KPSS unavailable without buildml[timeseries].",),
-        leakage=(),
-        anti_patterns=(),
+        leakage=(
+            "scope='train' is the honest default; running diagnostics on holdout tells you about rows you are supposed to be measured against.",
+        ),
+        anti_patterns=(
+            "Choosing differencing orders from a scope='all' stationarity test and then reporting test error as untouched.",
+        ),
         state_changes=("Stores ts_analysis_result.",),
         result_reading=("Read adf_pvalue, kpss_pvalue, acf_values.",),
         next_steps=("fit_forecast(method='arima'| 'ets'| 'auto').",),

@@ -7,8 +7,9 @@
 > See [installation](../docs/installation.rst).
 
 Behavioral cloning from demonstration tables, contextual bandits on logged
-`(context, action, reward)` rows, and an optional small Gymnasium REINFORCE
-loop. **Not** a MuJoCo / robotics / multi-agent platform.
+`(context, action, reward)` rows, and optional small Gymnasium loops: tabular
+TD control (Q-learning / SARSA / Expected SARSA / Double Q-learning) and
+REINFORCE-lite. **Not** a MuJoCo / robotics / multi-agent platform.
 
 **Proof:** [imitation-cartpole-control](../proofs/imitation-cartpole-control/) (+ Tier C sklearn BC twin; Gymnasium optional via `buildml[rl]`).
 
@@ -126,6 +127,53 @@ print(ev.offline, ev.metrics["mean_return"])
 
 session.save_rl_bundle("artifacts/rl_gym_demo_bundle")
 ```
+
+---
+
+## Optional tabular Q-learning / SARSA (`buildml[rl]`)
+
+The classical value-based starting point: an explicit `Q[s, a]` table, no
+neural network. `q_learning`, `sarsa`, `expected_sarsa`, and
+`double_q_learning` all run through `mode="tabular_q"`.
+
+```python
+# pip install "buildml[rl]"
+from buildml import Session
+import pandas as pd
+
+session = (
+    Session.ingest(pd.DataFrame({"a": [0.0, 1.0], "y": [0, 1]}))
+    .set_roles({"a": "feature", "y": "target"})
+    .split(test_size=0.5, random_state=0)
+)
+
+fit = session.fit_rl(
+    mode="tabular_q",
+    algorithm="q_learning",
+    env_id="FrozenLake-v1",
+    n_episodes=3_000,
+    learning_rate=0.2,   # TD step size alpha
+    gamma=0.99,
+    epsilon=1.0,         # exploration start, decayed each episode
+    epsilon_min=0.05,
+    epsilon_decay=0.999,
+)
+print(fit.train_metrics["state_coverage"])
+
+ev = session.evaluate_rl(n_episodes=100)
+print(ev.offline, ev.metrics["mean_return"], ev.metrics["unseen_state_rate"])
+
+# Q(s, a) per action for a few states
+print(session.act_rl(observations=[0, 1, 2]).scores)
+
+# Inspect what was actually learned
+q_table = session.rl_plan.policy_.q_table
+print(q_table.shape, session.rl_plan.policy_.greedy_policy_table())
+```
+
+Continuous (Box) observations such as CartPole are binned automatically:
+`fit_rl(mode="tabular_q", env_id="CartPole-v1", n_bins=6, n_episodes=3_000)`.
+Inspect `session.rl_plan.config["discretizer"]` to see the bounds used.
 
 ---
 

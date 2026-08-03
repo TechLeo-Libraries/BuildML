@@ -36,7 +36,8 @@ print(registered_tool_names())
 | Tool | Purpose |
 | --- | --- |
 | `describe_dataset` | Schema / shape summary |
-| `explain_operation` | Catalog overlay for an operation |
+| `explain_operation` | Catalog overlay for an operation, with a beginner primer by default |
+| `learn_concept` | Teach a concept, operation, or term, with a reading order |
 | `workflow_status` | Resolver statuses |
 | `eda_summary` | Compact EDA findings |
 | `dry_run_plan` | Preview ops without mutation |
@@ -185,14 +186,19 @@ increase residual risk even with caps.
 ## Pattern 5 — Teaching-first before writes
 
 ```python
+session.ai_execute("learn_concept", {"topic": "missing-data"}, confirm=False)
 session.ai_execute(
     "explain_operation",
-    {"operation": "impute", "moment": "before"},
+    {"operation": "impute", "moment": "before", "level": "beginner"},
     confirm=False,
 )
 session.ai_execute("dry_run_plan", {"operations": ["impute", "scale", "fit"]}, confirm=False)
 session.ai_execute("workflow_status", {}, confirm=False)
 ```
+
+`learn_concept` answers the conceptual question and `explain_operation` answers
+the state-aware one. Both are read-only and neither appends history, so an
+operator can teach freely before proposing a write.
 
 ---
 

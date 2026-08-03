@@ -175,7 +175,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "pip install 'buildml[tda]' (native); "
                 "pip install 'buildml[tda-industry]' (giotto); "
                 "tda_capability_matrix(); require_tda_stack()."
-            ),
+            ,),
             interpretation_rules=(
                 "Default backend when both installed: giotto (industry depth). "
                 "Silhouette remains native-only.",
@@ -187,7 +187,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             anti_patterns=("Importing ripser/gtda at buildml package import time.",),
             worked_example_pattern=(
                 "fit_tda(backend='giotto', vectorization='betti_curve')."
-            ),
+            ,),
             related_concepts=("tda-persistent-homology", "tda-giotto-backend"),
         ),
         _note(
@@ -212,7 +212,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "fit_tda(backend='giotto', vectorization='betti_curve', mapper=True)."
-            ),
+            ,),
             interpretation_rules=(
                 "Mapper output is diagnostic disclosure only — not supervised features.",
             ),
@@ -221,7 +221,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             anti_patterns=("Expecting interactive Mapper visualization from Session API.",),
             worked_example_pattern=(
                 "Session.tda_capability_matrix()['backends']['giotto']."
-            ),
+            ,),
             related_concepts=("tda-extra-boundary", "tda-vectorization"),
         ),
     )

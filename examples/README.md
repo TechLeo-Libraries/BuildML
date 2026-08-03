@@ -21,6 +21,7 @@ pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 | `imitation_rl_loop.py` | [quickstart-imitation-rl](../guides/quickstart-imitation-rl.md) |
 | `tda_loop.py` | [quickstart-tda](../guides/quickstart-tda.md) (`buildml[tda]`) |
 | `recommender_item_knn_loop.py` | [quickstart-recommenders](../guides/quickstart-recommenders.md) |
+| `nlp_text_classifier_loop.py` | [quickstart-nlp](../guides/quickstart-nlp.md) |
 
 Run from the repo root (or any cwd) after install:
 
@@ -34,4 +35,5 @@ python examples/symbolic_rules_loop.py
 python examples/imitation_rl_loop.py
 python examples/tda_loop.py
 python examples/recommender_item_knn_loop.py
+python examples/nlp_text_classifier_loop.py
 ```

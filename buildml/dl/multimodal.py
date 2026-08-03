@@ -1,18 +1,33 @@
-"""Multimodal fusion path for BuildML DL (tabular ⊕ text ⊕ image ⊕ audio).
+"""Train one model on several kinds of input at once.
 
-Builds leakage-safe loaders (train-only vocab, train-only numeric normalize,
-train-only image channel stats, train-only audio amplitude stats) and a
-built-in late-fusion module that concatenates available modality embeddings
-before a task head.
+Real problems often come with more than one kind of evidence: a product has
+numeric attributes, a text description, and a photograph; a support ticket has
+metadata and prose. Fitting a separate model per modality throws away the
+interactions between them, which is frequently where the signal is.
 
-Supported modality mixes (at least two modalities required):
-- tabular + text (Pass G)
-- tabular + image / text + image / tabular + text + image (Pass J)
-- tabular + audio / text + audio / tabular + text + audio (Pass L)
-- image + audio and richer mixes that include audio (Pass L)
+This module handles the combination. It builds loaders that yield one tensor per
+modality per batch, and a fusion model with a branch per modality whose outputs
+are joined before a shared head — late fusion. Tabular, text, image, and audio
+are supported, and any two or more can be mixed. One alone is not multimodal;
+use the single-modality loaders instead.
 
-Audio uses a small 1D-CNN branch — honest alpha fusion, not a speech
-foundation-model product.
+The leakage surface is wider than usual and gets corresponding attention. Four
+things are fitted here — the token vocabulary, the tabular statistics, the image
+channel statistics, and the audio amplitude statistics — and every one of them
+is fitted on the training partition alone. All four are recorded in a
+:class:`MultimodalContract`, which must be reapplied rather than refitted when
+loading a saved model.
+
+The audio branch is a small 1D convolutional network. It is enough to pick up
+coarse acoustic structure and is not a speech foundation model; see
+:mod:`buildml.dl.speech` for that.
+
+See Also
+--------
+buildml.dl.loaders : Tabular only.
+buildml.dl.text : Text only.
+buildml.dl.image : Image handling and statistics.
+buildml.dl.audio : Audio handling and statistics.
 """
 
 from __future__ import annotations
@@ -51,7 +66,49 @@ ModalityName = Literal["numeric", "tokens", "image", "audio"]
 
 @dataclass(slots=True)
 class MultimodalLoaderConfig:
-    """Knobs for multimodal DataLoader construction."""
+    """Settings for building fused multimodal loaders.
+
+    Attributes
+    ----------
+    batch_size:
+        Rows per batch. Smaller than the tabular default because a batch here
+        can carry images and waveforms.
+    num_workers:
+        Background loading processes. Worth raising when decoding media from
+        disk is the bottleneck.
+    pin_memory:
+        Page-lock batches for faster GPU transfer. Train loader only.
+    shuffle_train:
+        Shuffle the training loader.
+    drop_last:
+        Discard a final short batch.
+    normalize, normalize_images, normalize_audio:
+        Whether to standardise each modality using training statistics. Set
+        independently because the modalities have genuinely different needs.
+    seed:
+        Controls shuffling.
+    max_len:
+        Token sequence length. Longer is truncated, shorter is padded.
+    max_vocab:
+        Vocabulary cap, keeping the most frequent training tokens.
+    min_freq:
+        Minimum training occurrences for a token to earn a vocabulary slot.
+    image_size:
+        Height and width every image is resized to.
+    image_channels:
+        1 for greyscale, 3 for colour.
+    audio_sample_rate:
+        Target sample rate. Clips at other rates are resampled.
+    audio_max_samples:
+        Waveform length after padding or truncation. At 16 kHz, the default is
+        one second.
+    audio_source_sample_rate:
+        The rate of the incoming audio, when arrays are supplied without one.
+
+    See Also
+    --------
+    make_multimodal_loaders : Consumes this.
+    """
 
     batch_size: int = 16
     num_workers: int = 0
@@ -72,6 +129,17 @@ class MultimodalLoaderConfig:
     audio_source_sample_rate: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the loader settings as JSON-safe values.
+
+        Records how a multimodal run was configured, so it can be arranged the
+        same way later.
+
+        Returns
+        -------
+        dict
+            Every field, with ``image_size`` as a list rather than a tuple so
+            it survives a JSON round trip.
+        """
         payload = asdict(self)
         payload["image_size"] = list(self.image_size)
         return payload
@@ -79,7 +147,61 @@ class MultimodalLoaderConfig:
 
 @dataclass(slots=True)
 class MultimodalContract:
-    """Schema for fused multimodal loaders / trainers."""
+    """Everything needed to feed a fused model the same inputs it trained on.
+
+    Where a tabular model needs column names and scaling constants, a
+    multimodal model needs those plus a vocabulary, image dimensions and channel
+    statistics, and audio rates and amplitude statistics. All of it is
+    train-fitted, all of it must be reproduced at inference, and all of it lives
+    here.
+
+    Attributes
+    ----------
+    numeric_columns:
+        Tabular feature columns, in order.
+    text_column, image_column, audio_column:
+        The source column for each modality, or ``None`` when absent.
+    target_column:
+        What is being predicted.
+    task:
+        ``'classification'`` or ``'regression'``.
+    class_labels:
+        The class vocabulary, indexed by predicted class id.
+    vocab:
+        The serialised token vocabulary — token-to-id map, id-to-token
+        sequence, padding and unknown ids, and sequence length.
+    normalize_mean, normalize_std:
+        Per-column tabular statistics.
+    image_mean, image_std:
+        Per-channel image statistics.
+    image_size, image_channels:
+        The geometry every image is coerced to.
+    audio_mean, audio_std:
+        Waveform amplitude statistics.
+    audio_sample_rate, audio_max_samples, audio_source_sample_rate:
+        The audio geometry.
+    input_layout:
+        The order tensors arrive in the forward pass — ``numeric``, ``tokens``,
+        ``image``, ``audio``, restricted to what is present. The model reads
+        this to know which branch each tensor belongs to.
+    modality:
+        A readable name for the mix, such as ``'tabular_text_fusion'``.
+
+    Notes
+    -----
+    **``input_layout`` is load-bearing.** The fusion module walks it to route
+    tensors to branches, so a mismatch between loaders and model is not a shape
+    error you would notice — it is images being fed to the audio branch.
+
+    **Persist this alongside the weights.** A saved multimodal model without its
+    contract cannot be used: nothing else records the vocabulary or the media
+    geometry, and both were fitted, not chosen.
+
+    See Also
+    --------
+    make_multimodal_loaders : Produces this.
+    build_multimodal_fusion : Accepts it directly to size a model.
+    """
 
     numeric_columns: tuple[str, ...]
     text_column: str | None
@@ -104,6 +226,25 @@ class MultimodalContract:
     modality: str = "tabular_text_fusion"
 
     def to_feature_contract(self) -> FeatureContract:
+        """Project this down to the tabular-shaped contract shared code expects.
+
+        Loader reports, evaluation, and export all take a plain
+        :class:`~buildml.dl.types.FeatureContract`. This produces one by listing
+        every source column — numeric first, then text, image, and audio — and
+        carrying the target, task, class labels, and numeric scaling across.
+
+        Returns
+        -------
+        FeatureContract
+            The flattened view.
+
+        Notes
+        -----
+        **Media-specific detail does not survive the projection.** The
+        vocabulary, image geometry, and audio statistics have nowhere to live in
+        a tabular contract, so keep the full ``MultimodalContract`` for anything
+        that needs to rebuild loaders.
+        """
         cols: list[str] = list(self.numeric_columns)
         if self.text_column:
             cols.append(self.text_column)
@@ -121,6 +262,25 @@ class MultimodalContract:
         )
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the whole contract as JSON-safe values.
+
+        Complete and round-trippable — :meth:`from_dict` reconstructs an
+        equivalent contract from this, which is how a saved multimodal model
+        gets its preprocessing back. NumPy scalars and arrays are converted to
+        Python types along the way.
+
+        Returns
+        -------
+        dict
+            Every column, the task and class labels, the serialised vocabulary,
+            all three sets of normalisation statistics, image and audio
+            geometry, the input layout, and the modality name.
+
+        See Also
+        --------
+        from_dict : The inverse.
+        """
+
         def _jsonable(value: Any) -> Any:
             if isinstance(value, (np.integer, np.floating)):
                 return value.item()
@@ -162,7 +322,32 @@ class MultimodalContract:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> MultimodalContract:
-        """Rebuild a contract from :meth:`to_dict` (bundle / meta round-trip)."""
+        """Rebuild a contract from its serialised form.
+
+        The inverse of :meth:`to_dict`, used when reloading a trainer bundle so
+        the restored model can be fed the way it was trained.
+
+        Parameters
+        ----------
+        payload:
+            A mapping from :meth:`to_dict`.
+
+        Returns
+        -------
+        MultimodalContract
+            The reconstructed contract.
+
+        Raises
+        ------
+        KeyError
+            If ``target_column`` or ``task`` is absent. Everything else has a
+            defensible default; those two do not.
+
+        Notes
+        -----
+        Missing optional keys fall back to the field defaults, so a contract
+        written by an earlier version loads rather than failing.
+        """
 
         def _float_tuple(key: str) -> tuple[float, ...] | None:
             raw = payload.get(key)
@@ -404,11 +589,97 @@ def build_multimodal_fusion(
     fusion_type: FusionMode | None = None,
     fusion_mode: FusionMode = "concat",
 ) -> Any:
-    """Late-fusion module over any mix of tabular / text / image / audio branches.
+    """Build a network that processes each modality separately, then combines.
 
-    Accepts either explicit sizes or a :class:`MultimodalContract` as the first
-    positional argument. ``fusion`` / ``fusion_type`` / ``fusion_mode`` select
-    ``concat`` (default) or ``gated`` late fusion.
+    This is late fusion: every modality gets its own branch — an MLP for
+    tabular, a mean-pooled embedding for text, a small 2D-CNN for images, a
+    small 1D-CNN for audio — and the branch outputs are joined before a shared
+    head. The alternative, early fusion, would concatenate raw inputs, which
+    works poorly when the inputs have wildly different shapes and scales.
+
+    Parameters
+    ----------
+    n_numeric:
+        Number of tabular columns, or a :class:`MultimodalContract` to take
+        every size from. Passing the contract is the reliable path — it
+        guarantees the model matches the loaders.
+    vocab_size:
+        Token vocabulary size. Below 2 disables the text branch.
+    image_channels:
+        1 or 3. Zero disables the image branch.
+    image_size:
+        Height and width of input images.
+    audio_channels:
+        1 for mono. Zero disables the audio branch.
+    audio_samples:
+        Waveform length in samples.
+    task:
+        ``'classification'`` or ``'regression'``.
+    n_classes:
+        Output width for classification.
+    tabular_hidden:
+        Hidden widths of the tabular branch.
+    text_embed_dim / text_hidden:
+        Token vector width and the text branch's projected output width.
+    image_hidden / audio_hidden:
+        Output widths of the media branches.
+    fusion_hidden:
+        Hidden width of the shared head.
+    dropout:
+        Dropout probability throughout.
+    padding_idx:
+        Token id treated as padding and excluded from the text average.
+    fusion / fusion_type / fusion_mode:
+        ``'concat'`` or ``'gated'``. Three spellings for the same choice, kept
+        for compatibility; the first one supplied wins.
+
+    Returns
+    -------
+    torch.nn.Module
+        Accepting one tensor per active modality and emitting logits or a
+        single value. Carries ``input_layout``, ``modality``, ``task``, and the
+        branch sizes as attributes.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If fewer than two modalities are active, if the fusion mode is
+        unrecognised, if the task is unrecognised, or if classification is
+        requested with fewer than two classes.
+
+    Notes
+    -----
+    **Concat fusion weights every branch equally; gated fusion learns the
+    weighting.** Gating adds one learned scalar per modality, passed through a
+    sigmoid, which lets training turn down a branch that is contributing noise.
+    It is cheap and usually worth trying when one modality is much weaker than
+    the others.
+
+    **The forward pass accepts inputs packed or unpacked.** Training passes a
+    single tuple; TorchScript and ONNX tracing pass separate arguments. Both
+    work, which is what lets the same module train and export.
+
+    **Input order must match ``input_layout``.** Nothing checks that the tensor
+    in the image position is an image, so a mismatch produces a trained model
+    that learned from the wrong branches rather than an error.
+
+    **The audio branch is a small CNN, not a speech model.** It can pick up
+    coarse acoustic structure. For transcription or pretrained speech
+    representations, see :mod:`buildml.dl.speech`.
+
+    Examples
+    --------
+    Build straight from the loaders' contract::
+
+        bundle = make_multimodal_loaders(dataset, split_plan, image_column="photo")
+        module = build_multimodal_fusion(bundle.multimodal_contract, fusion="gated")
+
+    See Also
+    --------
+    make_multimodal_loaders : Producing matching loaders.
+    MultimodalContract : What to pass as the first argument.
     """
     if isinstance(n_numeric, MultimodalContract):
         contract = n_numeric
@@ -611,12 +882,94 @@ def make_multimodal_loaders(
     task: Literal["classification", "regression", "auto"] = "auto",
     preprocess: MultimodalContract | dict[str, Any] | None = None,
 ) -> TorchLoaderBundle:
-    """Build fused multimodal DataLoaders with train-only fit stats.
+    """Build loaders that feed several modalities to one model.
 
-    Batch layout is ``(*modality_tensors, y)`` in order
-    ``numeric`` → ``tokens`` → ``image`` → ``audio`` for whichever modalities
-    are present. Pair with :func:`build_multimodal_fusion` (or
-    :meth:`Session.fit_torch` auto-build).
+    Works out which columns hold which modality, fits every transformation on
+    the training partition, and produces batches of
+    ``(*modality_tensors, y)`` in the order ``numeric``, ``tokens``, ``image``,
+    ``audio`` — restricted to whichever are present.
+
+    Parameters
+    ----------
+    dataset:
+        The data, with roles and a numeric target.
+    split_plan:
+        Which rows belong to which partition. A train partition is required.
+    text_column:
+        The text column. Inferred when there is exactly one plausible
+        candidate.
+    numeric_columns:
+        Tabular columns. Defaults to every numeric feature not claimed by
+        another modality.
+    image_column:
+        Column of image paths or arrays.
+    audio_column:
+        Column of audio paths or waveform arrays.
+    config:
+        Batching, sequence length, and media geometry.
+    task:
+        ``'auto'`` to infer, or an explicit choice.
+    preprocess:
+        A frozen contract to reapply instead of fitting. This is how a reloaded
+        model gets loaders that match what it was trained on — refitting would
+        produce a different vocabulary and different statistics, and the model
+        would receive inputs it has never seen.
+
+    Returns
+    -------
+    TorchLoaderBundle
+        The loaders, the multimodal contract, the vocabulary, the layout, and a
+        report.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed. Image and audio decoding may additionally
+        require Pillow or soundfile.
+    ValidationError
+        If fewer than two modalities are present, if a named column is absent,
+        if the image and audio columns are the same, if text inference is
+        ambiguous, if the target is non-numeric or contains ``NaN``, if the
+        train partition is empty, or if a config value is out of range.
+
+    Notes
+    -----
+    **Every fitted quantity comes from the training partition only** — the
+    vocabulary, the tabular statistics, the image channel statistics, and the
+    audio amplitude statistics. Four separate opportunities to leak, and each
+    one would inflate holdout scores invisibly.
+
+    **Text inference refuses when the candidates look like file paths.** A
+    column of ``photos/img_001.png`` is not text, and tokenising it would build
+    a vocabulary of path fragments that appears to work. When the heuristic is
+    unsure it raises and asks you to name the column.
+
+    **Short audio clips are repeat-padded, not zero-padded.** The audio branch
+    ends in adaptive average pooling, and zero padding would drag that average
+    toward silence in proportion to how short the clip was. Repeating the
+    content keeps the pooled representation about the signal rather than about
+    the padding.
+
+    Examples
+    --------
+    Fuse tabular features with product photos::
+
+        bundle = make_multimodal_loaders(
+            dataset, split_plan, image_column="photo_path",
+        )
+        bundle.input_layout  # ('numeric', 'image')
+
+    Rebuild loaders for a reloaded model::
+
+        bundle = make_multimodal_loaders(
+            dataset, split_plan,
+            preprocess=restored.multimodal_preprocess,
+        )
+
+    See Also
+    --------
+    build_multimodal_fusion : The matching model.
+    MultimodalContract : What gets fitted and must be reproduced.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

@@ -1,4 +1,24 @@
-"""DuckDB engine adapter (optional extra)."""
+"""Run prep as SQL, against data that may never be fully read.
+
+DuckDB is an analytical database that runs in this process. There is no server,
+and for BuildML's purposes it is a query planner that can read Parquet directly,
+push projections and predicates down into the scan, and return only what was
+asked for. On a wide table where a dozen columns matter, that is the difference
+between reading a gigabyte and reading forty megabytes.
+
+Everything here works on *relations* — unexecuted query plans. Projecting,
+filtering, sampling, and aggregating all compose more plan; nothing runs until
+something calls for pandas or Arrow. Arrow is the bridge at that boundary,
+because it shares memory layout with DuckDB and avoids a serialisation pass.
+
+Requires the ``duckdb`` extra. Every relation carries a connection that must
+eventually be closed — see :class:`DuckDBTable`.
+
+See Also
+--------
+buildml.data.engines.polars_engine : The other lazy engine.
+buildml.data.dataset.Dataset : The caller.
+"""
 
 from __future__ import annotations
 
@@ -12,33 +32,119 @@ from buildml.core.types import EngineName
 
 
 class DuckDBTable:
-    """DuckDB relation plus connection keepalive.
+    """A DuckDB relation, kept together with the connection it needs.
 
-    Newer DuckDB relation objects reject ad-hoc attributes, so the connection
-    that backs a native handle is stored here instead.
+    A relation is only a query plan; executing it requires the connection it was
+    built against. If that connection is garbage collected, the relation becomes
+    unusable. Newer DuckDB relations reject arbitrary attributes, so the
+    connection cannot simply be stapled on — hence this pairing.
 
-    Ownership
-    ---------
-    The connection is typically owned by a root :class:`~buildml.data.dataset.Dataset`
-    (``_owns_native_connection=True``). Derived project/filter handles share the
-    same connection without taking ownership. Call ``Dataset.close_native()`` on
-    the owner when finished so tests and long sessions do not leak connections.
-    Adapters from :func:`~buildml.data.engines.get_engine` do not open a
-    connection until ``from_pandas`` / ``from_parquet`` / ``from_arrow`` need one.
+    Attributes
+    ----------
+    relation:
+        The unexecuted plan.
+    connection:
+        The connection that backs it.
+
+    Notes
+    -----
+    **One connection is shared by a whole family of handles.** The Dataset that
+    first opened it owns it; every projection and filter derived from that
+    Dataset shares it without owning it. Close the owner and the derived handles
+    stop working too, so keep the owner alive as long as anything descends from
+    it.
+
+    **Adapters do not open connections; operations do.** Calling
+    :func:`~buildml.data.engines.get_engine` repeatedly is free. The first
+    ``from_pandas``, ``from_parquet``, or ``from_arrow`` opens one, and further
+    operations reuse it.
+
+    **Unclosed connections leak.** Use ``with dataset:`` or call
+    ``Dataset.close_native()`` on the owner.
+
+    See Also
+    --------
+    close_duckdb_connection : Closing one directly.
+    buildml.data.dataset.Dataset.close_native : The usual way.
     """
 
     __slots__ = ("relation", "connection")
 
     def __init__(self, relation: Any, connection: Any) -> None:
+        """Pair a relation with the connection that must outlive it.
+
+        Neither is validated; the caller is responsible for supplying a relation
+        that was actually built against this connection.
+
+        Parameters
+        ----------
+        relation:
+            The DuckDB relation — an unexecuted query plan.
+        connection:
+            The connection it was built against.
+
+        Notes
+        -----
+        Set through ``object.__setattr__`` because of ``__slots__``.
+        """
         object.__setattr__(self, "relation", relation)
         object.__setattr__(self, "connection", connection)
 
     def __getattr__(self, name: str) -> Any:
+        """Forward unknown attributes to the wrapped relation.
+
+        Lets this object stand in for a relation for read-only use, so callers
+        holding a handle can reach relation methods directly.
+
+        Parameters
+        ----------
+        name:
+            The attribute being looked up.
+
+        Returns
+        -------
+        Any
+            The relation's attribute.
+
+        Raises
+        ------
+        AttributeError
+            If the relation has no such attribute.
+
+        Notes
+        -----
+        **Forwarded methods return bare relations, not wrapped handles**, so
+        the connection is lost from anything obtained this way. Use the adapter
+        methods when the result needs to stay usable.
+        """
         return getattr(self.relation, name)
 
 
 def close_duckdb_connection(connection: Any) -> None:
-    """Close a DuckDB connection if it is still open (best-effort)."""
+    """Close a connection, tolerating one that is already gone.
+
+    Cleanup runs in destructors, exception handlers, and ``finally`` blocks,
+    where the connection may already be closed or partly torn down. Raising
+    there would replace the real error with a noisy secondary one, so this
+    swallows failures instead.
+
+    Parameters
+    ----------
+    connection:
+        The connection. ``None`` is accepted and does nothing.
+
+    Notes
+    -----
+    **Failures are silent by design**, which does mean a genuinely stuck
+    connection closes quietly. That trade is deliberate: cleanup should not be
+    able to mask the error that triggered it.
+
+    Safe to call more than once.
+
+    See Also
+    --------
+    buildml.data.dataset.Dataset.close_native : The usual entry point.
+    """
     if connection is None:
         return
     closer = getattr(connection, "close", None)
@@ -82,25 +188,53 @@ def _relation_to_arrow_table(rel: Any) -> Any:
 
 
 class DuckDBEngine:
-    """Adapter that moves tables through DuckDB relations/SQL.
+    """Implement the engine protocol by building DuckDB query plans.
 
-    Prefer relation/SQL ops (project, filter, sample, read_parquet) before
-    materializing full tables to Arrow/Pandas. Arrow remains the interchange
-    bridge when a full collect is unavoidable.
+    Every operation composes more plan rather than computing anything. Only
+    :meth:`to_pandas`, :meth:`to_arrow`, and :meth:`write_parquet` execute, and
+    by then the plan describes exactly the columns and rows that are wanted —
+    so the scan reads only those.
 
-    Connection lifecycle
-    --------------------
-    Construction does **not** open a DuckDB connection. Each
-    ``from_pandas`` / ``from_parquet`` / ``from_arrow`` call creates a connection
-    owned by the returned :class:`DuckDBTable` unless an existing ``connection``
-    is supplied for reuse. Relation ops reuse ``DuckDBTable.connection`` so
-    repeated :func:`~buildml.data.engines.get_engine` calls do not spawn
-    adapter-owned connections.
+    Attributes
+    ----------
+    name:
+        :attr:`~buildml.core.types.EngineName.DUCKDB`.
+
+    Notes
+    -----
+    **Constructing this opens nothing.** Connections appear when a table is
+    first created and live on the resulting :class:`DuckDBTable`.
+
+    **Several methods fall back when the fast path fails**, and the fallbacks
+    are slower and materialise more. Which one ran is recorded internally, so
+    an unexpectedly slow operation can be traced to the path it took rather
+    than guessed at.
+
+    See Also
+    --------
+    buildml.data.engines.base.Engine : The contract.
+    DuckDBTable : The handle returned.
     """
 
     name = EngineName.DUCKDB
 
     def __init__(self) -> None:
+        """Import DuckDB and prepare the adapter, without connecting.
+
+        Fails fast and clearly when the optional extra is missing, rather than
+        at the first operation.
+
+        Raises
+        ------
+        MissingExtraError
+            If ``duckdb`` is not installed. Install with
+            ``pip install 'buildml[duckdb]'``.
+
+        Notes
+        -----
+        No connection is opened here, so constructing adapters is cheap and
+        :func:`~buildml.data.engines.get_engine` can cache them.
+        """
         try:
             import duckdb
         except ImportError as exc:  # pragma: no cover - guarded by get_engine
@@ -113,6 +247,33 @@ class DuckDBEngine:
         return self._duckdb.connect(database=":memory:")
 
     def from_pandas(self, frame: pd.DataFrame, *, connection: Any | None = None) -> Any:
+        """Register a DataFrame as a DuckDB relation.
+
+        Goes through Arrow when PyArrow is available, since Arrow and DuckDB
+        share a memory layout and the conversion is close to free. Without it,
+        DuckDB's own DataFrame reader is used, which copies.
+
+        Parameters
+        ----------
+        frame:
+            The data.
+        connection:
+            An existing connection to reuse. Omit to open one, which the
+            returned handle then owns.
+
+        Returns
+        -------
+        DuckDBTable
+            The relation and its connection.
+
+        Notes
+        -----
+        **Reuse a connection when rebuilding.** Repeated conversions that each
+        open their own connection accumulate until something closes them.
+
+        **The pandas index is dropped.** Anything meaningful in it should be a
+        column first.
+        """
         con = connection if connection is not None else self._new_connection()
         try:
             import pyarrow as pa
@@ -126,7 +287,34 @@ class DuckDBEngine:
             return _wrap(con.from_df(frame), con)
 
     def from_arrow(self, table: Any, *, connection: Any | None = None) -> Any:
-        """Attach a PyArrow table as a DuckDB relation (no Pandas)."""
+        """Register an Arrow table as a DuckDB relation, without copying.
+
+        The cheapest way in. DuckDB reads Arrow buffers directly, so this is
+        effectively free compared with going through pandas — worth using
+        whenever the data is already Arrow, such as after a Parquet read.
+
+        Parameters
+        ----------
+        table:
+            A PyArrow table.
+        connection:
+            An existing connection to reuse. Omit to open one.
+
+        Returns
+        -------
+        DuckDBTable
+            The relation and its connection.
+
+        Notes
+        -----
+        **The Arrow table must stay alive.** DuckDB references its buffers
+        rather than copying them; releasing it while the relation is in use is
+        undefined behaviour.
+
+        See Also
+        --------
+        to_arrow : The other direction.
+        """
         con = connection if connection is not None else self._new_connection()
         rel = con.from_arrow(table)
         self._bridge = "arrow"
@@ -140,17 +328,43 @@ class DuckDBEngine:
         connection: Any | None = None,
         compression: str | None = None,
     ) -> Any:
-        """Attach a Parquet file or directory as a DuckDB relation.
+        """Point DuckDB at a Parquet file or directory, reading nothing yet.
+
+        **The best entry point for large data.** The relation knows the schema
+        but has read no values. Projections and filters applied afterwards are
+        pushed into the scan, so columns you never ask for are never read off
+        disk at all.
 
         Parameters
         ----------
+        path:
+            A ``.parquet`` file, or a directory whose ``*.parquet`` files are
+            read as one table.
         lazy:
-            Accepted for API parity with Polars. DuckDB always returns a
-            relation over ``read_parquet``; the flag only records intent.
+            Ignored. DuckDB relations are always lazy; the parameter exists so
+            call sites can be written once and work on Polars too.
         connection:
-            Optional existing connection to reuse (Dataset reattach / rebuild).
+            An existing connection to reuse. Omit to open one.
         compression:
-            Ignored on read; accepted for call-site symmetry with writers.
+            Ignored on read. Parquet records its own codec.
+
+        Returns
+        -------
+        DuckDBTable
+            A relation over the file or directory.
+
+        Notes
+        -----
+        **Directory reads assume a consistent schema.** Files that disagree
+        about column names or types fail at execution, not here — the error
+        surfaces on the first materialisation.
+
+        **The path is interpolated into SQL for directory reads.** Directory
+        names containing quotes will not work.
+
+        See Also
+        --------
+        write_parquet : The other direction.
         """
         del lazy, compression
         target = Path(path)
@@ -172,7 +386,42 @@ class DuckDBEngine:
         compression: str = "zstd",
         row_group_size: int | None = None,
     ) -> Path:
-        """Write a DuckDB relation to Parquet without a Pandas round-trip."""
+        """Write a relation to Parquet without going through pandas.
+
+        Executes the plan and streams the result to disk. Because pandas is not
+        involved, the whole table never has to exist in memory at once.
+
+        Parameters
+        ----------
+        table:
+            The relation to write.
+        path:
+            Destination. Parent directories are created.
+        compression:
+            Codec. ``zstd`` compresses well and decompresses fast, which is
+            usually the right default for data that gets re-read.
+        row_group_size:
+            Rows per group. Smaller groups allow finer-grained skipping on
+            read; larger ones compress better.
+
+        Returns
+        -------
+        pathlib.Path
+            The path written.
+
+        Notes
+        -----
+        **Three paths are tried in order**: the relation's own writer, a SQL
+        ``COPY``, then an Arrow write. Only the last materialises the whole
+        table, and it is reached only when the first two are unavailable.
+
+        **``row_group_size`` is honoured only on the SQL path.** The relation
+        writer does not accept it.
+
+        See Also
+        --------
+        from_parquet : Reading it back.
+        """
         destination = Path(path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         rel = _as_relation(table)
@@ -215,6 +464,28 @@ class DuckDBEngine:
         return destination
 
     def to_pandas(self, table: Any) -> pd.DataFrame:
+        """Execute the plan and return the result as a DataFrame.
+
+        Where the deferral ends: the scan runs, the filters apply, and the whole
+        result lands in memory.
+
+        Parameters
+        ----------
+        table:
+            The relation to materialise.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The result.
+
+        Notes
+        -----
+        **Goes through Arrow when possible**, which converts faster and
+        preserves types better than DuckDB's direct DataFrame path.
+
+        **Everything before this was free; this is not.** Narrow the plan first.
+        """
         rel = _as_relation(table)
         try:
             return _relation_to_arrow_table(rel).to_pandas()
@@ -222,10 +493,61 @@ class DuckDBEngine:
             return rel.df()
 
     def to_arrow(self, table: Any) -> Any:
-        """Materialize a DuckDB relation as a PyArrow table when supported."""
+        """Execute the plan and return the result as Arrow.
+
+        Cheaper than :meth:`to_pandas` and better at preserving types —
+        especially nulls in integer columns, which pandas has historically
+        widened to float. Prefer this when handing data to another Arrow-aware
+        library.
+
+        Parameters
+        ----------
+        table:
+            The relation to materialise.
+
+        Returns
+        -------
+        Any
+            A PyArrow table.
+
+        Raises
+        ------
+        RuntimeError
+            If the relation does not expose Arrow output.
+
+        Notes
+        -----
+        **A streamed reader is drained fully**, so the whole result is in memory
+        when this returns. It is not an iterator.
+
+        See Also
+        --------
+        from_arrow : The other direction.
+        """
         return _relation_to_arrow_table(_as_relation(table))
 
     def n_rows(self, table: Any) -> int:
+        """Count the rows the plan would produce.
+
+        Uses the relation's shape when it is known, and otherwise runs a
+        ``COUNT(*)``.
+
+        Parameters
+        ----------
+        table:
+            The relation.
+
+        Returns
+        -------
+        int
+            The row count.
+
+        Notes
+        -----
+        **Counting can be nearly free or not, depending on the plan.** Parquet
+        stores row counts in metadata, so a plain scan is cheap; a filtered plan
+        has to evaluate the predicate to know the answer.
+        """
         rel = _as_relation(table)
         shape = getattr(rel, "shape", None)
         if shape is not None:
@@ -233,6 +555,26 @@ class DuckDBEngine:
         return int(rel.count("*").fetchone()[0])
 
     def columns(self, table: Any) -> list[str]:
+        """List the columns the plan would produce.
+
+        Read from the relation's schema, so this does not execute anything.
+
+        Parameters
+        ----------
+        table:
+            The relation.
+
+        Returns
+        -------
+        list of str
+            Column names, in order.
+
+        Notes
+        -----
+        There are fallbacks through Arrow and pandas for relations that do not
+        expose a schema directly, and those do materialise. In practice DuckDB
+        always exposes one.
+        """
         rel = _as_relation(table)
         cols = getattr(rel, "columns", None)
         if cols is not None:
@@ -243,6 +585,29 @@ class DuckDBEngine:
             return list(rel.df().columns.astype(str))
 
     def head(self, table: Any, n: int = 5) -> pd.DataFrame:
+        """Return the first few rows as pandas.
+
+        Adds a ``LIMIT`` to the plan before executing, so the scan stops early
+        rather than reading the whole table and slicing.
+
+        Parameters
+        ----------
+        table:
+            The relation.
+        n:
+            How many rows.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The first ``n`` rows.
+
+        Notes
+        -----
+        **Which rows these are is not defined.** Relational results have no
+        inherent order, so without an ``ORDER BY`` the same limit can return
+        different rows across runs or after a change in the plan.
+        """
         rel = _as_relation(table)
         limited = rel.limit(n)
         try:
@@ -251,6 +616,35 @@ class DuckDBEngine:
             return limited.df()
 
     def select_columns(self, table: Any, columns: list[str]) -> Any:
+        """Add a projection to the plan.
+
+        The most valuable operation here. On a Parquet-backed relation the
+        projection is pushed into the scan, so unselected columns are never read
+        off disk — a wide table costs only the columns you named.
+
+        Parameters
+        ----------
+        table:
+            The relation.
+        columns:
+            Which to keep, in the desired order.
+
+        Returns
+        -------
+        DuckDBTable
+            A projected relation, sharing the connection.
+
+        Raises
+        ------
+        RuntimeError
+            If the handle carries no connection.
+
+        Notes
+        -----
+        **Column names are quoted but not validated here.** A name that does not
+        exist fails at execution, which may be some distance from this call.
+        :meth:`~buildml.data.dataset.Dataset.project` checks first.
+        """
         rel = _as_relation(table)
         con = _connection_of(table, None)
         if con is None:
@@ -266,11 +660,46 @@ class DuckDBEngine:
         *,
         random_state: int | None = None,
     ) -> Any:
-        """Sample rows via DuckDB SQL/relation ops before full Arrow collect.
+        """Draw rows inside the engine, without materialising the table.
 
-        Unseeded samples prefer ``USING SAMPLE`` on the relation. Seeded samples
-        use a deterministic hash order + ``LIMIT`` (still relation-native). Full
-        Arrow materialization is a last-resort fallback only.
+        Two strategies, chosen by whether reproducibility is required. Unseeded
+        draws use DuckDB's ``USING SAMPLE``, which is genuinely random and fast.
+        Seeded draws order rows by a hash of their leading columns combined with
+        the seed and take the first ``n`` — deterministic, and still evaluated
+        in the engine.
+
+        Parameters
+        ----------
+        table:
+            The relation.
+        n:
+            How many rows. Clamped to the row count.
+        random_state:
+            Seed. Omit for a genuinely random draw.
+
+        Returns
+        -------
+        DuckDBTable
+            A sampled relation, sharing the connection.
+
+        Raises
+        ------
+        RuntimeError
+            If the handle carries no connection.
+
+        Notes
+        -----
+        **A seeded draw is deterministic but not uniformly random.** Hashing the
+        first three columns and taking the smallest hashes is stable across
+        runs, which is what reproducibility needs, but rows with similar leading
+        values are not independently selected. Do not treat a seeded sample as a
+        statistically clean draw.
+
+        **The same seed gives different rows on a different engine**, since the
+        hash functions differ.
+
+        **Sampling requires a row count**, which executes enough of the plan to
+        produce one.
         """
         rel = _as_relation(table)
         con = _connection_of(table, None)
@@ -301,7 +730,45 @@ class DuckDBEngine:
         return _wrap(rel.order(order_exprs).limit(take), con)
 
     def filter_expr(self, table: Any, expression: str) -> Any:
-        """Push a SQL predicate into the relation (no full-table Arrow collect)."""
+        """Add a SQL predicate to the plan.
+
+        **The most efficient way to drop rows.** On a Parquet-backed relation
+        DuckDB pushes the predicate into the scan and uses row-group statistics
+        to skip whole blocks — non-matching rows are never read.
+
+        Parameters
+        ----------
+        table:
+            The relation.
+        expression:
+            A SQL boolean expression, such as ``'"score" >= 0.5'``.
+
+        Returns
+        -------
+        DuckDBTable
+            A filtered relation, sharing the connection.
+
+        Raises
+        ------
+        ValueError
+            If the expression is empty or whitespace.
+        RuntimeError
+            If the handle carries no connection.
+
+        Notes
+        -----
+        **The expression is interpolated into SQL, not parameterised.** Never
+        build one from untrusted input; use
+        :func:`~buildml.data.filter_syntax.portable_filter_expr`, which quotes
+        and escapes.
+
+        **Syntax errors surface at execution**, not here. The plan is built
+        without validating the predicate.
+
+        See Also
+        --------
+        filter_rows : When the condition is easier in Python.
+        """
         if not str(expression).strip():
             raise ValueError("filter_expr requires a non-empty SQL expression")
         rel = _as_relation(table)
@@ -313,10 +780,44 @@ class DuckDBEngine:
         return _wrap(rel.filter(str(expression)), con)
 
     def filter_rows(self, table: Any, mask: list[bool] | tuple[bool, ...]) -> Any:
-        """Keep rows where ``mask`` is True without materializing the source table first.
+        """Keep the rows a Python boolean mask selects.
 
-        Registers a small mask index table and filters via ``row_number()`` join
-        SQL. Falls back to Arrow ``Table.filter`` only when the SQL path fails.
+        SQL has no notion of row position, so the mask is turned into a small
+        table of keep-indices, registered, and joined against ``row_number()``.
+        Only that index sidecar is materialised — the source table stays a plan.
+
+        Parameters
+        ----------
+        table:
+            The relation.
+        mask:
+            One boolean per row, aligned to current order.
+
+        Returns
+        -------
+        DuckDBTable
+            A filtered relation, sharing the connection.
+
+        Raises
+        ------
+        ValueError
+            If the mask length does not match the row count.
+        RuntimeError
+            If the handle carries no connection.
+
+        Notes
+        -----
+        **``row_number()`` over an unordered relation is a stable numbering, not
+        a meaningful one.** The mask must have been built from the same relation
+        in the same state; against a re-planned or reordered relation it will
+        select different rows without complaint.
+
+        **Prefer :meth:`filter_expr` where the condition can be written as
+        SQL.** A predicate is pushed into the scan; a mask requires the rows to
+        be enumerated first.
+
+        **There are two fallbacks, and both materialise the source** — an Arrow
+        filter, then a pandas one. They run only when the SQL path fails.
         """
         n = int(self.n_rows(table))
         if len(mask) != n:
@@ -380,7 +881,43 @@ class DuckDBEngine:
         *,
         by: list[str] | None = None,
     ) -> Any:
-        """Push group aggregations into DuckDB SQL before Arrow collect."""
+        """Add a ``GROUP BY`` to the plan.
+
+        Compiled to SQL and evaluated by DuckDB, which streams and spills to
+        disk as needed — so aggregating a table larger than memory works, and
+        only the small result comes back.
+
+        Parameters
+        ----------
+        table:
+            The relation.
+        aggregations:
+            Column to function name, or to a list of names. See
+            :meth:`~buildml.data.engines.base.Engine.aggregate` for the
+            supported set.
+        by:
+            Group-by columns. Omit for a single summary row.
+
+        Returns
+        -------
+        DuckDBTable
+            A relation over the aggregated result, sharing the connection.
+
+        Raises
+        ------
+        ValidationError
+            If a named column does not exist, or a function is not supported.
+        RuntimeError
+            If the handle carries no connection.
+
+        Notes
+        -----
+        **Columns and functions are validated before the SQL is built**, so
+        mistakes surface here rather than as a database error later.
+
+        **Quantiles use ``quantile_cont``**, which can differ from pandas on
+        ties.
+        """
         from buildml.data.engines.aggregate import (
             normalize_aggregations,
             sql_aggregate_select,

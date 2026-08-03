@@ -8,6 +8,7 @@ from proofs._lib.datasets import (
     load_intrusion_anomaly_synthetic,
     load_store_sales_synthetic,
     load_support_kb_corpus,
+    load_support_tickets_synthetic,
     load_telco_churn_synthetic,
 )
 from proofs._lib.env import (
@@ -48,6 +49,7 @@ __all__ = [
     "load_intrusion_anomaly_synthetic",
     "load_store_sales_synthetic",
     "load_support_kb_corpus",
+    "load_support_tickets_synthetic",
     "load_telco_churn_synthetic",
     "metrics_round",
     "new_proof_context",

@@ -1,4 +1,39 @@
-"""Train/validation/test split planning and membership."""
+"""Decide which rows a model may learn from, and prove it never saw the rest.
+
+A model evaluated on data it was trained on will report a score it cannot
+reproduce on anything new. Splitting is how that is avoided, and the whole of
+this module exists to make the split correct and to keep it correct.
+
+A :class:`SplitPlan` is membership, not data — positional indices into the
+frame. Nothing is copied, so a plan is cheap to carry and can be serialised
+alongside a model to record exactly which rows it was fitted on.
+
+Four strategies, because "correct" depends on the data. :func:`create_split`
+shuffles rows at random, optionally stratified so class proportions hold in each
+partition. :func:`create_group_split` keeps every row of a group together, which
+matters whenever rows are not independent — repeated measurements of one
+patient, several orders from one customer. :func:`create_time_split` cuts
+chronologically, because predicting the past from the future is not a problem
+anyone has. :func:`inject_partitions` accepts membership you determined
+elsewhere.
+
+The invariants are checked rather than assumed. Every plan asserts disjoint
+partitions; group splits verify no group crosses a boundary; time splits verify
+no training timestamp lands after a test one. Violations raise
+:class:`~buildml.core.errors.LeakageError`, and :func:`assert_fit_partition`
+refuses any fit that has no split at all.
+
+Notes
+-----
+**The strategy matters more than the fraction.** A random split of grouped data
+gives an inflated score that looks fine, and choosing 80/20 over 75/25 will not
+save it.
+
+See Also
+--------
+buildml.data.dataset.Dataset : What gets split.
+buildml.core.errors.LeakageError : What a violation raises.
+"""
 
 from __future__ import annotations
 
@@ -18,23 +53,53 @@ PartitionName = Literal["train", "validation", "test"]
 
 @dataclass(slots=True)
 class SplitPlan:
-    """Split recipe and row-index membership for a dataset.
+    """Which rows belong to which partition, and how that was decided.
 
-    Parameters
+    Membership, not data. The indices are positions in the frame, so a plan
+    stays small and can be stored beside a model as a record of exactly what it
+    was fitted on.
+
+    Attributes
     ----------
     kind:
-        Split strategy name (``random``, ``stratified``, ``group``, ``time``,
-        or ``injected``).
+        How it was made — ``'random'``, ``'stratified'``, ``'group'``,
+        ``'time'``, or ``'injected'``. **Read this before trusting a score**: a
+        random split of grouped data is the most common cause of an optimistic
+        result.
     test_size:
-        Fraction or count used for the test partition when created by BuildML.
+        The fraction or count requested for test.
     validation_size:
-        Optional fraction or count for a validation partition.
+        The same for validation, or ``None`` when there is no validation
+        partition.
     random_state:
-        Seed used for reproducible splitting.
+        The seed. ``None`` for time splits, which do not shuffle, and for
+        injected plans.
     stratify_column:
-        Column used for stratification, if any.
-    train_indices / validation_indices / test_indices:
-        Positional indices into the current dataset frame.
+        The column that shaped the split — the stratification target, the group
+        column, or the time column, depending on ``kind``.
+    train_indices:
+        Positions a model may learn from.
+    validation_indices:
+        Positions for tuning. Empty when none was carved.
+    test_indices:
+        Positions reserved for the final estimate.
+
+    Notes
+    -----
+    **Indices are positional and tied to the current frame.** Reordering or
+    filtering rows after building a plan silently invalidates it — the indices
+    will still resolve, and will point at different rows. Split after the frame
+    is settled.
+
+    **Every partition a model tunes against stops being a clean estimate.**
+    Choosing between models on validation is why a separate test partition
+    exists; consulting test repeatedly turns it into validation.
+
+    See Also
+    --------
+    create_split : Random and stratified.
+    create_group_split : Keeping groups intact.
+    create_time_split : Chronological.
     """
 
     kind: str
@@ -47,6 +112,27 @@ class SplitPlan:
     test_indices: tuple[int, ...]
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the split as JSON-safe values, indices included.
+
+        Complete and round-trippable. The indices are written in full rather
+        than summarised, because a plan without them is a description of a
+        split rather than the split itself.
+
+        Returns
+        -------
+        dict
+            Kind, sizes, seed, the shaping column, and all three index lists.
+
+        Notes
+        -----
+        **This grows with the dataset.** A million-row split serialises a
+        million indices. That is the cost of being able to reproduce a fit
+        exactly.
+
+        See Also
+        --------
+        from_dict : The inverse.
+        """
         return {
             "kind": self.kind,
             "test_size": self.test_size,
@@ -60,6 +146,34 @@ class SplitPlan:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> SplitPlan:
+        """Rebuild a split from its serialised form.
+
+        Restores the exact membership, which is how a reloaded checkpoint
+        continues against the same partitions rather than a fresh split that
+        happens to be the same size.
+
+        Parameters
+        ----------
+        payload:
+            A mapping from :meth:`to_dict`.
+
+        Returns
+        -------
+        SplitPlan
+            The reconstructed plan.
+
+        Raises
+        ------
+        KeyError
+            If ``kind`` is absent. Everything else defaults, since a plan with
+            no validation partition legitimately has none.
+
+        Notes
+        -----
+        **Nothing is validated against a dataset here.** A plan restored
+        against a differently ordered or differently sized frame will resolve
+        to the wrong rows. Restore the data and the plan together.
+        """
         return cls(
             kind=str(payload["kind"]),
             test_size=payload.get("test_size"),
@@ -72,6 +186,36 @@ class SplitPlan:
         )
 
     def indices_for(self, partition: PartitionName) -> tuple[int, ...]:
+        """Return the row positions belonging to one partition.
+
+        The accessor everything else uses to slice a frame, so that no caller
+        has to know which attribute holds which partition.
+
+        Parameters
+        ----------
+        partition:
+            ``'train'``, ``'validation'``, or ``'test'``.
+
+        Returns
+        -------
+        tuple of int
+            Positions in the frame. Empty when the partition was never carved.
+
+        Raises
+        ------
+        ValidationError
+            If the name is not one of the three.
+
+        Notes
+        -----
+        **An empty result is not an error.** A plan built without a validation
+        partition returns an empty tuple for it, and slicing by that yields an
+        empty frame rather than raising.
+
+        See Also
+        --------
+        frame_for_partition : The rows themselves.
+        """
         if partition == "train":
             return self.train_indices
         if partition == "validation":
@@ -81,6 +225,34 @@ class SplitPlan:
         raise ValidationError(f"Unknown partition '{partition}'")
 
     def assert_disjoint(self) -> None:
+        """Verify no row belongs to two partitions, and that the split is usable.
+
+        Called by every constructor in this module. A row appearing in both
+        train and test is the purest form of leakage — the model has memorised
+        the answer — and it is cheap enough to check that there is no reason
+        to assume it away.
+
+        Returns
+        -------
+        None
+            Returns nothing on success; the value is the absence of an
+            exception.
+
+        Raises
+        ------
+        ValidationError
+            If any two partitions share a row, or if train or test is empty.
+
+        Notes
+        -----
+        **Disjoint indices are not the same as disjoint information.**
+        Duplicate rows with different positions pass this check and still leak.
+        Deduplicate before splitting, or split on a group.
+
+        See Also
+        --------
+        assert_fit_partition : The guard on fitting.
+        """
         train, valid, test = (
             set(self.train_indices),
             set(self.validation_indices),
@@ -100,35 +272,68 @@ def create_split(
     random_state: int | None = 42,
     stratify: bool = False,
 ) -> SplitPlan:
-    """Create a random or stratified split over dataset row positions.
+    """Split rows at random, optionally preserving class balance.
+
+    The default strategy, and the right one when rows are independent — each
+    row a separate observation, with no shared subject, session, or entity tying
+    any two together.
+
+    With ``stratify``, class proportions are held roughly constant across
+    partitions. This matters most when a class is rare: an unstratified split of
+    a 2% positive rate can leave a test partition with almost none, making the
+    score mostly noise.
 
     Parameters
     ----------
     dataset:
-        Dataset to split.
+        What to split.
     test_size:
-        Test fraction or absolute count.
+        A fraction in (0, 1), or an absolute row count.
     validation_size:
-        Optional validation fraction/count taken from the remaining train pool.
+        Carved from what remains after test, so a 0.2 test and 0.2 validation
+        leaves 64% for training rather than 60%.
     random_state:
-        RNG seed.
+        The seed. Fixed by default, because a split that changes between runs
+        makes every comparison meaningless.
     stratify:
-        If True, stratify using the dataset target column.
+        Preserve the target's class proportions. Classification only.
 
     Returns
     -------
     SplitPlan
-        Disjoint membership plan.
+        Verified disjoint membership.
 
     Raises
     ------
     ValidationError
-        If stratification is requested without a target role, or sizes are invalid.
+        If the dataset has fewer than two rows, if stratification is requested
+        with no target role, or if the sizes are out of range.
 
     Notes
     -----
-    **Leakage:** Modeling fits must use the train partition only after a split
-    exists. Use :func:`assert_fit_partition` before fit-capable operations.
+    **Random splitting assumes independent rows, and quietly gives a wrong
+    answer when they are not.** If the same patient, customer, or device appears
+    in several rows, use :func:`create_group_split`. If rows are ordered in
+    time, use :func:`create_time_split`. The inflated score a random split
+    produces in those cases looks entirely reasonable.
+
+    **Stratification needs enough of every class.** Scikit-learn refuses when a
+    class has fewer members than partitions; the error names the class.
+
+    Examples
+    --------
+    A stratified split with a validation partition::
+
+        plan = create_split(
+            dataset, test_size=0.2, validation_size=0.2, stratify=True,
+        )
+        len(plan.train_indices), len(plan.test_indices)
+
+    See Also
+    --------
+    create_group_split : When rows share an entity.
+    create_time_split : When rows are ordered.
+    assert_fit_partition : The guard that uses this.
     """
     n_rows = dataset.n_rows
     if n_rows < 2:
@@ -184,23 +389,66 @@ def create_group_split(
     random_state: int | None = 42,
     group_column: str | None = None,
 ) -> SplitPlan:
-    """Create a group-aware split so no group appears in more than one partition.
+    """Split so that no group is ever split, keeping related rows together.
+
+    When several rows describe the same entity — visits by one patient, orders
+    by one customer, readings from one sensor — a random split puts some of that
+    entity's rows in train and some in test. The model then recognises the
+    entity rather than learning the pattern, and reports a score it will not
+    reproduce on anyone new.
+
+    This assigns whole groups to partitions, so a group appears in exactly one.
 
     Parameters
     ----------
     dataset:
-        Dataset with a ``group`` role column (or ``group_column`` override).
-    test_size / validation_size:
-        Fractions or counts interpreted over **groups**, not rows.
+        Data with a ``group`` role, or use ``group_column``.
+    test_size:
+        A fraction or count **of groups, not rows**.
+    validation_size:
+        The same, carved from the training groups.
     random_state:
-        RNG seed.
+        The seed.
     group_column:
-        Optional explicit group column. Defaults to the sole ``group`` role.
+        Which column identifies the group. Defaults to the sole ``group`` role.
+
+    Returns
+    -------
+    SplitPlan
+        Membership, verified both disjoint and group-clean.
 
     Raises
     ------
     ValidationError
-        If no group column exists, groups are too few, or sizes are invalid.
+        If no group column can be resolved, if there are fewer than two
+        distinct groups, or if too few training groups remain to carve a
+        validation partition.
+    LeakageError
+        If a group nonetheless appears in two partitions. A defensive check on
+        the splitter's output.
+
+    Notes
+    -----
+    **Row counts will not match your fractions, and that is correct.** Groups
+    vary in size, so requesting 20% of groups might yield 12% or 31% of rows.
+    Grouping is the thing being controlled; row balance is what gets traded for
+    it.
+
+    **Class balance is not preserved.** Stratified grouping is a harder problem
+    and is not attempted here. Check the class distribution in each partition
+    afterwards if a class is rare.
+
+    Examples
+    --------
+    Hold out whole patients::
+
+        plan = create_group_split(
+            dataset, test_size=0.2, group_column="patient_id",
+        )
+
+    See Also
+    --------
+    create_split : When rows are independent.
     """
     column = _resolve_group_column(dataset, group_column)
     groups = dataset._ensure_pandas()[column]
@@ -249,25 +497,70 @@ def create_time_split(
     validation_size: float | int | None = None,
     time_column: str | None = None,
 ) -> SplitPlan:
-    """Create a chronological split ordered by a time-role column.
+    """Split chronologically: train on the past, test on the future.
 
-    Earlier rows form train (and optional validation); the latest rows form
-    test. No random shuffle is applied.
+    Sorts by timestamp and cuts. The earliest rows train, the latest test, and
+    a validation partition sits between them. Nothing is shuffled.
+
+    This mirrors how a deployed model actually works — it will only ever see
+    data from before the moment it predicts. A random split on time-ordered data
+    lets the model train on Thursday and predict Tuesday, which inflates the
+    score by an amount nobody can estimate afterwards.
 
     Parameters
     ----------
     dataset:
-        Dataset with a ``time`` role column (or ``time_column`` override).
-    test_size / validation_size:
-        Fraction or absolute count of rows (after time ordering).
+        Data with a ``time`` role, or use ``time_column``.
+    test_size:
+        A fraction or count of rows, taken from the most recent end.
+    validation_size:
+        The same, taken from the most recent end of what remains — so the
+        ordering is train, then validation, then test.
     time_column:
-        Optional explicit time column. Defaults to the sole ``time`` role.
+        Which column holds the timestamps. Defaults to the sole ``time`` role.
+
+    Returns
+    -------
+    SplitPlan
+        Membership, verified disjoint and chronologically ordered. Its
+        ``random_state`` is ``None``, since nothing was randomised.
 
     Raises
     ------
     ValidationError
-        If the time column is missing, unparseable, or sizes leave empty
-        partitions.
+        If no time column can be resolved, if any timestamp cannot be parsed,
+        or if the sizes would leave a partition empty.
+    LeakageError
+        If a training timestamp lands after a validation or test one. A
+        defensive check on the sort.
+
+    Notes
+    -----
+    **Every timestamp must parse.** Unparseable values are refused rather than
+    dropped or sorted arbitrarily, since either would put rows on the wrong side
+    of the cut without saying so.
+
+    **Ties are broken stably.** Rows sharing a timestamp keep their original
+    relative order, so the split is reproducible — but rows on the boundary
+    could have gone either way, and if many rows share the cut timestamp that is
+    worth knowing about.
+
+    **The test partition is one period, not a sample of periods.** A model
+    scored against a single unusual month is scored against that month. Rolling
+    evaluation, in :mod:`buildml.timeseries`, addresses this.
+
+    Examples
+    --------
+    Hold out the most recent fifth::
+
+        plan = create_time_split(
+            dataset, test_size=0.2, time_column="order_date",
+        )
+
+    See Also
+    --------
+    create_split : When order does not matter.
+    buildml.timeseries : Rolling-origin evaluation.
     """
     column = _resolve_time_column(dataset, time_column)
     stamps = pd.to_datetime(dataset._ensure_pandas()[column], errors="coerce")
@@ -319,19 +612,55 @@ def inject_partitions(
     test_indices: list[int] | tuple[int, ...],
     validation_indices: list[int] | tuple[int, ...] | None = None,
 ) -> SplitPlan:
-    """Inject externally owned partition membership.
+    """Adopt a split you determined elsewhere.
+
+    For membership that comes from outside BuildML — a competition's official
+    split, a partition your team agreed on, or a scheme none of the built-in
+    strategies expresses.
+
+    The escape hatch is real but not unguarded. Indices are bounds-checked and
+    the result must still be disjoint, so an injected plan cannot smuggle in an
+    overlap the built-in strategies would have refused.
 
     Parameters
     ----------
     dataset:
-        Dataset whose positional indices are referenced.
-    train_indices / test_indices / validation_indices:
-        Positional indices into ``dataset.frame``.
+        The data the indices refer to.
+    train_indices:
+        Positions a model may learn from.
+    test_indices:
+        Positions reserved for evaluation.
+    validation_indices:
+        Optional positions for tuning.
+
+    Returns
+    -------
+    SplitPlan
+        Membership with ``kind='injected'``, verified disjoint.
+
+    Raises
+    ------
+    ValidationError
+        If any index is out of range, if the partitions overlap, or if train or
+        test is empty.
 
     Notes
     -----
-    Professional escape hatch. BuildML still enforces disjoint membership and
-    fit-scope guards; it does not silently allow fit-on-full-data.
+    **Only disjointness is checked.** Group and time invariants are not — the
+    plan does not record what scheme you intended, so there is nothing to verify
+    against. An injected split that leaks groups will be accepted.
+
+    **Rows in no partition are silently excluded.** The indices need not cover
+    the frame, and any row you omit takes no part in anything.
+
+    **Positions, not labels.** These are positions in the frame, so a plan built
+    against a DataFrame index rather than its position will point at the wrong
+    rows.
+
+    See Also
+    --------
+    create_split : Letting BuildML decide.
+    SplitPlan.assert_disjoint : The check applied here.
     """
     n_rows = dataset.n_rows
     for name, values in {
@@ -362,7 +691,42 @@ def frame_for_partition(
     plan: SplitPlan,
     partition: PartitionName,
 ) -> pd.DataFrame:
-    """Return a copy of the frame rows belonging to ``partition``."""
+    """Return the rows of one partition, as an independent copy.
+
+    Turns membership into data. A copy is returned so that modifying the
+    partition cannot reach back into the dataset, which would be a leak in the
+    other direction.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    plan:
+        Which rows belong where.
+    partition:
+        ``'train'``, ``'validation'``, or ``'test'``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The rows, in plan order.
+
+    Raises
+    ------
+    ValidationError
+        If the partition name is unrecognised, or if ``'validation'`` is
+        requested from a plan that has none — an empty frame there would look
+        like an empty split rather than an absent one.
+
+    Notes
+    -----
+    **This copies.** On a large partition that is real memory. Where a view
+    would do, slice with :meth:`SplitPlan.indices_for` instead.
+
+    See Also
+    --------
+    SplitPlan.indices_for : The positions without the copy.
+    """
     indices = plan.indices_for(partition)
     if not indices and partition == "validation":
         raise ValidationError("No validation partition exists on this split plan")
@@ -370,19 +734,49 @@ def frame_for_partition(
 
 
 def assert_fit_partition(plan: SplitPlan | None, partition: PartitionName = "train") -> None:
-    """Guard fit-capable operations against full-data / wrong-partition use.
+    """Refuse to fit on anything except a real training partition.
+
+    Called at the top of every operation that learns something — imputation
+    statistics, encoder vocabularies, scaler parameters, model weights. It
+    enforces two rules: a split must exist, and the fit must be on train.
+
+    The first rule is the one that matters most. Fitting on full data before
+    splitting is the leak that produces the most convincing wrong number,
+    because nothing about it looks unusual — the code runs, the score is good,
+    and the model fails in production for reasons nobody can reconstruct.
 
     Parameters
     ----------
     plan:
-        Current split plan. ``None`` means no split has been created.
+        The current split. ``None`` means none was made.
     partition:
-        Partition the caller intends to fit on.
+        Which partition the caller intends to fit on.
+
+    Returns
+    -------
+    None
+        Returns nothing on success; the value is the absence of an exception.
 
     Raises
     ------
     LeakageError
-        If there is no split, or the requested partition is not ``train``.
+        If there is no split, if the partition is not ``'train'``, or if the
+        training partition is empty.
+
+    Notes
+    -----
+    **The refusal is deliberate friction.** Every alternative — a warning, a
+    default, an inferred split — leaves a path to a wrong number that looks
+    right. :func:`inject_partitions` is available when you genuinely own the
+    split.
+
+    **Cross-validation refits per fold** and calls this against each fold's
+    training rows, so the guard holds there too.
+
+    See Also
+    --------
+    create_split : Making a plan to satisfy this.
+    inject_partitions : Supplying your own.
     """
     if plan is None:
         raise LeakageError(

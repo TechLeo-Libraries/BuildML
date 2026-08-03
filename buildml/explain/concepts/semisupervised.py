@@ -186,7 +186,7 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "Combining representation learning with partial labels is a common "
                 "industry recipe; finetune_ssl_head alone ignores unlabeled train rows."
-            ),
+            ,),
             how_buildml_uses=(
                 "Session.fit_ssl_pretext → Session.transform_ssl(attach=True) → "
                 "Session.fit_semisupervised(columns=ssl_emb_*).",

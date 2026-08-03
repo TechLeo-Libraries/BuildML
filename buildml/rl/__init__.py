@@ -13,7 +13,9 @@ Honesty (this package):
   - Behavioral cloning from demonstration tables (state → action) on **train only**.
   - Contextual bandits from logged (context, action, reward) tables on **train only**;
     holdout metrics are **offline** (DM / IPS) and disclosed as such.
-  - Optional Gymnasium env loop behind ``buildml[rl]`` (REINFORCE-lite linear softmax).
+  - Optional Gymnasium env loops behind ``buildml[rl]``: REINFORCE-lite linear
+    softmax (policy gradient) and tabular TD control — Q-learning / SARSA /
+    Expected SARSA / Double Q-learning — with explicit state discretization.
   - **Not** a MuJoCo / robotics / AV / multi-agent world-sim platform.
   - Core stays numpy/pandas/sklearn — ``gymnasium`` is optional and never required
     for ``import buildml`` or BC / bandit paths.
@@ -43,6 +45,10 @@ __all__ = [
     "RlMode",
     "RlPlan",
     "BanditAlgorithm",
+    "TabularAlgorithm",
+    "TabularValuePolicy",
+    "ObservationDiscretizer",
+    "TABULAR_ALGORITHMS",
     "act_rl",
     "evaluate_imitation",
     "evaluate_rl",
@@ -74,11 +80,20 @@ def __getattr__(name: str) -> Any:
         "ImitationConfig",
         "RlMode",
         "BanditAlgorithm",
+        "TabularAlgorithm",
         "RlConfig",
     }:
         from buildml.rl import types as types_mod
 
         return getattr(types_mod, name)
+    if name in {
+        "TabularValuePolicy",
+        "ObservationDiscretizer",
+        "TABULAR_ALGORITHMS",
+    }:
+        from buildml.rl import tabular as tabular_mod
+
+        return getattr(tabular_mod, name)
     if name in {
         "ImitationPlan",
         "ImitationFitResult",

@@ -1,4 +1,34 @@
-"""Score-time schema contract for pipeline bundles."""
+"""Check the incoming frame looks like the training frame, before predicting.
+
+A model will produce a number for almost any input. Rename a column and it may
+raise; reorder them and it may not; pass strings where floats were expected and
+pandas may quietly upcast to object, at which point the estimator sees garbage
+and returns a confident answer. None of these announce themselves.
+
+A schema contract is what the training frame looked like — the columns, their
+types, their roles, their nullability — saved alongside the model and checked
+before each batch of predictions. It turns a silent wrong answer into a clear
+error naming the column.
+
+Two stages are checked, because two different frames are involved. The *input*
+stage checks the raw frame you supply, before the fitted transforms run. The
+*features* stage checks what comes out the other side, against what the
+estimator was actually fitted on. A mismatch at input usually means the caller
+sent the wrong thing; a mismatch at features usually means a transform behaved
+differently than at training time, most often because a category it had never
+seen produced a different set of one-hot columns.
+
+Type checking is by *family* rather than exact dtype, deliberately. A column
+that was ``int64`` in training and arrives as ``Int64`` from a Parquet round
+trip is the same column. Insisting on exact equality would make the contract
+fire constantly on differences that do not matter, and a check that cries wolf
+gets turned off.
+
+See Also
+--------
+buildml.pipeline.score : Where these checks run during prediction.
+buildml.pipeline.card : The human-readable half of the same record.
+"""
 
 from __future__ import annotations
 
@@ -30,7 +60,13 @@ _SCORE_REQUIRED_ROLES = frozenset(
 
 @dataclass(slots=True)
 class SchemaContract:
-    """Input / feature contract persisted with a pipeline bundle.
+    """What the training frame looked like, recorded so inputs can be checked.
+
+    Two column lists, for the two stages. ``columns`` is the raw frame expected
+    before transforms run; ``feature_columns`` is what the estimator was fitted
+    on afterwards. They differ whenever encoding, binning, or feature selection
+    is involved, and conflating them produces confusing failures — a one-hot
+    output column is not something a caller can supply.
 
     Parameters
     ----------
@@ -55,6 +91,22 @@ class SchemaContract:
         Columns that are numeric after encode/bin replay (one-hot / target /
         ordinal outputs). Used for dtype-family compatibility at the features
         stage.
+
+    Notes
+    -----
+    **The target is excluded from ``columns`` on purpose.** Score-time frames do
+    not have labels — that is the point of scoring — so requiring the target
+    would fail every real prediction request.
+
+    **Roles are required by *kind*, not by name.** If training had a group
+    column, the contract requires *some* column with the group role, not that
+    exact name. Column names change between systems; the role is the thing that
+    has to survive.
+
+    See Also
+    --------
+    build_schema_contract : Deriving one at save time.
+    validate_score_frame : Checking a frame against one.
     """
 
     columns: tuple[str, ...]
@@ -70,6 +122,21 @@ class SchemaContract:
     buildml_version: str = __version__
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the contract to JSON-safe plain data.
+
+        Written to ``schema_contract.json`` in the bundle, sorted and indented
+        so two versions of a model can be diffed to see exactly how the expected
+        input changed.
+
+        Returns
+        -------
+        dict
+            Every field, with tuples as lists and mappings copied.
+
+        See Also
+        --------
+        from_dict : The inverse.
+        """
         return {
             "format": self.format,
             "buildml_version": self.buildml_version,
@@ -86,6 +153,35 @@ class SchemaContract:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> SchemaContract:
+        """Rebuild a contract from stored JSON, refusing an unknown format.
+
+        Unlike the model card, the format label is enforced here. A card that is
+        partly understood still informs; a contract that is partly understood
+        would validate against incomplete expectations and pass frames it should
+        reject, which is worse than not checking at all.
+
+        Parameters
+        ----------
+        payload:
+            The parsed contents of ``schema_contract.json``.
+
+        Returns
+        -------
+        SchemaContract
+            The reconstructed contract. Absent optional fields default empty,
+            and a missing format label is treated as the current one, since
+            unlabelled contracts predate versioning.
+
+        Raises
+        ------
+        ValidationError
+            If the payload is not a mapping, or carries a format label this
+            version does not know.
+
+        See Also
+        --------
+        to_dict : The inverse.
+        """
         if not isinstance(payload, dict):
             raise ValidationError("schema contract payload must be a mapping")
         fmt = payload.get("format")
@@ -120,7 +216,51 @@ class SchemaContract:
 
 @dataclass(slots=True)
 class SchemaContractValidation:
-    """Outcome of validating a score frame against a contract."""
+    """Everything wrong with a frame, not just the first thing.
+
+    Reporting all problems at once matters here more than usual. Fixing a score
+    frame is often an integration task against a system you do not control, and
+    discovering three missing columns and two type mismatches in one pass beats
+    five deploy-and-retry cycles.
+
+    Attributes
+    ----------
+    ok:
+        Whether the frame passes. Note that ``ok`` can be ``True`` alongside
+        warnings, and is ``True`` when there was no contract to check against.
+    missing_columns:
+        Expected columns absent from the frame. Always a failure.
+    extra_columns:
+        Columns the contract does not mention. A warning by default, since
+        upstream systems commonly carry extra fields.
+    wrong_type_columns:
+        Family mismatches, each naming the column, what was expected, what
+        arrived, and the actual dtype.
+    missing_roles:
+        Required roles with no column present to fill them.
+    coerced_columns:
+        Columns :func:`coerce_score_frame` converted. Populated only by that
+        function.
+    warnings:
+        Non-fatal observations, including all-null columns that were
+        non-nullable in training.
+    stage:
+        ``'input'`` or ``'features'``, so a failure can be traced to the right
+        side of the transforms.
+    contract_present:
+        ``False`` for a bundle with no contract, meaning nothing was checked.
+
+    Notes
+    -----
+    **``ok=True`` with ``contract_present=False`` means unchecked, not valid.**
+    Older bundles have no contract, and passing a frame through unvalidated is
+    the compatible behaviour — but it is not evidence the frame was right.
+
+    See Also
+    --------
+    validate_score_frame : Producing this.
+    raise_for_contract : Turning a failure into an exception.
+    """
 
     ok: bool
     missing_columns: list[str] = field(default_factory=list)
@@ -133,6 +273,16 @@ class SchemaContractValidation:
     contract_present: bool = True
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the validation outcome to plain data.
+
+        Suitable for logging or returning in an HTTP error body, so a caller who
+        sent a bad frame gets the specifics rather than "invalid input".
+
+        Returns
+        -------
+        dict
+            Every field, with lists copied.
+        """
         return {
             "ok": self.ok,
             "missing_columns": list(self.missing_columns),
@@ -147,7 +297,58 @@ class SchemaContractValidation:
 
 
 def dtype_family(dtype: Any) -> DtypeFamily:
-    """Map a pandas/numpy dtype (or string) to a coarse family."""
+    """Reduce a dtype to one of six families, so equivalent types compare equal.
+
+    Exact dtype comparison is the wrong test for a score-time contract. The same
+    column can be ``int64`` from pandas, ``Int64`` from a nullable read,
+    ``int32`` from Arrow, and ``Float64`` from Polars — all of them the same
+    column as far as a model is concerned. Comparing families keeps the check
+    meaningful without firing on round-trip noise.
+
+    Matching is by substring on the lowercased name, which handles the many
+    spellings the ecosystem produces without enumerating them.
+
+    Parameters
+    ----------
+    dtype:
+        A dtype object or its string name. Anything with a ``name`` attribute is
+        read from that; otherwise the value is stringified.
+
+    Returns
+    -------
+    str
+        One of ``'numeric'``, ``'bool'``, ``'string'``, ``'datetime'``,
+        ``'categorical'``, or ``'other'``.
+
+    Notes
+    -----
+    **Booleans are checked before numerics** because ``'bool'`` would otherwise
+    be caught by neither and fall through, and because a boolean column is
+    meaningfully different from an integer one even though the two are
+    interchangeable at score time.
+
+    **``'other'`` is a genuine answer, not a failure.** Object columns holding
+    lists, or exotic extension types, land here and are treated as compatible
+    with everything, since nothing useful can be asserted about them.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> dtype_family(np.dtype("int64"))
+    'numeric'
+    >>> dtype_family("Float64")
+    'numeric'
+    >>> dtype_family("datetime64[ns]")
+    'datetime'
+    >>> dtype_family("object")
+    'string'
+    >>> dtype_family("complex128")
+    'other'
+
+    See Also
+    --------
+    families_compatible : Deciding whether two families may substitute.
+    """
     name = str(getattr(dtype, "name", dtype)).lower()
     if "bool" in name:
         return "bool"
@@ -174,7 +375,60 @@ def dtype_family(dtype: Any) -> DtypeFamily:
 
 
 def families_compatible(expected: DtypeFamily, actual: DtypeFamily) -> bool:
-    """Return True when score-time families are interchangeable."""
+    """Decide whether an arriving family can stand in for the expected one.
+
+    Identical families always match. Beyond that, two substitutions are allowed,
+    both because they happen constantly in practice and neither changes what the
+    model sees.
+
+    Strings and categoricals are interchangeable: whether pandas represents a
+    column as ``object`` or ``category`` depends on how it was read, not on the
+    data. Booleans and numerics are interchangeable because ``True``/``False``
+    survives a CSV or Arrow round trip as ``1``/``0`` more often than not.
+
+    Anything involving ``'other'`` passes, since nothing can be asserted about a
+    family that could not be identified, and failing on it would reject valid
+    frames for no reason.
+
+    Parameters
+    ----------
+    expected:
+        The family recorded in the contract.
+    actual:
+        The family of the column that arrived.
+
+    Returns
+    -------
+    bool
+        Whether the substitution is acceptable.
+
+    Notes
+    -----
+    **Compatibility is symmetric.** The pair is compared as a set, so it does
+    not matter which side is which.
+
+    **This is a deliberately loose check.** It catches a string where a number
+    belongs, or a date where a category belongs — the mistakes that produce
+    nonsense predictions — and lets through the representational differences
+    that do not.
+
+    Examples
+    --------
+    >>> families_compatible("numeric", "numeric")
+    True
+    >>> families_compatible("string", "categorical")
+    True
+    >>> families_compatible("bool", "numeric")
+    True
+    >>> families_compatible("numeric", "string")
+    False
+    >>> families_compatible("numeric", "other")
+    True
+
+    See Also
+    --------
+    dtype_family : Producing the families being compared.
+    """
     if expected == "other" or actual == "other":
         return True
     if expected == actual:
@@ -188,10 +442,43 @@ def families_compatible(expected: DtypeFamily, actual: DtypeFamily) -> bool:
 
 
 def input_columns_from_plans(plans: dict[str, Any] | None) -> list[str]:
-    """Collect raw score-time input columns referenced by fitted plans.
+    """Work out which raw columns a caller must supply, from the plans themselves.
 
-    Engineered outputs (for example one-hot feature names) are excluded so the
-    contract describes the frame expected *before* plan replay.
+    The plans know what they consume, so the contract can be derived rather than
+    hand-written — and a derived list does not drift out of date the way a
+    hand-written one does.
+
+    The subtlety is exclusion. An encode plan reads ``city`` and produces
+    ``city_London``, ``city_Paris``, and so on. Those outputs are *not* inputs;
+    requiring them would demand that the caller do the encoding the bundle
+    exists to perform. Engineered names are collected across all plans and
+    subtracted from the result.
+
+    Parameters
+    ----------
+    plans:
+        The fitted plans keyed by name, as stored in a bundle. ``None`` or empty
+        yields an empty list.
+
+    Returns
+    -------
+    list of str
+        The raw input columns in first-seen order, deduplicated, with
+        engineered outputs removed.
+
+    Notes
+    -----
+    **Order is first-seen across plans, not the frame's order.** It is a set of
+    requirements rather than a layout; column *presence* is what gets checked,
+    not position.
+
+    **An empty result means no plan declared its inputs**, which is why
+    :func:`~buildml.pipeline.bundle.save_pipeline_bundle` falls back to the
+    estimator's feature columns rather than writing an empty contract.
+
+    See Also
+    --------
+    build_schema_contract : Where this feeds in.
     """
     if not plans:
         return []
@@ -284,7 +571,58 @@ def build_schema_contract(
     input_columns: list[str] | tuple[str, ...] | None = None,
     encoded_numeric_columns: list[str] | tuple[str, ...] | None = None,
 ) -> SchemaContract:
-    """Build a score-time contract from training schema/roles/feature columns."""
+    """Derive the contract from what was known at training time.
+
+    Assembles the expected input from the training schema, the roles, and the
+    plans' declared inputs, then makes three adjustments that matter.
+
+    The target is removed, because score-time frames have no labels. Feature
+    columns are ordered first when roles are known, so the important columns
+    lead the list in error messages and in the saved JSON. And columns that are
+    numeric only *after* encoding are recorded separately, so the features-stage
+    check expects numbers from a column that was a string at input.
+
+    Parameters
+    ----------
+    schema:
+        The training schema, as a :class:`~buildml.core.types.TableSchema` or
+        its dictionary form. When ``None``, types cannot be checked and every
+        column gets the permissive ``'other'`` family.
+    roles:
+        Column roles at training time. Without them the contract cannot require
+        roles at score time, only columns.
+    feature_columns:
+        What the estimator was fitted on — the features-stage expectation.
+    target_column:
+        The training target, excluded from the expected inputs.
+    input_columns:
+        Override the raw inputs, normally from
+        :func:`input_columns_from_plans`. When given, it replaces whatever the
+        schema implied.
+    encoded_numeric_columns:
+        Feature columns that are numeric post-transform. Inferred when omitted,
+        by taking feature columns that are already numeric or that do not appear
+        among the inputs — the latter being engineered outputs.
+
+    Returns
+    -------
+    SchemaContract
+        The contract, ready to save.
+
+    Notes
+    -----
+    **A contract with no schema still checks column presence.** Types are
+    skipped, roles are skipped, and missing columns are still caught, which is
+    the most common failure anyway.
+
+    **The inference of ``encoded_numeric_columns`` is a heuristic**, and a good
+    one for the standard plans. Pass the list explicitly when a custom transform
+    produces columns that do not follow the pattern.
+
+    See Also
+    --------
+    validate_score_frame : Using the contract.
+    """
     nullable: dict[str, bool] = {}
     if isinstance(schema, TableSchema):
         fields = schema.fields
@@ -365,7 +703,34 @@ def build_schema_contract(
 
 
 def save_schema_contract(path: str | Path, contract: SchemaContract) -> Path:
-    """Write ``schema_contract.json`` under a pipeline bundle directory."""
+    """Write the contract as sorted, indented JSON in the bundle directory.
+
+    Sorted and indented so the file diffs cleanly: comparing two versions of a
+    model shows exactly which columns or types changed, which is the review
+    question that matters when redeploying.
+
+    Parameters
+    ----------
+    path:
+        The bundle directory, created if missing.
+    contract:
+        The contract to write.
+
+    Returns
+    -------
+    Path
+        The path of the written file, not the directory — useful for logging the
+        exact artifact.
+
+    Raises
+    ------
+    OSError
+        If the directory cannot be created or the file written.
+
+    See Also
+    --------
+    load_schema_contract : Reading it back.
+    """
     root = Path(path)
     root.mkdir(parents=True, exist_ok=True)
     destination = root / SCHEMA_CONTRACT_FILENAME
@@ -377,7 +742,37 @@ def save_schema_contract(path: str | Path, contract: SchemaContract) -> Path:
 
 
 def load_schema_contract(path: str | Path) -> SchemaContract | None:
-    """Load a schema contract when present; return None for older bundles."""
+    """Read the contract if the bundle has one, and ``None`` if it does not.
+
+    Absence is a normal outcome, not an error. Bundles written before contracts
+    existed have no such file, and refusing to load them would break artifacts
+    that are otherwise fine. Callers handle the ``None`` by skipping validation
+    with a warning.
+
+    Parameters
+    ----------
+    path:
+        The bundle directory, or the contract file itself.
+
+    Returns
+    -------
+    SchemaContract or None
+        The contract, or ``None`` when no file is present.
+
+    Raises
+    ------
+    ValidationError
+        If a file exists but carries an unsupported format. Present-but-unknown
+        is different from absent: something wrote a contract this version cannot
+        interpret, and ignoring it would validate against nothing while
+        appearing to validate.
+    json.JSONDecodeError
+        If the file is not valid JSON.
+
+    See Also
+    --------
+    save_schema_contract : Writing it.
+    """
     root = Path(path)
     contract_path = root / SCHEMA_CONTRACT_FILENAME if root.is_dir() else root
     if not contract_path.exists():
@@ -395,24 +790,66 @@ def validate_score_frame(
     strict_types: bool = True,
     check_roles: bool = True,
 ) -> SchemaContractValidation:
-    """Validate a score frame against a persisted contract.
+    """Compare a frame against the contract and report every discrepancy.
+
+    Checks four things and collects all of them before returning: columns that
+    are missing, columns that are extra, columns whose type family does not
+    match, and roles with no column to fill them. Nothing raises — the caller
+    decides what is fatal, usually via :func:`raise_for_contract`.
 
     Parameters
     ----------
     frame:
-        Incoming score DataFrame.
+        The frame to check.
     contract:
-        Contract from the bundle, or ``None`` for legacy bundles (skip).
+        The contract from the bundle, or ``None`` for a bundle that has none,
+        in which case validation is skipped and the result says so.
     stage:
-        ``input`` checks raw columns before plan replay; ``features`` checks
-        the estimator feature contract after transforms.
+        ``'input'`` to check the raw frame before transforms, ``'features'`` to
+        check the transformed frame against what the estimator expects.
     allow_extra:
-        When True, extra columns produce warnings rather than errors.
+        Treat unexpected columns as a warning rather than a failure. Defaults to
+        permissive, because upstream systems routinely carry fields the model
+        does not use.
     strict_types:
-        When True, dtype-family mismatches are errors.
+        Treat family mismatches as failures. Turning this off records them as
+        warnings instead, which is occasionally right when a downstream
+        transform will fix the type anyway.
     check_roles:
-        When True (input stage), require that each ``required_roles`` entry has
-        at least one present column with that role.
+        Check required roles. Input stage only; roles have no meaning after
+        transforms.
+
+    Returns
+    -------
+    SchemaContractValidation
+        Every discrepancy found, and whether the frame passes overall.
+
+    Notes
+    -----
+    **Type checks only cover columns that are present.** A missing column is
+    reported once, as missing, rather than twice.
+
+    **Nullability is advisory.** A column that was non-nullable in training and
+    arrives entirely null produces a warning, never a failure — the model will
+    still predict, and whether that is acceptable depends on the column.
+
+    **Extra columns at the features stage deserve more suspicion than at
+    input.** They usually mean a transform produced something unexpected, most
+    often an unseen category creating an extra one-hot column.
+
+    Examples
+    --------
+    Check before predicting, and act on the specifics::
+
+        result = validate_score_frame(frame, bundle.schema_contract)
+        if not result.ok:
+            print(result.missing_columns, result.wrong_type_columns)
+            raise_for_contract(result)
+
+    See Also
+    --------
+    coerce_score_frame : Fixing what can be fixed before checking.
+    raise_for_contract : Turning a failure into an exception.
     """
     if contract is None:
         return SchemaContractValidation(
@@ -509,17 +946,63 @@ def coerce_score_frame(
     *,
     stage: Literal["input", "features"] = "input",
 ) -> tuple[pd.DataFrame, SchemaContractValidation]:
-    """Return a copy with best-effort dtype coercion toward the contract.
+    """Convert what can safely be converted, then report what is left.
 
-    Coercion is conservative:
+    JSON has no numeric type distinction worth relying on, CSV has no types at
+    all, and both are how score frames usually arrive. A column of ``"42"``
+    strings that should be integers is not a real mismatch, it is a transport
+    artefact, and failing on it makes the contract an obstacle rather than a
+    guard.
 
-    - numeric ← bool / numeric-looking strings
-    - bool ← 0/1 numeric
-    - datetime ← parseable strings
-    - string/categorical ← cast to string
+    Four conversions are attempted, each conservative: numeric from
+    numeric-looking strings, boolean from strictly 0/1 numerics, datetime from
+    parseable strings, and string from anything. A conversion that fails leaves
+    the column untouched and surfaces in the returned validation, so nothing is
+    hidden.
 
-    Failures leave the column unchanged and appear as wrong-type entries when
-    revalidated. Does not invent missing columns.
+    Parameters
+    ----------
+    frame:
+        The frame to coerce. Never modified — a copy is returned.
+    contract:
+        The contract to coerce toward, or ``None`` to copy and skip.
+    stage:
+        Which expectation to use, as in :func:`validate_score_frame`.
+
+    Returns
+    -------
+    tuple of (DataFrame, SchemaContractValidation)
+        The coerced copy, and its validation with ``coerced_columns`` listing
+        what changed.
+
+    Notes
+    -----
+    **Missing columns are never invented.** A column that is absent stays
+    absent and is reported as missing. Filling it would mean guessing values,
+    and a guessed value produces a prediction that looks real.
+
+    **Boolean coercion requires strictly 0 and 1.** A column of arbitrary
+    integers is not silently truncated to booleans.
+
+    **Numeric coercion uses ``errors='coerce'``, which turns unparseable values
+    into nulls.** A column of mostly-numeric strings with a few ``'N/A'``
+    entries converts, and those entries become missing. That is usually what was
+    meant, and it is worth knowing it happened — check ``coerced_columns``
+    against your expectations rather than assuming a clean conversion.
+
+    **Coercion is not free on large frames.** It touches every expected column;
+    skip it when the source already produces correct types.
+
+    Examples
+    --------
+    The usual score-time entry point::
+
+        frame, result = coerce_score_frame(raw_frame, bundle.schema_contract)
+        raise_for_contract(result)
+
+    See Also
+    --------
+    validate_score_frame : Checking without converting.
     """
     if contract is None:
         return frame.copy(), validate_score_frame(frame, None, stage=stage)
@@ -575,7 +1058,35 @@ def coerce_score_frame(
 
 
 def raise_for_contract(result: SchemaContractValidation, *, allow_extra: bool = True) -> None:
-    """Raise :class:`ValidationError` when contract validation failed."""
+    """Turn a failed validation into an exception naming every problem.
+
+    The separation between checking and raising is deliberate: some callers want
+    to inspect and recover, others want to stop. This is the stopping half, and
+    it builds a message that lists missing columns, missing roles, and each
+    wrong-typed column with what was expected and what arrived — enough to fix
+    the caller without a debugging session.
+
+    Passing validations return silently, so this can be called unconditionally.
+
+    Parameters
+    ----------
+    result:
+        The validation to act on.
+    allow_extra:
+        Whether extra columns are acceptable. Should match what was passed to
+        the validation; when they were already treated as a warning, they are
+        left out of the message.
+
+    Raises
+    ------
+    ValidationError
+        If the validation failed. The message names the stage, so it is clear
+        whether the caller's frame was wrong or a transform misbehaved.
+
+    See Also
+    --------
+    validate_score_frame : Producing the result.
+    """
     if result.ok:
         return
     parts: list[str] = []

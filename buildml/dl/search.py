@@ -1,8 +1,29 @@
-"""Nested / nested-style Torch hyperparameter search (fold-honest).
+"""Search Torch hyperparameters without the search inflating the score.
 
-Outer folds estimate generalization after an inner search that never sees
-outer-eval rows. Normalize stats are fit fold-locally on the train subset of
-each loop. Session test/validation partitions (when present) stay untouched.
+Trying many configurations and reporting the best one's score overstates it,
+and by more than most people expect. With enough configurations, one of them
+will fit the evaluation rows well by luck, and that luck does not transfer. The
+selected score measures the selection as much as the model.
+
+Nested cross-validation is the standard fix, and :func:`nested_cv_torch`
+implements it. An outer loop holds out a fold; the entire search runs inside on
+the remaining rows; the winner is scored once on the held-out fold. The outer
+score never influenced the choice, so it stays honest. The cost is that the
+search runs once per outer fold, which multiplies the work.
+
+:func:`search_torch` is the cheaper option: a single search with no outer loop.
+It finds good hyperparameters at a fraction of the cost, and its best score is
+optimistic. Use it to choose, then get your estimate from a partition the search
+never touched.
+
+Both refuse to touch Session validation and test partitions, verify that
+training and evaluation indices do not overlap, and fit normalisation statistics
+fold-locally.
+
+See Also
+--------
+buildml.dl.cv.cross_validate_torch : Evaluation without selection.
+buildml.model.tuning : The classical equivalent.
 """
 
 from __future__ import annotations
@@ -33,7 +54,36 @@ SearchMethod = Literal["grid", "randomized", "auto"]
 
 @dataclass(slots=True)
 class TorchSearchTrial:
-    """One hyperparameter configuration with inner-fold evidence."""
+    """One configuration and how it scored across the folds that tested it.
+
+    Attributes
+    ----------
+    params:
+        The hyperparameters tried.
+    mean_metrics:
+        Average of each metric across the folds.
+    std_metrics:
+        Spread across folds. Two configurations with similar means but very
+        different spreads are not equally good, and the ranking cannot see
+        that.
+    n_inner_folds:
+        How many folds contributed.
+    rank_metric:
+        Which metric decided the ordering.
+    rank_value:
+        This configuration's value for that metric.
+
+    Notes
+    -----
+    **Compare ``std_metrics`` between the top few trials before trusting the
+    ranking.** When the gap between first and second is smaller than either
+    one's spread, the ordering is noise, and picking the simpler or cheaper
+    configuration is the better call.
+
+    See Also
+    --------
+    search_torch : Produces these.
+    """
 
     params: dict[str, Any]
     mean_metrics: dict[str, float]
@@ -43,6 +93,17 @@ class TorchSearchTrial:
     rank_value: float
 
     def to_dict(self) -> dict[str, Any]:
+        """Return this trial as JSON-safe values.
+
+        Includes the per-fold spread alongside the mean, so a recorded search
+        can still be second-guessed later.
+
+        Returns
+        -------
+        dict
+            Parameters, mean and standard-deviation metrics, fold count,
+            ranking metric, and ranking value.
+        """
         return {
             "params": dict(self.params),
             "mean_metrics": dict(self.mean_metrics),
@@ -55,7 +116,38 @@ class TorchSearchTrial:
 
 @dataclass(slots=True)
 class TorchOuterFoldResult:
-    """Outer-fold outcome after inner hyperparameter selection."""
+    """One outer fold: what the inner search chose, and how it then scored.
+
+    Attributes
+    ----------
+    fold:
+        Zero-based outer fold index.
+    train_size, eval_size:
+        Row counts. The training side ran the whole inner search; the
+        evaluation side was scored once.
+    best_params:
+        What the inner search selected on this fold's training rows.
+    inner_best:
+        The winning trial's full inner-fold evidence.
+    outer_metrics:
+        How the refit winner scored on the held-out rows. **This** is the
+        honest number.
+    n_inner_trials:
+        How many configurations the inner search compared.
+    warnings:
+        Anything notable about this fold.
+
+    Notes
+    -----
+    **``outer_metrics`` will usually be worse than ``inner_best``, and that gap
+    is the point.** The inner score was chosen as the maximum over many trials;
+    the outer score was measured once on rows that had no influence on the
+    choice. The difference is how much the selection was flattering itself.
+
+    See Also
+    --------
+    nested_cv_torch : Produces these.
+    """
 
     fold: int
     train_size: int
@@ -67,6 +159,17 @@ class TorchOuterFoldResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Return this outer fold as JSON-safe values.
+
+        Keeps the inner winner's evidence alongside the outer score, so the
+        gap between selection and generalisation stays visible in the record.
+
+        Returns
+        -------
+        dict
+            Fold index, both row counts, selected parameters, the nested inner
+            trial, outer metrics, trial count, and warnings.
+        """
         return {
             "fold": self.fold,
             "train_size": self.train_size,
@@ -81,7 +184,53 @@ class TorchOuterFoldResult:
 
 @dataclass(slots=True)
 class TorchNestedCVResult:
-    """Nested Torch CV: outer estimate after per-fold inner search."""
+    """The nested cross-validation outcome: an honest estimate, plus what won.
+
+    Attributes
+    ----------
+    n_outer_folds, n_inner_folds:
+        Loop sizes. Total training runs is roughly outer times inner times the
+        number of configurations.
+    task:
+        The resolved task.
+    search_method:
+        ``'grid'`` or ``'randomized'``.
+    scoring_metric:
+        What ranked the configurations.
+    outer_folds:
+        Each outer fold's record.
+    mean_metrics:
+        Average outer-fold performance. The headline, and the honest one.
+    std_metrics:
+        Spread across outer folds.
+    best_params_per_fold:
+        What each fold's inner search chose. Disagreement here is informative.
+    consensus_params:
+        A modal-and-median summary across the fold winners. A starting point,
+        not a validated configuration.
+    held_out_partitions:
+        Session partitions kept out of the whole procedure.
+    disclosures, limitations, warnings:
+        How the run was arranged, what it does not establish, anything notable.
+    config:
+        The settings used.
+
+    Notes
+    -----
+    **``mean_metrics`` estimates the whole procedure, not one model.** It says
+    "searching this space this way, on data like this, yields models that score
+    around here" — which is the useful claim, and is not the same as a
+    guarantee about any particular fitted model.
+
+    **When ``best_params_per_fold`` disagrees, the search space is not clearly
+    separated.** Different folds preferring different configurations means the
+    differences between them are within noise, and ``consensus_params`` is
+    papering over that rather than resolving it.
+
+    See Also
+    --------
+    nested_cv_torch : Produces this.
+    """
 
     n_outer_folds: int
     n_inner_folds: int
@@ -100,6 +249,19 @@ class TorchNestedCVResult:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the whole nested run as JSON-safe values.
+
+        Includes every outer fold's record and its nested inner winner —
+        keeping the per-fold disagreement visible, which a summary of the means
+        alone would hide.
+
+        Returns
+        -------
+        dict
+            Loop sizes, task, method, scoring metric, outer fold records, mean
+            and standard-deviation metrics, per-fold winners, consensus
+            parameters, held-out partitions, the three prose lists, and config.
+        """
         return {
             "n_outer_folds": self.n_outer_folds,
             "n_inner_folds": self.n_inner_folds,
@@ -123,7 +285,45 @@ class TorchNestedCVResult:
 
 @dataclass(slots=True)
 class TorchSearchResult:
-    """Inner-style Torch search on a declared train universe (no outer nest)."""
+    """A hyperparameter search outcome, with the caveat that its score is high.
+
+    Attributes
+    ----------
+    task:
+        The resolved task.
+    search_method:
+        ``'grid'`` or ``'randomized'``.
+    scoring_metric:
+        What ranked the trials.
+    n_folds:
+        How many folds each trial was scored on.
+    trials:
+        Every configuration tried, ordered best first.
+    best_params:
+        The top configuration. This is what the search is for.
+    best_metrics:
+        Its cross-validated scores. **Optimistic** — the maximum over many
+        trials, which is not the same as a typical outcome.
+    held_out_partitions:
+        Session partitions the search never touched. Score there for an honest
+        number.
+    disclosures, limitations, warnings:
+        How the search ran, what it does not establish, anything notable.
+    config:
+        The settings used.
+
+    Notes
+    -----
+    **Take ``best_params`` and leave ``best_metrics``.** The selected score is
+    biased upward by the selection itself. Refit with the chosen configuration
+    and evaluate on a partition that played no part in the search — that is the
+    number to report.
+
+    See Also
+    --------
+    search_torch : Produces this.
+    nested_cv_torch : When you need the estimate from the same run.
+    """
 
     task: str
     search_method: str
@@ -139,6 +339,18 @@ class TorchSearchResult:
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the search as JSON-safe values.
+
+        Every trial is included, not just the winner — the runners-up are what
+        tell you whether the winner won by a margin or by noise.
+
+        Returns
+        -------
+        dict
+            Task, method, scoring metric, fold count, all trials, best
+            parameters and metrics, held-out partitions, the three prose lists,
+            and config.
+        """
         return {
             "task": self.task,
             "search_method": self.search_method,
@@ -499,11 +711,99 @@ def search_torch(
     scoring_metric: str | None = None,
     module_factory: ModuleFactory | None = None,
 ) -> TorchSearchResult:
-    """Inner-fold Torch hyperparameter search on the train universe.
+    """Find good hyperparameters by cross-validating each candidate.
 
-    Session validation/test partitions (when a split exists) are never scored
-    during search. This is **not** a nested outer estimate — use
-    :func:`nested_cv_torch` for that. Results include honest limitations.
+    Expands the search space into configurations, scores each one with
+    cross-validation over the training rows, and ranks them. Session validation
+    and test partitions are excluded entirely, so they remain available for an
+    unbiased estimate afterwards.
+
+    Parameters
+    ----------
+    dataset:
+        The data, with roles and a numeric target.
+    split_plan:
+        When supplied, only the training partition is searched over. Without
+        one, all rows are used.
+    param_grid:
+        Every combination to try, as name to list of values. Exhaustive.
+    param_distributions:
+        Distributions to sample from, as name to sequence or scipy-style object
+        with ``rvs``. Supply exactly one of this and ``param_grid``.
+    inner_search:
+        ``'grid'``, ``'randomized'``, or ``'auto'`` to follow whichever space
+        you provided.
+    n_iter:
+        How many samples to draw for randomized search.
+    n_folds:
+        Folds per configuration.
+    epochs / batch_size / learning_rate:
+        Defaults for anything not being searched.
+    device:
+        Where to train.
+    normalize:
+        Standardise features using each fold's training statistics.
+    seed:
+        Controls fold assignment and sampling.
+    stratify:
+        Preserve class balance across folds, for classification.
+    task:
+        ``'auto'`` to infer, or an explicit choice.
+    scoring_metric:
+        What to rank by. Defaults to accuracy for classification, MSE for
+        regression.
+    module_factory:
+        Called as ``factory(in_features, task, n_classes, params)``. Defaults to
+        a tabular MLP that reads ``hidden`` and ``dropout`` from the parameters.
+
+    Returns
+    -------
+    TorchSearchResult
+        Ranked trials, the winner, and honest limitations.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If neither or both search spaces are given, if a key is outside the
+        searchable set, if a space is empty, if the target is non-numeric, or
+        if the scoring metric is not among the computed fold metrics.
+    LeakageError
+        If the training partition overlaps validation or test.
+
+    Notes
+    -----
+    **The reported best score is optimistic and should not be published.** It
+    is the maximum over many trials, and the maximum of a noisy sample sits
+    above the mean by construction. Refit the winner and score on held-out data
+    for the number you report.
+
+    **Randomized search usually beats grid search per unit of compute.** A grid
+    spends its budget varying every parameter equally, including the ones that
+    do not matter; sampling explores more distinct values of the ones that do.
+
+    **Only tabular MLP knobs are searchable by default** — learning rate,
+    hidden widths, dropout, batch size, epochs, and weight decay. Anything else
+    is rejected explicitly rather than silently ignored. Pass a
+    ``module_factory`` to search over your own architecture.
+
+    Examples
+    --------
+    Search, then evaluate honestly::
+
+        result = search_torch(
+            dataset,
+            split_plan=split_plan,
+            param_grid={"learning_rate": [1e-3, 1e-4], "dropout": [0.0, 0.2]},
+            n_folds=3,
+        )
+        result.best_params      # use this
+        result.best_metrics     # do not report this
+
+    See Also
+    --------
+    nested_cv_torch : Selection and an honest estimate in one run.
     """
     # Validate search space before optional Torch import so AI dispatch /
     # missing-extra environments get a clear ValidationError first.
@@ -609,15 +909,109 @@ def nested_cv_torch(
     scoring_metric: str | None = None,
     module_factory: ModuleFactory | None = None,
 ) -> TorchNestedCVResult:
-    """Nested Torch CV: outer evaluation after fold-local inner hyperparameter search.
+    """Estimate performance honestly when hyperparameters are also being chosen.
 
-    For each outer fold:
-    1. Hold out outer-eval indices.
-    2. Run inner CV search on the outer-train subset only.
-    3. Refit the winning config on all outer-train rows (fold-local normalize).
-    4. Score the outer-eval fold once.
+    For each outer fold: hold out its evaluation rows, run a complete
+    hyperparameter search on the remaining rows only, refit the winner on all of
+    them, and score the held-out rows once. The outer scores never influenced
+    any selection, which is what makes their average a fair estimate of the
+    whole procedure.
 
-    Session validation/test partitions never enter outer or inner membership.
+    Parameters
+    ----------
+    dataset:
+        The data, with roles and a numeric target.
+    split_plan:
+        When supplied, only the training partition participates. Validation and
+        test stay entirely outside both loops.
+    param_grid:
+        Every combination to try, as name to list of values.
+    param_distributions:
+        Distributions to sample from. Supply exactly one of this and
+        ``param_grid``.
+    inner_search:
+        ``'grid'``, ``'randomized'``, or ``'auto'``.
+    n_iter:
+        Samples per randomized search.
+    outer_cv:
+        Outer folds. Each produces one honest score.
+    inner_cv:
+        Folds inside each search.
+    epochs / batch_size / learning_rate:
+        Defaults for anything not being searched.
+    device:
+        Where to train.
+    normalize:
+        Standardise using each fold's own training statistics.
+    seed:
+        Controls fold assignment and sampling. Inner and outer loops use
+        derived seeds so they do not partition identically.
+    stratify:
+        Preserve class balance across folds, for classification.
+    task:
+        ``'auto'`` to infer, or an explicit choice.
+    scoring_metric:
+        What ranks configurations in the inner loop.
+    module_factory:
+        Called as ``factory(in_features, task, n_classes, params)``.
+
+    Returns
+    -------
+    TorchNestedCVResult
+        Outer-fold scores with their mean and spread, each fold's chosen
+        configuration, and a consensus summary.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If the search space is missing, doubled, empty, or uses unsupported
+        keys; or if the target is non-numeric.
+    LeakageError
+        If the training partition overlaps validation or test, or if outer
+        training and evaluation indices overlap.
+
+    Notes
+    -----
+    **This is expensive, and predictably so.** The total number of training runs
+    is roughly ``outer_cv * inner_cv * n_configurations``, plus one refit per
+    outer fold. Three outer folds, two inner folds, and eight configurations is
+    fifty-one runs. Size the epoch budget accordingly, or use
+    :func:`search_torch` and a held-out partition instead.
+
+    **What you get is an estimate of the procedure, not of a model.** Nested CV
+    answers "how well does searching this space and fitting the winner tend to
+    work?" To deploy, refit once on all your training data with a chosen
+    configuration.
+
+    **``consensus_params`` is a convenience, not a validated choice.** It takes
+    the median of numeric parameters and the mode of the rest across outer
+    winners. No fold actually evaluated that exact combination.
+
+    **Small epoch budgets make the inner ranking noisy**, which propagates: a
+    fold that picks arbitrarily among indistinguishable configurations produces
+    an outer score for an arbitrary choice.
+
+    Examples
+    --------
+    Honest estimate with selection included::
+
+        result = nested_cv_torch(
+            dataset,
+            split_plan=split_plan,
+            param_grid={"learning_rate": [1e-3, 1e-4]},
+            outer_cv=3,
+            inner_cv=2,
+            epochs=10,
+        )
+        result.mean_metrics        # honest
+        result.best_params_per_fold  # disagreement means the space is flat
+
+    See Also
+    --------
+    search_torch : Selection alone, much cheaper.
+    buildml.dl.cv.cross_validate_torch : Evaluation without selection.
     """
     method = _resolve_method(
         inner_search=inner_search,

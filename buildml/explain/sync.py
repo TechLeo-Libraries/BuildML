@@ -81,6 +81,18 @@ REQUIRED_AI_TOOL_SESSION_METHODS: frozenset[str] = frozenset(
         "fit_neuro_symbolic",
         "evaluate_neuro_symbolic",
         "predict_neuro_symbolic",
+        "profile_text_corpus",
+        "detect_language",
+        "fit_text_classifier",
+        "predict_text",
+        "evaluate_text_classifier",
+        "interpret_text_prediction",
+        "fit_topics",
+        "assign_topics",
+        "extract_keyphrases",
+        "analyze_sentiment",
+        "extract_entities",
+        "summarize_text",
         "fit_cbr",
         "retrieve_cases",
         "evaluate_cbr",
@@ -141,6 +153,36 @@ EXPLICITLY_NON_AI_SESSION_METHODS: frozenset[str] = frozenset({"serve_bundle"})
 
 @dataclass(frozen=True, slots=True)
 class ParameterIndex:
+    """One parameter of a Session method, captured as comparable text.
+
+    Everything is a string, including the annotation and the default. That is
+    deliberate: the index is written to JSON and diffed against a regenerated
+    version, and comparing live type objects across Python versions is not
+    stable enough to build a CI gate on. Text is.
+
+    Attributes
+    ----------
+    name:
+        The parameter name.
+    kind:
+        How it can be passed — ``'POSITIONAL_OR_KEYWORD'``, ``'KEYWORD_ONLY'``,
+        ``'VAR_KEYWORD'``, and so on, from ``inspect``. Part of the contract:
+        making a positional parameter keyword-only breaks callers.
+    annotation:
+        The type annotation as source text, empty when unannotated.
+    default:
+        The default's ``repr``, or ``None`` when there is no default. Note that
+        a parameter defaulting to ``None`` records the string ``'None'``, so the
+        two cases stay distinguishable.
+    required:
+        Whether a caller must supply it. ``*args`` and ``**kwargs`` are never
+        required.
+
+    See Also
+    --------
+    OperationIndexEntry : The operation these belong to.
+    """
+
     name: str
     kind: str
     annotation: str
@@ -148,6 +190,17 @@ class ParameterIndex:
     required: bool
 
     def to_dict(self) -> dict[str, Any]:
+        """Flatten to a plain dict for the JSON index.
+
+        No conversion is needed — every field is already a string or a bool,
+        which is the reason they were stored that way. The method exists so the
+        index writer can treat parameters and operations uniformly.
+
+        Returns
+        -------
+        dict
+            The five fields, all JSON-safe already.
+        """
         return {
             "name": self.name,
             "kind": self.kind,
@@ -159,6 +212,35 @@ class ParameterIndex:
 
 @dataclass(frozen=True, slots=True)
 class OperationIndexEntry:
+    """One Session operation as the teaching surface sees it.
+
+    A machine-readable description of a public method: its name, its
+    parameters, and the first line of its docstring. This is what the catalog,
+    the AI tool registry, and the documentation are checked against, so an
+    operation cannot quietly change shape while its teaching content goes on
+    describing the old one.
+
+    Attributes
+    ----------
+    name:
+        The method name, and the key everything else references.
+    qualname:
+        The qualified name, which shows where an inherited method came from.
+    doc_summary:
+        The first non-empty docstring line. Extracted so the index can be read
+        as a listing of what a Session does.
+    parameters:
+        The parameters, in declaration order, excluding ``self`` and ``cls``.
+    is_classmethod:
+        Whether it is a classmethod — ``Session.from_csv`` and similar.
+    is_staticmethod:
+        Whether it is a staticmethod.
+
+    See Also
+    --------
+    build_operation_index : What produces these.
+    """
+
     name: str
     qualname: str
     doc_summary: str
@@ -167,6 +249,19 @@ class OperationIndexEntry:
     is_staticmethod: bool
 
     def to_dict(self) -> dict[str, Any]:
+        """Flatten to a plain dict, converting the parameters too.
+
+        The parameter tuple becomes a list of dicts, since JSON has no tuples
+        and reading one back would produce a list regardless. Doing the
+        conversion here keeps the written form and the round-tripped form
+        identical, so a comparison between them never reports a false
+        difference.
+
+        Returns
+        -------
+        dict
+            The entry with ``parameters`` as a list of dicts.
+        """
         return {
             "name": self.name,
             "qualname": self.qualname,
@@ -186,16 +281,81 @@ class DriftReport:
 
     @property
     def ok(self) -> bool:
+        """Whether anything blocking was found.
+
+        Errors fail the build; warnings do not. A check that could not run —
+        because an optional extra is missing — records a warning, so a partial
+        environment does not block a merge over something it cannot verify.
+
+        Returns
+        -------
+        bool
+            ``True`` when there are no errors, regardless of warnings.
+        """
         return not self.errors
 
     def raise_if_failed(self) -> None:
+        """Raise with every error listed, or return quietly.
+
+        For use as a test assertion. Every error is included in the message
+        rather than only the first, because drift usually comes in batches — one
+        renamed parameter shows up in the catalog check, the index check, and
+        the AI tool check at once, and fixing them one CI run at a time is
+        needlessly slow.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        AssertionError
+            If there are errors. The message lists them, one per line.
+
+        Notes
+        -----
+        **Warnings are not raised** and not shown here. Inspect ``warnings``
+        directly if a skipped check matters.
+        """
         if self.errors:
             joined = "\n".join(f"- {item}" for item in self.errors)
             raise AssertionError(f"Teaching-surface drift detected:\n{joined}")
 
 
 def public_session_operations(session_cls: type | None = None) -> dict[str, Callable[..., Any]]:
-    """Return public Session callables keyed by name (catalog surface)."""
+    """List the Session's public methods, which define what operations exist.
+
+    The Session class is the source of truth for the operation surface. Every
+    other list — the catalog, the AI tool registry, the generated index — is
+    checked against this one rather than maintained beside it.
+
+    Public means not starting with an underscore. A simple rule, and one that
+    means adding a public method to Session automatically obliges you to add its
+    teaching content, because the parity check will fail until you do.
+
+    Parameters
+    ----------
+    session_cls:
+        The class to inspect. Defaults to the real
+        :class:`~buildml.session.Session`; pass a stand-in for testing.
+
+    Returns
+    -------
+    dict
+        Method name to callable. Includes inherited methods and properties that
+        happen to be callable.
+
+    Notes
+    -----
+    **Renaming a public method is a breaking change here as well as for
+    users** — the catalog, the index, and possibly a tool registry all reference
+    the old name and will fail until updated.
+
+    See Also
+    --------
+    build_operation_index : Turning these into the index.
+    check_session_catalog_parity : The check this feeds.
+    """
     if session_cls is None:
         from buildml.session import Session
 
@@ -234,7 +394,43 @@ def _doc_summary(func: Callable[..., Any]) -> str:
 
 
 def build_operation_index(session_cls: type | None = None) -> dict[str, Any]:
-    """Build the machine-readable Session operation index."""
+    """Read the live Session's signatures into a comparable index.
+
+    Introspects every public method and records its parameters, kinds,
+    defaults, and docstring summary. The result is the current shape of the API,
+    and comparing it against the checked-in copy is how signature drift gets
+    caught before it reaches a release.
+
+    A method whose signature cannot be read — which happens with some decorated
+    callables — is indexed with no parameters rather than skipped. Present and
+    incomplete is more useful than absent, since absence would look like the
+    method had been removed.
+
+    Parameters
+    ----------
+    session_cls:
+        The class to index. Defaults to the real ``Session``.
+
+    Returns
+    -------
+    dict
+        ``schema_version``, ``source``, ``n_operations``, and ``operations`` —
+        the entries keyed by name, sorted for a stable diff.
+
+    Notes
+    -----
+    **Sorting is what makes this diffable.** Dict ordering would otherwise
+    follow ``inspect``'s enumeration, and an unrelated edit could reshuffle the
+    file and bury the real change.
+
+    **``self`` and ``cls`` are excluded**, so the parameters listed are the ones
+    a caller actually passes.
+
+    See Also
+    --------
+    write_operation_index : Persisting this.
+    check_operation_index_fresh : Comparing it against the checked-in copy.
+    """
     if session_cls is None:
         from buildml.session import Session
 
@@ -290,7 +486,49 @@ def write_operation_index(
     *,
     session_cls: type | None = None,
 ) -> Path:
-    """Regenerate ``operation_index.json`` from the live Session surface."""
+    """Write the index to disk, formatted so diffs stay readable.
+
+    Regenerates the checked-in ``operation_index.json``. Run it after changing a
+    public Session signature; the freshness check fails until you do, and its
+    error message says so.
+
+    Indented and key-sorted, with a trailing newline. That formatting is not
+    cosmetic — an index written compactly would show every signature change as
+    one enormous modified line, and reviewing it would be impossible.
+
+    Parameters
+    ----------
+    path:
+        Where to write. Defaults to the packaged location. Parent directories
+        are created.
+    session_cls:
+        The class to index. Defaults to the real ``Session``.
+
+    Returns
+    -------
+    Path
+        The file written.
+
+    Raises
+    ------
+    OSError
+        If the file cannot be written.
+
+    Notes
+    -----
+    **Commit the result.** The point of the file is that CI can compare against
+    it; an uncommitted regeneration fixes the check locally and nowhere else.
+
+    Examples
+    --------
+    From the repository root::
+
+        python scripts/sync_teaching_surface.py --write
+
+    See Also
+    --------
+    check_operation_index_fresh : The check this satisfies.
+    """
     destination = path or OPERATION_INDEX_PATH
     destination.parent.mkdir(parents=True, exist_ok=True)
     payload = build_operation_index(session_cls)
@@ -302,7 +540,40 @@ def write_operation_index(
 
 
 def load_operation_index(path: Path | None = None) -> dict[str, Any]:
-    """Load the checked-in generated operation index."""
+    """Read the checked-in index back from JSON.
+
+    The counterpart to :func:`write_operation_index`. Used by the freshness
+    check, and by anything that wants the operation surface without importing
+    Session — documentation tooling, for instance, which can then describe the
+    API without paying for the import.
+
+    Parameters
+    ----------
+    path:
+        The index file. Defaults to the packaged location.
+
+    Returns
+    -------
+    dict
+        The index as written, with ``schema_version``, ``source``,
+        ``n_operations``, and ``operations``.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file is absent.
+    json.JSONDecodeError
+        If it is not valid JSON.
+
+    Notes
+    -----
+    **This may be stale.** It reflects the last regeneration, not the live
+    class. :func:`check_operation_index_fresh` is what tells you which.
+
+    See Also
+    --------
+    write_operation_index : Producing the file.
+    """
     from typing import cast
 
     source = path or OPERATION_INDEX_PATH
@@ -322,6 +593,36 @@ def check_session_catalog_parity(
     session_cls: type | None = None,
     catalog: Mapping[str, Any] | None = None,
 ) -> DriftReport:
+    """Check that the catalog covers exactly the Session's public operations.
+
+    Both directions are errors, for different reasons. A Session method missing
+    from the catalog is an operation with no teaching content — it exists, users
+    can call it, and nothing explains it. A catalog entry with no Session method
+    is teaching content for something that does not exist, which is worse: a
+    reader follows the documentation and gets an ``AttributeError``.
+
+    Parameters
+    ----------
+    session_cls:
+        The class to check. Defaults to the real ``Session``.
+    catalog:
+        The operation catalog. Defaults to the real one.
+
+    Returns
+    -------
+    DriftReport
+        Errors naming the operations on each side of the mismatch. Clean when
+        the two sets match.
+
+    Notes
+    -----
+    **This checks names only.** Whether the catalog's parameters match the
+    signature is :func:`check_catalog_parameters_vs_signatures`.
+
+    See Also
+    --------
+    check_teaching_surface : Running this with the rest.
+    """
     report = DriftReport()
     session_names = set(public_session_operations(session_cls))
     catalog_names = _catalog_names(catalog)
@@ -339,7 +640,39 @@ def check_catalog_parameters_vs_signatures(
     session_cls: type | None = None,
     catalog: Mapping[str, Any] | None = None,
 ) -> DriftReport:
-    """Require catalog parameters ⊆ signature and signature ⊆ catalog (excl. self/cls)."""
+    """Check that documented parameters and real parameters are the same set.
+
+    Both directions again, and both are real failures. A catalog parameter that
+    does not exist means the documentation describes an argument nobody can
+    pass. A signature parameter missing from the catalog means an argument
+    exists and nothing explains it — which is how a parameter ends up
+    permanently undiscovered.
+
+    ``self`` and ``cls`` are excluded on both sides.
+
+    Parameters
+    ----------
+    session_cls:
+        The class to check. Defaults to the real ``Session``.
+    catalog:
+        The operation catalog. Defaults to the real one.
+
+    Returns
+    -------
+    DriftReport
+        Errors naming the operation and the offending parameters. A method whose
+        signature cannot be read produces a warning rather than an error, since
+        the check could not run.
+
+    Notes
+    -----
+    **Names only.** Types, defaults, and ordering are not compared here; the
+    generated index covers required flags and kinds.
+
+    See Also
+    --------
+    check_session_catalog_parity : Whether the operations themselves line up.
+    """
     report = DriftReport()
     if session_cls is None:
         from buildml.session import Session
@@ -383,7 +716,40 @@ def check_operation_index_fresh(
     path: Path | None = None,
     session_cls: type | None = None,
 ) -> DriftReport:
-    """Fail when the checked-in index does not match live Session signatures."""
+    """Check the committed index still matches the code it describes.
+
+    The gate that keeps the generated file honest. If a signature changed and
+    nobody regenerated, this fails and its message names the command to run.
+
+    Parameter names, required flags, and kinds are compared; annotations and
+    defaults are not. That is a considered line. Changing a parameter from
+    required to optional, or from positional to keyword-only, changes what
+    callers can do and must be visible. Tightening an annotation from ``Any`` to
+    ``str | None`` does not break anyone, and failing CI over it would train
+    people to regenerate reflexively without reading the diff.
+
+    Parameters
+    ----------
+    path:
+        The index file. Defaults to the packaged location.
+    session_cls:
+        The class to compare against. Defaults to the real ``Session``.
+
+    Returns
+    -------
+    DriftReport
+        Errors for a missing file, a schema version mismatch, operations present
+        on one side only, or a parameter contract that moved.
+
+    Notes
+    -----
+    **The remedy is in the error message** — run the sync script and commit the
+    result.
+
+    See Also
+    --------
+    write_operation_index : The fix.
+    """
     report = DriftReport()
     source = path or OPERATION_INDEX_PATH
     if not source.is_file():
@@ -428,6 +794,47 @@ def check_ai_tools_vs_catalog(
     session_cls: type | None = None,
     catalog: Mapping[str, Any] | None = None,
 ) -> DriftReport:
+    """Check the AI tool registry against Session and the catalog, both ways.
+
+    The AI tools are an allowlist, not a mirror. Not every Session method should
+    be callable by an agent, and the registry is curated — so unlike the catalog
+    this is not checked for exact parity. What is checked is that every listed
+    tool resolves to something real, and that two specific lists are respected.
+
+    ``REQUIRED_AI_TOOL_SESSION_METHODS`` names the operations an agent must be
+    able to reach. Without this, a refactor can quietly drop a tool and the
+    agent simply becomes less capable, with no failure anywhere.
+
+    ``EXPLICITLY_NON_AI_SESSION_METHODS`` names operations an agent must not
+    reach. ``serve_bundle`` is the example: it opens a network listener, and an
+    agent deciding on its own to start a server is not a decision anyone
+    delegated. Those methods still need catalog entries, because a human calling
+    them deserves documentation.
+
+    Parameters
+    ----------
+    session_cls:
+        The class to check. Defaults to the real ``Session``.
+    catalog:
+        The operation catalog. Defaults to the real one.
+
+    Returns
+    -------
+    DriftReport
+        Errors for a tool pointing at a missing method or catalog operation, a
+        required method absent from the registry, a forbidden method present in
+        it, or a forbidden method missing from Session or the catalog. Builtin
+        tools that unexpectedly set ``session_method`` produce a warning.
+
+    Notes
+    -----
+    **Builtins are handled separately.** They do not map to Session methods, so
+    only their catalog references are checked.
+
+    See Also
+    --------
+    buildml.ai.tools.build_default_registry : The registry being checked.
+    """
     report = DriftReport()
     if session_cls is None:
         from buildml.session import Session
@@ -486,7 +893,30 @@ def check_ai_tools_vs_catalog(
 
 
 def check_dashboard_teaching_concepts() -> DriftReport:
-    """Fail when Teaching Studio concept chips reference unknown CONCEPT_NOTES keys."""
+    """Check that the studio's concept links all point at real glossary entries.
+
+    Teaching panels offer concept chips — "what is a variance inflation factor",
+    "what is a leakage boundary" — and each is a key into ``CONCEPT_NOTES``. A
+    renamed or removed note leaves a chip pointing nowhere, and the failure
+    surfaces as a dead link in a UI that a developer may not open.
+
+    Returns
+    -------
+    DriftReport
+        An error listing every unknown key. When the dashboard extra is not
+        installed the check cannot run, and that is recorded as a warning rather
+        than an error, so a minimal environment does not fail CI over something
+        it has no way to verify.
+
+    Notes
+    -----
+    **The studios are built against an empty report**, which is enough to
+    enumerate the concept keys without needing real analysis output.
+
+    See Also
+    --------
+    buildml.explain.concepts : The glossary being referenced.
+    """
     report = DriftReport()
     from buildml.explain.concepts import CONCEPT_NOTES
 
@@ -516,7 +946,43 @@ def check_teaching_surface(
     catalog: Mapping[str, Any] | None = None,
     index_path: Path | None = None,
 ) -> DriftReport:
-    """Run the full Session ↔ index ↔ catalog ↔ AI tool ↔ dashboard sync suite."""
+    """Run every drift check and combine the results into one report.
+
+    The single entry point, used by the CI test. Runs all five checks and
+    collects their findings rather than stopping at the first failure, because
+    one underlying change usually breaks several checks at once and seeing them
+    together is what makes the cause obvious.
+
+    Parameters
+    ----------
+    session_cls:
+        The class to check. Defaults to the real ``Session``.
+    catalog:
+        The operation catalog. Defaults to the real one.
+    index_path:
+        The generated index. Defaults to the packaged location.
+
+    Returns
+    -------
+    DriftReport
+        Every error and warning from every check. ``ok`` is ``True`` only when
+        nothing blocking was found.
+
+    Notes
+    -----
+    **Every check runs**, even after one fails.
+
+    Examples
+    --------
+    As a test::
+
+        def test_teaching_surface_in_sync():
+            check_teaching_surface().raise_if_failed()
+
+    See Also
+    --------
+    DriftReport.raise_if_failed : Turning the report into an assertion.
+    """
     report = DriftReport()
     for partial in (
         check_session_catalog_parity(session_cls=session_cls, catalog=catalog),

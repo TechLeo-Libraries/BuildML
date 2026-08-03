@@ -156,7 +156,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             anti_patterns=("Claiming image ProtoNet or foundation-model meta-learning.",),
             worked_example_pattern=(
                 "fit_metalearning(backend='torch', method='prototypical_torch', k_shot=5)."
-            ),
+            ,),
             related_concepts=("metalearning-episodic", "metalearning-prototypical", "metalearning-maml"),
         ),
         _note(
@@ -178,7 +178,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "Provides honest task-adaptation beyond warm-start without "
                 "second-order MAML-at-scale claims."
-            ),
+            ,),
             how_buildml_uses=(
                 "fit_metalearning(backend='industry', method='maml'); adapt_to_task.",
             ),
@@ -192,7 +192,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             ),
             worked_example_pattern=(
                 "fit_metalearning(backend='industry', method='maml', inner_steps=5)."
-            ),
+            ,),
             related_concepts=("metalearning-episodic", "metalearning-warm-start"),
         ),
         _note(

@@ -116,7 +116,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "one decided the output?"
             ),
             formal_idea=("Trace τ(x) = ({r : r(x)}, argmin priority among firings)."),
-            why_it_matters=("Auditability is the point of shipping rules."),
+            why_it_matters=("Auditability is the point of shipping rules.",),
             how_buildml_uses=(
                 "predict_symbolic(..., return_traces=True); evaluate reports rule_coverage.",
             ),
@@ -125,9 +125,9 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "Multiple firings are normal; only the first by priority chooses.",
             ),
             assumptions=("Rules are priority-ordered in the knowledge base.",),
-            failure_modes=("Empty traces when return_traces=False."),
-            anti_patterns=("Ignoring traces and treating rules as opaque."),
-            worked_example_pattern="pred.traces[0].fired_rule_ids",
+            failure_modes=("Empty traces when return_traces=False.",),
+            anti_patterns=("Ignoring traces and treating rules as opaque.",),
+            worked_example_pattern=("pred.traces[0].fired_rule_ids",),
             related_concepts=("symbolic-rules", "neuro-symbolic-hybrid"),
         ),
         _note(
@@ -190,15 +190,15 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "Checkpoint the workflow; bundle the rule base / hybrid learner."
             ),
             formal_idea=("Artifact separation: workflow state ⊥ learner state."),
-            why_it_matters=("Prevents silent loss of rules across reattach."),
+            why_it_matters=("Prevents silent loss of rules across reattach.",),
             how_buildml_uses=(
                 "save_symbolic_bundle / load_symbolic_bundle.",
             ),
             interpretation_rules=(
                 "meta.json kind is symbolic or neuro_symbolic.",
             ),
-            assumptions=("joblib can pickle the sklearn base estimator."),
-            failure_modes=("Loading wrong format; incomplete bundle directory."),
+            assumptions=("joblib can pickle the sklearn base estimator.",),
+            failure_modes=("Loading wrong format; incomplete bundle directory.",),
             anti_patterns=(
                 "Expecting checkpoint_load to restore SymbolicPlan.",
             ),

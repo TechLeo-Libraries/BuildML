@@ -1,18 +1,33 @@
-"""Speech foundation-model integration path (ASR inference + finetune-lite).
+"""Transcribe speech and classify audio, without pretending to train Whisper.
 
-Honest alpha scope
-------------------
-* **ASR transcription** via a stub backend (CI-safe) or optional Hugging Face
-  ``transformers`` Whisper-class pipelines behind ``buildml[speech]``.
-* **Classification fine-tune** on frozen/tiny speech encoder embeddings fused
-  with optional tabular labels — leakage-safe splits, train-only amp stats.
+Two things live here, and they answer different questions.
 
-This is an **integration / finetune-lite** path. It does **not** train a
-Whisper-scale foundation model from scratch.
+**Transcription** turns audio into text. It runs an existing pretrained model —
+a Whisper-class Hugging Face pipeline — because a model that can transcribe
+general speech was trained on hundreds of thousands of hours of audio, and
+nothing you do in a Session will reproduce that. A deterministic stub backend
+exists so tests can exercise the plumbing offline; its output is nonsense and is
+labelled as such.
 
-Use :func:`domain_adapt_speech_disclosures` for domain-adapt naming, and
-:func:`refuse_foundation_model_pretrain` when a caller asks for FM-from-scratch
-or large-scale continued pretrain — those are not coherent pip-library features.
+**Classification** trains a small encoder on your labelled audio to predict a
+category. Not what was said, but which class the clip belongs to — a speaker, a
+sound type, a quality judgement. The encoder is a small 1D-CNN, trained from
+scratch on your data, and it is honest about being small.
+
+Alongside those, :func:`evaluate_asr` computes word and character error rates
+from strings alone, needing no models at all.
+
+What is explicitly out of scope is foundation-model pretraining.
+:func:`refuse_foundation_model_pretrain` exists to say so clearly rather than
+letting a caller discover it slowly: the data and compute involved are not
+things a pip package can supply, and a method that claimed otherwise would be
+lying about what it does. Fine-tuning on a small corpus is available and is
+named accordingly.
+
+See Also
+--------
+buildml.dl.audio : Decoding and normalising waveforms.
+buildml.dl.zoo : Pretrained speech encoders for feature extraction.
 """
 
 from __future__ import annotations
@@ -46,12 +61,30 @@ SpeechMode = Literal["classify", "asr"]
 
 
 def refuse_foundation_model_pretrain(*, requested: str = "foundation_model_pretrain") -> None:
-    """Raise :class:`ValidationError` explaining FM-from-scratch is out of scope.
+    """Refuse foundation-model pretraining, and say what to do instead.
 
-    Whisper-scale / foundation-model pretraining needs massive corpora and
-    compute budgets — not something a Session method in a pip package can
-    honestly provide. Prefer :meth:`Session.fit_speech_torch` (finetune-lite)
-    or :meth:`Session.domain_adapt_speech_torch` for small-corpus domain adapt.
+    Always raises. Training a Whisper-scale model needs hundreds of thousands of
+    hours of audio and a cluster running for weeks, and no amount of API surface
+    in a pip package changes that. A method that accepted the request and
+    produced something would be misrepresenting what it did.
+
+    Parameters
+    ----------
+    requested:
+        What was asked for. Included in the message.
+
+    Raises
+    ------
+    ValidationError
+        Always, naming the alternatives: fine-tuning on a small labelled corpus,
+        domain adaptation, transcription with pretrained weights, or loading a
+        pretrained encoder for feature extraction.
+
+    See Also
+    --------
+    domain_adapt_speech_disclosures : What the supported path does claim.
+    make_speech_loaders : Fine-tuning on your own labels.
+    transcribe_audio_values : Using someone else's pretrained model.
     """
     raise ValidationError(
         f"Refusing {requested!r}: BuildML does not train Whisper-scale / "
@@ -65,7 +98,23 @@ def refuse_foundation_model_pretrain(*, requested: str = "foundation_model_pretr
 
 
 def domain_adapt_speech_disclosures() -> tuple[str, ...]:
-    """Honest disclosures for domain-adapt / finetune-lite speech training."""
+    """State plainly what speech fine-tuning here is and is not.
+
+    Attached to results from the domain-adapt path so the claim travels with
+    the numbers. Fine-tuning a small encoder on a Session-sized corpus is
+    useful; it is a different thing from continued pretraining of a foundation
+    model, and the two are easy to conflate.
+
+    Returns
+    -------
+    tuple of str
+        Two statements: that this is fine-tuning rather than pretraining, and
+        where to go for genuinely pretrained weights.
+
+    See Also
+    --------
+    refuse_foundation_model_pretrain : The explicit refusal.
+    """
     return (
         "domain_adapt_speech_torch is finetune-lite / domain adapt on a small "
         "Session corpus — not continued pretrain of a foundation model.",
@@ -77,7 +126,41 @@ def domain_adapt_speech_disclosures() -> tuple[str, ...]:
 
 @dataclass(slots=True)
 class SpeechLoaderConfig:
-    """Knobs for speech classification DataLoader construction."""
+    """Settings for building speech classification loaders.
+
+    Attributes
+    ----------
+    batch_size:
+        Clips per batch. Small by default, since waveforms are large.
+    num_workers:
+        Background loading processes. Worth raising when decoding audio files
+        is the bottleneck.
+    pin_memory:
+        Page-lock batches for faster GPU transfer. Train loader only.
+    shuffle_train:
+        Shuffle the training loader.
+    drop_last:
+        Discard a final short batch.
+    seed:
+        Controls shuffling.
+    sample_rate:
+        Target rate in Hz. Clips at other rates are resampled.
+    max_samples:
+        Waveform length after padding or truncation. At 16 kHz, the default is
+        one second — raise it for longer clips, at a cost in memory and time.
+    source_sample_rate:
+        The rate of incoming arrays, when supplied without one.
+    normalize_audio:
+        Standardise amplitude using training statistics. Usually worth keeping
+        on, since recording level varies far more than anything you want the
+        model to learn from.
+    encoder_dim:
+        Width of the encoder's output representation.
+
+    See Also
+    --------
+    make_speech_loaders : Consumes this.
+    """
 
     batch_size: int = 8
     num_workers: int = 0
@@ -92,12 +175,56 @@ class SpeechLoaderConfig:
     encoder_dim: int = 64
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the loader settings as JSON-safe values.
+
+        Records how a speech run was configured, so it can be arranged the same
+        way later.
+
+        Returns
+        -------
+        dict
+            Every field.
+        """
         return asdict(self)
 
 
 @dataclass(slots=True)
 class SpeechContract:
-    """Schema carried with speech Torch loaders / trainers."""
+    """What a speech classifier needs in order to be fed correctly.
+
+    Attributes
+    ----------
+    audio_column:
+        The source column.
+    target_column:
+        What is being predicted.
+    task:
+        Always ``'classification'``. Speech regression is not on this path.
+    class_labels:
+        The class vocabulary, indexed by predicted class id.
+    sample_rate, max_samples, source_sample_rate:
+        The audio geometry every clip is coerced to.
+    audio_mean, audio_std:
+        Train-fitted amplitude statistics. ``None`` when normalisation was off.
+    encoder_dim:
+        Encoder output width.
+    modality:
+        ``'speech_classify'``.
+    disclosures:
+        What this path is, carried with the contract so the claim survives
+        persistence.
+
+    Notes
+    -----
+    **The audio geometry is part of the contract, not a preference.** A model
+    trained on one-second clips at 16 kHz has learned at that resolution;
+    feeding it something else produces predictions that mean nothing in
+    particular.
+
+    See Also
+    --------
+    make_speech_loaders : Produces this.
+    """
 
     audio_column: str
     target_column: str
@@ -113,6 +240,25 @@ class SpeechContract:
     disclosures: tuple[str, ...] = ()
 
     def to_feature_contract(self) -> FeatureContract:
+        """Project this down to the tabular-shaped contract shared code expects.
+
+        Loader reports and evaluation take a plain
+        :class:`~buildml.dl.types.FeatureContract`. This produces one listing
+        the audio column as the single feature.
+
+        Returns
+        -------
+        FeatureContract
+            The flattened view.
+
+        Notes
+        -----
+        **The audio geometry and amplitude statistics do not survive the
+        projection**, since a tabular contract has nowhere to record them. Keep
+        the ``SpeechContract`` for anything that needs to rebuild loaders. The
+        normalisation fields are left ``None`` because audio amplitude
+        standardisation is not per-column scaling and would be misread as such.
+        """
         return FeatureContract(
             feature_columns=(self.audio_column,),
             target_column=self.target_column,
@@ -123,6 +269,22 @@ class SpeechContract:
         )
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the speech contract as JSON-safe values.
+
+        Complete and round-trippable — :meth:`from_dict` reconstructs an
+        equivalent contract, which is how a saved speech model gets its audio
+        geometry back.
+
+        Returns
+        -------
+        dict
+            Columns, task, class labels, audio geometry, amplitude statistics,
+            encoder width, modality, and disclosures.
+
+        See Also
+        --------
+        from_dict : The inverse.
+        """
         return {
             "audio_column": self.audio_column,
             "target_column": self.target_column,
@@ -140,7 +302,27 @@ class SpeechContract:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> SpeechContract:
-        """Rebuild a contract from :meth:`to_dict` (bundle / meta round-trip)."""
+        """Rebuild a contract from its serialised form.
+
+        The inverse of :meth:`to_dict`, used when reloading a trainer bundle so
+        the restored model is fed audio prepared the way it was trained.
+
+        Parameters
+        ----------
+        payload:
+            A mapping from :meth:`to_dict`.
+
+        Returns
+        -------
+        SpeechContract
+            The reconstructed contract.
+
+        Raises
+        ------
+        KeyError
+            If ``audio_column`` or ``target_column`` is absent. Everything else
+            has a defensible default; those two do not.
+        """
         return cls(
             audio_column=str(payload["audio_column"]),
             target_column=str(payload["target_column"]),
@@ -167,7 +349,43 @@ class SpeechContract:
 
 @dataclass(slots=True)
 class AsrEvalResult:
-    """Word / character error rates for ASR hypotheses vs references."""
+    """How far a set of transcriptions is from what was actually said.
+
+    Attributes
+    ----------
+    n_utterances:
+        How many were compared.
+    wer:
+        Word error rate — word-level edits divided by reference words. 0.0 is
+        perfect; values above 1.0 are possible when a hypothesis inserts more
+        words than the reference contains.
+    cer:
+        Character error rate, computed the same way over characters.
+    n_ref_words, n_ref_chars:
+        Reference totals, the denominators. A corpus this small makes the rates
+        noisy, and this is where you notice.
+    per_utterance:
+        Each pair with its own rates. Where you find the individual failures
+        that the corpus rate averages away.
+    disclosures, limitations, warnings:
+        How the metrics were computed and what they do not capture.
+
+    Notes
+    -----
+    **Word error rate punishes formatting as harshly as meaning.** A transcript
+    that writes "twenty five" where the reference has "25" scores two errors
+    despite being correct. Normalise both sides before comparing when
+    formatting is not what you are measuring.
+
+    **Character error rate is the more forgiving view.** A near-miss on one word
+    costs a few characters rather than a whole word, which makes it better for
+    tracking small improvements and for languages where word boundaries are
+    not obvious.
+
+    See Also
+    --------
+    evaluate_asr : Produces this.
+    """
 
     n_utterances: int
     wer: float
@@ -180,6 +398,17 @@ class AsrEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the error rates as JSON-safe values.
+
+        Includes every per-utterance comparison, since the worst few are
+        usually more actionable than the corpus average.
+
+        Returns
+        -------
+        dict
+            Utterance count, WER, CER, reference totals, per-utterance
+            comparisons, and the three prose lists.
+        """
         return {
             "n_utterances": self.n_utterances,
             "wer": self.wer,
@@ -215,7 +444,62 @@ def evaluate_asr(
     references: list[str] | tuple[str, ...],
     lowercase: bool = True,
 ) -> AsrEvalResult:
-    """Compute corpus WER / CER without downloading ASR models."""
+    """Measure transcription accuracy against known-correct text.
+
+    Compares each hypothesis to its reference using Levenshtein edit distance,
+    at both word and character level. Corpus rates are computed by pooling edits
+    and reference lengths, which weights long utterances more heavily than
+    averaging per-utterance rates would — and is the standard definition.
+
+    Pure string comparison. No models, no audio, no downloads.
+
+    Parameters
+    ----------
+    hypotheses:
+        What the system produced.
+    references:
+        What was actually said.
+    lowercase:
+        Lowercase and collapse whitespace before comparing. On by default, so
+        capitalisation differences do not count as errors.
+
+    Returns
+    -------
+    AsrEvalResult
+        Corpus rates, reference totals, and each pair's own rates.
+
+    Raises
+    ------
+    ValidationError
+        If the two sequences differ in length, or if either is empty.
+
+    Notes
+    -----
+    **Edit distance counts substitutions, insertions, and deletions equally.**
+    A transcript that drops a word and one that swaps a word both cost one
+    error, though they can matter very differently downstream.
+
+    **Text normalisation is your responsibility beyond casing.** Punctuation,
+    numbers, and contractions all inflate error rates when the two sides
+    disagree on convention rather than content.
+
+    **Corpus rates pool edits rather than averaging rates.** One badly
+    transcribed long utterance moves the corpus number more than one badly
+    transcribed short one, which is usually what you want.
+
+    Examples
+    --------
+    >>> result = evaluate_asr(
+    ...     hypotheses=["the cat sat", "hello world"],
+    ...     references=["the cat sat", "hello there"],
+    ... )
+    >>> round(result.wer, 3)
+    0.2
+
+    See Also
+    --------
+    transcribe_audio_values : Producing the hypotheses.
+    """
     if len(hypotheses) != len(references):
         raise ValidationError(
             f"hypotheses/references length mismatch: {len(hypotheses)} vs {len(references)}"
@@ -266,7 +550,40 @@ def evaluate_asr(
 
 @dataclass(slots=True)
 class SpeechTranscribeResult:
-    """ASR transcription outcomes for one or more audio cells."""
+    """Transcribed text, with a clear record of what produced it.
+
+    Attributes
+    ----------
+    texts:
+        One transcript per input clip, in order. Failures appear as
+        ``'[asr-error]'`` rather than shifting the alignment.
+    backend:
+        ``'stub'`` or ``'transformers'``. **Check this before reading the
+        text** — stub output is a deterministic fingerprint, not speech.
+    model_id:
+        Which model ran.
+    n_rows:
+        How many clips were processed.
+    disclosures:
+        How transcription was performed.
+    limitations:
+        What this path does not claim.
+    warnings:
+        Per-clip failures from the transformers backend.
+    meta:
+        Audio geometry, and the column and partition when transcribing from a
+        Dataset.
+
+    Notes
+    -----
+    **``backend='stub'`` means the text is meaningless.** It is derived from a
+    hash of the waveform's energy so that tests get stable output offline.
+    Anything downstream that treats it as a transcript is measuring noise.
+
+    See Also
+    --------
+    transcribe_audio_values : Produces this.
+    """
 
     texts: list[str]
     backend: str
@@ -278,6 +595,17 @@ class SpeechTranscribeResult:
     meta: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the transcription run as JSON-safe values.
+
+        Carries the backend and model alongside the text, so a stored
+        transcript never loses the context that says whether it is real.
+
+        Returns
+        -------
+        dict
+            Texts, backend, model id, row count, the three prose lists, and
+            metadata.
+        """
         return {
             "texts": list(self.texts),
             "backend": self.backend,
@@ -291,7 +619,31 @@ class SpeechTranscribeResult:
 
 
 def require_speech_stack(*, feature: str = "Speech transformers backend") -> Any:
-    """Import and return ``transformers``, or raise :class:`MissingExtraError`."""
+    """Import transformers, or explain how to install it.
+
+    Only the ``transformers`` transcription backend needs this. The stub backend
+    and every classification path work without it, which is why the import is
+    lazy.
+
+    Parameters
+    ----------
+    feature:
+        What the caller was doing. Appears in the error message.
+
+    Returns
+    -------
+    module
+        The ``transformers`` module.
+
+    Raises
+    ------
+    MissingExtraError
+        If transformers is absent. Install with ``pip install buildml[speech]``.
+
+    See Also
+    --------
+    speech_stack_available : The boolean form.
+    """
     try:
         import transformers
     except ImportError as exc:
@@ -300,7 +652,26 @@ def require_speech_stack(*, feature: str = "Speech transformers backend") -> Any
 
 
 def speech_stack_available() -> bool:
-    """Return True when ``transformers`` is importable."""
+    """Report whether the transformers speech backend can be used.
+
+    Consults package metadata rather than importing, since importing
+    transformers is slow enough to be worth avoiding for a capability check.
+
+    Returns
+    -------
+    bool
+        True when a transformers distribution is installed.
+
+    Notes
+    -----
+    Installation is not the same as a working install. A broken transformers
+    reports ``True`` here and fails at :func:`require_speech_stack`, which is
+    the right place for that failure to surface.
+
+    See Also
+    --------
+    require_speech_stack : The raising form.
+    """
     return importlib.util.find_spec("transformers") is not None
 
 
@@ -333,9 +704,50 @@ def build_tiny_speech_encoder(
     embed_dim: int = 64,
     sample_rate: int = 16_000,
 ) -> Any:
-    """Build a tiny 1D-CNN speech encoder (Torch-only; no HF weights).
+    """Build a small convolutional encoder that turns waveforms into vectors.
 
-    Suitable for CI and finetune-lite classification. Not a Whisper-scale FM.
+    Three strided 1D convolutions reduce the time dimension while widening the
+    channels, then global average pooling collapses what remains into one
+    fixed-width vector per clip. Each stride-2 layer halves the temporal
+    resolution, so a 16000-sample clip reaches a manageable length by the third
+    layer.
+
+    Parameters
+    ----------
+    in_channels:
+        Input channels. 1 for mono.
+    embed_dim:
+        Output width.
+    sample_rate:
+        Recorded on the module for reference. Does not change the computation,
+        but a model trained at one rate should not be fed another.
+
+    Returns
+    -------
+    torch.nn.Module
+        Accepting ``(B, 1, T)`` or ``(B, T)`` and emitting ``(B, embed_dim)``.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+
+    Notes
+    -----
+    **Trained from scratch on your data, with the ceiling that implies.** This
+    has none of the acoustic knowledge a pretrained encoder brings, so it needs
+    more labelled examples to reach a given accuracy and will not match
+    Wav2Vec2 or HuBERT on most tasks. It is fast, dependency-free, and a
+    reasonable baseline — see :mod:`buildml.dl.zoo` when you want more.
+
+    **Global pooling discards timing entirely.** Two clips containing the same
+    sounds in different orders produce similar representations, which is fine
+    for classifying sound type and wrong for anything sequential.
+
+    See Also
+    --------
+    build_speech_classifier : This with a head attached.
+    buildml.dl.zoo.load_audio_backbone : The pretrained alternative.
     """
     torch = require_torch(feature="Tiny speech encoder")
 
@@ -373,7 +785,56 @@ def build_speech_classifier(
     sample_rate: int = 16_000,
     freeze_encoder: bool = False,
 ) -> Any:
-    """Build encoder + linear head for speech classification fine-tune."""
+    """Build a complete model for classifying audio clips.
+
+    Combines :func:`build_tiny_speech_encoder` with a linear head sized to your
+    class count. Ready to train with the ordinary training loop.
+
+    Parameters
+    ----------
+    n_classes:
+        Number of classes.
+    embed_dim:
+        Encoder output width, which is also the head's input width.
+    sample_rate:
+        Recorded on the encoder for reference.
+    freeze_encoder:
+        Train only the head. Rarely useful here — a randomly initialised
+        encoder has learned nothing worth preserving, so freezing it leaves the
+        head classifying random projections. It exists for the case where you
+        have loaded encoder weights from elsewhere.
+
+    Returns
+    -------
+    torch.nn.Module
+        Accepting waveforms and emitting ``(B, n_classes)`` logits.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If ``n_classes`` is below 2.
+
+    Notes
+    -----
+    **Raw logits, no softmax.** ``CrossEntropyLoss`` applies its own
+    log-softmax, and applying it twice degrades the gradient.
+
+    Examples
+    --------
+    Size from the loader bundle::
+
+        bundle = make_speech_loaders(dataset, split_plan, audio_column="clip")
+        module = build_speech_classifier(
+            n_classes=len(bundle.contract.class_labels),
+        )
+
+    See Also
+    --------
+    make_speech_loaders : Producing matching loaders.
+    buildml.dl.train.train_supervised_module : Training it.
+    """
     torch = require_torch(feature="Speech classifier")
     if n_classes < 2:
         raise ValidationError("n_classes must be >= 2 for speech classification")
@@ -406,9 +867,62 @@ def make_speech_loaders(
     audio_column: str | None = None,
     config: SpeechLoaderConfig | None = None,
 ) -> TorchLoaderBundle:
-    """Build waveform DataLoaders for speech classification (finetune-lite).
+    """Build loaders that feed waveforms to a speech classifier.
 
-    Amplitude mean/std are fit on the **train** partition only.
+    Finds the audio and target columns, decodes the training clips to fit
+    amplitude statistics, then decodes and normalises every partition with those
+    same statistics.
+
+    Parameters
+    ----------
+    dataset:
+        The data, with exactly one target role and a numeric target.
+    split_plan:
+        Which rows belong to which partition. A train partition is required.
+    audio_column:
+        The audio column. Inferred when exactly one feature column exists.
+    config:
+        Batching, audio geometry, and normalisation settings.
+
+    Returns
+    -------
+    TorchLoaderBundle
+        The loaders, the feature contract, the speech contract, and a report.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed. Decoding audio files also needs soundfile.
+    ValidationError
+        If there is not exactly one target role, if the audio column is absent
+        or ambiguous, if the train partition is empty, if the target is not
+        numeric class ids, or if a config value is out of range.
+
+    Notes
+    -----
+    **Amplitude statistics come from training clips only**, and are computed
+    length-aware so repeat-padding does not skew them toward short clips.
+
+    **Labels must already be integers**, and they are remapped internally to
+    contiguous ``0..K-1`` while the contract keeps your original ids.
+
+    **Clips are padded or truncated to ``max_samples``.** The default of one
+    second at 16 kHz is short for many tasks — a longer clip loses everything
+    past the first second, silently. Raise it to match your audio.
+
+    Examples
+    --------
+    Three-second clips::
+
+        cfg = SpeechLoaderConfig(max_samples=48_000, sample_rate=16_000)
+        bundle = make_speech_loaders(
+            dataset, split_plan, audio_column="clip", config=cfg,
+        )
+
+    See Also
+    --------
+    build_speech_classifier : The matching model.
+    buildml.dl.audio : The decoding and normalisation underneath.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -570,15 +1084,79 @@ def transcribe_audio_values(
     max_samples: int = 16_000,
     source_sample_rate: int | None = None,
 ) -> SpeechTranscribeResult:
-    """Transcribe a list of audio path/waveform cells.
+    """Turn audio into text, using a pretrained model or a testing stub.
+
+    Decodes each cell to a waveform and runs the chosen backend over it. The
+    transformers backend uses a Hugging Face automatic-speech-recognition
+    pipeline; the stub produces deterministic placeholder text without any
+    model.
 
     Parameters
     ----------
+    values:
+        Audio cells — paths, ``Path`` objects, or waveform arrays.
     backend:
-        ``stub`` (default, CI-safe) or ``transformers`` (requires ``buildml[speech]``).
+        ``'stub'`` for offline placeholder text, ``'transformers'`` for real
+        transcription.
     model_id:
-        Hugging Face model id when ``backend="transformers"``. Defaults to a tiny
-        internal-testing Whisper when omitted (still may download once).
+        Hugging Face model id for the transformers backend. Defaults to a tiny
+        testing model, which downloads once and transcribes badly — name a real
+        model such as ``'openai/whisper-base'`` for actual use.
+    sample_rate:
+        Target rate in Hz. Whisper-class models expect 16 kHz.
+    max_samples:
+        Waveform length. Audio beyond this is truncated **before**
+        transcription, so long recordings lose their tails.
+    source_sample_rate:
+        The rate of incoming arrays.
+
+    Returns
+    -------
+    SpeechTranscribeResult
+        Transcripts in input order, the backend and model used, and any
+        per-clip failures in ``warnings``.
+
+    Raises
+    ------
+    MissingExtraError
+        If the transformers backend is chosen and transformers is not
+        installed.
+    ValidationError
+        If the backend name is unrecognised, or a cell cannot be decoded.
+
+    Notes
+    -----
+    **The stub backend does not transcribe anything.** It hashes the waveform's
+    energy into a stable phrase so tests can run offline and deterministically.
+    Never treat its output as speech.
+
+    **A per-clip failure does not stop the run.** The transformers backend
+    records the error in ``warnings`` and puts ``'[asr-error]'`` in that
+    position, keeping the output aligned with the input.
+
+    **Truncation happens before transcription and is silent.** With the default
+    one-second window, a thirty-second recording is transcribed from its first
+    second. Raise ``max_samples`` to cover your audio.
+
+    **Transcription runs on CPU.** Fine for a handful of clips; slow for a
+    corpus.
+
+    Examples
+    --------
+    Real transcription with a named model::
+
+        result = transcribe_audio_values(
+            ["clip1.wav", "clip2.wav"],
+            backend="transformers",
+            model_id="openai/whisper-base",
+            max_samples=16_000 * 30,
+        )
+        result.texts
+
+    See Also
+    --------
+    transcribe_from_dataset : The Dataset-oriented version.
+    evaluate_asr : Scoring the transcripts.
     """
     if backend not in {"stub", "transformers"}:
         raise ValidationError("speech backend must be 'stub' or 'transformers'")
@@ -663,7 +1241,67 @@ def transcribe_from_dataset(
     partition: Literal["train", "validation", "test", "all"] = "all",
     split_plan: SplitPlan | None = None,
 ) -> SpeechTranscribeResult:
-    """Transcribe an audio feature column from a Dataset (optional split slice)."""
+    """Transcribe an audio column, optionally limited to one partition.
+
+    A Dataset-shaped wrapper over :func:`transcribe_audio_values`. Pulls the
+    column, slices it if asked, transcribes, and records the column and
+    partition in the result's metadata.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    audio_column:
+        Which column holds audio.
+    backend:
+        ``'stub'`` or ``'transformers'``.
+    model_id:
+        Hugging Face model id for the transformers backend.
+    sample_rate / max_samples / source_sample_rate:
+        Audio geometry, as in :func:`transcribe_audio_values`.
+    partition:
+        ``'all'`` for every row, or one partition name.
+    split_plan:
+        Required unless ``partition='all'``.
+
+    Returns
+    -------
+    SpeechTranscribeResult
+        Transcripts for the selected rows, with the column and partition in
+        ``meta``.
+
+    Raises
+    ------
+    MissingExtraError
+        If the transformers backend is chosen and transformers is not
+        installed.
+    ValidationError
+        If the column is absent, or a partition was named without a split plan.
+
+    Notes
+    -----
+    **Transcription is not fitting**, so there is no leakage concern in running
+    it over any partition. Nothing is learned from the audio.
+
+    **Transcripts arrive in partition order, not dataset order.** When
+    ``partition`` names a split, index ``i`` corresponds to the ``i``-th row of
+    that partition. Use the split plan's indices to map back.
+
+    Examples
+    --------
+    Transcribe the test split::
+
+        result = transcribe_from_dataset(
+            dataset,
+            audio_column="clip",
+            partition="test",
+            split_plan=split_plan,
+        )
+
+    See Also
+    --------
+    transcribe_audio_values : The underlying call.
+    """
     if audio_column not in dataset.columns:
         raise ValidationError(f"audio_column {audio_column!r} not in dataset")
     frame = dataset._ensure_pandas()
@@ -690,7 +1328,37 @@ def transcribe_from_dataset(
 
 
 def resolve_audio_paths(values: list[Any]) -> list[str]:
-    """Helper: stringify path-like audio cells (for diagnostics)."""
+    """Describe audio cells as readable strings for diagnostics.
+
+    An audio column can hold paths or in-memory arrays. Printing it raw gives
+    either useful filenames or pages of numbers. This keeps paths intact and
+    reduces arrays to a shape summary.
+
+    Parameters
+    ----------
+    values:
+        Audio cells.
+
+    Returns
+    -------
+    list of str
+        One description per cell, in order.
+
+    Notes
+    -----
+    For diagnostics only — nothing here decodes or validates the audio. A path
+    that does not exist passes through unchanged.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> resolve_audio_paths(["clip.wav", np.zeros((16000,), dtype=np.float32)])
+    ['clip.wav', '<waveform shape=(16000,)>']
+
+    See Also
+    --------
+    buildml.dl.audio.decode_audio_cell : Actually reading a cell.
+    """
     out: list[str] = []
     for value in values:
         if isinstance(value, (str, Path)):

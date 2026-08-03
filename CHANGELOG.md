@@ -8,6 +8,453 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Added
+
+- **Capability-matrix wiring audit (foundational introspection).** Domains that
+  already published honest backend matrices in catalog code but hid them from
+  Session, explain overlays, and the AI operator now expose them consistently:
+  `rl_capability_matrix`, `causal_capability_matrix`, `federated_capability_matrix`,
+  `graph_capability_matrix`, `kg_capability_matrix`, `metalearning_capability_matrix`,
+  `multitask_capability_matrix`, `online_capability_matrix`,
+  `probabilistic_capability_matrix`, `recommender_capability_matrix`,
+  `semisupervised_capability_matrix`, `activelearning_capability_matrix`, and
+  `automl_capability_matrix`, plus AI tools for every matrix peer domains already
+  had (SSL, unsupervised, forecast, timeseries, RAG, TDA, CBR, symbolic).
+- **Time-series analysis teaching layer.** New concept notes and beginner layers
+  for decomposition, stationarity diagnostics, changepoint detection, and the
+  analysis-before-forecast workflow (`buildml/explain/concepts/timeseries.py`,
+  `buildml/explain/beginner/timeseries.py`).
+- **Tier A proof: tabular Q-learning** (`proofs/tabular-q-frozenlake/`) —
+  end-to-end `fit_rl(mode='tabular_q')` → `evaluate_rl` → `act_rl` → bundle,
+  complementing the existing imitation-cartpole proof.
+- **AI executor generic read-only dispatch.** Registered read-only tools with a
+  `session_method` now fall back to Session dispatch when no bespoke branch
+  exists, fixing unwired capability-matrix tools (anomaly, ranking, decision,
+  synthetic, and the new matrices above).
+
+### Changed
+
+- **The explain system now teaches beginners.** Explanations were written for
+  people who already knew the material: terse, jargon-first, and silent on what
+  a term meant or why a step existed — which defeats the point of an explain
+  surface. Every explanation is now layered, and the beginner layer is the
+  default.
+  - **Reading levels.** `Session.explain(...)` and the new `Session.learn(...)`
+    accept `level="beginner"` (default), `"intermediate"`, or `"advanced"`. The
+    level controls how much scaffolding is rendered, never which facts are true:
+    assumptions, leakage risks, and failure modes appear at every level, while
+    `advanced` drops the analogy and glossary and widens the parameter and
+    pitfall lists.
+  - **An operation primer on every explanation.** All 288 catalog operations
+    carry a beginner briefing: plain-language summary, analogy, why it exists,
+    the steps in order, prerequisites in ordinary words with the calls that
+    satisfy them, what each key parameter means in practice and how to move it,
+    what changes on the session, how to read the result, the common pitfalls, a
+    glossary of the jargon the answer itself used, a worked example, and the
+    neighbouring tools. The primer is *derived* in `buildml/explain/pedagogy.py`
+    from the catalog entry and its linked concept notes rather than hand-copied,
+    so it cannot drift from the expert sections it fronts — and any operation can
+    override any section with authored prose.
+  - **A beginner layer on all 188 concept notes**, across every domain:
+    supervised, unsupervised, forecasting, anomaly, NLP, RAG, RL, online,
+    federated, causal, graph, knowledge graphs, symbolic, CBR, TDA,
+    meta-learning, probabilistic, recommenders, ranking, synthetic, AutoML, and
+    the AI operator. Each adds a plain summary, an analogy, beginner steps, when
+    to use and when not to, misconceptions paired with corrections, a worked
+    example, self-check questions, the BuildML tools that apply the idea, and
+    prerequisite/follow-on links that turn the note set into a reading order
+    instead of an index.
+  - **A machine-learning glossary** (`buildml/explain/glossary.py`): 234 terms
+    with aliases, in plain language, detected automatically in explanation prose
+    so jargon is defined where it is used. Every term now resolves to the concept
+    note or operation that teaches it, so a definition is never a dead end.
+- **Prerequisite handling consolidated.** `buildml/explain/prerequisites.py` now
+  owns how each precondition is checked, which operations satisfy it, and how it
+  is phrased for a beginner. The resolver previously carried a long `if`/`elif`
+  chain that had fallen behind the catalog and could not evaluate a third of its
+  prerequisite keys; the three answers now live in one table and are covered by a
+  test that fails if a catalog prerequisite has no probe.
+- **AI operator teaching tools.** `explain_operation` takes a `level`, and the
+  new read-only `learn_concept` tool lets an operator answer "what is this?"
+  before proposing any write. Both are in the default registry and the autonomy
+  allowlist.
+
+### Added
+
+- **`Session.learn(topic, level=...)`.** Answers the question that comes before
+  `explain`: what *is* this, and what should I understand first. The topic may be
+  a concept key (`"leakage-boundary"`), an operation name (`"split"`), or the
+  word that tripped you up (`"stratified"`), with spacing and hyphenation
+  forgiven and close matches suggested when nothing resolves. Called with no
+  topic it returns the foundation concepts in reading order. Returns a
+  `LearningBrief` carrying the subject plus `read_first` and `read_next` notes.
+
+### Fixed
+
+- **Single-sentence explain content no longer renders one bullet per letter.**
+  497 fields across the operation catalog and the concept notes were authored as
+  a bare string where a tuple was expected — a missing trailing comma, which no
+  type checker catches at runtime. Anything iterating them, including the new
+  beginner primer, walked the characters. `OperationSpec` and `ConceptNote` now
+  normalize their prose fields on construction, and a test fails if a prose
+  field is ever a string again.
+- **The beginner primer no longer repeats itself.** "When not to use" and
+  "common pitfalls" both drew on the same anti-patterns and leakage risks, so a
+  reader met the same warning twice in one briefing; pitfalls now exclude what
+  the avoidance list already said. "When to use" no longer reprints the ordering
+  notes already shown in the expert appropriateness section, and the related
+  tools list drops any call the authored alternatives already recommend.
+
+### Documentation
+
+- **Docstring standard, enforced in CI.** BuildML's promise is to make the
+  complex easy, and the API docstrings were not holding up their end: most were
+  a single line, parameters were listed by type without saying what they do, and
+  almost nothing explained *when* to reach for one option over another. There is
+  now a written standard in [`CONTRIBUTING.md`](CONTRIBUTING.md) — NumPy style,
+  with a beginner-readable summary, a description of the concept and its role in
+  the pipeline, parameters explained by effect rather than type, returns
+  explained by meaning, raises, notes covering leakage and alternatives, and
+  examples for anything non-trivial.
+  - `scripts/audit_docstrings.py` checks the standard mechanically. Run it with
+    `--report` for a per-package coverage table, `--path` to see every finding in
+    one area, and `--check` for the CI gate. Wired into
+    [`ci.yml`](.github/workflows/ci.yml).
+  - The gate is a two-part ratchet. Packages listed in `ENFORCED_PREFIXES` must
+    stay at zero findings; every other package must stay at or below its recorded
+    count in `scripts/docstring_budget.json`. New shallow docstrings fail CI while
+    the existing backlog does not block unrelated work, and the recorded counts
+    can only fall — `--write-budget` refuses to raise one unless `--rebaseline`
+    is passed, which prints exactly what it ratified.
+  - Variadic parameters documented in NumPy's `*args` / `**kwargs` spelling are
+    now recognised. The parser skipped every line beginning with `*` to avoid
+    reading bullets as parameter names, which meant a correctly documented
+    `**kwargs` was reported as undocumented. Bullets and block quotes always
+    carry a space after their marker, so the filter now requires one.
+- **`buildml.preprocess` rewritten to the standard and locked at zero findings.**
+  Every public function, class, and method across all 15 modules now explains the
+  technique, not just the call. Each fit function states why a split plan is
+  mandatory and what leaks without it; each method choice (`'iqr'` against
+  `'zscore'`, `'onehot'` against `'target'`, `'quantile'` against `'uniform'`)
+  explains the trade-off rather than naming the option; each plan class explains
+  why the learned state is stored rather than recomputed at inference.
+  Target encoding, the easiest step in the package to misuse, now documents the
+  out-of-fold mechanism that makes it safe and why `transform_encoder` demands a
+  split plan when the other methods do not.
+- **`buildml.nlp` rewritten to the standard and locked at zero findings.** All 26
+  modules — the supervised path, topics, keyphrases, sentiment, entities,
+  summaries, language detection, corpus profiling, normalisation, vectorisation,
+  the result dataclasses, the three optional-backend adapters, and the history
+  hooks. Text carries failure modes tabular data does not, so the docstrings name
+  them: every fit function states that the vocabulary is learned on train alone
+  and what a holdout score means once it is not; the out-of-vocabulary rate is
+  explained as the signal that a metric is measuring words the model never saw;
+  extractive summarisation documents that it selects sentences rather than
+  writing them; sentiment documents that a lexicon which recognises none of a
+  corpus's vocabulary will report it as uniformly neutral; and
+  `interpret_text_prediction` explains why it refuses hashing and embedding
+  representations instead of returning attributions that cannot be traced to a
+  word. Backend choices (`sklearn` against `embedding` against `transformer`,
+  NMF against LDA, TF-IDF against RAKE against TextRank) explain the trade-off
+  rather than listing the option.
+- **`buildml.rl` rewritten to the standard and locked at zero findings.** All 18
+  modules across imitation learning and reinforcement learning. Decision-making
+  is the domain where a metric is most easily read as more than it is, so the
+  docstrings draw the lines explicitly: behavioural cloning documents that it
+  reproduces a demonstrator rather than succeeding, and that agreement with a
+  poor demonstrator is still a poor policy; offline bandit evaluation explains
+  why the direct method and inverse propensity scoring fail in opposite
+  directions, and that disagreement between them means neither should be
+  trusted; `action_match_rate` is documented as the diagnostic to read before
+  either estimate; the `offline` flag is carried through every result, summary,
+  and bundle so a counterfactual estimate is never later mistaken for a measured
+  one; and tabular control documents `unseen_state_rate` as the point at which
+  a return becomes a measure of luck. Algorithm choices (LinUCB against
+  epsilon-greedy against softmax, Q-learning against SARSA, PPO against DQN
+  against A2C) explain the trade-off rather than naming the option, and
+  `act_sb3_observation` documents that its one-hot scores are not probabilities
+  and why Stable-Baselines3 cannot supply real ones.
+- **`buildml.dl` rewritten to the standard and locked at zero findings.** All 25
+  modules — the tabular and text Torch path, loaders, training, evaluation,
+  curves, cross-validation, nested search, DDP, export, packaging, the
+  Kubernetes renderers, the multimodal and modality helpers, the pretrained
+  backbone hooks, and the speech path. Deep learning fails in ways classical
+  models do not, so the docstrings name them: `make_loaders` documents the group
+  and time checks it runs and why it raises rather than warns; `fit_standardize`
+  and the image and audio statistics helpers each state that they learn from
+  train rows only and what a holdout distribution should therefore look like;
+  `nested_cv_torch` explains what its estimate covers and why `search_torch`
+  alone reports an optimistic number; the export helpers document that tracing
+  records one path through the model and that data-dependent control flow is
+  silently lost; `TorchBundle` documents what a bundle does and does not contain,
+  and why the module must be supplied on load. The pretrained hooks carry
+  `weight_mode` through every result so `'mock'` weights can never be mistaken
+  for real ones, and the speech module refuses foundation-model pretraining by
+  name rather than approximating it, while labelling its stub transcription
+  backend as test scaffolding wherever the text appears.
+- **`buildml.ai` rewritten to the standard and locked at zero findings.** All 13
+  modules — the tool registry, egress controls, provider layer, advisor,
+  executor, planner, autonomy mode, transcript, and security hardening. This is
+  the domain where a docstring that overstates a guarantee is itself a hazard,
+  so each control now says what it actually does: `detect_pii_columns` documents
+  that it matches column *names* and will miss a `notes` column full of
+  addresses; `sanitize_tool_result` and `detect_injection_attempt` state that a
+  finite phrase list raises the cost of an attack rather than preventing one,
+  and that the real bound is the closed registry; `build_stats_payload` explains
+  that a minimum and maximum are literal values from your data and that an
+  aggregate over few rows can still identify someone; `EgressManifest` documents
+  that it accounts for the payload and not the prompt. The confirmation model is
+  documented as structural rather than procedural — `ToolRegistry` explains that
+  an unregistered name is refused rather than matched to the nearest tool, and
+  `requires_confirmation` explains why it answers `True` for a tool it does not
+  recognise. `run_autonomous` names its residual risks and recommends reviewing
+  a plan before executing it unattended.
+- **`buildml.data` rewritten to the standard and locked at zero findings.** All
+  11 modules — the `Dataset` handle, split planning, the engine protocol, the
+  pandas, Polars, and DuckDB adapters, the shared aggregation vocabulary, the
+  portable filter helpers, and the design-matrix prep path. Two things decide
+  whether a result is trustworthy here, and both are now stated wherever they
+  apply. The first is leakage: `create_split` explains why a random split is
+  wrong for grouped or time-ordered data and what the resulting score would
+  overstate, `create_time_split` documents that a chronological cut is the only
+  honest evaluation of forecasting, and `guard_fit_partition` explains that its
+  refusal is deliberate friction rather than a missing convenience. The second
+  is memory: every method now says whether it defers work or forces it, so
+  `select_columns` and `filter_expr` are documented as the operations that keep
+  data off disk and out of memory, while `sample_rows`, `filter_rows`, and
+  `to_pandas` are marked as the points where a lazy plan collects. Native
+  handles are documented as narrowing what must be materialised and explicitly
+  *not* as out-of-core fitting. `DuckDBTable` explains connection ownership —
+  who closes, who shares, and what breaks when the owner closes first — and
+  `prepare_design_frame` records that a sampled fit describes the sample rather
+  than the population.
+- **`buildml.rag` rewritten to the standard and locked at zero findings.** All 18
+  modules — corpus ingest, chunking, the three embedding backends, the vector
+  store, index build and incremental update, dense, BM25 and hybrid retrieval,
+  fusion, cross-encoder reranking, grounded generation, retrieval and generation
+  evaluation, bundle persistence, the capability matrix, the dependency gates,
+  the history hooks, and the LangChain adapter. Retrieval always returns
+  something, so the docstrings say what that something is worth: `retrieve`
+  documents that there is no relevance threshold and that a question the corpus
+  cannot answer still produces `k` confidently ranked passages; `rrf_fuse`
+  explains why fusing by rank avoids comparing a BM25 score against a cosine
+  similarity, and `weighted_fuse` explains why its per-query normalisation makes
+  scores unstable across queries. Grounding claims are bounded rather than
+  implied — `score_faithfulness` states that it measures citation coverage and
+  lexical overlap, not truth, and that a fluent, well-cited, entirely wrong
+  answer scores well; `generate_from_retrieve` documents that empty retrieval and
+  provider errors are hard failures precisely so no ungrounded fallback can be
+  mistaken for a grounded answer. Leakage and persistence are stated where they
+  bite: `Document.role` explains what `eval_only` holds out and why,
+  `evaluate_retrieval` explains why document mode deduplicates and chunk mode does
+  not, and `load_rag_bundle` documents that a bundle saved with a custom callable
+  embedder reloads with hashing substituted — queries and stored vectors then
+  occupy unrelated spaces, and retrieval returns confident nonsense.
+  `rag_status` reports the absences as plainly as the presences, including that a
+  Session checkpoint does not carry the vector index.
+- **`buildml.cbr` rewritten to the standard and locked at zero findings.** All 19
+  modules — the case base and distance metrics, fit, retrieve, predict, evaluate
+  and retain, feature preparation, the result dataclasses, the capability matrix,
+  bundle persistence, the history hooks, and the four backend adapters. Case-based
+  reasoning promises an explanation alongside every prediction, so the docstrings
+  say what that explanation is worth: `pairwise_distances` describes what each of
+  the four metrics actually treats as similar, and states that the mixed metric
+  weights numeric and categorical features by column count rather than importance;
+  `standardize_fit` explains that unscaled features let whichever column has the
+  largest units decide every neighbour; and `distance_weights` explains why inverse
+  distance falls off sharply enough that one very close case can decide a
+  prediction on its own. Leakage discipline is stated wherever memory can absorb a
+  label it should not — `fit_cbr` documents that the case base is built from train
+  alone and that its `train_score` is in-sample because a row is its own nearest
+  neighbour, `retain_cbr` documents that holdout rows are refused outright rather
+  than warned about and that identity is the frame index, so a default
+  `RangeIndex` silently skips every genuinely new row as a duplicate. The
+  approximate and learned backends state their costs: `build_ann_index` documents
+  that approximate search can miss a true nearest neighbour, and the torch metric
+  encoder documents that a learned space is uninterpretable, which forfeits part
+  of why the method was chosen. `pairwise_distances`, `top_k_indices`,
+  `distance_weights`, `encode_categoricals`, `standardize_fit`,
+  `standardize_apply`, and `numeric_ranges` now carry executable doctests.
+- **`buildml.model` rewritten to the standard and locked at zero findings.** The
+  classical supervised surface — fit, predict and evaluate, cross-validation and
+  the four hyperparameter searches, nested CV, model comparison, the deep
+  diagnostics, the evidence records, and both the HTML and plot-board exports.
+  This is the package where an honest number and a flattering one look identical,
+  so the docstrings say which is which: `fit_estimator` documents that
+  `train_score` is in-sample and therefore not evidence of anything;
+  `cv_score` explains that a fold standard deviation is the number that says
+  whether a difference between two models is real, and refuses to run when a
+  Session split already exists because scoring the whole frame would put test
+  rows in a training fold; `nested_cv_score` explains that it estimates the
+  *procedure* rather than a model, which is why it returns no single winner; and
+  `optuna_search` documents that its early trials are random, so a small budget
+  buys a randomized search with extra machinery. The diagnostics state what
+  metrics hide — `calibration_report` explains that a well-ranked model can still
+  be badly calibrated and that AUC will not show it, `threshold_report` explains
+  that 0.5 is a convention rather than a decision, and
+  `permutation_importance_report` documents that correlated features split their
+  importance and can both look unused. `_infer_task` and
+  `fit_kwargs_for_sample_weight` carry executable doctests, the latter showing
+  that an estimator which cannot weight refuses rather than ignoring the weights.
+- **The persistence and deployment path rewritten to the standard and locked at
+  zero findings** — `buildml.core`, `buildml.checkpoint`, `buildml.pipeline`, and
+  `buildml.serving`. These are the modules a reader meets first and last, and the
+  distinctions they turn on were previously left implicit. `ColumnRole` now
+  explains what each role *causes* rather than naming it, including that a group
+  column exists so a patient seen in training cannot reappear at test time and
+  that an ID is excluded because an identifier correlated with the target is a
+  shortcut that will not exist in production. The two artifacts are told apart
+  wherever they are confusable: `save_checkpoint` documents that the split is the
+  one thing that could not be recomputed, `load_checkpoint` documents that a
+  clean load with a `None` split plan is the case to handle, and
+  `save_pipeline_bundle` documents that omitting a plan that was used in training
+  produces a bundle which silently under-prepares its inputs. The schema contract
+  now says why it is loose — that comparing dtype *families* keeps the check
+  meaningful across a Parquet round trip, and that a check which cries wolf gets
+  turned off — and `coerce_score_frame` documents that numeric coercion turns
+  unparseable values into nulls, so a column of mostly-numeric strings converts
+  and quietly loses its `'N/A'` entries. `predict_from_pipeline` explains that a
+  feature column missing *after* plan replay usually means encoding met a
+  category the training data did not contain. Serving states its own limits:
+  `serve_bundle` documents that a non-loopback bind without keys is refused
+  rather than warned about, and `create_serving_app` documents that the API-key
+  middleware is a shared secret with no identities, rotation, or audit trail.
+  `coerce_data_mode`, `TableSchema.from_dict`, `validate_role_name`,
+  `validate_column_names`, `MissingExtraError`, `normalize_api_keys`,
+  `extract_presented_key`, `key_is_authorized`, `dtype_family`, and
+  `families_compatible` carry executable doctests.
+- **The docstring auditor no longer mis-reports NumPy's comma-grouped
+  parameters.** `a, b, c:` on one line is standard NumPy shorthand, but only the
+  `a / b / c:` spelling was parsed, so correctly documented sibling arguments
+  were reported as undocumented. Fixing the parser removed ten false findings
+  from `buildml.session` and two from `buildml.dashboard` without any docstring
+  changes in either.
+- **`Session` core path rewritten to the standard.** Ingestion, roles, splitting,
+  the full preprocessing surface, fit, predict, evaluate, cross-validation,
+  nested CV, the four hyperparameter searches, diagnostics, EDA, and the
+  persistence and pipeline methods.
+- **Sphinx now renders NumPy sections as sections.** `sphinx.ext.napoleon` was
+  missing from [`docs/conf.py`](docs/conf.py), so "Parameters" and "Returns"
+  headings were being emitted as literal text instead of parameter tables.
+  Enabled alongside `intersphinx`, so references to pandas, NumPy, and
+  scikit-learn types now link to upstream documentation.
+
+### Added
+
+- **NLP promoted to a first-class Session domain (`buildml.nlp`).** Text was the
+  one capability BuildML claimed without holding it to the bar every other domain
+  meets: there was no `buildml/nlp/` package, no Session operations, no explain
+  coverage, no proof, no benchmark, and no guide. `Session.text_features` wrote
+  numeric columns for tabular models and `buildml.rag` retrieved documents for
+  generation, but nothing modelled or analysed a text column on its own terms.
+  The domain now ships the full standard surface — capability matrix, ops,
+  results, explain overlay and concepts, AI tools, bundle, tests, proof,
+  benchmark, example, and guides.
+  - **Supervised path:** `fit_text_classifier` fits a single-label document
+    classifier on train (`tfidf` / `count` / `hashing` × `word` / `char` /
+    `char_wb`, with `logistic` / `linear_svm` / `complement_nb` /
+    `multinomial_nb` / `sgd` heads), then `predict_text` and
+    `evaluate_text_classifier` score holdout partitions with accuracy, balanced
+    accuracy, macro/weighted F1, macro precision/recall, log loss, ROC AUC, a
+    per-class report, the confusion matrix, and the holdout out-of-vocabulary
+    token rate. `log_loss` and `roc_auc` are omitted rather than faked for
+    margin-only heads.
+  - **`interpret_text_prediction` is exact, or it refuses.** For a linear head on
+    an invertible vocabulary a token's contribution is `coefficient × feature
+    value` — an identity, not an approximation — and the per-class global tokens
+    come straight from the coefficients. Naive Bayes gets centred
+    log-likelihoods, and the method string says so. Hashing (no invertible
+    vocabulary), dense backends (features are latent dimensions), and heads
+    without per-feature weights are refused with the reason.
+  - **`profile_text_corpus` screens the split before you quote a number:** empty
+    documents, length distribution, vocabulary and hapax rate, duplicate groups,
+    train↔holdout exact overlap, near-duplicate overlap at a stated cosine
+    threshold, holdout OOV rate, and optional language mix. It **reports**
+    contamination in plain-language findings; it never silently drops rows.
+  - **Unsupervised description on the same split:** `fit_topics` / `assign_topics`
+    (NMF on TF-IDF, LDA on counts, NPMI coherence computed on train and clamped
+    to its bounds, with assignment as a pure transform), `extract_keyphrases`
+    (TF-IDF / RAKE / TextRank), `summarize_text` (extractive TextRank / LexRank /
+    lead — sentences are selected, never generated), `extract_entities`
+    (precision-first regex + gazetteer rules with exact character offsets, or
+    spaCy), `analyze_sentiment` (lexicon with negation and intensifier handling,
+    reusing a fitted classifier, or a transformer), and `detect_language`.
+  - **Deterministic normalization, train-only vocabulary.** `buildml/nlp/normalize.py`
+    ships a stateless normalizer, tokenizer, and abbreviation-aware sentence
+    splitter; `buildml/nlp/lexicons.py` ships stopwords for seven languages, a
+    sentiment lexicon with negators and intensifiers, Unicode script ranges,
+    conservative English suffix-stem rules, and the entity patterns. Because
+    normalization learns nothing it cannot leak, so the plan replays it on
+    holdout freely — while vocabulary, document frequencies, IDF, topic
+    components, and heads are all frozen at fit on train rows only.
+  - **`buildml.nlp_bundle.v1`** (`save_nlp_bundle` / `load_nlp_bundle`) carries the
+    normalization plan with the fitted representation and head, plus an optional
+    topic plan, so a reloaded bundle reproduces the holdout score exactly. The
+    proof and the integration smoke both assert that equality rather than
+    asserting the file exists.
+  - **Optional extras:** `buildml[nlp]` (NLTK morphology, langdetect,
+    sentence-transformer embeddings, frozen transformer encoders) and
+    `buildml[nlp-industry]` (spaCy statistical NER), both folded into
+    `buildml[production]`. Adapters in `buildml/nlp/adapters/` are imported
+    lazily, so `import buildml.nlp` stays on the numpy / pandas / scikit-learn
+    core. The bag-of-n-grams backend stays the default **even when the extras are
+    installed**: it is reproducible, needs no download, and is the only
+    representation that can explain its own decisions. A missing extra raises a
+    named `MissingExtraError`, never a silent fallback.
+  - **Wired across the ecosystem:** `Session` methods and read-only result
+    accessors, `buildml/session/nlp_ops.py`, history recording with per-operation
+    result summaries, `walkthrough` `nlp_status`, `audit` priority order,
+    `dry_run` / `workflow` prerequisites (`nlp-text-plan`, `nlp-topic-plan`,
+    `nlp-text-column`, `nlp-extra`), the operation overlay and generated catalog,
+    NLP explain concepts, and 15 AI tool specs.
+  - **Honesty, stated in the capability matrix and the guides:** single-label
+    document classification and analysis — not multi-label, not span/sequence
+    labelling, not text generation or abstractive summarization, not machine
+    translation, not transformer fine-tuning (the Torch text path owns that), and
+    not document retrieval for generation (`buildml.rag` owns that). Sharing a
+    text column, or a sentence-transformer, does not merge those surfaces.
+  - **Evidence:** Tier A proof [`ticket-routing-nlp`](proofs/ticket-routing-nlp/)
+    with a Tier C `Pipeline(TfidfVectorizer + LogisticRegression)` twin on the
+    same split indices (Tier A/C now **26/26**); benchmark
+    `benchmarks/nlp/representation_tradeoff.py` comparing representations on one
+    fixed corpus for accuracy, latency, vocabulary size, and whether attribution
+    survives; runnable `examples/nlp_text_classifier_loop.py`; guides
+    [`quickstart-nlp`](guides/quickstart-nlp.md) and
+    [`nlp-deep`](guides/nlp-deep.md) plus Sphinx pages; and tests
+    `tests/unit/test_nlp_slice.py`, `test_nlp_m2_depth.py`,
+    `test_nlp_industry_depth.py`, and `tests/integration/test_nlp_alpha_smoke.py`.
+    The proof corpus deliberately includes an ambiguous share so the headline
+    accuracy lands near its stated ceiling instead of a suspicious 1.0.
+- **Tabular TD control — the Q-learning family (`fit_rl(mode="tabular_q")`):**
+  closes the value-based gap in `buildml.rl`, which previously shipped
+  contextual bandits, REINFORCE-lite policy gradient, and SB3 PPO/DQN/A2C but no
+  foundational tabular methods. New `buildml/rl/tabular.py` implements
+  `q_learning` (off-policy), `sarsa` and `expected_sarsa` (on-policy), and
+  `double_q_learning` (cross-evaluated, no maximisation bias) on discrete-action
+  Gymnasium envs behind `buildml[rl]`.
+  - `ObservationDiscretizer` bins continuous Box observations uniformly
+    (`n_bins=`), taking bounds from the declared space where finite and from a
+    seeded random-policy probe (1st/99th percentile) where not; `Discrete`
+    spaces index directly. Bounds, sources, and state count are recorded in
+    `RlPlan.config["discretizer"]`, and tables above 500k states are refused
+    with a pointer to function approximation.
+  - `TabularValuePolicy` exposes the learned `q_table`, `greedy_policy_table()`,
+    `state_value_table()`, and per-state visit counts; `act_rl` returns
+    `Q(s, a)` as its scores.
+  - Exploration schedule `eps_t = max(epsilon_min, epsilon * epsilon_decay**ep)`
+    via new `n_bins` / `epsilon_min` / `epsilon_decay` knobs on `Session.fit_rl`.
+  - Honest disclosures: `state_coverage` (fit) and `unseen_state_rate` (eval)
+    report how much of the table was actually learned; off-policy TD control is
+    explicitly distinguished from batch offline RL (CQL/IQL/DT stay out of scope).
+  - Wired end to end: capability matrix (`algorithms_by_mode`), backend/mode
+    resolver, `fit_rl` / `act_rl` / `evaluate_rl`, RL bundles, walkthrough
+    `rl_status`, operation overlay, AI tool schema + executor, and three concept
+    notes (`rl-tabular-q-learning`, `rl-sarsa-on-policy`,
+    `rl-state-discretization`) linking Q-learning to DQN.
+  - Tests: `tests/unit/test_rl_tabular.py` (discretizer edge cases, tie-breaking,
+    hyperparameter guards, all four algorithms on CliffWalking, FrozenLake
+    learning floor, Session fit/act/evaluate/bundle round-trip).
+
 ## [2.4.0a2] — proof suite / preprocess harden — 2026-08-03
 
 ### Summary

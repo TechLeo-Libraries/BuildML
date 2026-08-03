@@ -1,16 +1,33 @@
-"""Pretrained vision / audio / speech backbone hooks (integration, not a full zoo).
+"""Start from a model that already learned something, instead of from scratch.
 
-Loads ResNet/ViT-class (torchvision), Wav2Vec/HuBERT-class (transformers), and
-Whisper-encoder-class (transformers) backbones with freeze/finetune helpers.
+Training a vision or audio model from random initialisation needs an enormous
+amount of labelled data. Transfer learning avoids that: take a network already
+trained on a very large corpus, keep the representations it learned, and train
+only a small head on your labels. It routinely works with a few hundred examples
+where from-scratch training would need hundreds of thousands.
 
-Weight modes
-------------
-* ``none`` — architecture only (random init; no download).
-* ``mock`` — architecture + tiny random compatible tensors (CI-safe).
-* ``pretrained`` — real published weights (may download; needs network/extra).
+This module loads such backbones. Vision architectures come from torchvision
+(ResNet and ViT), audio and speech from Hugging Face transformers (Wav2Vec2,
+HuBERT, and the Whisper encoder). Each is returned as a feature extractor with
+its classification head removed, ready for :func:`attach_backbone_head`.
 
-Shipped paths are real library loaders. Limits describe product scope
-(not a full HF/TorchVision zoo SaaS; not FM-from-scratch), not stubs.
+Three weight modes, and picking the right one matters. ``pretrained`` downloads
+the real published weights and is what you want for actual work. ``mock``
+constructs the architecture with random weights, which is fast, offline, and
+useless for accuracy — it exists so tests can exercise the plumbing without
+pulling gigabytes. ``none`` is the same thing without even the random
+initialisation pass.
+
+This is an integration layer over torchvision and transformers, not a model zoo
+of its own. It curates a handful of architectures that work well; it does not
+mirror the full Hugging Face hub, and it does not train foundation models from
+scratch.
+
+See Also
+--------
+buildml.dl.train : Training the head.
+buildml.dl.image : Preparing image tensors.
+buildml.dl.speech : Transcription, rather than feature extraction.
 """
 
 from __future__ import annotations
@@ -46,7 +63,44 @@ _DEFAULT_SPEECH_MOCK = {
 
 @dataclass(slots=True)
 class PretrainedBackbone:
-    """Loaded backbone module plus honest disclosures."""
+    """A loaded feature extractor, with a clear record of what it actually is.
+
+    Attributes
+    ----------
+    module:
+        The backbone, with its classification head replaced by identity so it
+        emits features rather than class scores.
+    modality:
+        ``'vision'``, ``'audio'``, or ``'speech'``.
+    architecture:
+        Which one was loaded.
+    weight_mode:
+        ``'pretrained'``, ``'mock'``, or ``'none'``. **Check this before
+        drawing conclusions from any result** — mock weights are random.
+    frozen:
+        Whether the parameters are excluded from gradient updates.
+    feature_dim:
+        Output width, needed to size a head.
+    disclosures:
+        What was loaded and from where.
+    limitations:
+        Scope boundaries.
+    warnings:
+        Notably that weights are random, or that a config could not be fetched.
+    meta:
+        Provider, model identifier, and seed.
+
+    Notes
+    -----
+    **``weight_mode`` is the field to look at first.** A pipeline that works
+    end to end with ``mock`` weights is a pipeline that works; it is not a model
+    that predicts anything.
+
+    See Also
+    --------
+    load_pretrained_backbone : Produces this.
+    attach_backbone_head : Making it a classifier.
+    """
 
     module: Any
     modality: Literal["vision", "audio", "speech"]
@@ -60,6 +114,19 @@ class PretrainedBackbone:
     meta: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the backbone's provenance as JSON-safe values.
+
+        Records what was loaded and under which weight mode — the thing that
+        determines whether a downstream result means anything. The module
+        itself is reported by class name.
+
+        Returns
+        -------
+        dict
+            Modality, architecture, weight mode, frozen flag, feature
+            dimension, the three prose lists, metadata, and the module class
+            name.
+        """
         return {
             "modality": self.modality,
             "architecture": self.architecture,
@@ -76,7 +143,27 @@ class PretrainedBackbone:
 
 @dataclass(slots=True)
 class BackboneHeadResult:
-    """Backbone + linear head for linear-probe / finetune-head workflows."""
+    """A backbone with a classification head attached, ready to train.
+
+    Attributes
+    ----------
+    module:
+        The combined model: backbone, pooling, and linear head. Train this.
+    backbone:
+        The underlying backbone record, with its frozen flag updated.
+    n_classes:
+        Output width.
+    disclosures:
+        What was attached.
+    limitations:
+        What remains yours — loaders, training configuration, the fit call.
+    warnings:
+        Anything notable.
+
+    See Also
+    --------
+    attach_backbone_head : Produces this.
+    """
 
     module: Any
     backbone: PretrainedBackbone
@@ -86,6 +173,17 @@ class BackboneHeadResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the assembled model's description as JSON-safe values.
+
+        The backbone's own record nests inside, so the weight mode stays
+        visible in the log.
+
+        Returns
+        -------
+        dict
+            Class count, the nested backbone description, the three prose
+            lists, and the module class name.
+        """
         return {
             "n_classes": self.n_classes,
             "backbone": self.backbone.to_dict(),
@@ -97,7 +195,27 @@ class BackboneHeadResult:
 
 
 def list_pretrained_backbones() -> tuple[dict[str, str], ...]:
-    """Return the curated architecture catalog (honesty: not a full zoo product)."""
+    """List the architectures this module knows how to load.
+
+    A curated set, not a mirror of any hub. Each entry names a modality, an
+    architecture, and which library provides it.
+
+    Returns
+    -------
+    tuple of dict
+        One entry per architecture, with ``modality``, ``architecture``, and
+        ``provider`` keys.
+
+    Notes
+    -----
+    **Availability here does not mean the provider is installed.** Vision needs
+    torchvision, audio and speech need transformers, and both are optional. The
+    loaders raise a clear error when the provider is missing.
+
+    See Also
+    --------
+    load_pretrained_backbone : Loading one of these.
+    """
     rows: list[dict[str, str]] = []
     for arch in _VISION_ARCHS:
         rows.append({"modality": "vision", "architecture": arch, "provider": "torchvision"})
@@ -109,7 +227,40 @@ def list_pretrained_backbones() -> tuple[dict[str, str], ...]:
 
 
 def freeze_module(module: Any, *, freeze: bool = True) -> Any:
-    """Freeze or unfreeze all parameters on ``module`` (in-place)."""
+    """Stop or resume gradient updates for every parameter in a module.
+
+    Freezing sets ``requires_grad = False`` throughout, so the optimiser leaves
+    those weights alone. This is what makes transfer learning cheap: the
+    backbone's learned representations are kept as-is, and only the head is
+    trained.
+
+    Parameters
+    ----------
+    module:
+        The module to modify. Changed in place.
+    freeze:
+        ``True`` to freeze, ``False`` to unfreeze.
+
+    Returns
+    -------
+    torch.nn.Module
+        The same module, for chaining.
+
+    Notes
+    -----
+    **Frozen makes training much faster and much less flexible.** No gradients
+    are computed for those layers, so each step is cheaper and uses less memory
+    — but the representations cannot adapt to your data at all.
+
+    **Unfreezing after the head has trained is the usual refinement.** Training
+    a random head against an unfrozen backbone lets large early gradients damage
+    good pretrained weights; training the head first, then unfreezing with a
+    small learning rate, avoids that.
+
+    See Also
+    --------
+    attach_backbone_head : Where the frozen flag is usually set.
+    """
     for param in module.parameters():
         param.requires_grad = not freeze
     return module
@@ -155,7 +306,61 @@ def attach_backbone_head(
     n_classes: int,
     freeze_backbone: bool | None = None,
 ) -> BackboneHeadResult:
-    """Attach a linear classification head to a loaded backbone."""
+    """Turn a feature extractor into a classifier for your labels.
+
+    Wraps the backbone with pooling and a single linear layer sized to your
+    class count. The result is a module that takes the backbone's input and
+    emits class logits, trainable with the ordinary training loop.
+
+    Parameters
+    ----------
+    backbone:
+        A loaded backbone.
+    n_classes:
+        How many classes to predict.
+    freeze_backbone:
+        Override the backbone's frozen state. ``None`` keeps it as loaded.
+
+    Returns
+    -------
+    BackboneHeadResult
+        The combined module, the updated backbone record, and the limitations.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If ``n_classes`` is below 2.
+
+    Notes
+    -----
+    **Pooling adapts to whatever the backbone emits.** Transformer outputs with
+    a sequence dimension are mean-pooled across it; already-flat outputs pass
+    through. This is what lets one head work across vision, audio, and speech
+    backbones that have quite different output shapes.
+
+    **A frozen backbone with a linear head is a linear probe**, and it is a
+    genuinely useful measurement: it tells you how much of your task is already
+    captured by the pretrained representations, before you spend anything on
+    fine-tuning.
+
+    **Loaders and training are still yours.** This returns a module, not a
+    trained model.
+
+    Examples
+    --------
+    Linear probe on a pretrained ResNet::
+
+        backbone = load_vision_backbone("resnet18", weights="pretrained")
+        head = attach_backbone_head(backbone, n_classes=5)
+        head.module  # pass to train_supervised_module
+
+    See Also
+    --------
+    freeze_module : Changing the frozen state later.
+    buildml.dl.train.train_supervised_module : Training the result.
+    """
     torch = require_torch(feature="attach backbone head")
     if n_classes < 2:
         raise ValidationError("n_classes must be >= 2")
@@ -228,7 +433,63 @@ def load_vision_backbone(
     freeze: bool = True,
     seed: int = 0,
 ) -> PretrainedBackbone:
-    """Load a torchvision vision backbone as a feature extractor."""
+    """Load a ResNet or Vision Transformer as an image feature extractor.
+
+    Constructs the architecture, optionally with ImageNet weights, and replaces
+    the final classification layer with identity so the module emits features
+    instead of ImageNet class scores.
+
+    Parameters
+    ----------
+    architecture:
+        ``'resnet18'``, ``'resnet34'``, ``'resnet50'``, ``'vit_b_16'``, or
+        ``'vit_b_32'``.
+    weights:
+        ``'pretrained'`` for real ImageNet weights, ``'mock'`` for random
+        weights suitable only for testing, ``'none'`` for a bare architecture.
+    freeze:
+        Freeze the parameters. On by default, which is the linear-probe setup.
+    seed:
+        Controls mock initialisation, so tests are reproducible.
+
+    Returns
+    -------
+    PretrainedBackbone
+        The feature extractor and its provenance.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch or torchvision is not installed.
+    ValidationError
+        If the architecture is not one of the supported names.
+
+    Notes
+    -----
+    **ResNets are the safer default; ViTs need more data.** Vision transformers
+    reach higher ceilings but are more sensitive to fine-tuning data volume, and
+    ResNet-18 is a better first attempt on a small labelled set.
+
+    **Pretrained weights expect ImageNet-style input** — three channels,
+    224x224, normalised with ImageNet statistics. Feeding differently prepared
+    images works mechanically and degrades the representations, sometimes
+    substantially.
+
+    **``pretrained`` downloads on first use**, tens to hundreds of megabytes, to
+    the torch hub cache. Use ``mock`` in CI.
+
+    Examples
+    --------
+    Pretrained extractor, frozen for a linear probe::
+
+        backbone = load_vision_backbone("resnet18", weights="pretrained")
+        backbone.feature_dim  # 512
+
+    See Also
+    --------
+    attach_backbone_head : Making it a classifier.
+    buildml.dl.image : Preparing the image tensors.
+    """
     torch = require_torch(feature="vision backbone")
     tv = _require_torchvision()
     warnings: list[str] = []
@@ -296,7 +557,65 @@ def load_audio_backbone(
     seed: int = 0,
     model_id: str | None = None,
 ) -> PretrainedBackbone:
-    """Load a transformers Wav2Vec2 / HuBERT-class audio encoder backbone."""
+    """Load a Wav2Vec2 or HuBERT encoder as an audio feature extractor.
+
+    Both were trained on very large quantities of unlabelled speech using
+    self-supervised objectives, and both produce representations that transfer
+    well to downstream audio tasks with modest labelled data.
+
+    Parameters
+    ----------
+    architecture:
+        ``'wav2vec2_base'`` or ``'hubert_base'``.
+    weights:
+        ``'pretrained'`` for real weights, ``'mock'`` for random, ``'none'``
+        for a bare architecture.
+    freeze:
+        Freeze the parameters.
+    seed:
+        Controls mock initialisation.
+    model_id:
+        A specific Hugging Face model identifier, overriding the default.
+
+    Returns
+    -------
+    PretrainedBackbone
+        The feature extractor and its provenance.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch or transformers is not installed. Install with
+        ``pip install buildml[speech]``.
+    ValidationError
+        If the architecture is not one of the supported names.
+
+    Notes
+    -----
+    **These expect raw 16 kHz waveforms**, not spectrograms and not audio at
+    other sample rates. :mod:`buildml.dl.audio` resamples to 16 kHz by default
+    for exactly this reason.
+
+    **The output has a time dimension.** These emit one vector per frame rather
+    than one per clip, so a head has to pool across time —
+    :func:`attach_backbone_head` mean-pools automatically.
+
+    **Wav2Vec2 and HuBERT are close in practice.** They differ in training
+    objective; for a downstream classification task the choice rarely matters
+    much, and trying both is cheap.
+
+    Examples
+    --------
+    Frozen speech representations::
+
+        backbone = load_audio_backbone("wav2vec2_base", weights="pretrained")
+        backbone.feature_dim  # 768
+
+    See Also
+    --------
+    buildml.dl.audio : Preparing waveforms at the right rate.
+    load_speech_backbone : Whisper, for transcription-oriented features.
+    """
     require_torch(feature="audio backbone")
     transformers = _require_transformers()
     warnings: list[str] = []
@@ -352,7 +671,65 @@ def load_speech_backbone(
     seed: int = 0,
     model_id: str | None = None,
 ) -> PretrainedBackbone:
-    """Load a Whisper-class encoder backbone (finetune/feature extract — not FM pretrain)."""
+    """Load the encoder half of a Whisper model as a speech feature extractor.
+
+    Whisper was trained on a very large multilingual transcription corpus. Its
+    encoder learned representations that capture linguistic content well, and
+    those transfer usefully to speech classification tasks. The decoder — the
+    part that generates text — is discarded here.
+
+    Parameters
+    ----------
+    architecture:
+        ``'whisper_tiny_encoder'`` or ``'whisper_base_encoder'``.
+    weights:
+        ``'pretrained'`` for real weights, ``'mock'`` for random, ``'none'``
+        for a bare architecture.
+    freeze:
+        Freeze the parameters.
+    seed:
+        Controls mock initialisation.
+    model_id:
+        A specific Hugging Face model identifier, overriding the default.
+
+    Returns
+    -------
+    PretrainedBackbone
+        The encoder and its provenance.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch or transformers is not installed. Install with
+        ``pip install buildml[speech]``.
+    ValidationError
+        If the architecture is not one of the supported names.
+
+    Notes
+    -----
+    **Whisper expects log-mel spectrograms, not raw waveforms** — a different
+    input format from Wav2Vec2 and HuBERT. Use the Hugging Face Whisper
+    feature extractor to prepare audio for it.
+
+    **Encoder features skew toward linguistic content.** Whisper was trained to
+    transcribe, so its representations emphasise what was said. For tasks about
+    who is speaking or how, Wav2Vec2 or HuBERT may suit better.
+
+    **For transcription, this is the wrong entry point.** See
+    :mod:`buildml.dl.speech`, which uses the whole model.
+
+    Examples
+    --------
+    Feature extraction from the tiny encoder::
+
+        backbone = load_speech_backbone("whisper_tiny_encoder", weights="pretrained")
+        backbone.feature_dim  # 384 for tiny
+
+    See Also
+    --------
+    buildml.dl.speech : Transcription with the full model.
+    load_audio_backbone : Waveform-input alternatives.
+    """
     require_torch(feature="speech backbone")
     transformers = _require_transformers()
     warnings: list[str] = []
@@ -417,7 +794,59 @@ def load_pretrained_backbone(
     seed: int = 0,
     model_id: str | None = None,
 ) -> PretrainedBackbone:
-    """Dispatch helper for vision / audio / speech backbone loads."""
+    """Load a backbone for any modality through one entry point.
+
+    Dispatches to the modality-specific loader, applying a sensible default
+    architecture when none is named. Convenient when the modality is
+    configuration rather than a decision made in code.
+
+    Parameters
+    ----------
+    modality:
+        ``'vision'``, ``'audio'``, or ``'speech'``.
+    architecture:
+        Which architecture. Defaults to ``'resnet18'``, ``'wav2vec2_base'``, or
+        ``'whisper_tiny_encoder'`` respectively.
+    weights:
+        ``'pretrained'``, ``'mock'``, or ``'none'``.
+    freeze:
+        Freeze the parameters.
+    seed:
+        Controls mock initialisation.
+    model_id:
+        A specific Hugging Face identifier. Audio and speech only; vision
+        weights come from torchvision.
+
+    Returns
+    -------
+    PretrainedBackbone
+        The feature extractor and its provenance.
+
+    Raises
+    ------
+    MissingExtraError
+        If a required provider is not installed.
+    ValidationError
+        If the modality, architecture, or weight mode is unrecognised.
+
+    Notes
+    -----
+    ``'hubert'`` is accepted as an alias for ``'hubert_base'``, since the short
+    form is the natural thing to type.
+
+    Examples
+    --------
+    Load whatever the configuration asked for::
+
+        backbone = load_pretrained_backbone("vision", weights="pretrained")
+
+    See Also
+    --------
+    list_pretrained_backbones : What can be loaded.
+    load_vision_backbone : The vision path, with its caveats.
+    load_audio_backbone : The audio path, with its caveats.
+    load_speech_backbone : The speech path, with its caveats.
+    """
     weights = _validate_weight_mode(weights)
     if modality == "vision":
         arch = architecture or "resnet18"

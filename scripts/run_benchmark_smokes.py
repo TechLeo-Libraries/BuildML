@@ -6,10 +6,10 @@ are written to skip optional industry backends when extras are missing; this
 runner only fails on non-zero exit codes (hard errors or metric floors on
 core paths such as RAG hashing).
 
-Discovery uses ``benchmarks/*/*.py`` (25 scripts as of R6 complete). Domains:
+Discovery uses ``benchmarks/*/*.py`` (26 scripts). Domains:
 
   activelearning, anomaly, automl, causal, cbr, federated, graph, kg,
-  metalearning, multitask, online, optimize, probabilistic, rag, ranking,
+  metalearning, multitask, nlp, online, optimize, probabilistic, rag, ranking,
   recommenders, rl, semisupervised, ssl, symbolic, synthetic, tda, timeseries,
   unsupervised
 

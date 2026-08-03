@@ -23,6 +23,7 @@ or editable install for Session 2.x until a 2.x wheel is published.
 ruff check buildml tests scripts docs/conf.py
 python scripts/lint_user_copy.py
 python scripts/sync_teaching_surface.py --check
+python scripts/audit_docstrings.py --check
 pytest -q
 ```
 
@@ -32,6 +33,57 @@ After Session / AI tool / overlay changes, regenerate teaching surfaces:
 python scripts/sync_teaching_surface.py --write
 python scripts/sync_teaching_surface.py --check
 ```
+
+## Docstring standard
+
+BuildML's promise is that someone who does not already know a technique can
+still apply it correctly. Docstrings are the only documentation that travels
+with the code, so they carry that promise — they are documentation, not
+labels. `python scripts/audit_docstrings.py --check` enforces the structural
+half of this on the packages listed in that script's `ENFORCED_PREFIXES`; the
+teaching half is on the author.
+
+Format is **NumPy style**, rendered by `sphinx.ext.napoleon`. Every public
+class, function, method, and property gets:
+
+1. **A one-line summary** in the imperative mood that a beginner can parse
+   without knowing the domain. "Fit a gradient-boosted ranker on grouped
+   query data" — not "Fit ranker".
+2. **A description paragraph** saying what the operation actually does, where
+   it sits in the workflow, and what state it changes. Name the step before
+   and the step after so the reader can place it.
+3. **`Parameters`** — every argument, with what it means and what changes when
+   you change it. Give the practical default reasoning, not a restatement of
+   the type annotation. "`n_estimators`: number of trees" is useless;
+   "`n_estimators`: how many boosting rounds to run. More trees fit the
+   training data more closely and cost proportionally more time" is the bar.
+4. **`Returns`** — what the object *means* and what you do with it next, not
+   just its class name. Link the result class with `:class:` so readers can
+   follow through.
+5. **`Raises`** — every exception raised directly, with the condition that
+   triggers it, phrased so the reader can avoid it.
+6. **`Notes`** — the intuition. When to reach for this versus the obvious
+   alternative, the assumption that has to hold, the leakage or scale trap.
+   BuildML already uses bolded `**Leakage:**` and `**Scale:**` leads for the
+   two recurring hazards; keep them.
+7. **`Examples`** — for anything non-trivial. Use `>>>` doctest form with real
+   BuildML calls. Illustrative examples are fine (they are not run by CI), but
+   they must use APIs that genuinely exist.
+
+Additional conventions:
+
+- Properties need a summary and, when the annotation is `... | None`, a
+  sentence saying what `None` means and which call populates the value.
+- Conceptual teaching material lives in `buildml/explain/` and the `docs/`
+  guides. Docstrings describe the API and link outward with `:meth:`,
+  `:class:`, and `See Also` rather than duplicating a guide.
+- `scripts/lint_user_copy.py` bans marketing language. Write plainly.
+- When a package finishes its depth pass, add it to `ENFORCED_PREFIXES` in
+  `scripts/audit_docstrings.py`. That list is a ratchet — entries are added,
+  never removed.
+
+Use `python scripts/audit_docstrings.py --report` to see per-package coverage
+and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 
 ## Release checklist
 

@@ -1,4 +1,22 @@
-"""CBR catalog and honest capability matrix."""
+"""Report which CBR backends this installation has, and pair them with metrics.
+
+Two jobs, both about being straight with the caller. The capability matrix says
+what is actually available here, since retrieval behaviour depends on optional
+dependencies and the same code searches differently on different machines. The
+resolver pairs a requested backend with a requested metric and refuses
+combinations that cannot be honoured.
+
+That refusal is the important part. Approximate index libraries implement
+Euclidean and cosine distance and nothing else — there is no Manhattan or
+Gower-style mixed distance in an HNSW graph. Silently substituting a metric the
+backend does support would change what "similar" means without telling anyone,
+so an impossible pairing raises instead.
+
+See Also
+--------
+buildml.cbr.extras : The availability probes underneath.
+buildml.cbr.types.CbrConfig : Where backend and metric are chosen.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +39,52 @@ TORCH_METRICS = ("euclidean", "cosine")
 
 
 def cbr_capability_matrix() -> dict[str, Any]:
-    """Honest capability matrix for CBR retrieval backends."""
+    """Describe the CBR retrieval capabilities available in this environment.
+
+    Probes the optional dependencies and assembles a plain dictionary: which
+    backends work here, which metrics each supports, what the defaults resolve
+    to, how to install what is missing, and what this module deliberately does
+    not attempt.
+
+    The first thing to reach for when CBR behaves differently than expected, and
+    worth logging alongside results so a run can be explained later.
+
+    Returns
+    -------
+    dict
+        Keys:
+
+        ``backends``
+            Per backend (``sklearn``, ``industry``, ``embedding``, ``torch``):
+            availability, the extra that provides it, the metrics it supports,
+            and a note on what it is for.
+        ``ann_library``
+            Which approximate library would be used, or ``None``.
+        ``defaults``
+            The backend and metric chosen when the caller specifies neither.
+        ``install_hints``
+            Copy-paste pip commands per extra.
+        ``non_goals``
+            What this is not trying to be.
+
+    Notes
+    -----
+    **Availability comes from real imports where it is affordable**, so an
+    installed-but-broken compiled library reports as unavailable — which matches
+    what the user would experience.
+
+    **The metric lists are narrower for the optional backends, and that is
+    intrinsic.** Exact search can compute any distance you can write down;
+    approximate indexes are built around a specific one.
+
+    Examples
+    --------
+    Check before requesting a backend::
+
+        matrix = cbr_capability_matrix()
+        if not matrix["backends"]["industry"]["available"]:
+            print(matrix["install_hints"]["cbr-industry"])
+    """
     ann_lib = None
     if hnswlib_available():
         ann_lib = "hnswlib"
@@ -158,10 +221,47 @@ def _default_backend_when_installed() -> str:
 
 
 def _default_metric_when_installed() -> str:
+    """Return the metric used when the caller names none.
+
+    Euclidean, unconditionally. It is supported by every backend, needs no
+    categorical handling, and behaves predictably on standardised numeric
+    features — so the default never constrains which backend can be chosen.
+
+    Returns
+    -------
+    str
+        Always ``'euclidean'``.
+    """
     return "euclidean"
 
 
 def list_cbr_backends(*, available_only: bool = True) -> list[str]:
+    """List the retrieval backends, by default only those that work here.
+
+    Filtering to what is actually installed is the useful default: a list that
+    includes backends the environment cannot run turns a configuration choice
+    into a failed import later on.
+
+    Parameters
+    ----------
+    available_only:
+        Restrict to backends whose dependencies are installed. Pass ``False``
+        to see the full set, which is useful when telling a user what they
+        could have.
+
+    Returns
+    -------
+    list of str
+        Backend names.
+
+    Notes
+    -----
+    **``'sklearn'`` is always present**, so this never returns an empty list.
+
+    See Also
+    --------
+    cbr_capability_matrix : The detail behind these names.
+    """
     matrix = cbr_capability_matrix()
     out: list[str] = []
     for name, entry in matrix["backends"].items():
@@ -172,6 +272,28 @@ def list_cbr_backends(*, available_only: bool = True) -> list[str]:
 
 
 def backend_available(name: CbrBackendName) -> bool:
+    """Report whether one named backend can be used here.
+
+    The single-backend form of :func:`cbr_capability_matrix`, for branching on
+    one capability without reading the whole picture.
+
+    Parameters
+    ----------
+    name:
+        ``'sklearn'``, ``'industry'``, ``'embedding'``, or ``'torch'``.
+
+    Returns
+    -------
+    bool
+        True when the backend is usable. An unrecognised name returns ``False``
+        rather than raising, so a typo degrades to "unavailable".
+
+    Notes
+    -----
+    **This builds the full matrix internally**, so it probes every dependency
+    rather than only the one asked about. Fine for a setup check; avoid it in a
+    loop.
+    """
     entry = cbr_capability_matrix()["backends"].get(name)
     if entry is None:
         return False
@@ -184,7 +306,55 @@ def resolve_backend_metric(
     metric: str,
     text_columns: list[str] | None = None,
 ) -> tuple[CbrBackendName, str]:
-    """Validate backend/metric pairing and apply honest defaults."""
+    """Settle on a backend and metric, refusing pairings that cannot be honoured.
+
+    Chooses a backend when none is named, then checks that the requested metric
+    is one that backend can actually compute. An impossible pairing raises
+    rather than substituting: quietly swapping in a metric the backend does
+    support would change what "similar" means, and every downstream neighbour,
+    prediction, and score would be answering a different question than the one
+    asked.
+
+    When no backend is given, the choice follows from the other settings. Text
+    columns imply the embedding backend, since nothing else can compare text.
+    Manhattan and mixed distances imply exact search, since no approximate index
+    implements them. Otherwise the best installed option is used.
+
+    Parameters
+    ----------
+    backend:
+        The requested backend, or ``None`` to infer.
+    metric:
+        The requested distance function.
+    text_columns:
+        Text columns, whose presence forces the embedding backend.
+
+    Returns
+    -------
+    tuple
+        ``(backend, metric)`` — both resolved and validated.
+
+    Raises
+    ------
+    ValidationError
+        If the metric is not one the resolved backend supports.
+    MissingExtraError
+        If a backend was named explicitly and its dependency is not installed.
+
+    Notes
+    -----
+    **Torch is never probed while inferring a backend.** Importing torch is slow
+    and, on some Windows configurations with antivirus in the path, can hang
+    outright. It is only touched when explicitly requested.
+
+    **Naming an unavailable backend raises; inferring one falls back.** An
+    explicit request is a decision worth honouring or failing on, whereas
+    inference is by definition a best-effort choice.
+
+    See Also
+    --------
+    cbr_capability_matrix : Which pairings are possible here.
+    """
     from buildml.core.errors import MissingExtraError, ValidationError
 
     metric_key = str(metric).lower().replace("-", "_")

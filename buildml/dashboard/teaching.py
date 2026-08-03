@@ -9,7 +9,49 @@ from buildml.dashboard.serialize import flagged_column_names
 
 
 def build_teaching_studios(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """Build per-domain teaching studios with dataset-specific worked examples."""
+    """Write the teaching panel for each board, using this dataset's numbers.
+
+    The studio's second half. Each board shows an analysis; each teaching panel
+    explains what that analysis is, how to read it, what commonly goes wrong,
+    and — crucially — walks through the reader's own result rather than a
+    textbook one.
+
+    That last part is what distinguishes this from a glossary. "Variance
+    inflation factor measures collinearity" is a definition anyone can look up.
+    "Your ``total_spend`` has a VIF of 23, which means it is almost perfectly
+    predicted by the other columns, and its coefficient in a linear model would
+    be arbitrary" is the sentence that teaches.
+
+    Parameters
+    ----------
+    report:
+        The report as a dict, from
+        :meth:`~buildml.eda.report.EDAReport.to_dict`. Missing sections yield
+        panels that explain the concept without a worked example, rather than
+        panels that are absent.
+
+    Returns
+    -------
+    dict
+        Keyed by domain — ``cockpit``, ``quality``, ``features``,
+        ``relationships``, ``multivariate``, ``target``, ``outliers``,
+        ``visuals``. Each value holds the definition, method, pitfalls, and
+        worked example for that board.
+
+    Notes
+    -----
+    **The keys line up with the domain registry.** Adding a board means adding a
+    builder here, or its teaching panel will be missing.
+
+    **This reads the report and nothing else.** No data access, so it works
+    against a saved report just as well as a live one — which is what lets the
+    offline export carry its teaching content with it.
+
+    See Also
+    --------
+    buildml.dashboard.domains : The boards these correspond to.
+    buildml.explain : The concept definitions referenced.
+    """
     return {
         "cockpit": _studio_cockpit(report),
         "quality": _studio_quality(report),

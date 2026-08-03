@@ -1,4 +1,24 @@
-"""High-level automated ingest pipeline."""
+"""One call that inspects a source, decides how to read it, and says why.
+
+The front door for getting data into BuildML. Detects the format, estimates the
+scale, picks a mode and engine, loads, and returns both the dataset and a report
+of every decision it made.
+
+The report is not decoration. Ingest makes several choices on your behalf — this
+file looked large, so lazy; Polars was not installed, so pandas — and each one
+changes what happens later. A loader that made those choices silently would be a
+loader you could not debug.
+
+The one hard rule: a source that looks large is not loaded blindly into pandas.
+Ingest refuses, explains, and offers four ways forward — force it, inspect it,
+sample it, or install an engine that can stream it. That refusal is deliberate
+friction, chosen because the alternative is a killed kernel with no message.
+
+See Also
+--------
+buildml.ingest.detect : The detection and scale heuristics.
+buildml.core.results.IngestReport : What the report contains.
+"""
 
 from __future__ import annotations
 
@@ -24,36 +44,96 @@ def ingest(
     mock_byte_estimate: int | None = None,
     read_nrows: int | None = None,
 ) -> tuple[Dataset | None, IngestReport]:
-    """Ingest a tabular source with automated detection and recommendations.
+    """Load a source, choosing how based on what it is and how big it looks.
+
+    Handles a DataFrame you already have or a path you want read. In both cases
+    it produces a :class:`~buildml.data.dataset.Dataset` and a report recording
+    the format, the schema, the size estimates, the recommended mode and engine,
+    what was actually chosen, and every warning raised on the way.
+
+    The refusal is the part worth knowing about. A path that looks large gets no
+    blind pandas load — instead an :class:`~buildml.core.errors.IngestError`
+    listing four ways forward: ``mode='memory'`` to insist, ``dry_run=True`` to
+    inspect the schema without reading, ``read_nrows=N`` to sample, or install
+    ``buildml[engines]`` and read it natively. Annoying once, better than a
+    kernel that dies without saying why.
+
+    When a native engine is used, no pandas frame is created at all. The Dataset
+    holds an engine handle and promotes to pandas only when something requires
+    it — preprocessing, a scikit-learn fit, or an explicit ``to_pandas``.
 
     Parameters
     ----------
     source:
-        A Pandas DataFrame or a filesystem path to CSV/Parquet/Arrow data.
+        A DataFrame, or a path to CSV, TSV, Parquet, or Arrow.
     mode:
-        Optional explicit :class:`~buildml.core.types.DataMode` override.
+        Force ``'memory'`` or ``'lazy'`` instead of the recommendation.
+        ``'memory'`` also overrides the large-file refusal, which is how you say
+        "I know, load it anyway".
     engine:
-        Optional explicit :class:`~buildml.core.types.EngineName` override.
+        Force ``'pandas'``, ``'polars'``, or ``'duckdb'``. Naming an
+        uninstalled engine raises rather than falling back, since a silent
+        fallback here would defeat the reason for asking.
     dry_run:
-        If True, return only the :class:`~buildml.core.results.IngestReport`
-        without materializing a Dataset when possible.
+        Return the report and no Dataset. The schema and size are still
+        determined, so this is how you inspect a file too large to open.
     mock_byte_estimate:
-        Testing/helper override for scale heuristics without huge files.
+        Pretend the source is this many bytes. For exercising the scale
+        heuristics in tests without generating large files; recorded in the
+        report so a mocked run is not mistaken for a real measurement.
     read_nrows:
-        Optional row cap when reading CSV (inspection aid).
+        Read at most this many rows. **Disables native lazy scanning**, since a
+        row cap requires a concrete frame.
 
     Returns
     -------
     tuple
-        ``(dataset_or_none, ingest_report)``.
+        ``(Dataset | None, IngestReport)``. The dataset is ``None`` under
+        ``dry_run``, and the report is always present.
+
+    Raises
+    ------
+    IngestError
+        If the path does not exist, if the format is unrecognised, if a large
+        source would need a blind pandas load, or if the read fails.
+    MissingExtraError
+        If an explicitly requested engine is not installed.
 
     Notes
     -----
-    Path ingest with ``engine='polars'`` or ``'duckdb'`` (or a recommended
-    non-Pandas engine when those extras are installed) loads natively without a
-    Pandas-first pass. The Pandas cache is promoted only when required
-    (preprocess, sklearn fit, ``to_pandas``). Sklearn still needs an in-memory
-    design matrix at the estimator boundary.
+    **Read ``report.warnings``.** They record the decisions that differ from
+    what you might assume — a pandas fallback in lazy mode, a native handle that
+    will collect later, a DataFrame source that keeps its pandas cache
+    regardless of mode.
+
+    **Lazy mode is about prep, not training.** scikit-learn needs an in-memory
+    design matrix, so lazy loading lets you narrow a huge source down to
+    something trainable; it does not train out-of-core.
+
+    **A DataFrame source is always pandas-backed.** Asking for lazy mode on a
+    frame that is already in memory attaches a native handle but cannot undo the
+    fact that the data is there.
+
+    Examples
+    --------
+    Inspect a large file without loading it::
+
+        _, report = ingest("data/events.parquet", dry_run=True)
+        print(report.schema.columns())
+        print(report.recommended_mode, report.recommended_engine)
+
+    Read it natively once you know what is in it::
+
+        dataset, report = ingest(
+            "data/events.parquet", engine="polars", mode="lazy"
+        )
+        for note in report.warnings:
+            print(note)
+
+    See Also
+    --------
+    buildml.ingest.detect.recommend_mode : The scale heuristic behind the choice.
+    buildml.data.dataset.Dataset : What you get back.
     """
     installed = detect.available_engines()
     warnings: list[str] = []

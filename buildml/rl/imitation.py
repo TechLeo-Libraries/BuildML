@@ -1,4 +1,33 @@
-"""Behavioral cloning (imitation learning) from demonstration tables."""
+"""Learn a policy by copying demonstrated decisions.
+
+Behavioural cloning is the most direct answer to "I have a record of what a
+person did in each situation, and I want a model that does the same". You give
+it a table where each row is a situation plus the action taken, and it fits a
+supervised model mapping situation to action. Discrete actions make it a
+classification problem, continuous ones a regression problem.
+
+The framing matters more than the machinery. **Cloning learns to reproduce the
+demonstrations, not to succeed.** If the demonstrator was mediocre, the clone is
+mediocre in the same way, and no amount of accuracy on holdout rows will reveal
+that — high agreement with a poor demonstrator is still a poor policy. Accuracy
+here answers "does it act like the demonstrator", never "does it act well".
+
+The second limit is subtler and specific to policies. A cloned policy acting in
+the real world drives itself into situations the demonstrator never reached,
+because its small errors compound: a slightly-off action produces a slightly
+unfamiliar state, where the policy is less reliable still. Interactive methods
+such as DAgger address this by querying the demonstrator on the states the
+policy actually visits. This module does not: it fits offline from a fixed
+table, and holdout rows come from the same demonstrator distribution as train.
+
+Fitting uses train rows only, so :func:`evaluate_imitation` measures agreement
+on demonstrations the policy has not seen.
+
+See Also
+--------
+buildml.rl.fit : Learning from rewards rather than from demonstrations.
+buildml.rl.features : Column resolution and the metrics used here.
+"""
 
 from __future__ import annotations
 
@@ -73,10 +102,97 @@ def fit_imitation(
     prefer_reduce_components: bool = True,
     reduce_plan: Any | None = None,
 ) -> tuple[ImitationPlan, ImitationFitResult]:
-    """Fit a behavioral cloning policy on Session train demonstration rows.
+    """Learn to reproduce demonstrated actions from a table of examples.
 
-    Demonstrations are ``(state features → action)``. When ``action_column`` is
-    omitted, the Dataset target is treated as the demonstrated action.
+    Reads the training partition as demonstrations — each row a situation and
+    the action taken in it — and fits a model that predicts the action from the
+    situation. Whether that is a classifier or a regressor follows from the
+    action column: labelled or few-valued actions give classification, numeric
+    ones give regression.
+
+    Parameters
+    ----------
+    dataset:
+        The demonstration table.
+    split_plan:
+        Required. Fitting on all rows would leave nothing to measure agreement
+        against.
+    backend:
+        ``'sklearn'`` (default) fits a scikit-learn model and always works.
+        ``'industry'`` fits a neural policy and needs ``buildml[rl-industry]``.
+        Reach for the neural path when the mapping from state to action is
+        genuinely non-linear and there are enough demonstrations to support it;
+        on tabular data the boosted-tree default is usually competitive.
+    task:
+        Override the inferred task. Useful when actions are integer-coded
+        categories that would otherwise look continuous.
+    estimator:
+        The scikit-learn model. ``'logistic_regression'`` and ``'ridge'`` are
+        linear, fast, and inspectable; ``'hist_gradient_boosting'`` and
+        ``'hist_gradient_boosting_regressor'`` capture interactions between
+        state features at the cost of transparency. Must match the task.
+    method:
+        The industry method: ``'bc_mlp'`` for a plain neural policy, or
+        ``'gail_lite'`` for adversarial imitation, which also needs ``env_id``.
+    columns:
+        The state features. Defaults to the usable columns of the dataset with
+        the action column excluded.
+    action_column:
+        The demonstrated action. Defaults to the Dataset target.
+    env_id:
+        The Gymnasium environment, required by ``'gail_lite'``.
+    n_epochs:
+        Neural training passes. Ignored on the scikit-learn path.
+    random_state:
+        Seed for reproducibility.
+    prefer_reduce_components:
+        When ``True`` and a reduction is attached, its components are used as
+        state features rather than the raw columns.
+    reduce_plan:
+        An explicit reduction plan, overriding whatever is attached.
+
+    Returns
+    -------
+    ImitationPlan
+        The fitted policy. Pass this to :func:`predict_imitation_action` and
+        :func:`evaluate_imitation`.
+    ImitationFitResult
+        What the fit saw: rows, columns, action classes, and the in-sample
+        agreement score.
+
+    Raises
+    ------
+    LeakageError
+        If ``split_plan`` is ``None`` or defines no train partition.
+    ValidationError
+        If the action column is absent from the dataset or from train, if the
+        estimator does not suit the task, if ``'gail_lite'`` is requested
+        without ``env_id``, or if the underlying fit fails.
+
+    Notes
+    -----
+    **``train_score`` measures agreement with the demonstrator, in-sample.** It
+    is not a measure of whether the policy is any good — a clone that perfectly
+    reproduces bad decisions scores 1.0. Judge the demonstrator separately;
+    cloning can only inherit its quality.
+
+    **The regression score is not R².** It is ``1 - MAE / std(y)``, a scale-free
+    agreement measure that stays interpretable when actions are bounded. Do not
+    compare it against R² values from elsewhere in BuildML.
+
+    Examples
+    --------
+    >>> plan, result = fit_imitation(dataset, split_plan)  # doctest: +SKIP
+    >>> result.task, result.n_train_rows  # doctest: +SKIP
+    ('classification', 800)
+    >>> evaluate_imitation(dataset, plan, split_plan).metrics  # doctest: +SKIP
+    {'accuracy': 0.86, 'macro_f1': 0.71}
+
+    See Also
+    --------
+    evaluate_imitation : Agreement on demonstrations the policy never saw.
+    buildml.rl.fit.fit_rl : Learn from rewards when demonstrations are absent
+        or the demonstrator is not worth copying.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -323,7 +439,45 @@ def predict_imitation_action(
     *,
     partition: PartitionOrAll = "test",
 ) -> ImitationPredictResult:
-    """Predict actions for a partition under the fitted BC policy."""
+    """Ask the cloned policy what it would do in each row's situation.
+
+    Applies the fitted policy to a partition and returns one action per row. No
+    demonstrated action is needed — this is what you call in production, where
+    the right answer is not known.
+
+    Parameters
+    ----------
+    dataset:
+        A dataset carrying the state columns the plan was fitted on.
+    plan:
+        The fitted policy from :func:`fit_imitation`.
+    split_plan:
+        Required unless ``partition='all'``.
+    partition:
+        Which rows to act on. ``'all'`` scores every row.
+
+    Returns
+    -------
+    ImitationPredictResult
+        The chosen actions in row order. Classification actions come back as
+        the original labels, not the internal integer codes; regression actions
+        as floats.
+
+    Raises
+    ------
+    ValidationError
+        If the state columns are missing, or a partition is requested without a
+        split plan.
+
+    Notes
+    -----
+    An empty partition returns an empty result rather than raising, so a
+    pipeline that scores several partitions is not derailed by one being empty.
+
+    See Also
+    --------
+    evaluate_imitation : The same predictions, scored against known actions.
+    """
     frame = _frame_for(dataset, split_plan, partition)
     if frame.empty:
         return ImitationPredictResult(
@@ -361,7 +515,59 @@ def evaluate_imitation(
     *,
     partition: PartitionOrAll = "validation",
 ) -> ImitationEvalResult:
-    """Compare predicted actions to held-out demonstration actions."""
+    """Measure how often the clone agrees with the demonstrator on unseen rows.
+
+    Predicts actions for a holdout partition and compares them against the
+    actions actually demonstrated there. Because the policy was fitted on train
+    alone, this is an honest measure of agreement.
+
+    Parameters
+    ----------
+    dataset:
+        A dataset carrying both the state columns and the action column.
+    plan:
+        The fitted policy from :func:`fit_imitation`.
+    split_plan:
+        Required unless ``partition='all'``.
+    partition:
+        Which rows to score. Defaults to ``'validation'``; keep test in reserve
+        until the policy is settled.
+
+    Returns
+    -------
+    ImitationEvalResult
+        ``accuracy`` and ``macro_f1`` for discrete actions, or ``rmse``,
+        ``mae``, and ``r2`` for continuous ones.
+
+    Raises
+    ------
+    ValidationError
+        If the action column is missing from the partition, or if
+        classification actions contain nulls — there is no defensible way to
+        score a prediction against an unknown action.
+
+    Notes
+    -----
+    **These metrics measure imitation, not performance.** A score of 0.95 says
+    the clone acts like the demonstrator 95% of the time. Whether that is
+    desirable depends entirely on the demonstrator, which no metric here can
+    assess.
+
+    **Read ``macro_f1`` before ``accuracy`` when actions are imbalanced.** If the
+    demonstrator chose one action 90% of the time, a policy that always chooses
+    it scores 0.90 accuracy while having learned nothing. Macro F1 averages over
+    actions rather than rows, so the ignored actions drag it down.
+
+    Examples
+    --------
+    >>> result = evaluate_imitation(dataset, plan, split_plan)  # doctest: +SKIP
+    >>> result.metrics  # doctest: +SKIP
+    {'accuracy': 0.86, 'macro_f1': 0.71}
+
+    See Also
+    --------
+    predict_imitation_action : Actions without a comparison.
+    """
     frame = _frame_for(dataset, split_plan, partition)
     if plan.action_column not in frame.columns:
         raise ValidationError(

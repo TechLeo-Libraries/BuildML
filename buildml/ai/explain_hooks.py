@@ -1,4 +1,28 @@
-"""History / catalog / walkthrough helpers for AI operator operations."""
+"""Condense AI operator results for history and teaching surfaces.
+
+Session history, walkthroughs, and the Teaching Studio need short, JSON-safe
+summaries — not whole result objects. An advisory answer can run to paragraphs
+and a plan to a dozen steps; neither belongs verbatim in a history entry.
+
+The summarisers here take counts and previews instead: how much evidence was
+cited, how many steps a plan had, whether a tool actually executed. Enough to
+see the shape of what happened, small enough to store on every operation.
+
+:func:`ai_status` reports the state of the AI domain for walkthroughs, and is
+deliberately conservative in what it claims — that a provider is configured, not
+that advice is reliable; that confirmation is required, not that the system is
+safe.
+
+Notes
+-----
+**Every function here accepts ``None`` and objects that are not results.** They
+run against whatever a Session happens to hold, and a teaching surface should
+degrade to an empty summary rather than fail.
+
+See Also
+--------
+buildml.ai.results : The full result objects.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +30,32 @@ from typing import Any
 
 
 def advisor_result_summary(result: Any) -> dict[str, Any]:
-    """Compact result_summary for ai_advisor history."""
+    """Summarise an advisory answer for a history entry.
+
+    Truncates the question and answer to previews and reduces the rest to
+    counts, keeping the entry small enough to store on every operation.
+
+    Parameters
+    ----------
+    result:
+        An :class:`~buildml.ai.advisor.AdvisorResult`, a mapping, or ``None``.
+
+    Returns
+    -------
+    dict
+        Question preview, answer preview, evidence and recommendation counts,
+        and the egress level. Empty when there is nothing to summarise.
+
+    Notes
+    -----
+    **The egress level is kept while the manifest is dropped**, because the
+    level is what a reader scanning history wants to see. The full manifest
+    lives in the transcript.
+
+    See Also
+    --------
+    buildml.ai.advisor.AdvisorResult : The full object.
+    """
     if result is None:
         return {}
     if hasattr(result, "to_dict"):
@@ -27,7 +76,33 @@ def advisor_result_summary(result: Any) -> dict[str, Any]:
 
 
 def executor_result_summary(result: Any) -> dict[str, Any]:
-    """Compact result_summary for ai_execute history."""
+    """Summarise a tool execution for a history entry.
+
+    Records what was attempted and how it ended, without the returned object —
+    which may be a fitted model or a frame and has no place in history.
+
+    Parameters
+    ----------
+    result:
+        An :class:`~buildml.ai.executor.ExecutorResult`, a mapping, or ``None``.
+
+    Returns
+    -------
+    dict
+        Tool name, the confirmation and execution flags, any error, and how
+        many state changes were recorded. Empty when there is nothing to
+        summarise.
+
+    Notes
+    -----
+    **``executed`` is the field that matters when scanning history.** A run of
+    entries with ``confirmed`` true and ``executed`` false is a sequence of
+    approved operations that all failed.
+
+    See Also
+    --------
+    buildml.ai.executor.ExecutorResult : The full object.
+    """
     if result is None:
         return {}
     if hasattr(result, "to_dict"):
@@ -44,7 +119,35 @@ def executor_result_summary(result: Any) -> dict[str, Any]:
 
 
 def plan_result_summary(result: Any) -> dict[str, Any]:
-    """Compact result_summary for ai_plan history."""
+    """Summarise a generated plan for a history entry.
+
+    Keeps the goal and the first few operation names — enough to recognise the
+    plan later — and reduces the reasoning to counts.
+
+    Parameters
+    ----------
+    result:
+        A :class:`~buildml.ai.results.PlanResult`, a mapping, or ``None``.
+
+    Returns
+    -------
+    dict
+        Goal preview, step count, the first five operations, and the numbers of
+        assumptions and limitations. Empty when there is nothing to summarise.
+
+    Notes
+    -----
+    **Only the first five operations are listed.** A longer plan is truncated
+    here; ``step_count`` still reports the true total.
+
+    **The rationales are dropped entirely.** They are the most valuable part of
+    a plan and the least suited to a history entry. Read the
+    :class:`~buildml.ai.results.PlanResult` for those.
+
+    See Also
+    --------
+    buildml.ai.results.PlanResult : The full object.
+    """
     if result is None:
         return {}
     if hasattr(result, "to_dict"):
@@ -71,10 +174,50 @@ def ai_status(
     last_executor_result: Any | None = None,
     history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Factual walkthrough disclosure for AI operator status.
+    """Report the state of the AI domain, claiming nothing it should not.
 
-    Does not claim autonomous capability, does not imply keys are persisted,
-    and does not treat catalog availability as production safety.
+    Builds the walkthrough view: whether a provider is configured, what egress
+    level applies, how much transcript exists, and what the last advisory and
+    execution did. The disclosures are written to be accurate rather than
+    reassuring — that confirmation is required, and that the advice needs
+    verifying.
+
+    Parameters
+    ----------
+    provider_configured:
+        Whether a provider is attached.
+    provider_type:
+        Its class name.
+    egress_level:
+        The configured level, as a string.
+    transcript_entries:
+        How many events have been recorded.
+    last_advisor_result:
+        The most recent advisory answer, summarised into the output.
+    last_executor_result:
+        The most recent execution, summarised into the output.
+    history:
+        Session history, scanned for operations beginning ``ai_``.
+
+    Returns
+    -------
+    dict
+        Enabled and present flags, the disclosures, provider and egress
+        details, transcript size, and the two summaries.
+
+    Notes
+    -----
+    **The disclosures state limits, not capabilities.** No claim of autonomy,
+    no implication that keys are persisted, and no suggestion that an available
+    catalog entry means an operation is production-ready.
+
+    **``present`` covers past use as well as current configuration**, so a
+    Session that used AI earlier still surfaces its history after the provider
+    is detached.
+
+    See Also
+    --------
+    ai_status_for_session : This, read from a Session.
     """
     records = list(history or [])
     saw_ai = any(
@@ -139,7 +282,31 @@ def ai_status(
 
 
 def ai_status_for_session(session: Any) -> dict[str, Any]:
-    """Build walkthrough ai_status from a Session."""
+    """Report AI domain status by reading it off a Session.
+
+    Pulls the provider, egress configuration, transcript, last results, and
+    history, then hands them to :func:`ai_status`. The convenience form, used
+    by walkthroughs that hold a Session and nothing else.
+
+    Parameters
+    ----------
+    session:
+        The Session to inspect.
+
+    Returns
+    -------
+    dict
+        The status payload from :func:`ai_status`.
+
+    Notes
+    -----
+    Every attribute is read defensively, so a Session that never touched the AI
+    domain reports a coherent "not configured" status rather than failing.
+
+    See Also
+    --------
+    ai_status : The underlying builder.
+    """
     return ai_status(
         provider_configured=bool(getattr(session, "_ai_provider", None)),
         provider_type=getattr(

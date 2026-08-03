@@ -68,7 +68,32 @@ if len(OPERATION_CATALOG) != len(_RAW_OPERATIONS):
 
 
 def get_operation(name: str) -> OperationSpec:
-    """Return one public operation specification."""
+    """Fetch the editorial contract for one public session operation.
+
+    The specification is what every explanation surface reads from — the
+    resolver, the beginner primer, the AI tool registry, and the docs build — so
+    an unknown name is raised rather than defaulted. A silent miss would produce
+    an explanation that describes nothing.
+
+    Parameters
+    ----------
+    name:
+        A session operation name, such as ``'split'`` or ``'fit_forecast'``.
+
+    Returns
+    -------
+    ~buildml.explain.schemas.OperationSpec
+        The catalog entry, with index-derived parameters already merged in.
+
+    Raises
+    ------
+    KeyError
+        No catalog operation has that name.
+
+    See Also
+    --------
+    list_operations : Every entry, in a stable order.
+    """
     try:
         return OPERATION_CATALOG[name]
     except KeyError as exc:
@@ -76,5 +101,15 @@ def get_operation(name: str) -> OperationSpec:
 
 
 def list_operations() -> tuple[OperationSpec, ...]:
-    """Return operation specifications in stable alphabetical order."""
+    """List every catalog entry in a stable order.
+
+    Ordering is alphabetical rather than insertion-based so that generated
+    artifacts — the operation index, the docs tables, the drift reports — do not
+    churn when an overlay module is edited.
+
+    Returns
+    -------
+    tuple of ~buildml.explain.schemas.OperationSpec
+        All operations, sorted by name.
+    """
     return tuple(OPERATION_CATALOG[name] for name in sorted(OPERATION_CATALOG))

@@ -1,10 +1,24 @@
-"""Image decode + train-only channel normalize helpers for multimodal DL.
+"""Turn image cells into uniform tensors a network can batch.
 
-Supports:
-- path cells (str / Path) via Pillow (included in ``buildml[torch]``)
-- array cells (``numpy.ndarray`` / nested lists) without Pillow
+Images arrive as file paths or as arrays already in memory, at whatever size and
+orientation they were stored in. Batching needs all of them in one shape, so
+this module decodes, resizes, converts to the requested channel count, scales
+into ``[0, 1]``, and arranges as channels-first — the layout Torch convolutions
+expect.
 
-Normalized tensors are CHW float32. Channel mean/std are fit on train only.
+Channel statistics are fitted on the training partition only and applied
+everywhere else. Per-channel rather than global, because photographic corpora
+routinely have systematically different distributions in red, green, and blue,
+and a single number would leave that structure for the first convolution to
+undo.
+
+Pillow is needed only for file paths. Arrays go through without it, which keeps
+the dependency lazy.
+
+See Also
+--------
+buildml.dl.multimodal : Where these tensors are consumed.
+buildml.dl.zoo : Pretrained vision architectures.
 """
 
 from __future__ import annotations
@@ -18,7 +32,26 @@ from buildml.core.errors import MissingExtraError, ValidationError
 
 
 def require_pillow(*, feature: str = "Image path loading") -> Any:
-    """Import and return ``PIL.Image``, or raise :class:`MissingExtraError`."""
+    """Import Pillow, or explain how to install it.
+
+    Only needed for decoding image files. Arrays already in memory go through
+    without it, which is why the import is lazy.
+
+    Parameters
+    ----------
+    feature:
+        What the caller was doing. Appears in the error message.
+
+    Returns
+    -------
+    module
+        ``PIL.Image``.
+
+    Raises
+    ------
+    MissingExtraError
+        If Pillow is absent. It ships with ``pip install buildml[dl]``.
+    """
     try:
         from PIL import Image
     except ImportError as exc:
@@ -32,10 +65,51 @@ def decode_image_cell(
     size: tuple[int, int] = (32, 32),
     channels: int = 3,
 ) -> np.ndarray:
-    """Decode one cell to a CHW float32 array in ``[0, 1]``.
+    """Turn one image cell into a fixed-size channels-first array.
 
-    Accepts file paths, ``Path`` objects, ``numpy`` arrays, or nested lists.
-    Arrays may be HWC, CHW, or HW (expanded to ``channels``).
+    Handles the whole conversion: read the file or accept the array, convert to
+    the requested channel count, resize, scale into ``[0, 1]``, and transpose to
+    ``(C, H, W)``.
+
+    Parameters
+    ----------
+    value:
+        A path string, ``Path``, NumPy array, or nested list. Arrays may be
+        ``(H, W)``, ``(H, W, C)``, or ``(C, H, W)``.
+    size:
+        Target height and width.
+    channels:
+        1 for greyscale, 3 for colour. Colour input to a greyscale request is
+        averaged; greyscale input to a colour request is repeated.
+
+    Returns
+    -------
+    numpy.ndarray
+        A ``(channels, height, width)`` float32 array in ``[0, 1]``.
+
+    Raises
+    ------
+    MissingExtraError
+        If a path is given and Pillow is not installed.
+    ValidationError
+        If ``channels`` is not 1 or 3, if the size is not positive, if the file
+        does not exist, if the array shape is not interpretable, or if its
+        channel count cannot be reconciled with the request.
+
+    Notes
+    -----
+    **Values above 1.5 are assumed to be on a 0-255 scale and divided by 255.**
+    This is a heuristic, and it is the right one nearly always — a genuine
+    ``[0, 1]`` image containing a value above 1.5 is not an image. Pillow output
+    is scaled unconditionally, since its range is known.
+
+    **Array resizing is nearest-neighbour**, chosen to avoid a SciPy or
+    torchvision dependency. It is blockier than bilinear on large downscales.
+    Paths go through Pillow, which interpolates properly.
+
+    See Also
+    --------
+    stack_image_column : The batched version.
     """
     if channels not in {1, 3}:
         raise ValidationError("image channels must be 1 or 3")
@@ -124,7 +198,44 @@ def stack_image_column(
     size: tuple[int, int] = (32, 32),
     channels: int = 3,
 ) -> np.ndarray:
-    """Decode a Series/list of image cells → ``(N, C, H, W)`` float32."""
+    """Decode a whole column of images into one batched array.
+
+    Applies :func:`decode_image_cell` to every cell and stacks the results.
+
+    Parameters
+    ----------
+    values:
+        An iterable of image cells — a pandas Series or a list.
+    size:
+        Target height and width.
+    channels:
+        1 or 3.
+
+    Returns
+    -------
+    numpy.ndarray
+        An ``(N, channels, height, width)`` float32 array. An empty input gives
+        an array with zero rows and the right trailing shape, so downstream code
+        that inspects dimensions still works.
+
+    Raises
+    ------
+    MissingExtraError
+        If any cell is a path and Pillow is not installed.
+    ValidationError
+        Propagated from any cell that cannot be decoded.
+
+    Notes
+    -----
+    **Everything is decoded eagerly into memory.** A thousand 224x224 colour
+    images is around 600 MB as float32. For corpora large enough to matter, a
+    custom ``Dataset`` that decodes per batch is the right shape.
+
+    See Also
+    --------
+    decode_image_cell : The single-cell version.
+    fit_image_channel_stats : The usual next step.
+    """
     decoded = [decode_image_cell(v, size=size, channels=channels) for v in values]
     if not decoded:
         return np.zeros((0, channels, size[0], size[1]), dtype=np.float32)
@@ -132,7 +243,43 @@ def stack_image_column(
 
 
 def fit_image_channel_stats(images: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Fit per-channel mean/std on a train batch ``(N, C, H, W)``."""
+    """Learn each colour channel's brightness and contrast from training images.
+
+    Computes one mean and one deviation per channel, across every training image
+    and every pixel position. Standardising with these is standard practice for
+    convolutional networks and helps them converge.
+
+    Parameters
+    ----------
+    images:
+        Training images shaped ``(N, C, H, W)``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Per-channel means, shape ``(C,)``.
+    numpy.ndarray
+        Per-channel deviations, shape ``(C,)``, floored at 1.0 when near zero.
+
+    Raises
+    ------
+    ValidationError
+        If the input is not 4-D, or if the batch is empty.
+
+    Notes
+    -----
+    **Per channel, not per pixel.** A per-pixel mean would encode where in the
+    frame things tend to be bright — real structure in a corpus of centred
+    product photos, and exactly the kind of structure the model should be
+    learning rather than having subtracted away.
+
+    **A constant channel would divide by zero, so its deviation becomes 1.0.**
+    Real images do not produce this; synthetic or single-colour test data can.
+
+    See Also
+    --------
+    apply_image_channel_stats : Applying what this learned.
+    """
     if images.ndim != 4:
         raise ValidationError(f"Expected NCHW images; got shape {images.shape}")
     if images.shape[0] < 1:
@@ -147,7 +294,32 @@ def fit_image_channel_stats(images: np.ndarray) -> tuple[np.ndarray, np.ndarray]
 def apply_image_channel_stats(
     images: np.ndarray, mean: np.ndarray, std: np.ndarray
 ) -> np.ndarray:
-    """Apply frozen per-channel mean/std to ``(N, C, H, W)`` images."""
+    """Rescale images using statistics learned from training images.
+
+    Subtracts the per-channel mean and divides by the per-channel deviation,
+    broadcasting across every pixel. The same constants are used for every
+    partition and at inference.
+
+    Parameters
+    ----------
+    images:
+        Images shaped ``(N, C, H, W)``.
+    mean:
+        Per-channel means from :func:`fit_image_channel_stats`.
+    std:
+        Per-channel deviations.
+
+    Returns
+    -------
+    numpy.ndarray
+        Rescaled float32 images, same shape as the input.
+
+    Notes
+    -----
+    Output is no longer in ``[0, 1]`` and is not meant to be — values centre
+    near zero and extend either way. Reverse the transformation before trying to
+    display a standardised image.
+    """
     mean_b = mean.reshape(1, -1, 1, 1).astype(np.float32)
     std_b = std.reshape(1, -1, 1, 1).astype(np.float32)
     return ((images.astype(np.float32) - mean_b) / std_b).astype(np.float32)

@@ -1,4 +1,28 @@
-"""Deterministic document chunking (fixed and recursive strategies)."""
+"""Cut documents into passages, the same way every time.
+
+Chunking decides what a retrievable unit is, and therefore sets a ceiling on
+retrieval quality that no amount of tuning downstream can lift. If the sentence
+answering a question is split across two chunks, neither chunk answers it.
+
+Two strategies. **Fixed** slides a window of ``size`` characters across the text
+at regular steps — predictable, uniform, and indifferent to whether it cuts
+through the middle of a word. **Recursive** tries a list of separators from
+coarsest to finest and cuts at the largest boundary that fits, so paragraphs
+stay whole where they can and only fall back to arbitrary cuts when a single
+paragraph is oversized. Recursive is the better default for prose.
+
+Both overlap adjacent chunks, which is the insurance against cutting through the
+one sentence that mattered.
+
+Chunk IDs are ``{doc_id}::c{ordinal}``, derived from position rather than
+content, so the same corpus and config always produce the same identifiers. That
+is what lets an index be rebuilt and still match stored references.
+
+See Also
+--------
+buildml.rag.types.ChunkConfig : The settings, and how to choose them.
+buildml.rag.index : What consumes chunks.
+"""
 
 from __future__ import annotations
 
@@ -161,15 +185,66 @@ def chunk_documents(
     overlap: int | None = None,
     strategy: ChunkStrategy | None = None,
 ) -> ChunkResult:
-    """Split documents into overlapping chunks with stable ids.
+    """Cut every document into overlapping passages.
 
-    Strategies
+    The step between ingest and indexing, and the one most worth checking before
+    going further. Inspect the resulting chunk count against the document count:
+    if they are close, the chunk size exceeds your documents and retrieval is
+    effectively working at document level.
+
+    Parameters
     ----------
-    - ``fixed`` (default): sliding character windows.
-    - ``recursive``: separator-aware splits (paragraph → line → sentence → word).
+    documents:
+        A corpus handle, or a sequence of documents.
+    config:
+        Chunking settings. Defaults are a reasonable starting point, not a
+        tuned choice for your corpus.
+    size:
+        Chunk length in characters. Overrides ``config``.
+    overlap:
+        Characters shared between neighbours. Overrides ``config``.
+    strategy:
+        ``'fixed'`` or ``'recursive'``. Overrides ``config``.
 
-    Chunk ids are ``{doc_id}::c{ordinal}`` so resume/update paths stay deterministic
-    for a fixed corpus and config.
+    Returns
+    -------
+    ChunkResult
+        The chunks, with the settings that produced them.
+
+    Raises
+    ------
+    ValidationError
+        If there are no documents, the size is not positive, the overlap is
+        negative, or the overlap is not smaller than the size. The last is
+        refused because a step of zero or less would never advance.
+
+    Notes
+    -----
+    **Chunk IDs are positional.** Editing a document changes the content of
+    every chunk after the edit while their IDs stay the same, so a partial
+    re-index against stored IDs will silently mismatch. Rebuild after edits.
+
+    **Roles are not filtered here.** Passing a mixed corpus chunks the eval-only
+    documents too; the indexing path is where they are excluded.
+
+    **The overrides are applied one at a time.** Passing ``size`` and
+    ``strategy`` together with a ``config`` follows a precedence chain — pass a
+    complete :class:`~buildml.rag.types.ChunkConfig` when setting several.
+
+    **Metadata is copied to every chunk**, so a document with large metadata
+    multiplies it by its chunk count.
+
+    Examples
+    --------
+    Chunk with sentence-aware boundaries::
+
+        result = chunk_documents(corpus, size=1024, overlap=128, strategy="recursive")
+        print(result.n_chunks / result.n_documents)
+
+    See Also
+    --------
+    buildml.rag.types.ChunkConfig : What the settings mean.
+    buildml.rag.index.build_index : The next step.
     """
     if isinstance(documents, CorpusHandle):
         docs = list(documents.documents)

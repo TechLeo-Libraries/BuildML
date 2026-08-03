@@ -1,4 +1,22 @@
-"""Unified neighbor retrieval dispatch for CBR backends."""
+"""Route a neighbour query to whichever backend the plan was fitted with.
+
+The four backends search different spaces. Exact search works over the raw
+numeric features. The embedding backend searches sentence-transformer vectors,
+so the query has to be embedded first. The torch backend searches a learned
+representation, so the query has to pass through the encoder. The industry
+backend searches an approximate index rather than scanning.
+
+Two invariants hold across all of them. A query is always transformed the same
+way the cases were, since neighbours in mismatched spaces are meaningless. And
+where an approximate index is unavailable, the same search matrix is scanned
+exactly — the result is identical, just slower, so an unavailable index never
+changes the answer.
+
+See Also
+--------
+buildml.cbr.retrieval_build.build_search_artifacts : Building what is searched.
+buildml.cbr.cases.pairwise_distances : The exact-search arithmetic.
+"""
 
 from __future__ import annotations
 
@@ -22,9 +40,51 @@ def retrieve_neighbor_batches(
     k: int,
     query_frame: Any | None = None,
 ) -> tuple[list[np.ndarray], list[np.ndarray]]:
-    """Retrieve k-neighbor orders and distances for each query row.
+    """Find each query's nearest cases, using the plan's backend.
 
-    Dispatches by ``plan.backend`` while preserving sklearn exact fallback.
+    Transforms the queries into the space the case base was indexed in, then
+    searches — through the approximate index when one exists, by exact scan
+    otherwise.
+
+    Parameters
+    ----------
+    plan:
+        The fitted reasoner, supplying the backend, metric, and case memory.
+    q_num:
+        Query numeric features, already encoded with the train-fitted
+        transforms.
+    q_cat:
+        Query categorical codes, used by the mixed metric.
+    k:
+        Neighbours per query.
+    query_frame:
+        The raw query frame. Required by the embedding backend, which needs the
+        text columns; ignored by the others.
+
+    Returns
+    -------
+    tuple
+        ``(orders, distances)`` — per query, the neighbour indices nearest first
+        and their distances.
+
+    Raises
+    ------
+    ValidationError
+        If the search matrix is missing, the embedding backend was given no
+        query frame, or the torch encoder is absent from memory.
+
+    Notes
+    -----
+    **Falling back to an exact scan changes speed, not results.** The same
+    matrix is searched with the same metric; only the shortcut is missing.
+
+    **Approximate index results are approximate.** The industry backend may miss
+    a true nearest neighbour, which is the trade being made for speed over a
+    large memory.
+
+    **Distances from the embedding and torch backends live in the learned
+    space.** They are not comparable with distances over raw features, and their
+    absolute values mean nothing outside their own ranking.
     """
     backend = str(getattr(plan, "backend", "sklearn") or "sklearn")
     if backend == "sklearn":

@@ -127,6 +127,12 @@ def _operation(
     result_reading: tuple[str, ...],
     next_steps: tuple[str, ...],
     concepts: tuple[str, ...],
+    plain: str = "",
+    analogy: str = "",
+    beginner_steps: tuple[str, ...] = (),
+    when_to_use: tuple[str, ...] = (),
+    when_not_to_use: tuple[str, ...] = (),
+    mini_example: tuple[str, ...] = (),
 ) -> OperationSpec:
     unknown = set(concepts) - CONCEPT_NOTES.keys()
     if unknown:
@@ -153,4 +159,10 @@ def _operation(
         result_reading=result_reading,
         next_considerations=next_steps,
         concept_links=concepts,
+        plain_summary=plain,
+        analogy=analogy,
+        beginner_steps=beginner_steps,
+        when_to_use=when_to_use,
+        when_not_to_use=when_not_to_use,
+        mini_example=mini_example,
     )

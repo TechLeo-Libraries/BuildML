@@ -1,4 +1,28 @@
-"""FastAPI application factory for BuildML managed model serving."""
+"""Put a saved bundle behind an HTTP endpoint, honestly scoped.
+
+The gap between "the model works in my notebook" and "the model answers
+requests" is mostly plumbing: load the artifact once, accept JSON, rebuild a
+frame with the columns the model expects, apply the same preprocessing that was
+fitted at training time, and return predictions. This module is that plumbing.
+
+Be clear about what it is not. This is a library that builds a FastAPI app; it
+is not a managed serving product. There is no identity provider, no certificate
+management, no autoscaling, no request queue, and no model registry. The
+optional API-key middleware is a shared-secret check, useful for keeping a
+colleague on the same network from hitting the wrong endpoint, and no substitute
+for authentication at a reverse proxy. Bind to localhost, or put a proxy that
+terminates TLS in front of it. The ``/health`` endpoint says so in its own
+response, so nobody discovers it later.
+
+Two bundle kinds are supported: a classical pipeline bundle, which carries the
+fitted preprocessing plans and applies them per request, and a TorchScript
+module, which takes pre-built numeric tensors.
+
+See Also
+--------
+buildml.serving.launch : Running the app in a background thread.
+buildml.pipeline.bundle : The artifact being served.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +45,38 @@ except ImportError:  # pragma: no cover - exercised when serve extra missing
 
 
 class ServingState:
-    """Process-local loaded bundle for the serving app."""
+    """The one loaded bundle this process serves from.
+
+    Loading a model is expensive and must not happen per request, so the
+    artifact is read once at startup and held here. Exactly one of
+    ``pipeline_bundle`` or ``torchscript_module`` is populated, according to
+    ``kind``.
+
+    Attributes
+    ----------
+    kind:
+        ``'pipeline'`` or ``'torchscript'``, which decides how a request body is
+        interpreted and which predict path runs.
+    path:
+        Where the artifact was loaded from, reported by ``/health`` so a running
+        server can be traced back to a file on disk.
+    pipeline_bundle:
+        The loaded pipeline bundle, or ``None`` for TorchScript.
+    torchscript_module:
+        The loaded TorchScript module in eval mode, or ``None`` for a pipeline.
+    title:
+        The name shown in the API docs and health response.
+
+    Notes
+    -----
+    **The state is module-global and therefore per process.** This is what makes
+    the app importable by an ASGI server, and it also means a worker pool loads
+    the bundle once per worker. Size the memory accordingly.
+
+    See Also
+    --------
+    load_serving_bundle : Constructing this from a path.
+    """
 
     def __init__(
         self,
@@ -32,6 +87,25 @@ class ServingState:
         torchscript_module: Any | None = None,
         title: str = "BuildML Serve",
     ) -> None:
+        """Hold an already-loaded artifact and the metadata describing it.
+
+        Does no loading or validation of its own — the caller has already read
+        the artifact and knows which kind it is.
+
+        Parameters
+        ----------
+        kind:
+            Which of the two artifact kinds this holds.
+        path:
+            The resolved artifact path, for reporting.
+        pipeline_bundle:
+            The loaded bundle when ``kind`` is ``'pipeline'``.
+        torchscript_module:
+            The loaded module when ``kind`` is ``'torchscript'``. Should already
+            be in eval mode.
+        title:
+            The display name for docs and health.
+        """
         self.kind = kind
         self.path = path
         self.pipeline_bundle = pipeline_bundle
@@ -43,17 +117,61 @@ _STATE: ServingState | None = None
 
 
 def get_serving_state() -> ServingState:
+    """Return the loaded bundle, refusing if the app was never initialised.
+
+    Every request handler goes through this rather than touching the module
+    global, so a request arriving before startup finished fails with an
+    explanation instead of an ``AttributeError`` on ``None``.
+
+    Returns
+    -------
+    ServingState
+        The bundle this process is serving.
+
+    Raises
+    ------
+    ValidationError
+        If no bundle has been loaded. In normal use this cannot happen, since
+        :func:`create_serving_app` loads before returning the app; it indicates
+        the state was cleared, or a handler was called outside an app.
+    """
     if _STATE is None:
         raise ValidationError("Serving app has no loaded bundle state")
     return _STATE
 
 
 def set_serving_state(state: ServingState) -> None:
+    """Install ``state`` as the bundle this process serves, replacing any prior.
+
+    Called by :func:`create_serving_app` after loading. Exposed for tests and
+    for hot-swapping a model in a long-running process.
+
+    Parameters
+    ----------
+    state:
+        The loaded bundle to serve.
+
+    Notes
+    -----
+    **Replacement is not synchronised with in-flight requests.** A request that
+    has already read the old state finishes against it, which is fine for a swap
+    between versions of the same model and not for a swap to a different schema.
+    """
     global _STATE
     _STATE = state
 
 
 def clear_serving_state() -> None:
+    """Drop the loaded bundle, so the next request fails rather than guessing.
+
+    Primarily for tests, which need each case to start from a known-empty
+    process. Also releases the reference to a large model.
+
+    Notes
+    -----
+    **The app object remains valid after clearing**, but every request will
+    raise until a new state is installed.
+    """
     global _STATE
     _STATE = None
 
@@ -69,7 +187,50 @@ def load_serving_bundle(
     kind: BundleKind = "pipeline",
     map_location: str = "cpu",
 ) -> ServingState:
-    """Load a classical pipeline or TorchScript artifact for serving."""
+    """Read an artifact from disk once, ready to answer requests from memory.
+
+    Loading is the expensive step and belongs at startup, not in a handler. For
+    a pipeline bundle this reads the estimator, the fitted preprocessing plans,
+    and the model card. For TorchScript it loads the module and puts it in eval
+    mode, which matters — dropout and batch-norm behave differently in training
+    mode, and a module left in training mode returns subtly wrong answers rather
+    than failing.
+
+    Parameters
+    ----------
+    path:
+        The artifact location. For a pipeline, the bundle directory. For
+        TorchScript, either the file itself or a directory containing
+        ``model.ts.pt``, ``model.pt``, or ``model.ts``, tried in that order.
+    kind:
+        Which artifact kind to expect. Defaults to ``'pipeline'``.
+    map_location:
+        Where to place TorchScript tensors — ``'cpu'`` (the default),
+        ``'cuda'``, or a specific device. Ignored for pipelines. Loading a
+        GPU-saved module onto a CPU-only host needs this left at ``'cpu'``.
+
+    Returns
+    -------
+    ServingState
+        The loaded artifact and its metadata.
+
+    Raises
+    ------
+    ValidationError
+        If the pipeline directory does not exist, if no TorchScript file is
+        found at or under the path, or if ``kind`` is neither supported value.
+    MissingExtraError
+        If TorchScript serving is requested without PyTorch installed.
+
+    Notes
+    -----
+    **This does not start a server.** It only loads, which makes it usable for
+    validating an artifact in CI without binding a port.
+
+    See Also
+    --------
+    create_serving_app : Loading and building the app in one step.
+    """
     root = Path(path)
     if kind == "pipeline":
         from buildml.pipeline.bundle import load_pipeline_bundle
@@ -113,15 +274,91 @@ def create_serving_app(
     map_location: str = "cpu",
     api_keys: str | list[str] | tuple[str, ...] | None = None,
 ) -> Any:
-    """Create a FastAPI app that serves health + predict for a bundle.
+    """Load a bundle and wrap it in a FastAPI app with five endpoints.
 
-    Security honesty
-    ----------------
-    * Auth is **optional** library middleware (API key / Bearer), not a managed
-      IAM / cloud identity product.
-    * Intended for localhost or reverse-proxy fronted deployments (prefer TLS
-      + auth at the proxy for internet exposure).
-    * Do not expose bare to the public internet without a reverse proxy.
+    The app exposes ``/health`` for liveness and self-description, ``/metadata``
+    for the model card and schema contract, ``/predict`` and ``/predict/batch``
+    for inference, and ``/docs`` for the generated OpenAPI page. The bundle is
+    loaded before the app is returned, so a bad artifact fails at construction
+    rather than on the first request.
+
+    Request bodies differ by kind. A pipeline takes ``{"rows": [{col: value,
+    ...}, ...]}`` — records, by column name, with the fitted preprocessing
+    applied server-side. TorchScript takes ``{"inputs": [[...], ...]}`` — a
+    batch of numeric vectors, already in the order and scale the module expects,
+    because a TorchScript module carries no preprocessing.
+
+    Parameters
+    ----------
+    path:
+        The artifact to serve.
+    kind:
+        ``'pipeline'`` or ``'torchscript'``.
+    title:
+        The name shown in the docs page and health response. Worth setting when
+        several models run side by side.
+    map_location:
+        Device placement for TorchScript.
+    api_keys:
+        One key or several. When given, every request must present a matching
+        key; when ``None``, the app is unauthenticated and must not be reachable
+        from an untrusted network.
+
+    Returns
+    -------
+    Any
+        A ``FastAPI`` application, ready for ``uvicorn`` or a test client.
+        Typed loosely because FastAPI is an optional dependency and cannot be
+        named in the signature.
+
+    Raises
+    ------
+    MissingExtraError
+        If FastAPI is not installed. Install with ``pip install
+        'buildml[serve]'``.
+    ValidationError
+        If the artifact cannot be loaded, or if ``api_keys`` contains a key that
+        is empty or too short.
+
+    Notes
+    -----
+    **The API-key middleware is a shared secret, not authentication.** It has no
+    identities, no rotation, no expiry, and no audit trail. It is a guard
+    against accidental access, not against an attacker. For anything reachable
+    beyond localhost, terminate TLS and authenticate at a reverse proxy.
+
+    **Prediction errors become 400 or 500 by intent.** A
+    :class:`~buildml.core.errors.ValidationError` means the request was wrong
+    and returns 400; anything else returns 500. Both include the message, which
+    is convenient locally and worth suppressing at a proxy if the endpoint is
+    exposed.
+
+    **The bundle loads once per process.** Running several uvicorn workers loads
+    it once per worker.
+
+    Examples
+    --------
+    Serve locally with a key, and check it end to end::
+
+        app = create_serving_app(
+            "artifacts/churn-pipeline",
+            title="Churn v3",
+            api_keys="local-dev-key",
+        )
+
+        from fastapi.testclient import TestClient
+        client = TestClient(app)
+        headers = {"Authorization": "Bearer local-dev-key"}
+        client.get("/health", headers=headers).json()["ok"]
+        client.post(
+            "/predict",
+            headers=headers,
+            json={"rows": [{"tenure": 12, "monthly_charges": 79.9}]},
+        ).json()["predictions"]
+
+    See Also
+    --------
+    buildml.serving.launch.serve_bundle : Doing this and starting a server.
     """
     _require_fastapi()
     state = load_serving_bundle(path, kind=kind, map_location=map_location)

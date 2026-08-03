@@ -1,8 +1,29 @@
-"""Grounded generation over retrieved RAG context.
+"""Answer a question using only the passages that were retrieved for it.
 
-Uses a pluggable chat provider (typically :class:`buildml.ai.provider.ProviderProtocol`
-or any object with ``chat(messages, ...)``). Core BuildML never imports OpenAI;
-pass a provider explicitly or reuse the Session AI provider.
+The last stage, and the one that determines whether the whole pipeline was worth
+building. A language model asked a question from its own memory will produce
+something plausible whether or not it knows the answer. Given a set of retrieved
+passages and told to answer from those alone, it can be checked — every claim
+either traces to a passage the caller can read or it does not.
+
+Three things make that checkable in practice. The prompt labels each passage
+``[source:N]`` and instructs the model to cite those markers. The result carries
+the full :class:`~buildml.rag.results.Citation` list, so a marker resolves back
+to a chunk, a document, and its text. And a cheap faithfulness pass measures
+whether the answer actually used them.
+
+Failures here are loud on purpose. Zero retrieved passages, a provider error, or
+an empty completion all raise rather than falling back to an ungrounded answer —
+a wrong answer that looks grounded is worse than no answer.
+
+No provider is bundled. Core BuildML never imports an LLM SDK; pass any object
+with a ``chat`` method, or let Session supply the one it was configured with.
+
+See Also
+--------
+buildml.rag.retrieve.retrieve : Producing the passages.
+buildml.rag.results.GenerateResult : What comes back.
+buildml.rag.evaluate.evaluate_generation : Measuring answer quality.
 """
 
 from __future__ import annotations
@@ -42,7 +63,24 @@ Answer with citations where claims come from CONTEXT."""
 
 @runtime_checkable
 class ChatProvider(Protocol):
-    """Minimal chat provider used by grounded generate (avoids importing buildml.ai)."""
+    """The only thing grounded generation needs from a language model.
+
+    Structural, not nominal: anything with a matching ``chat`` method satisfies
+    it, with no base class to inherit and no import of ``buildml.ai``. That
+    keeps this module free of any LLM SDK dependency and makes it trivial to
+    substitute a fake in tests.
+
+    Notes
+    -----
+    **Deliberately narrower than a full provider interface.** Streaming, tool
+    execution, and multi-turn management are out of scope here, so a wider range
+    of objects — including a five-line test double — can stand in.
+
+    See Also
+    --------
+    EchoGroundedProvider : A deterministic implementation for tests.
+    buildml.ai.provider : The full provider abstraction.
+    """
 
     def chat(
         self,
@@ -51,20 +89,92 @@ class ChatProvider(Protocol):
         *,
         max_tokens: int | None = None,
         temperature: float | None = None,
-    ) -> Any: ...
+    ) -> Any:
+        """Send messages to the model and return its reply.
+
+        One round trip, no streaming and no state. Grounded generation calls
+        this exactly once per answer, with the passages already in the system
+        message.
+
+        Parameters
+        ----------
+        messages:
+            Ordered conversation turns. Each has ``role`` and ``content``,
+            either as attributes or dict keys.
+        tools:
+            Tool schemas. Always ``None`` from grounded generation, which wants
+            prose rather than tool calls.
+        max_tokens:
+            Cap on reply length, or ``None`` for the provider's default.
+        temperature:
+            Sampling randomness. Grounded generation passes something near zero.
+
+        Returns
+        -------
+        object
+            Anything exposing ``content``; ``model`` and ``usage`` are read when
+            present and omitted quietly when not.
+        """
+        ...
 
 
 @dataclass(slots=True)
 class _SimpleMessage:
+    """A chat turn, in the shape every provider understands.
+
+    The fallback message type, used when ``buildml.ai`` is unavailable so that
+    grounded generation works without it.
+    """
+
     role: str
     content: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the ``{"role", "content"}`` mapping providers expect.
+
+        The wire format every chat API accepts, so a provider that does not
+        understand this dataclass can still be handed the message.
+
+        Returns
+        -------
+        dict
+            The message as a plain dict, ready to serialise.
+        """
         return {"role": self.role, "content": self.content}
 
 
 def hits_to_citations(hits: Sequence[Hit]) -> tuple[Citation, ...]:
-    """Build ordered citations from ranked retrieval hits."""
+    """Number the retrieved passages so the model can refer to them.
+
+    The step that makes citation possible. Each hit gets a small integer
+    ``source_id`` matching its rank, which appears in the prompt as
+    ``[source:N]`` and in the model's answer as the same marker. Without stable
+    numbering there is nothing for the model to cite and nothing for the reader
+    to look up.
+
+    Parameters
+    ----------
+    hits:
+        Ranked retrieval hits, best first.
+
+    Returns
+    -------
+    tuple of Citation
+        One per hit, numbered from 1, carrying the text, scores, and metadata.
+
+    Notes
+    -----
+    **Numbering follows position, not rank.** They coincide for a normal ranked
+    list, and passing a filtered subset renumbers from 1 rather than preserving
+    gaps.
+
+    **Full chunk text is copied in**, because a citation the reader cannot read
+    is not a citation.
+
+    See Also
+    --------
+    assemble_context : Rendering these into the prompt.
+    """
     citations: list[Citation] = []
     for i, hit in enumerate(hits, start=1):
         citations.append(
@@ -86,7 +196,44 @@ def assemble_context(
     *,
     max_context_chars: int = 8000,
 ) -> str:
-    """Format citations as labeled CONTEXT blocks with a character budget."""
+    """Render the citations into the labelled text block the prompt carries.
+
+    Each passage becomes a block headed by its ``[source:N]`` marker and its
+    provenance, followed by the text. Blocks are added in rank order until the
+    character budget would be exceeded, so the best passages are the ones that
+    survive truncation.
+
+    Parameters
+    ----------
+    citations:
+        Numbered passages, best first.
+    max_context_chars:
+        Budget for the whole context string. A rough stand-in for a token limit;
+        four characters per token is the usual approximation.
+
+    Returns
+    -------
+    str
+        Blocks separated by blank lines, or ``""`` when there are no citations.
+
+    Notes
+    -----
+    **Dropped passages are dropped silently here.** The answer may then omit
+    something the retriever found, with no marker in the text to say so. Compare
+    the citation count against the hit count if that matters.
+
+    **The first passage is always included, however long it is.** Returning an
+    empty context because the top hit alone exceeded the budget would be worse
+    than overshooting it.
+
+    **Characters, not tokens.** Code and non-Latin scripts tokenise far less
+    efficiently than English prose, so leave headroom.
+
+    See Also
+    --------
+    hits_to_citations : Producing the input.
+    buildml.rag.types.GenerateConfig : Where the budget is configured.
+    """
     if not citations:
         return ""
     parts: list[str] = []
@@ -111,7 +258,49 @@ def assemble_grounded_messages(
     user_template: str | None = None,
     max_context_chars: int = 8000,
 ) -> tuple[list[_SimpleMessage], str]:
-    """Build system/user messages and the assembled context string."""
+    """Build the two-message prompt that grounds the model in the passages.
+
+    The default system message does the grounding work: it puts the labelled
+    passages in front of the model, restricts it to answering from them, tells
+    it to say so when they are insufficient, and asks for ``[source:N]``
+    markers. The user message carries the question.
+
+    Parameters
+    ----------
+    query:
+        The question, substituted into the user template.
+    citations:
+        Numbered passages for the context block.
+    system_template:
+        Overrides the system message. Must contain ``{context}``.
+    user_template:
+        Overrides the user message. Must contain ``{query}``.
+    max_context_chars:
+        Budget passed through to :func:`assemble_context`.
+
+    Returns
+    -------
+    tuple
+        ``(messages, context)`` — the system and user messages, and the context
+        string, returned separately so faithfulness scoring can measure against
+        exactly what the model saw.
+
+    Notes
+    -----
+    **Replacing the templates replaces the grounding instructions.** A custom
+    system template that omits the "answer only from context" constraint gets an
+    ungrounded model with passages attached, which is a different and much less
+    trustworthy thing.
+
+    **An empty context renders as ``(empty)``** rather than a blank, so the
+    model is told plainly that it has nothing rather than being left to guess
+    from a gap in the prompt.
+
+    See Also
+    --------
+    assemble_context : The context block.
+    score_faithfulness : What consumes the returned context.
+    """
     context = assemble_context(citations, max_context_chars=max_context_chars)
     system = (system_template or _SYSTEM_TEMPLATE).format(context=context or "(empty)")
     user = (user_template or _USER_TEMPLATE).format(query=query)
@@ -167,7 +356,57 @@ def score_faithfulness(
     context: str = "",
     min_overlap: float = 0.05,
 ) -> FaithfulnessReport:
-    """Cheap grounding heuristics: citation markers + answer↔context token overlap."""
+    """Check cheaply whether the answer actually used the passages it was given.
+
+    Two signals, both lexical and both fast. Citation coverage asks how many of
+    the supplied sources the answer cited. Token overlap asks what fraction of
+    the answer's words appear in the context, on the reasoning that an answer
+    drawn from the passages reuses their vocabulary while an invented one does
+    not.
+
+    Neither measures truth, and it is important to be clear about that. This
+    catches the common failure — a model ignoring its context and answering from
+    memory — not subtle misstatement. A fluent, well-cited, entirely wrong
+    answer scores well here.
+
+    Parameters
+    ----------
+    answer:
+        The generated text, scanned for ``[source:N]`` markers.
+    citations:
+        The passages that were supplied, defining what could be cited.
+    context:
+        The assembled context string. Falls back to concatenating citation text
+        when empty, which is close but not identical if the context was
+        truncated.
+    min_overlap:
+        Overlap fraction required for ``grounded`` to be true. The default of
+        0.05 is deliberately permissive — it flags answers with essentially no
+        relationship to the context rather than judging quality.
+
+    Returns
+    -------
+    FaithfulnessReport
+        Coverage, cited and uncited source IDs, overlap, a ``grounded`` verdict,
+        and its own statement of what it cannot tell you.
+
+    Notes
+    -----
+    **Overlap is asymmetric**: it divides by the answer's tokens, so a short
+    answer quoting the context scores near 1.0 while a long answer that
+    paraphrases correctly scores lower. Do not compare across answer lengths.
+
+    **Stopwords count.** Common English words inflate overlap, which is part of
+    why the threshold is set so low.
+
+    **Uncited sources are not a failure.** ``missing_source_ids`` usually just
+    means the retriever returned more passages than the answer needed.
+
+    See Also
+    --------
+    buildml.rag.results.FaithfulnessReport : The fields in full.
+    buildml.rag.evaluate.evaluate_generation : Scoring against known answers.
+    """
     available = {int(c.source_id) for c in citations}
     cited = tuple(sorted({int(m) for m in _SOURCE_MARKER_RE.findall(answer)}))
     missing = tuple(sorted(available - set(cited)))
@@ -205,7 +444,62 @@ def generate_from_retrieve(
     config: GenerateConfig | None = None,
     score_grounding: bool = True,
 ) -> GenerateResult:
-    """Generate a grounded answer from an existing :class:`RetrieveResult`."""
+    """Answer from passages that have already been retrieved.
+
+    The generation half on its own, for when retrieval already happened — you
+    inspected the hits, reused them across several prompts, or filtered them by
+    hand. :func:`generate_grounded` is the same thing with retrieval attached.
+
+    Parameters
+    ----------
+    retrieve_result:
+        The passages to answer from. Must contain at least one hit.
+    provider:
+        Anything with a ``chat`` method.
+    config:
+        Templates, context budget, temperature, token cap. Defaults are tuned
+        for grounded answering.
+    score_grounding:
+        Run the faithfulness heuristics. Cheap; leave it on.
+
+    Returns
+    -------
+    GenerateResult
+        The answer, its citations, the retrieval it came from, the exact prompt
+        context, provider usage, and the faithfulness report.
+
+    Raises
+    ------
+    ValidationError
+        If retrieval returned no hits, the provider raised, or the completion
+        was empty.
+
+    Notes
+    -----
+    **Every failure is a hard failure.** No hits, a provider error, or an empty
+    answer all raise rather than degrading to an ungrounded response, because a
+    plausible answer with no basis is the failure mode this whole pipeline
+    exists to avoid.
+
+    **The provider is called exactly once.** No retries, no fallback model — add
+    those in the provider if you want them, where the policy is visible.
+
+    **Citations record what was supplied, not what was used.** Read
+    ``result.faithfulness.cited_source_ids`` for what the answer actually
+    referenced.
+
+    Examples
+    --------
+    Retrieve, inspect, then answer::
+
+        hits = retrieve(index, "what is the refund window?", k=5)
+        result = generate_from_retrieve(hits, provider)
+        print(result.answer, result.faithfulness.grounded)
+
+    See Also
+    --------
+    generate_grounded : Retrieval and generation in one call.
+    """
     cfg = config or GenerateConfig()
     if not retrieve_result.hits:
         raise ValidationError(
@@ -272,7 +566,79 @@ def generate_grounded(
     config: GenerateConfig | None = None,
     retrieve_result: RetrieveResult | None = None,
 ) -> GenerateResult:
-    """Retrieve (unless ``retrieve_result`` is provided) then generate with citations."""
+    """Ask a question of an indexed corpus and get a cited answer.
+
+    The whole RAG pipeline in one call: retrieve the relevant passages, prompt
+    the model with them, return the answer with its citations attached. This is
+    the entry point most callers want.
+
+    Parameters
+    ----------
+    index:
+        The index to search. May be ``None`` if ``retrieve_result`` is supplied.
+    query:
+        The question. Must be non-empty.
+    provider:
+        Anything with a ``chat`` method.
+    k:
+        How many passages to retrieve. Ignored when ``config`` sets its own.
+    retrieve_config:
+        Full retrieval settings, if you need more than ``k``.
+    mode:
+        ``'dense'``, ``'bm25'``, or ``'hybrid'``.
+    filters:
+        Metadata equality constraints applied before scoring.
+    rerank:
+        Run a cross-encoder over the candidates.
+    fusion:
+        ``'rrf'`` or ``'weighted'``, for hybrid mode.
+    config:
+        Generation settings. Its ``k`` wins over the ``k`` argument.
+    retrieve_result:
+        Pre-retrieved passages. Supplying this skips retrieval and ignores every
+        retrieval argument above.
+
+    Returns
+    -------
+    GenerateResult
+        The answer with citations, the retrieval behind it, and disclosures.
+
+    Raises
+    ------
+    ValidationError
+        If there is neither an index nor a retrieval result, the query is empty,
+        no provider was given, retrieval found nothing, or generation failed.
+
+    Notes
+    -----
+    **More passages is not reliably better.** Beyond roughly five, the extra
+    context dilutes rather than helps, and models attend less well to the middle
+    of a long prompt. Raise ``k`` with ``rerank=True`` rather than alone.
+
+    **The answer is only as good as the retrieval.** When answers are wrong,
+    inspect ``result.retrieve_result.hits`` before changing the prompt — usually
+    the passage needed was never retrieved.
+
+    **Determinism depends on the provider.** BuildML's own steps are
+    deterministic and the default temperature is low, but the model is not
+    guaranteed to repeat itself.
+
+    Examples
+    --------
+    A grounded question with reranking::
+
+        result = generate_grounded(
+            index, "what is the refund window?", provider, k=5, rerank=True,
+        )
+        print(result.answer)
+        for cite in result.citations:
+            print(cite.source_id, cite.doc_id)
+
+    See Also
+    --------
+    generate_from_retrieve : Generation from passages you already have.
+    buildml.rag.retrieve.retrieve : Retrieval on its own.
+    """
     if index is None and retrieve_result is None:
         raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
     if not str(query or "").strip():
@@ -303,7 +669,33 @@ def generate_grounded(
 
 @dataclass(slots=True)
 class EchoGroundedProvider:
-    """Deterministic offline provider for CI: echoes top citation ids into an answer."""
+    """A fake model that cites its sources without needing a network.
+
+    Reads the source markers out of the prompt and echoes the first few back in
+    a sentence. That is enough to exercise the full grounded-generation path —
+    prompt assembly, citation numbering, faithfulness scoring, result
+    construction — with no API key, no network, and identical output every run.
+
+    Use it in tests and examples. The answers are structurally correct and
+    semantically empty, which is exactly what makes them useful for checking
+    plumbing and useless for evaluating quality.
+
+    Attributes
+    ----------
+    prefix:
+        Opening words of the generated sentence.
+
+    Examples
+    --------
+    Exercise the pipeline offline::
+
+        result = generate_grounded(index, "anything", EchoGroundedProvider())
+        assert result.citations
+
+    See Also
+    --------
+    ChatProvider : The protocol this satisfies.
+    """
 
     prefix: str = "Grounded answer"
 
@@ -315,6 +707,38 @@ class EchoGroundedProvider:
         max_tokens: int | None = None,
         temperature: float | None = None,
     ) -> Any:
+        """Return a fixed sentence citing the first few sources in the prompt.
+
+        Parses ``[source:N]`` markers out of the system message and names them
+        in a one-line answer, which is enough to make citation handling and
+        faithfulness scoring behave as they would with a real model.
+
+        Parameters
+        ----------
+        messages:
+            Conversation turns. Only the system message is read, for its
+            ``[source:N]`` markers.
+        tools:
+            Ignored.
+        max_tokens:
+            Ignored; the reply is one short sentence.
+        temperature:
+            Ignored; output is deterministic.
+
+        Returns
+        -------
+        object
+            A response object with ``content``, ``usage``, ``model``, and the
+            other fields a real provider returns.
+
+        Notes
+        -----
+        **At most three sources are cited**, so faithfulness scoring sees both
+        cited and uncited sources when retrieval returned more.
+
+        **Usage figures are fabricated constants.** They exist so code that
+        reads token counts has something to read, and mean nothing.
+        """
         _ = tools, max_tokens, temperature
         system = ""
         for msg in messages:

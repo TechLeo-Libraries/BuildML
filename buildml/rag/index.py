@@ -1,4 +1,24 @@
-"""Build and update a dense vector index from a corpus."""
+"""Turn a corpus into something searchable, and keep it current.
+
+Building an index is three steps: cut documents into chunks, embed the chunks,
+store the vectors. What makes it worth its own module is everything around
+those steps — the leakage refusal, the disclosures, and the incremental updates.
+
+The leakage refusal comes first. Indexing an ``eval_only`` document means every
+subsequent retrieval metric measures a system that was shown the answers, so
+:func:`build_index` raises rather than filtering, and the same guard runs on
+every upsert.
+
+Updates avoid rebuilds. A corpus that changes daily should not be re-embedded
+daily, so :meth:`RagIndex.upsert_chunks` re-encodes only what changed and
+:meth:`RagIndex.delete` drops rows without touching the rest.
+
+See Also
+--------
+buildml.rag.chunk : The first step.
+buildml.rag.embed : The second.
+buildml.rag.store : The third.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +37,47 @@ from buildml.rag.types import HASHING_EMBEDDER_ID, ChunkConfig, EmbedConfig, Ind
 
 
 class RagIndex:
-    """In-memory RAG index: chunks + embeddings + store + configs."""
+    """A searchable index, plus the embedder and settings that built it.
+
+    Holding the embedder alongside the vectors is what makes the rest work.
+    Queries have to be embedded the same way the passages were, and updates have
+    to encode new chunks into the same space — keeping the model here means
+    neither can be done with the wrong one by accident.
+
+    Attributes
+    ----------
+    store:
+        The vectors and their chunks.
+    embedder:
+        The model that produced them, reused for queries and updates.
+    embed_config:
+        Recorded embedding settings.
+    chunk_config:
+        Recorded chunking settings, reused when upserting documents so new
+        content is cut the same way.
+    index_config:
+        Recorded store settings.
+    n_documents:
+        How many distinct documents are represented.
+    warnings:
+        Problems found while building.
+    disclosures:
+        Facts affecting how results should be read, including whether the
+        placeholder embedder was used.
+
+    Notes
+    -----
+    **Entirely in memory, and not persisted.** Saving is
+    :mod:`buildml.rag.checkpoint`'s job.
+
+    **Mutating methods replace the store in place**, so an index shared across
+    threads is not safe to update while it is being queried.
+
+    See Also
+    --------
+    build_index : What creates one.
+    buildml.rag.retrieve : What queries one.
+    """
 
     def __init__(
         self,
@@ -31,6 +91,37 @@ class RagIndex:
         warnings: tuple[str, ...] = (),
         disclosures: tuple[str, ...] = (),
     ) -> None:
+        """Assemble an index from its parts.
+
+        Normally called by :func:`build_index` rather than directly. Nothing is
+        validated here — the components are assumed to be consistent, which they
+        are when the builder produced them.
+
+        Parameters
+        ----------
+        store:
+            The vectors and chunks.
+        embedder:
+            The model that produced them.
+        embed_config:
+            Embedding settings to record.
+        chunk_config:
+            Chunking settings, reused for later document upserts.
+        index_config:
+            Store settings to record.
+        n_documents:
+            Distinct document count.
+        warnings:
+            Problems found while building.
+        disclosures:
+            Notes affecting interpretation.
+
+        Notes
+        -----
+        **The embedder is not checked against the store.** Constructing this
+        with a model that did not produce these vectors yields an index whose
+        queries land in a different space.
+        """
         self.store = store
         self.embedder = embedder
         self.embed_config = embed_config
@@ -42,13 +133,50 @@ class RagIndex:
 
     @property
     def chunks(self) -> tuple[Chunk, ...]:
+        """Return the indexed passages, aligned with the vectors.
+
+        Returns
+        -------
+        tuple of Chunk
+            Every chunk in the index, in vector-row order.
+
+        Notes
+        -----
+        **Position matters.** Element ``i`` corresponds to embedding row ``i``.
+        """
         return self.store.chunks
 
     @property
     def embeddings(self) -> np.ndarray:
+        """Return the vector matrix.
+
+        Returns
+        -------
+        numpy.ndarray
+            Shape ``(n_chunks, dim)``, L2-normalised.
+
+        Notes
+        -----
+        **This is the underlying array, not a copy.** Modifying it corrupts the
+        index.
+        """
         return self.store.embeddings
 
     def to_index_result(self) -> IndexResult:
+        """Describe the index without exposing its contents.
+
+        Counts, identities, and settings — enough to record what was built and
+        to check compatibility, with no vectors and no text.
+
+        Returns
+        -------
+        IndexResult
+            The description, including warnings and disclosures.
+
+        See Also
+        --------
+        buildml.rag.results.IndexResult : What the fields mean.
+        """
         return IndexResult(
             n_chunks=len(self.store.chunks),
             n_documents=self.n_documents,
@@ -86,9 +214,47 @@ class RagIndex:
         chunk_ids: Sequence[str] | None = None,
         doc_ids: Sequence[str] | None = None,
     ) -> IndexResult:
-        """Remove chunks by ``chunk_id`` and/or parent ``doc_id`` without full rebuild.
+        """Drop chunks or whole documents from the index.
 
-        Dense rows for survivors are retained; embeddings for deleted rows are dropped.
+        Surviving vectors are kept as they are, so removing outdated content
+        costs nothing beyond the removal itself — no re-embedding, no rebuild.
+
+        Parameters
+        ----------
+        chunk_ids:
+            Specific chunks to remove.
+        doc_ids:
+            Remove every chunk of these documents. The usual case: a document
+            was withdrawn or superseded.
+
+        Returns
+        -------
+        IndexResult
+            The index as it now stands, with the removal count in its
+            disclosures.
+
+        Raises
+        ------
+        ValidationError
+            If neither argument is given. Deleting nothing is more likely a
+            mistake than an intent.
+
+        Notes
+        -----
+        **Unknown identifiers are ignored silently.** Check the reported chunk
+        count to confirm a deletion did what you expected.
+
+        **This mutates the index.** Anything holding it sees the change.
+
+        Examples
+        --------
+        Remove a superseded document::
+
+            index.delete(doc_ids=["policy-v1"])
+
+        See Also
+        --------
+        upsert_documents : Replacing content instead of removing it.
         """
         if not chunk_ids and not doc_ids:
             raise ValidationError("rag delete requires chunk_ids and/or doc_ids.")
@@ -100,10 +266,45 @@ class RagIndex:
         return self.to_index_result()
 
     def upsert_chunks(self, chunks: Sequence[Chunk]) -> IndexResult:
-        """Insert or replace chunks by ``chunk_id``, re-embedding only new/changed rows.
+        """Add or replace chunks, re-embedding only what was supplied.
 
-        Existing embeddings for untouched chunk ids are preserved. Replaced ids are
-        re-encoded with the index embedder.
+        Chunks whose IDs already exist are replaced; the rest are appended.
+        Everything untouched keeps its existing vector, so the cost is
+        proportional to the change rather than to the corpus.
+
+        Parameters
+        ----------
+        chunks:
+            The chunks to insert or replace, matched by ``chunk_id``.
+
+        Returns
+        -------
+        IndexResult
+            The index as it now stands, with insert and replace counts in its
+            disclosures.
+
+        Raises
+        ------
+        ValidationError
+            If no chunks are given, or the embedder returns vectors of the
+            wrong width for this index.
+
+        Notes
+        -----
+        **Replaced chunks move to the end.** Positions shift, but IDs do not, so
+        anything referring to chunks by ID is unaffected.
+
+        **Chunk IDs are positional, and that matters here.** Re-chunking an
+        edited document produces the same IDs with different content, so
+        upserting a subset of them leaves the rest describing text that no
+        longer exists. Upsert the whole document's chunks, or delete first.
+
+        **The index embedder is used**, so new chunks land in the same space.
+
+        See Also
+        --------
+        upsert_documents : The document-level form.
+        delete : Removing instead.
         """
         incoming = list(chunks)
         if not incoming:
@@ -168,7 +369,55 @@ class RagIndex:
         *,
         chunk: bool = True,
     ) -> IndexResult:
-        """Chunk (optional) and upsert documents into this index."""
+        """Add or replace whole documents, chunked with the index's own settings.
+
+        The convenient form of :meth:`upsert_chunks`. Reusing the recorded
+        chunk config is the point: new content is cut exactly as the original
+        corpus was, so it is comparable to what is already indexed.
+
+        Parameters
+        ----------
+        documents:
+            Strings, mappings, or ``Document`` objects.
+        chunk:
+            Cut the documents into chunks. Set false to index each document
+            whole, which is appropriate for content already short enough to
+            retrieve as a unit.
+
+        Returns
+        -------
+        IndexResult
+            The index as it now stands.
+
+        Raises
+        ------
+        LeakageError
+            If any document is marked ``'eval_only'``.
+        ValidationError
+            If the documents are malformed or the sequence is empty.
+
+        Notes
+        -----
+        **The leakage guard runs on every upsert**, not only at build time, so
+        held-out documents cannot enter an index later.
+
+        **Adding a document does not replace an earlier version of it** unless
+        the chunk IDs coincide. When a document has been edited, delete it by
+        ``doc_id`` first — otherwise both versions are searchable and retrieval
+        can cite the stale one.
+
+        Examples
+        --------
+        Replace a document cleanly::
+
+            index.delete(doc_ids=["faq"])
+            index.upsert_documents([{"doc_id": "faq", "text": updated}])
+
+        See Also
+        --------
+        upsert_chunks : The chunk-level form.
+        delete : Removing the previous version.
+        """
         corpus = corpus_from_documents(documents)
         refuse_eval_only_index(corpus)
         if chunk:
@@ -199,10 +448,74 @@ def build_index(
     chunks: ChunkResult | Sequence[Chunk] | None = None,
     device: str | None = None,
 ) -> RagIndex:
-    """Chunk (optional), embed, and build the default NumPy cosine index.
+    """Chunk, embed, and index a corpus in one call.
 
-    Raises :class:`~buildml.core.errors.LeakageError` when the corpus contains
-    any ``eval_only`` documents.
+    The main entry point. Check the disclosures on the returned index before
+    drawing conclusions about retrieval quality — in particular whether a real
+    embedding model was used, since the fallback is not semantic and will miss
+    every paraphrase.
+
+    Parameters
+    ----------
+    corpus:
+        The documents. Must contain no ``eval_only`` documents.
+    chunk_config:
+        Chunking settings. Ignored when ``chunks`` is supplied.
+    chunk_size:
+        Chunk length in characters, overriding ``chunk_config``.
+    chunk_overlap:
+        Overlap in characters, overriding ``chunk_config``.
+    embedder:
+        ``'auto'`` picks a real model when the extra is installed and falls back
+        to hashing otherwise. Also accepts a model identifier, a callable, or an
+        embedder object.
+    chunks:
+        Pre-computed chunks, to skip chunking entirely.
+    device:
+        Where to run the embedder.
+
+    Returns
+    -------
+    RagIndex
+        The searchable index, its embedder, and the settings used.
+
+    Raises
+    ------
+    LeakageError
+        If the corpus contains any ``eval_only`` document. Indexing one would
+        make every later retrieval metric meaningless, so this refuses rather
+        than filtering.
+    ValidationError
+        If chunking produced nothing to index.
+    MissingExtraError
+        If a sentence-transformers model was requested without the extra.
+
+    Notes
+    -----
+    **``'auto'`` is not a guarantee of quality.** Without ``buildml[rag]``
+    installed it resolves to the hashing embedder, which matches words rather
+    than meaning. The index records this in its disclosures; poor retrieval
+    from such an index says nothing about your corpus.
+
+    **Every chunk is embedded now.** On a large corpus with a real model this is
+    the slow step, and it is proportional to chunk count — which chunk size
+    controls.
+
+    **The recorded dimension comes from the actual matrix**, not from what was
+    requested, so it always matches what queries will be checked against.
+
+    Examples
+    --------
+    Build with a real embedding model::
+
+        index = build_index(corpus, embedder="minilm", chunk_size=1024)
+        print(index.to_index_result().disclosures)
+
+    See Also
+    --------
+    RagIndex : What comes back.
+    buildml.rag.retrieve : Querying it.
+    buildml.rag.chunk.chunk_documents : Chunking separately first.
     """
     refuse_eval_only_index(corpus)
     cfg = chunk_config or ChunkConfig()

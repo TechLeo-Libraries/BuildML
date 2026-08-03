@@ -94,12 +94,12 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Still evaluate with ranking metrics, not only RMSE.",
             ),
-            assumptions=("Numeric features; finite relevance labels."),
-            failure_modes=("Calibration mismatch; dominance by frequent queries."),
-            anti_patterns=("Reporting only regression loss as ranking quality."),
+            assumptions=("Numeric features; finite relevance labels.",),
+            failure_modes=("Calibration mismatch; dominance by frequent queries.",),
+            anti_patterns=("Reporting only regression loss as ranking quality.",),
             worked_example_pattern=(
                 "fit_ranker(method='pointwise', pointwise_estimator='ridge') → rank()."
-            ),
+            ,),
             related_concepts=("ltr-tabular-ranking", "ltr-pairwise", "ltr-ranking-metrics"),
         ),
         _note(
@@ -132,14 +132,14 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Needs queries with ≥2 items and distinct grades.",
             ),
-            assumptions=("Multiple candidates per train query."),
-            failure_modes=("No distinct-grade pairs; extreme class imbalance in pairs."),
+            assumptions=("Multiple candidates per train query.",),
+            failure_modes=("No distinct-grade pairs; extreme class imbalance in pairs.",),
             anti_patterns=(
                 "Calling this LambdaMART or a production search stack.",
             ),
             worked_example_pattern=(
                 "fit_ranker(method='pairwise') → evaluate_ranker(k=5)."
-            ),
+            ,),
             related_concepts=("ltr-tabular-ranking", "ltr-pointwise", "ltr-ranking-metrics"),
         ),
         _note(
@@ -173,15 +173,15 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Compare against sklearn pointwise on the same group_split.",
                 "Do not equate with RAG chunk ranking or recommender CF metrics.",
             ),
-            assumptions=("Numeric features; ≥2 train queries; ranking-industry extra."),
-            failure_modes=("Missing extra; tiny query groups; overlapping query ids."),
+            assumptions=("Numeric features; ≥2 train queries; ranking-industry extra.",),
+            failure_modes=("Missing extra; tiny query groups; overlapping query ids.",),
             anti_patterns=(
                 "Calling LambdaRank a search-engine stack.",
                 "Mixing evaluate_ranker numbers with rag_evaluate.",
             ),
             worked_example_pattern=(
                 "fit_ranker(backend='industry') → evaluate_ranker(k=10)."
-            ),
+            ,),
             related_concepts=(
                 "ltr-tabular-ranking",
                 "ltr-pointwise",
@@ -210,17 +210,17 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Regression loss alone does not prove ranking quality.",
                 "Same metric names appear in RAG/recommenders with different protocols.",
             ),
-            how_buildml_uses=("Session.evaluate_ranker(partition='test', k=...)."),
+            how_buildml_uses=("Session.evaluate_ranker(partition='test', k=...).",),
             interpretation_rules=(
                 "Compare only under the same k, threshold, and split policy.",
                 "Do not equate with RAG chunk nDCG or recommender known-item nDCG.",
             ),
-            assumptions=("Holdout queries with ≥1 relevant item."),
-            failure_modes=("All-zero labels; tiny k; leaked query overlap."),
-            anti_patterns=("Mixing RAG evaluate metrics with LTR evaluate_ranker."),
+            assumptions=("Holdout queries with ≥1 relevant item.",),
+            failure_modes=("All-zero labels; tiny k; leaked query overlap.",),
+            anti_patterns=("Mixing RAG evaluate metrics with LTR evaluate_ranker.",),
             worked_example_pattern=(
                 "evaluate_ranker(k=10) → inspect metrics['ndcg_at_k']."
-            ),
+            ,),
             related_concepts=("ltr-tabular-ranking", "leakage-boundary"),
         ),
         _note(
@@ -240,21 +240,21 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "with load_ranker_bundle."
             ),
             formal_idea=("buildml.ranker_bundle.v1 = meta.json + ranker_plan.joblib."),
-            why_it_matters=("Prevents silent mixing of artifact types."),
+            why_it_matters=("Prevents silent mixing of artifact types.",),
             how_buildml_uses=(
                 "Session.save_ranker_bundle / load_ranker_bundle.",
             ),
             interpretation_rules=(
                 "Bundles are complementary to checkpoints, not interchangeable.",
             ),
-            assumptions=("A RankerPlan exists."),
-            failure_modes=("Expecting dataset rows inside the bundle."),
+            assumptions=("A RankerPlan exists.",),
+            failure_modes=("Expecting dataset rows inside the bundle.",),
             anti_patterns=(
                 "Treating ranker bundles as RAG corpora or recommender catalogs.",
             ),
             worked_example_pattern=(
                 "save_ranker_bundle(path) → load_ranker_bundle(path) → evaluate_ranker()."
-            ),
+            ,),
             related_concepts=("ltr-tabular-ranking", "checkpoint-boundary"),
         ),
     )

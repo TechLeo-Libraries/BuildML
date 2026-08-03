@@ -1,7 +1,30 @@
-"""Text / sequence tensor path for BuildML DL (non-tabular modality).
+"""Turn text columns into the token sequences a neural network can read.
 
-Tokenizes text with a fold-safe vocabulary fit on train only, builds padded
-token-id loaders, and pairs with :func:`buildml.dl.models.build_text_classifier`.
+Networks work on numbers, so text has to become numbers first. The approach here
+is the classic one: split each document into words, assign every word an
+integer, and represent a document as the sequence of those integers, padded to a
+common length so documents can be batched.
+
+The vocabulary is the fitted part, and it is fitted on the training partition
+alone. A vocabulary built across all partitions would give the model a slot for
+every word in the test set, which both leaks and misleads — at deployment, words
+it has never seen will arrive, and a model that never encountered an unknown
+token during training has no idea what to do with one. Reserving ``<unk>`` and
+training with it present is what makes that case survivable.
+
+Two ids are reserved. Zero is padding, excluded from pooling so document length
+does not affect the representation. One is the unknown token, which every
+out-of-vocabulary word maps to.
+
+This is the token-id path, distinct from :mod:`buildml.nlp`, which offers TF-IDF
+and transformer representations for classical models. Use this when you want to
+train a network on text end to end.
+
+See Also
+--------
+buildml.dl.models.build_text_classifier : The matching model.
+buildml.nlp : Classical text representations and tasks.
+buildml.dl.multimodal : Text combined with other modalities.
 """
 
 from __future__ import annotations
@@ -28,7 +51,37 @@ _TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
 
 @dataclass(slots=True)
 class TextVocab:
-    """Word vocabulary with reserved pad/unk tokens."""
+    """The word-to-integer mapping a text model was trained with.
+
+    Attributes
+    ----------
+    token_to_id:
+        Word to integer id. Words absent from this map become ``unk_id``.
+    id_to_token:
+        The inverse, as a sequence indexed by id. Position 0 is ``<pad>``,
+        position 1 is ``<unk>``.
+    pad_id:
+        The padding id, 0. Masked out of pooling.
+    unk_id:
+        The unknown-word id, 1.
+    max_len:
+        Sequence length. Longer documents are truncated, shorter are padded.
+
+    Notes
+    -----
+    **This must be persisted with the model.** Token ids are arbitrary — they
+    depend on the training corpus's word frequencies — so a model paired with a
+    different vocabulary is reading a different language.
+
+    **Truncation at ``max_len`` silently discards the tail.** A model with
+    ``max_len=64`` sees only the first 64 words of a long document, and nothing
+    reports how much was cut.
+
+    See Also
+    --------
+    fit_vocab : Builds this.
+    texts_to_ids : Applies it.
+    """
 
     token_to_id: dict[str, int]
     id_to_token: tuple[str, ...]
@@ -38,9 +91,29 @@ class TextVocab:
 
     @property
     def vocab_size(self) -> int:
+        """Number of ids, including the two reserved ones.
+
+        This is the width the embedding layer needs.
+
+        Returns
+        -------
+        int
+            Vocabulary size.
+        """
         return len(self.id_to_token)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the vocabulary as JSON-safe values.
+
+        Complete enough to reconstruct — which is how a saved text model gets
+        its vocabulary back when loaders are rebuilt.
+
+        Returns
+        -------
+        dict
+            Both directions of the mapping, the reserved ids, the sequence
+            length, and the vocabulary size.
+        """
         return {
             "token_to_id": dict(self.token_to_id),
             "id_to_token": list(self.id_to_token),
@@ -53,7 +126,38 @@ class TextVocab:
 
 @dataclass(slots=True)
 class TextLoaderConfig:
-    """Knobs for text DataLoader construction."""
+    """Settings for building text loaders.
+
+    Attributes
+    ----------
+    batch_size:
+        Documents per batch.
+    num_workers:
+        Background loading processes. Rarely needed here, since token ids are
+        already in memory.
+    pin_memory:
+        Page-lock batches for faster GPU transfer. Train loader only.
+    shuffle_train:
+        Shuffle the training loader.
+    drop_last:
+        Discard a final short batch.
+    seed:
+        Controls shuffling.
+    max_len:
+        Sequence length. Long enough to capture what matters, short enough to
+        avoid padding most documents into mostly-padding.
+    max_vocab:
+        Cap on vocabulary size, including the two reserved ids. The most
+        frequent training words are kept; the rest become ``<unk>``.
+    min_freq:
+        Minimum training occurrences for a word to earn an id. Raising this
+        drops one-off typos and proper nouns, which a model cannot learn
+        anything reliable from anyway.
+
+    See Also
+    --------
+    make_text_loaders : Consumes this.
+    """
 
     batch_size: int = 16
     num_workers: int = 0
@@ -66,12 +170,49 @@ class TextLoaderConfig:
     min_freq: int = 1
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the loader settings as JSON-safe values.
+
+        Records how a text run was configured, so it can be arranged the same
+        way later.
+
+        Returns
+        -------
+        dict
+            Every field.
+        """
         return asdict(self)
 
 
 @dataclass(slots=True)
 class TextContract:
-    """Schema carried with text Torch loaders / trainers."""
+    """What a text model needs in order to be fed correctly.
+
+    Attributes
+    ----------
+    text_column:
+        The source column.
+    target_column:
+        What is being predicted.
+    task:
+        Always ``'classification'``. Text regression is not on this path.
+    class_labels:
+        The class vocabulary, indexed by predicted class id.
+    vocab:
+        The serialised :class:`TextVocab`.
+    modality:
+        ``'text_tokens'``, distinguishing this from tabular and multimodal
+        bundles.
+
+    Notes
+    -----
+    **The vocabulary is the part that must survive.** Column names can be
+    rediscovered; the specific word-to-id mapping cannot, and a text model
+    without it is unusable.
+
+    See Also
+    --------
+    make_text_loaders : Produces this.
+    """
 
     text_column: str
     target_column: str
@@ -81,6 +222,23 @@ class TextContract:
     modality: str = "text_tokens"
 
     def to_feature_contract(self) -> FeatureContract:
+        """Project this down to the tabular-shaped contract shared code expects.
+
+        Loader reports and evaluation take a plain
+        :class:`~buildml.dl.types.FeatureContract`. This produces one listing
+        the text column as the single feature, with no normalisation statistics
+        since text is not scaled.
+
+        Returns
+        -------
+        FeatureContract
+            The flattened view.
+
+        Notes
+        -----
+        **The vocabulary does not survive the projection.** Keep the
+        ``TextContract`` for anything that needs to rebuild loaders.
+        """
         return FeatureContract(
             feature_columns=(self.text_column,),
             target_column=self.target_column,
@@ -91,6 +249,17 @@ class TextContract:
         )
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the text contract as JSON-safe values.
+
+        Includes the full vocabulary, since a persisted contract without it
+        cannot rebuild working loaders.
+
+        Returns
+        -------
+        dict
+            Text and target columns, task, class labels, serialised
+            vocabulary, and modality.
+        """
         return {
             "text_column": self.text_column,
             "target_column": self.target_column,
@@ -102,7 +271,39 @@ class TextContract:
 
 
 def tokenize(text: str) -> list[str]:
-    """Lowercase alphanumeric tokenizer."""
+    """Split a document into lowercase word-like tokens.
+
+    Lowercases, then extracts runs of letters, digits, and underscores.
+    Punctuation, whitespace, and anything else act as separators and are
+    discarded.
+
+    Parameters
+    ----------
+    text:
+        The document. Coerced to ``str``, so numbers and ``NaN`` do not crash.
+
+    Returns
+    -------
+    list of str
+        The tokens, in order.
+
+    Notes
+    -----
+    **Deliberately simple, with the trade-offs that implies.** Contractions
+    split ("don't" becomes "don" and "t"), hyphenated words split, and
+    non-Latin scripts without word-boundary punctuation may not segment
+    usefully. For a corpus where any of that carries meaning, the richer
+    tokenisation in :mod:`buildml.nlp` or a pretrained subword tokeniser is a
+    better fit.
+
+    **Lowercasing loses case information.** "Apple" and "apple" become the same
+    token, which is usually right and occasionally not.
+
+    Examples
+    --------
+    >>> tokenize("Hello, World! It's 2024.")
+    ['hello', 'world', 'it', 's', '2024']
+    """
     return _TOKEN_RE.findall(str(text).lower())
 
 
@@ -113,7 +314,44 @@ def fit_vocab(
     min_freq: int = 1,
     max_len: int = 64,
 ) -> TextVocab:
-    """Fit a vocabulary on train texts only (pad=0, unk=1)."""
+    """Build the word-to-id mapping from training documents.
+
+    Counts every token, keeps those meeting the frequency floor, orders them by
+    descending frequency, and truncates to the size cap. Ids 0 and 1 are
+    reserved for padding and unknown words before the real words begin.
+
+    Parameters
+    ----------
+    texts:
+        The training documents. **Training only** — including holdout text here
+        leaks.
+    max_vocab:
+        Cap including the two reserved ids, so ``5000`` allows 4998 words.
+    min_freq:
+        Minimum occurrences to earn an id.
+    max_len:
+        Sequence length, stored on the vocabulary for later encoding.
+
+    Returns
+    -------
+    TextVocab
+        The mapping, both directions, with the reserved ids and length.
+
+    Notes
+    -----
+    **Frequency ordering makes truncation sensible.** Cutting the tail removes
+    the rarest words, which are the ones the model has least evidence about
+    anyway. Ties break alphabetically so the mapping is reproducible.
+
+    **Words that do not make the cut become ``<unk>`` during training, and that
+    is useful.** It teaches the model that unknown words exist, so the
+    inevitable out-of-vocabulary words at deployment are a case it has seen
+    rather than a surprise.
+
+    See Also
+    --------
+    texts_to_ids : Applying the result.
+    """
     counts: Counter[str] = Counter()
     for text in texts:
         counts.update(tokenize(text))
@@ -132,7 +370,38 @@ def fit_vocab(
 
 
 def texts_to_ids(texts: list[str], vocab: TextVocab) -> np.ndarray:
-    """Encode texts to a padded ``int64`` matrix ``[n, max_len]``."""
+    """Convert documents into a rectangular matrix of token ids.
+
+    Tokenises each document, maps tokens to ids, truncates at the vocabulary's
+    length, and pads the remainder. The result is rectangular, which is what
+    batching requires.
+
+    Parameters
+    ----------
+    texts:
+        The documents to encode.
+    vocab:
+        The training vocabulary.
+
+    Returns
+    -------
+    numpy.ndarray
+        An ``(n_documents, max_len)`` int64 matrix.
+
+    Notes
+    -----
+    **Padding sits at the end, and the model must mask it.** Left padding would
+    also work, but the models here assume trailing padding and exclude
+    ``pad_id`` positions from pooling.
+
+    **Unknown words map to ``unk_id`` rather than being dropped.** Dropping them
+    would shorten the sequence and shift everything after, changing the
+    positions the model sees.
+
+    See Also
+    --------
+    fit_vocab : Building the vocabulary.
+    """
     matrix = np.full((len(texts), vocab.max_len), vocab.pad_id, dtype=np.int64)
     for i, text in enumerate(texts):
         ids = [vocab.token_to_id.get(tok, vocab.unk_id) for tok in tokenize(text)]
@@ -174,9 +443,64 @@ def make_text_loaders(
     text_column: str | None = None,
     config: TextLoaderConfig | None = None,
 ) -> TorchLoaderBundle:
-    """Build token-id DataLoaders for text classification.
+    """Build loaders that feed token sequences to a text classifier.
 
-    Vocabulary is fit on the **train** partition only (leakage-safe).
+    Finds the text column, fits a vocabulary on the training partition, encodes
+    every partition with it, and wraps the results as DataLoaders.
+
+    Parameters
+    ----------
+    dataset:
+        The data, with roles and a numeric target.
+    split_plan:
+        Which rows belong to which partition. A train partition is required.
+    text_column:
+        The text column. Inferred when exactly one string-like feature exists.
+    config:
+        Batching, sequence length, and vocabulary settings.
+
+    Returns
+    -------
+    TorchLoaderBundle
+        The loaders, the feature contract, the text contract, the vocabulary,
+        and a report.
+
+    Raises
+    ------
+    MissingExtraError
+        If PyTorch is not installed.
+    ValidationError
+        If no text column can be identified or the named one is absent, if
+        several candidates exist and none was named, if the train partition is
+        empty, if the target is not numeric class ids, or if ``batch_size`` is
+        below 1.
+
+    Notes
+    -----
+    **The vocabulary comes from training documents only**, so words appearing
+    exclusively in validation or test arrive as ``<unk>`` — which is exactly
+    what will happen in production, and therefore what the holdout should
+    measure.
+
+    **Labels must already be integers.** Encode string class labels before
+    calling; the text path does not do it for you.
+
+    **Classification only.** Text regression is not supported here.
+
+    Examples
+    --------
+    Build loaders and a matching model::
+
+        bundle = make_text_loaders(dataset, split_plan, text_column="review")
+        module = build_text_classifier(
+            vocab_size=bundle.text_vocab.vocab_size,
+            n_classes=len(bundle.contract.class_labels),
+        )
+
+    See Also
+    --------
+    buildml.dl.models.build_text_classifier : The matching model.
+    fit_vocab : What gets fitted here.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -277,7 +601,30 @@ def make_text_loaders(
 
 
 def loader_config_from_text(cfg: TextLoaderConfig) -> LoaderConfig:
-    """Map text loader knobs onto the shared LoaderConfig shape."""
+    """Translate text loader settings into the shared config shape.
+
+    Some code paths — the training loop, checkpoint metadata — take a generic
+    :class:`~buildml.dl.types.LoaderConfig`. This carries the fields the two
+    have in common across.
+
+    Parameters
+    ----------
+    cfg:
+        The text loader settings.
+
+    Returns
+    -------
+    LoaderConfig
+        The shared shape, with ``normalize`` forced off.
+
+    Notes
+    -----
+    **Text-specific settings do not survive.** Sequence length, vocabulary cap,
+    and frequency floor have no equivalent field, so keep the
+    ``TextLoaderConfig`` if you need to rebuild loaders. ``normalize`` is always
+    false — standardising token ids would be meaningless, since they are labels
+    rather than quantities.
+    """
     return LoaderConfig(
         batch_size=cfg.batch_size,
         num_workers=cfg.num_workers,

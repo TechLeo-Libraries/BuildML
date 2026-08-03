@@ -1,4 +1,20 @@
-"""CLI entry point for ``buildml-serve`` / ``python -m buildml.serving``."""
+"""Serve a bundle from a shell, for containers and one-off deployments.
+
+The command-line face of :func:`~buildml.serving.launch.serve_bundle`. Every
+flag maps to a keyword argument there, including the security ones, so the same
+refusal to bind a public address without keys applies from the shell.
+
+Always blocking, because that is what a container entrypoint or a systemd unit
+needs: the process must stay in the foreground so the supervisor can see it
+running and restart it when it stops::
+
+    buildml-serve --bundle artifacts/churn --port 8080
+    python -m buildml.serving --bundle artifacts/churn --api-key "$SERVE_KEY"
+
+See Also
+--------
+buildml.serving.launch.serve_bundle : The function underneath, for use in code.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +24,27 @@ from collections.abc import Sequence
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Construct the argument parser, exposed separately so it can be tested.
+
+    Kept apart from :func:`main` so tests can parse arguments and assert on the
+    result without starting a server, and so ``--help`` can be rendered by
+    documentation tooling.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        The parser for ``buildml-serve``, with every flag documented in its own
+        help text.
+
+    Notes
+    -----
+    **``--api-key`` is repeatable**, collecting into a list, which is how key
+    rotation is done: add the new key, deploy, remove the old one.
+
+    See Also
+    --------
+    main : Where the parsed arguments are used.
+    """
     parser = argparse.ArgumentParser(
         prog="buildml-serve",
         description=(
@@ -79,6 +116,47 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Parse arguments, announce the configuration, and serve until stopped.
+
+    Prints a one-line summary to stderr before starting — the scheme, address,
+    bundle, and whether authentication is on. That last part is the reason the
+    line exists: a server started without keys should say so where an operator
+    will see it, not only in a docstring.
+
+    Parameters
+    ----------
+    argv:
+        Arguments to parse. ``None`` reads ``sys.argv``, which is the normal
+        path; pass a list in tests.
+
+    Returns
+    -------
+    int
+        ``0`` after the server stops cleanly. In practice this only returns when
+        the process is being shut down, since serving is blocking.
+
+    Raises
+    ------
+    SystemExit
+        From argparse, on ``--help`` or a malformed argument list.
+    ValidationError
+        If the configuration is refused — most often a public bind without
+        ``--api-key``.
+    MissingExtraError
+        If the serving extra is not installed.
+    ServingLaunchError
+        If the port is unavailable.
+
+    Notes
+    -----
+    **The summary goes to stderr, not stdout**, so it does not contaminate a
+    pipeline that captures stdout, and so it appears in container logs
+    interleaved with uvicorn's own output.
+
+    See Also
+    --------
+    build_parser : The flags this accepts.
+    """
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
     from buildml.serving.launch import serve_bundle

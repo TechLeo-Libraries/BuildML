@@ -1,4 +1,30 @@
-"""Leakage-safe retain: add newly labeled cases into the case memory."""
+"""Add newly resolved cases to memory, with the guards that keep it honest.
+
+Retention is what distinguishes case-based reasoning from a static model. Solve
+a case, find out how it actually turned out, keep it — and the reasoner improves
+without any retraining. In production this is the loop that makes the method
+attractive.
+
+It is also the easiest way to destroy the evaluation. Retaining a validation or
+test row puts it in memory, where it becomes its own nearest neighbour at
+distance zero, and the holdout score silently becomes a measurement of storage.
+The damage is permanent and invisible: nothing looks wrong, the number just goes
+up.
+
+So the guards here are strict rather than convenient. Holdout indices are
+refused outright, not warned about. A ``source_disclosure`` is mandatory,
+forcing the caller to state in writing where the labels came from — the point
+being that having to write "human review of production traffic" makes it hard to
+retain a holdout partition without noticing.
+
+This is a retain hook, not a full revise-and-retain cognitive cycle. Cases are
+added as given; nothing repairs a failed solution before storing it.
+
+See Also
+--------
+buildml.cbr.results.CbrRetainResult : What comes back.
+buildml.cbr.evaluate.evaluate_cbr : Re-scoring after memory has grown.
+"""
 
 from __future__ import annotations
 
@@ -30,17 +56,85 @@ def retain_cbr(
     source_disclosure: str,
     allow_overlap_with_train: bool = True,
 ) -> tuple[CbrPlan, CbrRetainResult]:
-    """Append labeled cases to the case base with leakage checks.
+    """Add labelled cases to memory, refusing anything that would corrupt evaluation.
 
-    Leakage discipline
-    ------------------
-    - Refuses any row whose index appears in Session **validation** or **test**.
-    - Requires a non-empty ``source_disclosure`` explaining where labels came from
-      (e.g. human labeling of a production stream — never Session holdout).
-    - Train-overlap rows may be skipped (default) or kept when
-      ``allow_overlap_with_train=True`` (still skipped if already present by index).
+    Encodes the new rows with the plan's train-fitted transforms, appends them
+    as retained cases, and updates any search index in place. Returns an updated
+    plan and a report of what was admitted and what was refused.
 
-    Honesty: this is a lite retain hook, not a full revise/retain cognitive cycle.
+    Parameters
+    ----------
+    dataset:
+        The source data, used to resolve which indices belong to holdout
+        partitions.
+    plan:
+        The fitted reasoner whose memory is being extended.
+    split_plan:
+        Partition membership, which is what makes the holdout check possible.
+    labeled_frame:
+        The new cases. Must carry the plan's feature columns and a solution
+        column, with no nulls in either.
+    solution_column:
+        Where the outcome lives, defaulting to the plan's target column.
+    source_disclosure:
+        Mandatory, non-empty. Where these labels came from — human review, a
+        resolved support ticket, a settled transaction. Never a Session holdout
+        partition.
+    allow_overlap_with_train:
+        Whether rows already represented in train may be retained again. Rows
+        already present by index are skipped either way.
+
+    Returns
+    -------
+    tuple
+        ``(plan, result)`` — the plan with extended memory, and the counts of
+        what was added and skipped.
+
+    Raises
+    ------
+    ValidationError
+        If ``source_disclosure`` is empty, ``labeled_frame`` is empty, the
+        solution column is missing or contains nulls, a feature column is
+        absent, or any row's index belongs to validation or test.
+
+    Notes
+    -----
+    **Holdout rows are refused, not warned about.** Retaining one makes it its
+    own nearest neighbour and inflates every later holdout score, with no
+    symptom to notice. There is no override.
+
+    **``source_disclosure`` exists to make the mistake hard to make silently.**
+    Being required to write down the provenance is a small friction that
+    surfaces "these came from the test set" before the data does.
+
+    **Distance transforms are not refitted.** Standardisation and vocabularies
+    stay as fitted on train, which is what keeps evaluation comparable — and
+    means a sustained distribution shift in retained cases is scaled by
+    increasingly stale statistics. Refit periodically.
+
+    **Identity is the frame index, not the feature values.** A new frame built
+    with a default ``RangeIndex`` collides with the row indices already in
+    memory, and every row is skipped as a duplicate — ``n_added`` comes back
+    zero for data that is genuinely new. Carry the original indices, or assign
+    fresh ones outside the dataset's range.
+
+    **Re-evaluate after retaining.** The previous holdout score described the
+    memory as it was.
+
+    Examples
+    --------
+    Retain cases resolved by human review::
+
+        plan, result = retain_cbr(
+            dataset, plan, split_plan,
+            labeled_frame=reviewed,
+            source_disclosure="Human review of production traffic, Q3.",
+        )
+        print(result.n_added, result.n_skipped, result.n_cases_after)
+
+    See Also
+    --------
+    retain_from_indices : Retaining rows already in the dataset.
     """
     if not str(source_disclosure).strip():
         raise ValidationError(
@@ -297,7 +391,49 @@ def retain_from_indices(
     row_indices: Sequence[Any],
     source_disclosure: str,
 ) -> tuple[CbrPlan, CbrRetainResult]:
-    """Retain rows from the live Dataset by index (holdout indices refused)."""
+    """Retain rows that are already in the dataset, named by index.
+
+    A convenience over :func:`retain_cbr` for the common case where the newly
+    resolved cases are rows you already have — labelled after the fact, or
+    corrected. Pulls them from the dataset and hands them over with the same
+    guards applied.
+
+    Parameters
+    ----------
+    dataset:
+        The source data.
+    plan:
+        The fitted reasoner.
+    split_plan:
+        Partition membership, used for the holdout check.
+    row_indices:
+        Which rows to retain. Must all exist in the dataset.
+    source_disclosure:
+        Mandatory, non-empty. Where the labels came from.
+
+    Returns
+    -------
+    tuple
+        ``(plan, result)`` — the extended plan and the retention report.
+
+    Raises
+    ------
+    ValidationError
+        If ``row_indices`` is empty, any index is absent from the dataset, or
+        any names a validation or test row.
+
+    Notes
+    -----
+    **Naming a holdout index still fails.** Convenience does not relax the
+    guard; the check happens in :func:`retain_cbr` either way.
+
+    **The solution comes from the plan's target column**, so these rows must
+    already carry a resolved outcome.
+
+    See Also
+    --------
+    retain_cbr : The general form, for cases from outside the dataset.
+    """
     if not row_indices:
         raise ValidationError("row_indices must be non-empty.")
     frame = dataset._ensure_pandas()

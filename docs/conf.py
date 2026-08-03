@@ -34,8 +34,42 @@ extensions = [
     "myst_parser",
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.intersphinx",
     "sphinx_rtd_theme",
 ]
+
+# BuildML docstrings are NumPy style (see the docstring standard in
+# CONTRIBUTING.md). Without napoleon, autodoc renders "Parameters/Returns"
+# headings as literal text instead of parameter tables.
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_special_with_doc = True
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_preprocess_types = True
+
+# Session methods are two-line delegations to `buildml.session.*_ops`; the
+# signature plus docstring is the whole user-facing surface, so keep both.
+autodoc_typehints = "description"
+autodoc_member_order = "bysource"
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": False,
+    "show-inheritance": True,
+}
+
+# Lets `:class:`pandas.DataFrame`` and friends resolve to upstream docs rather
+# than rendering as dead literals.
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    "sklearn": ("https://scikit-learn.org/stable/", None),
+}
+# Read the Docs builds must not fail when an inventory host is unreachable.
+intersphinx_timeout = 10
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

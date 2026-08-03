@@ -38,12 +38,13 @@ silent gaps (no weights in a checkpoint, no dataset in a pipeline).
 | Symbolic bundle | `save_symbolic_bundle` / `load_symbolic_bundle` | `SymbolicPlan` / `NeuroSymbolicPlan` (rule KB ± sklearn hybrid) | Dataset, splits, Prolog/Z3, AGI reasoner, fuzzy product |
 | CBR bundle | `save_cbr_bundle` / `load_cbr_bundle` | `CbrPlan` (train case memory + metric/reuse config) | Dataset, splits, RAG corpus, vector DB product |
 | Imitation bundle | `save_imitation_bundle` / `load_imitation_bundle` | `ImitationPlan` (behavioral cloning policy) | Dataset, splits, inverse RL / robotics stack |
-| RL bundle | `save_rl_bundle` / `load_rl_bundle` | `RlPlan` (contextual bandit or Gymnasium REINFORCE-lite) | Dataset, splits, MuJoCo / multi-agent platform |
+| RL bundle | `save_rl_bundle` / `load_rl_bundle` | `RlPlan` (contextual bandit, tabular Q-table, Gymnasium REINFORCE-lite, or SB3) | Dataset, splits, MuJoCo / multi-agent platform |
 | TDA bundle | `save_tda_bundle` / `load_tda_bundle` | `TdaPlan` (ripser/persim vectorizer + train NN + optional head) | Dataset, splits, Mapper research suite, every TDA paper |
 | Recommender bundle | `save_recommender_bundle` / `load_recommender_bundle` | `RecommenderPlan` (train catalog + matrix + similarities/factors) | Dataset, splits, Netflix-scale platform, RAG corpus, EDA Findings |
 | Ranker (LTR) bundle | `save_ranker_bundle` / `load_ranker_bundle` | `RankerPlan` (feature contract + pointwise/pairwise estimator) | Dataset, splits, search-engine product, RAG corpus, recommender catalog |
 | KG bundle | `save_kg_bundle` / `load_kg_bundle` | `KgPlan` (train vocab + TransE/DistMult embeddings + adjacency) | Dataset, splits, Neo4j, Graph ML node-classify, RAG |
 | Decision bundle | `save_decision_bundle` / `load_decision_bundle` | `DecisionPlan` (threshold / cost matrix / allocation rules) | Dataset, splits, general OR / MIP platform, Optuna HPO |
+| NLP bundle | `save_nlp_bundle` / `load_nlp_bundle` | `NlpTextPlan` (normalization recipe + train-fitted representation + head) ± `NlpTopicPlan` | Dataset, splits, RAG corpus, Torch fine-tuning checkpoint, downloaded encoder weights |
 | AI transcript | `save_ai_transcript` / `load_ai_transcript` | conversation, tool calls, egress manifests | API keys; raw rows unless FULL_SAMPLE opt-in |
 | TorchServe pack | `pack_torchserve` | directory recipe for operator-owned TorchServe | Running server |
 | TensorRT plan | `prepare_tensorrt_export` | `trtexec` plan files | Built `.engine` (operator builds) |
@@ -69,6 +70,7 @@ Schemas to remember: `buildml.torch_bundle.v1`, `buildml.rag_bundle.v1`,
 `buildml.ranker_bundle.v1`,
 `buildml.kg_bundle.v1`,
 `buildml.decision_bundle.v1`,
+`buildml.nlp_bundle.v1`,
 `buildml.ai_transcript.v1`.
 
 ---

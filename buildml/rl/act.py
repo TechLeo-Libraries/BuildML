@@ -1,4 +1,28 @@
-"""Act / choose actions under a fitted RL policy."""
+"""Ask a fitted policy what to do.
+
+Fitting produces a policy; this is where you use it. What you pass in depends on
+the mode, and the difference is not arbitrary. A contextual bandit reads
+situations off a table, so you give it a partition. An environment policy reads
+observation vectors, which have no tabular equivalent, so you give it
+observations directly.
+
+Every action comes back with the scores behind it, and reading those is usually
+more informative than reading the action. Four arms scoring 0.51, 0.50, 0.50,
+0.49 mean the policy has essentially no preference, which the chosen action
+alone would not tell you.
+
+The ``deterministic`` flag is the one real decision here. Deterministic acting
+always takes the highest-scoring action and is what you want when serving:
+reproducible, and it exploits what has been learned. Stochastic acting samples,
+which keeps exploring — necessary if the log you collect will be used to train
+the next policy, because a deterministic policy generates data about one action
+per context and nothing about the alternatives.
+
+See Also
+--------
+buildml.rl.fit : Producing the policy.
+buildml.rl.evaluate : Scoring the policy rather than running it.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +38,7 @@ from buildml.rl.bandit import LinUCBPolicy, RewardModelBandit
 from buildml.rl.features import decode_discrete_actions, matrix_from_frame
 from buildml.rl.gym_reinforce import LinearSoftmaxPolicy, act_gym_observation
 from buildml.rl.results import RlActResult, RlPlan
+from buildml.rl.tabular import TabularValuePolicy, act_tabular_observation
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -28,9 +53,80 @@ def act_rl(
     deterministic: bool = True,
     random_state: int | None = 0,
 ) -> RlActResult:
-    """Choose actions for a tabular partition (bandit) or raw observations (gym)."""
+    """Choose an action for each situation you give the policy.
+
+    Dispatches on the plan's mode. Bandit plans read situations from a dataset
+    partition; environment plans read observation vectors from
+    ``observations``.
+
+    Parameters
+    ----------
+    dataset:
+        The table of situations, for ``'contextual_bandit'``. Not used by the
+        environment modes.
+    plan:
+        The fitted policy from :func:`~buildml.rl.fit.fit_rl`.
+    split_plan:
+        Required when a bandit plan is scoped to a partition other than
+        ``'all'``.
+    partition:
+        Which rows to act on, for bandit plans.
+    observations:
+        Observation vectors for the environment modes: a 2-D array of rows, or
+        a single 1-D vector, which is treated as one observation. For a
+        ``Discrete`` observation space under ``'tabular_q'``, pass the state
+        indices themselves.
+    deterministic:
+        ``True`` (default) always takes the best-scoring action. ``False``
+        samples, which keeps exploring — use it when the resulting log will
+        train the next policy.
+    random_state:
+        Seed for stochastic acting. Ignored when ``deterministic`` is ``True``.
+
+    Returns
+    -------
+    RlActResult
+        The chosen actions plus their per-action scores. Bandit actions come
+        back as the original action labels rather than internal codes.
+
+    Raises
+    ------
+    ValidationError
+        If the mode is unsupported, if a bandit plan is given no dataset, if a
+        partition is requested without a split plan, if an environment plan is
+        given no observations, or if the plan's stored policy does not match
+        its declared mode.
+
+    Notes
+    -----
+    **Scores mean different things per mode, and are not comparable across
+    them.** LinUCB reports upper confidence bounds — an optimistic estimate,
+    deliberately inflated for arms it has seen little of. Epsilon-greedy and
+    softmax report predicted rewards. Policy-gradient modes report action
+    probabilities summing to 1.0. Tabular control reports Q-values, which are
+    discounted future-return estimates.
+
+    An empty bandit partition returns an empty result rather than raising.
+
+    Examples
+    --------
+    >>> result = act_rl(dataset, plan, split_plan, partition="test")  # doctest: +SKIP
+    >>> result.actions[:3], result.scores[0]  # doctest: +SKIP
+    (('offer_b', 'offer_a', 'offer_b'), (0.41, 0.62, 0.33, 0.29))
+
+    See Also
+    --------
+    buildml.rl.evaluate.evaluate_rl : What this policy is estimated to earn.
+    """
     if plan.mode == "gym_reinforce":
         return _act_gym(
+            plan,
+            observations=observations,
+            deterministic=deterministic,
+            random_state=random_state,
+        )
+    if plan.mode == "tabular_q":
+        return _act_tabular(
             plan,
             observations=observations,
             deterministic=deterministic,
@@ -156,6 +252,55 @@ def _act_gym(
         scores=tuple(scores),
         disclosures=(
             "Actions chosen by a Gymnasium REINFORCE-lite linear softmax policy.",
+        ),
+    )
+
+
+def _act_tabular(
+    plan: RlPlan,
+    *,
+    observations: Sequence[Any] | np.ndarray | None,
+    deterministic: bool,
+    random_state: int | None,
+) -> RlActResult:
+    if observations is None:
+        raise ValidationError(
+            "tabular_q act_rl requires observations=... "
+            "(state indices for Discrete envs, or observation vectors for Box envs)."
+        )
+    policy = plan.policy_
+    if not isinstance(policy, TabularValuePolicy):
+        raise ValidationError("tabular_q plan is missing a TabularValuePolicy.")
+    arr = np.asarray(observations, dtype=float)
+    if policy.discretizer.kind == "discrete":
+        rows: list[Any] = [float(v) for v in arr.reshape(-1).tolist()]
+    else:
+        if arr.ndim == 1:
+            arr = arr.reshape(1, -1)
+        rows = list(arr)
+    actions: list[Any] = []
+    scores: list[tuple[float, ...]] = []
+    for i, obs in enumerate(rows):
+        action, q_values = act_tabular_observation(
+            policy,
+            obs,
+            random_state=None if random_state is None else int(random_state) + i,
+            deterministic=deterministic,
+        )
+        actions.append(action)
+        scores.append(q_values)
+    return RlActResult(
+        partition=None,
+        mode=plan.mode,
+        n_rows=len(actions),
+        actions=tuple(actions),
+        scores=tuple(scores),
+        disclosures=(
+            f"Actions chosen greedily from a tabular {policy.algorithm} Q-table."
+            if deterministic
+            else f"Actions sampled epsilon-greedily from a tabular "
+            f"{policy.algorithm} Q-table.",
+            "Scores are Q(s, a) action values for the discretized state.",
         ),
     )
 

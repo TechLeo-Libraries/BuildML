@@ -1,4 +1,29 @@
-"""Persist fitted preprocess plans with an estimator as one pipeline bundle."""
+"""Save the model *and* the transforms it was trained on, as one artifact.
+
+Saving an estimator by itself is the most common way a model that worked in
+training fails in production. The estimator learned from data that had been
+imputed with training medians, encoded with training categories, and scaled by
+training statistics. Hand it a raw row and it will happily return a number that
+means nothing, because nothing checked that the row was prepared the same way.
+
+A pipeline bundle is the estimator plus every fitted plan needed to prepare a
+row, plus a schema contract describing what the input must look like, plus a
+model card recording where it came from. Restoring it restores the whole path
+from a raw record to a prediction.
+
+The layout is a directory: ``model.joblib``, ``plans.joblib``, ``meta.json``,
+``schema_contract.json``, and the model card in both JSON and Markdown. The card
+in Markdown is there so a human can read it without tooling.
+
+Both files carry format versions, and both loaders accept their predecessors, so
+a bundle written by an older BuildML keeps working.
+
+See Also
+--------
+buildml.pipeline.score : Turning a loaded bundle into predictions.
+buildml.pipeline.contract : What the input must look like, and enforcing it.
+buildml.checkpoint : The complementary artifact, for resuming rather than serving.
+"""
 
 from __future__ import annotations
 
@@ -55,7 +80,54 @@ CHECKPOINT_COMPATIBILITY = (
 
 @dataclass(slots=True)
 class PipelineBundle:
-    """Coherent fitted preprocess + estimator artifact."""
+    """Everything needed to turn a raw row into a prediction, in one object.
+
+    The plan fields are each ``None`` when that step was not part of training.
+    Their *order* matters and is not encoded here — it is fixed by
+    :func:`~buildml.pipeline.score.predict_from_pipeline`, which must apply them
+    exactly as they were applied during training. Scaling before encoding
+    produces different numbers than encoding before scaling.
+
+    Attributes
+    ----------
+    fit_result:
+        The estimator, its task, and the feature columns it expects in order.
+    impute_plan, encode_plan, scale_plan, date_plan:
+        The fitted transforms, each holding the values learned from training
+        data — the medians, the category maps, the means and scales. These are
+        what make a prediction reproducible.
+    outlier_plan, binning_plan, feature_select_plan:
+        As above — outlier handling, binning, and feature selection.
+    text_plan, reduce_plan, custom_plan:
+        As above — text featurisation, dimensionality reduction, and any
+        user-supplied transform.
+    resample_plan:
+        Kept for lineage only. Resampling rewrites training rows to rebalance
+        classes; there is nothing to apply at inference, and applying it would
+        be wrong. Recorded so the model card can say the model was trained on
+        resampled data, which changes how its probabilities should be read.
+    model_card:
+        Provenance — data, metrics, history, and limitations.
+    schema_contract:
+        What an input frame must contain, checked at score time.
+    plans_format, bundle_format:
+        Version labels, so a future loader knows what it is reading.
+
+    Notes
+    -----
+    **A bundle is not a checkpoint.** It holds no data rows, no split indices,
+    and no full session history, so it cannot resume an analysis. Save both when
+    a run needs to be both resumable and deployable.
+
+    **The plans hold statistics computed from training data**, which is what
+    makes them safe. Refitting them on incoming data at score time would
+    reintroduce exactly the drift the bundle exists to prevent.
+
+    See Also
+    --------
+    save_pipeline_bundle : Writing one.
+    load_pipeline_bundle : Reading one back.
+    """
 
     fit_result: FitResult
     impute_plan: SimpleImputePlan | None = None
@@ -75,6 +147,28 @@ class PipelineBundle:
     bundle_format: str = BUNDLE_FORMAT
 
     def to_meta(self) -> dict[str, Any]:
+        """Describe the bundle as JSON, for ``meta.json``.
+
+        This is the human-readable index of the bundle. The plans appear here as
+        dictionaries — their configuration and learned values — while the
+        objects that actually do the work live in ``plans.joblib``. Anyone can
+        read ``meta.json`` to see what a bundle contains and what it was trained
+        with, without unpickling anything.
+
+        Returns
+        -------
+        dict
+            The format versions, the BuildML version that wrote it, the fit
+            summary, each plan as a dictionary or ``None``, flags for the card
+            and contract, and the compatibility note explaining how bundles
+            relate to checkpoints.
+
+        Notes
+        -----
+        **The model card and contract are flagged, not embedded.** They have
+        their own files, and duplicating them here would create two copies that
+        could disagree.
+        """
         return {
             "format": self.bundle_format,
             "plans_format": self.plans_format,
@@ -114,7 +208,46 @@ def pack_plans_payload(
     custom_plan: CustomTransformPlan | None = None,
     resample_plan: ResamplePlan | None = None,
 ) -> dict[str, Any]:
-    """Wrap plan objects in the versioned ``plans.joblib`` envelope."""
+    """Wrap the plan objects in a versioned envelope before pickling them.
+
+    The envelope is the reason old bundles keep loading. A bare dictionary of
+    plans has no way to say which layout it uses, so adding or renaming a plan
+    kind later becomes a guessing game for the loader. Recording a format label
+    and the writing version alongside the plans makes migration mechanical.
+
+    Every plan key is present in the payload even when its value is ``None``, so
+    a reader sees the full set of possible steps rather than inferring absence
+    from a missing key.
+
+    Parameters
+    ----------
+    impute_plan, encode_plan, scale_plan, date_plan:
+        The fitted transforms to store, each ``None`` when that step was not
+        used.
+    outlier_plan, binning_plan, feature_select_plan:
+        As above — outlier handling, binning, and feature selection.
+    text_plan, reduce_plan, custom_plan:
+        As above — text featurisation, dimensionality reduction, and any
+        user-supplied transform.
+    resample_plan:
+        Stored for lineage only; never applied at inference.
+
+    Returns
+    -------
+    dict
+        ``{'format', 'buildml_version', 'plans': {...}}``, ready for
+        :func:`joblib.dump`.
+
+    Notes
+    -----
+    **The plans are stored as live objects, not serialised dictionaries**, which
+    is why this goes through joblib rather than JSON — the transforms have to be
+    callable again after loading.
+
+    See Also
+    --------
+    unpack_plans_payload : The inverse, including the migration path.
+    """
     return {
         "format": PLANS_FORMAT,
         "buildml_version": __version__,
@@ -135,10 +268,47 @@ def pack_plans_payload(
 
 
 def unpack_plans_payload(loaded: Any) -> tuple[dict[str, Any], str]:
-    """Normalize a ``plans.joblib`` payload to a flat plan dict + format label.
-    Accepts:
-    - v2 envelope ``{format, buildml_version, plans: {...}}``
-    - v1 / unversioned flat dict with ``*_plan`` keys
+    """Read either payload layout and return one shape, plus which it was.
+
+    Two layouts exist in the wild. The current one is the versioned envelope
+    written by :func:`pack_plans_payload`. The older one is a flat dictionary
+    with the plan keys at the top level, written before versioning existed.
+    Both are accepted and normalised to the same result, so callers never branch
+    on the layout.
+
+    The format label is returned rather than discarded because it belongs in the
+    loaded bundle: knowing an artifact came from an older writer is useful when
+    a prediction looks wrong.
+
+    Parameters
+    ----------
+    loaded:
+        Whatever :func:`joblib.load` produced from ``plans.joblib``. Typed
+        loosely because that is genuinely unknown until inspected.
+
+    Returns
+    -------
+    tuple of (dict, str)
+        The plan dictionary with every key present — missing plans as ``None``
+        — and the detected format label.
+
+    Raises
+    ------
+    ValidationError
+        If the payload is not a mapping, carries an unrecognised format label,
+        or is a mapping with no plan keys at all. The last case is the one worth
+        failing on: a payload that yielded silently empty plans would produce a
+        bundle that predicts from raw, unprepared rows.
+
+    Notes
+    -----
+    **The empty-plan template is applied first, then updated.** This guarantees
+    the full key set regardless of which layout was read, so downstream code can
+    index without ``get``.
+
+    See Also
+    --------
+    pack_plans_payload : The writer.
     """
     empty = {
         "impute_plan": None,
@@ -200,22 +370,108 @@ def save_pipeline_bundle(
     metrics: dict[str, dict[str, float]] | None = None,
     title: str | None = None,
 ) -> Path:
-    """Save a pipeline bundle directory.
+    """Write the estimator, its transforms, a contract, and a card to a directory.
 
-    Layout
+    The one call that turns a fitted model into something deployable. Beyond
+    writing the files, it derives two things you would otherwise have to supply.
+
+    The schema contract is inferred from the plans: each fitted transform knows
+    which columns it consumes, so the union of those is what an input frame must
+    provide. When no plans were used, the estimator's own feature columns become
+    the contract. Either way, a score-time frame can be checked before it
+    reaches the model, and a missing or misnamed column becomes a clear error
+    rather than a wrong prediction.
+
+    The model card is built from the fit result, the plan summaries, and
+    whatever history and metrics were passed. Providing ``metrics`` and
+    ``history`` is worth the effort — six months on, a card that records what
+    the model scored and how it got there is the difference between trusting an
+    artifact and rebuilding it.
+
+    Parameters
+    ----------
+    path:
+        The destination directory, created if missing. An existing bundle is
+        overwritten file by file, so a partial failure can leave a mixed
+        directory; write to a fresh path when that matters.
+    fit_result:
+        The fitted estimator with its task and feature columns. Required.
+    impute_plan, encode_plan, scale_plan, date_plan:
+        The fitted transforms to save. Omitting one that was used in training
+        produces a bundle that silently under-prepares its inputs, which is the
+        main way to get a bundle wrong.
+    outlier_plan, binning_plan, feature_select_plan:
+        As above — outlier handling, binning, and feature selection.
+    text_plan, reduce_plan, custom_plan:
+        As above — text featurisation, dimensionality reduction, and any
+        user-supplied transform.
+    resample_plan:
+        Recorded for lineage, never replayed at inference.
+    model_card:
+        A card to use as-is. When omitted, one is built.
+    dataset_schema:
+        Column dtypes at training time, used for the contract's type
+        expectations and recorded on the card.
+    roles:
+        Column roles at training time, recorded on the contract.
+    input_columns:
+        Override the inferred input columns. Rarely needed — inference from the
+        plans is usually more accurate than a hand-written list, which drifts.
+    schema_contract:
+        A contract to use as-is instead of building one.
+    history:
+        The operation log, for the card's provenance section.
+    metrics:
+        Scores by partition, for example ``{'test': {'roc_auc': 0.84}}``.
+        Recorded on the card as the model's stated performance.
+    title:
+        A human-readable name for the card.
+
+    Returns
+    -------
+    Path
+        The bundle directory.
+
+    Raises
     ------
-    ``model.joblib``, ``plans.joblib`` (``buildml.plans.v2``), ``meta.json``
-    (``buildml.pipeline_bundle.v2``), ``schema_contract.json``,
-    ``model_card.json``, ``model_card.md``.
+    ValidationError
+        If ``fit_result`` is ``None``. There is no meaningful bundle without an
+        estimator.
+    OSError
+        If the directory cannot be created or written.
 
     Notes
     -----
-    A pipeline bundle is not a Session checkpoint. Checkpoints restore data,
-    roles, splits, history, and optional plan metadata; pipeline bundles restore
-    fitted transforms and the estimator feature contract. Resample plans are
-    stored for lineage only — resampling is a train-row rewrite, not an
-    inference-time transform. Older bundles without ``schema_contract.json``
-    remain loadable; score-time contract checks are skipped with a warning.
+    **The contract is only as good as the plans you pass.** Inferred input
+    columns come from the plans that are present, so an omitted plan narrows the
+    contract as well as skipping a transform.
+
+    **A bundle does not carry data or splits.** For resuming an analysis, save a
+    checkpoint alongside it.
+
+    **Old bundles without ``schema_contract.json`` still load**, with score-time
+    checks skipped and a warning. New bundles always write one.
+
+    Examples
+    --------
+    Save a fitted model with everything needed to serve and to audit it::
+
+        save_pipeline_bundle(
+            "artifacts/churn-v3",
+            fit_result=fit,
+            impute_plan=impute,
+            encode_plan=encode,
+            scale_plan=scale,
+            dataset_schema=dataset.schema.to_dict(),
+            metrics={"test": evaluation.metrics},
+            history=session.history(),
+            title="Churn model v3",
+        )
+
+    See Also
+    --------
+    load_pipeline_bundle : Reading it back.
+    buildml.pipeline.score.predict_from_pipeline : Using it.
     """
     if fit_result is None:
         raise ValidationError("fit_result is required to save a pipeline bundle")
@@ -326,11 +582,50 @@ def save_pipeline_bundle(
 
 
 def load_pipeline_bundle(path: str | Path) -> PipelineBundle:
-    """Load a pipeline bundle saved by :func:`save_pipeline_bundle`.
+    """Restore an estimator together with the transforms it depends on.
 
-    Reads ``buildml.pipeline_bundle.v2`` and migrates older v1 / unversioned
-    ``meta.json`` plus flat ``plans.joblib`` payloads. Missing
-    ``schema_contract.json`` is tolerated for legacy bundles.
+    Reads the current format and migrates the older ones, so a bundle written by
+    a previous BuildML still loads. The only hard requirements are
+    ``model.joblib`` and ``meta.json``; a bundle missing either is incomplete
+    and rejected rather than partially restored.
+
+    Everything else degrades. Missing plans give a bundle with ``None`` in those
+    slots — correct for a model trained without them, and wrong for one whose
+    plans were lost, which is why the plan set is worth checking against the
+    card. A missing contract disables score-time validation with a warning.
+
+    Parameters
+    ----------
+    path:
+        The bundle directory.
+
+    Returns
+    -------
+    PipelineBundle
+        The estimator, the fitted plans, the card and contract when present, and
+        the detected format labels.
+
+    Raises
+    ------
+    ValidationError
+        If ``model.joblib`` or ``meta.json`` is absent, if the metadata carries
+        an unrecognised format with no recoverable fit section, or if
+        ``plans.joblib`` holds an unreadable payload.
+
+    Notes
+    -----
+    **Loading unpickles an estimator, which executes code.** Only load bundles
+    from a source you trust — this is a property of joblib and pickle, not of
+    BuildML.
+
+    **A version mismatch in scikit-learn may warn or fail.** Estimators are
+    pickled objects tied to the library that created them; record the
+    environment alongside the artifact when it has to survive an upgrade.
+
+    See Also
+    --------
+    save_pipeline_bundle : Writing one.
+    buildml.pipeline.score.predict_from_pipeline : Predicting from one.
     """
     root = Path(path)
     model_path = root / "model.joblib"

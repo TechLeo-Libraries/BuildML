@@ -1,4 +1,25 @@
-"""Launch helpers for BuildML managed model serving."""
+"""Start a server for a bundle, with the unsafe defaults refused up front.
+
+The app in :mod:`buildml.serving.app` is a FastAPI object. Getting it running is
+this module's job, and the interesting part is what it refuses to do.
+
+Binding to ``0.0.0.0`` without authentication exposes an unauthenticated
+prediction endpoint to every host that can route to the machine, and it is the
+kind of thing that happens by copying a command from a tutorial. That
+combination raises rather than starting. Localhost stays open, because that is a
+development loop and adding friction there teaches nothing. An explicit override
+exists for the case where a reverse proxy really is handling auth, and it is
+named to be conspicuous in a code review.
+
+A server also starts by default in a background thread, so a notebook stays
+usable and the handle can be stopped again. Blocking mode is there for
+containers, where the process should not exit.
+
+See Also
+--------
+buildml.serving.app.create_serving_app : The app being served.
+buildml.serving.cli : The command-line entry point onto this.
+"""
 
 from __future__ import annotations
 
@@ -14,12 +35,58 @@ from buildml.serving.app import BundleKind, clear_serving_state, create_serving_
 
 
 class ServingLaunchError(BuildMLError):
-    """Raised when the managed serving process cannot bind or start."""
+    """Raised when the server cannot take the port or dies during startup.
+
+    Separate from :class:`~buildml.core.errors.ValidationError` because the
+    request was valid and the environment refused it — the port is taken, the
+    address is not assignable, or the thread exited before the server reported
+    itself started. Nothing in the calling code is wrong; something outside it
+    has to change.
+    """
 
 
 @dataclass(slots=True)
 class ServeHandle:
-    """Handle for a running local model server thread."""
+    """A running background server, and the means to stop it.
+
+    Returned by :func:`serve_bundle` in non-blocking mode. Holding it matters:
+    the thread is a daemon, so losing the reference leaves a server bound to a
+    port with no way to shut it down short of ending the process.
+
+    Attributes
+    ----------
+    host, port:
+        Where the server bound.
+    url:
+        The base URL, with the scheme reflecting whether TLS was configured, so
+        it can be handed straight to a client.
+    kind:
+        Which artifact kind is being served.
+    path:
+        The artifact location, for tracing a running server back to a file.
+    tls:
+        Whether local HTTPS is in effect.
+
+    Notes
+    -----
+    **Always stop the handle when finished.** In a notebook this is what frees
+    the port for the next run; :meth:`stop` also clears the loaded bundle, which
+    releases the model.
+
+    Examples
+    --------
+    Serve, use, and stop::
+
+        handle = serve_bundle("artifacts/churn-pipeline", port=8123)
+        try:
+            requests.get(handle.url + "/health").json()
+        finally:
+            handle.stop()
+
+    See Also
+    --------
+    serve_bundle : Producing this.
+    """
 
     host: str
     port: int
@@ -31,7 +98,22 @@ class ServeHandle:
     tls: bool = False
 
     def stop(self) -> None:
-        """Stop the background uvicorn server and clear serving state."""
+        """Ask the server to exit, wait briefly, and release the loaded bundle.
+
+        Signals uvicorn to stop accepting connections and finish what it is
+        handling, then joins the thread with a five-second timeout and clears
+        the process-global serving state so the model can be collected.
+
+        Notes
+        -----
+        **The join times out rather than hanging.** A request still in flight
+        after five seconds leaves the thread running; since it is a daemon, it
+        will not keep the interpreter alive. The bundle is cleared either way,
+        so a straggling request may fail — which is the right trade for a stop
+        that always returns.
+
+        **Calling this twice is harmless.**
+        """
         server = self._server
         if server is not None:
             server.should_exit = True
@@ -41,6 +123,20 @@ class ServeHandle:
 
     @property
     def is_running(self) -> bool:
+        """Report whether the server thread is still alive.
+
+        Returns
+        -------
+        bool
+            ``True`` while the thread runs.
+
+        Notes
+        -----
+        **A live thread is not the same as a ready server.** The thread starts
+        before uvicorn finishes binding, and :func:`serve_bundle` already waits
+        for readiness before returning — so use this to detect a server that has
+        *stopped*, and ``/health`` to confirm one that is *working*.
+        """
         return self._thread.is_alive()
 
 
@@ -112,33 +208,113 @@ def serve_bundle(
     ssl_certfile: str | Path | None = None,
     ssl_keyfile: str | Path | None = None,
 ) -> ServeHandle:
-    """Serve a classical pipeline or TorchScript bundle over HTTP(S).
+    """Load a bundle and start serving it, refusing the unsafe configurations.
+
+    Validates the bind target, refuses a public bind without keys, confirms the
+    port is free, loads the artifact, and starts uvicorn. In the default
+    non-blocking mode it waits until the server reports itself started before
+    returning, so a successful return means the endpoint is live rather than
+    merely scheduled.
+
+    The checks run in order of how cheap they are to fail. A bad port number is
+    rejected before the artifact is read; a taken port is found before the model
+    is loaded into memory.
 
     Parameters
     ----------
     path:
-        Pipeline bundle directory or TorchScript file.
+        The pipeline bundle directory or TorchScript file to serve.
     kind:
-        ``pipeline`` (classical ``buildml.pipeline_bundle``) or ``torchscript``.
-    host, port:
-        Bind address. **Defaults to localhost**.
-    api_keys:
-        Optional API key(s) enabling Bearer / ``X-API-Key`` middleware.
-        Still not a managed IAM / cloud auth product. **Required** for
-        non-loopback binds unless ``allow_insecure_public_bind=True``.
-    allow_insecure_public_bind:
-        Loud opt-in to bind ``0.0.0.0`` / other non-loopback hosts without
-        ``api_keys``. Prefer API keys + reverse-proxy TLS instead.
-    ssl_certfile, ssl_keyfile:
-        Optional local PEM paths for uvicorn HTTPS. Both required together.
-        Library-owned local TLS only — not managed certificate infrastructure.
+        ``'pipeline'`` or ``'torchscript'``.
+    host:
+        The bind address, defaulting to loopback. Anything else triggers the
+        security check below.
+    port:
+        The TCP port, 1 to 65535. Tested for availability before loading, so a
+        clash fails in a second rather than after the model is read.
+    title:
+        The name shown in the docs page and health response.
     blocking:
-        If True, run uvicorn on the current thread.
+        Run uvicorn on the calling thread and never return until it stops. Use
+        this in a container, where the process must stay alive. The default runs
+        in a background thread, which keeps a notebook usable.
+    map_location:
+        Device placement for TorchScript.
+    api_keys:
+        One key or several, enabling the Bearer and ``X-API-Key`` middleware.
+        Required for any non-loopback bind.
+    allow_insecure_public_bind:
+        Bind a public address with no keys at all. Named at length because it
+        should be conspicuous in review. Only defensible when something in front
+        — a proxy, a service mesh — is doing the authentication.
+    ssl_certfile:
+        A PEM certificate for local HTTPS. Must be paired with ``ssl_keyfile``.
+    ssl_keyfile:
+        The matching PEM private key. Must be paired with ``ssl_certfile``.
+
+    Returns
+    -------
+    ServeHandle
+        The running server. Keep it: it is the only way to stop the thread.
+
+    Raises
+    ------
+    ValidationError
+        If the host is empty or the port out of range; if a non-loopback host is
+        requested without keys and without the override; if only one of the two
+        TLS files is given, or either does not exist; or if the artifact cannot
+        be loaded.
+    MissingExtraError
+        If uvicorn or FastAPI is missing. Install with ``pip install
+        'buildml[serve]'``.
+    ServingLaunchError
+        If the port cannot be bound, or the server thread exits during the
+        ten-second startup window — usually a failure inside uvicorn's own
+        startup, such as an unreadable certificate.
 
     Notes
     -----
-    Prefer TLS + auth at a reverse proxy for any non-local exposure.
-    This is a library-owned local server, not a Kubernetes multi-cluster product.
+    **A non-loopback bind without keys is refused, not warned about.** An
+    unauthenticated prediction endpoint on ``0.0.0.0`` is reachable from
+    anywhere that can route to the host, and a warning in a log is not a
+    control. Supply ``api_keys``, or state the override explicitly.
+
+    **The TLS support here is genuinely local.** Uvicorn will terminate HTTPS
+    with the PEM files you give it, and that is all — no certificate issuance,
+    renewal, or rotation. For anything that outlives an afternoon, terminate TLS
+    at a proxy.
+
+    **Local HTTPS with a self-signed certificate needs client cooperation.**
+    Most clients reject it by default; ``verify=False`` is the usual local
+    workaround and should not follow the code anywhere else.
+
+    Examples
+    --------
+    A development server on localhost::
+
+        handle = serve_bundle("artifacts/churn-pipeline", port=8123)
+        try:
+            print(handle.url)
+        finally:
+            handle.stop()
+
+    Reachable from other hosts, and therefore authenticated::
+
+        handle = serve_bundle(
+            "artifacts/churn-pipeline",
+            host="0.0.0.0",
+            port=8080,
+            api_keys=["rotate-me-2026-q1"],
+        )
+
+    In a container, holding the process open::
+
+        serve_bundle("/models/churn", host="0.0.0.0",
+                     api_keys=os.environ["SERVE_KEY"], blocking=True)
+
+    See Also
+    --------
+    buildml.serving.app.create_serving_app : Building the app without serving.
     """
     _validate_bind_target(host, port)
     _ensure_bind_security(

@@ -1,4 +1,27 @@
-"""Score-time prediction through a saved pipeline bundle."""
+"""Take a raw frame through the saved transforms and out as predictions.
+
+The path from a raw record to a prediction has several places to go wrong, and
+this module walks all of them in order: coerce the incoming types toward what
+the contract expects, validate what is left, replay each fitted transform in the
+order it was applied during training, confirm the estimator's feature columns
+are all present, then predict.
+
+Each step exists because skipping it produces a wrong answer rather than an
+error. Types that were not coerced silently become object columns. Transforms
+that were not replayed leave raw values where scaled ones belong. Feature
+columns that do not match leave the estimator reading the wrong column as the
+wrong feature.
+
+Warnings accumulate through the process rather than being raised, because most
+of them are informative rather than fatal — extra columns ignored, a resample
+plan skipped, a coercion applied. They are worth reading on the first run
+against a new data source.
+
+See Also
+--------
+buildml.pipeline.bundle : The artifact being scored from.
+buildml.pipeline.contract : The checks applied before predicting.
+"""
 
 from __future__ import annotations
 
@@ -22,7 +45,49 @@ from buildml.preprocess.apply import ApplyPlansResult, apply_preprocess_plans
 
 @dataclass(slots=True)
 class PipelinePredictResult:
-    """Predictions from a loaded pipeline bundle on a new frame."""
+    """The predictions, and a record of everything that happened to get them.
+
+    The predictions are the answer; the rest is the audit trail. When a
+    production score looks wrong, ``warnings``, ``apply_result``, and
+    ``contract_validation`` together say what the frame arrived as, what was
+    changed, which transforms ran, and which were skipped.
+
+    Attributes
+    ----------
+    predictions:
+        The predicted values, indexed to match the input frame so they can be
+        joined back to source records.
+    probabilities:
+        Class probabilities as a frame with one ``proba_<class>`` column per
+        class, or ``None`` when not requested or unsupported.
+    apply_result:
+        What the transform replay did — which plans applied, which were skipped,
+        and why. ``None`` when no plans ran.
+    feature_columns:
+        The columns fed to the estimator, in order.
+    task:
+        ``'classification'`` or ``'regression'``.
+    warnings:
+        Everything non-fatal, gathered from coercion, validation, and replay.
+    n_rows:
+        How many predictions were produced.
+    contract_validation:
+        The schema check, including any coerced columns.
+
+    Notes
+    -----
+    **The index is preserved deliberately.** Predictions can be assigned
+    straight back onto the source frame without relying on positional
+    alignment.
+
+    **An empty ``warnings`` on a first run against a new source is worth as much
+    as a populated one.** It means the frame arrived exactly as the contract
+    expected.
+
+    See Also
+    --------
+    predict_from_pipeline : Producing this.
+    """
 
     predictions: pd.Series
     probabilities: pd.DataFrame | None = None
@@ -34,6 +99,24 @@ class PipelinePredictResult:
     contract_validation: SchemaContractValidation | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Summarise the run as plain data, without the predictions themselves.
+
+        The values are deliberately excluded. This is the record you log for
+        every scoring run — row counts, which transforms ran, what the contract
+        found — and writing the predictions into a log would be both enormous
+        and, for personal data, inappropriate.
+
+        Returns
+        -------
+        dict
+            Row count, task, feature columns, whether probabilities were
+            produced, the warnings, the applied and skipped plans, and the
+            contract validation.
+
+        Notes
+        -----
+        **Read ``predictions`` and ``probabilities`` from the attributes.**
+        """
         return {
             "n_rows": self.n_rows,
             "task": self.task,
@@ -56,7 +139,16 @@ def predict_from_pipeline(
     return_proba: bool = False,
     apply_plans: bool = True,
 ) -> PipelinePredictResult:
-    """Load a pipeline bundle and score a new frame in one call.
+    """Take a raw frame through coercion, validation, and replay to predictions.
+
+    The one call that gets from a record to an answer. It coerces incoming types
+    toward the contract, validates what remains and raises if the frame cannot
+    be scored, replays the fitted transforms in training order, checks the
+    estimator's feature columns are present, and predicts.
+
+    Accepts either a bundle directory or an already-loaded bundle. Pass the
+    loaded object when scoring repeatedly — reloading per batch re-reads and
+    re-unpickles the model every time.
 
     Parameters
     ----------
@@ -81,12 +173,54 @@ def predict_from_pipeline(
         Label predictions, optional probabilities, apply warnings, and the
         feature contract used.
 
+    Raises
+    ------
+    ValidationError
+        If ``data`` is neither a Dataset nor a DataFrame; if the frame fails
+        contract validation; if feature columns are still missing after replay;
+        if the frame has rows but no usable features; or if the estimator itself
+        fails during predict. The last case is wrapped rather than propagated,
+        because a bare scikit-learn shape error says nothing about which column
+        was wrong — the wrapped message names the expected contract.
+
     Notes
     -----
-    Resample plans are lineage-only and are never reapplied. When the bundle
-    includes ``schema_contract.json``, incoming frames are checked for missing
-    columns and dtype-family mismatches before prediction. Older bundles without
-    a contract remain usable; only the fitted feature-column check applies.
+    **A missing feature column after replay usually means an unseen category.**
+    The message distinguishes the two causes: plans that were never replayed
+    because ``apply_plans=False``, and plans that ran but produced a different
+    set of columns than at training time. The second is the common one in
+    production, and it happens when encoding meets a category the training data
+    did not contain.
+
+    **Resample plans are never replayed.** Resampling rewrites training rows to
+    rebalance classes; there is nothing to apply at inference. A warning records
+    that it was skipped.
+
+    **Extra columns are ignored, not rejected.** Only the fitted feature columns
+    are selected, so an upstream system may carry whatever else it likes.
+
+    **``return_proba`` on an estimator without ``predict_proba`` warns rather
+    than failing.** The predictions are still valid; the probabilities are
+    simply absent.
+
+    **Bundles without a contract still work**, with only the feature-column
+    check applied — which catches missing columns but not wrong types.
+
+    Examples
+    --------
+    Scoring a batch, and reading the audit trail::
+
+        bundle = load_pipeline_bundle("artifacts/churn-v3")
+        result = predict_from_pipeline(bundle, new_frame, return_proba=True)
+
+        frame["churn_risk"] = result.probabilities["proba_1"]
+        for message in result.warnings:
+            print(message)
+
+    See Also
+    --------
+    buildml.pipeline.bundle.load_pipeline_bundle : Loading once, scoring often.
+    buildml.pipeline.contract.validate_score_frame : Checking without scoring.
     """
     bundle = (
         path_or_bundle

@@ -1,4 +1,40 @@
-"""Fit RL policies: contextual bandit (core) or Gymnasium REINFORCE (optional)."""
+"""Learn a decision policy from rewards rather than from labels.
+
+Supervised learning is told the right answer. Reinforcement learning is not: it
+chooses an action, sees a reward, and has to work out which action was
+responsible. That gap is what makes it hard, and it is why this module offers
+four modes rather than one algorithm — they differ in what the world lets you
+do.
+
+**Contextual bandits** are the mode most tabular work needs, and the only one
+that runs without extra dependencies. Each row of a log records a situation, the
+action taken, and the reward observed. There is no sequence: the action does not
+change what happens next, so credit assignment is one step deep. Recommendation
+slots, offer selection, and treatment choice usually fit this shape. Learning is
+offline, from a fixed log, and holdout scoring is therefore an *estimate* of how
+an alternative policy would have performed — see :mod:`buildml.rl.evaluate` for
+what that estimate can and cannot support.
+
+The other three modes need an environment to interact with, because they handle
+sequential problems where an action changes the next situation.
+``'gym_reinforce'`` runs a linear-softmax policy gradient, ``'tabular_q'`` runs
+TD control over a discretised state table, and ``'gym_sb3'`` hands off to
+Stable-Baselines3. All three need ``buildml[rl]`` or ``buildml[rl-industry]``,
+and none of them read the Session's tabular partitions — they learn in the
+environment, and the Session merely holds the resulting policy so it can be
+checkpointed and resumed alongside the rest of your work.
+
+Two things are deliberately out of scope. This is not batch offline RL: CQL,
+IQL, and Decision Transformers learn a sequential policy from logged
+trajectories without an environment, and nothing here does that. Nor is it a
+robotics or multi-agent platform.
+
+See Also
+--------
+buildml.rl.evaluate : Offline estimators, and why they are estimates.
+buildml.rl.act : Choosing actions once a policy is fitted.
+buildml.rl.imitation : Copying a demonstrator when you have no reward signal.
+"""
 
 from __future__ import annotations
 
@@ -15,7 +51,15 @@ from buildml.rl.catalog import resolve_rl_backend_mode_algorithm
 from buildml.rl.features import encode_discrete_actions, matrix_from_frame, resolve_rl_columns
 from buildml.rl.gym_reinforce import train_gym_reinforce
 from buildml.rl.results import RlFitResult, RlPlan
-from buildml.rl.types import BanditAlgorithm, RlBackend, RlConfig, RlMode, Sb3Algorithm
+from buildml.rl.tabular import train_tabular_control
+from buildml.rl.types import (
+    BanditAlgorithm,
+    RlBackend,
+    RlConfig,
+    RlMode,
+    Sb3Algorithm,
+    TabularAlgorithm,
+)
 
 
 def fit_rl(
@@ -24,7 +68,7 @@ def fit_rl(
     *,
     backend: RlBackend | None = None,
     mode: RlMode | None = None,
-    algorithm: BanditAlgorithm | Sb3Algorithm | str = "linucb",
+    algorithm: BanditAlgorithm | TabularAlgorithm | Sb3Algorithm | str = "linucb",
     columns: list[str] | None = None,
     action_column: str | None = None,
     reward_column: str | None = None,
@@ -40,32 +84,161 @@ def fit_rl(
     learning_rate: float = 0.01,
     gamma: float = 0.99,
     total_timesteps: int = 20_000,
+    n_bins: int = 8,
+    epsilon_min: float = 0.01,
+    epsilon_decay: float = 0.995,
 ) -> tuple[RlPlan, RlFitResult]:
-    """Fit a Session-shaped RL policy.
+    """Learn a policy that chooses actions to earn reward.
 
-    Backends
-    --------
-    sklearn (default for bandits):
-        Contextual bandit on logged train rows.
-    native (``buildml[rl]``):
-        REINFORCE-lite linear softmax Gymnasium loop.
-    industry (``buildml[rl-industry]``):
-        Stable-Baselines3 PPO/DQN/A2C on Gymnasium envs.
+    One entry point for four different situations. Which one applies depends on
+    what you have: a log of past decisions and their outcomes, or an environment
+    you can interact with.
 
-    Modes
+    Parameters
+    ----------
+    dataset:
+        The logged table for ``'contextual_bandit'``. Ignored by the
+        environment modes, which learn from the environment instead — pass
+        ``None`` there.
+    split_plan:
+        Required for ``'contextual_bandit'``, so the policy is fitted on train
+        rows and can be estimated honestly on holdout ones. Ignored by the
+        environment modes.
+    backend:
+        ``'sklearn'`` for bandits, ``'native'`` for BuildML's own environment
+        loops, ``'industry'`` for Stable-Baselines3. Left unset, it follows
+        from the mode and algorithm.
+    mode:
+        Which problem you are solving. Inferred from the algorithm when not
+        given, so ``algorithm='q_learning'`` selects ``'tabular_q'`` on its own.
+    algorithm:
+        Within bandits: ``'linucb'`` (default) keeps an uncertainty estimate per
+        arm and explores the ones it is least sure about, which is the
+        principled choice when contexts are informative;
+        ``'epsilon_greedy'`` explores at a fixed rate, simpler and easier to
+        reason about; ``'softmax'`` explores in proportion to estimated reward.
+        Within tabular control: ``'q_learning'`` and ``'double_q_learning'``
+        learn the greedy policy's value while behaving exploratorily, whereas
+        ``'sarsa'`` and ``'expected_sarsa'`` learn the value of the policy they
+        actually follow — the latter matter when exploration itself is costly.
+        Within Stable-Baselines3: ``'ppo'``, ``'dqn'``, or ``'a2c'``.
+    columns:
+        Bandit context features. Defaults to the usable columns with the action
+        and reward columns excluded.
+    action_column:
+        The action taken in each logged row. Defaults to the Dataset target.
+    reward_column:
+        The reward observed. Falls back to a column literally named ``reward``,
+        or to a numeric target when the action came from elsewhere. When the
+        target *is* the action, this must be passed explicitly — quietly reusing
+        the target as its own reward would produce a meaningless policy.
+    alpha:
+        LinUCB exploration width. Higher values try under-explored arms more
+        readily.
+    epsilon:
+        Random-action probability for epsilon-greedy and for tabular
+        exploration.
+    temperature:
+        Softmax sharpness. Low values concentrate on the best arm.
+    random_state:
+        Seed. RL results vary widely across seeds; a single run is an anecdote.
+    prefer_reduce_components:
+        Use an attached dimensionality reduction for the context.
+    reduce_plan:
+        An explicit reduction plan.
+    env_id:
+        The Gymnasium environment for the environment modes.
+    n_episodes:
+        Training episodes for ``'gym_reinforce'`` and ``'tabular_q'``.
+    max_steps:
+        Per-episode step cap, so a non-terminating episode cannot hang the run.
+    learning_rate:
+        Step size for the environment modes.
+    gamma:
+        Discount factor. Near 1.0 values long-run reward; lower values make the
+        policy short-sighted.
+    total_timesteps:
+        Interaction budget for Stable-Baselines3.
+    n_bins:
+        Bins per observation dimension for ``'tabular_q'``. The state table
+        grows as ``n_bins ** obs_dim``, so this is what decides whether tabular
+        control is viable for a given environment.
+    epsilon_min / epsilon_decay:
+        Exploration schedule for tabular control: start at ``epsilon``, multiply
+        by ``epsilon_decay`` each episode, never fall below ``epsilon_min``.
+
+    Returns
+    -------
+    RlPlan
+        The fitted policy, ready for :func:`~buildml.rl.act.act_rl` and
+        :func:`~buildml.rl.evaluate.evaluate_rl`.
+    RlFitResult
+        What the fit saw: rows or episodes, arms, columns, and per-mode
+        training metrics.
+
+    Raises
+    ------
+    LeakageError
+        If a bandit fit is attempted without a train partition.
+    ValidationError
+        If the mode or algorithm is unknown, if a bandit fit is missing its
+        dataset, split plan, action column, or reward column, or if the reward
+        column is non-numeric or contains nulls.
+    MissingExtraError
+        If an environment mode is requested without ``buildml[rl]`` or
+        ``buildml[rl-industry]``.
+
+    Notes
     -----
-    contextual_bandit:
-        Train-only offline learning from logged (context, action, reward) rows.
-    gym_reinforce:
-        Optional Gymnasium REINFORCE-lite env loop (requires ``buildml[rl]``).
-    gym_sb3:
-        SB3 industry env loop (requires ``buildml[rl-industry]``).
+    **A bandit's training metrics are not a score.** ``mean_logged_reward`` is
+    what the *logging* policy earned, which is the baseline the new policy has
+    to beat — not evidence that it does. Use
+    :func:`~buildml.rl.evaluate.evaluate_rl` for that.
+
+    **A propensity model is fitted alongside the bandit** to estimate how likely
+    the logging policy was to take each action. Inverse propensity scoring needs
+    it. If it cannot be fitted, the fit still succeeds and records a warning,
+    and holdout evaluation falls back to direct-method estimates alone.
+
+    **The environment modes ignore your data entirely.** They learn in the
+    environment; the Session stores the policy so it travels with your
+    checkpoints. If you expected your tabular rows to influence a
+    ``'gym_reinforce'`` fit, they did not.
+
+    Examples
+    --------
+    >>> plan, result = fit_rl(  # doctest: +SKIP
+    ...     dataset, split_plan, action_column="offer", reward_column="revenue"
+    ... )
+    >>> result.n_arms, result.train_metrics["mean_logged_reward"]  # doctest: +SKIP
+    (4, 12.7)
+
+    See Also
+    --------
+    buildml.rl.evaluate.evaluate_rl : Estimate holdout performance offline.
+    buildml.rl.act.act_rl : Choose actions with the fitted policy.
+    buildml.rl.catalog.rl_capability_matrix : Every mode and algorithm as data.
     """
     resolved_backend, resolved_mode, resolved_algo = resolve_rl_backend_mode_algorithm(
         backend=backend,
         mode=mode,
         algorithm=str(algorithm),
     )
+    if resolved_mode == "tabular_q":
+        return _fit_tabular_q(
+            env_id=env_id,
+            algorithm=resolved_algo,
+            n_episodes=n_episodes,
+            max_steps=max_steps,
+            learning_rate=learning_rate,
+            gamma=gamma,
+            epsilon=epsilon,
+            epsilon_min=epsilon_min,
+            epsilon_decay=epsilon_decay,
+            n_bins=n_bins,
+            random_state=random_state,
+            backend=resolved_backend,
+        )
     if resolved_mode == "gym_sb3":
         return _fit_gym_sb3(
             env_id=env_id,
@@ -91,7 +264,7 @@ def fit_rl(
     if resolved_mode != "contextual_bandit":
         raise ValidationError(
             f"Unknown RL mode={resolved_mode!r}. "
-            "Supported: contextual_bandit, gym_reinforce, gym_sb3."
+            "Supported: contextual_bandit, gym_reinforce, tabular_q, gym_sb3."
         )
     if dataset is None or split_plan is None:
         raise ValidationError(
@@ -328,6 +501,90 @@ def _fit_gym_reinforce(
         mode="gym_reinforce",
         backend=backend,
         algorithm="reinforce_linear_softmax",
+        n_train_rows=int(metrics.get("n_episodes", 0)),
+        n_arms=int(policy.n_actions),
+        columns=(),
+        env_id=env_id,
+        train_metrics=metrics,
+        disclosures=tuple(disclosures),
+        warnings=tuple(warnings),
+    )
+    return plan, result
+
+
+def _fit_tabular_q(
+    *,
+    env_id: str,
+    algorithm: str,
+    n_episodes: int,
+    max_steps: int,
+    learning_rate: float,
+    gamma: float,
+    epsilon: float,
+    epsilon_min: float,
+    epsilon_decay: float,
+    n_bins: int,
+    random_state: int | None,
+    backend: RlBackend,
+) -> tuple[RlPlan, RlFitResult]:
+    policy, metrics, disclosures, warnings = train_tabular_control(
+        env_id=env_id,
+        algorithm=algorithm,
+        n_episodes=n_episodes,
+        max_steps=max_steps,
+        learning_rate=learning_rate,
+        gamma=gamma,
+        epsilon=epsilon,
+        epsilon_min=epsilon_min,
+        epsilon_decay=epsilon_decay,
+        n_bins=n_bins,
+        random_state=random_state,
+    )
+    disclosures = list(disclosures) + [
+        "tabular_q does not fit on Session tabular partitions; "
+        "the Session hosts the checkpointed Q-table policy for workflow continuity.",
+        "Off-policy TD control here is still an ONLINE env loop — it is not "
+        "batch offline RL (CQL / IQL / Decision Transformer remain out of scope).",
+    ]
+    config = RlConfig(
+        mode="tabular_q",
+        backend=backend,
+        algorithm=algorithm,
+        env_id=env_id,
+        n_episodes=n_episodes,
+        max_steps=max_steps,
+        learning_rate=learning_rate,
+        gamma=gamma,
+        epsilon=epsilon,
+        epsilon_min=epsilon_min,
+        epsilon_decay=epsilon_decay,
+        n_bins=n_bins,
+        random_state=random_state,
+    )
+    config_dict = config.to_dict()
+    config_dict["discretizer"] = policy.discretizer.to_dict()
+    plan = RlPlan(
+        mode="tabular_q",
+        backend=backend,
+        algorithm=algorithm,
+        columns=(),
+        action_column=None,
+        reward_column=None,
+        n_train_rows=int(metrics.get("n_episodes", 0)),
+        n_arms=int(policy.n_actions),
+        arms_=tuple(range(int(policy.n_actions))),
+        policy_=policy,
+        env_id=env_id,
+        obs_dim=int(policy.obs_dim),
+        disclosures=tuple(disclosures),
+        warnings=tuple(warnings),
+        config=config_dict,
+        train_metrics=metrics,
+    )
+    result = RlFitResult(
+        mode="tabular_q",
+        backend=backend,
+        algorithm=algorithm,
         n_train_rows=int(metrics.get("n_episodes", 0)),
         n_arms=int(policy.n_actions),
         columns=(),

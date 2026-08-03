@@ -1,4 +1,48 @@
-"""Honest cross-validation and hyperparameter search for classical estimators."""
+"""Cross-validation and hyperparameter search that do not quietly lie to you.
+
+A single train/test split gives one number, and that number moves — sometimes a
+lot — depending on which rows happened to land where. Cross-validation replaces
+it with several: the train partition is divided into folds, each fold is scored
+by a model trained on the others, and you get a mean *and* a spread. The spread
+is the part people skip and the part that matters, because it tells you whether
+a difference between two models is a real difference or resampling noise.
+
+Hyperparameter search then uses those scores to choose a configuration. That
+introduces its own problem: the moment you pick the best of fifty configurations
+by cross-validated score, that score is optimistically biased. You selected on
+it, so it partly measures which configuration got lucky on these folds. Nested
+cross-validation is the honest answer — an inner loop chooses, an outer loop
+scores what was chosen, and the outer score is unbiased because the rows it
+scores on took no part in the choosing.
+
+Two forms of leakage are guarded rather than documented-and-hoped-for:
+
+*Partition leakage.* Everything here runs on the train partition alone. Test and
+validation rows never enter fold membership, never get scored, and never
+influence a ranking. Overlapping partitions raise rather than proceed.
+
+*Preprocessing leakage.* Scaling or imputing across the whole train partition
+before cross-validating means every fold's held-out rows helped compute the
+statistics used to transform them. Scores come out optimistic and the run looks
+completely normal. Pass a fold-local :class:`~buildml.preprocess.fold.PreprocessRecipe`
+instead and it is refitted inside each fold. If Session-global preprocessing has
+already run, these functions refuse with a
+:class:`~buildml.core.errors.LeakageError` rather than producing a number that
+cannot be trusted.
+
+Four search strategies are available. Grid search is exhaustive and predictable,
+and its cost multiplies with each parameter. Randomized search samples a fixed
+budget, which usually finds a comparable configuration far sooner. Optuna's TPE
+sampler learns from earlier trials and concentrates on promising regions.
+Evolutionary search runs a genetic algorithm, which suits rugged spaces where
+parameters interact.
+
+See Also
+--------
+buildml.model.supervised : Fitting and evaluating a single configuration.
+buildml.preprocess.fold : Fold-local recipes that avoid preprocessing leakage.
+buildml.model.compare : Comparing estimators once configured.
+"""
 
 from __future__ import annotations
 
@@ -61,7 +105,31 @@ _LOWER_IS_BETTER = {"mae", "mse", "rmse", "log_loss", "median_ae", "mape"}
 
 @dataclass(slots=True)
 class FoldScore:
-    """Metrics for a single CV fold."""
+    """What one fold scored, and how much data it had to work with.
+
+    Folds are kept individually rather than only averaged because the spread
+    across them is diagnostic. One fold far below the others usually means that
+    fold's held-out rows differ from the rest — a rare class concentrated in one
+    place, a time period with different behaviour, a group that does not
+    resemble its neighbours. Averaging hides that; listing the folds does not.
+
+    Attributes
+    ----------
+    fold:
+        Zero-based fold number, in the order the splitter produced them. For
+        time-series splits this order is chronological and meaningful.
+    n_train:
+        Rows the fold's model trained on.
+    n_eval:
+        Rows it was scored on. Small values make that fold's metrics noisy, and
+        a per-class metric on a small fold can rest on a handful of rows.
+    metrics:
+        This fold's scores.
+
+    See Also
+    --------
+    CVScoreResult : The aggregate these roll up into.
+    """
 
     fold: int
     n_train: int
@@ -69,6 +137,16 @@ class FoldScore:
     metrics: dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the fold record to plain data.
+
+        Used when serialising a whole cross-validation result for history or a
+        report.
+
+        Returns
+        -------
+        dict
+            ``fold``, ``n_train``, ``n_eval``, and a copy of ``metrics``.
+        """
         return {
             "fold": self.fold,
             "n_train": self.n_train,
@@ -79,7 +157,73 @@ class FoldScore:
 
 @dataclass(slots=True)
 class CVScoreResult:
-    """Structured cross-validation card with fold spread and interpretation."""
+    """Fold-by-fold scores, their spread, and an honest account of the limits.
+
+    The result carries three kinds of thing. The numbers — per-fold metrics and
+    their mean and standard deviation. The context needed to interpret them —
+    which population was used, what was held out, whether preprocessing ran
+    inside the folds. And the caveats, spelled out rather than left implicit.
+
+    The standard deviation deserves as much attention as the mean. Two models
+    at 0.84 ± 0.01 and 0.86 ± 0.09 are not ranked by their means; the second is
+    less reliable, and on a different split it could easily come out lower. Any
+    difference smaller than the fold spread is not yet a difference.
+
+    Attributes
+    ----------
+    task:
+        ``'classification'`` or ``'regression'``.
+    scoring_metric:
+        The headline metric. Defaults to F1-weighted for classification and R²
+        for regression.
+    cv_strategy:
+        Which folding scheme ran — k-fold, stratified, group, stratified-group,
+        or time. Worth checking: an inappropriate strategy silently inflates
+        every fold, and this field is where that becomes visible.
+    n_splits:
+        How many folds. More folds means more training data per fold and a
+        noisier per-fold estimate, since each is scored on less.
+    folds:
+        The individual fold results.
+    mean_metrics:
+        Metrics averaged across folds.
+    std_metrics:
+        Standard deviation across folds — the estimate's stability.
+    population:
+        Which rows the folds were drawn from. Always ``'train'``.
+    held_out_partitions:
+        What was excluded entirely, so a later confirmation score on it is
+        genuinely independent.
+    fold_preprocess:
+        The fold-local recipe, if one was used. ``None`` means no preprocessing
+        ran inside the folds — which is fine if the data needed none, and a leak
+        if it was applied globally beforehand.
+    limitations:
+        What this run cannot tell you, including any leakage that was explicitly
+        permitted.
+    interpretation:
+        What the numbers appear to say.
+    recommendations:
+        Suggested next steps.
+    params:
+        The estimator parameters and recipe knobs used, so a result read later
+        is self-describing.
+
+    Notes
+    -----
+    **A cross-validated mean is not a holdout score.** It estimates how this
+    procedure performs on data like the training data. Confirm once on the
+    held-out partition before believing it.
+
+    **Fold standard deviation above about 20% of the mean is a warning.** The
+    estimate is unstable — usually too little data, too many parameters, or a
+    folding scheme that does not match the data's structure.
+
+    See Also
+    --------
+    cv_score : Producing this result.
+    NestedCVResult : The unbiased estimate when selection is involved.
+    """
 
     task: Literal["classification", "regression"]
     scoring_metric: str
@@ -97,6 +241,22 @@ class CVScoreResult:
     params: dict[str, Any] = field(default_factory=dict)
 
     def to_frame(self) -> pd.DataFrame:
+        """Lay the folds out as a table, one row per fold.
+
+        The convenient shape for looking at the spread directly — sorting by the
+        metric, plotting it, or spotting the one fold that dropped.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Columns ``fold``, ``n_train``, ``n_eval``, and one per metric.
+
+        Notes
+        -----
+        **This is where an unusual fold shows itself.** A single low row is more
+        informative than the standard deviation summarising it, because you can
+        go and look at which rows that fold held out.
+        """
         rows = [
             {"fold": fold.fold, "n_train": fold.n_train, "n_eval": fold.n_eval, **fold.metrics}
             for fold in self.folds
@@ -104,6 +264,16 @@ class CVScoreResult:
         return pd.DataFrame(rows)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the whole card to plain data for history and reports.
+
+        Includes the limitations and recommendations, not just the numbers, so a
+        serialised result stays as qualified as the object was.
+
+        Returns
+        -------
+        dict
+            Every field, with collections copied.
+        """
         return {
             "task": self.task,
             "scoring_metric": self.scoring_metric,
@@ -122,6 +292,18 @@ class CVScoreResult:
         }
 
     def show(self) -> None:
+        """Print the metrics as mean ± standard deviation, then the tips.
+
+        Every metric is printed with its spread rather than alone, because a
+        mean read without one invites treating a 0.01 difference as meaningful
+        when the folds vary by 0.09.
+
+        Notes
+        -----
+        **Limitations are not printed**, only recommendations. Read
+        ``limitations`` directly before reporting a number — that is where an
+        acknowledged leak or an ill-fitting fold strategy is recorded.
+        """
         metric = self.scoring_metric
         mean = self.mean_metrics.get(metric)
         std = self.std_metrics.get(metric)
@@ -141,7 +323,44 @@ class CVScoreResult:
 
 @dataclass(slots=True)
 class SearchTrial:
-    """One hyperparameter trial with nested CV evidence."""
+    """One configuration that was tried, and the cross-validation behind it.
+
+    Each trial keeps its full cross-validation result, not just the score it was
+    ranked by. That is what lets you ask whether the winner actually won: if the
+    top two differ by less than the leading trial's fold standard deviation, the
+    ranking is a coin toss dressed as a result.
+
+    Attributes
+    ----------
+    trial:
+        The trial's position in the ranking after sorting, so ``0`` is the
+        winner.
+    params:
+        The estimator parameters tried.
+    mean_score:
+        Cross-validated mean of the ranking metric — the number that decided
+        this trial's position.
+    std_score:
+        Fold spread for that metric. The scale against which any gap to the next
+        trial should be judged.
+    mean_metrics, std_metrics:
+        All metrics, not only the ranking one. A configuration can win on F1 and
+        lose badly on recall, and this is where that shows.
+    recipe_knobs:
+        Fold-local preprocessing settings tried, such as ``select_k``.
+    cv:
+        The full cross-validation result, including per-fold scores.
+
+    Notes
+    -----
+    **A trial's score is optimistic in exactly the way selection makes it.** It
+    was chosen for being high, so part of its height is luck on these folds.
+    Nested CV is what removes that bias.
+
+    See Also
+    --------
+    SearchResult : The ranked collection of trials.
+    """
 
     trial: int
     params: dict[str, Any]
@@ -153,6 +372,18 @@ class SearchTrial:
     cv: CVScoreResult | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the trial to plain data, without its full CV result.
+
+        The nested :class:`CVScoreResult` is omitted because serialising every
+        trial's per-fold detail turns a search log into something unreadable.
+        Read ``cv`` off the object when the detail is wanted.
+
+        Returns
+        -------
+        dict
+            ``trial``, ``params``, ``recipe_knobs``, ``mean_score``,
+            ``std_score``, and the metric dictionaries.
+        """
         return {
             "trial": self.trial,
             "params": dict(self.params),
@@ -166,7 +397,67 @@ class SearchTrial:
 
 @dataclass(slots=True)
 class SearchResult:
-    """Ranked hyperparameter search card with best params and evidence."""
+    """Every configuration tried, ranked, with the winner and its caveats.
+
+    A search returns a ranking rather than an answer. The winner is the
+    configuration that scored best on these folds, which is a weaker claim than
+    "the best configuration" — and the difference matters most when the top few
+    are close together, which is the common case once a search is well specified.
+
+    The result therefore keeps all the trials, not just the best, and states in
+    ``interpretation`` when the gap between the top two is smaller than the
+    leading trial's fold spread.
+
+    Attributes
+    ----------
+    method:
+        Which strategy ran: grid, randomized, optuna, or evolutionary.
+    task:
+        ``'classification'`` or ``'regression'``.
+    ranking_metric:
+        What trials were ordered by. Loss-like metrics are minimised, everything
+        else maximised.
+    trials:
+        Every trial, best first.
+    best_params:
+        The winning estimator parameters.
+    best_recipe_knobs:
+        The winning fold-local preprocessing settings.
+    best_score, best_std:
+        The winner's cross-validated mean and fold spread.
+    best_cv:
+        The winner's full cross-validation result.
+    refit_result:
+        The winning configuration refitted on the whole train partition, when
+        ``refit=True``. This is the model to deploy — more training data than
+        any single fold saw. ``None`` when refitting was skipped.
+    interpretation:
+        What the ranking appears to say, including whether the top gap is
+        meaningful.
+    recommendations:
+        Suggested next steps.
+    limitations:
+        What this search cannot tell you.
+    study:
+        Backend-specific search state — the Optuna study, or the evolutionary
+        run's generation history. ``None`` for grid and randomized search.
+
+    Notes
+    -----
+    **``best_score`` is not an estimate of future performance.** It was selected
+    for being the maximum over many trials, so it is biased upward. Use nested
+    cross-validation for an unbiased number, or confirm once on the held-out
+    partition.
+
+    **A refit model is not the model that produced ``best_score``.** It was
+    trained on more data with the same settings, which usually helps and is not
+    guaranteed to.
+
+    See Also
+    --------
+    nested_cv_score : Estimating performance without selection bias.
+    grid_search, randomized_search, optuna_search, evolutionary_search
+    """
 
     method: SearchMethod
     task: Literal["classification", "regression"]
@@ -184,6 +475,23 @@ class SearchResult:
     study: Any | None = None
 
     def to_frame(self) -> pd.DataFrame:
+        """Lay the trials out as a table, one row per configuration.
+
+        Parameters are flattened into ``param_``- and ``recipe_``-prefixed
+        columns, which makes the table sortable and easy to plot — score against
+        one parameter shows immediately whether that parameter mattered at all.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Columns ``trial``, ``mean_score``, ``std_score``, and one per
+            parameter and recipe knob.
+
+        Notes
+        -----
+        **A parameter whose column shows no relationship to score is not doing
+        anything.** Drop it from the space and spend the budget on one that is.
+        """
         rows = [
             {
                 "trial": trial.trial,
@@ -197,6 +505,17 @@ class SearchResult:
         return pd.DataFrame(rows)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the search to plain data for history and reports.
+
+        The refit model is reduced to its :meth:`FitResult.to_dict` summary and
+        the backend ``study`` is dropped, since neither is serialisable.
+
+        Returns
+        -------
+        dict
+            Method, task, ranking metric, every trial, the winner, and the
+            interpretation, recommendations, and limitations.
+        """
         return {
             "method": self.method,
             "task": self.task,
@@ -213,6 +532,17 @@ class SearchResult:
         }
 
     def show(self) -> None:
+        """Print the winner and the first eight recommendations.
+
+        The score is shown with its fold spread, so a narrow win over the runner
+        up can be recognised as narrow.
+
+        Notes
+        -----
+        **Only the winner is printed.** Use :meth:`to_frame` to see how close
+        the rest came — if several trials sit within a fold standard deviation
+        of the top, the choice among them is arbitrary.
+        """
         print(f"Search · {self.method} · ranked by {self.ranking_metric}")
         if self.best_score is not None and self.best_std is not None:
             print(f"  best: {self.best_score:.6f} ± {self.best_std:.6f}")
@@ -223,7 +553,45 @@ class SearchResult:
 
 @dataclass(slots=True)
 class OuterFoldResult:
-    """One outer-fold score after inner-loop selection."""
+    """One outer fold: what the inner search chose, and how that choice scored.
+
+    Each outer fold runs a complete search on its own training rows and then
+    scores the winner on rows that search never saw. Comparing
+    ``inner_best_score`` with ``metrics`` shows the selection bias directly —
+    the inner score is usually the higher of the two, and the gap is roughly how
+    much optimism selection introduced.
+
+    Attributes
+    ----------
+    fold:
+        Zero-based outer fold number.
+    n_train:
+        Rows the inner search had, and the winner was refitted on.
+    n_eval:
+        Rows the winner was scored on, which the inner search never saw.
+    best_params:
+        What the inner search chose for this fold.
+    best_recipe_knobs:
+        The fold-local preprocessing settings it chose.
+    inner_best_score, inner_best_std:
+        The winner's inner cross-validated mean and spread. Selection evidence,
+        not a performance estimate.
+    inner_n_trials:
+        How many configurations the inner search evaluated. More trials means
+        more selection bias in ``inner_best_score``.
+    metrics:
+        The honest score: the winner evaluated on the outer-eval rows.
+
+    Notes
+    -----
+    **Different outer folds often choose different parameters.** That is not a
+    bug; it means the choice is not strongly determined by the data, and any
+    single set of "best" parameters is one of several equally plausible ones.
+
+    See Also
+    --------
+    NestedCVResult : The aggregate over outer folds.
+    """
 
     fold: int
     n_train: int
@@ -236,6 +604,17 @@ class OuterFoldResult:
     metrics: dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the outer-fold record to plain data.
+
+        Keeps both the inner selection score and the outer evaluation score, so
+        the gap between them survives serialisation.
+
+        Returns
+        -------
+        dict
+            Fold number, row counts, chosen parameters and knobs, inner scores,
+            trial count, and outer metrics.
+        """
         return {
             "fold": self.fold,
             "n_train": self.n_train,
@@ -251,11 +630,73 @@ class OuterFoldResult:
 
 @dataclass(slots=True)
 class NestedCVResult:
-    """Outer-loop estimate after inner hyperparameter / selection search.
+    """An unbiased estimate of what tuning-then-fitting actually achieves.
 
-    Outer folds score a configuration chosen only from that fold's inner
-    train-CV. Session test / validation partitions never enter outer or inner
-    membership.
+    The number most people want and few compute. An ordinary search reports the
+    best score it found, which is optimistic by construction: pick the maximum
+    of fifty noisy estimates and you have picked partly for noise. Nested
+    cross-validation separates the two jobs — an inner loop chooses, an outer
+    loop scores what was chosen on rows the choosing never touched.
+
+    What this estimates is the *procedure*, not one model: "if I tune this way on
+    data like this, this is roughly how well the result performs." That is the
+    question worth answering before committing to an approach.
+
+    The cost is real. Nested CV runs a full search inside every outer fold, so
+    five outer folds over a fifty-configuration search is 250 searches' worth of
+    fitting.
+
+    Attributes
+    ----------
+    task:
+        ``'classification'`` or ``'regression'``.
+    scoring_metric:
+        The metric the outer loop reports and the inner loop ranks by.
+    outer_cv_strategy, inner_cv_strategy:
+        The folding schemes used at each level.
+    n_outer_splits, n_inner_splits:
+        Fold counts at each level. Total fits scale with their product.
+    search_method:
+        Which strategy the inner loop used.
+    outer_folds:
+        Per-fold results, each with its own chosen configuration.
+    mean_metrics, std_metrics:
+        Outer-fold means and spreads. **This is the estimate** — report the mean
+        with its spread, never the inner scores.
+    inner_selection_summary:
+        How consistently the inner searches agreed, including a
+        ``param_stability`` rating and the per-fold choices.
+    population:
+        Always ``'train'``.
+    held_out_partitions:
+        Never touched by either loop.
+    fold_preprocess:
+        The fold-local recipe, refitted in both loops.
+    limitations, interpretation, recommendations:
+        What this cannot tell you, what it appears to say, and what to do next.
+    warm_start_studies:
+        Whether Optuna state was shared across outer folds, which couples them
+        slightly. Recorded because it makes the estimate marginally optimistic.
+
+    Notes
+    -----
+    **Nested CV does not hand you a model.** It estimates a procedure. Afterward,
+    run the search once on the full train partition and use that winner —
+    accepting that its inner score is optimistic while the nested estimate
+    describes what to expect.
+
+    **Unstable parameter choices across folds are informative.** They mean the
+    data does not determine the choice, so treat any single winner as one of
+    several defensible options rather than the answer.
+
+    **The inner means are always higher than the outer mean.** That gap is the
+    selection bias, made visible. It is why the outer number is the one to
+    report.
+
+    See Also
+    --------
+    nested_cv_score : Producing this result.
+    SearchResult : The biased-but-cheaper alternative.
     """
 
     task: Literal["classification", "regression"]
@@ -278,6 +719,24 @@ class NestedCVResult:
     warm_start_studies: bool = False
 
     def to_frame(self) -> pd.DataFrame:
+        """Lay the outer folds out as a table, one row per fold.
+
+        Puts the inner selection score beside the outer evaluation score with
+        the chosen parameters, which is the clearest way to see both the
+        selection bias and how much the choices varied.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Fold number, row counts, inner scores, outer metrics, and one column
+            per chosen parameter and recipe knob.
+
+        Notes
+        -----
+        **Read the parameter columns down, not across.** Identical values in
+        every row mean the choice is well determined; scattered values mean it
+        is not, whatever the search reported as best.
+        """
         rows = [
             {
                 "fold": fold.fold,
@@ -294,6 +753,16 @@ class NestedCVResult:
         return pd.DataFrame(rows)
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert the nested result to plain data for history and reports.
+
+        Keeps the limitations and the warm-start flag alongside the numbers, so
+        a serialised estimate remains as qualified as the object was.
+
+        Returns
+        -------
+        dict
+            Every field, with collections copied.
+        """
         return {
             "task": self.task,
             "scoring_metric": self.scoring_metric,
@@ -316,6 +785,18 @@ class NestedCVResult:
         }
 
     def show(self) -> None:
+        """Print the outer-loop estimate and the first eight recommendations.
+
+        Only the outer mean and spread are shown. The inner scores are
+        deliberately absent: they are selection evidence, and printing them
+        beside the outer number invites reporting the wrong one.
+
+        Notes
+        -----
+        **Check ``inner_selection_summary`` as well.** A low
+        ``param_stability`` rating means the outer estimate is sound while any
+        single set of best parameters is not settled.
+        """
         metric = self.scoring_metric
         mean = self.mean_metrics.get(metric)
         std = self.std_metrics.get(metric)
@@ -336,12 +817,47 @@ def _refuse_session_global_cv_leakage(
     preprocess: PreprocessRecipe | None,
     allow_session_global_preprocess: bool,
 ) -> None:
-    """Hard-refuse CV/search when Session-global prep already poisoned the frame.
+    """Refuse to cross-validate on data that global preprocessing already spoiled.
 
-    A fold-local :class:`~buildml.preprocess.fold.PreprocessRecipe` does **not**
-    undo Session-global transforms — recipes run on the current (already
-    transformed) design matrix unless the caller re-ingests / reattaches
-    unpoisoned data. Opt in only via ``allow_session_global_preprocess=True``.
+    Fitting a scaler or an imputer on the whole train partition and then
+    cross-validating is one of the most common ways to get a wrong number. Every
+    fold's held-out rows contributed to the statistics used to transform them,
+    so each fold has partial knowledge of what it is about to be scored on. The
+    result is optimistic and completely unremarkable-looking.
+
+    Passing a fold-local recipe afterwards does not fix it. The recipe operates
+    on the frame as it currently is — already transformed — so it cannot rebuild
+    from untouched values. The only real fix is to start from data that global
+    preprocessing has not yet run on.
+
+    Parameters
+    ----------
+    session_preprocess_applied:
+        Whether Session-global fit-capable plans already ran.
+    preprocess:
+        The fold-local recipe, if one was passed. Used only to make the error
+        message specific about why it is not sufficient.
+    allow_session_global_preprocess:
+        Explicit opt-in to proceed anyway, accepting a biased score.
+
+    Raises
+    ------
+    LeakageError
+        When global preprocessing has run and the override was not set.
+
+    Notes
+    -----
+    **This refuses rather than warns because the warning would be ignored.** The
+    run otherwise succeeds and produces a plausible number, so nothing later
+    forces the issue.
+
+    **The override exists for comparing against a known-biased baseline**, and
+    for that only. Every result produced under it carries the fact in its
+    limitations.
+
+    See Also
+    --------
+    buildml.preprocess.fold.PreprocessRecipe : Preprocessing that folds honestly.
     """
     if not session_preprocess_applied:
         return
@@ -385,17 +901,111 @@ def cv_score(
     params: dict[str, Any] | None = None,
     recipe_knobs: dict[str, Any] | None = None,
 ) -> CVScoreResult:
-    """Cross-validate an estimator on the train partition only.
+    """Score an estimator across several folds instead of trusting one split.
 
-    The Session test (and validation) partitions are never used for fold
-    membership or scoring. Optional ``preprocess`` recipes are fitted on each
-    fold's training rows only. ``recipe_knobs`` override safe fold-local
-    controls (for example ``select_k``, ``n_bins``) on that recipe copy.
+    Splits the train partition into folds, trains on all but one and scores on
+    the one left out, and repeats until every row has been scored exactly once
+    by a model that never saw it. What comes back is a mean and a spread.
 
-    When Session-global fit-capable plans already exist, this refuses with
-    :class:`~buildml.core.errors.LeakageError` unless
-    ``allow_session_global_preprocess=True``. A fold-local ``preprocess`` recipe
-    alone is not enough — Session data may already be poisoned.
+    The spread is the reason to do this. A single train/test split gives one
+    number whose stability is unknown; cross-validation shows how much that
+    number moves when the rows are dealt differently. A model at 0.85 ± 0.02 and
+    one at 0.85 ± 0.12 are not equally good, and only the second answer reveals
+    that.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        The split. Folds are drawn from the train partition only.
+    estimator:
+        Any scikit-learn-compatible estimator. Cloned for every fold, so folds
+        are genuinely independent.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'``.
+    cv:
+        Fold count, or a scikit-learn splitter for full control.
+    cv_strategy:
+        How to fold: ``'auto'``, ``'kfold'``, ``'stratified'``, ``'group'``,
+        ``'stratified_group'``, or ``'time'``. ``'auto'`` picks from the
+        dataset's roles, which is usually right — see the notes for why the
+        choice is not cosmetic.
+    scoring_metric:
+        The headline metric. Defaults to F1-weighted for classification and R²
+        for regression.
+    groups:
+        Explicit group labels, overriding the group-role column.
+    preprocess:
+        A fold-local recipe, refitted inside each fold. This is how to
+        preprocess without leaking.
+    session_preprocess_applied:
+        Whether Session-global preprocessing already ran, which triggers the
+        leakage refusal.
+    allow_session_global_preprocess:
+        Override that refusal, accepting a biased score.
+    params:
+        Estimator parameters to set before fitting. Keys prefixed ``recipe__``
+        are routed to the recipe instead.
+    recipe_knobs:
+        Fold-local recipe overrides such as ``select_k`` or ``n_bins``. Only the
+        knobs in ``SAFE_RECIPE_KNOBS`` are permitted, because the rest cannot be
+        varied per fold without leaking.
+
+    Returns
+    -------
+    CVScoreResult
+        Per-fold scores, their mean and spread, and the limitations of the run.
+
+    Raises
+    ------
+    ValidationError
+        If ``cv`` is under 2, if a recipe knob is not recognised, if knobs are
+        passed without a recipe, or if no folds were produced.
+    LeakageError
+        If partitions overlap, if a fold's train and eval rows overlap, or if
+        global preprocessing already ran without the override.
+
+    Notes
+    -----
+    **The folding strategy is a correctness decision, not a preference.** Plain
+    k-fold on grouped data splits a patient's or a customer's rows across the
+    boundary, and the model recognises the individual rather than the pattern —
+    scores come out high and do not survive contact with a new group. On time
+    series, k-fold trains on the future to predict the past. Group and time
+    strategies exist to prevent exactly these.
+
+    **Stratification matters most where it is easiest to skip.** With a rare
+    class, an unstratified fold can contain almost no positives, making that
+    fold's metrics close to meaningless.
+
+    **Cross-validated scores are not holdout scores.** They estimate performance
+    on data resembling the training data. Confirm once on the held-out partition
+    at the end.
+
+    **More folds is not simply better.** Ten folds gives each model more training
+    data and scores it on less, so per-fold estimates get noisier even as the
+    mean stabilises. Five is a reasonable default.
+
+    Examples
+    --------
+    Cross-validate with fold-local preprocessing::
+
+        from buildml.preprocess.fold import PreprocessRecipe
+
+        result = cv_score(
+            dataset, split_plan, estimator,
+            cv=5,
+            preprocess=PreprocessRecipe(impute="median", scale="standard"),
+        )
+        result.show()
+        print(result.to_frame())
+
+    See Also
+    --------
+    nested_cv_score : When hyperparameters are being chosen too.
+    grid_search : Searching over configurations.
+    buildml.preprocess.fold.PreprocessRecipe : Leak-free fold preprocessing.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -565,11 +1175,96 @@ def grid_search(
     allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
-    """Exhaustive grid search with nested fold scoring on the train partition.
+    """Try every combination in the grid, cross-validating each one.
 
-    Provide ``param_grid`` (estimator), ``recipe_grid`` (fold-local knobs such
-    as ``select_k`` / ``n_bins``), or both. Recipe knobs require ``preprocess``.
-    Keys in ``param_grid`` may also use a ``recipe__`` prefix.
+    Exhaustive and predictable: the space is enumerated, every point is
+    cross-validated, and the results are ranked. Nothing is missed within the
+    grid, and the run is fully reproducible.
+
+    The cost is multiplicative. Three parameters with five values each is 125
+    combinations, and at 5-fold that is 625 model fits. A fourth parameter makes
+    it 3,125. Beyond two or three parameters, :func:`randomized_search` reaches
+    a comparable configuration far sooner, because most parameters have little
+    effect and grid search spends the same effort on them regardless.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        The split. Folds come from train only.
+    estimator:
+        The estimator to configure.
+    param_grid:
+        Parameter names to lists of values, every combination of which is tried.
+        Keys prefixed ``recipe__`` are routed to the recipe.
+    recipe_grid:
+        Fold-local recipe knobs to try, such as ``{'select_k': [5, 10, 20]}``.
+        Requires ``preprocess``.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'``.
+    cv:
+        Fold count or splitter for each trial's cross-validation.
+    cv_strategy:
+        How to fold.
+    ranking_metric:
+        What to rank by. Defaults to F1-weighted or R².
+    groups:
+        Explicit group labels.
+    preprocess:
+        Fold-local recipe, refitted inside every fold of every trial.
+    session_preprocess_applied:
+        Whether Session-global preprocessing already ran.
+    allow_session_global_preprocess:
+        Override the resulting leakage refusal.
+    refit:
+        Refit the winner on the whole train partition. This is the model to
+        deploy; set ``False`` inside a nested loop, where the outer loop refits.
+
+    Returns
+    -------
+    SearchResult
+        Every trial ranked, the winner, and the optional refitted model.
+
+    Raises
+    ------
+    ValidationError
+        If both grids are empty, if a recipe knob is unrecognised, or if recipe
+        knobs are given without a recipe.
+    LeakageError
+        If partitions overlap or global preprocessing already ran without the
+        override.
+
+    Notes
+    -----
+    **The best score is optimistic.** It is the maximum over many noisy
+    estimates, so it partly measures luck on these folds. Use
+    :func:`nested_cv_score` for an unbiased estimate.
+
+    **Check the gap against the fold spread before believing the ranking.** If
+    the top two differ by less than the leading trial's standard deviation, the
+    order is not a finding.
+
+    **A grid is only as good as its edges.** If the winner sits at the boundary
+    of a range, the optimum probably lies outside it — widen and rerun.
+
+    Examples
+    --------
+    Search two parameters and a fold-local knob::
+
+        result = grid_search(
+            dataset, split_plan, estimator,
+            {"max_depth": [3, 5, 10], "min_samples_leaf": [1, 5]},
+            recipe_grid={"select_k": [10, 20]},
+            preprocess=PreprocessRecipe(scale="standard", select="model"),
+        )
+        print(result.best_params, result.best_score)
+
+    See Also
+    --------
+    randomized_search : Cheaper on larger spaces.
+    optuna_search : Adaptive sampling that learns from earlier trials.
+    nested_cv_score : Estimating what the tuning actually buys.
     """
     trials = _expand_grid_trials(param_grid=param_grid, recipe_grid=recipe_grid)
     _require_recipe_for_knobs(preprocess, any(t[1] for t in trials))
@@ -610,9 +1305,99 @@ def randomized_search(
     allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
-    """Randomized hyperparameter search with nested fold scoring on train.
+    """Sample a fixed number of configurations rather than trying them all.
 
-    Provide ``param_distributions``, ``recipe_distributions``, or both.
+    Usually the better default. The reason is that most hyperparameters barely
+    matter and one or two matter a great deal, but you rarely know in advance
+    which. Grid search spends the same effort on every axis; random sampling
+    tries a different value of the important parameter on *every* draw, so with
+    a fixed budget it explores the axis that matters far more thoroughly.
+
+    The budget is set directly by ``n_iter``, so cost does not explode when the
+    space grows. Adding a parameter to a grid multiplies the work; adding one
+    here does not.
+
+    Parameters
+    ----------
+    dataset:
+        The data.
+    split_plan:
+        The split. Folds come from train only.
+    estimator:
+        The estimator to configure.
+    param_distributions:
+        Parameter names to either a list to choose from or a scipy distribution
+        to draw from. Continuous parameters benefit most from a distribution,
+        since sampling can land between grid points.
+    recipe_distributions:
+        Fold-local recipe knobs, in the same forms. Requires ``preprocess``.
+    n_iter:
+        How many configurations to try. The whole budget.
+    random_state:
+        Seed, so the sampled configurations reproduce.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'``.
+    cv:
+        Fold count or splitter for each trial.
+    cv_strategy:
+        How to fold.
+    ranking_metric:
+        What to rank by.
+    groups:
+        Explicit group labels.
+    preprocess:
+        Fold-local recipe, refitted inside every fold.
+    session_preprocess_applied:
+        Whether Session-global preprocessing already ran.
+    allow_session_global_preprocess:
+        Override the resulting leakage refusal.
+    refit:
+        Refit the winner on the whole train partition.
+
+    Returns
+    -------
+    SearchResult
+        Every sampled trial ranked, the winner, and the optional refitted model.
+
+    Raises
+    ------
+    ValidationError
+        If ``n_iter`` is below 1, if both distributions are empty, or if recipe
+        knobs are given without a recipe.
+    LeakageError
+        If partitions overlap or global preprocessing already ran without the
+        override.
+
+    Notes
+    -----
+    **Use distributions for continuous parameters, lists for discrete ones.** A
+    log-uniform distribution over a learning rate covers orders of magnitude
+    evenly; a list of five values covers five points.
+
+    **The same configuration can be drawn twice**, particularly from a small
+    discrete space. That costs budget without adding information — use
+    :func:`grid_search` when the space is small enough to enumerate.
+
+    **A too-small ``n_iter`` finds a decent configuration, not a good one.**
+    Twenty to fifty is a reasonable starting range for a handful of parameters.
+
+    Examples
+    --------
+    Sample from mixed discrete and continuous ranges::
+
+        from scipy.stats import loguniform
+
+        result = randomized_search(
+            dataset, split_plan, estimator,
+            {"learning_rate": loguniform(1e-3, 1e-1), "max_depth": [3, 5, 7, 10]},
+            n_iter=40,
+        )
+        print(result.to_frame().head())
+
+    See Also
+    --------
+    grid_search : Exhaustive, for small spaces.
+    optuna_search : Adaptive, concentrating on promising regions.
     """
     if n_iter < 1:
         raise ValidationError("n_iter must be >= 1")
@@ -661,29 +1446,112 @@ def optuna_search(
     refit: bool = True,
     study: Any | None = None,
 ) -> SearchResult:
-    """Optuna-backed search with the same leakage-safe CV contract as grid search.
+    """Let each trial learn from the ones before it, instead of sampling blind.
+
+    Random search treats every draw as independent, which means it keeps
+    sampling regions it has already found to be poor. Optuna's TPE sampler
+    builds a model of which regions produced good scores and concentrates
+    subsequent trials there, so a fixed budget goes further — usually
+    noticeably so once the space has more than a couple of dimensions.
+
+    The trade-off is that concentrating can also mean converging early on a
+    local optimum, and the run is no longer embarrassingly parallel in the way
+    random search is.
 
     Parameters
     ----------
+    dataset:
+        The data.
+    split_plan:
+        The split. Folds come from train only.
+    estimator:
+        The estimator to configure.
     param_space:
-        Either a callable ``trial -> estimator_params`` or a declare-style dict
-        (see :func:`_suggest_from_space`). Keys may use a ``recipe__`` prefix.
+        Either a callable taking an Optuna trial and returning parameters, or a
+        declare-style dict: ``{'type': 'float', 'low': …, 'high': …, 'log':
+        bool}``, ``{'type': 'int', 'low': …, 'high': …}``, ``{'type':
+        'categorical', 'choices': [...]}``, or a plain list of choices. Keys may
+        use a ``recipe__`` prefix.
     recipe_space:
-        Optional callable or declare-style dict for fold-local recipe knobs.
-        Requires ``preprocess``.
+        The same forms, for fold-local recipe knobs. Requires ``preprocess``.
     n_trials:
-        Number of Optuna trials.
+        How many configurations to evaluate.
+    random_state:
+        Seed for the TPE sampler.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'``.
+    cv:
+        Fold count or splitter for each trial.
+    cv_strategy:
+        How to fold.
     ranking_metric:
-        Metric maximized (or minimized for loss-like names) via train-fold CV.
+        What to optimise. Loss-like metrics are minimised, everything else
+        maximised.
+    groups:
+        Explicit group labels.
+    preprocess:
+        Fold-local recipe, refitted inside every fold.
+    session_preprocess_applied:
+        Whether Session-global preprocessing already ran.
+    allow_session_global_preprocess:
+        Override the resulting leakage refusal.
+    refit:
+        Refit the winner on the whole train partition.
     study:
-        Optional existing Optuna study to continue (warm-start). When omitted, a
-        fresh study is created. Trial objectives still score only the current
-        ``split_plan`` train partition via inner CV — never Session test rows.
+        An existing Optuna study to continue, so a second call builds on the
+        first rather than starting over. Its direction must match the metric.
+
+    Returns
+    -------
+    SearchResult
+        Trials ranked, the winner, the optional refitted model, and the Optuna
+        study in ``study``.
+
+    Raises
+    ------
+    MissingExtraError
+        If Optuna is not installed. Install with ``pip install
+        'buildml[optuna]'``.
+    ValidationError
+        If ``n_trials`` is below 1, if neither space is given, if a warm-start
+        study's direction disagrees with the metric, or if recipe knobs are
+        given without a recipe.
+    LeakageError
+        If partitions overlap or global preprocessing already ran without the
+        override.
 
     Notes
     -----
-    Requires ``pip install 'buildml[optuna]'``. Folds stay inside the Session
-    train partition; Session test/validation never enter trial scoring.
+    **Use ``log=True`` for parameters that span orders of magnitude.** A
+    learning rate from 1e-5 to 1e-1 sampled linearly puts almost every draw
+    above 0.01; sampled logarithmically it covers each decade evenly.
+
+    **Early trials are effectively random.** TPE needs some observations before
+    its model is worth anything, so very small budgets get little benefit over
+    random search.
+
+    **Adaptive search intensifies selection bias.** Concentrating on
+    high-scoring regions means the best score is more optimistic than random
+    search's would be, not less. The case for nested CV is stronger here, not
+    weaker.
+
+    Examples
+    --------
+    Search a declare-style space::
+
+        result = optuna_search(
+            dataset, split_plan, estimator,
+            param_space={
+                "learning_rate": {"type": "float", "low": 1e-3, "high": 0.3, "log": True},
+                "max_depth": {"type": "int", "low": 2, "high": 12},
+            },
+            n_trials=50,
+        )
+
+    See Also
+    --------
+    randomized_search : No extra dependency, easy to parallelise.
+    evolutionary_search : Better on rugged spaces with interacting parameters.
     """
     try:
         import optuna
@@ -838,46 +1706,132 @@ def evolutionary_search(
     allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
-    """Genetic-algorithm hyperparameter search with leakage-safe train-fold CV.
+    """Breed good configurations from other good configurations.
 
-    Evolves a population of estimator hyperparameters (and optional fold-local
-    recipe knobs) using tournament selection, uniform crossover, per-gene
-    mutation, and elitism. Each unique genome is scored once via
-    :func:`cv_score` on the Session **train** partition only.
+    A genetic algorithm. A population of configurations is scored, the better
+    ones are more likely to be selected as parents, and children are formed by
+    mixing two parents' values and randomly perturbing some of them. Repeat for
+    a few generations and the population drifts toward regions that work.
+
+    The reason to prefer this over TPE is parameter *interaction*. TPE models
+    each parameter's contribution largely separately, which struggles when a
+    high learning rate is only good alongside a shallow tree and terrible
+    otherwise. Crossover recombines whole configurations, so a combination that
+    only works as a pair can survive and spread as a pair.
+
+    It needs more evaluations than TPE to get going, since early generations are
+    close to random, and it has more knobs of its own to set.
 
     Parameters
     ----------
+    dataset:
+        The data.
+    split_plan:
+        The split. Folds come from train only.
+    estimator:
+        The estimator to configure.
     param_space:
-        Declare-style mapping (same forms as Optuna declare spaces):
-
-        - ``{"type": "float", "low": ..., "high": ..., "log": bool}``
-        - ``{"type": "int", "low": ..., "high": ...}``
-        - ``{"type": "categorical", "choices": [...]}``
-        - plain list/tuple → categorical choices
-
-        Keys may use a ``recipe__`` prefix. Callables are not supported —
-        the GA needs an explicit gene encoding.
+        A declare-style dict — ``{'type': 'float', 'low': …, 'high': …, 'log':
+        bool}``, ``{'type': 'int', 'low': …, 'high': …}``, ``{'type':
+        'categorical', 'choices': [...]}``, or a plain list. Callables are not
+        accepted: the algorithm needs an explicit encoding to mutate and
+        recombine. Keys may use a ``recipe__`` prefix.
     recipe_space:
-        Optional declare-style space for fold-local recipe knobs. Requires
-        ``preprocess``.
-    population_size / n_generations:
-        GA population and generation budget (before ``max_evaluations``).
+        The same forms, for fold-local recipe knobs. Requires ``preprocess``.
+    population_size:
+        Configurations alive at once. Larger keeps more diversity and costs more
+        per generation.
+    n_generations:
+        Breeding rounds. More generations means more refinement and more risk of
+        the population collapsing onto one region.
     elite_size:
-        Number of top individuals copied unchanged into the next generation.
-    crossover_rate / mutation_rate / tournament_size:
-        Standard GA operators (uniform crossover; per-gene resample/perturb).
+        How many of the best carry over unchanged. Guarantees the best score
+        never gets worse; too many and diversity dies out.
+    crossover_rate:
+        Probability a child is formed by mixing two parents rather than copying
+        one.
+    mutation_rate:
+        Per-parameter probability of a random change. The only source of genuine
+        novelty once the population has converged — too low and the search
+        stalls, too high and it is random search.
+    tournament_size:
+        How many candidates compete to be a parent. Larger favours the strong
+        more aggressively and converges faster on less exploration.
     max_evaluations:
-        Hard cap on unique CV evaluations. Defaults to
-        ``population_size * n_generations``.
+        Hard ceiling on distinct configurations scored. Defaults to
+        ``population_size * n_generations``. Repeats are cached, not rescored.
+    random_state:
+        Seed for the whole evolutionary process.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'``.
+    cv:
+        Fold count or splitter for each evaluation.
+    cv_strategy:
+        How to fold.
     ranking_metric:
-        Metric maximized (or minimized for loss-like names) via train-fold CV.
+        What to optimise. Loss-like metrics are minimised.
+    groups:
+        Explicit group labels.
+    preprocess:
+        Fold-local recipe, refitted inside every fold.
+    session_preprocess_applied:
+        Whether Session-global preprocessing already ran.
+    allow_session_global_preprocess:
+        Override the resulting leakage refusal.
+    refit:
+        Refit the winner on the whole train partition.
+
+    Returns
+    -------
+    SearchResult
+        Every distinct configuration evaluated, ranked, with the per-generation
+        history in ``study``.
+
+    Raises
+    ------
+    ValidationError
+        If ``population_size`` is under 2, ``n_generations`` under 1,
+        ``elite_size`` not between 1 and ``population_size``, a rate outside
+        ``[0, 1]``, ``tournament_size`` under 2, ``max_evaluations`` below
+        ``population_size``, no space given, or a space passed as a callable.
+    LeakageError
+        If partitions overlap or global preprocessing already ran without the
+        override.
 
     Notes
     -----
-    This is an **HPO / search backend**, not neuroevolution-of-architectures,
-    NAS, or a swarm-intelligence zoo. Core dependency is NumPy only (no DEAP).
-    Folds stay inside the Session train partition; Session test/validation never
-    enter trial scoring.
+    **Identical configurations are cached, not rescored.** Convergence means the
+    population repeats itself, so the evaluation budget is spent on distinct
+    genomes only.
+
+    **This is hyperparameter search, not architecture search.** It evolves
+    values in a space you define; it does not invent network topologies. The
+    implementation needs only NumPy.
+
+    **Watch ``study['generation_best']``.** A best score that stopped improving
+    several generations ago means the population has converged and further
+    generations will not help — raise the mutation rate or widen the space.
+
+    Examples
+    --------
+    Evolve over interacting parameters::
+
+        result = evolutionary_search(
+            dataset, split_plan, estimator,
+            param_space={
+                "learning_rate": {"type": "float", "low": 0.01, "high": 0.3, "log": True},
+                "max_depth": {"type": "int", "low": 2, "high": 12},
+                "max_features": ["sqrt", "log2", None],
+            },
+            population_size=16,
+            n_generations=6,
+        )
+        print(result.study["generation_best"])
+
+    See Also
+    --------
+    optuna_search : Usually stronger when parameters act independently.
+    randomized_search : The simplest baseline worth beating.
     """
     if population_size < 2:
         raise ValidationError("population_size must be >= 2")
@@ -1109,58 +2063,146 @@ def nested_cv_score(
     allow_session_global_preprocess: bool = False,
     warm_start_studies: bool = False,
 ) -> NestedCVResult:
-    """Honest outer estimate after inner-loop hyperparameter / recipe-knob search.
+    """Estimate what tuning actually achieves, without the selection bias.
+
+    The problem this solves is easy to miss. Run a search, take the best
+    cross-validated score, and report it — that number is too high, and not
+    because anything went wrong. You picked the maximum of many noisy estimates,
+    so you picked partly for noise. With enough trials, a configuration will
+    score well on your folds through luck alone.
+
+    Nested cross-validation separates choosing from measuring. The train
+    partition is divided into outer folds. Within each, a complete search runs on
+    that fold's training rows, its winner is refitted on those rows, and it is
+    scored on the outer-eval rows — which took no part in choosing it. Average
+    those outer scores and you have an unbiased estimate of the whole
+    tune-then-fit procedure.
+
+    What comes back describes the procedure, not a model. It answers "if I tune
+    this way on data like this, how well does the result do?" Different outer
+    folds may well choose different parameters, and that is itself worth
+    knowing: it means the data does not determine the choice.
 
     Parameters
     ----------
-    param_grid / param_distributions:
-        Estimator search space for grid / randomized inner search. At most one
-        may be set. May be omitted when a recipe space is provided.
-    recipe_grid / recipe_distributions:
-        Fold-local recipe knob space (``select_k``, ``n_bins``, …). At most one
-        may be set. Requires ``preprocess``.
-    param_space / recipe_space:
-        Declare-style (or Optuna callable) spaces for ``inner_search='optuna'``
-        or declare-style dicts for ``inner_search='evolutionary'``.
-        Optuna requires ``pip install 'buildml[optuna]'``.
+    dataset:
+        The data.
+    split_plan:
+        The split. Both loops stay inside the train partition.
+    estimator:
+        The estimator to tune.
+    param_grid:
+        Grid space for grid inner search. Mutually exclusive with
+        ``param_distributions``.
+    param_distributions:
+        Distribution space for randomized inner search.
+    recipe_grid:
+        Fold-local recipe knobs as a grid. Requires ``preprocess``.
+    recipe_distributions:
+        Fold-local recipe knobs as distributions. Requires ``preprocess``.
+    param_space:
+        Declare-style or callable space for Optuna, or declare-style for
+        evolutionary.
+    recipe_space:
+        The same, for recipe knobs.
     inner_search:
-        ``auto`` (infer from provided spaces), ``grid``, ``randomized``,
-        ``optuna``, or ``evolutionary``.
+        ``'auto'`` to infer from the spaces given, or an explicit ``'grid'``,
+        ``'randomized'``, ``'optuna'``, or ``'evolutionary'``.
     n_iter:
-        Randomized inner trials when using distributions.
+        Trials per inner randomized search.
     n_trials:
-        Optuna inner trials when ``inner_search`` resolves to ``optuna``.
-        For ``evolutionary``, also used as ``max_evaluations`` budget.
-    population_size / n_generations:
-        Evolutionary GA knobs when ``inner_search='evolutionary'``.
-    outer_cv / inner_cv:
-        Outer and inner fold counts (or sklearn splitters).
+        Trials per inner Optuna search; also the evaluation ceiling for
+        evolutionary.
+    population_size:
+        Configurations alive at once in an evolutionary inner search.
+    n_generations:
+        Breeding rounds in an evolutionary inner search.
+    random_state:
+        Base seed. Offset per outer fold so folds do not search identically.
+    task:
+        ``'classification'``, ``'regression'``, or ``'auto'``.
+    outer_cv:
+        Outer fold count or splitter. These produce the estimate.
+    inner_cv:
+        Inner fold count or splitter. These rank configurations.
     cv_strategy:
-        Shared fold builder for integer outer/inner CV when roles allow.
+        Folding scheme, shared by both loops.
+    scoring_metric:
+        Reported by the outer loop and ranked by the inner.
+    groups:
+        Explicit group labels, aligned to the train partition.
     preprocess:
-        Fold-local :class:`PreprocessRecipe` used in both loops. Required when
-        searching recipe knobs.
+        Fold-local recipe, refitted in both loops.
+    session_preprocess_applied:
+        Whether Session-global preprocessing already ran.
     allow_session_global_preprocess:
-        Explicit opt-in when Session-global preprocess already ran.
-        Default ``False`` refuses that path even if a fold-local recipe is
-        passed (recipes do not rebuild from raw/unpoisoned rows).
+        Override the resulting leakage refusal.
     warm_start_studies:
-        Default False. When True with Optuna inner search, reuse one Optuna
-        study across outer folds so later folds inherit prior trial history
-        (TPE priors). See Notes for the leakage-audit policy.
+        Share one Optuna study across outer folds so later folds inherit earlier
+        TPE priors. Cheaper, and slightly couples the folds — see the notes.
+
+    Returns
+    -------
+    NestedCVResult
+        Outer-fold scores and their mean and spread, each fold's chosen
+        configuration, and a stability summary of those choices.
+
+    Raises
+    ------
+    ValidationError
+        If no search space is given, if mutually exclusive spaces are combined,
+        if a space does not match the chosen inner method, if
+        ``warm_start_studies`` is set without Optuna, if ``groups`` does not
+        match the train partition's length, or if no outer folds were produced.
+    LeakageError
+        If partitions overlap, if an outer fold intersects a Session holdout, or
+        if global preprocessing already ran without the override.
 
     Notes
     -----
-    **Leakage:** Outer-eval rows never enter inner CV membership or inner
-    ranking. Session test/validation partitions are never used for outer or
-    inner folds. Chosen recipe knobs are recorded per outer fold. Optuna /
-    evolutionary trials run only on each outer-train subset.
+    **The cost is the product of both loops.** Five outer folds around a
+    fifty-trial inner search at three inner folds is 750 model fits before the
+    outer refits. Start with fewer folds and a smaller space than you would use
+    for a plain search.
 
-    **Warm-start policy (``warm_start_studies=True``):** Shared study state
-    carries only prior *inner*-CV trial scores from earlier outer-train
-    subsets. Outer-eval rows and Session test/validation still never enter
-    trial objectives. This can couple search trajectories across outer folds
-    (mild optimism vs independent studies) and is therefore opt-in.
+    **Report the outer mean and spread, never the inner scores.** The inner
+    means are selection evidence and are biased upward. The gap between them and
+    the outer mean is exactly the bias this procedure exists to expose.
+
+    **Nested CV gives you a number, not a model.** Afterwards, run the search
+    once on the full train partition and deploy that winner, reporting the
+    nested estimate as what to expect from it.
+
+    **Unstable choices across folds are a real finding.** When
+    ``inner_selection_summary['param_stability']`` is low, several
+    configurations are effectively tied, and the one a single search picks is
+    somewhat arbitrary.
+
+    **Warm-starting couples the outer folds.** Shared study state carries only
+    inner-CV scores from earlier outer-train subsets — outer-eval rows and
+    Session holdouts never enter any objective — but later folds start from
+    priors shaped by earlier ones, which makes the estimate mildly optimistic
+    relative to independent studies. It is opt-in for that reason.
+
+    Examples
+    --------
+    Estimate the procedure, then tune once for real::
+
+        nested = nested_cv_score(
+            dataset, split_plan, estimator,
+            param_distributions={"max_depth": [3, 5, 8], "min_samples_leaf": [1, 5, 10]},
+            outer_cv=5,
+            inner_cv=3,
+        )
+        nested.show()
+        print(nested.inner_selection_summary["param_stability"])
+
+        final = randomized_search(dataset, split_plan, estimator, {...})
+
+    See Also
+    --------
+    cv_score : When there is nothing to select.
+    grid_search : The biased-but-cheaper alternative.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

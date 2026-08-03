@@ -107,7 +107,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         rationale=(
             "Use when you need predictive intervals / NLL beyond point metrics."
-        ),
+        ,),
         assumptions=(
             "Numeric non-null features; enough train rows for optional conformal.",
         ),

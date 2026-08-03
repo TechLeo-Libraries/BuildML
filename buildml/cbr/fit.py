@@ -1,4 +1,23 @@
-"""Build a case base from Session train only."""
+"""Turn training rows into a searchable case base.
+
+Fitting here means something different from fitting a model. Nothing is
+estimated from the data and compressed into parameters; the rows are kept, and
+what gets *fitted* is only the machinery for measuring distance between them —
+the standardisation, the per-feature ranges, the categorical vocabularies, and
+whatever search index the backend needs.
+
+Those transforms are the reason this module insists on the training partition.
+They are learned once, on train rows alone, and reused unchanged for every
+query. If validation rows entered the case base, they would be their own nearest
+neighbours at distance zero and the holdout score would be meaningless; if they
+merely influenced the scaler, the leak would be subtler and just as real.
+
+See Also
+--------
+buildml.cbr.types.CbrConfig : What the settings mean.
+buildml.cbr.predict.predict_cbr : Using the result.
+buildml.cbr.evaluate.evaluate_cbr : Scoring it honestly.
+"""
 
 from __future__ import annotations
 
@@ -54,18 +73,124 @@ def fit_cbr(
     torch_embed_dim: int = 32,
     device: str = "cpu",
 ) -> tuple[CbrPlan, CbrFitResult]:
-    """Build a tabular case memory from Session **train** rows.
+    """Build a case base from the training rows and everything needed to query it.
 
-    Honesty
+    Each training row becomes a case: its features, and the outcome that
+    followed. Distance transforms are fitted on those rows, the requested
+    backend is resolved against what is installed, and the result is a
+    :class:`~buildml.cbr.results.CbrPlan` ready to predict, retrieve, evaluate,
+    and retain against.
+
+    This is case-based reasoning for supervised tabular problems. It is not
+    document retrieval for generation, not a vector database, and not a
+    cognitive CBR research platform.
+
+    Parameters
+    ----------
+    dataset:
+        The source data.
+    split_plan:
+        Required. Only train rows become cases; the guard refuses anything else.
+    backend:
+        ``'sklearn'`` for exact search, ``'industry'`` for an approximate index,
+        ``'embedding'`` or ``'torch'`` to learn a representation first. ``None``
+        resolves against what is installed.
+    task:
+        ``'classification'`` or ``'regression'``. Inferred from the target when
+        ``None``.
+    metric:
+        Distance function. ``'mixed'`` is the one to use when categorical
+        columns matter.
+    reuse:
+        How neighbour solutions combine into a prediction.
+    adapt:
+        Post-reuse adjustment.
+    k:
+        Neighbours consulted per query. Can be overridden later per call.
+    columns:
+        Feature columns, or ``None`` to infer. Every column included pulls on
+        distance, so an irrelevant one actively separates similar cases.
+    categorical_columns:
+        Columns to treat as categorical, or ``None`` to infer from dtype.
+    text_columns:
+        Columns to embed as text rather than treat as categories.
+    text_model_name:
+        The sentence-transformer for text columns.
+    standardize:
+        Centre and scale numeric features on train rows. Leave on unless scales
+        are already comparable — an unscaled large-range column otherwise
+        decides every distance by itself.
+    distance_eps:
+        Floor when inverting distances into weights.
+    random_state:
+        Seed for the sampling components.
+    prefer_reduce_components:
+        Search reduced components when ``reduce_plan`` supplies them. Distance
+        degrades in high dimensions, so reducing first often improves
+        neighbours — at the cost that "similar" now means similar under that
+        projection.
+    reduce_plan:
+        A fitted dimensionality-reduction plan.
+    torch_epochs:
+        Training passes for the torch metric encoder. Ignored by other backends.
+    torch_learning_rate:
+        Adam step size for the torch metric encoder.
+    torch_hidden_dim:
+        Hidden layer width of the torch metric encoder.
+    torch_embed_dim:
+        Width of the learned space the torch backend searches in. Smaller keeps
+        distances meaningful; larger retains more structure.
+    device:
+        Where the torch encoder trains.
+
+    Returns
     -------
-    Each train row becomes a case: features + solution (label/outcome).
-    Retrieval uses numpy/sklearn-style distances (euclidean / manhattan /
-    cosine / mixed Gower-style). Reuse votes or averages neighbor solutions.
-    This is **case-based reasoning** for supervised-style tasks — **not** RAG
-    (document retrieval for generation), not a vector DB, not a full cognitive
-    CBR research platform.
+    tuple
+        ``(plan, result)`` — the fitted reasoner and its fit report.
 
-    Leakage: validation/test rows never enter the case base at fit time.
+    Raises
+    ------
+    ValidationError
+        If no split plan was supplied or it does not permit fitting on train, if
+        ``k`` is below one, if ``distance_eps`` is not positive, if the metric,
+        reuse mode, or task is unrecognised, or if the requested columns are
+        absent or unusable.
+    MissingExtraError
+        If a backend was named explicitly and its dependency is not installed.
+
+    Notes
+    -----
+    **Validation and test rows never enter the case base.** They would be their
+    own nearest neighbours at distance zero, and every holdout metric would be
+    measuring memory rather than generalisation.
+
+    **The fit is cheap and the queries are not.** Nothing is estimated, so
+    fitting is close to the cost of copying the data — but every later
+    prediction searches the whole memory, so the expense moves to inference.
+
+    **Check ``result.backend`` against what you asked for.** An unavailable
+    optional backend falls back rather than failing, and the fallback is
+    recorded in the result and its disclosures.
+
+    **The training score in the result is not a measurement.** Every train row
+    is its own nearest neighbour, so it approaches perfect regardless.
+
+    Examples
+    --------
+    Mixed-type data with categorical columns::
+
+        plan, result = fit_cbr(
+            dataset, split_plan,
+            metric="mixed",
+            categorical_columns=["region", "channel"],
+            k=7,
+        )
+        print(result.backend, result.n_cases)
+
+    See Also
+    --------
+    buildml.cbr.retrieve.retrieve_cases : Inspecting neighbours before trusting them.
+    buildml.cbr.checkpoint.save_cbr_bundle : Persisting the plan.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

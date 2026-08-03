@@ -1,7 +1,28 @@
-"""Kubernetes Job / Service / ConfigMap helpers for torchrun DDP and local serve.
+"""Generate the Kubernetes YAML for distributed training and serving.
 
-Emits YAML templates. This is **not** live multi-cluster orchestration, a Helm
-product, or a managed training cloud. Shipped emitters are real YAML writers.
+Running multi-node training on Kubernetes needs an Indexed Job so each pod knows
+its node rank, a headless Service so the pods can find each other for the
+torchrun rendezvous, and the environment wiring that connects the two. Getting
+that arrangement right the first time takes a while, and the failure mode — pods
+that start and then hang at the rendezvous — is not self-explanatory.
+
+These functions emit that YAML. Two templates: a training Job with its Service
+and optional ConfigMap, and a serving Deployment with health probes.
+
+They write files. They do not apply them, talk to a cluster, or manage anything.
+BuildML is not a Helm chart, a managed training platform, or a control plane, and
+you still need to supply GPU nodes, networking, shared storage, and RBAC. Every
+result says so in its ``limitations``.
+
+Treat the output as a working starting point rather than a finished
+configuration. Cluster conventions around image registries, node selectors,
+tolerations, and storage vary too much for a generic template to be
+production-ready anywhere in particular.
+
+See Also
+--------
+buildml.dl.ddp : The distributed training these manifests launch.
+buildml.dl.packaging : Serving artifacts for the Deployment to load.
 """
 
 from __future__ import annotations
@@ -15,7 +36,35 @@ from buildml.core.errors import ValidationError
 
 @dataclass(slots=True)
 class K8sJobRenderResult:
-    """Rendered Kubernetes YAML result."""
+    """The YAML that was rendered, and what it does not include.
+
+    Attributes
+    ----------
+    yaml_text:
+        The manifest. Multiple documents separated by ``---``.
+    path:
+        Where it was written, or ``None`` when only rendered.
+    nnodes:
+        Node count for a training Job, or replica count for a Deployment.
+    nproc_per_node:
+        Processes per node for training; 1 for serving.
+    disclosures:
+        What was written.
+    limitations:
+        What the cluster operator still has to provide.
+    meta:
+        Names, namespace, and the options that were used.
+
+    Notes
+    -----
+    ``to_dict`` reports the YAML's length rather than its content, since a full
+    manifest embedded in a history record is noise.
+
+    See Also
+    --------
+    write_torchrun_ddp_job : Produces this for training.
+    write_serve_deployment : Produces this for serving.
+    """
 
     yaml_text: str
     path: Path | None
@@ -26,6 +75,18 @@ class K8sJobRenderResult:
     meta: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return the render outcome as JSON-safe values.
+
+        The manifest itself is reported as a character count rather than
+        embedded — a history entry should record that YAML was written, not
+        reproduce it.
+
+        Returns
+        -------
+        dict
+            Path, node and process counts, disclosures, limitations, metadata,
+            and the manifest length.
+        """
         return {
             "path": None if self.path is None else str(self.path),
             "nnodes": self.nnodes,
@@ -58,7 +119,82 @@ def render_torchrun_ddp_job(
     service_account: str | None = None,
     include_configmap: bool = True,
 ) -> str:
-    """Render Indexed Job + Service (+ optional ConfigMap) for torchrun DDP."""
+    """Produce the manifest for a multi-node torchrun training job.
+
+    Emits three documents: an Indexed Job whose completion index becomes each
+    pod's node rank, a headless Service giving the pods stable DNS names so they
+    can find each other, and optionally a ConfigMap holding the shared settings.
+
+    Parameters
+    ----------
+    job_name:
+        Name for the Job and Service. Must be a DNS-1123 label — letters,
+        digits, and hyphens.
+    namespace:
+        Kubernetes namespace.
+    image:
+        Container image. Must contain PyTorch and your training code.
+    nnodes:
+        Pods to run. Becomes both ``completions`` and ``parallelism``, so all of
+        them run at once — which torchrun requires, since the rendezvous waits
+        for every node.
+    nproc_per_node:
+        Processes per pod, normally the GPU count per node.
+    script_path:
+        Path to the training script inside the container.
+    master_port:
+        Rendezvous port.
+    cpu_request / memory_request:
+        Per-pod resources.
+    gpu_limit:
+        GPUs per pod. 0 omits the GPU resource entirely.
+    gpu_request:
+        GPU request when it should differ from the limit. Defaults to the
+        limit, which is what Kubernetes requires for GPUs anyway.
+    service_account:
+        Service account for the pods, when RBAC needs one.
+    include_configmap:
+        Also emit a ConfigMap and mount it via ``envFrom``.
+
+    Returns
+    -------
+    str
+        The manifest, documents separated by ``---``.
+
+    Raises
+    ------
+    ValidationError
+        If ``nnodes`` or ``nproc_per_node`` is below 1, if ``gpu_limit`` is
+        negative, or if the job name is not a valid DNS label.
+
+    Notes
+    -----
+    **The Indexed completion mode is what makes this work.** Kubernetes sets
+    ``JOB_COMPLETION_INDEX`` per pod, and the generated command passes it to
+    torchrun as ``--node_rank``. Without indexed mode every pod would claim rank
+    0 and the rendezvous would never complete.
+
+    **The Service is headless — ``clusterIP: None``.** Load balancing is exactly
+    wrong here: the pods need to address each other individually, and the
+    manifest points ``MASTER_ADDR`` at the rank-0 pod's stable DNS name.
+
+    **The pods need shared access to your data.** Nothing here provisions
+    storage. Add a volume mount, or bake the data into the image.
+
+    Examples
+    --------
+    Two nodes, two GPUs each::
+
+        yaml_text = render_torchrun_ddp_job(
+            nnodes=2, nproc_per_node=2, gpu_limit=2,
+            script_path="/workspace/train.py",
+        )
+
+    See Also
+    --------
+    write_torchrun_ddp_job : Render and write in one step.
+    buildml.dl.ddp : The training code these pods run.
+    """
     if nnodes < 1:
         raise ValidationError("nnodes must be >= 1")
     if nproc_per_node < 1:
@@ -176,7 +312,40 @@ def render_torchrun_ddp_job(
 
 
 def write_torchrun_ddp_job(path: str | Path, **kwargs: Any) -> K8sJobRenderResult:
-    """Render and write a torchrun DDP Job YAML to ``path``."""
+    """Render a training job manifest and write it to disk.
+
+    A thin wrapper over :func:`render_torchrun_ddp_job` that creates parent
+    directories, writes the file, and returns a result carrying the honest
+    limitations alongside it.
+
+    Parameters
+    ----------
+    path:
+        Where to write. Parent directories are created.
+    kwargs:
+        Passed through to :func:`render_torchrun_ddp_job`.
+
+    Returns
+    -------
+    K8sJobRenderResult
+        The manifest text, the path, and what the operator still owns.
+
+    Raises
+    ------
+    ValidationError
+        Propagated from the renderer.
+
+    Examples
+    --------
+    Write and apply::
+
+        result = write_torchrun_ddp_job("k8s/train-job.yaml", nnodes=4)
+        result.limitations  # read before assuming this is deployable
+
+    See Also
+    --------
+    render_torchrun_ddp_job : The renderer, and the full parameter list.
+    """
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     yaml_text = render_torchrun_ddp_job(**kwargs)
@@ -219,7 +388,72 @@ def render_serve_deployment(
     bundle_path: str = "/models/bundle",
     kind: str = "pipeline",
 ) -> str:
-    """Render a serve Deployment + Service template (not a control plane)."""
+    """Produce the manifest for serving a saved bundle.
+
+    Emits a Deployment running the BuildML serve command against a bundle path,
+    with readiness and liveness probes on ``/health``, plus a ClusterIP Service
+    in front of it.
+
+    Parameters
+    ----------
+    name:
+        Name for the Deployment and Service. Must be a DNS-1123 label.
+    namespace:
+        Kubernetes namespace.
+    image:
+        Container image. Must have BuildML and its serving dependencies.
+    replicas:
+        How many pods. More than one gives redundancy and throughput; the
+        Service load-balances across them.
+    port:
+        HTTP port the server listens on.
+    cpu_request / memory_request:
+        Per-pod resources.
+    gpu_limit:
+        GPUs per pod, when inference needs one. ``None`` omits it.
+    service_account:
+        Service account, when RBAC needs one.
+    bundle_path:
+        Where the model bundle lives inside the container. Mount it or bake it
+        in — nothing here provisions it.
+    kind:
+        Bundle kind, ``'pipeline'`` or ``'torch'``.
+
+    Returns
+    -------
+    str
+        The manifest, documents separated by ``---``.
+
+    Raises
+    ------
+    ValidationError
+        If the name is not a valid DNS label, or if ``replicas`` is below 1.
+
+    Notes
+    -----
+    **The two probes do different jobs.** Readiness controls whether the Service
+    routes traffic to a pod, so a pod still loading its model is kept out of
+    rotation rather than returning errors. Liveness restarts a pod that has
+    stopped responding. The liveness delay is longer so that slow startup is not
+    mistaken for failure.
+
+    **The Service is ClusterIP, reachable only inside the cluster.** External
+    access needs an Ingress, a LoadBalancer, or a port-forward, none of which
+    are generated here — TLS, hostnames, and certificates are too
+    cluster-specific to template.
+
+    Examples
+    --------
+    Three replicas serving a pipeline bundle::
+
+        yaml_text = render_serve_deployment(
+            replicas=3, bundle_path="/models/churn", kind="pipeline",
+        )
+
+    See Also
+    --------
+    write_serve_deployment : Render and write in one step.
+    """
     _validate_dns_label(name, field_name="name")
     if replicas < 1:
         raise ValidationError("replicas must be >= 1")
@@ -298,7 +532,35 @@ def render_serve_deployment(
 
 
 def write_serve_deployment(path: str | Path, **kwargs: Any) -> K8sJobRenderResult:
-    """Write a serve Deployment+Service YAML template."""
+    """Render a serving manifest and write it to disk.
+
+    A thin wrapper over :func:`render_serve_deployment` that creates parent
+    directories, writes the file, and returns a result carrying the honest
+    limitations alongside it.
+
+    Parameters
+    ----------
+    path:
+        Where to write. Parent directories are created.
+    kwargs:
+        Passed through to :func:`render_serve_deployment`.
+
+    Returns
+    -------
+    K8sJobRenderResult
+        The manifest text, the path, and what the operator still owns. The
+        replica count is reported in ``nnodes``, since the result type is
+        shared with the training path.
+
+    Raises
+    ------
+    ValidationError
+        Propagated from the renderer.
+
+    See Also
+    --------
+    render_serve_deployment : The renderer, and the full parameter list.
+    """
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     yaml_text = render_serve_deployment(**kwargs)
