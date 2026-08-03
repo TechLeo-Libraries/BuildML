@@ -95,6 +95,12 @@ CLAIMED_COMPLETE: dict[str, dict[str, str]] = {
         "guide": "quickstart-timeseries-analysis",
         "analysis_only": "1",
     },
+    "fairness": {
+        "matrix": "fairness_capability_matrix",
+        "guide": "quickstart-fairness",
+        "proof_hint": "fairness",
+        "analysis_only": "1",
+    },
 }
 
 # Primary-path domains without capability matrices — alternate checklist.

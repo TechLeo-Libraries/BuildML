@@ -21,7 +21,9 @@ a stable 2.x release.
    `*_capability_matrix` names are freeze candidates. Experimental Torch/AI
    operator details may still move until beta.
 6. **Proofs and CI smoke** (`python -m proofs._lib.run_all --smoke`) must stay
-   green on the freeze set.
+   green on the freeze set. Smoke fails on unexpected
+   `skipped_missing_extra` / `partial` result statuses (use `--allow-skip`
+   only for local investigation).
 
 ## Coverage ratchet
 

@@ -119,7 +119,12 @@ def load_intrusion_anomaly_synthetic(
     n_attack: int = 120,
     seed: int = 11,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Network-flow-like anomaly table with rare attack rows."""
+    """Network-flow-like anomaly table with rare, partially overlapping attacks.
+
+    Attack margins are softer than well-separated blobs, and a small fraction of
+    rows receive flipped labels so unsupervised detectors cannot trivially hit
+    perfect holdout scores.
+    """
     rng = np.random.default_rng(seed)
     normal = pd.DataFrame(
         {
@@ -133,27 +138,35 @@ def load_intrusion_anomaly_synthetic(
             "is_attack": np.zeros(n_normal, dtype=int),
         }
     )
+    # Milder shift vs normal so IsolationForest / HBOS leave residual error.
     attack = pd.DataFrame(
         {
-            "duration": rng.exponential(0.4, n_attack),
-            "src_bytes": rng.lognormal(8.5, 0.6, n_attack),
-            "dst_bytes": rng.lognormal(2.0, 1.2, n_attack),
-            "count": rng.poisson(40, n_attack),
-            "srv_count": rng.poisson(35, n_attack),
-            "same_srv_rate": rng.beta(2, 5, n_attack),
-            "dst_host_count": rng.integers(50, 255, n_attack),
+            "duration": rng.exponential(1.1, n_attack),
+            "src_bytes": rng.lognormal(6.4, 0.9, n_attack),
+            "dst_bytes": rng.lognormal(3.5, 1.0, n_attack),
+            "count": rng.poisson(18, n_attack),
+            "srv_count": rng.poisson(14, n_attack),
+            "same_srv_rate": rng.beta(3, 3, n_attack),
+            "dst_host_count": rng.integers(20, 255, n_attack),
             "is_attack": np.ones(n_attack, dtype=int),
         }
     )
     frame = pd.concat([normal, attack], ignore_index=True)
+    # ~4% label flips keep irreducible evaluation error for tuned detectors.
+    flip = rng.random(len(frame)) < 0.04
+    frame.loc[flip, "is_attack"] = 1 - frame.loc[flip, "is_attack"]
     frame = frame.sample(frac=1.0, random_state=seed).reset_index(drop=True)
     meta = {
         "name": "network_intrusion_synthetic",
         "license": "synthetic/public-domain (generated in-repo)",
         "n_rows": int(len(frame)),
-        "n_attack": int(n_attack),
+        "n_attack": int(int(frame["is_attack"].sum())),
         "target": "is_attack",
-        "notes": "KDD-inspired synthetic flows; not the full KDD Cup 1999 corpus.",
+        "difficulty": "partial_overlap_with_label_noise",
+        "notes": (
+            "KDD-inspired synthetic flows with soft attack margins and ~4% "
+            "label flips; not the full KDD Cup 1999 corpus."
+        ),
     }
     return frame, meta
 

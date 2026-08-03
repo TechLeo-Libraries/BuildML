@@ -27,7 +27,7 @@ and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
 | Stage | Read | Outcome |
 | --- | --- | --- |
 | 0 | [Installation](../docs/installation.rst), [concepts](../docs/concepts.rst), [workflow guide](../docs/workflow-guide.rst) | Vocabulary, install honesty, stage decisions |
-| 0b | New to machine learning? `session.learn()` then `session.explain("<step>")`: see [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough) | Plain-language concepts and operations, in reading order |
+| 0b | New to machine learning? `session.learn()` then `session.explain("<step>")`: see [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough). Browse the surface with `Session.list_capabilities()` / `Session.describe_method("fit")` | Plain-language concepts and operations, in reading order |
 | 1 | [Classical quickstart](quickstart-classical.md) → [Classical end-to-end](classical-end-to-end.md) | Dirty data → roles → split → prep → fit → evaluate |
 | 2 | [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Why BuildML refuses poisoned CV; good vs bad patterns |
 | 3 | [Engines](engines-polars-duckdb.md), [EDA / Teaching Studio](eda-teaching-studio.md) | Prep at scale; explore before mutating |
@@ -68,7 +68,7 @@ cross-links.
 | CV / search / nested | `cv_score`, `grid_search`, `randomized_search`, `optuna_search`, `evolutionary_search`, `nested_cv_score`, `PreprocessRecipe` | [Leakage](leakage-cv-recipes.md), [Diagnostics & search](classical-diagnostics-search.md) |
 | Diagnostics | `calibration`, `tune_threshold`, `feature_importance`, `error_slices`, `learning_curve`, `eval_plots` | [Diagnostics & search](classical-diagnostics-search.md) |
 | Engines | `with_engine`, `to_engine`, `dataset.filter_expr` / `project` / `aggregate`, DuckDB lifecycle | [Engines](engines-polars-duckdb.md) |
-| EDA / teaching | `eda`, `eda_app`, `explain`, `learn`, `workflow`, `walkthrough`, `dry_run` | [EDA / Teaching Studio](eda-teaching-studio.md) |
+| EDA / teaching | `eda`, `eda_app`, `explain`, `learn`, `workflow`, `walkthrough`, `dry_run`, `list_capabilities`, `describe_method`, `list_active_domains` | [EDA / Teaching Studio](eda-teaching-studio.md) |
 | Artifacts | `checkpoint_*`, `save_model`, `save_pipeline`, `predict_from_pipeline`, torch/rag/unsupervised/ensemble/automl/forecast/anomaly/semisupervised/ssl/activelearning/online/multitask/metalearning/federated/symbolic/cbr/imitation/rl/ai artifacts | [Artifacts](artifacts-checkpoints-bundles.md) |
 | Unsupervised | `fit_clusters`, `assign_clusters`, `evaluate_clusters`, unsupervised bundle (+ `reduce_dimensions` for PCA) | [Unsupervised quickstart](quickstart-unsupervised.md), [Unsupervised deep](unsupervised-deep.md) |
 | Ensembles | `fit_voting`, `fit_stacking`, `fit_blending`, `evaluate_ensemble`, ensemble bundle | [Ensemble quickstart](quickstart-ensemble.md), [Ensemble deep](ensemble-deep.md) |
@@ -94,7 +94,7 @@ cross-links.
 | Search / LTR | `fit_ranker`, `rank`, `evaluate_ranker`, ranker bundle | [LTR quickstart](quickstart-ranking.md), [LTR deep](ranking-deep.md) |
 | Knowledge graphs | `fit_kg`, `score_triples`, `predict_links`, `query_kg`, `evaluate_kg`, KG bundle | [KG quickstart](quickstart-kg.md), [KG deep](kg-deep.md) |
 | Optimisation / decisions | `fit_decision_policy`, `apply_decisions`, `evaluate_decisions`, decision bundle | [Decisions quickstart](quickstart-optimize.md), [Decisions deep](optimize-deep.md) |
-| Fairness / SHAP | `evaluate_fairness`, `fairness_capability_matrix`; `explain_shap` (`buildml[shap]`) | [features](../docs/features.rst), [stability](../docs/stability.md) |
+| Fairness / SHAP | `evaluate_fairness`, `fairness_capability_matrix`; `explain_shap` (`buildml[shap]`); discovery via `Session.list_capabilities(domain="fairness")` | [Fairness quickstart](quickstart-fairness.md), [features](../docs/features.rst), [stability](../docs/stability.md) |
 | Synthetic data | `fit_synthesizer`, `sample_synthetic`, `evaluate_synthetic`, `synthetic_capability_matrix`, synthetic bundle | [Synthetic quickstart](quickstart-synthetic.md), [Synthetic deep](synthetic-deep.md) |
 | NLP (text column) | `nlp_capability_matrix`, `profile_text_corpus`, `detect_language`, `fit_text_classifier`, `predict_text`, `evaluate_text_classifier`, `interpret_text_prediction`, `fit_topics`, `assign_topics`, `extract_keyphrases`, `analyze_sentiment`, `extract_entities`, `summarize_text`, NLP bundle | [NLP quickstart](quickstart-nlp.md), [NLP deep](nlp-deep.md) |
 | Torch tabular / text | `make_torch_loaders`, `make_text_torch_loaders`, `fit_torch`, `evaluate_torch` | [Torch quickstart](quickstart-torch.md), [Torch deep](torch-deep.md) |

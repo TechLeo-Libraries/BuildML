@@ -178,6 +178,93 @@ def test_invalid_backend_strategy_pairing() -> None:
         resolve_backend_strategy(backend="sklearn", strategy="bald")
 
 
+def test_industry_query_discloses_native_fallback_when_skactiveml_broken(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Broken/present skactiveml must not silently swallow into native scores."""
+    from buildml.activelearning.adapters import scikit_activeml as adapter
+    from buildml.activelearning.adapters.scikit_activeml import (
+        _FALLBACK_DISCLOSURE,
+        score_industry_pool,
+    )
+
+    monkeypatch.setattr(adapter, "scikit_activeml_spec_present", lambda: True)
+    monkeypatch.setattr(adapter, "scikit_activeml_importable", lambda: False)
+    rng = np.random.default_rng(0)
+    x_labeled = rng.normal(size=(10, 3))
+    y_labeled = np.array([0, 1] * 5)
+    x_pool = rng.normal(size=(8, 3))
+    scores, disclosures = score_industry_pool(
+        strategy="core_set",
+        x_labeled=x_labeled,
+        y_labeled=y_labeled,
+        x_pool=x_pool,
+        estimator=None,
+        committee=None,
+    )
+    assert scores.shape == (8,)
+    assert any(_FALLBACK_DISCLOSURE in note for note in disclosures)
+    assert any("subprocess import probe failed" in note for note in disclosures)
+
+
+def test_industry_query_discloses_when_host_path_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from buildml.activelearning.adapters import scikit_activeml as adapter
+    from buildml.activelearning.adapters.scikit_activeml import (
+        _FALLBACK_DISCLOSURE,
+        score_industry_pool,
+    )
+
+    monkeypatch.setattr(adapter, "scikit_activeml_spec_present", lambda: True)
+    monkeypatch.setattr(adapter, "scikit_activeml_importable", lambda: True)
+
+    def _boom(**kwargs):  # noqa: ANN003
+        raise RuntimeError("simulated skactiveml API failure")
+
+    monkeypatch.setattr(adapter, "_score_with_skactiveml", _boom)
+    rng = np.random.default_rng(0)
+    scores, disclosures = score_industry_pool(
+        strategy="core_set",
+        x_labeled=rng.normal(size=(10, 3)),
+        y_labeled=np.array([0, 1] * 5),
+        x_pool=rng.normal(size=(8, 3)),
+        estimator=None,
+        committee=None,
+    )
+    assert scores.shape == (8,)
+    assert any(_FALLBACK_DISCLOSURE in note for note in disclosures)
+    assert any("RuntimeError" in note for note in disclosures)
+
+
+def test_industry_suggest_query_attaches_fallback_disclosure() -> None:
+    session = (
+        Session.ingest(_frame())
+        .set_roles({"a": "feature", "b": "feature", "y": "target"})
+        .split(test_size=0.25, stratify=True, random_state=0)
+        .scale(method="standard")
+    )
+    session, _ = _mask(session)
+    session.fit_active_learner(
+        backend="industry",
+        strategy="core_set",
+        prefer_reduce_components=False,
+        label_budget=10,
+    )
+    q = session.suggest_query(batch_size=3)
+    assert len(q.indices) == 3
+    joined = " ".join(q.disclosures)
+    assert "native" in joined.lower() or "scikit-activeml" in joined.lower()
+
+
+def test_capability_matrix_reports_host_path_honesty() -> None:
+    matrix = activelearning_capability_matrix()
+    industry = matrix["backends"]["industry"]
+    assert industry["host_path"] == "scikit-activeml"
+    assert industry["host_path_import_probe"] == "deferred_to_query"
+    assert "disclosed native" in industry["notes"]
+
+
 def test_bundle_roundtrip_with_backend(tmp_path: Path) -> None:
     session = (
         Session.ingest(_frame())

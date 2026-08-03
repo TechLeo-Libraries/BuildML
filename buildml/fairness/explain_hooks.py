@@ -13,12 +13,18 @@ def fairness_status(session: Any | None = None) -> dict[str, Any]:
     status: dict[str, Any] = {
         "enabled": report is not None,
         "has_report": report is not None,
+        "maturity": "observational_analysis",
         "disclosures": [
             "evaluate_fairness is holdout-only observational disparity reporting.",
+            "positive_label is hard-validated against observed labels.",
+            "Not a legal audit; no automatic bias mitigation.",
         ],
     }
     if report is not None and hasattr(report, "to_dict"):
         status["last_report"] = report.to_dict()
+        status["demographic_parity_difference"] = getattr(
+            report, "demographic_parity_difference", None
+        )
     return attach_capability_matrix(status, "fairness_capability_matrix")
 
 

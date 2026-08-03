@@ -403,9 +403,10 @@ jobs:
       - name: Benchmark smoke scripts
         run: python scripts/run_benchmark_smokes.py --verbose
 
-  # Proof smoke gate: Tier A CI subset, always re-run (no --skip-existing).
-  # Core install only; scripts honest-skip missing extras. Linux-only for the
-  # same wheel reasons as benchmarks.
+  # Proof smoke gate: expanded Tier A CI subset, always re-run (no --skip-existing).
+  # Core install only. Soft-skips (skipped_missing_extra/partial) fail the job
+  # unless --allow-skip is passed (CI does not). Linux-only for the same wheel
+  # reasons as benchmarks.
   proofs-smoke:
     runs-on: ubuntu-latest
     strategy:

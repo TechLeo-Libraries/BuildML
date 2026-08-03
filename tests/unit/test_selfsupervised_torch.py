@@ -97,3 +97,54 @@ def test_ssl_method_catalog() -> None:
     names = {r["method"] for r in rows}
     assert "simclr_tabular" in names
     assert "masked_tabular" in names
+
+
+def test_vision_ssl_state_dict_roundtrip(tmp_path: Path) -> None:
+    """Vision SSL encoder must restore Torch weights from encoder_torch.pt."""
+    from buildml.core.errors import MissingExtraError
+    from buildml.selfsupervised.checkpoint import load_ssl_bundle, save_ssl_bundle
+    from buildml.selfsupervised.results import SelfSupervisedPlan
+    from buildml.selfsupervised.torch.vision import VisionSSLEncoder
+
+    rng = np.random.default_rng(0)
+    images = [rng.random((3, 16, 16)).astype(np.float32) for _ in range(8)]
+    encoder = VisionSSLEncoder(
+        architecture="resnet18",
+        weight_mode="mock",
+        projector_dim=16,
+        epochs=1,
+        batch_size=4,
+        image_size=(16, 16),
+        random_state=0,
+    )
+    try:
+        encoder.fit(images)
+    except (MissingExtraError, OSError) as exc:
+        pytest.skip(f"torch not usable for vision SSL on this host: {exc}")
+    before = encoder.transform(images)
+    latent = int(encoder.latent_dim)
+    rep_cols = tuple(f"ssl_{i}" for i in range(latent))
+
+    plan = SelfSupervisedPlan(
+        method="vision_ssl",
+        columns=("image",),
+        n_train_rows=len(images),
+        latent_dim=latent,
+        representation_prefix="ssl_",
+        representation_columns=rep_cols,
+        encoder_=encoder,
+        modality="vision",
+        disclosures=("vision ssl unit roundtrip",),
+    )
+
+    out = tmp_path / "vision_ssl_bundle"
+    save_ssl_bundle(out, plan)
+    assert (out / "encoder_torch.pt").is_file()
+
+    loaded_plan, _ = load_ssl_bundle(out, trusted=True)
+    restored = loaded_plan.encoder_
+    assert isinstance(restored, VisionSSLEncoder)
+    assert restored._backbone is not None
+    assert restored._projector is not None
+    after = restored.transform(images)
+    np.testing.assert_allclose(before, after, rtol=1e-5, atol=1e-5)

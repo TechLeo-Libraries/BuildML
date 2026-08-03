@@ -111,8 +111,9 @@ Coverage `fail_under` lives in `pyproject.toml` (`[tool.coverage.report]`) and
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 
-Proof CI gate: `python -m proofs._lib.run_all --smoke` (Tier A subset, never
-skips existing results). Full suites may use `--skip-existing` locally only.
+Proof CI gate: `python -m proofs._lib.run_all --smoke` (expanded Tier A subset,
+never skips existing results, fails on `skipped_missing_extra` / `partial`
+unless `--allow-skip`). Full suites may use `--skip-existing` locally only.
 
 Surface stability: see [`docs/stability.md`](docs/stability.md).
 

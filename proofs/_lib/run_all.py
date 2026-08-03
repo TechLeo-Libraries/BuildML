@@ -5,6 +5,7 @@ Usage (from repo root)::
     .\\.venv\\Scripts\\python.exe -m proofs._lib.run_all
     .\\.venv\\Scripts\\python.exe -m proofs._lib.run_all --tier B
     .\\.venv\\Scripts\\python.exe -m proofs._lib.run_all --tier C --skip-existing
+    .\\.venv\\Scripts\\python.exe -m proofs._lib.run_all --smoke
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 REPO = Path(__file__).resolve().parents[2]
 PROOFS = REPO / "proofs"
@@ -79,6 +81,8 @@ TIER_A = [
     "uplift-marketing-causal",
     "edge-fleet-federated",
     "peer-lending-graph",
+    # Observational fairness (analysis-only domain)
+    "loan-fairness-observational",
 ]
 
 TIER_B = [
@@ -124,6 +128,42 @@ TIER_B = [
 
 TIER_C = list(TIER_A)  # each Tier A may have baseline_industry.py
 
+# Broader core-viable Tier A subset for CI (sklearn/native paths; no torch required).
+# Scripts that need optional extras must complete on core or fail the smoke gate
+# unless --allow-skip is set (CI never sets that flag).
+CI_SMOKE_TIER_A: tuple[str, ...] = (
+    "loan-approval-classical",
+    "mortgage-default-classical",
+    "claim-severity-regression",
+    "cluster-customer-segments",
+    "network-intrusion-anomaly",
+    "payment-rail-anomaly",
+    "voting-ensemble-attrition",
+    "stacking-credit-risk",
+    "blending-payment-risk",
+    "stream-fraud-online",
+    "clickstream-online",
+    "prob-interval-risk",
+    "weather-prob-intervals",
+    "store-sales-forecast",
+    "support-kb-rag",
+    "ticket-routing-nlp",
+    "policy-rules-neuro-symbolic",
+    "compliance-neuro-symbolic",
+    "loan-fairness-observational",
+    "synthetic-privacy-utility",
+    "sku-embedding-clusters",
+)
+
+_SKIP_RESULT_STATUSES = frozenset(
+    {
+        "skipped_missing_extra",
+        "skipped",
+        "partial",
+        "skipped_partial",
+    }
+)
+
 
 def _run(script: Path, timeout: int = 600) -> tuple[str, float, str]:
     if not script.is_file():
@@ -140,7 +180,11 @@ def _run(script: Path, timeout: int = 600) -> tuple[str, float, str]:
         )
         elapsed = time.perf_counter() - t0
         if proc.returncode == 0:
-            return "ok", elapsed, (proc.stdout or "").strip().splitlines()[-1:][0] if proc.stdout else ""
+            return (
+                "ok",
+                elapsed,
+                (proc.stdout or "").strip().splitlines()[-1:][0] if proc.stdout else "",
+            )
         err = (proc.stderr or proc.stdout or "").strip()
         return "error", elapsed, err[-500:]
     except subprocess.TimeoutExpired:
@@ -149,17 +193,48 @@ def _run(script: Path, timeout: int = 600) -> tuple[str, float, str]:
         return "error", time.perf_counter() - t0, f"{type(exc).__name__}: {exc}"
 
 
-# Fast, core-only Tier A subset for CI (no torch / heavy industry required).
-CI_SMOKE_TIER_A: tuple[str, ...] = (
-    "loan-approval-classical",
-    "cluster-customer-segments",
-    "network-intrusion-anomaly",
-    "voting-ensemble-attrition",
-    "stream-fraud-online",
-    "support-kb-rag",
-    "ticket-routing-nlp",
-    "policy-rules-neuro-symbolic",
-)
+def _read_result_status(marker: Path) -> str | None:
+    """Return JSON ``status`` from a proof results marker when present."""
+    if not marker.is_file():
+        return None
+    try:
+        payload: Any = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if isinstance(payload, dict):
+        status = payload.get("status")
+        if isinstance(status, str) and status:
+            return status
+    return None
+
+
+def _classify_process_ok(
+    *,
+    process_status: str,
+    result_status: str | None,
+    allow_skip: bool,
+) -> str:
+    """Map process exit + results.json status into harness status.
+
+    ``ok`` means the proof completed. ``skipped`` / ``partial`` are distinct
+    from success so CI can fail unexpected soft-skips.
+    """
+    if process_status != "ok":
+        return process_status
+    if result_status is None:
+        # Older scripts may omit status; treat process-ok as completed.
+        return "ok"
+    normalized = result_status.strip().lower()
+    if normalized in {"completed", "ok", "success"}:
+        return "ok"
+    if normalized in _SKIP_RESULT_STATUSES:
+        if allow_skip:
+            return "skipped" if "partial" not in normalized else "partial"
+        return "unexpected_skip"
+    if normalized == "partial":
+        return "partial" if allow_skip else "unexpected_skip"
+    # Unknown non-completed status is not success under smoke discipline.
+    return "unexpected_skip" if not allow_skip else "skipped"
 
 
 def main() -> int:
@@ -180,7 +255,17 @@ def main() -> int:
         action="store_true",
         help=(
             "CI smoke subset of Tier A (ignores --tier for slug selection). "
-            "Never skips existing results."
+            "Never skips existing results. Fails on skipped_missing_extra / "
+            "partial unless --allow-skip is also set."
+        ),
+    )
+    parser.add_argument(
+        "--allow-skip",
+        action="store_true",
+        help=(
+            "Treat results.json status skipped_missing_extra/partial as "
+            "non-fatal (harness status skipped/partial). Default for --smoke "
+            "is to fail unexpected skips."
         ),
     )
     parser.add_argument(
@@ -197,10 +282,16 @@ def main() -> int:
         args.skip_existing = False
         args.tier = "A"
         slug_filter = set(CI_SMOKE_TIER_A)
+        # Smoke denies soft-skips unless --allow-skip is explicit.
+        allow_skip = bool(args.allow_skip)
     elif args.slugs:
         slug_filter = set(args.slugs)
+        # Local / explicit slug runs tolerate soft-skips by default.
+        allow_skip = True
     else:
         slug_filter = None
+        # Local full runs historically tolerate missing-extra soft skips.
+        allow_skip = True
 
     jobs: list[tuple[str, str, Path, Path]] = []
     # (tier, slug, script, result_marker)
@@ -209,14 +300,24 @@ def main() -> int:
             if slug_filter is not None and slug not in slug_filter:
                 continue
             jobs.append(
-                ("A", slug, PROOFS / slug / "script.py", PROOFS / slug / "results" / "results.json")
+                (
+                    "A",
+                    slug,
+                    PROOFS / slug / "script.py",
+                    PROOFS / slug / "results" / "results.json",
+                )
             )
     if args.tier in ("B", "AB", "all"):
         for slug in TIER_B:
             if slug_filter is not None and slug not in slug_filter:
                 continue
             jobs.append(
-                ("B", slug, PROOFS / slug / "script.py", PROOFS / slug / "results" / "summary.json")
+                (
+                    "B",
+                    slug,
+                    PROOFS / slug / "script.py",
+                    PROOFS / slug / "results" / "summary.json",
+                )
             )
     if args.tier in ("C", "all"):
         for slug in TIER_C:
@@ -238,7 +339,9 @@ def main() -> int:
     rows = []
     for tier, slug, script, marker in jobs:
         if args.skip_existing and marker.is_file():
-            rows.append({"tier": tier, "slug": slug, "status": "skipped_existing", "s": 0.0})
+            rows.append(
+                {"tier": tier, "slug": slug, "status": "skipped_existing", "s": 0.0}
+            )
             print(f"[{tier}] SKIP existing {slug}")
             continue
         if tier == "C" and not script.is_file():
@@ -255,13 +358,33 @@ def main() -> int:
                 )
                 print(f"[{tier}] OK embedded {slug}")
             else:
-                rows.append({"tier": tier, "slug": slug, "status": "no_baseline", "s": 0.0})
+                rows.append(
+                    {"tier": tier, "slug": slug, "status": "no_baseline", "s": 0.0}
+                )
                 print(f"[{tier}] NO baseline {slug}")
             continue
         print(f"[{tier}] RUN {slug} ...", flush=True)
-        status, elapsed, note = _run(script, timeout=args.timeout)
-        rows.append({"tier": tier, "slug": slug, "status": status, "s": round(elapsed, 2), "note": note})
-        print(f"[{tier}] {status.upper()} {slug} ({elapsed:.1f}s) {note[:120]}")
+        process_status, elapsed, note = _run(script, timeout=args.timeout)
+        result_status = _read_result_status(marker) if process_status == "ok" else None
+        status = _classify_process_ok(
+            process_status=process_status,
+            result_status=result_status,
+            allow_skip=allow_skip,
+        )
+        row: dict[str, Any] = {
+            "tier": tier,
+            "slug": slug,
+            "status": status,
+            "s": round(elapsed, 2),
+            "note": note,
+        }
+        if result_status is not None:
+            row["result_status"] = result_status
+        rows.append(row)
+        print(
+            f"[{tier}] {status.upper()} {slug} ({elapsed:.1f}s) {note[:120]}"
+            + (f" result={result_status}" if result_status else "")
+        )
 
     # Summary counts
     by_status: dict[str, int] = {}
@@ -270,19 +393,26 @@ def main() -> int:
 
     out = {
         "tier": args.tier,
+        "smoke": bool(args.smoke),
+        "allow_skip": allow_skip,
         "n_jobs": len(rows),
         "counts": by_status,
         "rows": rows,
     }
-    report_path = PROOFS / "results_run_all.json"
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    # Keep under proofs/ root as a harness artifact (gitignored results dirs are per-project).
     report_path = PROOFS / "_lib" / "last_run_report.json"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print("\n=== Proofs run report ===")
     print(json.dumps(by_status, indent=2))
     print(f"Wrote {report_path}")
-    return 0 if by_status.get("error", 0) == 0 and by_status.get("timeout", 0) == 0 else 1
+
+    fatal = (
+        by_status.get("error", 0)
+        + by_status.get("timeout", 0)
+        + by_status.get("unexpected_skip", 0)
+        + by_status.get("missing", 0)
+    )
+    return 0 if fatal == 0 else 1
 
 
 if __name__ == "__main__":

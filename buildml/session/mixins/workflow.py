@@ -178,3 +178,52 @@ class WorkflowSessionMixin:
             Canonical documentation for parameters, raises, and examples.
         """
         return workflow_ops.learn(self, topic=topic, level=level)
+
+    @staticmethod
+    def list_capabilities(
+        *,
+        include_matrices: bool = False,
+        domain: str | None = None,
+    ) -> dict[str, Any]:
+        """List Session domain capabilities grouped for discovery.
+
+        Additive helper over existing ``Session.*_capability_matrix()`` methods.
+        Does not remove or rename any public Session API.
+
+        See Also
+        --------
+        :func:`buildml.session.discovery_ops.list_capabilities`
+        """
+        from buildml.session import discovery_ops
+
+        return discovery_ops.list_capabilities(
+            include_matrices=include_matrices,
+            domain=domain,
+        )
+
+    @staticmethod
+    def describe_method(name: str) -> dict[str, Any]:
+        """Describe one Session method (catalog, capability route, or docstring).
+
+        Additive discoverability helper. Prefer :meth:`explain` for full teaching
+        overlays when the operation is catalogued.
+
+        See Also
+        --------
+        :func:`buildml.session.discovery_ops.describe_method`
+        """
+        from buildml.session import discovery_ops
+        from buildml.session.session import Session as _Session
+
+        return discovery_ops.describe_method(name, session_type=_Session)
+
+    def list_active_domains(self) -> dict[str, Any]:
+        """Report which domain artifacts are present on this Session.
+
+        See Also
+        --------
+        :func:`buildml.session.discovery_ops.list_active_domains`
+        """
+        from buildml.session import discovery_ops
+
+        return discovery_ops.list_active_domains(self)

@@ -28,7 +28,8 @@ def fairness_capability_matrix() -> dict[str, Any]:
                 "tasks": ["binary_classification"],
                 "notes": (
                     "Holdout-only observational rates and gaps. Requires a fitted "
-                    "classifier and a sensitive column on the evaluated partition."
+                    "classifier and a sensitive column on the evaluated partition. "
+                    "positive_label must appear in y_true (hard-validated)."
                 ),
             },
             "shap": {
@@ -41,7 +42,9 @@ def fairness_capability_matrix() -> dict[str, Any]:
             },
         },
         "default_backend": "native",
+        "maturity": "observational_analysis",
         "requires_sensitive_column": True,
+        "positive_label_validated": True,
         "partition_default": "test",
         "install_hints": {
             "shap": "pip install 'buildml[shap]'",
@@ -51,11 +54,14 @@ def fairness_capability_matrix() -> dict[str, Any]:
             "Causal fair representation learning",
             "Multi-class / regression fairness suites",
             "Automatic bias mitigation / reweighing products",
+            "Inferring protected class membership from features",
         ],
         "disclosures": [
             "Gaps are descriptive on one split: they do not prove discrimination "
             "or excuse a model.",
             "Sensitive attributes must be declared by the caller; BuildML never "
             "infers protected class membership.",
+            "Misconfigured positive_label (e.g. default 1 with string labels) "
+            "raises ValidationError instead of silent zero rates.",
         ],
     }

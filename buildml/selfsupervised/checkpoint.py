@@ -204,5 +204,15 @@ def _maybe_restore_torch_state(
 
         plan.encoder_ = TorchTabularSSLEncoder.from_state_dict(state)
     elif method == "vision_ssl":
-        # Vision restore kept minimal: joblib encoder retained when pt missing
-        pass
+        from buildml.selfsupervised.torch.vision import VisionSSLEncoder
+
+        plan.encoder_ = VisionSSLEncoder.from_state_dict(state)
+    elif method == "hf_text_ssl":
+        # Joblib payload already holds the fitted HF encoder; .pt is advisory
+        # provenance until a dedicated HFTextSSLEncoder.from_state_dict lands.
+        return
+    else:
+        raise ValidationError(
+            f"SSL bundle contains unsupported Torch encoder method={method!r}. "
+            "Supported: tabular SSL methods, vision_ssl, and hf_text_ssl."
+        )

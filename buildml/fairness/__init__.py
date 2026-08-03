@@ -6,11 +6,12 @@ gaps in domain context.
 """
 
 from buildml.fairness.catalog import fairness_capability_matrix
-from buildml.fairness.evaluate import evaluate_fairness
+from buildml.fairness.evaluate import evaluate_fairness, validate_positive_label
 from buildml.fairness.results import FairnessReport
 
 __all__ = [
     "FairnessReport",
     "evaluate_fairness",
     "fairness_capability_matrix",
+    "validate_positive_label",
 ]

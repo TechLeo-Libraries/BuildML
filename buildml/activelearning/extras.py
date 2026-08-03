@@ -11,9 +11,16 @@ buildml.activelearning.catalog.activelearning_capability_matrix : What is instal
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import sys
 from typing import Any
 
 from buildml.dl.extras import torch_available, torch_spec_available
+
+# Process-wide cache for subprocess import probes. In-process import of
+# skactiveml can hard-crash (Windows access violation via torch/skorch) which
+# is not catchable with try/except — never probe in-process for availability.
+_SKACTIVEML_IMPORTABLE_CACHE: bool | None = None
 
 
 def scikit_activeml_spec_present() -> bool:
@@ -30,10 +37,12 @@ def scikit_activeml_spec_present() -> bool:
 
 
 def scikit_activeml_available() -> bool:
-    """Return whether scikit-activeml is installed for industry host enhancements.
+    """Return whether scikit-activeml appears installed (``find_spec`` only).
 
-    Uses ``find_spec`` only: no import probe: so broken installs are not
-    reported as available until a real import is attempted.
+    Does **not** guarantee the package imports cleanly. Broken skorch/skactiveml
+    stacks still report ``True`` here; runtime scoring discloses native fallback
+    when the real import fails. Prefer :func:`scikit_activeml_importable` for
+    honest host-path readiness.
 
     Returns
     -------
@@ -43,11 +52,51 @@ def scikit_activeml_available() -> bool:
     return scikit_activeml_spec_present()
 
 
+def scikit_activeml_importable() -> bool:
+    """Return whether scikit-activeml query classes import in a subprocess.
+
+    Uses a subprocess probe so broken torch/skorch stacks that hard-crash on
+    import cannot take down the parent BuildML process. Result is cached
+    process-wide. Capability matrices should **not** call this (latency); query
+    scoring may.
+
+    Returns
+    -------
+    bool
+        ``True`` when ``GreedySamplingX`` imports successfully in a child process.
+    """
+    global _SKACTIVEML_IMPORTABLE_CACHE
+    if _SKACTIVEML_IMPORTABLE_CACHE is not None:
+        return _SKACTIVEML_IMPORTABLE_CACHE
+    if not scikit_activeml_spec_present():
+        _SKACTIVEML_IMPORTABLE_CACHE = False
+        return False
+    code = (
+        "from skactiveml.pool._greedy_sampling import GreedySamplingX; "
+        "print('ok')"
+    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            timeout=45,
+            check=False,
+        )
+        ok = proc.returncode == 0 and "ok" in (proc.stdout or "")
+    except (OSError, subprocess.TimeoutExpired):
+        ok = False
+    _SKACTIVEML_IMPORTABLE_CACHE = ok
+    return ok
+
+
 def activelearning_industry_available() -> bool:
     """Return whether industry CoreSet/QBC query strategies can run.
 
     Native numpy/sklearn scoring is always available in-tree; this gate marks
     the industry backend as usable for catalog defaults and resolve logic.
+    Optional scikit-activeml enhancement is disclosed separately via
+    ``scikit_activeml_present`` / ``scikit_activeml_importable``.
 
     Returns
     -------
@@ -113,6 +162,7 @@ __all__ = [
     "require_scikit_activeml",
     "require_torch_activelearning",
     "scikit_activeml_available",
+    "scikit_activeml_importable",
     "scikit_activeml_spec_present",
     "torch_available",
     "torch_spec_available",

@@ -108,6 +108,15 @@ def main() -> None:
     bundle = session.save_anomaly_bundle(ctx.artifacts_dir / "anomaly_bundle")
 
     labeled = metrics_round(dict(getattr(ev, "labeled_metrics", {}) or {}))
+    # Anti perfect-score theater: soft attack margins + label noise should leave
+    # residual error after validation threshold tuning.
+    for key in ("f1", "average_precision", "roc_auc"):
+        value = labeled.get(key)
+        if isinstance(value, (int, float)) and float(value) >= 0.999:
+            raise SystemExit(
+                "network-intrusion-anomaly refused perfect-score theater: "
+                f"{key}={float(value):.4f} >= 0.999 on overlapping noisy flows."
+            )
     write_results(
         ctx,
         {
@@ -148,6 +157,10 @@ def main() -> None:
                     "results/comparison.json."
                 ),
             },
+            "honesty": [
+                "Generator uses soft attack margins + ~4% label flips.",
+                "Refuses labeled f1/AP/ROC-AUC >= 0.999 (anti perfect-score theater).",
+            ],
             "limitations": [
                 "Synthetic KDD-inspired flows, not full KDD Cup 1999",
                 "Labeled metrics assume attack label quality; production often unlabeled",

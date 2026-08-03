@@ -218,9 +218,77 @@ class VisionSSLEncoder:
             "latent_dim": self.latent_dim,
             "projector_dim": self.projector_dim,
             "image_size": list(self.image_size),
+            "device": self.device,
             "backbone": self._backbone.module.state_dict(),
             "projector": self._projector.state_dict(),
+            "pretext_loss_": self.pretext_loss_,
         }
+
+    @classmethod
+    def from_state_dict(cls, payload: dict[str, Any]) -> VisionSSLEncoder:
+        """Restore a fitted vision SSL encoder from a bundle Torch payload.
+
+        Rebuilds the zoo backbone and projector, loads saved weights, and
+        restores latent / image metadata so :meth:`transform` works without
+        refitting.
+
+        Parameters
+        ----------
+        payload:
+            Dictionary produced by :meth:`state_dict`.
+
+        Returns
+        -------
+        VisionSSLEncoder
+            Encoder ready for transform without refitting.
+
+        Raises
+        ------
+        ValidationError
+            When the payload method is not ``vision_ssl`` or required keys
+            are missing.
+        """
+        method = str(payload.get("method", ""))
+        if method != "vision_ssl":
+            raise ValidationError(
+                f"Cannot restore VisionSSLEncoder from method={method!r}; "
+                "expected 'vision_ssl'."
+            )
+        required = ("architecture", "latent_dim", "projector_dim", "backbone", "projector")
+        missing = [key for key in required if key not in payload]
+        if missing:
+            raise ValidationError(
+                "Vision SSL checkpoint payload is incomplete; missing keys: "
+                + ", ".join(missing)
+            )
+
+        image_size_raw = payload.get("image_size") or (32, 32)
+        enc = cls(
+            architecture=str(payload["architecture"]),
+            weight_mode=str(payload.get("weight_mode", "mock")),
+            latent_dim=int(payload["latent_dim"]),
+            projector_dim=int(payload["projector_dim"]),
+            image_size=tuple(int(v) for v in image_size_raw),
+            device=str(payload.get("device", "cpu")),
+        )
+        # Reconstruct architecture with random/none weights, then overwrite.
+        enc._backbone = load_pretrained_backbone(
+            "vision",
+            enc.architecture,
+            weights="none",
+            freeze=False,
+        )
+        enc._backbone.module.load_state_dict(payload["backbone"])
+        feat_dim = int(enc._backbone.feature_dim)
+        enc._projector = models.build_projector(
+            feat_dim, hidden=(256,), out_dim=enc.projector_dim
+        )
+        enc._projector.load_state_dict(payload["projector"])
+        enc.latent_dim = int(payload["latent_dim"])
+        enc.n_features_in_ = 1
+        loss = payload.get("pretext_loss_")
+        enc.pretext_loss_ = float(loss) if loss is not None else None
+        return enc
 
 
 def _forward_features(backbone: Any, batch: Any) -> Any:

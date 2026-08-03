@@ -143,6 +143,7 @@ def suggest_query(
         resolved_strategy,
         x_labeled=x_labeled,
         y_labeled=y_labeled,
+        disclosures=disclosures,
     )
     order = np.argsort(-scores)
     take = min(requested, len(pool_indices))
@@ -181,6 +182,7 @@ def _score_pool(
     *,
     x_labeled: np.ndarray,
     y_labeled: np.ndarray,
+    disclosures: list[str] | None = None,
 ) -> np.ndarray:
     if backend == "torch":
         mc_samples = int((plan.config or {}).get("mc_samples", 20))
@@ -191,7 +193,7 @@ def _score_pool(
             mc_samples=mc_samples,
         )
     if backend == "industry":
-        return score_industry_pool(
+        scores, industry_notes = score_industry_pool(
             strategy=strategy,
             x_labeled=x_labeled,
             y_labeled=y_labeled,
@@ -199,6 +201,9 @@ def _score_pool(
             estimator=plan.estimator_,
             committee=plan.committee_,
         )
+        if disclosures is not None:
+            disclosures.extend(industry_notes)
+        return scores
     return score_sklearn_pool(
         strategy=strategy,
         x_pool=x_pool,

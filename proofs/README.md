@@ -6,9 +6,9 @@ artifacts where applicable, and JSON metrics under `results/` (gitignored).
 
 | Tier | Count | What it proves |
 | --- | ---: | --- |
-| **A** | **57/57** | One named product scenario per major Session domain (incl. ensembles + Torch) |
+| **A** | **58/58** | One named product scenario per major Session domain (incl. ensembles + Torch + fairness) |
 | **B** | **36/36** | Cross-domain products composing multiple Session surfaces |
-| **C** | **57/57** | Same-split industry twin + `comparison.json` per Tier A |
+| **C** | **58/58** | Same-split industry twin + `comparison.json` per Tier A (when present) |
 
 **Expansion:** +30 Tier A, +30 Tier B, +30 Tier C twins beyond the baseline cohort
 (ensembles, Torch/DL, and previously uncomposed Tier B domains).
@@ -51,9 +51,14 @@ feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products)
    .\.venv\Scripts\python.exe -m proofs._lib.run_all --smoke
    .\.venv\Scripts\python.exe -m proofs._lib.run_all --tier all
    ```
-3. Read `proofs/<slug>/results/*.json`: look for `"status": "completed"` (or an
-   honest `skipped_missing_extra` with a documented reason). Tier C writes
-   `results/comparison.json` on the **same split** as the BuildML path.
+3. Read `proofs/<slug>/results/*.json`: look for `"status": "completed"`.
+   Harness semantics:
+   - Process exit 0 alone is **not** enough under `--smoke`.
+   - `--smoke` reads result JSON and treats `skipped_missing_extra` /
+     `partial` as **`unexpected_skip`** (harness exit 1) unless you also
+     pass `--allow-skip`.
+   - Local non-smoke runs still allow soft-skips by default for optional extras.
+   Tier C writes `results/comparison.json` on the **same split** as the BuildML path.
 
 Shared helpers live in [`_lib/`](_lib/) (seed, results writer, leakage asserts,
 synthetic loaders, extra probes, Tier C `write_comparison`, `run_all`).
