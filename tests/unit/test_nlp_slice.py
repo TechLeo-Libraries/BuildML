@@ -226,7 +226,7 @@ def test_fit_predict_evaluate_interpret_and_bundle(tmp_path: Path) -> None:
     assert (bundle / "nlp_text_plan.joblib").is_file()
 
     other = _text_session()
-    other.load_nlp_bundle(bundle)
+    other.load_nlp_bundle(bundle, trusted=True)
     assert other.nlp_text_plan is not None
     assert other.nlp_text_plan.estimator == "logistic"
     reloaded = other.evaluate_text_classifier(partition="test")

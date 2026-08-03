@@ -113,7 +113,7 @@ def test_randomized_search_evaluate_and_bundle(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0, stratify=True)
     )
-    restored.load_automl_bundle(bundle)
+    restored.load_automl_bundle(bundle, trusted=True)
     again = restored.evaluate_automl(partition="test")
     assert again.n_rows == metrics.n_rows
 

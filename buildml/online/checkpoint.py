@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.online.results import OnlineEvalResult, OnlineFitResult, OnlinePlan
 
@@ -78,7 +79,7 @@ def save_online_bundle(
     return destination
 
 
-def load_online_bundle(path: str | Path) -> OnlinePlan:
+def load_online_bundle(path: str | Path, *, trusted: bool = False) -> OnlinePlan:
     """Load an online-learning bundle into an :class:`OnlinePlan`.
 
     Validates bundle format version and plan object type before returning.
@@ -87,6 +88,9 @@ def load_online_bundle(path: str | Path) -> OnlinePlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``online_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -112,7 +116,7 @@ def load_online_bundle(path: str | Path) -> OnlinePlan:
         raise ValidationError(
             f"Unsupported online-learning bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, OnlinePlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

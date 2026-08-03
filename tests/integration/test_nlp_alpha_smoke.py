@@ -139,7 +139,7 @@ def test_nlp_alpha_smoke(tmp_path: Path) -> None:
     # A reloaded bundle must reproduce the holdout score exactly; anything less
     # means the normalization plan did not travel with the vectorizer.
     reloaded = _session(frame)
-    reloaded.load_nlp_bundle(bundle)
+    reloaded.load_nlp_bundle(bundle, trusted=True)
     assert reloaded.nlp_text_plan is not None
     assert reloaded.nlp_topic_plan is not None
     again = reloaded.evaluate_text_classifier(partition="test")

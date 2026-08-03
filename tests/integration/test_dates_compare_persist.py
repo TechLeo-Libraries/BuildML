@@ -36,6 +36,6 @@ def test_extract_dates_compare_models_and_persist(tmp_path: Path) -> None:
 
     model_dir = tmp_path / "model"
     session.save_model(model_dir)
-    restored = Session.ingest(frame).load_model(model_dir)
+    restored = Session.ingest(frame).load_model(model_dir, trusted=True)
     assert restored.fit_result is not None
     assert restored.fit_result.feature_columns == session.fit_result.feature_columns

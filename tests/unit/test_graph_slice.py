@@ -133,6 +133,6 @@ def test_session_fit_predict_eval_bundle(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(columns=["f1", "f2"], method="standard")
     )
-    other.load_graph_bundle(out)
+    other.load_graph_bundle(out, trusted=True)
     assert other.graph_plan is not None
     assert "accuracy" in other.evaluate_graph(partition="test").metrics

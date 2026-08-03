@@ -783,6 +783,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
             _p("ssl_certfile", "str | Path | None", "Optional local TLS certificate path."),
             _p("ssl_keyfile", "str | Path | None", "Optional local TLS private key path."),
+            _p(
+                "trusted",
+                "bool",
+                "Required True to deserialize pickle/joblib/TorchScript payloads.",
+                False,
+            ),
         ),
         inputs=("Saved pipeline bundle directory or TorchScript file.",),
         outputs=("ServeHandle with url; process-local server thread.",),
@@ -796,6 +802,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         assumptions=(
             "Optional API-key middleware is library-local auth — not managed IAM/cloud identity.",
             "Prefer TLS termination at a reverse proxy for non-local exposure.",
+            "trusted=True means you accept pickle/TorchScript execution risk for this artifact.",
             "Localhost defaults stay open-with-honesty; public binds need keys or a loud override.",
         ),
         failures=(
@@ -1248,6 +1255,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("path", "str | Path", "Existing trainer bundle directory.", required=True),
             _p("module", "torch.nn.Module", "Compatible module shell for load_state_dict.", required=True),
             _p("map_location", "str | None", "Optional torch.load device map.", None),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize trainer.pt (default False).",
+                required=False,
+            ),
         ),
         inputs=("Trusted trainer bundle path and a compatible nn.Module instance.",),
         outputs=("Session with dl_train_result restored.",),

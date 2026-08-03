@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 import pandas as pd
 
@@ -461,7 +464,7 @@ def save_cbr_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_cbr_bundle_op(session, path: str | Path):
+def load_cbr_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a CBR bundle into this Session.
 
     Delegates to :func:`buildml.cbr.checkpoint.load_cbr_bundle` and clears
@@ -473,13 +476,16 @@ def load_cbr_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded CBR plan.
     path:
         Path to a ``buildml.cbr_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with CBR plan attached for chaining.
     """
-    plan = load_cbr_bundle(path)
+    plan = load_cbr_bundle(path, trusted=trusted)
     session._cbr_plan = plan
     session._cbr_fit_result = None
     session._cbr_eval_result = None
@@ -496,4 +502,4 @@ def load_cbr_bundle_op(session, path: str | Path):
             "n_cases": plan.case_base.n_cases,
         },
     )
-    return session
+    return cast("Session", session)

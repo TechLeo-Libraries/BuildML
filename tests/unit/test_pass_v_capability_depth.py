@@ -237,6 +237,7 @@ def test_ssl_pair_validation(tmp_path: Path) -> None:
             port=18081,
             ssl_certfile=cert,
             ssl_keyfile=None,
+            trusted=True,
         )
 
 
@@ -263,7 +264,7 @@ def test_serve_metadata_batch_openapi_and_ssl_cli(tmp_path: Path) -> None:
     )
     bundle_dir = tmp_path / "pipe"
     session.save_pipeline(bundle_dir)
-    app = create_serving_app(bundle_dir, kind="pipeline")
+    app = create_serving_app(bundle_dir, kind="pipeline", trusted=True)
     client = TestClient(app)
 
     meta = client.get("/metadata")
@@ -408,7 +409,7 @@ def test_torchscript_serve_predict(tmp_path: Path) -> None:
     module = torch.jit.script(_Tiny())
     path = tmp_path / "tiny.ts.pt"
     module.save(str(path))
-    app = create_serving_app(path, kind="torchscript")
+    app = create_serving_app(path, kind="torchscript", trusted=True)
     client = TestClient(app)
     health = client.get("/health")
     assert health.status_code == 200

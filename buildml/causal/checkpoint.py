@@ -14,6 +14,7 @@ from buildml.causal.results import (
     CausalFitResult,
     CausalPlan,
 )
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 
 BUNDLE_FORMAT = "buildml.causal_bundle.v1"
@@ -84,7 +85,7 @@ def save_causal_bundle(
     return destination
 
 
-def load_causal_bundle(path: str | Path) -> CausalPlan:
+def load_causal_bundle(path: str | Path, *, trusted: bool = False) -> CausalPlan:
     """Load a causal bundle into a :class:`~buildml.causal.results.CausalPlan`.
 
     Validates bundle format and restores the plan for estimate, evaluate, and
@@ -94,6 +95,9 @@ def load_causal_bundle(path: str | Path) -> CausalPlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``causal_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -119,7 +123,7 @@ def load_causal_bundle(path: str | Path) -> CausalPlan:
         raise ValidationError(
             f"Unsupported causal bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, CausalPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

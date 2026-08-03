@@ -77,7 +77,7 @@ class ServeHandle:
     --------
     Serve, use, and stop::
 
-        handle = serve_bundle("artifacts/churn-pipeline", port=8123)
+        handle = serve_bundle("artifacts/churn-pipeline", port=8123, trusted=True)
         try:
             requests.get(handle.url + "/health").json()
         finally:
@@ -207,6 +207,7 @@ def serve_bundle(
     allow_insecure_public_bind: bool = False,
     ssl_certfile: str | Path | None = None,
     ssl_keyfile: str | Path | None = None,
+    trusted: bool = False,
 ) -> ServeHandle:
     """Load a bundle and start serving it, refusing the unsafe configurations.
 
@@ -251,6 +252,8 @@ def serve_bundle(
         A PEM certificate for local HTTPS. Must be paired with ``ssl_keyfile``.
     ssl_keyfile:
         The matching PEM private key. Must be paired with ``ssl_certfile``.
+    trusted:
+        Must be ``True`` to deserialize the artifact (pickle/joblib/TorchScript).
 
     Returns
     -------
@@ -292,7 +295,7 @@ def serve_bundle(
     --------
     A development server on localhost::
 
-        handle = serve_bundle("artifacts/churn-pipeline", port=8123)
+        handle = serve_bundle("artifacts/churn-pipeline", port=8123, trusted=True)
         try:
             print(handle.url)
         finally:
@@ -305,12 +308,14 @@ def serve_bundle(
             host="0.0.0.0",
             port=8080,
             api_keys=["rotate-me-2026-q1"],
+            trusted=True,
         )
 
     In a container, holding the process open::
 
         serve_bundle("/models/churn", host="0.0.0.0",
-                     api_keys=os.environ["SERVE_KEY"], blocking=True)
+                     api_keys=os.environ["SERVE_KEY"], blocking=True,
+                     trusted=True)
 
     See Also
     --------
@@ -346,6 +351,7 @@ def serve_bundle(
         title=title,
         map_location=map_location,
         api_keys=api_keys,
+        trusted=trusted,
     )
     tls = cert is not None and key is not None
     config = uvicorn.Config(

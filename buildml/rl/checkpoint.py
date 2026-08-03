@@ -34,6 +34,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.rl.results import (
     ImitationEvalResult,
@@ -126,7 +127,7 @@ def save_imitation_bundle(
     return destination
 
 
-def load_imitation_bundle(path: str | Path) -> ImitationPlan:
+def load_imitation_bundle(path: str | Path, *, trusted: bool = False) -> ImitationPlan:
     """Read a saved cloning policy back into memory.
 
     Checks that both files are present and that the format string matches
@@ -137,6 +138,9 @@ def load_imitation_bundle(path: str | Path) -> ImitationPlan:
     ----------
     path:
         The bundle directory written by :func:`save_imitation_bundle`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -178,7 +182,7 @@ def load_imitation_bundle(path: str | Path) -> ImitationPlan:
         raise ValidationError(
             f"Unsupported imitation bundle format {fmt!r}; expected {BUNDLE_FORMAT_IMITATION}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, ImitationPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:
@@ -257,7 +261,7 @@ def save_rl_bundle(
     return destination
 
 
-def load_rl_bundle(path: str | Path) -> RlPlan:
+def load_rl_bundle(path: str | Path, *, trusted: bool = False) -> RlPlan:
     """Read a saved RL policy back into memory.
 
     Checks that both files are present and that the format string matches
@@ -267,6 +271,9 @@ def load_rl_bundle(path: str | Path) -> RlPlan:
     ----------
     path:
         The bundle directory written by :func:`save_rl_bundle`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -307,7 +314,7 @@ def load_rl_bundle(path: str | Path) -> RlPlan:
         raise ValidationError(
             f"Unsupported RL bundle format {fmt!r}; expected {BUNDLE_FORMAT_RL}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, RlPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

@@ -32,6 +32,8 @@ __all__ = [
     "EnsemblePlan",
     "EnsembleStrategy",
     "VotingMethod",
+    "ensemble_capability_matrix",
+    "ensemble_status_payload",
     "fit_blending_ensemble",
     "fit_stacking_ensemble",
     "fit_voting_ensemble",
@@ -43,6 +45,10 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    if name in {"ensemble_capability_matrix", "ensemble_status_payload"}:
+        from buildml.ensemble import catalog as catalog_mod
+
+        return getattr(catalog_mod, name)
     if name in {"EnsembleStrategy", "VotingMethod", "BlendMethod", "EnsembleConfig"}:
         from buildml.ensemble import types as types_mod
 

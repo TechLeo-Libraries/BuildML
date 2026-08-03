@@ -82,7 +82,7 @@ def test_fit_predict_evaluate_bundle(tmp_path: Path) -> None:
 
     bundle = session.save_multitask_bundle(tmp_path / "multitask_bundle")
     assert (bundle / "meta.json").is_file()
-    plan = load_multitask_bundle(bundle)
+    plan = load_multitask_bundle(bundle, trusted=True)
     assert plan.n_train_rows == fit.n_train_rows
 
     restored = Session.ingest(session.to_pandas()).set_roles(
@@ -90,7 +90,7 @@ def test_fit_predict_evaluate_bundle(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_multitask_bundle(bundle)
+    restored.load_multitask_bundle(bundle, trusted=True)
     assert restored.multitask_plan is not None
     assert restored.multitask_plan.method == "multi_output"
 

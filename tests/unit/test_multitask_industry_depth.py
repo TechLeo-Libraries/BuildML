@@ -183,7 +183,7 @@ def test_bundle_roundtrip_with_backend(tmp_path: Path) -> None:
     session2 = Session.ingest(_reg_frame()).set_roles(
         {"x": "feature", "y": "feature", "t1": "target", "t2": "target"}
     )
-    session2.load_multitask_bundle(out)
+    session2.load_multitask_bundle(out, trusted=True)
     assert session2.multitask_plan is not None
     assert session2.multitask_plan.method == "multi_output"
 

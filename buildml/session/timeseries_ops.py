@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from buildml.timeseries.analyze import analyze_timeseries
 from buildml.timeseries.explain_hooks import analysis_result_summary
@@ -123,17 +123,19 @@ def analyze_timeseries_op(
 def ts_decompose_op(session, **kwargs: Any) -> Any:
     """Run decomposition-only time-series analysis on Session data.
 
-    Convenience wrapper around :func:`analyze_timeseries_op` that enables
-    decomposition and disables diagnostics, changepoints, and features.
-    All other keyword arguments are forwarded unchanged.
+    Convenience wrapper around :meth:`analyze_timeseries` that enables
+    seasonal decomposition and disables diagnostics, changepoints, and
+    feature extraction. Use this when you only need trend/seasonal/residual
+    components before choosing a forecast method.
 
     Parameters
     ----------
     session:
-        Active Session with a time-ordered dataset.
+        Active Session instance this operation mutates or reads.
     **kwargs:
-        Forwarded to :func:`analyze_timeseries_op` (``target_column``,
-        ``time_column``, ``scope``, ``seasonal_period``, etc.).
+        Forwarded to :func:`analyze_timeseries` (for example ``target_column``,
+        ``time_column``, ``scope``, ``seasonal_period``, ``decompose_method``).
+        Decomposition is forced on; diagnostics/changepoints/features are off.
 
     Returns
     -------
@@ -161,17 +163,18 @@ def ts_decompose_op(session, **kwargs: Any) -> Any:
 def ts_diagnostics_op(session, **kwargs: Any) -> Any:
     """Run diagnostics-only time-series analysis on Session data.
 
-    Convenience wrapper around :func:`analyze_timeseries_op` that enables
-    stationarity and autocorrelation diagnostics while disabling
-    decomposition, changepoints, and features.
+    Convenience wrapper around :meth:`analyze_timeseries` that runs ACF/PACF
+    and ADF/KPSS stationarity tests while skipping decomposition,
+    changepoints, and feature extraction.
 
     Parameters
     ----------
     session:
-        Active Session with a time-ordered dataset.
+        Active Session instance this operation mutates or reads.
     **kwargs:
-        Forwarded to :func:`analyze_timeseries_op` (``target_column``,
-        ``time_column``, ``scope``, ``acf_lags``, etc.).
+        Forwarded to :func:`analyze_timeseries` (for example ``target_column``,
+        ``time_column``, ``scope``, ``acf_lags``, ``pacf_lags``). Diagnostics
+        are forced on; decomposition/changepoints/features are off.
 
     Returns
     -------

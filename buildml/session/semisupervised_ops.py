@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -350,7 +353,7 @@ def save_semisupervised_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_semisupervised_bundle_op(session, path: str | Path) -> Any:
+def load_semisupervised_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load a semi-supervised bundle into this Session.
 
     Delegates to :func:`buildml.semisupervised.checkpoint.load_semisupervised_bundle`
@@ -362,13 +365,16 @@ def load_semisupervised_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded semi-supervised plan.
     path:
         Path to a ``buildml.semisupervised_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with semi-supervised plan attached for chaining.
     """
-    plan = load_semisupervised_bundle(path)
+    plan = load_semisupervised_bundle(path, trusted=trusted)
     session._semisupervised_plan = plan
     session._semisupervised_fit_result = None
     session._semisupervised_predict_result = None
@@ -378,4 +384,4 @@ def load_semisupervised_bundle_op(session, path: str | Path) -> Any:
         {"path": str(path), "method": plan.method, "backend": getattr(plan, "backend", "sklearn")},
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

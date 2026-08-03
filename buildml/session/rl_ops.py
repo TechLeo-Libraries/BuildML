@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 import numpy as np
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
 from buildml.rl.act import act_rl
+from buildml.rl.catalog import rl_capability_matrix
 from buildml.rl.checkpoint import (
     load_imitation_bundle,
     load_rl_bundle,
@@ -25,7 +29,6 @@ from buildml.rl.explain_hooks import (
     rl_eval_summary,
     rl_fit_summary,
 )
-from buildml.rl.catalog import rl_capability_matrix
 from buildml.rl.fit import fit_rl
 from buildml.rl.imitation import (
     evaluate_imitation,
@@ -278,7 +281,7 @@ def save_imitation_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_imitation_bundle_op(session, path: str | Path):
+def load_imitation_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load an imitation bundle into this Session.
 
     Delegates to :func:`buildml.rl.checkpoint.load_imitation_bundle` and
@@ -290,13 +293,16 @@ def load_imitation_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded imitation plan.
     path:
         Path to a ``buildml.imitation_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with imitation plan attached for chaining.
     """
-    plan = load_imitation_bundle(path)
+    plan = load_imitation_bundle(path, trusted=trusted)
     session._imitation_plan = plan
     session._imitation_fit_result = None
     session._imitation_eval_result = None
@@ -311,9 +317,7 @@ def load_imitation_bundle_op(session, path: str | Path):
             "estimator": plan.estimator,
         },
     )
-    return session
-
-
+    return cast("Session", session)
 def fit_rl_op(
     session,
     *,
@@ -659,7 +663,7 @@ def save_rl_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_rl_bundle_op(session, path: str | Path):
+def load_rl_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load an RL bundle into this Session.
 
     Delegates to :func:`buildml.rl.checkpoint.load_rl_bundle` and clears
@@ -671,13 +675,16 @@ def load_rl_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded RL plan.
     path:
         Path to a ``buildml.rl_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with RL plan attached for chaining.
     """
-    plan = load_rl_bundle(path)
+    plan = load_rl_bundle(path, trusted=trusted)
     session._rl_plan = plan
     session._rl_fit_result = None
     session._rl_eval_result = None
@@ -692,9 +699,7 @@ def load_rl_bundle_op(session, path: str | Path):
             "algorithm": plan.algorithm,
         },
     )
-    return session
-
-
+    return cast("Session", session)
 def rl_capability_matrix_op() -> dict[str, Any]:
     """Return the RL / imitation capability matrix for this installation.
 

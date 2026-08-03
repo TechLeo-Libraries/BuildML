@@ -172,5 +172,5 @@ def test_load_v1_bundle_still_works(tmp_path) -> None:
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     meta["format"] = BUNDLE_FORMAT_V1
     meta_path.write_text(json.dumps(meta), encoding="utf-8")
-    session.load_unsupervised_bundle(dest)
+    session.load_unsupervised_bundle(dest, trusted=True)
     assert session.cluster_plan is not None

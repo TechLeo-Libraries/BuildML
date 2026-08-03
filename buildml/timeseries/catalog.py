@@ -151,8 +151,22 @@ def timeseries_capability_matrix() -> dict[str, Any]:
         "install_hints": {
             "timeseries": "pip install 'buildml[timeseries]'  # statsmodels + ruptures",
         },
+        "platform_markers": [],
+        "domain_floor": {
+            "catalog": True,
+            "checkpoint": False,
+            "explain_hooks": True,
+            "session_matrix": "timeseries_capability_matrix",
+            "analysis_only": True,
+            "note": (
+                "Time-series *analysis* (decompose / diagnostics / changepoints) "
+                "has no fitted-plan bundle by design — forecasting bundles live "
+                "under buildml.forecasting."
+            ),
+        },
         "non_goals": [
             "Full forecasting product (see buildml.forecasting)",
             "Streaming anomaly product",
+            "Fitted-plan checkpoint bundles (analysis-only surface)",
         ],
     }

@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.activelearning.results import (
     ActiveLearningEvalResult,
@@ -83,7 +84,7 @@ def save_active_learning_bundle(
     return destination
 
 
-def load_active_learning_bundle(path: str | Path) -> ActiveLearningPlan:
+def load_active_learning_bundle(path: str | Path, *, trusted: bool = False) -> ActiveLearningPlan:
     """Load an active-learning bundle into a :class:`ActiveLearningPlan`.
 
     Validates bundle format version and plan object type before returning.
@@ -92,6 +93,9 @@ def load_active_learning_bundle(path: str | Path) -> ActiveLearningPlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``activelearning_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -117,7 +121,7 @@ def load_active_learning_bundle(path: str | Path) -> ActiveLearningPlan:
         raise ValidationError(
             f"Unsupported active-learning bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, ActiveLearningPlan):
         if not getattr(loaded, "backend", None):
             loaded.backend = "sklearn"

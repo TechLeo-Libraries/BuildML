@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 import pandas as pd
 
@@ -338,7 +341,7 @@ def save_decision_bundle_op(session, path: str | Path) -> Path:
     return destination
 
 
-def load_decision_bundle_op(session, path: str | Path):
+def load_decision_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a decision bundle into this Session.
 
     Delegates to :func:`buildml.optimize.checkpoint.load_decision_bundle`
@@ -350,13 +353,16 @@ def load_decision_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded DecisionPlan.
     path:
         Path to a ``buildml.decision_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with DecisionPlan attached for chaining.
     """
-    plan = load_decision_bundle(path)
+    plan = load_decision_bundle(path, trusted=trusted)
     session._decision_plan = plan
     session._decision_fit_result = None
     session._decision_eval_result = None
@@ -366,9 +372,7 @@ def load_decision_bundle_op(session, path: str | Path):
         {"path": str(path)},
         result_summary={"path": str(path), "method": plan.method},
     )
-    return session
-
-
+    return cast("Session", session)
 def decision_capability_matrix_op() -> dict[str, Any]:
     """Return the decision/optimization capability matrix for this install.
 

@@ -90,6 +90,6 @@ def test_graph_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(columns=["f1", "f2"], method="standard")
     )
-    other.load_graph_bundle(bundle)
+    other.load_graph_bundle(bundle, trusted=True)
     assert other.graph_plan is not None
     assert other.evaluate_graph(partition="test").n_nodes > 0

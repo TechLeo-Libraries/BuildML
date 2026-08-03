@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.synthetic.results import (
     SyntheticEvalResult,
@@ -86,25 +87,29 @@ ValidationError
     return destination
 
 
-def load_synthetic_bundle(path: str | Path) -> SynthesizerPlan:
+def load_synthetic_bundle(path: str | Path, *, trusted: bool = False) -> SynthesizerPlan:
     """Load a synthesizer bundle into a :class:`SynthesizerPlan`.
 
-Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
 
-Parameters
-----------
-path:
-    Filesystem path to the bundle directory.
+    Parameters
+    ----------
+    path:
+        Filesystem path to the bundle directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
-Returns
--------
-SynthesizerPlan
-    Fitted plan object (SynthesizerPlan) with private estimators attached.
+    Returns
+    -------
+    SynthesizerPlan
+        Fitted plan object (SynthesizerPlan) with private estimators attached.
 
-Raises
-------
-ValidationError
-    When preconditions for this operation are not met.
+    Raises
+    ------
+    ValidationError
+        When preconditions for this operation are not met.
+        
     """
     root = Path(path)
     meta_path = root / "meta.json"
@@ -120,7 +125,7 @@ ValidationError
         raise ValidationError(
             f"Unsupported synthetic bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, SynthesizerPlan):
         plan = loaded
     elif isinstance(loaded, dict) and "plan" in loaded:

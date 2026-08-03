@@ -247,7 +247,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore a train-fitted semi-supervised estimator without refitting.",
         "Semi-supervised bundle load.",
         ("Validate bundle format.", "Attach SemiSupervisedPlan; clear fit/predict/eval slots."),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory with meta.json + semisupervised_plan.joblib.",),
         outputs=("Session with semisupervised_plan attached.",),
         prerequisites=(DATASET,),

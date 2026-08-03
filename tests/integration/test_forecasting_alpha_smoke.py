@@ -54,7 +54,7 @@ def test_forecasting_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"ts": "time", "y": "target"})
         .time_split(test_size=0.2, validation_size=0.2)
     )
-    restored.load_forecast_bundle(bundle)
+    restored.load_forecast_bundle(bundle, trusted=True)
     again = restored.generate_forecast(horizon=7)
     assert again.predictions == gen.predictions
 

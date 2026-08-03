@@ -118,9 +118,19 @@ def rag_available() -> bool:
     """
     if importlib.util.find_spec("sentence_transformers") is None:
         return False
+    # sentence-transformers imports torch; on Windows a broken torch install can
+    # hard-crash the process. Defer to the torch probe first, then try import.
+    import sys
+
+    from buildml.dl.extras import _subprocess_import_ok, torch_available
+
+    if not torch_available():
+        return False
+    if sys.platform == "win32":
+        return _subprocess_import_ok("sentence_transformers")
     try:
         import sentence_transformers  # noqa: F401
-    except (ImportError, OSError):
+    except Exception:
         return False
     return True
 

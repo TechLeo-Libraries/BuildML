@@ -81,6 +81,6 @@ def test_symbolic_and_neuro_symbolic_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    session3.load_symbolic_bundle(bundle)
+    session3.load_symbolic_bundle(bundle, trusted=True)
     assert session3.symbolic_plan is not None
     assert "accuracy" in session3.evaluate_symbolic(partition="test").metrics

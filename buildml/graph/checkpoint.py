@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.graph.results import GraphEvalResult, GraphFitResult, GraphPlan
 
@@ -76,7 +77,7 @@ def save_graph_bundle(
     return destination
 
 
-def load_graph_bundle(path: str | Path) -> GraphPlan:
+def load_graph_bundle(path: str | Path, *, trusted: bool = False) -> GraphPlan:
     """Load a graph bundle into a :class:`GraphPlan`.
 
     Validates bundle format and restores the fitted plan from
@@ -86,6 +87,9 @@ def load_graph_bundle(path: str | Path) -> GraphPlan:
     ----------
     path:
         Directory containing ``meta.json`` and ``graph_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -111,7 +115,7 @@ def load_graph_bundle(path: str | Path) -> GraphPlan:
         raise ValidationError(
             f"Unsupported graph bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, GraphPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

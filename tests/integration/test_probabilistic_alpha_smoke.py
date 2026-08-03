@@ -61,6 +61,6 @@ def test_probabilistic_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0)
         .scale(method="standard")
     )
-    clone.load_probabilistic_bundle(bundle)
+    clone.load_probabilistic_bundle(bundle, trusted=True)
     again = clone.predict_interval(partition="test")
     assert again.n_rows == intervals.n_rows

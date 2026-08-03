@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+from buildml.core.industry_markers import platform_skip_entry
 from buildml.recommenders.extras import (
     implicit_available,
     lightfm_available,
@@ -57,8 +58,12 @@ def recommender_capability_matrix() -> dict[str, Any]:
                 "methods": list(_LIGHTFM_METHODS),
                 "feedback": ["explicit", "implicit"],
                 "features": "Hybrid WARP/BPR with optional user/item side features",
+                **platform_skip_entry("lightfm", extra="recommenders-lightfm"),
             },
         },
+        "platform_markers": [
+            platform_skip_entry("lightfm", extra="recommenders-lightfm"),
+        ],
         "ranking_metrics": [
             "precision_at_k",
             "recall_at_k",

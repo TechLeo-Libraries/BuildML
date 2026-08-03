@@ -257,7 +257,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore a meta-learner without re-running meta-train.",
         "Meta-learning bundle load.",
         ("Validate bundle format.", "Attach MetaLearningPlan; clear fit/adapt/eval slots."),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory with meta.json + metalearning_plan.joblib.",),
         outputs=("Session with metalearning_plan attached.",),
         prerequisites=(DATASET,),

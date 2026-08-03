@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 import pandas as pd
 
@@ -440,7 +443,7 @@ def save_kg_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_kg_bundle_op(session, path: str | Path):
+def load_kg_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a knowledge-graph bundle into this Session.
 
     Delegates to :func:`buildml.kg.checkpoint.load_kg_bundle` and clears
@@ -452,13 +455,16 @@ def load_kg_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded KgPlan.
     path:
         Path to a ``buildml.kg_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with KgPlan attached for chaining.
     """
-    plan = load_kg_bundle(path)
+    plan = load_kg_bundle(path, trusted=trusted)
     session._kg_plan = plan
     session._kg_fit_result = None
     session._kg_eval_result = None
@@ -470,4 +476,4 @@ def load_kg_bundle_op(session, path: str | Path):
         {"path": str(path)},
         result_summary={"path": str(path), "format": "buildml.kg_bundle.v1"},
     )
-    return session
+    return cast("Session", session)

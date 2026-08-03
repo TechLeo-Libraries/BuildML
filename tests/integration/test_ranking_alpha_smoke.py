@@ -80,7 +80,7 @@ def test_ranking_alpha_smoke(tmp_path: Path) -> None:
         )
         .group_split(test_size=0.25, validation_size=0.15, random_state=0)
     )
-    other.load_ranker_bundle(bundle)
+    other.load_ranker_bundle(bundle, trusted=True)
     assert other.ranker_plan is not None
     assert other.evaluate_ranker(k=5).n_holdout_rows > 0
 

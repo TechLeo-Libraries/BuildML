@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.optimize.results import (
     ApplyDecisionsResult,
@@ -96,7 +97,7 @@ def save_decision_bundle(
     return destination
 
 
-def load_decision_bundle(path: str | Path) -> DecisionPlan:
+def load_decision_bundle(path: str | Path, *, trusted: bool = False) -> DecisionPlan:
     """Load a decision-policy bundle into a :class:`DecisionPlan`.
 
     Reads ``meta.json`` and ``decision_plan.joblib`` produced by
@@ -108,6 +109,9 @@ def load_decision_bundle(path: str | Path) -> DecisionPlan:
     ----------
     path:
         Bundle directory written by :func:`save_decision_bundle`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -135,7 +139,7 @@ def load_decision_bundle(path: str | Path) -> DecisionPlan:
         raise ValidationError(
             f"Unsupported decision bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, DecisionPlan):
         plan = loaded
     elif isinstance(loaded, dict) and "plan" in loaded:

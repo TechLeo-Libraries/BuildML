@@ -37,7 +37,7 @@ def test_sidecar_single_file_records_compression(tmp_path: Path) -> None:
     assert sidecar["compression"] == "zstd"
     assert (ckpt / "data" / "native_sidecar.parquet").exists()
 
-    restored = Session.checkpoint_load(ckpt)
+    restored = Session.checkpoint_load(ckpt, trusted=True)
     assert restored.dataset.n_rows == 10
     assert restored.dataset.has_native
     assert any("compression=zstd" in m for m in restored.reattach_result.messages)  # type: ignore[union-attr]
@@ -72,7 +72,7 @@ def test_sidecar_partitioned_layout_roundtrip(
     part_hashes = [k for k in manifest["hashes"] if k.startswith("data/native_sidecar/")]
     assert len(part_hashes) == 3
 
-    restored = Session.checkpoint_load(ckpt)
+    restored = Session.checkpoint_load(ckpt, trusted=True)
     assert restored.dataset.n_rows == 12
     assert restored.dataset.has_native
     assert any("layout=partitioned" in m for m in restored.reattach_result.messages)  # type: ignore[union-attr]
@@ -99,7 +99,7 @@ def test_legacy_single_sidecar_still_loads(tmp_path: Path) -> None:
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
     session.dataset.close_native()
 
-    restored = Session.checkpoint_load(ckpt)
+    restored = Session.checkpoint_load(ckpt, trusted=True)
     assert restored.dataset.engine == EngineName.DUCKDB
     assert restored.dataset.has_native
     assert restored.dataset.n_rows == 6
@@ -143,7 +143,7 @@ def test_sidecar_layout_force_partitioned(tmp_path: Path) -> None:
     assert meta["native_sidecar"]["rows_per_partition"] == 4
     assert meta["native_sidecar"]["n_partitions"] == 3
 
-    restored = Session.checkpoint_load(ckpt)
+    restored = Session.checkpoint_load(ckpt, trusted=True)
     assert restored.dataset.n_rows == 10
     assert restored.dataset.has_native
 

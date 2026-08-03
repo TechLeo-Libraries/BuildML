@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 import pandas as pd
 
@@ -377,7 +380,7 @@ def save_graph_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_graph_bundle_op(session, path: str | Path):
+def load_graph_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a graph bundle into this Session.
 
     Delegates to :func:`buildml.graph.checkpoint.load_graph_bundle`,
@@ -389,13 +392,16 @@ def load_graph_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded GraphPlan.
     path:
         Path to a ``buildml.graph_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with GraphPlan and GraphSpec attached for chaining.
     """
-    plan = load_graph_bundle(path)
+    plan = load_graph_bundle(path, trusted=trusted)
     session._graph_plan = plan
     session._graph_spec = plan.graph_spec
     session._graph_fit_result = None
@@ -411,4 +417,4 @@ def load_graph_bundle_op(session, path: str | Path):
             "n_train_nodes": plan.n_train_nodes,
         },
     )
-    return session
+    return cast("Session", session)

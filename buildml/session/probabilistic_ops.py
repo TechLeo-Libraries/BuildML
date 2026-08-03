@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -358,7 +361,7 @@ def save_probabilistic_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_probabilistic_bundle_op(session, path: str | Path):
+def load_probabilistic_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a probabilistic bundle into this Session.
 
     Delegates to :func:`buildml.probabilistic.checkpoint.load_probabilistic_bundle`
@@ -370,13 +373,16 @@ def load_probabilistic_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded ProbabilisticPlan.
     path:
         Path to a ``buildml.probabilistic_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with ProbabilisticPlan attached for chaining.
     """
-    plan = load_probabilistic_bundle(path)
+    plan = load_probabilistic_bundle(path, trusted=trusted)
     session._probabilistic_plan = plan
     session._probabilistic_fit_result = None
     session._probabilistic_eval_result = None
@@ -391,4 +397,4 @@ def load_probabilistic_bundle_op(session, path: str | Path):
             "task": plan.task,
         },
     )
-    return session
+    return cast("Session", session)

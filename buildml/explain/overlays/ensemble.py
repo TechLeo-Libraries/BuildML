@@ -245,7 +245,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Validate bundle format.",
             "Attach EnsemblePlan and FitResult.",
         ),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Ensemble bundle directory.",),
         outputs=("Session with ensemble_plan and fit_result attached.",),
         prerequisites=(DATASET,),

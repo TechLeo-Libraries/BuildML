@@ -63,7 +63,7 @@ def test_online_alpha_gate_smoke(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_online_bundle(bundle)
+    restored.load_online_bundle(bundle, trusted=True)
     assert restored.online_plan is not None
     assert restored.online_plan.n_updates == session.online_plan.n_updates
     again = restored.evaluate_online(partition="test")

@@ -161,7 +161,7 @@ def test_bundle_roundtrip(tmp_path) -> None:
     path = tmp_path / "decision_bundle"
     session.save_decision_bundle(path)
     other = _binary_session()
-    other.load_decision_bundle(path)
+    other.load_decision_bundle(path, trusted=True)
     assert other.decision_plan is not None
     assert other.decision_plan.method == "threshold"
     assert other.decision_plan.threshold is not None

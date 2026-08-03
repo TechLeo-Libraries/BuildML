@@ -138,6 +138,7 @@ def predict_from_pipeline(
     roles: dict[str, ColumnRole | str] | None = None,
     return_proba: bool = False,
     apply_plans: bool = True,
+    trusted: bool = False,
 ) -> PipelinePredictResult:
     """Take a raw frame through coercion, validation, and replay to predictions.
 
@@ -166,6 +167,10 @@ def predict_from_pipeline(
         When True (default), replay fitted preprocess plans from the bundle
         before prediction. Set False only when ``data`` already matches the
         estimator feature contract.
+    trusted:
+        Required when ``path_or_bundle`` is a filesystem path (pickle/joblib
+        load). Pass ``True`` only for artifacts you created or fully trust.
+        Ignored when an already-loaded :class:`PipelineBundle` is supplied.
 
     Returns
     -------
@@ -225,7 +230,7 @@ def predict_from_pipeline(
     bundle = (
         path_or_bundle
         if isinstance(path_or_bundle, PipelineBundle)
-        else load_pipeline_bundle(path_or_bundle)
+        else load_pipeline_bundle(path_or_bundle, trusted=trusted)
     )
     fit_result = bundle.fit_result
     warnings: list[str] = []

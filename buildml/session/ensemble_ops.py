@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.ensemble.checkpoint import load_ensemble_bundle, save_ensemble_bundle
@@ -350,7 +353,7 @@ def save_ensemble_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_ensemble_bundle_op(session, path: str | Path) -> Any:
+def load_ensemble_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load an ensemble bundle into this Session.
 
     Delegates to :func:`buildml.ensemble.checkpoint.load_ensemble_bundle`
@@ -362,13 +365,16 @@ def load_ensemble_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded EnsemblePlan.
     path:
         Path to a ``buildml.ensemble_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with EnsemblePlan and ``fit_result`` attached.
     """
-    plan, fit_result = load_ensemble_bundle(path)
+    plan, fit_result = load_ensemble_bundle(path, trusted=trusted)
     session._ensemble_plan = plan
     session._ensemble_fit_result = None
     session._fit_result = fit_result
@@ -377,4 +383,4 @@ def load_ensemble_bundle_op(session, path: str | Path) -> Any:
         {"path": str(path), "strategy": plan.strategy},
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

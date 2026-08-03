@@ -20,7 +20,7 @@ def test_checkpoint_save_load_restores_roles_and_splits(tmp_path: Path) -> None:
     assert (path / "MANIFEST.json").exists()
     assert (path / "data" / "frame.parquet").exists()
 
-    restored = Session.checkpoint_load(path)
+    restored = Session.checkpoint_load(path, trusted=True)
     assert restored.reattach_result is not None
     assert restored.reattach_result.status == "resume"
     assert restored.dataset.roles["y"].value == "target"
@@ -34,7 +34,7 @@ def test_data_only_reattach_is_fresh_ingest(tmp_path: Path) -> None:
     path = tmp_path / "ckpt"
     session.checkpoint_save(path)
 
-    restored = Session.checkpoint_load(path, data_only=True)
+    restored = Session.checkpoint_load(path, data_only=True, trusted=True)
     assert restored.reattach_result is not None
     assert restored.reattach_result.status == "fresh_ingest"
     assert restored.split_plan is None
@@ -52,7 +52,7 @@ def test_removed_column_blocks_reattach(tmp_path: Path) -> None:
     broken.to_parquet(path / "data" / "frame.parquet", index=False)
 
     with pytest.raises(ValidationError, match="required column"):
-        Session.checkpoint_load(path)
+        Session.checkpoint_load(path, trusted=True)
 
 
 def test_row_change_invalidates_splits(tmp_path: Path) -> None:
@@ -68,7 +68,7 @@ def test_row_change_invalidates_splits(tmp_path: Path) -> None:
     altered = pd.concat([altered, pd.DataFrame({"a": [99], "y": [1]})], ignore_index=True)
     altered.to_parquet(path / "data" / "frame.parquet", index=False)
 
-    restored = Session.checkpoint_load(path)
+    restored = Session.checkpoint_load(path, trusted=True)
     assert restored.reattach_result is not None
     assert restored.reattach_result.status == "splits_invalidated"
     assert restored.split_plan is None

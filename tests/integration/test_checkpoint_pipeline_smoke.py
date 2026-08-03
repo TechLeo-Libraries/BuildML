@@ -66,12 +66,12 @@ def test_checkpoint_and_pipeline_side_by_side_smoke(tmp_path: Path) -> None:
     assert legacy_fmt.startswith("buildml.plans.")
     assert legacy_plans["impute_plan"] is not None
 
-    restored_ckpt = Session.checkpoint_load(ckpt)
+    restored_ckpt = Session.checkpoint_load(ckpt, trusted=True)
     assert restored_ckpt.fit_result is None
     assert restored_ckpt.impute_plan is not None
     assert restored_ckpt.scale_plan is not None
 
-    restored_pipe = Session.ingest(frame).load_pipeline(pipe)
+    restored_pipe = Session.ingest(frame).load_pipeline(pipe, trusted=True)
     assert restored_pipe.fit_result is not None
     assert restored_pipe.model_card is not None
     assert restored_pipe.impute_plan is not None
@@ -92,7 +92,7 @@ def test_checkpoint_and_pipeline_side_by_side_smoke(tmp_path: Path) -> None:
         Session.ingest(frame)
         .set_roles({"age": "feature", "income": "feature", "approved": "target"})
         .split(test_size=0.25, stratify=True, random_state=0)
-        .load_pipeline(pipe)
+        .load_pipeline(pipe, trusted=True)
     )
     scored.apply_preprocess_plans()
     after = scored.evaluate(partition="test").metrics

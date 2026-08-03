@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -310,7 +313,7 @@ def save_ranker_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_ranker_bundle_op(session, path: str | Path):
+def load_ranker_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a ranker bundle into this Session.
 
     Delegates to :func:`buildml.ranking.checkpoint.load_ranker_bundle` and
@@ -322,13 +325,16 @@ def load_ranker_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded ranker plan.
     path:
         Path to a ``buildml.ranker_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with ranker plan attached for chaining.
     """
-    plan = load_ranker_bundle(path)
+    plan = load_ranker_bundle(path, trusted=trusted)
     session._ranker_plan = plan
     session._ranker_fit_result = None
     session._ranker_eval_result = None
@@ -338,4 +344,4 @@ def load_ranker_bundle_op(session, path: str | Path):
         {"path": str(path)},
         result_summary={"path": str(path), "format": "buildml.ranker_bundle.v1"},
     )
-    return session
+    return cast("Session", session)

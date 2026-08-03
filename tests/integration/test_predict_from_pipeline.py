@@ -52,6 +52,7 @@ def test_predict_from_pipeline_classification_roundtrip(tmp_path: Path) -> None:
             "y": "target",
         },
         return_proba=True,
+        trusted=True,
     )
     assert scored.n_rows == len(holdout)
     assert scored.probabilities is not None
@@ -69,6 +70,7 @@ def test_predict_from_pipeline_classification_roundtrip(tmp_path: Path) -> None:
             "y": "target",
         },
         return_proba=True,
+        trusted=True,
     )
     pd.testing.assert_series_equal(
         scored.predictions.reset_index(drop=True),
@@ -98,6 +100,7 @@ def test_predict_from_pipeline_regression_roundtrip(tmp_path: Path) -> None:
         pipe,
         holdout,
         roles={"x": "feature", "y": "target"},
+        trusted=True,
     )
     assert scored.n_rows == len(holdout)
     assert scored.probabilities is None
@@ -115,4 +118,9 @@ def test_predict_from_pipeline_schema_error(tmp_path: Path) -> None:
     pipe = tmp_path / "bad_pipe"
     session.save_pipeline(pipe, evaluate_partition=None)
     with pytest.raises(ValidationError, match="missing columns"):
-        predict_from_pipeline(pipe, pd.DataFrame({"z": [1.0, 2.0]}), apply_plans=False)
+        predict_from_pipeline(
+            pipe,
+            pd.DataFrame({"z": [1.0, 2.0]}),
+            apply_plans=False,
+            trusted=True,
+        )

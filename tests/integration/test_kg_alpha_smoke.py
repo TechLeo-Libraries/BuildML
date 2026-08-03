@@ -83,7 +83,7 @@ def test_kg_alpha_smoke(tmp_path: Path) -> None:
         .set_roles({"head": "id", "relation": "id", "tail": "id"})
         .split(test_size=0.2, validation_size=0.1, random_state=0)
     )
-    other.load_kg_bundle(bundle)
+    other.load_kg_bundle(bundle, trusted=True)
     assert other.kg_plan is not None
     ev2 = other.evaluate_kg(partition="test", k=5)
     assert ev2.n_triples_scored == ev.n_triples_scored

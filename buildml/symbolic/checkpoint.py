@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.symbolic.results import (
     NeuroSymbolicFitResult,
@@ -87,7 +88,7 @@ def save_symbolic_bundle(
     return destination
 
 
-def load_symbolic_bundle(path: str | Path) -> SymbolicPlan | NeuroSymbolicPlan:
+def load_symbolic_bundle(path: str | Path, *, trusted: bool = False) -> SymbolicPlan | NeuroSymbolicPlan:
     """Load a symbolic bundle from disk into a plan object.
 
     Supports bundles written by :func:`save_symbolic_bundle` or Session
@@ -97,6 +98,9 @@ def load_symbolic_bundle(path: str | Path) -> SymbolicPlan | NeuroSymbolicPlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``symbolic_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -122,7 +126,7 @@ def load_symbolic_bundle(path: str | Path) -> SymbolicPlan | NeuroSymbolicPlan:
         raise ValidationError(
             f"Unsupported symbolic bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, (SymbolicPlan, NeuroSymbolicPlan)):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

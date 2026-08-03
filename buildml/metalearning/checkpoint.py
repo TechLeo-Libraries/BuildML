@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.metalearning.results import (
     MetaAdaptResult,
@@ -92,7 +93,7 @@ def save_metalearning_bundle(
     return destination
 
 
-def load_metalearning_bundle(path: str | Path) -> MetaLearningPlan:
+def load_metalearning_bundle(path: str | Path, *, trusted: bool = False) -> MetaLearningPlan:
     """Load a meta-learning bundle into a :class:`MetaLearningPlan`.
 
     Validates bundle format version and plan object type before returning.
@@ -101,6 +102,9 @@ def load_metalearning_bundle(path: str | Path) -> MetaLearningPlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``metalearning_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -127,7 +131,7 @@ def load_metalearning_bundle(path: str | Path) -> MetaLearningPlan:
             f"Unsupported meta-learning bundle format {fmt!r}; "
             f"expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, MetaLearningPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

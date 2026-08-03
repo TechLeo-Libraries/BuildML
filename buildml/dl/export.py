@@ -251,7 +251,7 @@ def export_torchscript(
     Trace, then confirm it reloads::
 
         result = export_torchscript(module, "artifacts/model.pt", example_input=batch)
-        loaded = load_torchscript(result.path)
+        loaded = load_torchscript(result.path, trusted=True)
 
     See Also
     --------
@@ -682,11 +682,17 @@ def export_train_result(
     return result
 
 
-def load_torchscript(path: str | Path, *, map_location: str = "cpu") -> Any:
+def load_torchscript(
+    path: str | Path,
+    *,
+    map_location: str = "cpu",
+    trusted: bool = False,
+) -> Any:
     """Load a TorchScript artifact back into a runnable module.
 
     Reads a file written by :func:`export_torchscript`. No model class needed —
-    the graph is in the file.
+    the graph is in the file. Requires ``trusted=True`` because TorchScript
+    load can execute code depending on Torch version / settings.
 
     Parameters
     ----------
@@ -695,6 +701,9 @@ def load_torchscript(path: str | Path, *, map_location: str = "cpu") -> Any:
     map_location:
         Where to place the weights. Defaults to CPU, which works regardless of
         what the artifact was exported from.
+    trusted:
+        Must be ``True`` to deserialize. Pass only for artifacts you created
+        or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -705,6 +714,8 @@ def load_torchscript(path: str | Path, *, map_location: str = "cpu") -> Any:
     ------
     MissingExtraError
         If PyTorch is not installed.
+    ValidationError
+        When ``trusted`` is false or ``path`` is not a local filesystem path.
 
     Notes
     -----
@@ -717,8 +728,17 @@ def load_torchscript(path: str | Path, *, map_location: str = "cpu") -> Any:
     --------
     export_torchscript : Writing the file.
     """
+    from buildml.core.serialization import (
+        assert_local_load_path,
+        require_trusted_deserialize,
+    )
+
+    target = assert_local_load_path(path, artifact="TorchScript module")
+    require_trusted_deserialize(
+        trusted=trusted, artifact="TorchScript module", path=target
+    )
     torch = require_torch(feature="TorchScript load")
-    return torch.jit.load(str(path), map_location=map_location)
+    return torch.jit.load(str(target), map_location=map_location)
 
 
 def smoke_load_onnx(path: str | Path) -> dict[str, Any]:

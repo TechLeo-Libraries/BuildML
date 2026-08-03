@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.unsupervised.results import ClusterEvalResult, ClusterFitResult, ClusterPlan
 
@@ -84,25 +85,29 @@ ValidationError
     return destination
 
 
-def load_unsupervised_bundle(path: str | Path) -> ClusterPlan:
+def load_unsupervised_bundle(path: str | Path, *, trusted: bool = False) -> ClusterPlan:
     """Load a unsupervised bundle into a :class:`ClusterPlan`.
 
-Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
 
-Parameters
-----------
-path:
-    Filesystem path to the bundle directory.
+    Parameters
+    ----------
+    path:
+        Filesystem path to the bundle directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
-Returns
--------
-ClusterPlan
-    Fitted plan object (ClusterPlan) with private estimators attached.
+    Returns
+    -------
+    ClusterPlan
+        Fitted plan object (ClusterPlan) with private estimators attached.
 
-Raises
-------
-ValidationError
-    When preconditions for this operation are not met.
+    Raises
+    ------
+    ValidationError
+        When preconditions for this operation are not met.
+        
     """
     root = Path(path)
     meta_path = root / "meta.json"
@@ -119,7 +124,7 @@ ValidationError
             f"Unsupported unsupervised bundle format {fmt!r}; "
             f"expected {BUNDLE_FORMAT_V2} or {BUNDLE_FORMAT_V1}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, ClusterPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

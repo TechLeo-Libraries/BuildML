@@ -79,7 +79,7 @@ def test_fit_partial_evaluate_bundle(tmp_path: Path) -> None:
 
     bundle = session.save_online_bundle(tmp_path / "online_bundle")
     assert (bundle / "meta.json").is_file()
-    plan = load_online_bundle(bundle)
+    plan = load_online_bundle(bundle, trusted=True)
     assert plan.n_updates == 1
 
     restored = Session.ingest(session.to_pandas()).set_roles(
@@ -87,7 +87,7 @@ def test_fit_partial_evaluate_bundle(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_online_bundle(bundle)
+    restored.load_online_bundle(bundle, trusted=True)
     assert restored.online_plan is not None
     assert restored.online_plan.n_updates == 1
 

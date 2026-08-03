@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.forecasting.results import (
     ForecastEvalResult,
@@ -93,7 +94,7 @@ def save_forecast_bundle(
     return destination
 
 
-def load_forecast_bundle(path: str | Path) -> ForecastPlan:
+def load_forecast_bundle(path: str | Path, *, trusted: bool = False) -> ForecastPlan:
     """Load a forecast bundle into a :class:`ForecastPlan`.
 
     Reads ``meta.json`` for format validation and ``forecast_plan.joblib`` for
@@ -103,6 +104,9 @@ def load_forecast_bundle(path: str | Path) -> ForecastPlan:
     ----------
     path:
         Root directory of a saved forecast bundle.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -130,7 +134,7 @@ def load_forecast_bundle(path: str | Path) -> ForecastPlan:
             f"Unsupported forecast bundle format {fmt!r}; "
             f"expected one of {sorted(SUPPORTED_FORMATS)}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, ForecastPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

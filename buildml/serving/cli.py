@@ -112,6 +112,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional PEM private key for local HTTPS (pairs with --ssl-certfile).",
     )
+    parser.add_argument(
+        "--trusted",
+        action="store_true",
+        default=False,
+        help=(
+            "Acknowledge that this artifact is trusted for pickle/joblib/"
+            "TorchScript deserialization. Required; refuse to load otherwise."
+        ),
+    )
     return parser
 
 
@@ -180,6 +189,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         allow_insecure_public_bind=args.allow_insecure_public_bind,
         ssl_certfile=args.ssl_certfile,
         ssl_keyfile=args.ssl_keyfile,
+        trusted=bool(args.trusted),
     )
     return 0
 

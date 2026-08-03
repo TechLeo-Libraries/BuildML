@@ -43,7 +43,7 @@ jobs:
       - name: Docstring standard
         run: python scripts/audit_docstrings.py --check
 
-      # Scoped typing ratchet. Widen only with intentional cleanup — Session /
+      # Scoped typing ratchet. Session package is fully under warn_return_any;
       # dashboard / explain overlays still use warn_return_any=false overlays.
       - name: Mypy (scoped)
         run: >
@@ -57,9 +57,13 @@ jobs:
           buildml/explain/capability_status.py
           buildml/explain/glossary.py
           buildml/explain/prerequisites.py
+          buildml/session
+
+      - name: Domain maturity index
+        run: python scripts/domain_maturity_index.py --check --report
 
       # Coverage fail_under comes from pyproject.toml [tool.coverage.report]
-      # (currently 20 — ratchet measured against classical smoke floor).
+      # (currently 25 — ratchet measured against classical+checkpoint smoke ~26.5%).
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 
@@ -69,12 +73,20 @@ jobs:
       - name: Classical alpha-gate smoke
         run: pytest tests/integration/test_classical_alpha_smoke.py -q
 
+      - name: Industry extras probe (informational)
+        run: >
+          python scripts/probe_industry_extras.py
+          --artifact industry-probe.json
+          --markdown industry-probe.md
+        continue-on-error: true
+
       - name: Build wheel
         run: python -m build
 
   # Classical-only Windows gate. Core + dev install (no Torch / industry extras).
   # Torch, PyG, and several industry wheels stay Linux-only in CI — see the
-  # torch/rag/benchmarks jobs and README install honesty.
+  # torch/rag/benchmarks jobs and README install honesty. Industry probe is
+  # informational: missing Windows/Py3.13 wheels must not fail the job.
   windows-classical:
     runs-on: windows-latest
     strategy:
@@ -103,6 +115,13 @@ jobs:
 
       - name: Classical alpha-gate smoke
         run: pytest tests/integration/test_classical_alpha_smoke.py -q
+
+      - name: Industry extras probe (informational; expect many skips)
+        run: >
+          python scripts/probe_industry_extras.py
+          --artifact industry-probe-windows.json
+          --markdown industry-probe-windows.md
+        continue-on-error: true
 
   engines:
     runs-on: ubuntu-latest

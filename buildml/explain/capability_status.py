@@ -42,13 +42,14 @@ CAPABILITY_MATRIX_OPERATIONS: frozenset[str] = frozenset(
         "timeseries_capability_matrix",
         "unsupervised_capability_matrix",
         "dl_capability_matrix",
+        "ensemble_capability_matrix",
     }
 )
 
 # Walkthrough ``*_status`` field → Session capability-matrix operation.
 DOMAIN_STATUS_CAPABILITY_OPS: tuple[tuple[str, str], ...] = (
     ("unsupervised_status", "unsupervised_capability_matrix"),
-    ("ensemble_status", "automl_capability_matrix"),  # no ensemble matrix; skip below
+    ("ensemble_status", "ensemble_capability_matrix"),
     ("automl_status", "automl_capability_matrix"),
     ("forecasting_status", "forecast_capability_matrix"),
     ("timeseries_status", "timeseries_capability_matrix"),
@@ -139,11 +140,18 @@ _MATRIX_SOURCES: dict[str, tuple[str, str]] = {
         "unsupervised_capability_matrix",
     ),
     "dl_capability_matrix": ("buildml.dl.catalog", "dl_capability_matrix"),
+    "ensemble_capability_matrix": (
+        "buildml.ensemble.catalog",
+        "ensemble_capability_matrix",
+    ),
 }
 
 # Domain fit op → capability matrix to call first (audit / workflow routing).
 FIT_TO_CAPABILITY_MATRIX: dict[str, str] = {
     "fit_clusters": "unsupervised_capability_matrix",
+    "fit_voting": "ensemble_capability_matrix",
+    "fit_stacking": "ensemble_capability_matrix",
+    "fit_blending": "ensemble_capability_matrix",
     "run_automl": "automl_capability_matrix",
     "fit_forecast": "forecast_capability_matrix",
     "fit_torch": "dl_capability_matrix",
@@ -286,8 +294,6 @@ def capability_introspection_status(session: Any | None = None) -> dict[str, Any
     seen_ops: set[str] = set()
     for status_field, operation in DOMAIN_STATUS_CAPABILITY_OPS:
         if operation in seen_ops and status_field != "imitation_status":
-            continue
-        if status_field == "ensemble_status":
             continue
         seen_ops.add(operation)
         matrix = load_capability_matrix(operation)

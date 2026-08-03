@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+from buildml.core.industry_markers import platform_skip_entry
 from buildml.tda.extras import giotto_available, tda_available, tda_industry_available
 
 TdaBackendName = Literal["native", "giotto"]
@@ -69,8 +70,12 @@ def tda_capability_matrix() -> dict[str, Any]:
                     "PersistenceLandscape. Optional KeplerMapper summary on train "
                     "when mapper=True (buildml[tda-industry])."
                 ),
+                **platform_skip_entry("giotto_tda", extra="tda-industry"),
             },
         },
+        "platform_markers": [
+            platform_skip_entry("giotto_tda", extra="tda-industry"),
+        ],
         "subsample_strategies": ["error", "random", "stratified"],
         "evaluate_diagram_metrics": ["wasserstein", "bottleneck"],
         "default_backend_when_installed": _default_backend_when_installed(),

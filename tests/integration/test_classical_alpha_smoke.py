@@ -76,7 +76,7 @@ def test_classical_alpha_gate_smoke(tmp_path: Path) -> None:
     session.checkpoint_save(ckpt)
     session.save_pipeline(pipe, evaluate_partition="test", title="Alpha smoke")
 
-    restored = Session.checkpoint_load(ckpt)
+    restored = Session.checkpoint_load(ckpt, trusted=True)
     assert restored.split_plan is not None
     assert restored.impute_plan is not None
     assert restored.fit_result is None
@@ -86,6 +86,7 @@ def test_classical_alpha_gate_smoke(tmp_path: Path) -> None:
         pipe,
         holdout,
         roles={"age": "feature", "income": "feature", "approved": "target"},
+        trusted=True,
     )
     assert scored.n_rows == len(holdout)
     assert len(scored.predictions) == len(holdout)
@@ -94,7 +95,7 @@ def test_classical_alpha_gate_smoke(tmp_path: Path) -> None:
         Session.ingest(frame)
         .set_roles({"age": "feature", "income": "feature", "approved": "target"})
         .split(test_size=0.25, stratify=True, random_state=0)
-        .load_pipeline(pipe)
+        .load_pipeline(pipe, trusted=True)
     )
     reloaded.apply_preprocess_plans()
     after = reloaded.evaluate(partition="test").metrics["f1_weighted"]

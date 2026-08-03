@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
-from buildml.session._imports import *  # noqa: F403
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
+
+import pandas as pd
+
+from buildml.session._imports import (
+    ValidationError,
+)
 
 
 def ai_configure(
@@ -16,7 +26,7 @@ def ai_configure(
     max_iterations: int = 10,
     max_tokens: int | None = None,
     max_cost_usd: float | None = None,
-) -> Session:
+) -> "Session":
     """Configure an AI provider for LLM-assisted workflow guidance.
 
     API keys are read from environment variables by default. Keys are never
@@ -103,9 +113,7 @@ def ai_configure(
             "max_cost_usd": max_cost_usd,
         },
     )
-    return session
-
-
+    return cast("Session", session)
 def ai_egress_preview(
     session,
     *,
@@ -725,7 +733,7 @@ def save_ai_transcript(session, path: str | Path, *, redact: bool = True) -> Pat
     return destination
 
 
-def load_ai_transcript(session, path: str | Path) -> Session:
+def load_ai_transcript(session, path: str | Path) -> "Session":
     """Load an AI transcript for resume or audit.
 
     Records the operation on Session history and returns the result for downstream chaining.
@@ -748,4 +756,4 @@ def load_ai_transcript(session, path: str | Path) -> Session:
 
     session._ai_transcript = load_transcript(path)
     session._record("load_ai_transcript", {"path": str(path)})
-    return session
+    return cast("Session", session)

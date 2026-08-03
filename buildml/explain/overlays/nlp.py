@@ -912,7 +912,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Attach whichever plans the bundle carries.",
             "Clear stale fit, eval, predict, interpret, and topic results so nothing misattributes to the new plan.",
         ),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory.",),
         outputs=("Session with NlpTextPlan and/or NlpTopicPlan attached.",),
         prerequisites=(DATASET,),

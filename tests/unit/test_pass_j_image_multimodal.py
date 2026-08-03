@@ -210,7 +210,7 @@ def test_path_image_cells_and_export(tmp_path: Path) -> None:
     out = tmp_path / "img_mm.ts.pt"
     result = session.export_torch(out, format="torchscript")
     assert result.path.exists()
-    loaded = load_torchscript(result.path)
+    loaded = load_torchscript(result.path, trusted=True)
     with torch.no_grad():
         y_loaded = loaded(x_tab.cpu(), images.cpu())
     assert y_loaded.shape == y_args.shape

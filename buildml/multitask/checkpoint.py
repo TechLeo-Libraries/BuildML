@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.multitask.results import MultiTaskEvalResult, MultiTaskFitResult, MultiTaskPlan
 
@@ -79,7 +80,7 @@ def save_multitask_bundle(
     return destination
 
 
-def load_multitask_bundle(path: str | Path) -> MultiTaskPlan:
+def load_multitask_bundle(path: str | Path, *, trusted: bool = False) -> MultiTaskPlan:
     """Load a multi-task bundle into a :class:`MultiTaskPlan`.
 
     Validates bundle format version and plan object type before returning.
@@ -88,6 +89,9 @@ def load_multitask_bundle(path: str | Path) -> MultiTaskPlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``multitask_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -113,7 +117,7 @@ def load_multitask_bundle(path: str | Path) -> MultiTaskPlan:
         raise ValidationError(
             f"Unsupported multi-task bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, MultiTaskPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

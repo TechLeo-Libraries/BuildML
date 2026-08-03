@@ -289,7 +289,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restores KgPlan; clears prior fit/eval/score/predict/query results.",
         "KG bundle load.",
         ("Read meta + joblib.", "Attach KgPlan."),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("KG bundle directory.",),
         outputs=("Session with kg_plan.",),
         prerequisites=(DATASET,),

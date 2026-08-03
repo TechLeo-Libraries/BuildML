@@ -5822,6 +5822,30 @@ class ToolRegistry:
     def __contains__(self, name: str) -> bool:
         return name in self._tools
 
+    def register(self, spec: ToolSpec) -> None:
+        """Refuse runtime registration — the registry is closed by construction.
+
+        Models sometimes invent ``register_tool`` / ``add_tool`` style actions.
+        BuildML never mutates an existing registry from model text: construct a
+        new :class:`ToolRegistry` in application code if you need a different
+        allowlist.
+
+        Parameters
+        ----------
+        spec:
+            Ignored. Present only so mistaken calls have a clear signature.
+
+        Raises
+        ------
+        ValidationError
+            Always — the allowlist is fixed at construction time.
+        """
+        raise ValidationError(
+            "ToolRegistry is closed: tools cannot be registered at runtime from "
+            "model output. Construct a new ToolRegistry in application code if "
+            f"you need additional tools (refused: {getattr(spec, 'name', spec)!r})."
+        )
+
     def validate_tool_call(self, call: ToolCall) -> ToolSpec:
         """Resolve a proposed call to its spec, or refuse it.
 

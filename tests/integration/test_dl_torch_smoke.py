@@ -69,7 +69,7 @@ def test_session_torch_vertical_slice(tmp_path) -> None:
         .set_roles({"a": "feature", "b": "feature", "label": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=7)
     )
-    restored.load_torch_bundle(bundle_path, TinyMLP(), map_location="cpu")
+    restored.load_torch_bundle(bundle_path, TinyMLP(, trusted=True), map_location="cpu")
     restored.make_torch_loaders(batch_size=32, normalize=True, seed=7)
     again = restored.evaluate_torch(partition="test")
     assert again.metrics["accuracy"] == pytest.approx(result.metrics["accuracy"], abs=1e-5)

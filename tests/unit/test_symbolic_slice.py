@@ -76,7 +76,7 @@ def test_session_fit_predict_eval_bundle(tmp_path: Path) -> None:
     assert (out / "symbolic_plan.joblib").is_file()
 
     other = _clf_session()
-    other.load_symbolic_bundle(out)
+    other.load_symbolic_bundle(out, trusted=True)
     assert other.symbolic_plan is not None
     assert other.symbolic_plan.source == "decision_tree"
     reloaded = other.evaluate_symbolic(partition="test")
@@ -154,7 +154,7 @@ def test_neuro_symbolic_overlay_and_bundle(tmp_path: Path) -> None:
     out = tmp_path / "neuro_bundle"
     session2.save_symbolic_bundle(out)
     other = _clf_session()
-    other.load_symbolic_bundle(out)
+    other.load_symbolic_bundle(out, trusted=True)
     assert other.neuro_symbolic_plan is not None
     assert other.neuro_symbolic_plan.mode == "rules_as_features"
 

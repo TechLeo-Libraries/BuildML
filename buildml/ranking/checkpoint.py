@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.ranking.results import (
     RankerEvalResult,
@@ -91,7 +92,7 @@ def save_ranker_bundle(
     return destination
 
 
-def load_ranker_bundle(path: str | Path) -> RankerPlan:
+def load_ranker_bundle(path: str | Path, *, trusted: bool = False) -> RankerPlan:
     """Load a ranker bundle into a :class:`~buildml.ranking.results.RankerPlan`.
 
     Reads ``meta.json`` for format validation and ``ranker_plan.joblib`` for
@@ -101,6 +102,9 @@ def load_ranker_bundle(path: str | Path) -> RankerPlan:
     ----------
     path:
         Bundle directory written by :func:`save_ranker_bundle`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -127,7 +131,7 @@ def load_ranker_bundle(path: str | Path) -> RankerPlan:
         raise ValidationError(
             f"Unsupported ranker bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, RankerPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

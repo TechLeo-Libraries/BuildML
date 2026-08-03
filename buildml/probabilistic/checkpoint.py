@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.probabilistic.results import (
     ProbabilisticEvalResult,
@@ -83,7 +84,7 @@ def save_probabilistic_bundle(
     return destination
 
 
-def load_probabilistic_bundle(path: str | Path) -> ProbabilisticPlan:
+def load_probabilistic_bundle(path: str | Path, *, trusted: bool = False) -> ProbabilisticPlan:
     """Load a probabilistic bundle into a :class:`~buildml.probabilistic.results.ProbabilisticPlan`.
 
     Validates bundle format and restores the plan object for predict and
@@ -93,6 +94,9 @@ def load_probabilistic_bundle(path: str | Path) -> ProbabilisticPlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``probabilistic_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -118,7 +122,7 @@ def load_probabilistic_bundle(path: str | Path) -> ProbabilisticPlan:
         raise ValidationError(
             f"Unsupported probabilistic bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, ProbabilisticPlan):
         if not getattr(loaded, "backend", None):
             loaded.backend = "native"

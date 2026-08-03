@@ -129,5 +129,5 @@ def test_anomaly_bundle_roundtrip_backend(tmp_path: Path) -> None:
         {"a": "feature", "b": "feature", "is_fraud": "target"}
     )
     fresh.split(test_size=0.25, stratify=True, random_state=0).scale(method="standard")
-    fresh.load_anomaly_bundle(path)
+    fresh.load_anomaly_bundle(path, trusted=True)
     assert fresh.anomaly_plan.backend == "sklearn"

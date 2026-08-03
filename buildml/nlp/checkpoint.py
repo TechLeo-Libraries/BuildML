@@ -26,6 +26,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.nlp.results import (
     NlpEvalResult,
@@ -144,7 +145,7 @@ def save_nlp_bundle(
     return destination
 
 
-def load_nlp_bundle(path: str | Path) -> tuple[NlpTextPlan | None, NlpTopicPlan | None]:
+def load_nlp_bundle(path: str | Path, *, trusted: bool = False) -> tuple[NlpTextPlan | None, NlpTopicPlan | None]:
     """Restore a saved text model, ready to score documents.
 
     Reads the manifest, checks the format, and loads whichever plans the bundle
@@ -155,6 +156,9 @@ def load_nlp_bundle(path: str | Path) -> tuple[NlpTextPlan | None, NlpTopicPlan 
     ----------
     path:
         The bundle directory written by :func:`save_nlp_bundle`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -203,8 +207,8 @@ def load_nlp_bundle(path: str | Path) -> tuple[NlpTextPlan | None, NlpTopicPlan 
             f"Unsupported NLP bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
 
-    text_plan = _load_plan(root / _TEXT_PLAN_FILE, NlpTextPlan, "text")
-    topic_plan = _load_plan(root / _TOPIC_PLAN_FILE, NlpTopicPlan, "topic")
+    text_plan = _load_plan(root / _TEXT_PLAN_FILE, NlpTextPlan, "text", trusted=trusted)
+    topic_plan = _load_plan(root / _TOPIC_PLAN_FILE, NlpTopicPlan, "topic", trusted=trusted)
     if text_plan is None and topic_plan is None:
         raise ValidationError(
             f"NLP bundle at {root} declares {BUNDLE_FORMAT} but contains neither "
@@ -213,10 +217,10 @@ def load_nlp_bundle(path: str | Path) -> tuple[NlpTextPlan | None, NlpTopicPlan 
     return text_plan, topic_plan
 
 
-def _load_plan(path: Path, expected: type, kind: str) -> Any:
+def _load_plan(path: Path, expected: type, kind: str, *, trusted: bool) -> Any:
     if not path.is_file():
         return None
-    loaded = joblib.load(path)
+    loaded = joblib_load_trusted(path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, expected):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

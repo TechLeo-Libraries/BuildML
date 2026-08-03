@@ -247,7 +247,7 @@ def test_path_audio_cells_and_export(tmp_path: Path) -> None:
     out = tmp_path / "aud_mm.ts.pt"
     result = session.export_torch(out, format="torchscript")
     assert result.path.exists()
-    loaded = load_torchscript(result.path)
+    loaded = load_torchscript(result.path, trusted=True)
     with torch.no_grad():
         y_loaded = loaded(x_tab.cpu(), audio.cpu())
     assert y_loaded.shape == y_args.shape
@@ -504,7 +504,7 @@ def test_torch_bundle_persists_audio_preprocess_meta(tmp_path: Path) -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    other.load_torch_bundle(path, shell, map_location="cpu")
+    other.load_torch_bundle(path, shell, map_location="cpu", trusted=True)
     assert other.dl_train_result is not None
     loaded = other.dl_train_result.multimodal_preprocess
     assert loaded is not None

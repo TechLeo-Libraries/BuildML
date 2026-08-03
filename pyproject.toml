@@ -286,7 +286,8 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 20
+# Ratchet: classical+checkpoint smoke measured ~26.5% on Py3.13; leave headroom.
+fail_under = 25
 precision = 1
 skip_empty = true
 show_missing = true
@@ -304,9 +305,14 @@ extend-exclude = ["buildml/_legacy"]
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
-# Session ops modules share a deliberate star-import surface from `_imports`.
-"buildml/session/*_ops.py" = ["F403", "F405", "UP037", "E501"]
+# Session ops: long pedagogical docs; Sequence often typed via typing for
+# annotation-bag compatibility; some files still use TYPE_CHECKING Session.
+"buildml/session/*_ops.py" = ["UP035", "UP037", "E501", "F401"]
+"buildml/session/mixins/*.py" = ["F401", "F403", "F405", "UP037", "E501"]
+"buildml/session/mixins/_shared.py" = ["F401"]
 "buildml/session/_imports.py" = ["F401"]
+# Assembler keeps a large TYPE_CHECKING bag for __init__ slot annotations.
+"buildml/session/session.py" = ["E501", "F401", "I001"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -327,11 +333,10 @@ follow_imports_for_stubs = true
 module = "buildml._legacy.*"
 ignore_errors = true
 
-# Gradual typing: Session facade + ops still return through untyped helpers.
-# Scoped CI covers core/explain; widen this override only with intentional cleanup.
+# Gradual typing: dashboard + explain overlays still cross untyped helpers.
+# Session (mixins, ops, session, state) keeps global warn_return_any=true.
 [[tool.mypy.overrides]]
 module = [
-  "buildml.session.*",
   "buildml.dashboard.*",
   "buildml.explain.overlays.*",
   "buildml.explain.catalog",

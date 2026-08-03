@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+from buildml.core.industry_markers import platform_skip_entry
 from buildml.metalearning.extras import (
     learn2learn_available,
     metalearning_industry_available,
@@ -73,8 +74,12 @@ def metalearning_capability_matrix() -> dict[str, Any]:
                     "(buildml[metalearning-industry]); otherwise an honest native "
                     "first-order SGD meta-loop. Not second-order MAML-at-scale."
                 ),
+                **platform_skip_entry("learn2learn", extra="metalearning-industry"),
             },
         },
+        "platform_markers": [
+            platform_skip_entry("learn2learn", extra="metalearning-industry"),
+        ],
         "episodic_protocol": {
             "task_column": "role='group' or task_column=",
             "metrics": [

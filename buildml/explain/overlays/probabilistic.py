@@ -297,7 +297,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Validate bundle format.",
             "Attach ProbabilisticPlan; clear fit/eval/predict/interval slots.",
         ),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory with meta.json + probabilistic_plan.joblib.",),
         outputs=("Session with probabilistic_plan attached.",),
         prerequisites=(DATASET,),

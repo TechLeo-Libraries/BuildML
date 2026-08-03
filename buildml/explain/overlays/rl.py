@@ -165,7 +165,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore ImitationPlan from buildml.imitation_bundle.v1.",
         "Imitation bundle load.",
         ("Read meta + joblib.", "Attach plan; clear prior imitation results."),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Imitation bundle directory.",),
         outputs=("Session with imitation_plan attached.",),
         prerequisites=(),
@@ -377,7 +385,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore RlPlan from buildml.rl_bundle.v1.",
         "RL bundle load.",
         ("Read meta + joblib.", "Attach plan; clear prior RL results."),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("RL bundle directory.",),
         outputs=("Session with rl_plan attached.",),
         prerequisites=(),

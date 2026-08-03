@@ -53,7 +53,7 @@ def test_multitask_alpha_smoke(tmp_path: Path) -> None:
     )
     other._split_plan = session.split_plan
     other._dataset = session.dataset
-    other.load_multitask_bundle(bundle)
+    other.load_multitask_bundle(bundle, trusted=True)
     ev2 = other.evaluate_multitask(partition="test")
     assert "mean_accuracy" in ev2.metrics
     assert ev2.n_rows > 0

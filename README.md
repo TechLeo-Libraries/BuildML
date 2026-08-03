@@ -70,9 +70,38 @@ environment markers when upstream wheels are missing or broken (LightFM,
 learn2learn/qpth, giotto-tda, neuralforecast, skope-rules, …). Core sklearn paths
 and markers that resolve still install. Check each domain’s capability matrix
 (e.g. `Session.automl_capability_matrix()`) and the [proof suite](proofs/README.md)
-for what actually runs in your environment.
+for what actually runs in your environment. For a machine-local inventory of
+importable industry modules (never a hard fail), run:
+
+```bash
+python scripts/probe_industry_extras.py
+```
 
 It does **not** include dashboard, serve, or AI operator extras.
+
+### Security notes (bundles + AI)
+
+- **Pickle / joblib / torch bundles (opt-in).** Checkpoint `plans.joblib`,
+  pipeline bundles, domain `*_plan.joblib`, and Torch trainer / TorchScript
+  payloads can execute code on load. Public loaders default to `trusted=False`
+  and raise `ValidationError` until you pass `trusted=True` for artifacts you
+  created or fully trust — for example `Session.checkpoint_load(path, trusted=True)`,
+  `session.load_anomaly_bundle(path, trusted=True)`,
+  `Session().predict_from_pipeline(path, frame, trusted=True)`, or
+  `buildml-serve --bundle … --trusted`. Prefer JSON sidecars / parquet /
+  `Session.checkpoint_load(..., data_only=True)` (skips plans without needing
+  `trusted`) or re-fitting when provenance is unclear. Optional `sha256`
+  integrity in manifests detects *tampering after save*; it does **not** make a
+  malicious author safe. **Residual risk:** `trusted=True` on an
+  attacker-controlled artifact still executes code — untrusted pickle cannot be
+  made safe.
+- **AI operator.** Prompt-injection heuristics in `buildml.ai.security` are a
+  best-effort layer (NFKC + zero-width / bidi strip, Latin-homoglyph fold,
+  multi-line / base64-ish smuggle patterns, structured `InjectionFinding`
+  reason codes). Primary controls remain the closed tool registry (runtime
+  `register` refused), confirm-on-write for mutating tools, and egress levels in
+  `buildml.ai.privacy`. **Residual risk:** paraphrase / novel attacks may
+  bypass heuristics — do not treat pattern matching as injection-proof.
 
 ---
 

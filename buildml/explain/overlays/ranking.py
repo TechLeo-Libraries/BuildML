@@ -242,7 +242,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restores RankerPlan; clears prior fit/eval/rank result objects.",
         "LTR bundle load.",
         ("Read meta + joblib.", "Attach RankerPlan."),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Ranker bundle directory.",),
         outputs=("Session with ranker_plan.",),
         prerequisites=(DATASET,),

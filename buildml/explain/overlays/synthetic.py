@@ -261,7 +261,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore SynthesizerPlan for sample/evaluate.",
         "Synthetic bundle load.",
         ("Read meta.json + synthetic_plan.joblib.", "Attach SynthesizerPlan."),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Synthetic bundle directory.",),
         outputs=("Session with synthesizer_plan.",),
         prerequisites=(DATASET,),

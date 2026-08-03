@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.recommenders.results import (
     RecommendResult,
@@ -120,7 +121,7 @@ def save_recommender_bundle(
     return destination
 
 
-def load_recommender_bundle(path: str | Path) -> RecommenderPlan:
+def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> RecommenderPlan:
     """Load a recommender bundle into a :class:`RecommenderPlan`.
 
     Reads ``meta.json`` for format validation and ``recommender_plan.joblib``
@@ -131,6 +132,9 @@ def load_recommender_bundle(path: str | Path) -> RecommenderPlan:
     ----------
     path:
         Bundle directory written by :func:`save_recommender_bundle`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -158,7 +162,7 @@ def load_recommender_bundle(path: str | Path) -> RecommenderPlan:
         raise ValidationError(
             f"Unsupported recommender bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, RecommenderPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from buildml.session._imports import *  # noqa: F403
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
+
+from buildml.session._imports import (
+    ValidationError,
+)
 
 
 def _attached_classical_plans(session) -> dict[str, Any]:
@@ -102,7 +110,7 @@ def make_torch_loaders(
     applies to the train loader only. When ``normalize`` is True, mean/std
     are fit on train and frozen for validation/test.
 
-    Classical preprocess: Session ``impute`` / ``encode`` / ``scale`` already
+    Classical preprocess: "Session" ``impute`` / ``encode`` / ``scale`` already
     mutate the attached frame with train-fitted plans. Attached plans are
     disclosed on the loader report. Pass ``apply_plans=True`` to explicitly
     re-apply fitted plans via :meth:`apply_preprocess_plans` before building
@@ -271,7 +279,7 @@ def fit_torch(
     hidden: tuple[int, ...] = (64, 32),
     dropout: float = 0.1,
     mixed_precision: bool = False,
-) -> Session:
+) -> "Session":
     """Train an ``nn.Module`` on the train Torch loader.
 
     Requires ``pip install 'buildml[torch]'``. When ``module`` is omitted, builds
@@ -455,9 +463,7 @@ def fit_torch(
         result_summary=result.to_dict(),
         warnings=tuple(result.warnings),
     )
-    return session
-
-
+    return cast("Session", session)
 def cross_validate_torch(
     session,
     *,
@@ -671,8 +677,13 @@ def save_torch_bundle(session, path: str | Path) -> Path:
 
 
 def load_torch_bundle(
-    session, path: str | Path, module: Any, *, map_location: str | None = None
-) -> Session:
+    session,
+    path: str | Path,
+    module: Any,
+    *,
+    map_location: str | None = None,
+    trusted: bool = False,
+) -> "Session":
     """Load a Torch trainer bundle into this Session.
 
     Restores weights plus optional ``multimodal_preprocess`` meta (frozen
@@ -690,23 +701,26 @@ def load_torch_bundle(
         Compatible ``nn.Module`` shell that receives ``load_state_dict``.
     map_location:
         Optional device for ``torch.load`` (default CPU).
+    trusted:
+        Required ``True`` to deserialize ``trainer.pt`` (torch pickle). Pass
+        only for bundles you created or fully trust.
 
     Returns
     -------
     Session
         ``session`` with ``dl_train_result`` attached for chaining.
     """
-    from buildml.dl.checkpoint import load_torch_bundle
+    from buildml.dl.checkpoint import load_torch_bundle as _load_torch_bundle
 
-    session._dl_train_result = load_torch_bundle(path, module, map_location=map_location)
+    session._dl_train_result = _load_torch_bundle(
+        path, module, map_location=map_location, trusted=trusted
+    )
     session._record(
         "load_torch_bundle",
         {"path": str(path), "module": type(module).__name__, "map_location": map_location},
         result_summary=session._dl_train_result.to_dict(),
     )
-    return session
-
-
+    return cast("Session", session)
 def make_multimodal_torch_loaders(
     session,
     *,
@@ -1738,9 +1752,7 @@ def fit_speech_torch(
         result_summary=result.to_dict(),
         warnings=tuple(result.warnings),
     )
-    return session
-
-
+    return cast("Session", session)
 def transcribe_speech(
     session,
     *,
@@ -1832,6 +1844,7 @@ def serve_bundle(
     allow_insecure_public_bind: bool = False,
     ssl_certfile: str | Path | None = None,
     ssl_keyfile: str | Path | None = None,
+    trusted: bool = False,
 ) -> Any:
     """Launch BuildML managed serving for a pipeline or TorchScript artifact.
 
@@ -1871,6 +1884,8 @@ def serve_bundle(
         Optional TLS certificate file for local HTTPS.
     ssl_keyfile:
         Optional TLS private key file for local HTTPS.
+    trusted:
+        Must be ``True`` to deserialize the served artifact.
 
     Returns
     -------
@@ -1903,6 +1918,7 @@ def serve_bundle(
         allow_insecure_public_bind=allow_insecure_public_bind,
         ssl_certfile=ssl_certfile,
         ssl_keyfile=ssl_keyfile,
+        trusted=trusted,
     )
     session._serve_handle = handle
     auth_on = api_keys is not None
@@ -2110,7 +2126,11 @@ def evaluate_asr(
             "lowercase": lowercase,
             "from_speech_result": hypotheses is None,
         },
-        result_summary=result.to_dict() if hasattr(result, "to_dict") else dict(result),
+        result_summary=(
+            result.to_dict()
+            if hasattr(result, "to_dict")
+            else cast(dict[str, Any], getattr(result, "__dict__", {}))
+        ),
         warnings=tuple(getattr(result, "warnings", ()) or ()),
     )
     return result

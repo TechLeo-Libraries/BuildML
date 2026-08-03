@@ -230,7 +230,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Validate format string.",
             "Deserialize ClusterPlan and attach to Session slots.",
         ),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Unsupervised bundle directory.",),
         outputs=("Session with cluster_plan attached.",),
         prerequisites=(),

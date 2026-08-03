@@ -2,33 +2,144 @@
 
 from __future__ import annotations
 
-from buildml.session._imports import *  # noqa: F403
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
+
+import pandas as pd
+
+from buildml.session._imports import (
+    ColumnRole,
+    CVScoreResult,
+    Dataset,
+    DiagnosticReport,
+    EvaluateResult,
+    MaterializePrepResult,
+    ModelComparison,
+    NestedCVResult,
+    PipelinePredictResult,
+    PlotBoardReport,
+    PreprocessRecipe,
+    SearchResult,
+    ValidationError,
+    build_eval_plot_board,
+    calibration_report,
+    compare_estimators,
+    evaluate_estimator,
+    fit_estimator,
+    learning_curve_report,
+    load_fit_result,
+    load_pipeline_bundle,
+    materialize_partition_design,
+    permutation_importance_report,
+    predict_estimator,
+    prepare_design_frame,
+    run_cv_score,
+    run_evolutionary_search,
+    run_grid_search,
+    run_nested_cv_score,
+    run_optuna_search,
+    run_predict_from_pipeline,
+    run_randomized_search,
+    save_fit_result,
+    save_pipeline_bundle,
+    segment_error_report,
+    threshold_report,
+)
 
 
 def fit(
     session, estimator: Any, *, task: Literal['classification', 'regression', 'auto'] = "auto"
-) -> Session:
-    """Fit a sklearn-compatible estimator on the train partition.
+) -> "Session":
+    """Train a model on the training rows.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    This is the step everything before it was preparing for. BuildML reads
+    the column roles to work out what the inputs and the target are, hands
+    the training rows to your estimator, and stores the fitted model on the
+    session so :meth:`predict`, :meth:`evaluate`, and :meth:`save_pipeline`
+    can find it.
+
+    You supply the estimator yourself — any object with scikit-learn's
+    ``fit`` and ``predict`` methods works, including XGBoost, LightGBM, and
+    CatBoost models. BuildML does not maintain a private registry of model
+    names, so anything installed in your environment is available and you
+    configure it in the usual way.
+
+    Before fitting, the training scope is checked: if there is no split, or
+    an earlier step tried to widen the fit beyond the train rows, this
+    raises rather than quietly producing an inflated score.
 
     Parameters
     ----------
-    estimator:
-        Unfitted estimator instance.
-    task:
-        Task type or ``auto``.
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
+    estimator:
+        An unfitted estimator instance, already configured with whatever
+        hyperparameters you want — ``RandomForestClassifier(max_depth=6)``,
+        not the class itself. BuildML fits a reference to this object, so
+        it is the one that ends up in the pipeline.
+    task:
+        Whether this is ``'classification'`` or ``'regression'``. The
+        default ``'auto'`` infers it from the target column, which is
+        correct nearly always; state it explicitly when the target is
+        numeric but really represents classes, or when integer class labels
+        would otherwise be read as a quantity to predict.
 
     Returns
     -------
     Session
-        ``self`` for fluent chaining.
+        ``self``, so the fit chains into :meth:`evaluate`. The fitted model
+        and its metadata are on :attr:`fit_result`.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        No split exists. Fitting on everything leaves nothing to honestly
+        measure against, so BuildML refuses rather than allowing it.
+    ~buildml.core.errors.ValidationError
+        No target column is assigned, features are still non-numeric or
+        contain missing values, or the target does not fit the requested
+        task.
 
     Notes
     -----
     **Leakage:** Fits on train only. Call after split and preparation.
+
+    Only the training rows reach the estimator. Validation and test rows
+    stay untouched until you ask for them by name, which is what makes the
+    eventual test score meaningful.
+
+    If a ``weight`` role column is assigned and the estimator supports
+    sample weights, it is passed through, so rare-but-important rows can be
+    given more influence without resampling.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame(
+    ...     {"x": [0.1, 0.9, 0.2, 0.8], "y": [0, 1, 0, 1]}
+    ... )
+    >>> session = Session.ingest(frame).set_roles({"y": "target"})
+    >>> _ = session.split(test_size=0.5, stratify=True)
+    >>> _ = session.fit(LogisticRegression())
+    >>> session.fit_result.task
+    'classification'
+
+    Any scikit-learn-compatible estimator works the same way:
+
+    >>> from xgboost import XGBClassifier  # doctest: +SKIP
+    >>> _ = session.fit(XGBClassifier(n_estimators=200))  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.evaluate : Measure what the fitted model actually achieves.
+    Session.cv_score : A more stable estimate than a single holdout.
+    Session.grid_search : Choose hyperparameters instead of guessing.
+    Session.run_automl : Let a search pick the estimator for you.
     """
     session.assert_can_fit("train")
     session._fit_result = fit_estimator(session.dataset, session._split_plan, estimator, task=task)
@@ -37,37 +148,82 @@ def fit(
         {"estimator": type(estimator).__name__, "task": task},
         result_summary=session._fit_result.to_dict(),
     )
-    return session
-
-
+    return cast("Session", session)
 def predict(
     session,
     *,
     partition: Literal['train', 'validation', 'test'] = "test",
     return_proba: bool = False,
 ) -> pd.Series | pd.DataFrame:
-    """Predict labels or probabilities on a partition.
+    """Run the fitted model over one partition and return its predictions.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    Use this when you want the predictions themselves — to inspect them,
+    join them back to identifiers, or compute something BuildML does not
+    provide. If what you want is a score, :meth:`evaluate` computes metrics
+    and diagnostics in one call instead.
+
+    The features are rebuilt exactly as they were at fit time, using the
+    column order recorded on :attr:`fit_result`, so the model receives what
+    it expects.
 
     Parameters
     ----------
-    partition:
-        Split partition to score.
-    return_proba:
-        If True and supported, return class probabilities.
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
+    partition:
+        Which rows to score: ``'test'`` (the default) for the honest
+        estimate, ``'validation'`` while tuning, or ``'train'`` to compare
+        against the others. A model that scores far better on train than on
+        test is overfitting, and comparing the two is how you see it.
+    return_proba:
+        When True, return each class's predicted probability rather than a
+        single chosen label. Probabilities are what you need to move a
+        decision threshold (:meth:`tune_threshold`), to rank cases by risk,
+        or to check calibration. Ignored by estimators that do not expose
+        ``predict_proba``.
 
     Returns
     -------
-    pd.Series
-        Materialized tabular result as a Pandas DataFrame.
+    pandas.Series or pandas.DataFrame
+        A Series of predicted labels or values, indexed to match the
+        partition's rows. With ``return_proba=True`` on a classifier, a
+        DataFrame with one column per class instead.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        No model has been fitted yet, no split exists, or the named
+        partition is not part of the current split.
+
+    Notes
+    -----
+    Predicting on ``'train'`` tells you how well the model memorised, not
+    how well it generalises. It is a useful diagnostic and a misleading
+    headline number.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"x": [0.1, 0.9, 0.2, 0.8], "y": [0, 1, 0, 1]})
+    >>> session = Session.ingest(frame).set_roles({"y": "target"})
+    >>> _ = session.split(test_size=0.5, stratify=True)
+    >>> _ = session.fit(LogisticRegression())
+    >>> len(session.predict(partition="test"))
+    2
+
+    Get probabilities when you intend to choose your own cut-off:
+
+    >>> proba = session.predict(partition="test", return_proba=True)
+    >>> proba.shape[1]
+    2
+
+    See Also
+    --------
+    Session.evaluate : Metrics and diagnostics rather than raw output.
+    Session.predict_from_pipeline : Score new data outside this session.
+    Session.tune_threshold : Pick the cut-off these probabilities feed.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -92,32 +248,105 @@ def evaluate(
     export_html: str | Path | None = None,
     include_plots: bool = False,
 ) -> EvaluateResult:
-    """Evaluate the last fitted estimator on a partition.
+    """Measure the fitted model, and explain what the measurement means.
 
-    Returns metrics, diagnostics (confusion matrix / residuals), and
+    A single accuracy figure hides more than it reveals. 95% accuracy is
+    excellent when the classes are balanced and worthless when 95% of rows
+    belong to one class — the same number, opposite conclusions. So this
+    returns a card rather than a score: several complementary metrics, the
+    diagnostics behind them, and written recommendations about what to look
+    at next.
 
-    recommendations — not a single score.
+    For classification you get accuracy and balanced accuracy, weighted
+    precision and recall, macro and weighted F1, and — where the estimator
+    exposes probabilities — ROC-AUC, average precision, and log loss, plus
+    the confusion matrix showing which classes are being mistaken for
+    which. Precision and recall matter most when errors are asymmetric:
+    precision is how often a positive prediction is right, recall is how
+    many of the real positives you caught, and improving one generally
+    costs the other. Balanced accuracy is the one to read on imbalanced
+    data, because plain accuracy is dominated by the majority class.
+
+    For regression you get error magnitudes (MAE, RMSE) alongside R², plus
+    residual diagnostics. MAE is the average miss in the target's own
+    units. RMSE punishes large misses disproportionately, so a gap between
+    the two means a few predictions are badly wrong. R² is the share of
+    variance explained, and it can be negative — that simply means the
+    model does worse than always predicting the mean.
 
     Parameters
     ----------
-    partition:
-        Split partition to score.
-        include_plots / export_figures / export_html:
-        Optionally build the eval plot board (requires ``buildml[viz]``)
-        and persist figures/HTML. Plot board is also stored on
-        :attr:`last_plot_board`.
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
+    partition:
+        Which rows to score. ``'test'`` is the honest estimate and should
+        be used once, at the end; ``'validation'`` is for the comparisons
+        you make while deciding. Evaluating on ``'train'`` alongside test
+        is the standard way to detect overfitting.
+    export_figures:
+        Directory to write diagnostic figures into. Implies plotting, and
+        requires ``pip install 'buildml[viz]'``.
+    export_html:
+        Path for a self-contained HTML report of the same figures — handy
+        to attach to a review or send to someone without a Python
+        environment. Also implies plotting.
+    include_plots:
+        Build the diagnostic plot board without writing it anywhere. The
+        board is stored on :attr:`last_plot_board` either way.
 
     Returns
     -------
-    EvaluateResult
-        Metrics, diagnostics, and recommendations for the scored partition.
+    ~buildml.model.supervised.EvaluateResult
+        The evaluation card: ``metrics``, ``diagnostics`` (confusion
+        matrix, residual summaries, plot paths), the ``n_rows`` scored, and
+        ``recommendations``. Call its ``show()`` method for a readable
+        digest instead of reading the dictionaries by hand.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        No model has been fitted, no split exists, or the named partition
+        is not part of the current split.
+    ~buildml.core.errors.MissingExtraError
+        Plots were requested without ``buildml[viz]`` installed.
+
+    Notes
+    -----
+    Every glance at the test set spends a little of its independence. If
+    you evaluate on test, adjust something, and evaluate again, the test
+    score has quietly become a tuning signal and is no longer the unbiased
+    estimate you think it is. Tune against validation or
+    :meth:`cv_score`, and keep test for the end.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"x": [0.1, 0.9, 0.2, 0.8], "y": [0, 1, 0, 1]})
+    >>> session = Session.ingest(frame).set_roles({"y": "target"})
+    >>> _ = session.split(test_size=0.5, stratify=True)
+    >>> result = session.fit(LogisticRegression()).evaluate()
+    >>> result.task
+    'classification'
+    >>> "accuracy" in result.metrics and "balanced_accuracy" in result.metrics
+    True
+
+    Compare train against test to see whether the model is overfitting:
+
+    >>> train_score = session.evaluate(partition="train").metrics["accuracy"]
+    >>> test_score = session.evaluate(partition="test").metrics["accuracy"]
+
+    Produce a shareable report with figures:
+
+    >>> _ = session.evaluate(export_html="reports/eval.html")  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.eval_plots : Build the diagnostic board on its own.
+    Session.calibration : Check whether probabilities mean what they say.
+    Session.error_slices : Find the subgroups where the model fails.
+    Session.compare_models : Put several candidates side by side.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -166,51 +395,88 @@ def eval_plots(
     export_html: str | Path | None = None,
     show: bool = False,
 ) -> PlotBoardReport:
-    """Build an evaluation plot board for the fitted estimator.
+    """Draw the standard diagnostic charts for a fitted model, in one call.
 
-    Adaptive panels include confusion/residuals, ROC/PR, calibration,
+    Numbers tell you how well a model does; pictures tell you how it fails.
+    This assembles the panels worth looking at for the model you actually
+    fitted, skipping the ones that do not apply rather than erroring.
 
-    threshold tradeoffs, learning curves, and permutation importance.
-
-    Panels degrade gracefully when ``predict_proba`` or binary targets
-
-    are unavailable.
+    Depending on the task and what the estimator supports, the board can
+    include the confusion matrix or residual plots, the ROC and
+    precision-recall curves, a calibration curve showing whether predicted
+    probabilities match observed frequencies, the precision-recall
+    trade-off across thresholds, a learning curve indicating whether more
+    data would help, and permutation importance ranking the features the
+    model relied on.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     partition:
-        Split partition to read or score.
+        Which rows the diagnostics describe. ``'test'`` shows the
+        behaviour you will get in deployment; ``'train'`` next to it
+        reveals overfitting.
     include_learning_curve:
-        When True, compute learning-curve panels in the evaluation/report payload.
+        Add the learning curve. It refits the model on increasing
+        subsamples, so it is the slowest panel — turn it off for a quick
+        look. Read it as: converged curves mean more data will not help,
+        a persistent gap means it will.
     include_importance:
-        When True, attach feature-importance tables/plots to the result.
+        Add permutation importance, which measures how much the score drops
+        when a feature's values are shuffled. Slower than reading the
+        model's built-in importances, but model-agnostic and harder to
+        mislead.
     n_importance_repeats:
-        Repeats for permutation-importance style estimates. Higher is stabler and slower.
+        How many times each feature is shuffled. More repeats give a
+        steadier ranking at proportional cost; the default trades a little
+        noise for speed.
     learning_curve_cv:
-        CV arity/splitter used when computing learning curves.
+        Fold count used at each learning-curve sample size. Kept low by
+        default because the curve refits at every point.
     export_figures:
-        When True, export plot figures alongside the report (may require viz extras).
+        Directory to write the individual figures into. ``None`` keeps them
+        in memory only.
     export_html:
-        When True, write an HTML report artifact for the operation result.
+        Path for a single self-contained HTML page holding every panel —
+        the artefact to attach to a review.
     show:
-        When True, display plots/reports interactively in notebook-style environments.
+        Display the figures interactively, for notebook use.
 
     Returns
     -------
-    PlotBoardReport
-        Evaluation plot board with figure paths and interpretation notes.
-
-    Notes
-    -----
-    Requires ``pip install 'buildml[viz]'``. Delegates to
-    :func:`buildml.model.plot_boards.build_eval_plot_board`.
+    ~buildml.model.plot_boards.PlotBoardReport
+        The board: paths to any figures written, which panels were
+        ``skipped`` and why, and an ``interpretation`` explaining what each
+        panel shows. Also stored on :attr:`last_plot_board`.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        No model has been fitted, or no split exists.
+    ~buildml.core.errors.MissingExtraError
+        Plotting requires ``pip install 'buildml[viz]'``.
+
+    Notes
+    -----
+    Delegates to :func:`buildml.model.plot_boards.build_eval_plot_board`.
+
+    Panels degrade gracefully. A model without ``predict_proba`` has no
+    ROC or calibration curve, and a multi-class target has no single
+    precision-recall trade-off; those panels are listed in ``skipped``
+    with a reason rather than raising.
+
+    Examples
+    --------
+    >>> board = session.eval_plots(export_html="reports/board.html")  # doctest: +SKIP
+    >>> board.skipped  # doctest: +SKIP
+    ['roc_curve: estimator has no predict_proba']
+
+    See Also
+    --------
+    Session.evaluate : Metrics, with these plots available inline.
+    Session.calibration : The calibration panel on its own.
+    Session.learning_curve : The learning-curve panel on its own.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -253,27 +519,81 @@ def compare_models(
     partition: Literal['train', 'validation', 'test'] = "test",
     ranking_metric: str | None = None,
 ) -> ModelComparison:
-    """Fit/evaluate multiple estimators and return a ranked comparison card.
+    """Try several models on the same data and rank what you get.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    "Which algorithm should I use?" has no answer in the abstract — it
+    depends on your data, and the reliable way to find out is to try a few.
+    This fits each estimator on the training rows, evaluates them all on
+    the same partition, and returns them ranked, so the comparison is
+    genuinely like-for-like.
+
+    A sensible starting set is one linear model, one tree ensemble, and one
+    gradient-boosting model. That covers very different assumptions about
+    the data, and the spread between them tells you a lot: if the linear
+    model keeps up, your relationships are mostly additive and you should
+    probably prefer it for the interpretability.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     estimators:
-        Mapping of model name to unfitted estimator for comparison.
+        Label to unfitted estimator instance. The labels are yours and
+        appear in the ranking, so name them for what distinguishes them
+        (``"rf_depth6"``) rather than by class.
     task:
-        Task type (``classification``, ``regression``, or ``auto``).
+        ``'classification'``, ``'regression'``, or ``'auto'`` to infer it
+        from the target. Every estimator is treated as the same task.
     partition:
-        Split partition to read or score.
+        Which rows to score on. Use ``'validation'`` while choosing —
+        ranking candidates on ``'test'`` and then reporting the winner's
+        test score overstates it, because the winner was selected using
+        that very number.
     ranking_metric:
-        Primary ranking metric name used for selection or reporting (for example NDCG@k).
+        Which metric orders the table. ``None`` uses the task default.
+        Choose deliberately when errors are asymmetric: ranking by accuracy
+        on imbalanced data will happily crown a model that never predicts
+        the rare class.
 
     Returns
     -------
-    ModelComparison
-        Ranked comparison card with per-estimator metrics.
+    ~buildml.model.compare.ModelComparison
+        The ranked comparison, holding each model's metrics, the ordering,
+        and the metric used to produce it.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        No split exists, so there is nothing to compare on.
+    ~buildml.core.errors.ValidationError
+        ``estimators`` is empty, no target is assigned, or the features are
+        not yet numeric and complete.
+
+    Notes
+    -----
+    Each model is scored on a single fixed partition, so small differences
+    between them are within noise. When two candidates finish close
+    together, confirm with :meth:`cv_score` before declaring a winner —
+    a one-point gap on a few hundred rows frequently reverses on a
+    different split.
+
+    Examples
+    --------
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> comparison = session.compare_models(
+    ...     {
+    ...         "logistic": LogisticRegression(max_iter=500),
+    ...         "forest": RandomForestClassifier(random_state=0),
+    ...     },
+    ...     partition="validation",
+    ... )  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.cv_score : Confirm a close result across several folds.
+    Session.run_automl : Search a space of models rather than a shortlist.
+    Session.fit_voting : Combine candidates instead of picking one.
     """
     session.assert_can_fit("train")
     comparison = compare_estimators(
@@ -312,40 +632,77 @@ def cv_score(
     preprocess: PreprocessRecipe | None = None,
     allow_session_global_preprocess: bool = False,
 ) -> CVScoreResult:
-    """Cross-validate an estimator on the train partition only.
+    """Score a model across several rotating holdouts, not just one.
 
-    Returns mean±std fold metrics, interpretation, limitations, and
+    A single train/test split gives you one number, and that number depends
+    on which rows happened to land in test. On a few thousand rows the
+    swing between two random splits is easily a couple of percentage
+    points — enough to pick the wrong model.
 
-    recommendations. The test partition is never used for fold membership
+    Cross-validation removes that luck. The training rows are divided into
+    ``cv`` folds; the model is fitted ``cv`` times, each time holding out a
+    different fold and scoring on it. You end up with ``cv`` scores instead
+    of one, and their spread is as informative as their average: a high
+    mean with a wide spread means the result is fragile, not good.
 
-    or scoring.
+    The session's test partition takes no part in any of this. Folds are
+    cut from the training rows only, so test stays untouched for the final
+    measurement.
 
     Parameters
     ----------
-    estimator:
-        Unfitted sklearn-compatible estimator.
-        cv / cv_strategy:
-        Fold count or splitter; strategy selects k-fold, stratified,
-        group, or time-aware folds when ``cv`` is an integer.
-    scoring_metric:
-        Primary metric for summaries (defaults by task).
-    groups:
-        Optional group labels aligned to train rows.
-    preprocess:
-        Optional fold-local :class:`PreprocessRecipe` refit each fold.
-    allow_session_global_preprocess:
-        Explicit opt-in when Session-global preprocess already ran.
-        Default ``False`` refuses that path even if a fold-local recipe is
-        passed (recipes do not rebuild from raw/unpoisoned rows).
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
+    estimator:
+        An unfitted estimator instance. It is cloned for each fold, so the
+        object you pass is never itself fitted and can be reused.
     task:
-        Task type (``classification``, ``regression``, or ``auto``).
+        ``'classification'``, ``'regression'``, or ``'auto'`` to infer it
+        from the target.
+    cv:
+        How many folds, or a scikit-learn splitter object for full control.
+        Five is the usual compromise: more folds train on more data per
+        fold and give a less biased estimate, at proportionally more time.
+    cv_strategy:
+        How rows are assigned to folds when ``cv`` is a number. ``'auto'``
+        reads the column roles and picks for you. ``'stratified'``
+        preserves class balance in every fold, which matters for imbalanced
+        classification. ``'group'`` keeps an entity's rows in the same fold
+        — the cross-validation equivalent of :meth:`group_split`.
+        ``'stratified_group'`` does both. ``'time'`` only ever trains on
+        folds earlier than the one being scored. Choosing wrongly here
+        recreates the leakage the split was designed to prevent.
+    scoring_metric:
+        Which metric the summary reports. ``None`` uses the task default.
+    groups:
+        Group labels aligned to the training rows, for the group-aware
+        strategies. ``None`` uses the ``group``-role column.
+    preprocess:
+        A :class:`~buildml.preprocess.fold.PreprocessRecipe` refitted
+        inside every fold. This is the leakage-correct way to include
+        preprocessing in a cross-validated estimate: the scaler and encoder
+        are learned from that fold's training rows and applied to its
+        held-out rows, exactly as they would be in production.
+    allow_session_global_preprocess:
+        Permit cross-validation to proceed even though session-wide
+        preprocessing already ran. Off by default, and the refusal is the
+        point — see the note below.
 
     Returns
     -------
-    CVScoreResult
-        Cross-validation mean/std metrics and fold summaries.
+    ~buildml.model.selection.CVScoreResult
+        Per-fold scores with their mean and standard deviation, plus an
+        ``interpretation``, the ``limitations`` of the estimate, and
+        ``recommendations``. Also stored on :attr:`last_cv`.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        Session-wide preprocessing already ran and
+        ``allow_session_global_preprocess`` was not set.
+    ~buildml.core.errors.ValidationError
+        No split exists, the requested strategy needs a role column that is
+        not assigned, or a fold would be empty.
 
     Notes
     -----
@@ -354,6 +711,37 @@ def cv_score(
     re-ingesting unpoisoned data, then fold-local recipes (including
     ``text`` and ``reduce``) for selection claims that include
     preprocessing. Custom transforms and resample stay Session-global.
+
+    The reason for that refusal is worth understanding. Calling
+    :meth:`scale` fits one scaler across all the training rows. If you then
+    cross-validate, each fold's held-out rows were already involved in
+    computing that scaler's mean, so every fold score is slightly
+    optimistic. The recipe mechanism exists to avoid this: it defers
+    preprocessing until the fold boundary is known. Overriding the refusal
+    does not fix the estimate, it only silences the warning about it.
+
+    Examples
+    --------
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> result = session.cv_score(
+    ...     RandomForestClassifier(random_state=0), cv=5, cv_strategy="stratified"
+    ... )  # doctest: +SKIP
+    >>> result.mean_metrics["accuracy"], result.std_metrics["accuracy"]  # doctest: +SKIP
+    (0.884, 0.021)
+
+    With preprocessing done correctly, inside each fold:
+
+    >>> from buildml.preprocess.fold import PreprocessRecipe
+    >>> recipe = PreprocessRecipe(impute="median", scale="standard")
+    >>> result = session.cv_score(
+    ...     RandomForestClassifier(), preprocess=recipe
+    ... )  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.nested_cv_score : When you are also tuning hyperparameters.
+    Session.grid_search : Search a space, using this scoring underneath.
+    Session.evaluate : The single-holdout estimate this replaces.
     """
     session.assert_can_fit("train")
     result = run_cv_score(
@@ -417,71 +805,147 @@ def nested_cv_score(
     allow_session_global_preprocess: bool = False,
     warm_start_studies: bool = False,
 ) -> NestedCVResult:
-    """Outer-loop estimate after inner hyperparameter / recipe-knob search.
+    """Estimate how well your *tuning procedure* generalises, not just one model.
 
-    Each outer fold chooses estimator params and/or fold-local recipe knobs
+    There is a subtle trap in the usual workflow. You run :meth:`grid_search`,
+    it reports the cross-validated score of the winning configuration, and
+    you quote that number as your expected performance. But the winner was
+    chosen *because* it scored well on those folds, so its score is
+    optimistically biased — you picked the luckiest configuration and then
+    reported its luck as skill. On a large search space the inflation can be
+    several points.
 
-    (``select_k``, ``n_bins``, …) with inner CV on that fold's training rows
+    Nested cross-validation removes the bias by giving the search its own
+    private data. The rows are split into outer folds. Within each outer
+    fold's training portion, an independent inner search picks the best
+    configuration; that winner is then scored once on the outer fold's
+    held-out rows, which the search never saw. Averaging those outer scores
+    gives an honest estimate of what "run my tuning procedure on data like
+    this" is worth.
 
-    only, then scores the winner on the outer-eval rows. Session test and
-
-    validation partitions never enter either loop.
+    Note what is being estimated: the procedure, not a single model. Each
+    outer fold may crown a different winner, and that is fine — the spread
+    across folds tells you how stable your tuning is. To get a model to
+    deploy, run :meth:`grid_search` (or a sibling) once on the full training
+    set afterwards, and quote the nested score as its expected performance.
 
     Parameters
     ----------
-        param_grid / param_distributions:
-        Estimator search space (at most one). Optional when a recipe space
-        is provided.
-        recipe_grid / recipe_distributions:
-        Fold-local recipe knob space (at most one). Requires ``preprocess``.
-        param_space / recipe_space:
-        Optuna spaces when ``inner_search='optuna'`` (or ``auto`` with these
-        args). Declare-style dicts for ``inner_search='evolutionary'``.
-        Optuna requires ``pip install 'buildml[optuna]'``.
-    inner_search:
-        ``auto``, ``grid``, ``randomized``, ``optuna``, or ``evolutionary``.
-    n_trials:
-        Optuna inner trials per outer fold; evolutionary ``max_evaluations``.
-        population_size / n_generations:
-        Evolutionary GA knobs when ``inner_search='evolutionary'``.
-        outer_cv / inner_cv:
-        Outer and inner fold counts or sklearn splitters.
-    preprocess:
-        Fold-local :class:`PreprocessRecipe` refit in both loops.
-    warm_start_studies:
-        Opt-in Optuna study sharing across outer folds (default False).
-        Safe for Session test/validation (never scored); see nested CV notes.
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     estimator:
-        Unfitted sklearn-compatible estimator instance.
+        An unfitted estimator, cloned fresh for every candidate in both
+        loops.
+    param_grid:
+        Exhaustive estimator search space, ``{"max_depth": [3, 5, 8]}``.
+        Mutually exclusive with ``param_distributions``. Optional when you
+        are only searching recipe knobs.
+    param_distributions:
+        Sampled estimator search space for a randomized inner search.
+    recipe_grid:
+        Search space over preprocessing knobs — ``select_k``, ``n_bins``,
+        and friends — refit inside each fold. Requires ``preprocess``.
+    recipe_distributions:
+        Sampled counterpart to ``recipe_grid``.
+    param_space:
+        Optuna search space for the estimator, used when ``inner_search``
+        is ``'optuna'``. Declare-style dicts also drive the evolutionary
+        search. Optuna needs ``pip install 'buildml[optuna]'``.
+    recipe_space:
+        Optuna or evolutionary search space for the recipe knobs.
+    inner_search:
+        Which search runs inside each outer fold. ``'auto'`` infers it from
+        which spaces you supplied. Note the cost: the inner search runs once
+        per outer fold, so an exhaustive grid multiplies quickly.
     n_iter:
-        Number of random-search / iterative trials. More iterations explore more of the space at linear cost.
+        Candidates sampled per outer fold when the inner search is
+        randomized.
+    n_trials:
+        Optuna trials per outer fold; doubles as ``max_evaluations`` for the
+        evolutionary search.
+    population_size:
+        Candidates per generation for the evolutionary inner search.
+    n_generations:
+        Generations the evolutionary inner search runs for.
     random_state:
-        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
+        Seed for fold assignment and candidate sampling, so the estimate
+        reproduces.
     task:
-        Task type (``classification``, ``regression``, or ``auto``).
+        ``'classification'``, ``'regression'``, or ``'auto'`` to infer from
+        the target.
+    outer_cv:
+        Number of outer folds, or a scikit-learn splitter. These folds
+        produce the reported estimate.
+    inner_cv:
+        Number of inner folds, or a splitter. Kept smaller than ``outer_cv``
+        by default because it runs many more times.
     cv_strategy:
-        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
+        How rows are assigned to folds. ``'stratified'`` preserves class
+        balance, ``'group'`` keeps related rows together, ``'time'``
+        respects chronology. ``'auto'`` picks from the data and roles.
     scoring_metric:
-        Metric name used to score candidates during search or model selection.
+        Metric the inner search optimises and the outer loop reports.
+        Defaults to a sensible choice for the task.
     groups:
-        Group labels for group-aware splitting so entities do not leak across partitions.
+        Group labels for the group-aware strategies.
+    preprocess:
+        A :class:`~buildml.preprocess.fold.PreprocessRecipe` refit inside
+        every fold of both loops. This is what keeps preprocessing honest:
+        imputation values and scalers are learned from fold-training rows
+        only.
     allow_session_global_preprocess:
-        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
+        Permit running against session-wide preprocessing that was fit
+        before splitting. Off by default because it leaks; the guard exists
+        for deliberate exceptions.
+    warm_start_studies:
+        Share one Optuna study across outer folds so later folds benefit
+        from earlier trials. Faster, but the folds are no longer fully
+        independent searches — the outer estimate stays valid because the
+        outer-eval rows are still never scored during search.
 
     Returns
     -------
-    NestedCVResult
-        Outer-loop generalization estimate after inner search.
+    ~buildml.model.selection.NestedCVResult
+        ``mean_metrics`` and ``std_metrics`` hold the honest estimate and
+        its fold-to-fold spread. ``outer_folds`` records each fold's chosen
+        ``best_params`` and ``best_recipe_knobs``, which is where you look
+        to judge whether tuning is stable or thrashing.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        No split exists, no search space was supplied, mutually exclusive
+        spaces were combined, or recipe knobs were given without a recipe.
+    ~buildml.core.errors.MissingExtraError
+        Optuna was requested without ``buildml[optuna]`` installed.
 
     Notes
     -----
-    Prefer this over reporting :meth:`grid_search` mean CV as a
-    post-selection generalization claim. Read ``mean_metrics`` /
-    ``std_metrics`` for the outer estimate and
-    ``outer_folds[*].best_params`` / ``best_recipe_knobs`` for chosen
-    configs (including Optuna / evolutionary winners).
+    **Cost:** total fits are roughly ``outer_cv × inner_cv × candidates``.
+    With five outer folds, three inner folds, and fifty candidates that is
+    750 fits. Start with a randomized inner search and small fold counts.
+
+    **Leakage:** the session's test and validation partitions never enter
+    either loop. Both loops draw only from training rows.
+
+    **Reading the spread:** if ``std_metrics`` is large relative to
+    ``mean_metrics``, the procedure is unstable — usually too small a
+    dataset for the size of the search space.
+
+    Examples
+    --------
+    >>> result = session.nested_cv_score(  # doctest: +SKIP
+    ...     RandomForestClassifier(),
+    ...     param_distributions={"max_depth": [3, 5, 8, None]},
+    ...     inner_search="randomized",
+    ...     n_iter=8,
+    ... )
+    >>> result.mean_metrics["accuracy"]  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.cv_score : Honest estimate for a single fixed configuration.
+    Session.grid_search : The inner search, run once, to get a deployable model.
     """
     session.assert_can_fit("train")
     result = run_nested_cv_score(
@@ -563,45 +1027,113 @@ def grid_search(
     allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
-    """Grid-search estimator params and/or fold-local recipe knobs.
+    """Try every combination of the settings you list, and keep the best.
 
-    Ranks configurations by mean CV score, never peeking at test. When
+    Hyperparameters are the knobs you set before training — tree depth,
+    regularisation strength, learning rate — and the right values depend on
+    your data. Grid search takes the values you consider plausible, builds
+    every combination of them, cross-validates each one on the training
+    rows, and ranks the results.
 
-    ``refit=True`` (default), the winning params/knobs are refit on full
+    It is exhaustive, which is both its strength and its weakness. You are
+    guaranteed to find the best point *in the grid you specified*, and you
+    pay for the guarantee combinatorially: three parameters with four
+    values each is 64 fits, times ``cv`` folds. Use it when the space is
+    small or you already know roughly where to look. Use
+    :meth:`randomized_search` or :meth:`optuna_search` when it is not.
 
-    train and become the active :attr:`fit_result`.
+    Recipe knobs can be searched alongside estimator parameters. Whether
+    five features or fifty work better is a modelling decision like any
+    other, and searching it inside the folds keeps the choice honest.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     estimator:
-        Unfitted sklearn-compatible estimator instance.
+        An unfitted estimator instance supplying the defaults that the grid
+        overrides.
     param_grid:
-        Hyperparameter grid or distributions for search. Keys must match estimator parameters.
+        Parameter name to the list of values to try, for example
+        ``{"max_depth": [3, 6, 12]}``. Names match what the estimator's
+        ``set_params`` accepts, including nested ``step__param`` forms.
     recipe_grid:
-        Grid of preprocess/model recipes explored by combinatorial AutoML-style search.
+        Preprocessing knobs to search the same way, such as
+        ``{"select_k": [5, 10, 20]}``. Requires ``preprocess``.
     task:
-        Task type (``classification``, ``regression``, or ``auto``).
+        ``'classification'``, ``'regression'``, or ``'auto'``.
     cv:
-        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
+        Fold count, or a scikit-learn splitter, used to score each
+        configuration.
     cv_strategy:
-        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
+        How folds are formed — see :meth:`cv_score`, which describes the
+        same options and the same hazards.
     ranking_metric:
-        Primary ranking metric name used for selection or reporting (for example NDCG@k).
+        Which metric decides the winner. ``None`` uses the task default.
+        This choice *is* the objective you are optimising, so pick the one
+        that reflects the cost of being wrong.
     groups:
-        Group labels for group-aware splitting so entities do not leak across partitions.
+        Group labels for the group-aware strategies. ``None`` uses the
+        ``group``-role column.
     preprocess:
-        Optional preprocess recipe/key composed before the estimator. Fit on train only.
+        Fold-local recipe refit inside each fold, so the tuning estimate is
+        not inflated by preprocessing that saw the held-out rows.
     allow_session_global_preprocess:
-        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
+        Proceed despite session-wide preprocessing having already run. See
+        the leakage note on :meth:`cv_score`.
     refit:
-        When True, refit the winning estimator on the full train partition after search.
+        When True (the default), retrain the winning configuration on the
+        whole training partition and install it as :attr:`fit_result`, so
+        :meth:`predict` and :meth:`evaluate` immediately use the tuned
+        model. Set False to inspect the ranking before committing.
 
     Returns
     -------
-    SearchResult
-        Search trials, best params, and optional refit result.
+    ~buildml.model.selection.SearchResult
+        The ranked search: every trial with its score, the
+        ``best_params``, ``best_score`` and ``best_std``, the winner's full
+        ``best_cv`` breakdown, and the ``refit_result`` when refitting was
+        requested. ``to_frame()`` renders the trials as a DataFrame. Also
+        stored on :attr:`last_search`.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        Session-wide preprocessing already ran and was not explicitly
+        allowed.
+    ~buildml.core.errors.ValidationError
+        Neither a parameter grid nor a recipe grid was supplied, a
+        parameter name is not one the estimator accepts, or ``recipe_grid``
+        was given without ``preprocess``.
+
+    Notes
+    -----
+    Folds are cut from the training partition only; test never influences
+    the ranking.
+
+    The best cross-validation score is an optimistic estimate of the
+    winner's true performance. Searching many configurations and reporting
+    the maximum selects for luck as well as quality. Treat the tuned
+    model's honest number as the one from :meth:`evaluate` on test, or from
+    :meth:`nested_cv_score` if you want that without spending the test set.
+
+    Examples
+    --------
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> search = session.grid_search(
+    ...     RandomForestClassifier(random_state=0),
+    ...     {"max_depth": [3, 6, None], "min_samples_leaf": [1, 5]},
+    ...     cv=5,
+    ... )  # doctest: +SKIP
+    >>> search.best_params  # doctest: +SKIP
+    {'max_depth': 6, 'min_samples_leaf': 5}
+    >>> search.to_frame().head()  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.randomized_search : Sample the space instead of enumerating it.
+    Session.optuna_search : Let earlier trials guide later ones.
+    Session.nested_cv_score : An unbiased estimate of a tuned model.
     """
     session.assert_can_fit("train")
     result = run_grid_search(
@@ -668,47 +1200,100 @@ def randomized_search(
     allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
-    """Randomized search over estimator params and/or recipe knobs.
+    """Sample settings at random, which usually beats an exhaustive grid.
 
-    Same leakage contract as :meth:`grid_search`: folds stay inside train;
+    The result is counter-intuitive but well established: given the same
+    computing budget, randomly sampling a hyperparameter space typically
+    finds a better configuration than exhaustively searching a grid.
 
-    the winner may be refit onto the full training partition.
+    The reason is that parameters differ enormously in how much they
+    matter. A grid of four values across three parameters spends 64 fits,
+    but only ever tries four distinct values of the parameter that
+    actually drives performance — the other two dimensions multiply the
+    cost without adding resolution where it counts. Random sampling tries
+    64 *different* values of every parameter, so the important one gets
+    explored properly.
+
+    You also gain control of the budget. ``n_iter`` sets the number of
+    fits directly, so adding a parameter to explore costs nothing extra.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     estimator:
-        Unfitted sklearn-compatible estimator instance.
+        An unfitted estimator instance supplying the defaults being varied.
     param_distributions:
-        Distributions over estimator hyperparameters for randomized / Optuna search.
+        Parameter name to either a list to choose uniformly from, or a
+        ``scipy.stats`` distribution to draw from. Distributions are the
+        better choice for continuous parameters, and log-uniform is the
+        right shape for learning rates and regularisation strengths, where
+        the interesting variation is in orders of magnitude.
     recipe_distributions:
-        Distributions over preprocess/model recipes for randomized recipe search.
+        Preprocessing knobs sampled the same way. Requires ``preprocess``.
     n_iter:
-        Number of random-search / iterative trials. More iterations explore more of the space at linear cost.
+        How many configurations to sample — your entire budget, in fits per
+        fold. Start small to gauge the cost of one fit, then raise it.
     random_state:
-        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
+        Seed for the sampling, so a search can be reproduced exactly.
     task:
-        Task type (``classification``, ``regression``, or ``auto``).
+        ``'classification'``, ``'regression'``, or ``'auto'``.
     cv:
-        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
+        Fold count or splitter used to score each sampled configuration.
     cv_strategy:
-        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
+        How folds are formed — see :meth:`cv_score`.
     ranking_metric:
-        Primary ranking metric name used for selection or reporting (for example NDCG@k).
+        Which metric decides the winner. ``None`` uses the task default.
     groups:
-        Group labels for group-aware splitting so entities do not leak across partitions.
+        Group labels for the group-aware strategies.
     preprocess:
-        Optional preprocess recipe/key composed before the estimator. Fit on train only.
+        Fold-local recipe refit inside each fold.
     allow_session_global_preprocess:
-        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
+        Proceed despite session-wide preprocessing. See :meth:`cv_score`.
     refit:
-        When True, refit the winning estimator on the full train partition after search.
+        Retrain the winner on the full training partition and install it as
+        :attr:`fit_result`. On by default.
 
     Returns
     -------
-    SearchResult
-        Search trials, best params, and optional refit result.
+    ~buildml.model.selection.SearchResult
+        The ranked trials, ``best_params``, ``best_score``, the winner's
+        ``best_cv`` breakdown, and the refit model when requested. Also
+        stored on :attr:`last_search`.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        Session-wide preprocessing already ran and was not explicitly
+        allowed.
+    ~buildml.core.errors.ValidationError
+        No search space was supplied, a parameter name is not one the
+        estimator accepts, or recipe distributions were given without
+        ``preprocess``.
+
+    Notes
+    -----
+    Same leakage contract as :meth:`grid_search`: folds stay inside train;
+    the winner may be refit onto the full training partition.
+
+    Examples
+    --------
+    >>> from scipy.stats import loguniform, randint
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> search = session.randomized_search(
+    ...     RandomForestClassifier(random_state=0),
+    ...     {"max_depth": randint(2, 20), "min_samples_leaf": randint(1, 30)},
+    ...     n_iter=40,
+    ... )  # doctest: +SKIP
+
+    A learning rate should be sampled across magnitudes, not linearly:
+
+    >>> space = {"learning_rate": loguniform(1e-3, 1e-1)}  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.grid_search : Exhaustive, for small well-understood spaces.
+    Session.optuna_search : Adaptive, for larger budgets.
     """
     session.assert_can_fit("train")
     result = run_randomized_search(
@@ -779,51 +1364,115 @@ def optuna_search(
     allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
-    """Optuna TPE search with leakage-safe train-fold CV.
+    """Search adaptively, letting each trial learn from the ones before it.
 
-    Requires ``pip install 'buildml[optuna]'``. ``param_space`` may be a
+    Grid and random search are memoryless: the hundredth configuration is
+    chosen with no knowledge of the ninety-nine already scored. Optuna
+    instead builds a model of which regions of the space produce good
+    results and concentrates its sampling there, while still exploring
+    enough to avoid getting stuck.
 
-    ``trial -> dict`` callable or a declare-style mapping
+    That adaptivity pays off as the budget grows. For a handful of trials
+    it behaves much like random search; for fifty or more it usually
+    reaches a better configuration, because it stops re-testing regions it
+    has already established are poor. It also handles conditional and
+    mixed discrete/continuous spaces naturally, which grids do badly.
 
-    (``float`` / ``int`` / ``categorical``). ``recipe_space`` sweeps
-
-    fold-local recipe knobs and requires ``preprocess``.
+    Requires ``pip install 'buildml[optuna]'``.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     estimator:
-        Unfitted sklearn-compatible estimator instance.
+        An unfitted estimator instance supplying the defaults being tuned.
     param_space:
-        Hyperparameter search space mapping for Optuna/random/grid style searches.
+        The space to search, given either as a callable taking an Optuna
+        ``trial`` and returning a parameter dict — full control, including
+        parameters that only exist depending on others — or as a
+        declarative mapping using ``float``, ``int``, and ``categorical``
+        entries.
     recipe_space:
-        Search space over preprocess/model recipes for AutoML-style exploration.
+        Preprocessing knobs described the same way. Requires
+        ``preprocess``.
     n_trials:
-        Number of Optuna/search trials to run. More trials explore more of the space at linear cost.
+        How many configurations to evaluate. This is where Optuna earns its
+        keep; below roughly twenty trials it has little history to learn
+        from.
     random_state:
-        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
+        Seed for the sampler, making a search reproducible.
     task:
-        Task type (``classification``, ``regression``, or ``auto``).
+        ``'classification'``, ``'regression'``, or ``'auto'``.
     cv:
-        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
+        Fold count or splitter used to score each trial.
     cv_strategy:
-        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
+        How folds are formed — see :meth:`cv_score`.
     ranking_metric:
-        Primary ranking metric name used for selection or reporting (for example NDCG@k).
+        The metric Optuna optimises. ``None`` uses the task default.
     groups:
-        Group labels for group-aware splitting so entities do not leak across partitions.
+        Group labels for the group-aware strategies.
     preprocess:
-        Optional preprocess recipe/key composed before the estimator. Fit on train only.
+        Fold-local recipe refit inside each fold.
     allow_session_global_preprocess:
-        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
+        Proceed despite session-wide preprocessing. See :meth:`cv_score`.
     refit:
-        When True, refit the winning estimator on the full train partition after search.
+        Retrain the winner on the full training partition and install it as
+        :attr:`fit_result`. On by default.
 
     Returns
     -------
-    SearchResult
-        Search trials, best params, and optional refit result.
+    ~buildml.model.selection.SearchResult
+        The ranked trials, ``best_params``, ``best_score``, the winner's
+        ``best_cv`` breakdown, and the underlying Optuna ``study`` for
+        further analysis. Also stored on :attr:`last_search`.
+
+    Raises
+    ------
+    ~buildml.core.errors.MissingExtraError
+        Optuna is not installed.
+    ~buildml.core.errors.LeakageError
+        Session-wide preprocessing already ran and was not explicitly
+        allowed.
+    ~buildml.core.errors.ValidationError
+        No search space was supplied, or a recipe space was given without
+        ``preprocess``.
+
+    Notes
+    -----
+    Folds are cut from the training partition only; test never influences
+    the search.
+
+    The returned ``study`` supports Optuna's own analysis tools, including
+    parameter-importance ranking — often more useful than the winning
+    configuration itself, since it tells you which knobs are worth tuning
+    at all next time.
+
+    Examples
+    --------
+    Declarative form, which covers most cases:
+
+    >>> space = {
+    ...     "max_depth": {"type": "int", "low": 2, "high": 20},
+    ...     "learning_rate": {"type": "float", "low": 1e-3, "high": 0.3, "log": True},
+    ... }
+    >>> search = session.optuna_search(
+    ...     estimator, param_space=space, n_trials=60
+    ... )  # doctest: +SKIP
+
+    Callable form, when one parameter depends on another:
+
+    >>> def space(trial):  # doctest: +SKIP
+    ...     kind = trial.suggest_categorical("kernel", ["linear", "rbf"])
+    ...     params = {"kernel": kind}
+    ...     if kind == "rbf":
+    ...         params["gamma"] = trial.suggest_float("gamma", 1e-4, 1.0, log=True)
+    ...     return params
+
+    See Also
+    --------
+    Session.randomized_search : Simpler, and adequate for small budgets.
+    Session.evolutionary_search : Population-based, no extra dependency.
+    Session.run_automl : Search over model families as well as settings.
     """
     session.assert_can_fit("train")
     result = run_optuna_search(
@@ -896,63 +1545,134 @@ def evolutionary_search(
     allow_session_global_preprocess: bool = False,
     refit: bool = True,
 ) -> SearchResult:
-    """Genetic-algorithm HPO with leakage-safe train-fold CV.
+    """Evolve a population of configurations across generations.
 
-    In-tree NumPy GA (population, tournament selection, crossover/mutation,
+    This borrows from natural selection. A population of random
+    configurations is scored; the better ones are more likely to be chosen
+    as parents; parents are combined to produce offspring; offspring are
+    randomly perturbed; the best few survive untouched. Repeat for
+    ``n_generations``.
 
-    elitism) — not random search renamed, not NAS, not a swarm zoo.
+    The advantage over random sampling is recombination. If one
+    configuration happens to have a good tree depth and another a good
+    learning rate, crossover can produce a child with both — something
+    independent sampling can only stumble on. That makes evolutionary
+    search well suited to spaces where parameters interact.
 
-    ``param_space`` / ``recipe_space`` use the same declare-style float/int/
+    Compared with :meth:`optuna_search` it needs no extra dependency (the
+    algorithm is implemented here in NumPy) and it explores more broadly,
+    since a whole population advances at once rather than a single
+    adaptive sampler. It typically needs more total evaluations to reach
+    the same quality.
 
-    categorical forms as Optuna declare spaces (dicts only; no trial callables).
+    The total number of fits is roughly ``population_size *
+    n_generations``, each multiplied by ``cv`` folds — worth computing
+    before you start.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     estimator:
-        Unfitted sklearn-compatible estimator instance.
+        An unfitted estimator instance supplying the defaults being tuned.
     param_space:
-        Hyperparameter search space mapping for Optuna/random/grid style searches.
+        Declarative mapping of parameter name to a ``float``, ``int``, or
+        ``categorical`` specification. Callables are not accepted here;
+        the genetic operators need a described space they can recombine.
     recipe_space:
-        Search space over preprocess/model recipes for AutoML-style exploration.
+        Preprocessing knobs described the same way. Requires
+        ``preprocess``.
     population_size:
-        Population size for evolutionary / genetic search strategies.
+        How many configurations exist in each generation. Larger
+        populations explore more of the space per generation and cost
+        proportionally more.
     n_generations:
-        Number of generations for evolutionary / genetic search strategies.
+        How many rounds of selection and recombination to run. More
+        generations refine further, with diminishing returns once the
+        population converges.
     elite_size:
-        How many top individuals are carried unchanged into the next generation.
+        How many top performers pass into the next generation unchanged.
+        This guarantees the best result never gets worse; setting it too
+        high causes the population to converge prematurely on one region.
     crossover_rate:
-        Probability of crossover when combining parent individuals in evolutionary search.
+        The probability that two parents are recombined rather than copied.
+        High values mix aggressively, which is the mechanism that combines
+        good traits from different configurations.
     mutation_rate:
-        Probability of mutating an individual parameter during evolutionary search.
+        The probability that a parameter is randomly perturbed after
+        crossover. This is the only source of genuinely new values once the
+        population has converged; too low and the search stalls, too high
+        and it degenerates into random sampling.
     tournament_size:
-        Number of individuals sampled in each tournament selection step.
+        How many random candidates compete to become a parent. Larger
+        tournaments favour the strongest more strongly, converging faster
+        but exploring less.
     max_evaluations:
-        Hard cap on model evaluations for search strategies that are not trial-count based.
+        A hard cap on total configurations evaluated, stopping the run
+        early once reached. ``None`` runs all generations.
     random_state:
-        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
+        Seed for the stochastic operators, making the run reproducible.
     task:
-        Task type (``classification``, ``regression``, or ``auto``).
+        ``'classification'``, ``'regression'``, or ``'auto'``.
     cv:
-        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
+        Fold count or splitter used to score each configuration.
     cv_strategy:
-        Named CV strategy for nested search or evaluation (``"kfold"``, ``"stratified"``, ``"group"", …).
+        How folds are formed — see :meth:`cv_score`.
     ranking_metric:
-        Primary ranking metric name used for selection or reporting (for example NDCG@k).
+        The metric acting as the fitness function. ``None`` uses the task
+        default.
     groups:
-        Group labels for group-aware splitting so entities do not leak across partitions.
+        Group labels for the group-aware strategies.
     preprocess:
-        Optional preprocess recipe/key composed before the estimator. Fit on train only.
+        Fold-local recipe refit inside each fold.
     allow_session_global_preprocess:
-        When True, allow this NLP/text path to reuse Session-global preprocess artifacts. Keep False when the text pipeline must stay self-contained.
+        Proceed despite session-wide preprocessing. See :meth:`cv_score`.
     refit:
-        When True, refit the winning estimator on the full train partition after search.
+        Retrain the winner on the full training partition and install it as
+        :attr:`fit_result`. On by default.
 
     Returns
     -------
-    SearchResult
-        Search trials, best params, and optional refit result.
+    ~buildml.model.selection.SearchResult
+        Every evaluated configuration with its score, the ``best_params``,
+        ``best_score``, and the winner's ``best_cv`` breakdown. Also stored
+        on :attr:`last_search`.
+
+    Raises
+    ------
+    ~buildml.core.errors.LeakageError
+        Session-wide preprocessing already ran and was not explicitly
+        allowed.
+    ~buildml.core.errors.ValidationError
+        No search space was supplied, a space was given as a callable
+        rather than a mapping, or ``elite_size`` is not smaller than
+        ``population_size``.
+
+    Notes
+    -----
+    Folds are cut from the training partition only; test never influences
+    the search.
+
+    This is a plain genetic algorithm — population, tournament selection,
+    crossover, mutation, elitism. It is not neural architecture search and
+    not a particle swarm, and it is not random search under another name:
+    the recombination step is what makes it different.
+
+    Examples
+    --------
+    >>> space = {
+    ...     "max_depth": {"type": "int", "low": 2, "high": 24},
+    ...     "learning_rate": {"type": "float", "low": 1e-3, "high": 0.3, "log": True},
+    ...     "booster": {"type": "categorical", "choices": ["gbtree", "dart"]},
+    ... }
+    >>> search = session.evolutionary_search(
+    ...     estimator, param_space=space, population_size=16, n_generations=8
+    ... )  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.optuna_search : Adaptive single-sampler alternative.
+    Session.randomized_search : Cheaper when parameters do not interact.
     """
     session.assert_can_fit("train")
     result = run_evolutionary_search(
@@ -1018,30 +1738,39 @@ def evolutionary_search(
 
 
 def save_model(session, path: str | Path) -> Path:
-    """Persist the last fitted estimator bundle.
+    """Save the fitted estimator and the feature contract it expects.
 
-    This stores the estimator and feature contract only. Prefer
+    This writes the model itself plus the list of feature columns and their
+    order — enough to load the model back and call it, provided your data
+    is already in the right shape.
 
-    :meth:`save_pipeline` when impute/encode/scale plans must travel with
-
-    the model.
+    It is almost never what you want. A model trained on scaled, encoded,
+    imputed data will produce nonsense if handed raw data, and this bundle
+    does not carry the plans needed to prepare it. Use
+    :meth:`save_pipeline` instead unless you are deliberately keeping the
+    preprocessing under separate control.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     path:
-        Filesystem path for load or save.
+        Destination path for the bundle.
 
     Returns
     -------
-    Path
-        Resolved filesystem path written or loaded.
+    pathlib.Path
+        Where the bundle was written.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        No model has been fitted yet.
+
+    See Also
+    --------
+    Session.save_pipeline : Save the preprocessing with the model.
+    Session.checkpoint_save : Save the whole session, data included.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -1050,28 +1779,44 @@ def save_model(session, path: str | Path) -> Path:
     return destination
 
 
-def load_model(session, path: str | Path) -> Session:
-    """Load a previously saved fitted estimator bundle into this session.
+def load_model(session, path: str | Path, *, trusted: bool = False) -> "Session":
+    """Load an estimator bundle written by :meth:`save_model`.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    Restores :attr:`fit_result` — the estimator and its feature contract —
+    into this session. The dataset and split are left alone, so you can
+    attach a fitted model to data you loaded separately.
+
+    Because the bundle carries no preprocessing plans, whatever data you
+    attach must already be in the exact form the model was trained on.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     path:
-        Filesystem path for load or save.
+        Path to the bundle written by :meth:`save_model`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
-        ``self`` for fluent chaining.
+        ``self``, so the load chains into a predict.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        The path holds no readable bundle.
+
+    See Also
+    --------
+    Session.load_pipeline : Load a model together with its preprocessing.
+    Session.predict_from_pipeline : Score new data in a single call.
     """
-    session._fit_result = load_fit_result(path)
+    session._fit_result = load_fit_result(path, trusted=trusted)
     session._record("load_model", {"path": str(path)})
-    return session
-
-
+    return cast("Session", session)
 def save_pipeline(
     session,
     path: str | Path,
@@ -1079,39 +1824,75 @@ def save_pipeline(
     evaluate_partition: Literal['train', 'validation', 'test'] | None = "test",
     title: str | None = None,
 ) -> Path:
-    """Persist fitted preprocess plans, estimator, and a model card.
+    """Save everything needed to score new data: model, prep, and card.
 
-    Layout includes ``model.joblib``, ``plans.joblib``, ``meta.json``, and
+    This is the artefact you deploy. A model on its own is not enough,
+    because raw incoming data does not look like the matrix the model was
+    trained on — the categories need the same encoding, the numbers the
+    same scaling, the gaps the same fill values. Saving the fitted plans
+    alongside the estimator means score-time transformation reproduces
+    training exactly, months later and on a different machine.
 
-    ``model_card`` JSON/Markdown. Persists impute, encode, scale, dates,
+    The bundle is a directory containing ``model.joblib``, ``plans.joblib``
+    (imputation, encoding, scaling, date expansion, outlier fences,
+    binning, feature selection, and resampling lineage where present),
+    ``meta.json``, and a model card in both JSON and Markdown.
 
-    outliers, binning, feature selection, and resample (lineage) plans when
-
-    present. This is not a Session checkpoint: data, splits, and full
-
-    history remain checkpoint concerns.
+    This is not a session checkpoint. It carries what is needed for
+    inference — no data, no split membership, no operation history. To
+    resume interrupted work rather than deploy a result, use
+    :meth:`checkpoint_save`.
 
     Parameters
     ----------
-    path:
-        Destination directory.
-    evaluate_partition:
-        If set and a split exists, attach metrics from that partition to
-        the model card. Use ``None`` to skip evaluation at save time.
-    title:
-        Optional model-card title.
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
+    path:
+        Destination directory, created if it does not exist.
+    evaluate_partition:
+        Which partition to score so the card records how the model
+        performed. ``'test'`` by default. Pass ``None`` to skip, which is
+        what you want when the session has no split attached.
+    title:
+        A human-readable name for the model card. Worth setting — this is
+        what the person reading the card in six months sees first.
 
     Returns
     -------
-    Path
-        Resolved filesystem path written or loaded.
+    pathlib.Path
+        The bundle directory that was written.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        No model has been fitted, or ``evaluate_partition`` names a
+        partition that does not exist in the current split.
+
+    Notes
+    -----
+    The model card records what the model was trained on, what it scored,
+    and which preprocessing travelled with it. It is generated from the
+    session's own history rather than written by hand, so it cannot drift
+    from what actually happened.
+
+    Examples
+    --------
+    >>> path = session.save_pipeline(
+    ...     "artifacts/churn_v3", title="Churn model, Q1 refresh"
+    ... )  # doctest: +SKIP
+
+    Later, in a scoring job that has never seen this session:
+
+    >>> from buildml import Session
+    >>> scorer = Session.ingest(new_rows)  # doctest: +SKIP
+    >>> result = scorer.predict_from_pipeline("artifacts/churn_v3")  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.load_pipeline : Restore this bundle into a session.
+    Session.predict_from_pipeline : Score without restoring first.
+    Session.checkpoint_save : Save work in progress rather than a result.
+    Session.serve_bundle : Put a saved bundle behind an HTTP endpoint.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -1199,28 +1980,60 @@ def save_pipeline(
     return destination
 
 
-def load_pipeline(session, path: str | Path) -> Session:
-    """Load a pipeline bundle (estimator + preprocess plans + model card).
+def load_pipeline(session, path: str | Path, *, trusted: bool = False) -> "Session":
+    """Restore a saved model together with its preprocessing.
 
-    Restores :attr:`fit_result`, preprocess plan attributes, and
+    Reads a bundle written by :meth:`save_pipeline` and installs its
+    contents on this session: the fitted estimator lands on
+    :attr:`fit_result`, the preprocessing plans on their respective
+    properties (:attr:`scale_plan`, :attr:`encode_plan`, and so on), and
+    the model card on :attr:`model_card`.
 
-    :attr:`model_card`. Does not replace the dataset or split; attach
-
-    compatible data separately (or via :meth:`checkpoint_load`).
+    Your data and split are untouched. That is deliberate — it lets you
+    attach a trained model to a fresh batch of rows and score them, which
+    is the usual reason to load a pipeline at all. Once loaded, run
+    :meth:`apply_preprocess_plans` to transform the attached data, then
+    :meth:`predict`.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     path:
-        Filesystem path for load or save.
+        The bundle directory written by :meth:`save_pipeline`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
-        ``self`` for fluent chaining.
+        ``self``, so the load chains into scoring.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        The directory is not a readable pipeline bundle, or its contents
+        are incomplete.
+
+    Notes
+    -----
+    **Security:** pipeline bundles deserialise fitted estimators and plans
+    via joblib/pickle. Only load bundles you created or fully trust —
+    untrusted pickles can execute code on load.
+
+    For one-shot scoring, :meth:`predict_from_pipeline` does the load,
+    transform, and predict in a single call and leaves the session
+    unchanged. Prefer that in inference jobs; prefer this when you want the
+    restored plans on the session for further work.
+
+    See Also
+    --------
+    Session.save_pipeline : Create the bundle this reads.
+    Session.predict_from_pipeline : Load, transform, and score in one step.
+    Session.checkpoint_load : Restore data and split as well.
     """
-    bundle = load_pipeline_bundle(path)
+    bundle = load_pipeline_bundle(path, trusted=trusted)
     session._fit_result = bundle.fit_result
     session._impute_plan = bundle.impute_plan
     session._encode_plan = bundle.encode_plan
@@ -1261,9 +2074,7 @@ def load_pipeline(session, path: str | Path) -> Session:
             ],
         },
     )
-    return session
-
-
+    return cast("Session", session)
 def predict_from_pipeline(
     session,
     path: str | Path,
@@ -1272,41 +2083,80 @@ def predict_from_pipeline(
     roles: dict[str, ColumnRole | str] | None = None,
     return_proba: bool = False,
     apply_plans: bool = True,
+    trusted: bool = False,
 ) -> PipelinePredictResult:
-    """Score a frame through a saved pipeline bundle in one call.
+    """Score new rows through a saved bundle, in one call.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    This is the inference path. Point it at a directory written by
+    :meth:`save_pipeline` and give it rows to score; it loads the model and
+    its preprocessing plans, transforms the rows exactly as training did,
+    and returns the predictions.
+
+    Nothing on the session changes — not the dataset, not
+    :attr:`fit_result`, not the plans. That makes it safe to call inside a
+    batch job or a service handler, repeatedly, against different bundles,
+    without one call contaminating the next.
 
     Parameters
     ----------
-    path:
-        Pipeline bundle directory.
-    data:
-        Score frame. Defaults to this session's dataset when omitted.
-    roles:
-        Optional roles when ``data`` is a bare DataFrame.
-    return_proba:
-        Request class probabilities when the estimator supports them.
-    apply_plans:
-        Replay fitted preprocess plans from the bundle before predict
-        (default True).
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
+    path:
+        The pipeline bundle directory to score through.
+    data:
+        The rows to score, as a Dataset or a plain DataFrame. ``None`` uses
+        this session's dataset.
+    roles:
+        Column roles to apply when ``data`` is a bare DataFrame with no
+        role information of its own. Needed when the bundle's
+        preprocessing distinguishes features from identifiers.
+    return_proba:
+        Return class probabilities instead of chosen labels, where the
+        estimator supports it. Use this when a downstream decision applies
+        its own threshold rather than accepting the default cut-off.
+    apply_plans:
+        Replay the bundle's preprocessing before predicting. Leave on
+        unless your incoming rows are already fully transformed — turning
+        it off on raw data feeds the model inputs it cannot interpret and
+        produces confident nonsense rather than an error.
+    trusted:
+        Must be ``True`` to deserialize the bundle's pickle/joblib payloads.
+        Pass only for artifacts you created or fully trust.
 
     Returns
     -------
-    PipelinePredictResult
-        Predictions plus preprocess replay metadata.
-
-    Notes
-    -----
-    Does not mutate this session's dataset or fit_result. Prefer this for
-    inference-only scoring of new frames.
+    ~buildml.pipeline.score.PipelinePredictResult
+        The predictions plus the context needed to trust them: which
+        preprocessing steps ran, how many rows were scored, and any
+        warnings about the incoming data.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        The bundle cannot be read, or the incoming rows are missing a
+        column the model or its plans require.
+
+    Notes
+    -----
+    A column present at training and absent now is caught here rather than
+    producing a silently wrong answer. Schema drift between training and
+    serving is among the most common production failures, and this is where
+    it surfaces.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> incoming = pd.DataFrame({"tenure": [4], "plan": ["basic"]})  # doctest: +SKIP
+    >>> result = Session.ingest(incoming).predict_from_pipeline(
+    ...     "artifacts/churn_v3", return_proba=True, trusted=True
+    ... )  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.save_pipeline : Create the bundle this reads.
+    Session.apply_preprocess_plans : The transform half, on its own.
+    Session.serve_bundle : Expose a bundle over HTTP instead.
     """
     if data is None:
         if session._dataset is None:
@@ -1315,7 +2165,12 @@ def predict_from_pipeline(
     else:
         score_data = data
     result = run_predict_from_pipeline(
-        path, score_data, roles=roles, return_proba=return_proba, apply_plans=apply_plans
+        path,
+        score_data,
+        roles=roles,
+        return_proba=return_proba,
+        apply_plans=apply_plans,
+        trusted=trusted,
     )
     session._record(
         "predict_from_pipeline",
@@ -1323,6 +2178,7 @@ def predict_from_pipeline(
             "path": str(path),
             "return_proba": return_proba,
             "apply_plans": apply_plans,
+            "trusted": trusted,
             "n_rows": result.n_rows,
         },
         warnings=result.warnings,
@@ -1339,31 +2195,60 @@ def prepare_design_matrix(
     sample_rows: int | None = None,
     random_state: int | None = 0,
 ) -> MaterializePrepResult:
-    """Project/sample columns via the active engine before sklearn materialize.
+    """Narrow the data in the engine before pulling it into memory.
 
-    When ``columns`` is omitted and a split exists, prepares the partition
+    scikit-learn needs an in-memory matrix, which is a problem when the
+    table is larger than memory. The way through is to do the reduction
+    where the data already lives: let Polars or DuckDB select just the
+    columns you need and, if necessary, sample the rows, so that only the
+    reduced result crosses into Pandas.
 
-    feature+target design matrix. Disclosures record projection and any
-
-    sampling; sklearn still requires an in-memory matrix.
+    This matters only when :meth:`with_engine` has attached a native
+    engine. On plain Pandas the data is already in memory and this is a
+    no-op with bookkeeping.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     partition:
-        Split partition to read or score.
+        Which partition to prepare. Defaults to ``'train'``, the one that
+        usually needs to fit in memory for a fit call.
     columns:
-        Column names to include or transform.
+        Which columns to project. ``None`` selects the feature and target
+        columns for the partition, which is what a fit needs and nothing
+        more.
     sample_rows:
-        How many example rows to include in reports or egress payloads (privacy settings still apply).
+        Cap the result at this many rows, drawn at random. ``None`` keeps
+        all of them. Sampling makes an oversized partition trainable, at
+        the cost of learning from less of it — the sample is recorded in
+        the disclosures so the compromise stays visible.
     random_state:
-        Seed for randomized fitting steps so re-runs are comparable. ``None`` leaves RNG undeterministic.
+        Seed for the sampling, so the same subset is drawn each run.
 
     Returns
     -------
-    MaterializePrepResult
-        Engine projection/sample disclosure before sklearn materialize.
+    ~buildml.data.engines.prep.MaterializePrepResult
+        The prepared matrix together with disclosures recording which
+        columns were projected and whether rows were sampled.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        No split exists, the partition is not part of it, or a named column
+        is absent.
+
+    Notes
+    -----
+    Projection and sampling reduce what must be materialised; they do not
+    make scikit-learn out-of-core. The estimator still receives an
+    in-memory matrix. If the reduced partition still does not fit, reach
+    for :meth:`fit_online`, which learns incrementally from batches.
+
+    See Also
+    --------
+    Session.with_engine : Attach the engine that makes this worthwhile.
+    Session.fit_online : Train without holding all the data at once.
     """
     if columns is not None:
         result = prepare_design_frame(
@@ -1403,32 +2288,74 @@ def calibration(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Probability calibration diagnostics for the fitted classifier.
+    """Check whether predicted probabilities mean what they claim.
 
-    Returns Brier/ECE, reliability curve points, and interpretation tips.
+    A classifier that outputs ``0.8`` is asserting that eight out of ten
+    such cases are positive. Often that is simply false — the model ranks
+    cases correctly while its probabilities are systematically too
+    confident or too timid. Ranking quality (ROC-AUC) cannot detect this,
+    because rescaling every probability leaves the ranking untouched.
 
-    Optional figure/HTML export uses the viz extra.
+    Calibration matters whenever the number itself is used rather than just
+    the ordering: expected-value calculations, risk thresholds, or anything
+    shown to a person who will read "80%" as eighty percent. This groups
+    predictions into probability bands and compares each band's claimed
+    rate against the rate actually observed.
+
+    You get the Brier score (mean squared error of the probabilities),
+    expected calibration error (the average gap between claimed and
+    observed), and the reliability curve points behind both. A perfectly
+    calibrated model traces the diagonal; sagging below it means
+    overconfidence.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     partition:
-        Split partition to read or score.
+        Which rows to assess. Calibration must be measured on data the
+        model did not learn from — on training rows almost any model looks
+        well calibrated.
     export_figures:
-        When True, export plot figures alongside the report (may require viz extras).
+        Directory to write the reliability diagram into. Requires
+        ``pip install 'buildml[viz]'``.
     export_html:
-        When True, write an HTML report artifact for the operation result.
+        Path for a self-contained HTML version of the same.
 
     Returns
     -------
-    DiagnosticReport
-        Diagnostic tables, curves, and interpretation guidance.
+    ~buildml.model.diagnostics.DiagnosticReport
+        The calibration findings: Brier score, expected calibration error,
+        reliability curve points, and an interpretation of what the shape
+        implies.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        No model has been fitted, the fitted model is not a classifier, or
+        it does not expose ``predict_proba``.
+    ~buildml.core.errors.MissingExtraError
+        Figures were requested without ``buildml[viz]`` installed.
+
+    Notes
+    -----
+    Poor calibration is usually fixable without retraining, by fitting a
+    small correction from probability to observed rate on held-out data
+    (Platt scaling or isotonic regression). Note which models tend to need
+    it: naive Bayes is famously overconfident, boosted trees push
+    probabilities toward the extremes, and a random forest averaging many
+    votes is typically already close.
+
+    Examples
+    --------
+    >>> report = session.calibration(partition="validation")  # doctest: +SKIP
+    >>> report.metrics["brier_score"]  # doctest: +SKIP
+    0.084
+
+    See Also
+    --------
+    Session.tune_threshold : Choose the cut-off these probabilities feed.
+    Session.eval_plots : The reliability curve alongside other panels.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -1460,36 +2387,92 @@ def tune_threshold(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Sweep binary decision thresholds with precision/recall/F1 and optional costs.
+    """Choose the cut-off that turns a probability into a decision.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    A classifier outputs a probability, but acting on it requires a line:
+    above this, treat as positive. The default line is 0.5, and 0.5 is
+    almost never the right answer — it silently assumes that a false alarm
+    and a miss cost the same amount.
+
+    They rarely do. Missing a fraudulent transaction costs the value of the
+    fraud; flagging a legitimate one costs an annoyed customer. Missing a
+    disease costs far more than an unnecessary follow-up test. The correct
+    threshold follows from those costs, not from the midpoint of the
+    probability range.
+
+    This sweeps every candidate threshold and reports how precision,
+    recall, and F1 move as the line shifts. Supply ``fp_cost`` and
+    ``fn_cost`` and it goes further, computing expected cost at each
+    threshold and identifying the one that minimises it — turning a
+    modelling choice into an arithmetic one.
 
     Parameters
     ----------
-    partition:
-        Rows used for the sweep. Prefer ``validation`` when selecting a
-        policy; use ``test`` only to confirm a fixed threshold.
-        fp_cost, fn_cost:
-        Non-negative false-positive / false-negative costs. Provide both to
-        minimize expected cost on the scored partition.
-        tp_benefit, tn_benefit:
-        Optional benefits subtracted from cost for true positives / negatives.
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
+    partition:
+        Which rows to sweep over. Use ``'validation'`` while choosing;
+        selecting a threshold on ``'test'`` and then reporting that
+        partition's score means the score was tuned on the data it claims
+        to be independent of.
+    fp_cost:
+        What one false positive costs — flagging something that was fine.
+        Any consistent unit works; only the ratio to ``fn_cost`` affects
+        the chosen threshold.
+    fn_cost:
+        What one false negative costs — missing something real. Must be
+        given together with ``fp_cost``.
+    tp_benefit:
+        What correctly catching a positive is worth, subtracted from
+        expected cost. Useful when a true positive earns something concrete
+        rather than merely avoiding a loss.
+    tn_benefit:
+        What correctly leaving a negative alone is worth.
     export_figures:
-        When True, export plot figures alongside the report (may require viz extras).
+        Directory to write the threshold sweep chart into. Requires
+        ``pip install 'buildml[viz]'``.
     export_html:
-        When True, write an HTML report artifact for the operation result.
+        Path for a self-contained HTML version of the same.
 
     Returns
     -------
-    DiagnosticReport
-        Diagnostic tables, curves, and interpretation guidance.
+    ~buildml.model.diagnostics.DiagnosticReport
+        The sweep: metrics at every candidate threshold, the recommended
+        cut-off, and — when costs were supplied — the expected cost curve
+        and its minimum.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        No model has been fitted, the target is not binary, the model
+        exposes no ``predict_proba``, or exactly one of ``fp_cost`` and
+        ``fn_cost`` was supplied.
+    ~buildml.core.errors.MissingExtraError
+        Figures were requested without ``buildml[viz]`` installed.
+
+    Notes
+    -----
+    The threshold you pick here is part of the model as deployed. Record it
+    with the pipeline, because a bundle scored at 0.5 when it was tuned for
+    0.18 will behave nothing like the version you evaluated.
+
+    A cost-optimal threshold is only as good as the costs. If they are
+    guesses, look at how flat the cost curve is around its minimum: a flat
+    region means the exact number hardly matters, and a sharp one means
+    your guess needs to be right.
+
+    Examples
+    --------
+    >>> report = session.tune_threshold(
+    ...     partition="validation", fp_cost=1.0, fn_cost=12.0
+    ... )  # doctest: +SKIP
+    >>> report.metrics["best_threshold"]  # doctest: +SKIP
+    0.18
+
+    See Also
+    --------
+    Session.calibration : Confirm the probabilities are trustworthy first.
+    Session.predict : Obtain probabilities to apply the chosen cut-off to.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -1531,29 +2514,74 @@ def learning_curve(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Compute learning curves on the training partition.
+    """Find out whether more data would help, before you go and get it.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    When a model underperforms there are two very different remedies, and
+    pursuing the wrong one wastes weeks. Either the model is too simple to
+    capture the pattern, in which case more rows change nothing and you
+    need a richer model or better features; or it is complex enough but
+    starved of examples, in which case more rows are exactly what is
+    needed.
+
+    A learning curve distinguishes them. The model is refitted on
+    increasing fractions of the training rows and scored each time, giving
+    two lines: performance on the data it trained on, and performance on
+    held-out data.
+
+    Read them by their gap and their slope. A wide gap that is still
+    closing as the curves extend rightward means more data will help. Two
+    curves that have converged and flattened, both mediocre, mean the model
+    has learned everything it can from these features — more rows will not
+    move it. Converged and both excellent means you are done.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     estimator:
-        Unfitted sklearn-compatible estimator instance.
+        An unfitted estimator to trace. Usually the same one you fitted, so
+        the curve describes the model you are actually considering.
     task:
-        Task type (``classification``, ``regression``, or ``auto``).
+        ``'classification'``, ``'regression'``, or ``'auto'``.
     cv:
-        Cross-validation arity or splitter. An integer ``k`` means ``k`` folds when the task supports it.
+        Fold count used at each sample size, so every point on the curve is
+        itself averaged rather than a single noisy measurement.
     export_figures:
-        When True, export plot figures alongside the report (may require viz extras).
+        Directory to write the curve into. Requires
+        ``pip install 'buildml[viz]'``.
     export_html:
-        When True, write an HTML report artifact for the operation result.
+        Path for a self-contained HTML version of the same.
 
     Returns
     -------
-    DiagnosticReport
-        Diagnostic tables, curves, and interpretation guidance.
+    ~buildml.model.diagnostics.DiagnosticReport
+        The curve points at each training size, the train and validation
+        scores at each, and an interpretation of what the shape implies.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        No split exists, or the training partition is too small to
+        subdivide.
+    ~buildml.core.errors.MissingExtraError
+        Figures were requested without ``buildml[viz]`` installed.
+
+    Notes
+    -----
+    The model is refitted once per sample size per fold, so this is among
+    the slower diagnostics. Lower ``cv`` for a quick read.
+
+    Examples
+    --------
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> report = session.learning_curve(
+    ...     RandomForestClassifier(random_state=0), cv=5
+    ... )  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.eval_plots : The learning curve alongside other diagnostics.
+    Session.cv_score : Score at full training size only.
     """
     report = learning_curve_report(
         session.dataset,
@@ -1587,32 +2615,82 @@ def feature_importance(
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Permutation feature importance on a holdout partition.
+    """Measure which features the model genuinely depends on.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    The method is simple and that is its strength: take one feature, shuffle
+    its values across rows so it keeps its distribution but loses its
+    relationship to the target, and re-score. However far the score falls
+    is how much the model was relying on that feature. Repeat for each
+    feature.
+
+    This works for any model — the internals are never inspected, only the
+    predictions — so a neural network, a boosted ensemble, and a linear
+    model can be compared on the same footing. It also avoids the known
+    distortions of tree-based built-in importances, which systematically
+    favour high-cardinality and continuous features regardless of whether
+    they carry signal.
+
+    Run it on held-out rows. Importance measured on training data tells you
+    what the model memorised; importance on a holdout tells you what
+    actually generalises, which is the question worth asking.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     partition:
-        Split partition to read or score.
+        Which rows to measure on. Default ``'test'``; ``'validation'`` is
+        the better choice if you intend to act on the result and want to
+        keep test clean.
     n_repeats:
-        How many times to repeat a CV/search procedure for stabler estimates.
+        How many times each feature is shuffled. Shuffling is random, so a
+        single pass is noisy; more repeats give a steadier ranking at
+        proportionally more time.
     export_figures:
-        When True, export plot figures alongside the report (may require viz extras).
+        Directory to write the importance chart into. Requires
+        ``pip install 'buildml[viz]'``.
     export_html:
-        When True, write an HTML report artifact for the operation result.
+        Path for a self-contained HTML version of the same.
 
     Returns
     -------
-    DiagnosticReport
-        Diagnostic tables, curves, and interpretation guidance.
+    ~buildml.model.diagnostics.DiagnosticReport
+        Per-feature importance with the spread across repeats, ranked, plus
+        an interpretation. The spread matters: a feature whose importance
+        varies wildly between repeats has not been shown to matter.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        No model has been fitted, or no split exists.
+    ~buildml.core.errors.MissingExtraError
+        Figures were requested without ``buildml[viz]`` installed.
+
+    Notes
+    -----
+    Correlated features mislead this method, and it is worth knowing how.
+    If two columns carry the same information, shuffling either one leaves
+    the model able to recover the signal from the other, so both look
+    unimportant — even though together they are essential. When you see a
+    feature you expect to matter scoring near zero, check what it is
+    correlated with before concluding it is useless.
+
+    Importance is not causation. A feature the model leans on may be a
+    symptom of the outcome rather than a cause of it, and intervening on it
+    will change nothing. Use :meth:`fit_causal` when the question is what
+    to act on.
+
+    Examples
+    --------
+    >>> report = session.feature_importance(
+    ...     partition="validation", n_repeats=20
+    ... )  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.select_features : Act on importance by dropping columns.
+    Session.error_slices : Where the model fails, rather than on what.
+    Session.fit_causal : What to change, rather than what predicts.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")
@@ -1648,29 +2726,54 @@ def error_slices(
     min_segment_n: int = 5,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
-    """Slice prediction errors by one or more columns on a partition.
+    """Break performance down by subgroup, to find where the model fails.
 
-    Records the operation on Session history and returns the result for downstream chaining.
+    An overall score is an average, and averages conceal. A model at 92%
+    accuracy might be at 97% for the large customer segment and 61% for the
+    small one — a difference invisible in the headline number and highly
+    visible to the people in that second group.
+
+    This splits the scored rows by the columns you name and reports metrics
+    for each segment alongside the overall figure, so the gaps become
+    explicit. Slice by region, product line, customer tier, or any
+    categorical column whose subgroups you would be unhappy to serve badly.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     by:
-        Column name or sequence of columns used to slice errors.
+        One column name, or several. Passing several slices by their
+        combination, which finds interaction failures — a model can be fine
+        on each of two dimensions separately and poor on a particular
+        intersection.
     partition:
-        Split partition to read or score.
+        Which rows to slice. Use ``'validation'`` while exploring so test
+        stays reserved.
     max_segments:
-        Maximum segments retained by segment/changepoint helpers.
+        Cap on how many segments to report, keeping a high-cardinality
+        column from producing an unreadable table. The largest segments are
+        kept.
     min_segment_n:
-        Minimum rows required in a segment before it is kept.
+        Minimum rows for a segment to be reported as a finding. Below this,
+        a metric is mostly noise — three rows and two errors is not a 67%
+        error rate, it is three rows. Smaller segments are listed
+        separately rather than discarded.
     export_html:
-        When True, write an HTML report artifact for the operation result.
+        Optional path to write an HTML report of segment findings.
 
     Returns
     -------
-    DiagnosticReport
-        Diagnostic tables, curves, and interpretation guidance.
+    ~buildml.model.diagnostics.DiagnosticReport
+        Per-segment metrics and sizes, the segments that fell below
+        ``min_segment_n`` under ``small_segments``, and an interpretation
+        highlighting the largest gaps.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        No model has been fitted, no split exists, or a named column is
+        absent from the partition.
 
     Notes
     -----
@@ -1678,10 +2781,27 @@ def error_slices(
     validation for exploration and keep test for a final estimate.
     Segments with ``n < min_segment_n`` are listed under ``small_segments``.
 
-    Raises
-    ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    A gap tells you where the model is worse, not why. Small segments have
+    fewer training examples, may genuinely be harder to predict, and may
+    have been measured differently. Any of those explains a gap without
+    implicating the model. Treat the output as a list of places to
+    investigate, not a verdict.
+
+    Examples
+    --------
+    >>> report = session.error_slices(
+    ...     by="region", partition="validation"
+    ... )  # doctest: +SKIP
+
+    Look for an interaction the single-column view would hide:
+
+    >>> report = session.error_slices(by=["region", "product_tier"])  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.feature_importance : What the model uses, rather than where it
+        fails.
+    Session.evaluate : The aggregate this decomposes.
     """
     if session._fit_result is None:
         raise ValidationError("No fitted estimator. Call fit(...) first.")

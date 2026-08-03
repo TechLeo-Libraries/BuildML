@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted, require_trusted_deserialize
 from buildml.core.errors import ValidationError
 from buildml.selfsupervised.results import (
     SSLHeadFitResult,
@@ -92,7 +93,7 @@ def save_ssl_bundle(
     return destination
 
 
-def load_ssl_bundle(path: str | Path) -> tuple[SelfSupervisedPlan, SSLHeadPlan | None]:
+def load_ssl_bundle(path: str | Path, *, trusted: bool = False) -> tuple[SelfSupervisedPlan, SSLHeadPlan | None]:
     """Load a self-supervised bundle into plan (+ optional head).
 
     Restores v1 and v2 bundle formats, optionally rehydrating Torch encoder
@@ -102,6 +103,9 @@ def load_ssl_bundle(path: str | Path) -> tuple[SelfSupervisedPlan, SSLHeadPlan |
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``ssl_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -129,7 +133,7 @@ def load_ssl_bundle(path: str | Path) -> tuple[SelfSupervisedPlan, SSLHeadPlan |
             f"Unsupported self-supervised bundle format {fmt!r}; "
             f"expected {BUNDLE_FORMAT_V1} or {BUNDLE_FORMAT_V2}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, SelfSupervisedPlan):
         plan = loaded
         head = None
@@ -144,7 +148,7 @@ def load_ssl_bundle(path: str | Path) -> tuple[SelfSupervisedPlan, SSLHeadPlan |
         raise ValidationError("Loaded plan object is not a SelfSupervisedPlan")
     if head is not None and not isinstance(head, SSLHeadPlan):
         raise ValidationError("Loaded head_plan object is not an SSLHeadPlan")
-    _maybe_restore_torch_state(root, plan)
+    _maybe_restore_torch_state(root, plan, trusted=trusted)
     if fmt == BUNDLE_FORMAT_V1:
         plan.bundle_format = BUNDLE_FORMAT_V1  # type: ignore[attr-defined]
     return plan, head
@@ -173,7 +177,9 @@ def _maybe_save_torch_state(destination: Path, plan: SelfSupervisedPlan) -> None
         )
 
 
-def _maybe_restore_torch_state(root: Path, plan: SelfSupervisedPlan) -> None:
+def _maybe_restore_torch_state(
+    root: Path, plan: SelfSupervisedPlan, *, trusted: bool
+) -> None:
     meta_path = root / "encoder_torch.json"
     pt_path = root / "encoder_torch.pt"
     if not meta_path.is_file() or not pt_path.is_file():
@@ -181,6 +187,10 @@ def _maybe_restore_torch_state(root: Path, plan: SelfSupervisedPlan) -> None:
     from buildml.dl.extras import require_torch
 
     torch = require_torch(feature="SSL bundle restore")
+    require_trusted_deserialize(
+        trusted=trusted, artifact="torch SSL encoder payload", path=pt_path
+    )
+
     state = torch.load(pt_path, map_location="cpu", weights_only=False)
     method = str(state.get("method", plan.method))
     if method in {

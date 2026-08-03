@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.anomaly.catalog import anomaly_capability_matrix
 from buildml.anomaly.checkpoint import load_anomaly_bundle, save_anomaly_bundle
@@ -465,7 +468,7 @@ def save_anomaly_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_anomaly_bundle_op(session, path: str | Path) -> Any:
+def load_anomaly_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load an anomaly bundle into this Session.
 
     Delegates to :func:`buildml.anomaly.checkpoint.load_anomaly_bundle` and
@@ -477,13 +480,16 @@ def load_anomaly_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded anomaly plan.
     path:
         Path to a ``buildml.anomaly_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with anomaly plan attached for chaining.
     """
-    plan = load_anomaly_bundle(path)
+    plan = load_anomaly_bundle(path, trusted=trusted)
     session._anomaly_plan = plan
     session._anomaly_fit_result = None
     session._anomaly_score_result = None
@@ -499,4 +505,4 @@ def load_anomaly_bundle_op(session, path: str | Path) -> Any:
         },
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

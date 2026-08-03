@@ -59,6 +59,6 @@ def test_automl_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
-    restored.load_automl_bundle(automl_bundle)
+    restored.load_automl_bundle(automl_bundle, trusted=True)
     again = restored.evaluate_automl(partition="test")
     assert again.n_rows == test.n_rows

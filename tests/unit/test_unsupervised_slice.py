@@ -102,7 +102,7 @@ def test_kmeans_fit_assign_evaluate_and_bundle(tmp_path: Path) -> None:
     path = session.save_unsupervised_bundle(tmp_path / "unsup")
     assert (path / "meta.json").is_file()
     assert (path / "cluster_plan.joblib").is_file()
-    plan = load_unsupervised_bundle(path)
+    plan = load_unsupervised_bundle(path, trusted=True)
     assert plan.method == "kmeans"
     assert plan.columns == session.cluster_plan.columns
 
@@ -110,7 +110,7 @@ def test_kmeans_fit_assign_evaluate_and_bundle(tmp_path: Path) -> None:
         {"x": "feature", "y": "feature", "segment": "ignore"}
     )
     restored.split(test_size=0.25, random_state=0).scale(method="standard")
-    restored.load_unsupervised_bundle(path)
+    restored.load_unsupervised_bundle(path, trusted=True)
     again = restored.assign_clusters(partition="test")
     assert again.labels == assigned.labels
 
@@ -120,7 +120,7 @@ def test_kmeans_fit_assign_evaluate_and_bundle(tmp_path: Path) -> None:
         (bad / "meta.json").write_text('{"format": "buildml.rag_bundle.v1"}', encoding="utf-8")
         (bad / "cluster_plan.joblib").write_bytes(b"not-a-real-joblib")
         # force format check before joblib load when meta is wrong
-        load_unsupervised_bundle(bad)
+        load_unsupervised_bundle(bad, trusted=True)
 
 
 def test_prefer_reduce_components() -> None:
@@ -180,6 +180,6 @@ def test_low_level_fit_clusterer_matches_session(tmp_path: Path) -> None:
     assert fit.n_clusters == 2
     assert assign.n_rows == eval_result.n_rows
     path = save_unsupervised_bundle(tmp_path / "direct", plan, fit_result=fit)
-    restored = load_unsupervised_bundle(path)
+    restored = load_unsupervised_bundle(path, trusted=True)
     assert restored.method == plan.method
     assert restored.columns == plan.columns

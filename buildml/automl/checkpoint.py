@@ -10,6 +10,7 @@ import joblib
 
 from buildml._version import __version__
 from buildml.automl.results import AutoMLPlan, AutoMLResult, fit_result_from_plan
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.model.supervised import FitResult
 
@@ -83,7 +84,7 @@ def save_automl_bundle(
     (destination / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return destination
 
-def load_automl_bundle(path: str | Path) -> tuple[AutoMLPlan, FitResult | None]:
+def load_automl_bundle(path: str | Path, *, trusted: bool = False) -> tuple[AutoMLPlan, FitResult | None]:
     """Load an AutoML bundle into an :class:`AutoMLPlan` and optional FitResult.
 
     Validates bundle format version and plan object type before returning.
@@ -93,6 +94,9 @@ def load_automl_bundle(path: str | Path) -> tuple[AutoMLPlan, FitResult | None]:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``automl_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -119,7 +123,7 @@ def load_automl_bundle(path: str | Path) -> tuple[AutoMLPlan, FitResult | None]:
         raise ValidationError(
             f"Unsupported AutoML bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, AutoMLPlan):
         plan = loaded
         fit_result = None

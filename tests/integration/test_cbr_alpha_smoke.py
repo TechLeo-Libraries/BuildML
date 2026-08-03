@@ -52,6 +52,6 @@ def test_cbr_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=7, stratify=True)
         .scale(method="standard")
     )
-    other.load_cbr_bundle(bundle)
+    other.load_cbr_bundle(bundle, trusted=True)
     assert other.cbr_plan is not None
     assert other.evaluate_cbr(partition="test").n_rows > 0

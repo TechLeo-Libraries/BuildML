@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import TYPE_CHECKING, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -19,7 +22,14 @@ from buildml.tda.explain_hooks import (
 from buildml.tda.fit import fit_tda
 from buildml.tda.predict import predict_tda
 from buildml.tda.transform import transform_tda
-from buildml.tda.types import DiagramDistanceMetric, SubsampleStrategy, TdaBackend, TdaHead, TdaTask, Vectorization
+from buildml.tda.types import (
+    DiagramDistanceMetric,
+    SubsampleStrategy,
+    TdaBackend,
+    TdaHead,
+    TdaTask,
+    Vectorization,
+)
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -369,7 +379,7 @@ def save_tda_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_tda_bundle_op(session, path: str | Path):
+def load_tda_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a TDA bundle into this Session.
 
     Delegates to :func:`buildml.tda.checkpoint.load_tda_bundle` and clears
@@ -381,13 +391,16 @@ def load_tda_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded TdaPlan.
     path:
         Path to a ``buildml.tda_bundle.v2`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with TdaPlan attached for chaining.
     """
-    plan = load_tda_bundle(path)
+    plan = load_tda_bundle(path, trusted=trusted)
     session._tda_plan = plan
     session._tda_fit_result = None
     session._tda_eval_result = None
@@ -398,4 +411,4 @@ def load_tda_bundle_op(session, path: str | Path):
         {"path": str(path)},
         result_summary={"path": str(path), "format": "buildml.tda_bundle.v2"},
     )
-    return session
+    return cast("Session", session)

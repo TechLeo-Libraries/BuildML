@@ -126,7 +126,7 @@ def test_session_fit_recommend_evaluate_bundle(tmp_path: Path) -> None:
 
     session.save_recommender_bundle(tmp_path / "rec")
     other = _demo_session()
-    other.load_recommender_bundle(tmp_path / "rec")
+    other.load_recommender_bundle(tmp_path / "rec", trusted=True)
     assert other.recommender_plan is not None
     assert other.evaluate_recommender(partition="test", k=5).n_users_scored >= 0
 

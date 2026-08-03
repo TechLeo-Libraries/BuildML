@@ -87,7 +87,7 @@ def test_ssl_bundle_v2_roundtrip(tmp_path: Path) -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    restored.load_ssl_bundle(out)
+    restored.load_ssl_bundle(out, trusted=True)
     again = restored.evaluate_ssl(partition="test")
     assert again.metrics["accuracy"] == pytest.approx(ev.metrics["accuracy"])
 

@@ -115,7 +115,7 @@ def test_margin_loop_evaluate_bundle(tmp_path: Path) -> None:
 
     bundle = session.save_active_learning_bundle(tmp_path / "al")
     assert (bundle / "meta.json").is_file()
-    plan = load_active_learning_bundle(bundle)
+    plan = load_active_learning_bundle(bundle, trusted=True)
     assert plan.strategy == "margin"
     import json
 

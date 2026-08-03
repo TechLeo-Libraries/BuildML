@@ -242,7 +242,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore DecisionPlan for apply/evaluate.",
         "Decision bundle load.",
         ("Read meta.json + decision_plan.joblib.", "Attach DecisionPlan."),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Decision bundle directory.",),
         outputs=("Session with decision_plan.",),
         prerequisites=(DATASET,),

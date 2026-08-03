@@ -353,7 +353,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Validate bundle format.",
             "Attach CausalPlan and CausalAssumptions; clear result slots.",
         ),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory with meta.json + causal_plan.joblib.",),
         outputs=("Session with causal_plan attached.",),
         prerequisites=(DATASET,),

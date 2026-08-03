@@ -84,6 +84,6 @@ def test_metalearning_alpha_smoke(tmp_path: Path) -> None:
     )
     other._split_plan = session.split_plan
     other._dataset = session.dataset
-    other.load_metalearning_bundle(bundle)
+    other.load_metalearning_bundle(bundle, trusted=True)
     ev2 = other.evaluate_metalearning(partition="test", prefer_novel_tasks=False)
     assert ev2.method == "prototypical"

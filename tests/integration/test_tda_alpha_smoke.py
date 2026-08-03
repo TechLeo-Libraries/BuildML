@@ -50,5 +50,5 @@ def test_tda_end_to_end_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    other.load_tda_bundle(tmp_path / "tda")
+    other.load_tda_bundle(tmp_path / "tda", trusted=True)
     assert other.evaluate_tda(partition="test").n_rows > 0

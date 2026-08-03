@@ -243,7 +243,7 @@ def test_resume_train_from_bundle(tmp_path) -> None:
         .split(test_size=0.25, validation_size=0.2, random_state=0)
     )
     other.make_torch_loaders(batch_size=16, seed=0)
-    other.load_torch_bundle(path, _tiny_module(), map_location="cpu")
+    other.load_torch_bundle(path, _tiny_module(, trusted=True), map_location="cpu")
     other.fit_torch(_tiny_module(), epochs=2, learning_rate=1e-2, device="cpu", resume=True)
     resumed = other.dl_train_result
     assert resumed is not None

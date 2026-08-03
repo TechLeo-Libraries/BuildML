@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.kg.results import (
     KgEvalResult,
@@ -100,7 +101,7 @@ def save_kg_bundle(
     return destination
 
 
-def load_kg_bundle(path: str | Path) -> KgPlan:
+def load_kg_bundle(path: str | Path, *, trusted: bool = False) -> KgPlan:
     """Load a knowledge-graph bundle into a :class:`~buildml.kg.results.KgPlan`.
 
     Validates bundle format and restores embeddings, vocabularies, and train
@@ -110,6 +111,9 @@ def load_kg_bundle(path: str | Path) -> KgPlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``kg_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -135,7 +139,7 @@ def load_kg_bundle(path: str | Path) -> KgPlan:
         raise ValidationError(
             f"Unsupported KG bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, KgPlan):
         plan = loaded
     elif isinstance(loaded, dict) and "plan" in loaded:

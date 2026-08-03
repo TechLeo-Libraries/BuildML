@@ -191,6 +191,6 @@ def test_bundle_roundtrip_with_backend(tmp_path: Path) -> None:
     session2 = Session.ingest(_frame()).set_roles(
         {"a": "feature", "b": "feature", "y": "target"}
     )
-    session2.load_active_learning_bundle(out)
+    session2.load_active_learning_bundle(out, trusted=True)
     assert session2.activelearning_plan is not None
     assert session2.activelearning_plan.backend == "sklearn"

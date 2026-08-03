@@ -155,7 +155,7 @@ def test_export_torchscript_roundtrip(tmp_path: Path) -> None:
     out = tmp_path / "model.ts.pt"
     result = session.export_torch(out, format="torchscript")
     assert result.path.exists()
-    loaded = load_torchscript(result.path)
+    loaded = load_torchscript(result.path, trusted=True)
     xb, _ = next(iter(session._torch_loaders.loaders["train"]))
     with torch.no_grad():
         y1 = session.dl_train_result.module.cpu()(xb.cpu())
@@ -311,7 +311,7 @@ def test_multimodal_export_torchscript_dual_call_convention(tmp_path: Path) -> N
     out = tmp_path / "mm.ts.pt"
     result = session.export_torch(out, format="torchscript")
     assert result.path.exists()
-    loaded = load_torchscript(result.path)
+    loaded = load_torchscript(result.path, trusted=True)
     with torch.no_grad():
         y_loaded = loaded(x_tab.cpu(), tok.cpu())
     assert y_loaded.shape == y_args.shape

@@ -4,14 +4,23 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 import pandas as pd
 
 from buildml.automl.checkpoint import load_automl_bundle, save_automl_bundle
 from buildml.automl.explain_hooks import fit_result_summary
 from buildml.automl.search import run_automl
-from buildml.automl.types import AutoMLBackend, AutoMLBudget, AutoMLMethod, AutoMLSelection, EnsembleMode
+from buildml.automl.types import (
+    AutoMLBackend,
+    AutoMLBudget,
+    AutoMLMethod,
+    AutoMLSelection,
+    EnsembleMode,
+)
 from buildml.core.errors import ValidationError
 from buildml.model.supervised import EvaluateResult, evaluate_estimator
 from buildml.preprocess.fold import PreprocessRecipe
@@ -277,7 +286,7 @@ def save_automl_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_automl_bundle_op(session, path: str | Path) -> Any:
+def load_automl_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load an AutoML bundle into this Session.
 
     Delegates to :func:`buildml.automl.checkpoint.load_automl_bundle`,
@@ -289,13 +298,16 @@ def load_automl_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded AutoML plan.
     path:
         Path to a ``buildml.automl_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with AutoML plan and fit result attached for chaining.
     """
-    plan, fit_result = load_automl_bundle(path)
+    plan, fit_result = load_automl_bundle(path, trusted=trusted)
     session._automl_plan = plan
     session._automl_result = None
     session._fit_result = fit_result
@@ -308,4 +320,4 @@ def load_automl_bundle_op(session, path: str | Path) -> Any:
         },
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

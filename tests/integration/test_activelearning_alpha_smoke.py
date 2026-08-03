@@ -67,7 +67,7 @@ def test_activelearning_alpha_gate_smoke(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_active_learning_bundle(bundle)
+    restored.load_active_learning_bundle(bundle, trusted=True)
     assert restored.activelearning_plan is not None
     assert restored.activelearning_plan.n_queries_used == 5
     again = restored.suggest_query(batch_size=3)

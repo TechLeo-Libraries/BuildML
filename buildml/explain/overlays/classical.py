@@ -752,6 +752,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("roles", "dict | None", "Optional roles when data is a bare DataFrame."),
             _p("return_proba", "bool", "Also return class probabilities when supported.", False),
             _p("apply_plans", "bool", "Replay bundle preprocess plans before predict.", True),
+            _p(
+                "trusted",
+                "bool",
+                "Required True to deserialize pickle/joblib payloads from a path.",
+                False,
+            ),
         ),
         inputs=("Pipeline bundle path and a score Dataset or DataFrame.",),
         outputs=("PipelinePredictResult with predictions, optional probabilities, and apply warnings.",),
@@ -762,9 +768,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         rationale=("Keep score-time transforms and the estimator feature contract in one call.",),
         assumptions=("Score schema can supply the columns required by stored plans and the fit result.",),
-        failures=("Incomplete bundle, missing plan/feature columns, or estimator predict errors.",),
+        failures=(
+            "Incomplete bundle, missing plan/feature columns, estimator predict errors, "
+            "or trusted=False on a path load.",
+        ),
         leakage=("Plans must already be train-fitted; this path does not fit on score rows.",),
-        anti_patterns=("Setting apply_plans=False when the score frame is still in raw column space.",),
+        anti_patterns=(
+            "Setting apply_plans=False when the score frame is still in raw column space.",
+            "Passing trusted=True for an artifact whose provenance is unclear.",
+        ),
         state_changes=("Records history only; Session dataset and fit_result are not replaced.",),
         result_reading=(
             "Check warnings (resample lineage, target-encode maps) and confirm n_rows matches the score frame.",
@@ -1389,7 +1401,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Resume prediction and diagnostics without retraining.",
         "Estimator-only artifact restoration.",
         ("Read model metadata and deserialize the estimator.", "Restore the fitted feature contract."),
-        parameters=(_p("path", "str | Path", "Existing model bundle.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Existing model bundle.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib payloads (default False).",
+                required=False,
+            ),
+        ),
         inputs=("Trusted model bundle path.",),
         outputs=("Session with active FitResult.",),
         prerequisites=(),
@@ -1462,7 +1482,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "(impute/encode/scale/dates/outliers/binning/feature_select/resample).",
             "Restore model_card when present.",
         ),
-        parameters=(_p("path", "str | Path", "Existing pipeline bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Existing pipeline bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib payloads (default False).",
+                required=False,
+            ),
+        ),
         inputs=("Trusted pipeline bundle path.",),
         outputs=("Session with fit_result, preprocess plans, and model_card.",),
         prerequisites=(),
@@ -1804,6 +1832,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         parameters=(
             _p("path", "str | Path", "Checkpoint directory.", required=True),
             _p("data_only", "bool", "Discard prior workflow metadata and treat data as fresh.", False),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize plans.joblib when present (default False).",
+                required=False,
+            ),
         ),
         inputs=("Existing trusted checkpoint directory.",),
         outputs=("New Session with ReattachResult and restored plans when present.",),
@@ -1839,6 +1873,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         parameters=(
             _p("path", "str | Path", "Checkpoint directory.", required=True),
             _p("data_only", "bool", "Discard checkpoint metadata and plans.", False),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize plans.joblib when present (default False).",
+                required=False,
+            ),
         ),
         inputs=("Existing Session and trusted checkpoint bundle.",),
         outputs=("The same Session with replaced state.",),

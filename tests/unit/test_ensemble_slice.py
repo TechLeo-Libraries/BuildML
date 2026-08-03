@@ -118,7 +118,7 @@ def test_voting_fit_evaluate_and_bundle(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, random_state=0, stratify=True)
     )
-    restored.load_ensemble_bundle(bundle)
+    restored.load_ensemble_bundle(bundle, trusted=True)
     assert restored.ensemble_plan is not None
     assert restored.fit_result is not None
     again = restored.evaluate_ensemble(partition="test")

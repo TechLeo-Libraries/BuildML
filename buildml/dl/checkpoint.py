@@ -28,6 +28,8 @@ buildml.dl.export : Deployment artifacts, a different job.
 
 from __future__ import annotations
 
+from buildml.core.serialization import require_trusted_deserialize
+
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -201,6 +203,7 @@ def load_torch_bundle(
     module: Any,
     *,
     map_location: str | None = None,
+    trusted: bool = False,
 ) -> TrainResult:
     """Restore a saved run into a module you construct.
 
@@ -221,6 +224,9 @@ def load_torch_bundle(
         Where to deserialise tensors. Defaults to CPU, which loads correctly
         regardless of what the run trained on; move the module afterwards if
         you want it elsewhere.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -285,6 +291,8 @@ def load_torch_bundle(
         )
 
     location = map_location or "cpu"
+    require_trusted_deserialize(trusted=trusted, artifact='torch payload', path=path)
+
     payload = torch.load(trainer_path, map_location=location, weights_only=False)
     if payload.get("format") != BUNDLE_FORMAT:
         raise ValidationError(

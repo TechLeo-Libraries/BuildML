@@ -59,7 +59,7 @@ def test_anomaly_alpha_gate_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    restored.load_anomaly_bundle(bundle)
+    restored.load_anomaly_bundle(bundle, trusted=True)
     again = restored.score_anomalies(partition="validation")
     assert again.flags == scored.flags
 

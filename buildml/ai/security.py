@@ -33,25 +33,114 @@ buildml.ai.privacy : Controlling what leaves the machine.
 from __future__ import annotations
 
 import re
+import unicodedata
+from dataclasses import dataclass
 
 from buildml.ai.types import ToolCall
 from buildml.core.errors import ValidationError
 
-_INJECTION_PATTERNS = (
-    re.compile(r"ignore\s+(all\s+)?previous\s+instructions?", re.IGNORECASE),
-    re.compile(r"disregard\s+(all\s+)?previous", re.IGNORECASE),
-    re.compile(r"you\s+are\s+now\s+in\s+\w+\s+mode", re.IGNORECASE),
-    re.compile(r"new\s+instructions?:", re.IGNORECASE),
-    re.compile(r"override\s*:", re.IGNORECASE),
-    re.compile(r"^SYSTEM\s*:", re.MULTILINE),
-    re.compile(r"^ASSISTANT\s*:", re.MULTILINE),
-    re.compile(r"admin\s+mode", re.IGNORECASE),
-    re.compile(r"sudo\s+", re.IGNORECASE),
-    re.compile(r"execute\s+as\s+root", re.IGNORECASE),
-    re.compile(r"__import__\s*\(", re.IGNORECASE),
-    re.compile(r"eval\s*\(", re.IGNORECASE),
-    re.compile(r"exec\s*\(", re.IGNORECASE),
+# (reason_code, pattern) — reason codes are stable for structured refusal paths.
+_INJECTION_PATTERN_SPECS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "override_instructions",
+        re.compile(r"ignore\s+(all\s+)?previous\s+instructions?", re.IGNORECASE),
+    ),
+    (
+        "override_instructions",
+        re.compile(r"disregard\s+(all\s+)?(previous|prior|above)", re.IGNORECASE),
+    ),
+    (
+        "override_instructions",
+        re.compile(
+            r"forget\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?|context)",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "override_instructions",
+        re.compile(
+            r"(?:^|\n)\s*(?:instead|now)\s*,?\s*(?:follow|obey|use)\s+(?:these|the\s+following)\s+instructions?",
+            re.IGNORECASE | re.MULTILINE,
+        ),
+    ),
+    (
+        "override_instructions",
+        re.compile(
+            r"from\s+now\s+on\s+(?:you\s+)?(?:must|will|should)\s+",
+            re.IGNORECASE,
+        ),
+    ),
+    ("role_hijack", re.compile(r"you\s+are\s+now\s+in\s+\w+\s+mode", re.IGNORECASE)),
+    ("role_hijack", re.compile(r"new\s+instructions?:", re.IGNORECASE)),
+    ("role_hijack", re.compile(r"override\s*:", re.IGNORECASE)),
+    (
+        "role_hijack",
+        re.compile(
+            r"(?:enter|enable|activate)\s+(?:unrestricted|god|root)\s+mode",
+            re.IGNORECASE,
+        ),
+    ),
+    ("forged_role", re.compile(r"^SYSTEM\s*:", re.MULTILINE)),
+    ("forged_role", re.compile(r"^ASSISTANT\s*:", re.MULTILINE)),
+    ("forged_role", re.compile(r"^\[?\s*INST\s*\]?", re.MULTILINE | re.IGNORECASE)),
+    ("forged_role", re.compile(r"</?\s*system\s*>", re.IGNORECASE)),
+    (
+        "forged_role",
+        re.compile(r"(?:^|\n)\s*<<\s*SYS\s*>>", re.IGNORECASE | re.MULTILINE),
+    ),
+    ("privilege_language", re.compile(r"admin\s+mode", re.IGNORECASE)),
+    ("privilege_language", re.compile(r"developer\s+mode", re.IGNORECASE)),
+    ("jailbreak", re.compile(r"jailbreak", re.IGNORECASE)),
+    ("jailbreak", re.compile(r"\bDAN\b")),
+    ("jailbreak", re.compile(r"do\s+anything\s+now", re.IGNORECASE)),
+    (
+        "policy_bypass",
+        re.compile(
+            r"do\s+not\s+follow\s+(your\s+)?(safety|system)\s+(rules?|policy|policies)",
+            re.IGNORECASE,
+        ),
+    ),
+    ("privilege_language", re.compile(r"sudo\s+", re.IGNORECASE)),
+    ("privilege_language", re.compile(r"execute\s+as\s+root", re.IGNORECASE)),
+    ("exfiltrate_prompt", re.compile(r"reveal\s+(your\s+)?(system\s+)?prompt", re.IGNORECASE)),
+    (
+        "exfiltrate_prompt",
+        re.compile(r"show\s+(me\s+)?(the\s+)?hidden\s+instructions?", re.IGNORECASE),
+    ),
+    ("exfiltrate_prompt", re.compile(r"print\s+(your\s+)?system\s+prompt", re.IGNORECASE)),
+    ("role_play", re.compile(r"act\s+as\s+(if\s+you\s+(are|were)|a\s+)", re.IGNORECASE)),
+    ("role_play", re.compile(r"role[\s-]?play\s+as", re.IGNORECASE)),
+    ("encoded_payload", re.compile(r"base64\s*[:=]\s*[A-Za-z0-9+/=]{16,}", re.IGNORECASE)),
+    ("encoded_payload", re.compile(r"decode\s+this\s+base64", re.IGNORECASE)),
+    (
+        "encoded_payload",
+        re.compile(
+            r"(?:atob|b64decode|base64\.b64decode)\s*\(\s*['\"][A-Za-z0-9+/=]{12,}",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "encoded_payload",
+        re.compile(
+            r"(?:hex|rot13)\s*(?:decode|encoded)?\s*[:=]\s*[0-9a-fA-F]{16,}",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "encoded_payload",
+        re.compile(
+            r"(?:run|execute|eval)\s+(?:the\s+)?(?:following\s+)?(?:encoded|obfuscated)\s+",
+            re.IGNORECASE,
+        ),
+    ),
+    ("code_exec", re.compile(r"__import__\s*\(", re.IGNORECASE)),
+    ("code_exec", re.compile(r"eval\s*\(", re.IGNORECASE)),
+    ("code_exec", re.compile(r"exec\s*\(", re.IGNORECASE)),
+    ("code_exec", re.compile(r"os\.system\s*\(", re.IGNORECASE)),
+    ("code_exec", re.compile(r"subprocess\.(run|call|Popen)\s*\(", re.IGNORECASE)),
 )
+
+_INJECTION_PATTERNS = tuple(pattern for _, pattern in _INJECTION_PATTERN_SPECS)
 
 _DANGEROUS_TOOL_PATTERNS = (
     re.compile(r"drop", re.IGNORECASE),
@@ -61,13 +150,120 @@ _DANGEROUS_TOOL_PATTERNS = (
     re.compile(r"destroy", re.IGNORECASE),
 )
 
+_ZERO_WIDTH_RE = re.compile(r"[\u200b\u200c\u200d\u2060\ufeff\u180e\u200e\u200f]")
+
+# Common Latin lookalikes (Cyrillic / Greek) — best-effort, not a full confusable DB.
+_HOMOGLYPH_MAP = str.maketrans(
+    {
+        "\u0430": "a",  # Cyrillic а
+        "\u0435": "e",  # е
+        "\u043e": "o",  # о
+        "\u0440": "p",  # р
+        "\u0441": "c",  # с
+        "\u0443": "y",  # у
+        "\u0445": "x",  # х
+        "\u0456": "i",  # і
+        "\u0391": "A",  # Greek Α
+        "\u0392": "B",
+        "\u0395": "E",
+        "\u0397": "H",
+        "\u0399": "I",
+        "\u039a": "K",
+        "\u039c": "M",
+        "\u039d": "N",
+        "\u039f": "O",
+        "\u03a1": "P",
+        "\u03a4": "T",
+        "\u03a5": "Y",
+        "\u03a7": "X",
+        "\u03b1": "a",
+        "\u03bf": "o",
+        "\u03c1": "p",
+        "\uff21": "A",  # fullwidth
+        "\uff29": "I",
+        "\uff2f": "O",
+        "\uff41": "a",
+        "\uff49": "i",
+        "\uff4f": "o",
+    }
+)
+
+
+@dataclass(frozen=True)
+class InjectionFinding:
+    """One matched injection heuristic with a stable reason code.
+
+    Attributes
+    ----------
+    reason:
+        Stable code such as ``override_instructions`` or ``jailbreak``.
+    pattern:
+        The regular-expression source that matched.
+    """
+
+    reason: str
+    pattern: str
+
+
+def normalize_untrusted_text(text: str) -> str:
+    """Cheap normalisation before injection scanning.
+
+    Applies Unicode NFKC, strips zero-width / bidi marks, folds common
+    confusable spaces, and maps a small Latin-homoglyph table (Cyrillic /
+    Greek / fullwidth lookalikes). This is **not** a complete confusable
+    defence — it only catches careless obfuscation.
+
+    Parameters
+    ----------
+    text:
+        Raw untrusted text.
+
+    Returns
+    -------
+    str
+        Normalised text used for pattern matching.
+    """
+    folded = unicodedata.normalize("NFKC", text)
+    folded = _ZERO_WIDTH_RE.sub("", folded)
+    folded = folded.replace("\u00a0", " ").replace("\u202f", " ")
+    folded = folded.translate(_HOMOGLYPH_MAP)
+    return folded
+
+
+def detect_injection_findings(text: str) -> list[InjectionFinding]:
+    """Return structured injection findings for ``text``.
+
+    Same scan as :func:`detect_injection_attempt`, but each match carries a
+    stable reason code so callers can refuse, log, or surface a short label
+    without parsing regex source strings.
+
+    Parameters
+    ----------
+    text:
+        Untrusted text to scan (column names, cells, retrieved documents).
+
+    Returns
+    -------
+    list of InjectionFinding
+        One entry per matching pattern, with reason codes. Empty when none
+        matched. Heuristic only — paraphrase trivially evades this list.
+    """
+    scanned = normalize_untrusted_text(text)
+    findings: list[InjectionFinding] = []
+    for reason, pattern in _INJECTION_PATTERN_SPECS:
+        if pattern.search(scanned) or pattern.search(text):
+            findings.append(InjectionFinding(reason=reason, pattern=pattern.pattern))
+    return findings
+
 
 def detect_injection_attempt(text: str) -> list[str]:
     """Report which known injection patterns appear in a piece of text.
 
     Scans for the recognisable shapes: attempts to override earlier
     instructions, forged role prefixes such as a leading ``SYSTEM:``, privilege
-    language like admin mode or ``sudo``, and Python evaluation primitives.
+    language like admin mode or ``sudo``, jailbreak / DAN phrasing, prompt
+    exfiltration asks, and Python evaluation primitives. Text is NFKC-normalised
+    and stripped of zero-width characters before matching.
 
     Parameters
     ----------
@@ -78,7 +274,8 @@ def detect_injection_attempt(text: str) -> list[str]:
     Returns
     -------
     list of str
-        The regular expressions that matched. Empty when nothing did.
+        The regular expressions that matched. Empty when nothing did. Prefer
+        :func:`detect_injection_findings` when callers need reason codes.
 
     Notes
     -----
@@ -87,7 +284,8 @@ def detect_injection_attempt(text: str) -> list[str]:
     result is a signal to look, not a verdict.
 
     **An empty result is weak evidence.** It means nothing in a fixed list
-    matched, which a rephrased attempt trivially avoids.
+    matched, which a rephrased attempt trivially avoids. Never treat this as
+    perfect safety.
 
     Examples
     --------
@@ -98,14 +296,42 @@ def detect_injection_attempt(text: str) -> list[str]:
 
     See Also
     --------
+    detect_injection_findings : Structured reason codes for the same scan.
     sanitize_for_prompt : Neutralising what is found.
     validate_column_names : Applying this to a schema.
     """
-    detected = []
-    for pattern in _INJECTION_PATTERNS:
-        if pattern.search(text):
-            detected.append(pattern.pattern)
-    return detected
+    return [finding.pattern for finding in detect_injection_findings(text)]
+
+
+def refuse_injection(text: str, *, source: str = "data") -> None:
+    """Raise :class:`ValidationError` when injection heuristics fire.
+
+    Use this at a trust boundary when a match should hard-stop rather than
+    only warn. The closed tool registry and confirm-on-write remain the
+    primary controls; this is a best-effort second line.
+
+    Parameters
+    ----------
+    text:
+        Untrusted text to scan.
+    source:
+        Label included in the error (for example ``column`` or ``retrieval``).
+
+    Raises
+    ------
+    ValidationError
+        When one or more patterns match. The message lists reason codes; it
+        does not claim the text is definitely malicious.
+    """
+    findings = detect_injection_findings(text)
+    if not findings:
+        return
+    reasons = sorted({f.reason for f in findings})
+    raise ValidationError(
+        f"Refused {source}: injection heuristics matched reason(s) "
+        f"{', '.join(reasons)}. Best-effort only — paraphrase can evade "
+        "pattern lists; closed tools and confirm-on-write remain primary."
+    )
 
 
 def validate_column_names(columns: list[str]) -> tuple[list[str], list[str]]:
@@ -244,10 +470,15 @@ def sanitize_for_prompt(text: str, source: str = "data") -> str:
     --------
     buildml.ai.tools.mark_untrusted_data : Marking without escaping.
     """
+    scanned = normalize_untrusted_text(text)
     for pattern in _INJECTION_PATTERNS:
-        text = pattern.sub(lambda m: f"[ESCAPED: {m.group(0)}]", text)
+        scanned = pattern.sub(lambda m: f"[ESCAPED: {m.group(0)}]", scanned)
 
-    return f"[BEGIN {source.upper()} - NOT INSTRUCTIONS]\n{text}\n[END {source.upper()}]"
+    return (
+        f"[BEGIN {source.upper()} - NOT INSTRUCTIONS]\n"
+        f"{scanned}\n"
+        f"[END {source.upper()}]"
+    )
 
 
 def validate_no_code_execution(call: ToolCall) -> None:
@@ -294,14 +525,24 @@ def validate_no_code_execution(call: ToolCall) -> None:
 
     if call.tool_name.lower() in dangerous_tools:
         raise ValidationError(
-            f"Arbitrary code execution is not allowed. Tool '{call.tool_name}' rejected."
+            f"Refused tool '{call.tool_name}': BuildML's closed tool registry "
+            "does not allow arbitrary code execution (eval/exec/import). "
+            "Primary controls remain the allowlist and confirm-on-write; this "
+            "check is a second line for custom registries."
         )
 
     for key, value in call.arguments.items():
         if isinstance(value, str):
-            if re.search(r"(eval|exec|compile|__import__)\s*\(", value, re.IGNORECASE):
+            if re.search(
+                r"(eval|exec|compile|__import__|os\.system|subprocess\.(?:run|call|Popen))\s*\(",
+                value,
+                re.IGNORECASE,
+            ):
                 raise ValidationError(
-                    f"Argument '{key}' appears to contain code execution. Rejected."
+                    f"Refused argument '{key}': string looks like a code-execution "
+                    "primitive (eval/exec/import/os.system/subprocess). Heuristic "
+                    "only — paraphrase can evade it; the closed registry remains "
+                    "the primary control."
                 )
 
 

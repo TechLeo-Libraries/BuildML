@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
 
-from buildml.core.errors import ValidationError
-from buildml.data.splits import PartitionName
+if TYPE_CHECKING:
+    from buildml.session.session import Session
+
 from buildml.activelearning.checkpoint import (
     load_active_learning_bundle,
     save_active_learning_bundle,
@@ -26,6 +27,8 @@ from buildml.activelearning.types import (
     ActiveLearningEstimator,
     ActiveLearningStrategy,
 )
+from buildml.core.errors import ValidationError
+from buildml.data.splits import PartitionName
 
 PartitionOrAll = PartitionName | Literal["all"]
 
@@ -378,7 +381,7 @@ def save_active_learning_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_active_learning_bundle_op(session, path: str | Path) -> Any:
+def load_active_learning_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load an active-learning bundle into this Session.
 
     Delegates to
@@ -391,13 +394,16 @@ def load_active_learning_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded active-learning plan.
     path:
         Path to a ``buildml.activelearning_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with active-learning plan attached for chaining.
     """
-    plan = load_active_learning_bundle(path)
+    plan = load_active_learning_bundle(path, trusted=trusted)
     session._activelearning_plan = plan
     session._activelearning_fit_result = None
     session._activelearning_query_result = None
@@ -408,4 +414,4 @@ def load_active_learning_bundle_op(session, path: str | Path) -> Any:
         {"path": str(path), "strategy": plan.strategy},
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

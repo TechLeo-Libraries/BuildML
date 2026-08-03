@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from buildml.core.industry_markers import platform_skip_entry
 from buildml.forecasting.extras import (
     industry_forecast_available,
     neuralforecast_available,
@@ -265,8 +266,12 @@ def forecast_capability_matrix() -> dict[str, Any]:
                     "N-BEATS via NeuralForecast (buildml[timeseries-ml]); "
                     "Python/platform markers may skip the pin on Py3.13."
                 ),
+                **platform_skip_entry("neuralforecast", extra="timeseries-ml"),
             },
         },
+        "platform_markers": [
+            platform_skip_entry("neuralforecast", extra="timeseries-ml"),
+        ],
         "default_method_when_installed": DEFAULT_INDUSTRY_METHOD,
         "fallback_method": DEFAULT_TABULAR_METHOD,
         "methods": list(list_forecast_methods()),

@@ -65,6 +65,6 @@ def test_ensemble_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
-    restored.load_ensemble_bundle(ens_bundle)
+    restored.load_ensemble_bundle(ens_bundle, trusted=True)
     again = restored.evaluate_ensemble(partition="test")
     assert again.n_rows == blend_eval.n_rows

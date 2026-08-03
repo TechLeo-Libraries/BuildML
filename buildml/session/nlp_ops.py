@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -966,24 +969,37 @@ def summarize_text_op(
 def save_nlp_bundle_op(session, path: str | Path) -> Path:
     """Persist the active NLP plan(s) as ``buildml.nlp_bundle.v1``.
 
-    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+    The bundle carries the normalization recipe alongside the train-fitted
+    representation and head, which is what lets a reload reproduce a
+    holdout score exactly instead of approximately. A topic plan is
+    included when one has been fitted.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     path:
-        Filesystem path for load or save.
+        Directory to write. Created if missing, and overwritten if it
+        already holds a bundle.
 
     Returns
     -------
-    Path
-        Resolved filesystem path written or loaded.
+    pathlib.Path
+        The directory written.
 
     Raises
     ------
-    ValidationError
-        When prerequisites are missing or inputs are invalid.
+    ~buildml.core.errors.ValidationError
+        Neither a text plan nor a topic plan has been fitted, so there is
+        nothing to save.
+
+    Notes
+    -----
+    Bundles and Session checkpoints are complementary, not
+    interchangeable — see
+    :data:`buildml.nlp.checkpoint.CHECKPOINT_BOUNDARY`. A checkpoint stores
+    data, roles, splits, and history; it does not embed the vectorizer or
+    the head.
     """
     text_plan = getattr(session, "_nlp_text_plan", None)
     topic_plan = getattr(session, "_nlp_topic_plan", None)
@@ -1012,19 +1028,35 @@ def save_nlp_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_nlp_bundle_op(session, path: str | Path):
-    """Load an NLP bundle into this Session.
+def load_nlp_bundle_op(session, path: str | Path, *, trusted: bool = False):
+    """Restore a saved text plan, and topic plan, into this Session.
 
-    Thin Session facade over ``buildml.nlp``; records the call and stores NLP artifacts on the Session for follow-up steps.
+    Scoring resumes without refitting, because the normalization recipe
+    travelled with the representation. The Session still needs its own
+    dataset, roles, and split — the bundle carries the model, not the
+    workflow.
 
     Parameters
     ----------
     session:
-        Active Session with dataset and optional split plan attached.
+        Active Session instance this operation mutates or reads.
     path:
-        Filesystem path for load or save.
+        Directory previously written by ``save_nlp_bundle``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
+
+    Returns
+    -------
+    Session
+        This Session, so the call chains.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        The directory is not a readable ``buildml.nlp_bundle.v1``.
     """
-    text_plan, topic_plan = load_nlp_bundle(path)
+    text_plan, topic_plan = load_nlp_bundle(path, trusted=trusted)
     session._nlp_text_plan = text_plan
     session._nlp_topic_plan = topic_plan
     session._nlp_fit_result = None
@@ -1048,4 +1080,4 @@ def load_nlp_bundle_op(session, path: str | Path):
             ),
         },
     )
-    return session
+    return cast("Session", session)

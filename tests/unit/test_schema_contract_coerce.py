@@ -86,7 +86,7 @@ def test_predict_coerces_compatible_string_numerics(tmp_path) -> None:
     from buildml.pipeline import predict_from_pipeline
 
     holdout = pd.DataFrame({"age": ["41.0", "39.5"], "income": ["51", "48"]})
-    scored = predict_from_pipeline(pipe, holdout, apply_plans=False)
+    scored = predict_from_pipeline(pipe, holdout, apply_plans=False, trusted=True)
     assert scored.n_rows == 2
     assert scored.contract_validation is not None
     assert scored.contract_validation.ok

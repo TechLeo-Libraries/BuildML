@@ -25,7 +25,7 @@ def test_ingest_roles_split_impute_checkpoint_reattach(tmp_path: Path) -> None:
 
     path = tmp_path / "flow_ckpt"
     session.checkpoint_save(path)
-    restored = Session.checkpoint_load(path)
+    restored = Session.checkpoint_load(path, trusted=True)
 
     assert restored.reattach_result is not None
     assert restored.reattach_result.status == "resume"

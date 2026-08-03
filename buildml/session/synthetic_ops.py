@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -16,7 +19,13 @@ from buildml.synthetic.explain_hooks import (
 )
 from buildml.synthetic.fit import fit_synthesizer
 from buildml.synthetic.sample import sample_and_maybe_merge
-from buildml.synthetic.types import EvalBackend, EvalMode, MergeMode, SyntheticBackend, SynthesizerMethod
+from buildml.synthetic.types import (
+    EvalBackend,
+    EvalMode,
+    MergeMode,
+    SynthesizerMethod,
+    SyntheticBackend,
+)
 from buildml.synthetic.validation import validate_synthetic
 
 
@@ -369,7 +378,7 @@ def save_synthetic_bundle_op(session, path: str | Path) -> Path:
     return destination
 
 
-def load_synthetic_bundle_op(session, path: str | Path):
+def load_synthetic_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a synthetic-data bundle into this Session.
 
     Delegates to :func:`buildml.synthetic.checkpoint.load_synthetic_bundle`
@@ -381,13 +390,16 @@ def load_synthetic_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded synthesizer plan.
     path:
         Path to a ``buildml.synthetic_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with synthesizer plan attached for chaining.
     """
-    plan = load_synthetic_bundle(path)
+    plan = load_synthetic_bundle(path, trusted=trusted)
     session._synthesizer_plan = plan
     session._synthetic_fit_result = None
     session._synthetic_eval_result = None
@@ -397,4 +409,4 @@ def load_synthetic_bundle_op(session, path: str | Path):
         {"path": str(path)},
         result_summary={"path": str(path), "method": plan.method},
     )
-    return session
+    return cast("Session", session)

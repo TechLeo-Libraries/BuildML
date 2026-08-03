@@ -56,6 +56,6 @@ def test_unsupervised_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"pc_1": "feature", "pc_2": "feature", "segment": "ignore"})
         .split(test_size=0.2, validation_size=0.2, random_state=0)
     )
-    restored.load_unsupervised_bundle(bundle)
+    restored.load_unsupervised_bundle(bundle, trusted=True)
     again = restored.assign_clusters(partition="validation")
     assert again.labels == assigned.labels

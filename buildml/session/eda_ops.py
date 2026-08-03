@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
-from buildml.session._imports import *  # noqa: F403
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
+
+from buildml.session._imports import (
+    EDAReport,
+    explore_dataset,
+)
 
 
 def eda(
@@ -17,42 +26,93 @@ def eda(
     export_figures: str | Path | None = None,
     html_format: Literal['studio', 'research'] = "studio",
 ) -> EDAReport:
-    """Run exploratory data analysis on the attached dataset.
+    """Understand the data before you model it.
 
-    Delegates to :func:`buildml.eda.explore.explore_dataset`, enriches the
-    report with Session workflow status, stores it on Session, and records
-    the operation. Follow with :func:`eda_app` for the Teaching Studio UI or
-    export paths for offline artifacts.
+    Modelling before looking at the data is how people discover, three
+    weeks in, that a column is 80% missing, that two features are the same
+    number in different units, or that the target is nearly constant. This
+    runs the checks that would have caught it.
+
+    The screens cover data quality (missing values, constant and duplicate
+    columns, suspicious cardinality), distributions and their skew,
+    correlations between features and multicollinearity via VIF and PCA,
+    mutual information against the target, and outlier detection. When a
+    split exists it also compares train against test and reports drift —
+    systematic differences between the two that would make your holdout
+    estimate misleading.
+
+    The output is narrated rather than dumped. Each finding comes with what
+    it means and what to consider doing about it.
 
     Parameters
     ----------
     session:
-        Active Session with an ingested dataset (optional split plan for drift).
+        Active Session instance this operation mutates or reads.
     include_plots:
-        Render adaptive plots (requires ``pip install 'buildml[viz]'``).
+        Generate charts alongside the statistics. The plots are chosen to
+        suit each column's type and distribution rather than drawn
+        uniformly. Requires ``pip install 'buildml[viz]'``.
     show:
-        Print the narrative summary.
+        Print the narrative summary to standard output, for notebook use.
     sample_rows:
-        Optional analysis sample size for large datasets.
+        Analyse a random sample of this many rows instead of all of them.
+        Worth setting on a large table, where the statistics stabilise long
+        before the row count is exhausted.
     max_columns:
-        Maximum columns used by detailed analyzers. Dataset-wide quality
-        checks still cover the full schema.
+        How many columns the detailed analysers cover. Dataset-wide quality
+        checks still see every column; this caps the expensive per-column
+        work on very wide tables.
     max_plots:
-        Cap on adaptive plot specifications.
+        Upper bound on charts generated, so a wide table does not produce
+        hundreds of figures.
     export_html:
-        Optional path for a self-contained HTML artifact. Default format is
-        an offline Teaching Studio snapshot (same surface as ``eda_app``).
+        Path for a self-contained HTML report — the artefact to share with
+        someone who will not run the code.
     export_figures:
-        Optional directory for saved PNG figures.
+        Directory to write individual PNG figures into.
     html_format:
-        ``"studio"`` (default) writes the offline Teaching Studio; ``"research"``
-        writes the layered research HTML shell with matplotlib embeds.
+        ``'studio'`` writes the interactive offline studio layout, the same
+        surface :meth:`eda_app` serves. ``'research'`` writes a layered
+        document with embedded matplotlib figures, better suited to reading
+        top to bottom.
 
     Returns
     -------
-    EDAReport
-        Structured EDA report with overview, recommendations, narrative, and
-        optional plots. Use :func:`eda_app` to explore interactively.
+    ~buildml.eda.report.EDAReport
+        The findings, their interpretation, the recommendations drawn from
+        them, and paths to anything exported. Also stored on
+        :attr:`last_eda`.
+
+    Raises
+    ------
+    ~buildml.core.errors.ValidationError
+        No dataset is attached.
+    ~buildml.core.errors.MissingExtraError
+        Plots were requested without ``buildml[viz]`` installed.
+
+    Notes
+    -----
+    **Leakage:** Exploration is how analysts leak without noticing. Every
+    pattern you find by looking at the whole dataset — including the test
+    rows — informs decisions you then make about the model, so the test set
+    stops being independent. Split first, and explore the training rows.
+    The drift comparison is the exception: it exists precisely to compare
+    partitions and reports only aggregate differences.
+
+    **Scale:** Correlation and mutual-information analysis grows quickly
+    with column count. Use ``sample_rows`` and ``max_columns`` on wide or
+    tall tables.
+
+    Examples
+    --------
+    >>> report = session.eda(export_html="reports/eda.html")  # doctest: +SKIP
+    >>> report.recommendations[:2]  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.eda_app : The same analysis, served interactively.
+    Session.head : A quick look rather than a full profile.
+    Session.error_slices : Where the model fails, after fitting.
     """
     report = explore_dataset(
         session.dataset,
@@ -122,35 +182,76 @@ def eda_app(
     max_columns: int = 100,
     blocking: bool = False,
 ) -> Any:
-    """Launch the local EDA Teaching Studio web app.
+    """Explore the data interactively in a browser instead of on paper.
 
-    Runs a FastAPI process on the local host and opens a browser to an
-    interactive product UI (domain boards, Teaching Studio, Concept Academy,
-    Plotly charts, PDF/CSV export). Requires ``pip install 'buildml[dashboard]'``.
+    Starts a local web server and opens the EDA studio: the same analysis
+    :meth:`eda` produces, but navigable — click into a column to see its
+    distribution, sort correlations, filter findings, read the concept
+    explanations behind each screen, and export what you find as PDF or
+    CSV.
+
+    The advantage over a static report is following a thread. Noticing that
+    one column is skewed usually prompts a question about a second column,
+    and clicking is faster than re-running an analysis with different
+    arguments.
+
+    Nothing leaves your machine: the server binds to localhost by default.
+    Requires ``pip install 'buildml[dashboard]'``.
 
     Parameters
     ----------
     session:
-        Active Session; uses ``session._last_eda`` or runs :func:`eda` when
-        ``report`` is omitted.
+        Active Session instance this operation mutates or reads.
     report:
-        Optional existing :class:`~buildml.eda.report.EDAReport`. When omitted,
-        uses the last ``eda()`` result or runs a fresh analysis.
-    host, port:
-        Local bind address for the ASGI server.
+        An existing :class:`~buildml.eda.report.EDAReport` to display.
+        ``None`` reuses :attr:`last_eda` if present, and otherwise runs a
+        fresh analysis first.
+    host:
+        Address to bind to. The default keeps the app on this machine;
+        change it only if you intend the app to be reachable from
+        elsewhere, and understand that your data becomes reachable too.
+    port:
+        Port to serve on. Change it if the default is already taken.
     open_browser:
-        Open the system browser when the server is ready.
+        Open your browser automatically once the server is ready.
     title:
-        App header title.
-    sample_rows, max_columns:
-        Forwarded to ``eda()`` when a fresh report must be computed.
+        Heading shown in the app, useful when several are running.
+    sample_rows:
+        Row sample size, forwarded to :meth:`eda` when a fresh report has
+        to be computed.
+    max_columns:
+        Column cap, forwarded to :meth:`eda` on a fresh computation.
     blocking:
-        If True, serve on the current thread until interrupted.
+        Serve on the current thread until interrupted, rather than
+        returning immediately. Use this in a script that would otherwise
+        exit and take the server with it; leave it off in a notebook, where
+        you want the cell to finish.
 
     Returns
     -------
-    EDAAppHandle
-        Handle with ``url``, ``stop()``, and ``is_running``.
+    ~buildml.dashboard.launch.EDAAppHandle
+        A handle exposing ``url``, ``is_running``, and ``stop()``. Call
+        ``stop()`` when finished — a non-blocking server keeps running
+        until you do.
+
+    Raises
+    ------
+    ~buildml.core.errors.MissingExtraError
+        ``buildml[dashboard]`` is not installed.
+    ~buildml.core.errors.ValidationError
+        No dataset is attached and no report was supplied.
+
+    Examples
+    --------
+    >>> app = session.eda_app()  # doctest: +SKIP
+    >>> app.url  # doctest: +SKIP
+    'http://127.0.0.1:8765'
+    >>> app.stop()  # doctest: +SKIP
+
+    See Also
+    --------
+    Session.eda : The same analysis as a static report.
+    Session.open_eda_dashboard : An alias for this method.
     """
     from buildml.dashboard.launch import launch_eda_app
 
@@ -200,34 +301,47 @@ def open_eda_dashboard(
     max_columns: int = 100,
     blocking: bool = False,
 ) -> Any:
-    """Launch the EDA Teaching Studio (alias for :func:`eda_app`).
+    """Open the interactive EDA studio — an alias for :meth:`eda_app`.
 
-    Identical to :func:`eda_app`; kept for notebooks that expect a
-    ``open_eda_dashboard`` entry point. Delegates all arguments to
-    :func:`eda_app`.
+    Identical behaviour under a more discoverable name. See
+    :meth:`eda_app` for the full description of every argument.
 
     Parameters
     ----------
     session:
-        Active Session passed through to :func:`eda_app`.
+        Active Session instance this operation mutates or reads.
     report:
-        Optional existing EDA report; forwarded unchanged.
-    host, port:
-        Local bind address for the ASGI server.
+        Existing report to display, or ``None`` to reuse or compute one.
+    host:
+        Address to bind to.
+    port:
+        Port to serve on.
     open_browser:
-        Open the system browser when the server is ready.
+        Open the system browser once the server is ready.
     title:
-        App header title shown in the Teaching Studio.
-    sample_rows, max_columns:
-        Forwarded to :func:`eda` when a fresh report must be computed.
+        Heading shown in the app.
+    sample_rows:
+        Row sample size when a fresh report must be computed.
+    max_columns:
+        Column cap when a fresh report must be computed.
     blocking:
-        When True, serve on the current thread until interrupted.
+        Serve on the current thread until interrupted.
 
     Returns
     -------
-    EDAAppHandle
-        Handle with ``url``, ``stop()``, and ``is_running`` — same as
-        :func:`eda_app`.
+    ~buildml.dashboard.launch.EDAAppHandle
+        A handle exposing ``url``, ``is_running``, and ``stop()``.
+
+    Raises
+    ------
+    ~buildml.core.errors.MissingExtraError
+        ``buildml[dashboard]`` is not installed.
+    ~buildml.core.errors.ValidationError
+        No dataset is attached and no report was supplied.
+
+    See Also
+    --------
+    Session.eda_app : The method this delegates to.
     """
     return session.eda_app(
         report=report,

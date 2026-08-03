@@ -274,7 +274,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore an incremental learner + update history without refitting.",
         "Online-learning bundle load.",
         ("Validate bundle format.", "Attach OnlinePlan; clear fit/update/eval/predict slots."),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory with meta.json + online_plan.joblib.",),
         outputs=("Session with online_plan attached.",),
         prerequisites=(DATASET,),

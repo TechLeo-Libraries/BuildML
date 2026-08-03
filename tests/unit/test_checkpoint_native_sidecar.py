@@ -43,7 +43,7 @@ def test_checkpoint_sidecar_roundtrip_polars_lazy(tmp_path: Path) -> None:
     assert "native_sidecar" in meta
     assert "lazy_intent" in meta
 
-    restored = Session.checkpoint_load(ckpt)
+    restored = Session.checkpoint_load(ckpt, trusted=True)
     assert restored.dataset.engine == EngineName.POLARS
     assert restored.dataset.mode == DataMode.LAZY
     assert restored.dataset.has_native
@@ -66,7 +66,7 @@ def test_checkpoint_sidecar_roundtrip_duckdb(tmp_path: Path) -> None:
     session.checkpoint_save(ckpt)
     assert (ckpt / "data" / "native_sidecar.parquet").exists()
 
-    restored = Session.checkpoint_load(ckpt)
+    restored = Session.checkpoint_load(ckpt, trusted=True)
     assert restored.dataset.engine == EngineName.DUCKDB
     assert restored.dataset.has_native
     assert restored.reattach_result is not None
@@ -83,6 +83,6 @@ def test_checkpoint_without_sidecar_stays_backward_compatible(tmp_path: Path) ->
     ckpt = tmp_path / "ckpt_pd"
     session.checkpoint_save(ckpt)
     assert not (ckpt / "data" / "native_sidecar.parquet").exists()
-    restored = Session.checkpoint_load(ckpt)
+    restored = Session.checkpoint_load(ckpt, trusted=True)
     assert restored.dataset.engine == EngineName.PANDAS
     assert not restored.dataset.has_native

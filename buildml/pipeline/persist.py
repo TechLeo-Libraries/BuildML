@@ -24,6 +24,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.model.supervised import FitResult
 
@@ -81,7 +82,7 @@ def save_fit_result(path: str | Path, fit_result: FitResult) -> Path:
     return root
 
 
-def load_fit_result(path: str | Path) -> FitResult:
+def load_fit_result(path: str | Path, *, trusted: bool = False) -> FitResult:
     """Restore the estimator and the feature contract it was saved with.
 
     Both files must be present. An estimator without its metadata gives no way
@@ -93,6 +94,9 @@ def load_fit_result(path: str | Path) -> FitResult:
     ----------
     path:
         The directory written by :func:`save_fit_result`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -127,7 +131,7 @@ def load_fit_result(path: str | Path) -> FitResult:
     meta_path = root / "meta.json"
     if not model_path.exists() or not meta_path.exists():
         raise ValidationError(f"Fit artifact incomplete at '{root}'")
-    estimator = joblib.load(model_path)
+    estimator = joblib_load_trusted(model_path, trusted=trusted, artifact="joblib plan")
     meta: dict[str, Any] = json.loads(meta_path.read_text(encoding="utf-8"))
     return FitResult(
         estimator=estimator,

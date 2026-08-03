@@ -16,6 +16,11 @@ The layout is a plain directory of Parquet and JSON, readable without BuildML.
 Engine-native query plans cannot be serialised, so a Polars or DuckDB table is
 snapshotted to Parquet and reattached on load.
 
+**Security:** optional ``plans.joblib`` is a pickle/joblib payload. Load
+checkpoints only from directories you created or fully trust — untrusted
+``plans.joblib`` can execute code on load. Prefer data-only restore or
+re-fitting preprocess plans when the provenance of a bundle is unclear.
+
 See Also
 --------
 buildml.pipeline : Bundles that carry a fitted model for inference.
@@ -37,6 +42,11 @@ import pandas as pd
 
 from buildml._version import __version__
 from buildml.checkpoint.validate import ReattachResult, validate_reattach
+from buildml.core.serialization import (
+    assert_local_load_path,
+    joblib_load_trusted,
+    verify_manifest_hashes,
+)
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole, DataMode, EngineName, TableSchema, coerce_data_mode
 from buildml.data.dataset import Dataset
@@ -308,7 +318,12 @@ def save_checkpoint(
     return root
 
 
-def load_checkpoint(path: str | Path, *, data_only: bool = False) -> LoadedCheckpoint:
+def load_checkpoint(
+    path: str | Path,
+    *,
+    data_only: bool = False,
+    trusted: bool = False,
+) -> LoadedCheckpoint:
     """Restore a checkpoint, and say how much of it could safely be trusted.
 
     Reading the files back is the easy part. The question this answers is
@@ -330,7 +345,12 @@ def load_checkpoint(path: str | Path, *, data_only: bool = False) -> LoadedCheck
         Ignore all metadata and treat the checkpoint as a fresh ingest of its
         data file. Useful when the roles or splits are known to be stale and you
         intend to redefine them, but it discards the split, so scores after this
-        are not comparable with scores from before.
+        are not comparable with scores from before. When ``True``, ``plans.joblib``
+        is not loaded and ``trusted`` is not required.
+    trusted:
+        Required ``True`` to deserialize ``plans.joblib`` (pickle/joblib). Pass
+        only for checkpoint trees you created or fully trust. Defaults to
+        ``False`` so untrusted paths cannot execute code via pickle.
 
     Returns
     -------
@@ -340,9 +360,9 @@ def load_checkpoint(path: str | Path, *, data_only: bool = False) -> LoadedCheck
     Raises
     ------
     ValidationError
-        If no data file is found at the path, or if reattach is blocked —
+        If no data file is found at the path, if reattach is blocked —
         meaning the current data is incompatible enough that resuming would be
-        misleading. The messages name the specific mismatches.
+        misleading — or if ``plans.joblib`` is present and ``trusted`` is false.
 
     Notes
     -----
@@ -364,7 +384,7 @@ def load_checkpoint(path: str | Path, *, data_only: bool = False) -> LoadedCheck
     save_checkpoint : Writing what this reads.
     buildml.checkpoint.validate.validate_reattach : How the verdict is decided.
     """
-    root = Path(path)
+    root = assert_local_load_path(path, artifact="checkpoint")
     data_path = root / "data" / "frame.parquet"
     if not data_path.exists():
         # Allow a bare parquet path for flexibility.
@@ -380,6 +400,10 @@ def load_checkpoint(path: str | Path, *, data_only: bool = False) -> LoadedCheck
     splits_payload = None if data_only else _read_json(root / "splits.json")
     history_payload = None if data_only else _read_json(root / "history.json")
     manifest = None if data_only else _read_json(root / "MANIFEST.json")
+
+    # Verify recorded member hashes when present (tamper detection; not trust).
+    if isinstance(manifest, dict) and isinstance(manifest.get("hashes"), dict):
+        verify_manifest_hashes(root, manifest["hashes"])
 
     reattach = validate_reattach(
         current_schema=schema,
@@ -440,7 +464,14 @@ def load_checkpoint(path: str | Path, *, data_only: bool = False) -> LoadedCheck
     if not data_only and plans_path.exists():
         from buildml.pipeline.bundle import unpack_plans_payload
 
-        loaded = joblib.load(plans_path)
+        # plans.joblib is pickle/joblib — only load trusted checkpoint trees.
+        logger.warning(
+            "Loading plans.joblib from %s via joblib (pickle). "
+            "Only continue if you trust this checkpoint directory; "
+            "untrusted pickles can execute arbitrary code.",
+            plans_path,
+        )
+        loaded = joblib_load_trusted(plans_path, trusted=trusted, artifact="joblib plan")
         plans, _plans_format = unpack_plans_payload(loaded)
 
     return LoadedCheckpoint(

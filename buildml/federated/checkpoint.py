@@ -9,6 +9,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.federated.results import (
     FederatedEvalResult,
@@ -86,7 +87,7 @@ def save_federated_bundle(
     return destination
 
 
-def load_federated_bundle(path: str | Path) -> FederatedPlan:
+def load_federated_bundle(path: str | Path, *, trusted: bool = False) -> FederatedPlan:
     """Load a federated-learning bundle into a :class:`FederatedPlan`.
 
     Validates bundle format version and plan object type before returning.
@@ -95,6 +96,9 @@ def load_federated_bundle(path: str | Path) -> FederatedPlan:
     ----------
     path:
         Bundle directory containing ``meta.json`` and ``federated_plan.joblib``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -121,7 +125,7 @@ def load_federated_bundle(path: str | Path) -> FederatedPlan:
             f"Unsupported federated-learning bundle format {fmt!r}; "
             f"expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, FederatedPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

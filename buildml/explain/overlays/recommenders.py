@@ -209,7 +209,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore RecommenderPlan from buildml.recommender_bundle.v1.",
         "Recommender bundle load.",
         ("Read meta.json + recommender_plan.joblib.", "Attach plan; clear live results."),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory.",),
         outputs=("Session with recommender_plan attached.",),
         prerequisites=(DATASET,),

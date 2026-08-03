@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -396,7 +399,7 @@ def save_ssl_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_ssl_bundle_op(session, path: str | Path) -> Any:
+def load_ssl_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load a self-supervised bundle into this Session.
 
     Delegates to :func:`buildml.selfsupervised.checkpoint.load_ssl_bundle`
@@ -408,13 +411,16 @@ def load_ssl_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded SSLPlan.
     path:
         Path to a ``buildml.ssl_bundle.v2`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with SSLPlan and optional head plan attached.
     """
-    plan, head = load_ssl_bundle(path)
+    plan, head = load_ssl_bundle(path, trusted=trusted)
     session._ssl_plan = plan
     session._ssl_head_plan = head
     session._ssl_fit_result = None
@@ -430,4 +436,4 @@ def load_ssl_bundle_op(session, path: str | Path) -> Any:
         },
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

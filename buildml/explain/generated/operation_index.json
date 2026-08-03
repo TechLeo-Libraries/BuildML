@@ -1,5 +1,5 @@
 {
-  "n_operations": 303,
+  "n_operations": 304,
   "operations": {
     "act_rl": {
       "doc_summary": "Choose actions under the fitted RL policy.",
@@ -36,7 +36,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.act_rl"
+      "qualname": "RlSessionMixin.act_rl"
     },
     "activelearning_capability_matrix": {
       "doc_summary": "Report which active-learning query strategies are available on this machine.",
@@ -44,7 +44,7 @@
       "is_staticmethod": true,
       "name": "activelearning_capability_matrix",
       "parameters": [],
-      "qualname": "Session.activelearning_capability_matrix"
+      "qualname": "ActivelearningSessionMixin.activelearning_capability_matrix"
     },
     "adapt_to_task": {
       "doc_summary": "Fast-adapt the meta-learner to one task's labeled support set.",
@@ -88,7 +88,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.adapt_to_task"
+      "qualname": "MetalearningSessionMixin.adapt_to_task"
     },
     "ai_advisor": {
       "doc_summary": "Get advisory Q&A guidance about the current workflow (read-only).",
@@ -118,7 +118,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ai_advisor"
+      "qualname": "AiSessionMixin.ai_advisor"
     },
     "ai_configure": {
       "doc_summary": "Configure an AI provider for LLM-assisted workflow guidance.",
@@ -183,7 +183,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ai_configure"
+      "qualname": "AiSessionMixin.ai_configure"
     },
     "ai_dry_run": {
       "doc_summary": "Preview the full prompt payload without calling the provider.",
@@ -206,7 +206,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ai_dry_run"
+      "qualname": "AiSessionMixin.ai_dry_run"
     },
     "ai_egress_preview": {
       "doc_summary": "Preview what data will leave the machine before an LLM call.",
@@ -236,7 +236,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ai_egress_preview"
+      "qualname": "AiSessionMixin.ai_egress_preview"
     },
     "ai_execute": {
       "doc_summary": "Execute a single tool with propose-confirm-execute flow.",
@@ -266,7 +266,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ai_execute"
+      "qualname": "AiSessionMixin.ai_execute"
     },
     "ai_plan": {
       "doc_summary": "Generate a structured workflow plan for a goal (read-only).",
@@ -296,7 +296,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ai_plan"
+      "qualname": "AiSessionMixin.ai_plan"
     },
     "ai_run_autonomous": {
       "doc_summary": "Explicit autonomy mode with hard caps (see :mod:`buildml.ai.autonomous`).",
@@ -354,7 +354,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ai_run_autonomous"
+      "qualname": "AiSessionMixin.ai_run_autonomous"
     },
     "ai_run_plan": {
       "doc_summary": "Execute a multi-step plan with confirmation gating.",
@@ -405,7 +405,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ai_run_plan"
+      "qualname": "AiSessionMixin.ai_run_plan"
     },
     "ai_status": {
       "doc_summary": "Get AI operator status including provider, egress, budget, and autonomy.",
@@ -413,7 +413,7 @@
       "is_staticmethod": false,
       "name": "ai_status",
       "parameters": [],
-      "qualname": "Session.ai_status"
+      "qualname": "AiSessionMixin.ai_status"
     },
     "analyze_sentiment": {
       "doc_summary": "Score a partition's documents for sentiment.",
@@ -471,7 +471,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.analyze_sentiment"
+      "qualname": "NlpSessionMixin.analyze_sentiment"
     },
     "analyze_timeseries": {
       "doc_summary": "Run time-series analysis on train-only or full-dataset scope.",
@@ -571,7 +571,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.analyze_timeseries"
+      "qualname": "TimeseriesSessionMixin.analyze_timeseries"
     },
     "anomaly_capability_matrix": {
       "doc_summary": "Return the anomaly backend/method capability matrix for this install.",
@@ -579,7 +579,7 @@
       "is_staticmethod": true,
       "name": "anomaly_capability_matrix",
       "parameters": [],
-      "qualname": "Session.anomaly_capability_matrix"
+      "qualname": "AnomalySessionMixin.anomaly_capability_matrix"
     },
     "apply_custom_transform": {
       "doc_summary": "Run a transform you registered, with the same leakage guarantees.",
@@ -609,7 +609,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.apply_custom_transform"
+      "qualname": "PreprocessSessionMixin.apply_custom_transform"
     },
     "apply_decisions": {
       "doc_summary": "Apply the frozen DecisionPlan to a partition or candidate frame.",
@@ -632,7 +632,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.apply_decisions"
+      "qualname": "DecisionSessionMixin.apply_decisions"
     },
     "apply_preprocess_plans": {
       "doc_summary": "Replay fitted preprocessing on new rows, in the original order.",
@@ -669,7 +669,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.apply_preprocess_plans"
+      "qualname": "PreprocessSessionMixin.apply_preprocess_plans"
     },
     "assert_can_fit": {
       "doc_summary": "Refuse to continue unless fitting is confined to the train rows.",
@@ -685,7 +685,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.assert_can_fit"
+      "qualname": "DataSessionMixin.assert_can_fit"
     },
     "assign_clusters": {
       "doc_summary": "Assign cluster labels with the train-fitted plan without refitting.",
@@ -708,7 +708,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.assign_clusters"
+      "qualname": "UnsupervisedSessionMixin.assign_clusters"
     },
     "assign_topics": {
       "doc_summary": "Transform a partition into per-document topic weights.",
@@ -724,7 +724,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.assign_topics"
+      "qualname": "NlpSessionMixin.assign_topics"
     },
     "attach_backbone_head": {
       "doc_summary": "Attach a classification head to the Session pretrained backbone.",
@@ -747,7 +747,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.attach_backbone_head"
+      "qualname": "DlSessionMixin.attach_backbone_head"
     },
     "automl_capability_matrix": {
       "doc_summary": "Report which AutoML search backends and model families are available here.",
@@ -755,7 +755,7 @@
       "is_staticmethod": true,
       "name": "automl_capability_matrix",
       "parameters": [],
-      "qualname": "Session.automl_capability_matrix"
+      "qualname": "AutomlSessionMixin.automl_capability_matrix"
     },
     "bin": {
       "doc_summary": "Group a continuous column into bands, trading detail for shape.",
@@ -792,7 +792,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.bin"
+      "qualname": "PreprocessSessionMixin.bin"
     },
     "calibration": {
       "doc_summary": "Check whether predicted probabilities mean what they claim.",
@@ -822,7 +822,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.calibration"
+      "qualname": "ClassicalSessionMixin.calibration"
     },
     "causal_capability_matrix": {
       "doc_summary": "Report which causal inference backends and estimators are available here.",
@@ -830,7 +830,7 @@
       "is_staticmethod": true,
       "name": "causal_capability_matrix",
       "parameters": [],
-      "qualname": "Session.causal_capability_matrix"
+      "qualname": "CausalSessionMixin.causal_capability_matrix"
     },
     "cbr_capability_matrix": {
       "doc_summary": "Report which case-based retrieval backends are available on this machine.",
@@ -838,7 +838,7 @@
       "is_staticmethod": true,
       "name": "cbr_capability_matrix",
       "parameters": [],
-      "qualname": "Session.cbr_capability_matrix"
+      "qualname": "CbrSessionMixin.cbr_capability_matrix"
     },
     "checkpoint_load": {
       "doc_summary": "Restore a saved session and check the data still matches.",
@@ -859,9 +859,16 @@
           "kind": "KEYWORD_ONLY",
           "name": "data_only",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.checkpoint_load"
+      "qualname": "DataSessionMixin.checkpoint_load"
     },
     "checkpoint_save": {
       "doc_summary": "Save the whole session so you can stop and pick up where you left off.",
@@ -898,7 +905,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.checkpoint_save"
+      "qualname": "DataSessionMixin.checkpoint_save"
     },
     "close_native": {
       "doc_summary": "Close the DuckDB connection this session owns, if it has one.",
@@ -906,7 +913,7 @@
       "is_staticmethod": false,
       "name": "close_native",
       "parameters": [],
-      "qualname": "Session.close_native"
+      "qualname": "DataSessionMixin.close_native"
     },
     "compare_models": {
       "doc_summary": "Try several models on the same data and rank what you get.",
@@ -943,7 +950,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.compare_models"
+      "qualname": "ClassicalSessionMixin.compare_models"
     },
     "cross_validate_torch": {
       "doc_summary": "Fold-local Torch CV on the attached numeric tabular dataset.",
@@ -1022,7 +1029,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.cross_validate_torch"
+      "qualname": "DlSessionMixin.cross_validate_torch"
     },
     "cv_score": {
       "doc_summary": "Score a model across several rotating holdouts, not just one.",
@@ -1087,7 +1094,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.cv_score"
+      "qualname": "ClassicalSessionMixin.cv_score"
     },
     "decision_capability_matrix": {
       "doc_summary": "Return the decision/optimization capability matrix for this install.",
@@ -1095,7 +1102,7 @@
       "is_staticmethod": true,
       "name": "decision_capability_matrix",
       "parameters": [],
-      "qualname": "Session.decision_capability_matrix"
+      "qualname": "DecisionSessionMixin.decision_capability_matrix"
     },
     "declare_causal_assumptions": {
       "doc_summary": "Declare identification assumptions required before causal estimation.",
@@ -1167,7 +1174,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.declare_causal_assumptions"
+      "qualname": "CausalSessionMixin.declare_causal_assumptions"
     },
     "detect_language": {
       "doc_summary": "Identify the language of every document in a partition.",
@@ -1204,7 +1211,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.detect_language"
+      "qualname": "NlpSessionMixin.detect_language"
     },
     "dl_capability_matrix": {
       "doc_summary": "Report which deep-learning modalities and backends are available here.",
@@ -1212,7 +1219,7 @@
       "is_staticmethod": true,
       "name": "dl_capability_matrix",
       "parameters": [],
-      "qualname": "Session.dl_capability_matrix"
+      "qualname": "DlSessionMixin.dl_capability_matrix"
     },
     "domain_adapt_speech_torch": {
       "doc_summary": "Domain-adapt / finetune-lite speech classify (not FM continued pretrain).",
@@ -1305,7 +1312,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.domain_adapt_speech_torch"
+      "qualname": "DlSessionMixin.domain_adapt_speech_torch"
     },
     "drop_columns": {
       "doc_summary": "Remove columns you do not want the model to see.",
@@ -1321,7 +1328,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.drop_columns"
+      "qualname": "PreprocessSessionMixin.drop_columns"
     },
     "dry_run": {
       "doc_summary": "See what an operation would do, without doing it.",
@@ -1344,7 +1351,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.dry_run"
+      "qualname": "WorkflowSessionMixin.dry_run"
     },
     "eda": {
       "doc_summary": "Understand the data before you model it.",
@@ -1409,7 +1416,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.eda"
+      "qualname": "EdaSessionMixin.eda"
     },
     "eda_app": {
       "doc_summary": "Explore the data interactively in a browser instead of on paper.",
@@ -1474,7 +1481,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.eda_app"
+      "qualname": "EdaSessionMixin.eda_app"
     },
     "emit_k8s_ddp_job": {
       "doc_summary": "Emit a Kubernetes Job YAML for torchrun multi-node DDP (template only).",
@@ -1574,7 +1581,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.emit_k8s_ddp_job"
+      "qualname": "DlSessionMixin.emit_k8s_ddp_job"
     },
     "emit_k8s_serve_deployment": {
       "doc_summary": "Emit a Kubernetes Deployment+Service YAML for managed serve (template only).",
@@ -1653,7 +1660,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.emit_k8s_serve_deployment"
+      "qualname": "DlSessionMixin.emit_k8s_serve_deployment"
     },
     "encode": {
       "doc_summary": "Turn category labels into numbers a model can work with.",
@@ -1704,7 +1711,15 @@
           "required": false
         }
       ],
-      "qualname": "Session.encode"
+      "qualname": "PreprocessSessionMixin.encode"
+    },
+    "ensemble_capability_matrix": {
+      "doc_summary": "Report ensemble strategies available with core sklearn.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "ensemble_capability_matrix",
+      "parameters": [],
+      "qualname": "EnsembleSessionMixin.ensemble_capability_matrix"
     },
     "error_slices": {
       "doc_summary": "Break performance down by subgroup, to find where the model fails.",
@@ -1748,7 +1763,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.error_slices"
+      "qualname": "ClassicalSessionMixin.error_slices"
     },
     "estimate_causal": {
       "doc_summary": "Estimate ATE on a partition using the fitted CausalPlan.",
@@ -1778,7 +1793,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.estimate_causal"
+      "qualname": "CausalSessionMixin.estimate_causal"
     },
     "eval_plots": {
       "doc_summary": "Draw the standard diagnostic charts for a fitted model, in one call.",
@@ -1843,7 +1858,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.eval_plots"
+      "qualname": "ClassicalSessionMixin.eval_plots"
     },
     "evaluate": {
       "doc_summary": "Measure the fitted model, and explain what the measurement means.",
@@ -1880,7 +1895,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate"
+      "qualname": "ClassicalSessionMixin.evaluate"
     },
     "evaluate_active_learning": {
       "doc_summary": "Evaluate the active learner on labeled rows of a holdout partition.",
@@ -1903,7 +1918,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_active_learning"
+      "qualname": "ActivelearningSessionMixin.evaluate_active_learning"
     },
     "evaluate_anomaly": {
       "doc_summary": "Evaluate train-fitted anomaly scores on a labeled holdout partition.",
@@ -1947,7 +1962,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_anomaly"
+      "qualname": "AnomalySessionMixin.evaluate_anomaly"
     },
     "evaluate_asr": {
       "doc_summary": "Score ASR hypotheses vs references (WER/CER); reuse last transcription texts.",
@@ -1977,7 +1992,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_asr"
+      "qualname": "DlSessionMixin.evaluate_asr"
     },
     "evaluate_automl": {
       "doc_summary": "Evaluate the last AutoML winner with classical supervised metrics.",
@@ -1993,7 +2008,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_automl"
+      "qualname": "AutomlSessionMixin.evaluate_automl"
     },
     "evaluate_causal": {
       "doc_summary": "Evaluate nuisance predictive quality and ATE on a holdout partition.",
@@ -2016,7 +2031,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_causal"
+      "qualname": "CausalSessionMixin.evaluate_causal"
     },
     "evaluate_cbr": {
       "doc_summary": "Evaluate CBR on a holdout partition.",
@@ -2039,7 +2054,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_cbr"
+      "qualname": "CbrSessionMixin.evaluate_cbr"
     },
     "evaluate_clusters": {
       "doc_summary": "Evaluate train-fitted clusters on a holdout partition.",
@@ -2118,7 +2133,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_clusters"
+      "qualname": "UnsupervisedSessionMixin.evaluate_clusters"
     },
     "evaluate_decisions": {
       "doc_summary": "Evaluate the frozen DecisionPlan on a holdout partition.",
@@ -2134,7 +2149,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_decisions"
+      "qualname": "DecisionSessionMixin.evaluate_decisions"
     },
     "evaluate_ensemble": {
       "doc_summary": "Evaluate the last native ensemble with classical supervised metrics.",
@@ -2150,7 +2165,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_ensemble"
+      "qualname": "EnsembleSessionMixin.evaluate_ensemble"
     },
     "evaluate_federated": {
       "doc_summary": "Evaluate the global federated model on a holdout partition.",
@@ -2180,7 +2195,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_federated"
+      "qualname": "FederatedSessionMixin.evaluate_federated"
     },
     "evaluate_forecast": {
       "doc_summary": "Evaluate the train-fitted ForecastPlan on a holdout partition.",
@@ -2203,7 +2218,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_forecast"
+      "qualname": "ForecastSessionMixin.evaluate_forecast"
     },
     "evaluate_graph": {
       "doc_summary": "Evaluate node classification on a holdout graph partition.",
@@ -2219,7 +2234,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_graph"
+      "qualname": "GraphSessionMixin.evaluate_graph"
     },
     "evaluate_imitation": {
       "doc_summary": "Evaluate BC against held-out demonstration actions.",
@@ -2235,7 +2250,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_imitation"
+      "qualname": "RlSessionMixin.evaluate_imitation"
     },
     "evaluate_kg": {
       "doc_summary": "Evaluate link prediction with filtered MRR and Hits@K.",
@@ -2258,7 +2273,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_kg"
+      "qualname": "KgSessionMixin.evaluate_kg"
     },
     "evaluate_metalearning": {
       "doc_summary": "Run episodic holdout evaluation without meta-training on holdout.",
@@ -2309,7 +2324,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_metalearning"
+      "qualname": "MetalearningSessionMixin.evaluate_metalearning"
     },
     "evaluate_multitask": {
       "doc_summary": "Evaluate the multi-task plan on a holdout partition without refitting.",
@@ -2325,7 +2340,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_multitask"
+      "qualname": "MultitaskSessionMixin.evaluate_multitask"
     },
     "evaluate_neuro_symbolic": {
       "doc_summary": "Evaluate the neuro-symbolic plan on a holdout partition.",
@@ -2341,7 +2356,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_neuro_symbolic"
+      "qualname": "SymbolicSessionMixin.evaluate_neuro_symbolic"
     },
     "evaluate_online": {
       "doc_summary": "Evaluate the online learner on a holdout partition without updating it.",
@@ -2364,7 +2379,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_online"
+      "qualname": "OnlineSessionMixin.evaluate_online"
     },
     "evaluate_probabilistic": {
       "doc_summary": "Evaluate the probabilistic plan on a holdout partition.",
@@ -2387,7 +2402,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_probabilistic"
+      "qualname": "ProbabilisticSessionMixin.evaluate_probabilistic"
     },
     "evaluate_ranker": {
       "doc_summary": "Evaluate per-query ranking metrics on a holdout partition.",
@@ -2417,7 +2432,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_ranker"
+      "qualname": "RankingSessionMixin.evaluate_ranker"
     },
     "evaluate_recommender": {
       "doc_summary": "Evaluate ranking metrics on a holdout partition (frozen train plan).",
@@ -2440,7 +2455,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_recommender"
+      "qualname": "RecommenderSessionMixin.evaluate_recommender"
     },
     "evaluate_rl": {
       "doc_summary": "Evaluate RL (offline bandit metrics or Gymnasium rollouts).",
@@ -2484,7 +2499,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_rl"
+      "qualname": "RlSessionMixin.evaluate_rl"
     },
     "evaluate_semisupervised": {
       "doc_summary": "Evaluate the semi-supervised plan on labeled rows of a holdout partition.",
@@ -2507,7 +2522,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_semisupervised"
+      "qualname": "SemisupervisedSessionMixin.evaluate_semisupervised"
     },
     "evaluate_ssl": {
       "doc_summary": "Evaluate frozen SSL pretext encoder and head on a labeled partition.",
@@ -2530,7 +2545,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_ssl"
+      "qualname": "SelfsupervisedSessionMixin.evaluate_ssl"
     },
     "evaluate_symbolic": {
       "doc_summary": "Evaluate the symbolic plan on a holdout partition.",
@@ -2546,7 +2561,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_symbolic"
+      "qualname": "SymbolicSessionMixin.evaluate_symbolic"
     },
     "evaluate_synthetic": {
       "doc_summary": "Evaluate the frozen synthesizer for fidelity or TSTR utility.",
@@ -2597,7 +2612,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_synthetic"
+      "qualname": "SyntheticSessionMixin.evaluate_synthetic"
     },
     "evaluate_tda": {
       "doc_summary": "Evaluate the TDA head on a holdout partition.",
@@ -2641,7 +2656,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_tda"
+      "qualname": "TdaSessionMixin.evaluate_tda"
     },
     "evaluate_text_classifier": {
       "doc_summary": "Evaluate the text classifier on a holdout partition.",
@@ -2657,7 +2672,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_text_classifier"
+      "qualname": "NlpSessionMixin.evaluate_text_classifier"
     },
     "evaluate_torch": {
       "doc_summary": "Evaluate the last Torch trainer on a named partition.",
@@ -2680,7 +2695,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evaluate_torch"
+      "qualname": "DlSessionMixin.evaluate_torch"
     },
     "evolutionary_search": {
       "doc_summary": "Evolve a population of configurations across generations.",
@@ -2822,7 +2837,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.evolutionary_search"
+      "qualname": "ClassicalSessionMixin.evolutionary_search"
     },
     "explain": {
       "doc_summary": "Ask what an operation does, in plain language, at any point.",
@@ -2852,7 +2867,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.explain"
+      "qualname": "WorkflowSessionMixin.explain"
     },
     "export_round_history": {
       "doc_summary": "Export federated round metrics to JSON for audit and teaching overlays.",
@@ -2875,7 +2890,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.export_round_history"
+      "qualname": "FederatedSessionMixin.export_round_history"
     },
     "export_torch": {
       "doc_summary": "Export the last Torch trainer to TorchScript or ONNX.",
@@ -2919,7 +2934,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.export_torch"
+      "qualname": "DlSessionMixin.export_torch"
     },
     "extract_dates": {
       "doc_summary": "Break timestamps apart into the calendar parts a model can use.",
@@ -2949,7 +2964,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.extract_dates"
+      "qualname": "PreprocessSessionMixin.extract_dates"
     },
     "extract_entities": {
       "doc_summary": "Extract entity mentions from a partition's documents.",
@@ -3014,7 +3029,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.extract_entities"
+      "qualname": "NlpSessionMixin.extract_entities"
     },
     "extract_keyphrases": {
       "doc_summary": "Rank keyphrases for a partition with an unsupervised scorer.",
@@ -3114,7 +3129,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.extract_keyphrases"
+      "qualname": "NlpSessionMixin.extract_keyphrases"
     },
     "feature_importance": {
       "doc_summary": "Measure which features the model genuinely depends on.",
@@ -3151,7 +3166,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.feature_importance"
+      "qualname": "ClassicalSessionMixin.feature_importance"
     },
     "federated_capability_matrix": {
       "doc_summary": "Report which federated learning backends are available on this machine.",
@@ -3159,7 +3174,7 @@
       "is_staticmethod": true,
       "name": "federated_capability_matrix",
       "parameters": [],
-      "qualname": "Session.federated_capability_matrix"
+      "qualname": "FederatedSessionMixin.federated_capability_matrix"
     },
     "finetune_ssl_head": {
       "doc_summary": "Fit a supervised head on frozen SSL embeddings using labeled train rows.",
@@ -3189,7 +3204,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.finetune_ssl_head"
+      "qualname": "SelfsupervisedSessionMixin.finetune_ssl_head"
     },
     "fit": {
       "doc_summary": "Train a model on the training rows.",
@@ -3212,7 +3227,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit"
+      "qualname": "ClassicalSessionMixin.fit"
     },
     "fit_active_learner": {
       "doc_summary": "Fit or initialize the active learner on labeled train rows only.",
@@ -3326,7 +3341,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_active_learner"
+      "qualname": "ActivelearningSessionMixin.fit_active_learner"
     },
     "fit_anomaly": {
       "doc_summary": "Fit an anomaly detector on the train partition only.",
@@ -3503,7 +3518,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_anomaly"
+      "qualname": "AnomalySessionMixin.fit_anomaly"
     },
     "fit_blending": {
       "doc_summary": "Fit a holdout-blend ensemble on the train partition only.",
@@ -3568,7 +3583,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_blending"
+      "qualname": "EnsembleSessionMixin.fit_blending"
     },
     "fit_causal": {
       "doc_summary": "Fit causal models on this Session train and estimate ATE.",
@@ -3633,7 +3648,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_causal"
+      "qualname": "CausalSessionMixin.fit_causal"
     },
     "fit_cbr": {
       "doc_summary": "Build a case base from Session train.",
@@ -3754,7 +3769,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_cbr"
+      "qualname": "CbrSessionMixin.fit_cbr"
     },
     "fit_clusters": {
       "doc_summary": "Fit a clusterer on the train partition only.",
@@ -3973,7 +3988,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_clusters"
+      "qualname": "UnsupervisedSessionMixin.fit_clusters"
     },
     "fit_decision_policy": {
       "doc_summary": "Fit a decision policy on train or validation without refitting the model.",
@@ -4129,7 +4144,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_decision_policy"
+      "qualname": "DecisionSessionMixin.fit_decision_policy"
     },
     "fit_federated": {
       "doc_summary": "Simulate federated averaging on this Session train clients.",
@@ -4229,7 +4244,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_federated"
+      "qualname": "FederatedSessionMixin.fit_federated"
     },
     "fit_forecast": {
       "doc_summary": "Fit a classical forecaster on the train partition only.",
@@ -4350,7 +4365,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_forecast"
+      "qualname": "ForecastSessionMixin.fit_forecast"
     },
     "fit_graph": {
       "doc_summary": "Fit graph node classification on Session train nodes.",
@@ -4464,7 +4479,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_graph"
+      "qualname": "GraphSessionMixin.fit_graph"
     },
     "fit_imitation": {
       "doc_summary": "Fit behavioral cloning on Session train demonstrations.",
@@ -4543,7 +4558,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_imitation"
+      "qualname": "RlSessionMixin.fit_imitation"
     },
     "fit_kg": {
       "doc_summary": "Fit a knowledge-graph embedding model on Session train triples only.",
@@ -4643,7 +4658,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_kg"
+      "qualname": "KgSessionMixin.fit_kg"
     },
     "fit_metalearning": {
       "doc_summary": "Meta-train on episodic tasks carved from the train partition only.",
@@ -4785,7 +4800,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_metalearning"
+      "qualname": "MetalearningSessionMixin.fit_metalearning"
     },
     "fit_multitask": {
       "doc_summary": "Fit a multi-target estimator on the train partition only.",
@@ -4892,7 +4907,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_multitask"
+      "qualname": "MultitaskSessionMixin.fit_multitask"
     },
     "fit_neuro_symbolic": {
       "doc_summary": "Fit a sklearn + symbolic hybrid on Session train.",
@@ -5013,7 +5028,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_neuro_symbolic"
+      "qualname": "SymbolicSessionMixin.fit_neuro_symbolic"
     },
     "fit_online": {
       "doc_summary": "Warm-start an incremental estimator on the first train chunk.",
@@ -5162,7 +5177,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_online"
+      "qualname": "OnlineSessionMixin.fit_online"
     },
     "fit_probabilistic": {
       "doc_summary": "Fit a Bayesian or probabilistic estimator on this Session train only.",
@@ -5262,7 +5277,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_probabilistic"
+      "qualname": "ProbabilisticSessionMixin.fit_probabilistic"
     },
     "fit_ranker": {
       "doc_summary": "Fit a tabular ranker on Session train rows only.",
@@ -5397,7 +5412,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_ranker"
+      "qualname": "RankingSessionMixin.fit_ranker"
     },
     "fit_recommender": {
       "doc_summary": "Fit a recommender on Session train interactions only.",
@@ -5511,7 +5526,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_recommender"
+      "qualname": "RecommenderSessionMixin.fit_recommender"
     },
     "fit_rl": {
       "doc_summary": "Fit a contextual bandit (core) or a Gymnasium env policy (``buildml[rl]``).",
@@ -5660,7 +5675,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_rl"
+      "qualname": "RlSessionMixin.fit_rl"
     },
     "fit_semisupervised": {
       "doc_summary": "Fit a semi-supervised classifier on labeled and unlabeled train rows.",
@@ -5830,7 +5845,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_semisupervised"
+      "qualname": "SemisupervisedSessionMixin.fit_semisupervised"
     },
     "fit_speech_torch": {
       "doc_summary": "Fine-tune a tiny speech encoder + classifier head (finetune-lite).",
@@ -5923,7 +5938,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_speech_torch"
+      "qualname": "DlSessionMixin.fit_speech_torch"
     },
     "fit_ssl_pretext": {
       "doc_summary": "Fit a self-supervised pretext encoder on the train partition only.",
@@ -6086,7 +6101,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_ssl_pretext"
+      "qualname": "SelfsupervisedSessionMixin.fit_ssl_pretext"
     },
     "fit_stacking": {
       "doc_summary": "Fit a stacking ensemble on the train partition only.",
@@ -6137,7 +6152,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_stacking"
+      "qualname": "EnsembleSessionMixin.fit_stacking"
     },
     "fit_symbolic": {
       "doc_summary": "Compile or induce a symbolic rule base on Session train.",
@@ -6237,7 +6252,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_symbolic"
+      "qualname": "SymbolicSessionMixin.fit_symbolic"
     },
     "fit_synthesizer": {
       "doc_summary": "Fit a tabular synthesizer on Session train rows only.",
@@ -6323,7 +6338,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_synthesizer"
+      "qualname": "SyntheticSessionMixin.fit_synthesizer"
     },
     "fit_tda": {
       "doc_summary": "Fit TDA features and optional supervised head on Session train only.",
@@ -6458,7 +6473,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_tda"
+      "qualname": "TdaSessionMixin.fit_tda"
     },
     "fit_text_classifier": {
       "doc_summary": "Fit a single-label document classifier on Session train.",
@@ -6649,7 +6664,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_text_classifier"
+      "qualname": "NlpSessionMixin.fit_text_classifier"
     },
     "fit_topics": {
       "doc_summary": "Fit an unsupervised topic model on Session train documents.",
@@ -6756,7 +6771,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_topics"
+      "qualname": "NlpSessionMixin.fit_topics"
     },
     "fit_torch": {
       "doc_summary": "Train an ``nn.Module`` on the train Torch loader.",
@@ -6877,7 +6892,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_torch"
+      "qualname": "DlSessionMixin.fit_torch"
     },
     "fit_torch_ddp": {
       "doc_summary": "DDP training via a fresh ``module_factory`` per process.",
@@ -6942,7 +6957,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_torch_ddp"
+      "qualname": "DlSessionMixin.fit_torch_ddp"
     },
     "fit_voting": {
       "doc_summary": "Fit a voting ensemble on the train partition only.",
@@ -6979,7 +6994,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.fit_voting"
+      "qualname": "EnsembleSessionMixin.fit_voting"
     },
     "forecast_capability_matrix": {
       "doc_summary": "Report which forecasting backends and model families are available here.",
@@ -6987,7 +7002,7 @@
       "is_staticmethod": true,
       "name": "forecast_capability_matrix",
       "parameters": [],
-      "qualname": "Session.forecast_capability_matrix"
+      "qualname": "ForecastSessionMixin.forecast_capability_matrix"
     },
     "generate_forecast": {
       "doc_summary": "Generate an H-step forecast from the train-fitted ForecastPlan.",
@@ -7017,7 +7032,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.generate_forecast"
+      "qualname": "ForecastSessionMixin.generate_forecast"
     },
     "graph_capability_matrix": {
       "doc_summary": "Report which graph machine-learning backends are available here.",
@@ -7025,7 +7040,7 @@
       "is_staticmethod": true,
       "name": "graph_capability_matrix",
       "parameters": [],
-      "qualname": "Session.graph_capability_matrix"
+      "qualname": "GraphSessionMixin.graph_capability_matrix"
     },
     "grid_search": {
       "doc_summary": "Try every combination of the settings you list, and keep the best.",
@@ -7111,7 +7126,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.grid_search"
+      "qualname": "ClassicalSessionMixin.grid_search"
     },
     "group_split": {
       "doc_summary": "Split by entity, so no customer appears on both sides.",
@@ -7148,7 +7163,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.group_split"
+      "qualname": "DataSessionMixin.group_split"
     },
     "handle_outliers": {
       "doc_summary": "Find extreme numeric values, and decide what to do about them.",
@@ -7192,7 +7207,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.handle_outliers"
+      "qualname": "PreprocessSessionMixin.handle_outliers"
     },
     "head": {
       "doc_summary": "Look at the first few rows.",
@@ -7208,7 +7223,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.head"
+      "qualname": "DataSessionMixin.head"
     },
     "impute": {
       "doc_summary": "Fill in missing values, using only what the training rows reveal.",
@@ -7238,7 +7253,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.impute"
+      "qualname": "PreprocessSessionMixin.impute"
     },
     "ingest": {
       "doc_summary": "Create a session by loading a table, and inspect it while loading.",
@@ -7289,7 +7304,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ingest"
+      "qualname": "DataSessionMixin.ingest"
     },
     "inject_split": {
       "doc_summary": "Adopt a split that was decided outside BuildML.",
@@ -7319,7 +7334,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.inject_split"
+      "qualname": "DataSessionMixin.inject_split"
     },
     "interpret_text_prediction": {
       "doc_summary": "Explain document decisions with per-token contributions.",
@@ -7363,7 +7378,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.interpret_text_prediction"
+      "qualname": "NlpSessionMixin.interpret_text_prediction"
     },
     "kg_capability_matrix": {
       "doc_summary": "Report which knowledge-graph learning backends are available on this machine.",
@@ -7371,7 +7386,7 @@
       "is_staticmethod": true,
       "name": "kg_capability_matrix",
       "parameters": [],
-      "qualname": "Session.kg_capability_matrix"
+      "qualname": "KgSessionMixin.kg_capability_matrix"
     },
     "label_rows": {
       "doc_summary": "Incorporate user-provided labels on train-pool rows and optionally refit.",
@@ -7401,7 +7416,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.label_rows"
+      "qualname": "ActivelearningSessionMixin.label_rows"
     },
     "learn": {
       "doc_summary": "Teach a concept, an operation, or a term \u2014 and say what to read first.",
@@ -7424,7 +7439,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.learn"
+      "qualname": "WorkflowSessionMixin.learn"
     },
     "learning_curve": {
       "doc_summary": "Find out whether more data would help, before you go and get it.",
@@ -7468,7 +7483,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.learning_curve"
+      "qualname": "ClassicalSessionMixin.learning_curve"
     },
     "list_transforms": {
       "doc_summary": "List the custom transforms currently registered.",
@@ -7476,7 +7491,7 @@
       "is_staticmethod": false,
       "name": "list_transforms",
       "parameters": [],
-      "qualname": "Session.list_transforms"
+      "qualname": "PreprocessSessionMixin.list_transforms"
     },
     "load_active_learning_bundle": {
       "doc_summary": "Load an active-learning bundle into this Session.",
@@ -7490,9 +7505,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_active_learning_bundle"
+      "qualname": "ActivelearningSessionMixin.load_active_learning_bundle"
     },
     "load_ai_transcript": {
       "doc_summary": "Load an AI transcript for resume or audit.",
@@ -7508,7 +7530,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.load_ai_transcript"
+      "qualname": "AiSessionMixin.load_ai_transcript"
     },
     "load_anomaly_bundle": {
       "doc_summary": "Load an anomaly bundle into this Session.",
@@ -7522,9 +7544,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_anomaly_bundle"
+      "qualname": "AnomalySessionMixin.load_anomaly_bundle"
     },
     "load_automl_bundle": {
       "doc_summary": "Load an AutoML bundle into this Session.",
@@ -7538,9 +7567,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_automl_bundle"
+      "qualname": "AutomlSessionMixin.load_automl_bundle"
     },
     "load_causal_bundle": {
       "doc_summary": "Load a causal bundle into this Session.",
@@ -7554,9 +7590,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_causal_bundle"
+      "qualname": "CausalSessionMixin.load_causal_bundle"
     },
     "load_cbr_bundle": {
       "doc_summary": "Load a CBR bundle into this Session.",
@@ -7570,9 +7613,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_cbr_bundle"
+      "qualname": "CbrSessionMixin.load_cbr_bundle"
     },
     "load_decision_bundle": {
       "doc_summary": "Load a decision bundle into this Session.",
@@ -7586,9 +7636,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_decision_bundle"
+      "qualname": "DecisionSessionMixin.load_decision_bundle"
     },
     "load_ensemble_bundle": {
       "doc_summary": "Load an ensemble bundle into this Session.",
@@ -7602,9 +7659,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_ensemble_bundle"
+      "qualname": "EnsembleSessionMixin.load_ensemble_bundle"
     },
     "load_federated_bundle": {
       "doc_summary": "Load a federated-learning bundle into this Session.",
@@ -7618,9 +7682,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_federated_bundle"
+      "qualname": "FederatedSessionMixin.load_federated_bundle"
     },
     "load_forecast_bundle": {
       "doc_summary": "Load a forecast bundle into this Session.",
@@ -7634,9 +7705,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_forecast_bundle"
+      "qualname": "ForecastSessionMixin.load_forecast_bundle"
     },
     "load_graph_bundle": {
       "doc_summary": "Load a graph bundle into this Session.",
@@ -7650,9 +7728,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_graph_bundle"
+      "qualname": "GraphSessionMixin.load_graph_bundle"
     },
     "load_imitation_bundle": {
       "doc_summary": "Load an imitation bundle into this Session.",
@@ -7666,9 +7751,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_imitation_bundle"
+      "qualname": "RlSessionMixin.load_imitation_bundle"
     },
     "load_kg_bundle": {
       "doc_summary": "Load a knowledge-graph bundle into this Session.",
@@ -7682,9 +7774,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_kg_bundle"
+      "qualname": "KgSessionMixin.load_kg_bundle"
     },
     "load_metalearning_bundle": {
       "doc_summary": "Load a meta-learning bundle into this Session.",
@@ -7698,9 +7797,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_metalearning_bundle"
+      "qualname": "MetalearningSessionMixin.load_metalearning_bundle"
     },
     "load_model": {
       "doc_summary": "Load an estimator bundle written by :meth:`save_model`.",
@@ -7714,9 +7820,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_model"
+      "qualname": "ClassicalSessionMixin.load_model"
     },
     "load_multitask_bundle": {
       "doc_summary": "Load a multi-task bundle into this Session.",
@@ -7730,9 +7843,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_multitask_bundle"
+      "qualname": "MultitaskSessionMixin.load_multitask_bundle"
     },
     "load_nlp_bundle": {
       "doc_summary": "Restore a saved text plan, and topic plan, into this Session.",
@@ -7746,9 +7866,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_nlp_bundle"
+      "qualname": "NlpSessionMixin.load_nlp_bundle"
     },
     "load_online_bundle": {
       "doc_summary": "Load an online-learning bundle into this Session.",
@@ -7762,9 +7889,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_online_bundle"
+      "qualname": "OnlineSessionMixin.load_online_bundle"
     },
     "load_pipeline": {
       "doc_summary": "Restore a saved model together with its preprocessing.",
@@ -7778,9 +7912,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_pipeline"
+      "qualname": "ClassicalSessionMixin.load_pipeline"
     },
     "load_pretrained_backbone": {
       "doc_summary": "Load a curated pretrained vision/audio/speech backbone (integration hook).",
@@ -7831,7 +7972,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.load_pretrained_backbone"
+      "qualname": "DlSessionMixin.load_pretrained_backbone"
     },
     "load_probabilistic_bundle": {
       "doc_summary": "Load a probabilistic bundle into this Session.",
@@ -7845,9 +7986,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_probabilistic_bundle"
+      "qualname": "ProbabilisticSessionMixin.load_probabilistic_bundle"
     },
     "load_rag_bundle": {
       "doc_summary": "Load a RAG bundle into this Session (requires ``buildml[rag]``).",
@@ -7863,7 +8011,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.load_rag_bundle"
+      "qualname": "RagSessionMixin.load_rag_bundle"
     },
     "load_ranker_bundle": {
       "doc_summary": "Load a ranker bundle into this Session.",
@@ -7877,9 +8025,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_ranker_bundle"
+      "qualname": "RankingSessionMixin.load_ranker_bundle"
     },
     "load_recommender_bundle": {
       "doc_summary": "Load a recommender bundle into this Session.",
@@ -7893,9 +8048,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_recommender_bundle"
+      "qualname": "RecommenderSessionMixin.load_recommender_bundle"
     },
     "load_rl_bundle": {
       "doc_summary": "Load an RL bundle into this Session.",
@@ -7909,9 +8071,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_rl_bundle"
+      "qualname": "RlSessionMixin.load_rl_bundle"
     },
     "load_semisupervised_bundle": {
       "doc_summary": "Load a semi-supervised bundle into this Session.",
@@ -7925,9 +8094,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_semisupervised_bundle"
+      "qualname": "SemisupervisedSessionMixin.load_semisupervised_bundle"
     },
     "load_ssl_bundle": {
       "doc_summary": "Load a self-supervised bundle into this Session.",
@@ -7941,9 +8117,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_ssl_bundle"
+      "qualname": "SelfsupervisedSessionMixin.load_ssl_bundle"
     },
     "load_symbolic_bundle": {
       "doc_summary": "Load a symbolic bundle into this Session.",
@@ -7957,9 +8140,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_symbolic_bundle"
+      "qualname": "SymbolicSessionMixin.load_symbolic_bundle"
     },
     "load_synthetic_bundle": {
       "doc_summary": "Load a synthetic-data bundle into this Session.",
@@ -7973,9 +8163,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_synthetic_bundle"
+      "qualname": "SyntheticSessionMixin.load_synthetic_bundle"
     },
     "load_tda_bundle": {
       "doc_summary": "Load a TDA bundle into this Session.",
@@ -7989,9 +8186,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_tda_bundle"
+      "qualname": "TdaSessionMixin.load_tda_bundle"
     },
     "load_torch_bundle": {
       "doc_summary": "Load a Torch trainer bundle into this Session.",
@@ -8019,9 +8223,16 @@
           "kind": "KEYWORD_ONLY",
           "name": "map_location",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_torch_bundle"
+      "qualname": "DlSessionMixin.load_torch_bundle"
     },
     "load_unsupervised_bundle": {
       "doc_summary": "Load an unsupervised clustering bundle into this Session.",
@@ -8035,9 +8246,16 @@
           "kind": "POSITIONAL_OR_KEYWORD",
           "name": "path",
           "required": true
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.load_unsupervised_bundle"
+      "qualname": "UnsupervisedSessionMixin.load_unsupervised_bundle"
     },
     "make_audio_multimodal_torch_loaders": {
       "doc_summary": "Build audio multimodal loaders (audio \u2295 tabular and/or text and/or image).",
@@ -8179,7 +8397,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.make_audio_multimodal_torch_loaders"
+      "qualname": "DlSessionMixin.make_audio_multimodal_torch_loaders"
     },
     "make_image_multimodal_torch_loaders": {
       "doc_summary": "Build image multimodal loaders (image \u2295 tabular and/or text and/or audio).",
@@ -8321,7 +8539,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.make_image_multimodal_torch_loaders"
+      "qualname": "DlSessionMixin.make_image_multimodal_torch_loaders"
     },
     "make_multimodal_torch_loaders": {
       "doc_summary": "Build fused multimodal DataLoaders (tabular/text/image/audio mixes).",
@@ -8477,7 +8695,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.make_multimodal_torch_loaders"
+      "qualname": "DlSessionMixin.make_multimodal_torch_loaders"
     },
     "make_speech_torch_loaders": {
       "doc_summary": "Build speech classification loaders (finetune-lite encoder path).",
@@ -8549,7 +8767,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.make_speech_torch_loaders"
+      "qualname": "DlSessionMixin.make_speech_torch_loaders"
     },
     "make_text_torch_loaders": {
       "doc_summary": "Build token-id DataLoaders for text classification (non-tabular modality).",
@@ -8607,7 +8825,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.make_text_torch_loaders"
+      "qualname": "DlSessionMixin.make_text_torch_loaders"
     },
     "make_torch_loaders": {
       "doc_summary": "Build Torch DataLoaders from current roles and split partitions.",
@@ -8679,7 +8897,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.make_torch_loaders"
+      "qualname": "DlSessionMixin.make_torch_loaders"
     },
     "metadata": {
       "doc_summary": "Take a serialisable snapshot of everything the session knows.",
@@ -8687,7 +8905,7 @@
       "is_staticmethod": false,
       "name": "metadata",
       "parameters": [],
-      "qualname": "Session.metadata"
+      "qualname": "DataSessionMixin.metadata"
     },
     "metalearning_capability_matrix": {
       "doc_summary": "Report which meta-learning backends and algorithms are available here.",
@@ -8695,7 +8913,7 @@
       "is_staticmethod": true,
       "name": "metalearning_capability_matrix",
       "parameters": [],
-      "qualname": "Session.metalearning_capability_matrix"
+      "qualname": "MetalearningSessionMixin.metalearning_capability_matrix"
     },
     "multitask_capability_matrix": {
       "doc_summary": "Report which multi-task learning backends are available on this machine.",
@@ -8703,7 +8921,7 @@
       "is_staticmethod": true,
       "name": "multitask_capability_matrix",
       "parameters": [],
-      "qualname": "Session.multitask_capability_matrix"
+      "qualname": "MultitaskSessionMixin.multitask_capability_matrix"
     },
     "nested_cv_score": {
       "doc_summary": "Estimate how well your *tuning procedure* generalises, not just one model.",
@@ -8866,7 +9084,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.nested_cv_score"
+      "qualname": "ClassicalSessionMixin.nested_cv_score"
     },
     "nested_cv_torch": {
       "doc_summary": "Nested Torch CV: outer evaluation after fold-local inner hyperparameter search.",
@@ -8987,7 +9205,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.nested_cv_torch"
+      "qualname": "DlSessionMixin.nested_cv_torch"
     },
     "nlp_capability_matrix": {
       "doc_summary": "Honest capability matrix for NLP backends and task surfaces.",
@@ -8995,7 +9213,7 @@
       "is_staticmethod": true,
       "name": "nlp_capability_matrix",
       "parameters": [],
-      "qualname": "Session.nlp_capability_matrix"
+      "qualname": "NlpSessionMixin.nlp_capability_matrix"
     },
     "online_capability_matrix": {
       "doc_summary": "Report which online and incremental learning backends are available here.",
@@ -9003,7 +9221,7 @@
       "is_staticmethod": true,
       "name": "online_capability_matrix",
       "parameters": [],
-      "qualname": "Session.online_capability_matrix"
+      "qualname": "OnlineSessionMixin.online_capability_matrix"
     },
     "open_eda_dashboard": {
       "doc_summary": "Open the interactive EDA studio \u2014 an alias for :meth:`eda_app`.",
@@ -9068,7 +9286,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.open_eda_dashboard"
+      "qualname": "EdaSessionMixin.open_eda_dashboard"
     },
     "optimize_capability_matrix": {
       "doc_summary": "Return the decision/optimization capability matrix for this install.",
@@ -9076,7 +9294,7 @@
       "is_staticmethod": true,
       "name": "optimize_capability_matrix",
       "parameters": [],
-      "qualname": "Session.optimize_capability_matrix"
+      "qualname": "DecisionSessionMixin.optimize_capability_matrix"
     },
     "optuna_search": {
       "doc_summary": "Search adaptively, letting each trial learn from the ones before it.",
@@ -9176,7 +9394,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.optuna_search"
+      "qualname": "ClassicalSessionMixin.optuna_search"
     },
     "pack_torchserve": {
       "doc_summary": "Pack a TorchScript artifact into a TorchServe-ready directory layout.",
@@ -9206,7 +9424,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.pack_torchserve"
+      "qualname": "DlSessionMixin.pack_torchserve"
     },
     "partial_fit_online": {
       "doc_summary": "Apply one incremental partial_fit update on the next train chunk or frame.",
@@ -9236,7 +9454,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.partial_fit_online"
+      "qualname": "OnlineSessionMixin.partial_fit_online"
     },
     "partition": {
       "doc_summary": "Pull out the rows belonging to one partition, as a DataFrame.",
@@ -9252,7 +9470,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.partition"
+      "qualname": "DataSessionMixin.partition"
     },
     "predict": {
       "doc_summary": "Run the fitted model over one partition and return its predictions.",
@@ -9275,7 +9493,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict"
+      "qualname": "ClassicalSessionMixin.predict"
     },
     "predict_cbr": {
       "doc_summary": "Predict via retrieve + reuse (no case-base update).",
@@ -9312,7 +9530,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_cbr"
+      "qualname": "CbrSessionMixin.predict_cbr"
     },
     "predict_federated": {
       "doc_summary": "Predict with the global federated model without local updates.",
@@ -9335,7 +9553,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_federated"
+      "qualname": "FederatedSessionMixin.predict_federated"
     },
     "predict_from_pipeline": {
       "doc_summary": "Score new rows through a saved bundle, in one call.",
@@ -9377,9 +9595,16 @@
           "kind": "KEYWORD_ONLY",
           "name": "apply_plans",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.predict_from_pipeline"
+      "qualname": "ClassicalSessionMixin.predict_from_pipeline"
     },
     "predict_graph": {
       "doc_summary": "Predict node labels with the fitted GraphPlan on a partition.",
@@ -9395,7 +9620,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_graph"
+      "qualname": "GraphSessionMixin.predict_graph"
     },
     "predict_imitation_action": {
       "doc_summary": "Predict actions under the fitted BC policy.",
@@ -9411,7 +9636,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_imitation_action"
+      "qualname": "RlSessionMixin.predict_imitation_action"
     },
     "predict_interval": {
       "doc_summary": "Predict predictive intervals or conformal prediction sets on a partition.",
@@ -9441,7 +9666,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_interval"
+      "qualname": "ProbabilisticSessionMixin.predict_interval"
     },
     "predict_links": {
       "doc_summary": "Predict missing link components using the frozen KgPlan.",
@@ -9492,7 +9717,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_links"
+      "qualname": "KgSessionMixin.predict_links"
     },
     "predict_multitask": {
       "doc_summary": "Predict all targets with the frozen multi-task plan without refitting.",
@@ -9522,7 +9747,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_multitask"
+      "qualname": "MultitaskSessionMixin.predict_multitask"
     },
     "predict_neuro_symbolic": {
       "doc_summary": "Predict with the neuro-symbolic hybrid (no update).",
@@ -9545,7 +9770,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_neuro_symbolic"
+      "qualname": "SymbolicSessionMixin.predict_neuro_symbolic"
     },
     "predict_online": {
       "doc_summary": "Predict with the incremental online estimator without updating it.",
@@ -9561,7 +9786,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_online"
+      "qualname": "OnlineSessionMixin.predict_online"
     },
     "predict_probabilistic": {
       "doc_summary": "Predict with the probabilistic estimator without updating the plan.",
@@ -9591,7 +9816,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_probabilistic"
+      "qualname": "ProbabilisticSessionMixin.predict_probabilistic"
     },
     "predict_semisupervised": {
       "doc_summary": "Predict with the train-fitted semi-supervised plan without refitting.",
@@ -9621,7 +9846,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_semisupervised"
+      "qualname": "SemisupervisedSessionMixin.predict_semisupervised"
     },
     "predict_symbolic": {
       "doc_summary": "Predict with the symbolic rule base (no update).",
@@ -9644,7 +9869,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_symbolic"
+      "qualname": "SymbolicSessionMixin.predict_symbolic"
     },
     "predict_tda": {
       "doc_summary": "Predict with the optional TDA supervised head on a partition.",
@@ -9660,7 +9885,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_tda"
+      "qualname": "TdaSessionMixin.predict_tda"
     },
     "predict_text": {
       "doc_summary": "Score a partition with the train-fitted text plan.",
@@ -9683,7 +9908,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.predict_text"
+      "qualname": "NlpSessionMixin.predict_text"
     },
     "prepare_design_matrix": {
       "doc_summary": "Narrow the data in the engine before pulling it into memory.",
@@ -9720,7 +9945,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.prepare_design_matrix"
+      "qualname": "ClassicalSessionMixin.prepare_design_matrix"
     },
     "prepare_tensorrt_export": {
       "doc_summary": "Write a TensorRT ``trtexec`` plan next to a validated ONNX artifact.",
@@ -9757,7 +9982,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.prepare_tensorrt_export"
+      "qualname": "DlSessionMixin.prepare_tensorrt_export"
     },
     "probabilistic_capability_matrix": {
       "doc_summary": "Report which probabilistic prediction backends are available on this machine.",
@@ -9765,7 +9990,7 @@
       "is_staticmethod": true,
       "name": "probabilistic_capability_matrix",
       "parameters": [],
-      "qualname": "Session.probabilistic_capability_matrix"
+      "qualname": "ProbabilisticSessionMixin.probabilistic_capability_matrix"
     },
     "profile_text_corpus": {
       "doc_summary": "Profile corpus health and screen the split for text contamination.",
@@ -9809,7 +10034,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.profile_text_corpus"
+      "qualname": "NlpSessionMixin.profile_text_corpus"
     },
     "query_kg": {
       "doc_summary": "Run symbolic KG queries over the train-fitted graph structure.",
@@ -9867,7 +10092,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.query_kg"
+      "qualname": "KgSessionMixin.query_kg"
     },
     "rag_capability_matrix": {
       "doc_summary": "Report which retrieval-augmented generation stacks are available here.",
@@ -9875,7 +10100,7 @@
       "is_staticmethod": true,
       "name": "rag_capability_matrix",
       "parameters": [],
-      "qualname": "Session.rag_capability_matrix"
+      "qualname": "RagSessionMixin.rag_capability_matrix"
     },
     "rag_chunk": {
       "doc_summary": "Chunk the active RAG corpus (fixed or recursive strategy).",
@@ -9905,7 +10130,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rag_chunk"
+      "qualname": "RagSessionMixin.rag_chunk"
     },
     "rag_delete": {
       "doc_summary": "Delete chunks by id and/or parent document id from the active RAG index.",
@@ -9928,7 +10153,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rag_delete"
+      "qualname": "RagSessionMixin.rag_delete"
     },
     "rag_embed_and_index": {
       "doc_summary": "Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).",
@@ -9972,7 +10197,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rag_embed_and_index"
+      "qualname": "RagSessionMixin.rag_embed_and_index"
     },
     "rag_evaluate": {
       "doc_summary": "Score retrieval with gold qrels (recall@k, MRR, nDCG@k, hit-rate@k).",
@@ -10016,7 +10241,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rag_evaluate"
+      "qualname": "RagSessionMixin.rag_evaluate"
     },
     "rag_generate": {
       "doc_summary": "Retrieve (unless reusing the last retrieve) and generate a grounded answer.",
@@ -10095,7 +10320,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rag_generate"
+      "qualname": "RagSessionMixin.rag_generate"
     },
     "rag_ingest_corpus": {
       "doc_summary": "Load a text corpus for the RAG path (requires ``buildml[rag]``).",
@@ -10146,7 +10371,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rag_ingest_corpus"
+      "qualname": "RagSessionMixin.rag_ingest_corpus"
     },
     "rag_retrieve": {
       "doc_summary": "Retrieve ranked chunks (dense / BM25 / hybrid) against the active RAG index.",
@@ -10204,7 +10429,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rag_retrieve"
+      "qualname": "RagSessionMixin.rag_retrieve"
     },
     "rag_upsert": {
       "doc_summary": "Upsert documents or chunks into the active RAG index without a full rebuild.",
@@ -10234,7 +10459,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rag_upsert"
+      "qualname": "RagSessionMixin.rag_upsert"
     },
     "randomized_search": {
       "doc_summary": "Sample settings at random, which usually beats an exhaustive grid.",
@@ -10334,7 +10559,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.randomized_search"
+      "qualname": "ClassicalSessionMixin.randomized_search"
     },
     "rank": {
       "doc_summary": "Order items for queries in a partition or an explicit query id list.",
@@ -10371,7 +10596,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.rank"
+      "qualname": "RankingSessionMixin.rank"
     },
     "ranking_capability_matrix": {
       "doc_summary": "Report which learning-to-rank backends and objectives are available here.",
@@ -10379,7 +10604,7 @@
       "is_staticmethod": true,
       "name": "ranking_capability_matrix",
       "parameters": [],
-      "qualname": "Session.ranking_capability_matrix"
+      "qualname": "RankingSessionMixin.ranking_capability_matrix"
     },
     "reattach": {
       "doc_summary": "Replace this session's state from a checkpoint, in place.",
@@ -10400,9 +10625,16 @@
           "kind": "KEYWORD_ONLY",
           "name": "data_only",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.reattach"
+      "qualname": "DataSessionMixin.reattach"
     },
     "recommend": {
       "doc_summary": "Top-K recommendations for partition users or an explicit user id list.",
@@ -10439,7 +10671,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.recommend"
+      "qualname": "RecommenderSessionMixin.recommend"
     },
     "recommender_capability_matrix": {
       "doc_summary": "Report which recommender-system backends are available on this machine.",
@@ -10447,7 +10679,7 @@
       "is_staticmethod": true,
       "name": "recommender_capability_matrix",
       "parameters": [],
-      "qualname": "Session.recommender_capability_matrix"
+      "qualname": "RecommenderSessionMixin.recommender_capability_matrix"
     },
     "reduce_dimensions": {
       "doc_summary": "Compress many numeric columns into a few informative ones.",
@@ -10526,7 +10758,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.reduce_dimensions"
+      "qualname": "PreprocessSessionMixin.reduce_dimensions"
     },
     "refuse_speech_foundation_pretrain": {
       "doc_summary": "Refuse FM-from-scratch / large continued-pretrain with an explicit error.",
@@ -10534,7 +10766,7 @@
       "is_staticmethod": false,
       "name": "refuse_speech_foundation_pretrain",
       "parameters": [],
-      "qualname": "Session.refuse_speech_foundation_pretrain"
+      "qualname": "DlSessionMixin.refuse_speech_foundation_pretrain"
     },
     "refute_causal": {
       "doc_summary": "Simple placebo / random-confounder sensitivity disclosure.",
@@ -10557,7 +10789,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.refute_causal"
+      "qualname": "CausalSessionMixin.refute_causal"
     },
     "register_transform": {
       "doc_summary": "Teach BuildML a preprocessing step of your own.",
@@ -10622,7 +10854,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.register_transform"
+      "qualname": "PreprocessSessionMixin.register_transform"
     },
     "resample": {
       "doc_summary": "Rebalance the training classes so the rare one is not ignored.",
@@ -10652,7 +10884,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.resample"
+      "qualname": "PreprocessSessionMixin.resample"
     },
     "resample_strategies": {
       "doc_summary": "List the available resampling methods and when each one fits.",
@@ -10660,7 +10892,7 @@
       "is_staticmethod": false,
       "name": "resample_strategies",
       "parameters": [],
-      "qualname": "Session.resample_strategies"
+      "qualname": "PreprocessSessionMixin.resample_strategies"
     },
     "retain_cbr": {
       "doc_summary": "Retain new labeled cases (refuses Session validation/test indices).",
@@ -10704,7 +10936,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.retain_cbr"
+      "qualname": "CbrSessionMixin.retain_cbr"
     },
     "retrieve_cases": {
       "doc_summary": "Retrieve k nearest cases for a partition (no reuse).",
@@ -10734,7 +10966,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.retrieve_cases"
+      "qualname": "CbrSessionMixin.retrieve_cases"
     },
     "rl_capability_matrix": {
       "doc_summary": "Return the RL / imitation capability matrix for this installation.",
@@ -10742,7 +10974,7 @@
       "is_staticmethod": true,
       "name": "rl_capability_matrix",
       "parameters": [],
-      "qualname": "Session.rl_capability_matrix"
+      "qualname": "RlSessionMixin.rl_capability_matrix"
     },
     "run_automl": {
       "doc_summary": "Run AutoML model-family and recipe-strategy search on the train partition.",
@@ -10905,7 +11137,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.run_automl"
+      "qualname": "AutomlSessionMixin.run_automl"
     },
     "sample_synthetic": {
       "doc_summary": "Sample synthetic rows from the frozen synthesizer plan.",
@@ -10956,7 +11188,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.sample_synthetic"
+      "qualname": "SyntheticSessionMixin.sample_synthetic"
     },
     "save_active_learning_bundle": {
       "doc_summary": "Persist the active-learning plan as ``buildml.activelearning_bundle.v1``.",
@@ -10972,7 +11204,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_active_learning_bundle"
+      "qualname": "ActivelearningSessionMixin.save_active_learning_bundle"
     },
     "save_ai_transcript": {
       "doc_summary": "Save the AI transcript to a JSON file (secrets redacted by default).",
@@ -10995,7 +11227,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.save_ai_transcript"
+      "qualname": "AiSessionMixin.save_ai_transcript"
     },
     "save_anomaly_bundle": {
       "doc_summary": "Persist the active anomaly plan as ``buildml.anomaly_bundle.v1``.",
@@ -11011,7 +11243,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_anomaly_bundle"
+      "qualname": "AnomalySessionMixin.save_anomaly_bundle"
     },
     "save_automl_bundle": {
       "doc_summary": "Persist the active AutoML plan as ``buildml.automl_bundle.v1``.",
@@ -11027,7 +11259,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_automl_bundle"
+      "qualname": "AutomlSessionMixin.save_automl_bundle"
     },
     "save_causal_bundle": {
       "doc_summary": "Persist the active CausalPlan as ``buildml.causal_bundle.v1``.",
@@ -11043,7 +11275,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_causal_bundle"
+      "qualname": "CausalSessionMixin.save_causal_bundle"
     },
     "save_cbr_bundle": {
       "doc_summary": "Persist the active CbrPlan.",
@@ -11059,7 +11291,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_cbr_bundle"
+      "qualname": "CbrSessionMixin.save_cbr_bundle"
     },
     "save_decision_bundle": {
       "doc_summary": "Persist the active DecisionPlan as ``buildml.decision_bundle.v1``.",
@@ -11075,7 +11307,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_decision_bundle"
+      "qualname": "DecisionSessionMixin.save_decision_bundle"
     },
     "save_ensemble_bundle": {
       "doc_summary": "Persist the active EnsemblePlan as ``buildml.ensemble_bundle.v1``.",
@@ -11091,7 +11323,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_ensemble_bundle"
+      "qualname": "EnsembleSessionMixin.save_ensemble_bundle"
     },
     "save_federated_bundle": {
       "doc_summary": "Persist the active federated plan as ``buildml.federated_bundle.v1``.",
@@ -11107,7 +11339,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_federated_bundle"
+      "qualname": "FederatedSessionMixin.save_federated_bundle"
     },
     "save_forecast_bundle": {
       "doc_summary": "Persist the active ForecastPlan as ``buildml.forecast_bundle.v2``.",
@@ -11123,7 +11355,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_forecast_bundle"
+      "qualname": "ForecastSessionMixin.save_forecast_bundle"
     },
     "save_graph_bundle": {
       "doc_summary": "Persist the active GraphPlan as ``buildml.graph_bundle.v1``.",
@@ -11139,7 +11371,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_graph_bundle"
+      "qualname": "GraphSessionMixin.save_graph_bundle"
     },
     "save_imitation_bundle": {
       "doc_summary": "Persist the active ImitationPlan as ``buildml.imitation_bundle.v1``.",
@@ -11155,7 +11387,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_imitation_bundle"
+      "qualname": "RlSessionMixin.save_imitation_bundle"
     },
     "save_kg_bundle": {
       "doc_summary": "Persist the active KgPlan as ``buildml.kg_bundle.v1``.",
@@ -11171,7 +11403,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_kg_bundle"
+      "qualname": "KgSessionMixin.save_kg_bundle"
     },
     "save_metalearning_bundle": {
       "doc_summary": "Persist the active MetaLearningPlan as ``buildml.metalearning_bundle.v1``.",
@@ -11187,7 +11419,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_metalearning_bundle"
+      "qualname": "MetalearningSessionMixin.save_metalearning_bundle"
     },
     "save_model": {
       "doc_summary": "Save the fitted estimator and the feature contract it expects.",
@@ -11203,7 +11435,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_model"
+      "qualname": "ClassicalSessionMixin.save_model"
     },
     "save_multitask_bundle": {
       "doc_summary": "Persist the active multi-task plan as ``buildml.multitask_bundle.v1``.",
@@ -11219,7 +11451,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_multitask_bundle"
+      "qualname": "MultitaskSessionMixin.save_multitask_bundle"
     },
     "save_nlp_bundle": {
       "doc_summary": "Persist the active NLP plan(s) as ``buildml.nlp_bundle.v1``.",
@@ -11235,7 +11467,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_nlp_bundle"
+      "qualname": "NlpSessionMixin.save_nlp_bundle"
     },
     "save_online_bundle": {
       "doc_summary": "Persist the active online plan as ``buildml.online_bundle.v1``.",
@@ -11251,7 +11483,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_online_bundle"
+      "qualname": "OnlineSessionMixin.save_online_bundle"
     },
     "save_pipeline": {
       "doc_summary": "Save everything needed to score new data: model, prep, and card.",
@@ -11281,7 +11513,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.save_pipeline"
+      "qualname": "ClassicalSessionMixin.save_pipeline"
     },
     "save_probabilistic_bundle": {
       "doc_summary": "Persist the active ProbabilisticPlan as ``buildml.probabilistic_bundle.v1``.",
@@ -11297,7 +11529,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_probabilistic_bundle"
+      "qualname": "ProbabilisticSessionMixin.save_probabilistic_bundle"
     },
     "save_rag_bundle": {
       "doc_summary": "Persist the active RAG index as ``buildml.rag_bundle.v1``.",
@@ -11313,7 +11545,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_rag_bundle"
+      "qualname": "RagSessionMixin.save_rag_bundle"
     },
     "save_ranker_bundle": {
       "doc_summary": "Persist the active RankerPlan as ``buildml.ranker_bundle.v1``.",
@@ -11329,7 +11561,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_ranker_bundle"
+      "qualname": "RankingSessionMixin.save_ranker_bundle"
     },
     "save_recommender_bundle": {
       "doc_summary": "Persist the active RecommenderPlan as ``buildml.recommender_bundle.v1``.",
@@ -11345,7 +11577,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_recommender_bundle"
+      "qualname": "RecommenderSessionMixin.save_recommender_bundle"
     },
     "save_rl_bundle": {
       "doc_summary": "Persist the active RlPlan as ``buildml.rl_bundle.v1``.",
@@ -11361,7 +11593,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_rl_bundle"
+      "qualname": "RlSessionMixin.save_rl_bundle"
     },
     "save_semisupervised_bundle": {
       "doc_summary": "Persist the semi-supervised plan as ``buildml.semisupervised_bundle.v1``.",
@@ -11377,7 +11609,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_semisupervised_bundle"
+      "qualname": "SemisupervisedSessionMixin.save_semisupervised_bundle"
     },
     "save_ssl_bundle": {
       "doc_summary": "Persist the active SSL plan as ``buildml.ssl_bundle.v2``.",
@@ -11393,7 +11625,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_ssl_bundle"
+      "qualname": "SelfsupervisedSessionMixin.save_ssl_bundle"
     },
     "save_symbolic_bundle": {
       "doc_summary": "Persist the active symbolic or neuro-symbolic plan.",
@@ -11409,7 +11641,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_symbolic_bundle"
+      "qualname": "SymbolicSessionMixin.save_symbolic_bundle"
     },
     "save_synthetic_bundle": {
       "doc_summary": "Persist the active synthesizer plan as ``buildml.synthetic_bundle.v1``.",
@@ -11425,7 +11657,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_synthetic_bundle"
+      "qualname": "SyntheticSessionMixin.save_synthetic_bundle"
     },
     "save_tda_bundle": {
       "doc_summary": "Persist the active TdaPlan as ``buildml.tda_bundle.v2``.",
@@ -11441,7 +11673,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_tda_bundle"
+      "qualname": "TdaSessionMixin.save_tda_bundle"
     },
     "save_torch_bundle": {
       "doc_summary": "Persist the last Torch trainer as ``buildml.torch_bundle.v1``.",
@@ -11457,7 +11689,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_torch_bundle"
+      "qualname": "DlSessionMixin.save_torch_bundle"
     },
     "save_unsupervised_bundle": {
       "doc_summary": "Persist the active cluster plan as ``buildml.unsupervised_bundle.v2``.",
@@ -11473,7 +11705,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.save_unsupervised_bundle"
+      "qualname": "UnsupervisedSessionMixin.save_unsupervised_bundle"
     },
     "scale": {
       "doc_summary": "Put numeric columns on a comparable footing.",
@@ -11496,7 +11728,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.scale"
+      "qualname": "PreprocessSessionMixin.scale"
     },
     "score_anomalies": {
       "doc_summary": "Score and flag rows with the train-fitted anomaly plan without refitting.",
@@ -11526,7 +11758,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.score_anomalies"
+      "qualname": "AnomalySessionMixin.score_anomalies"
     },
     "score_triples": {
       "doc_summary": "Score head-relation-tail triples with the frozen KgPlan.",
@@ -11549,7 +11781,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.score_triples"
+      "qualname": "KgSessionMixin.score_triples"
     },
     "search_torch": {
       "doc_summary": "Inner-fold Torch hyperparameter search on the Session train universe.",
@@ -11663,7 +11895,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.search_torch"
+      "qualname": "DlSessionMixin.search_torch"
     },
     "select_features": {
       "doc_summary": "Keep the columns that carry signal and drop the rest.",
@@ -11714,7 +11946,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.select_features"
+      "qualname": "PreprocessSessionMixin.select_features"
     },
     "semisupervised_capability_matrix": {
       "doc_summary": "Report which semi-supervised learning backends are available here.",
@@ -11722,7 +11954,7 @@
       "is_staticmethod": true,
       "name": "semisupervised_capability_matrix",
       "parameters": [],
-      "qualname": "Session.semisupervised_capability_matrix"
+      "qualname": "SemisupervisedSessionMixin.semisupervised_capability_matrix"
     },
     "serve_bundle": {
       "doc_summary": "Launch BuildML managed serving for a pipeline or TorchScript artifact.",
@@ -11799,9 +12031,16 @@
           "kind": "KEYWORD_ONLY",
           "name": "ssl_keyfile",
           "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "trusted",
+          "required": false
         }
       ],
-      "qualname": "Session.serve_bundle"
+      "qualname": "DlSessionMixin.serve_bundle"
     },
     "set_graph": {
       "doc_summary": "Attach an edge list to the Session with dataset rows as nodes.",
@@ -11845,7 +12084,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.set_graph"
+      "qualname": "GraphSessionMixin.set_graph"
     },
     "set_roles": {
       "doc_summary": "Declare what each column means, so later steps can act on it.",
@@ -11861,7 +12100,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.set_roles"
+      "qualname": "DataSessionMixin.set_roles"
     },
     "split": {
       "doc_summary": "Randomly hold back rows so you can measure honest performance.",
@@ -11898,7 +12137,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.split"
+      "qualname": "DataSessionMixin.split"
     },
     "ssl_capability_matrix": {
       "doc_summary": "Report which self-supervised learning backends are available on this machine.",
@@ -11906,7 +12145,7 @@
       "is_staticmethod": true,
       "name": "ssl_capability_matrix",
       "parameters": [],
-      "qualname": "Session.ssl_capability_matrix"
+      "qualname": "SelfsupervisedSessionMixin.ssl_capability_matrix"
     },
     "suggest_query": {
       "doc_summary": "Suggest unlabeled train-pool indices for human labeling without an oracle.",
@@ -11929,7 +12168,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.suggest_query"
+      "qualname": "ActivelearningSessionMixin.suggest_query"
     },
     "summarize_history": {
       "doc_summary": "Condense what this session did, and flag what looks risky.",
@@ -11937,7 +12176,7 @@
       "is_staticmethod": false,
       "name": "summarize_history",
       "parameters": [],
-      "qualname": "Session.summarize_history"
+      "qualname": "WorkflowSessionMixin.summarize_history"
     },
     "summarize_text": {
       "doc_summary": "Build extractive summaries for a partition's documents.",
@@ -12002,7 +12241,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.summarize_text"
+      "qualname": "NlpSessionMixin.summarize_text"
     },
     "symbolic_capability_matrix": {
       "doc_summary": "Honest capability matrix for symbolic / neuro-symbolic backends.",
@@ -12010,7 +12249,7 @@
       "is_staticmethod": true,
       "name": "symbolic_capability_matrix",
       "parameters": [],
-      "qualname": "Session.symbolic_capability_matrix"
+      "qualname": "SymbolicSessionMixin.symbolic_capability_matrix"
     },
     "sync_native": {
       "doc_summary": "Rebuild the engine's table from the current Pandas frame.",
@@ -12018,7 +12257,7 @@
       "is_staticmethod": false,
       "name": "sync_native",
       "parameters": [],
-      "qualname": "Session.sync_native"
+      "qualname": "DataSessionMixin.sync_native"
     },
     "synthetic_capability_matrix": {
       "doc_summary": "Return the synthetic-data backend/method capability matrix.",
@@ -12026,7 +12265,7 @@
       "is_staticmethod": true,
       "name": "synthetic_capability_matrix",
       "parameters": [],
-      "qualname": "Session.synthetic_capability_matrix"
+      "qualname": "SyntheticSessionMixin.synthetic_capability_matrix"
     },
     "tda_capability_matrix": {
       "doc_summary": "Return the TDA backend and vectorization capability matrix.",
@@ -12034,7 +12273,7 @@
       "is_staticmethod": true,
       "name": "tda_capability_matrix",
       "parameters": [],
-      "qualname": "Session.tda_capability_matrix"
+      "qualname": "TdaSessionMixin.tda_capability_matrix"
     },
     "text_features": {
       "doc_summary": "Turn free-text columns into numeric features.",
@@ -12078,7 +12317,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.text_features"
+      "qualname": "PreprocessSessionMixin.text_features"
     },
     "time_split": {
       "doc_summary": "Train on the past and test on the future, as deployment will.",
@@ -12108,7 +12347,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.time_split"
+      "qualname": "DataSessionMixin.time_split"
     },
     "timeseries_capability_matrix": {
       "doc_summary": "Report which time-series analysis backends are available on this machine.",
@@ -12116,7 +12355,7 @@
       "is_staticmethod": true,
       "name": "timeseries_capability_matrix",
       "parameters": [],
-      "qualname": "Session.timeseries_capability_matrix"
+      "qualname": "TimeseriesSessionMixin.timeseries_capability_matrix"
     },
     "to_engine": {
       "doc_summary": "Hand back the data as the chosen engine's own object.",
@@ -12132,7 +12371,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.to_engine"
+      "qualname": "DataSessionMixin.to_engine"
     },
     "to_pandas": {
       "doc_summary": "Take the data out as a plain Pandas DataFrame.",
@@ -12140,7 +12379,7 @@
       "is_staticmethod": false,
       "name": "to_pandas",
       "parameters": [],
-      "qualname": "Session.to_pandas"
+      "qualname": "DataSessionMixin.to_pandas"
     },
     "to_parquet": {
       "doc_summary": "Write the current data to a Parquet file.",
@@ -12156,7 +12395,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.to_parquet"
+      "qualname": "DataSessionMixin.to_parquet"
     },
     "torch_training_curve": {
       "doc_summary": "Return structured training-curve teaching data for the last Torch run.",
@@ -12164,7 +12403,7 @@
       "is_staticmethod": false,
       "name": "torch_training_curve",
       "parameters": [],
-      "qualname": "Session.torch_training_curve"
+      "qualname": "DlSessionMixin.torch_training_curve"
     },
     "transcribe_speech": {
       "doc_summary": "ASR transcription for an audio feature column.",
@@ -12222,7 +12461,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.transcribe_speech"
+      "qualname": "DlSessionMixin.transcribe_speech"
     },
     "transform_ssl": {
       "doc_summary": "Export SSL representations with the train-fitted pretext encoder.",
@@ -12245,7 +12484,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.transform_ssl"
+      "qualname": "SelfsupervisedSessionMixin.transform_ssl"
     },
     "transform_tda": {
       "doc_summary": "Transform a partition with the frozen train-fitted TDA pipeline.",
@@ -12268,7 +12507,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.transform_tda"
+      "qualname": "TdaSessionMixin.transform_tda"
     },
     "ts_decompose": {
       "doc_summary": "Run decomposition-only time-series analysis on Session data.",
@@ -12312,7 +12551,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ts_decompose"
+      "qualname": "TimeseriesSessionMixin.ts_decompose"
     },
     "ts_diagnostics": {
       "doc_summary": "Run diagnostics-only time-series analysis on Session data.",
@@ -12356,7 +12595,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.ts_diagnostics"
+      "qualname": "TimeseriesSessionMixin.ts_diagnostics"
     },
     "tune_anomaly_threshold": {
       "doc_summary": "Tune the anomaly decision threshold on validation labels without refitting.",
@@ -12414,7 +12653,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.tune_anomaly_threshold"
+      "qualname": "AnomalySessionMixin.tune_anomaly_threshold"
     },
     "tune_threshold": {
       "doc_summary": "Choose the cut-off that turns a probability into a decision.",
@@ -12472,7 +12711,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.tune_threshold"
+      "qualname": "ClassicalSessionMixin.tune_threshold"
     },
     "unsupervised_capability_matrix": {
       "doc_summary": "Report which clustering and dimensionality-reduction backends are available here.",
@@ -12480,7 +12719,7 @@
       "is_staticmethod": true,
       "name": "unsupervised_capability_matrix",
       "parameters": [],
-      "qualname": "Session.unsupervised_capability_matrix"
+      "qualname": "UnsupervisedSessionMixin.unsupervised_capability_matrix"
     },
     "walkthrough": {
       "doc_summary": "Narrate everything this session did, and why.",
@@ -12496,7 +12735,7 @@
           "required": false
         }
       ],
-      "qualname": "Session.walkthrough"
+      "qualname": "WorkflowSessionMixin.walkthrough"
     },
     "with_engine": {
       "doc_summary": "Switch the compute engine backing the data.",
@@ -12512,7 +12751,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.with_engine"
+      "qualname": "DataSessionMixin.with_engine"
     },
     "with_mode": {
       "doc_summary": "Set whether data is held in memory or kept lazy.",
@@ -12528,7 +12767,7 @@
           "required": true
         }
       ],
-      "qualname": "Session.with_mode"
+      "qualname": "DataSessionMixin.with_mode"
     },
     "workflow": {
       "doc_summary": "List every operation, with what it needs and whether it can run now.",
@@ -12536,7 +12775,7 @@
       "is_staticmethod": false,
       "name": "workflow",
       "parameters": [],
-      "qualname": "Session.workflow"
+      "qualname": "WorkflowSessionMixin.workflow"
     }
   },
   "schema_version": 1,

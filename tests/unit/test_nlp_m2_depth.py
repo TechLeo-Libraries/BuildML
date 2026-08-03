@@ -530,7 +530,7 @@ def test_bundle_round_trip_preserves_the_normalization_plan(
     )
     plan = session.nlp_text_plan
     out = save_nlp_bundle(tmp_path / "bundle", plan)
-    text_plan, topic_plan = load_nlp_bundle(out)
+    text_plan, topic_plan = load_nlp_bundle(out, trusted=True)
     assert topic_plan is None
     assert text_plan is not None
     assert text_plan.normalize_plan.to_dict() == plan.normalize_plan.to_dict()
@@ -542,4 +542,4 @@ def test_bundle_round_trip_preserves_the_normalization_plan(
     )
 
     with pytest.raises(ValidationError):
-        load_nlp_bundle(tmp_path / "does-not-exist")
+        load_nlp_bundle(tmp_path / "does-not-exist", trusted=True)

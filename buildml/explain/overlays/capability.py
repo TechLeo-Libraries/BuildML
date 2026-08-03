@@ -295,11 +295,30 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         concepts=("automl-beyond-hpo", "automl-selection-honesty"),
     ),
     _matrix(
+        "ensemble_capability_matrix",
+        "ensemble learning",
+        "voting / stacking / blending strategies",
+        honesty=(
+            "Ensembles are core sklearn plus in-tree blending — availability is always "
+            "True with core deps; quality still depends on base learners and the split."
+        ),
+        next_steps=("fit_voting; fit_stacking; fit_blending; evaluate_ensemble.",),
+        concepts=("ensemble-voting-vs-single-tree", "leakage-boundary"),
+    ),
+    _matrix(
         "synthetic_capability_matrix",
         "synthetic data generation",
         "generator backends and evaluation paths",
         honesty="Fidelity availability is not privacy: read the privacy limits before sharing synthetic rows.",
         next_steps=("fit_synthesizer; sample_synthetic; evaluate_synthetic.",),
         concepts=("synthetic-fidelity-vs-tstr", "synthetic-privacy-limits"),
+    ),
+    _matrix(
+        "dl_capability_matrix",
+        "deep learning (Torch)",
+        "Torch trainer / export / multimodal backends",
+        honesty="Availability of Torch does not imply a good architecture for your data.",
+        next_steps=("make_torch_loaders; fit_torch; evaluate_torch.",),
+        concepts=("early-stopping-partition", "leakage-boundary", "reproducibility"),
     ),
 )

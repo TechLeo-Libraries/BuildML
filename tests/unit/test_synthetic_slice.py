@@ -137,7 +137,7 @@ def test_bundle_roundtrip(tmp_path) -> None:
     path = tmp_path / "syn_bundle"
     session.save_synthetic_bundle(path)
     other = _mixed_session()
-    other.load_synthetic_bundle(path)
+    other.load_synthetic_bundle(path, trusted=True)
     assert other.synthesizer_plan is not None
     assert other.synthesizer_plan.method == "gaussian_copula"
     sample = other.sample_synthetic(n=20, random_state=9)

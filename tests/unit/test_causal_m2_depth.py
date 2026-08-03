@@ -160,7 +160,7 @@ def test_refute_placebo_and_bundle(tmp_path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=1)
         .scale(method="standard")
     )
-    other.load_causal_bundle(out)
+    other.load_causal_bundle(out, trusted=True)
     assert other.causal_plan is not None
     assert other.causal_assumptions is not None
     est = other.estimate_causal(partition="test", bootstrap_samples=10)

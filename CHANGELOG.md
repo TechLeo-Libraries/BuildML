@@ -8,20 +8,70 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Security
+
+- **Trusted deserialize gate.** All joblib/pickle/torch bundle and checkpoint
+  plan loads require keyword-only ``trusted=True`` (default ``False``) via
+  ``buildml.core.serialization``. Session facades, domain loaders,
+  ``predict_from_pipeline``, and managed serving (``create_serving_app`` /
+  ``serve_bundle`` / ``buildml-serve --trusted``) thread the flag;
+  ``data_only=True`` checkpoint loads skip plans without needing ``trusted``.
+  Residual pickle risk remains inherent — the gate makes it opt-in.
+- **Path allowlist + integrity hashes.** Loaders refuse URI-shaped paths
+  (``https://``, ``s3://``, ``file://``, …). Optional ``sha256`` of joblib
+  payloads is recorded in anomaly / pipeline ``meta.json`` and Session
+  ``MANIFEST.json`` hashes are verified on load when present (tamper detection;
+  not authenticity). JSON sidecars load without executing code.
+- **TorchScript trust gate.** ``load_torchscript(..., trusted=True)`` required
+  (aligned with serving TorchScript loads).
+- **Windows Torch import probing.** ``torch_available`` / RAG semantic stack
+  probes import Torch in a subprocess on Windows so a broken DLL load cannot
+  hard-crash the parent process during capability matrices or EDA.
+- **AI injection heuristics.** Expanded patterns (DAN, prompt exfil, role-play,
+  base64 / atob / hex smuggle, multi-line instruction overrides), NFKC +
+  zero-width / bidi strip, Latin-homoglyph fold, structured ``InjectionFinding``
+  reason codes and ``refuse_injection``. ``ToolRegistry.register`` always
+  refuses — allowlist is closed at construction; confirm-on-write unchanged.
+
 ### Changed
+
+- **Session typing + facade docs.** Removed ``warn_return_any=false`` for
+  ``buildml.session.*``; CI mypy covers the full ``buildml/session`` package
+  cleanly. Mixin methods are short facades pointing at canonical ops docs;
+  ``scripts/audit_docstrings.py`` allows that facade shape. Mixin LOC cut
+  substantially (~18.4k → ~11.2k).
+- **Domain maturity floor.** ``scripts/domain_maturity_index.py`` ratchets
+  claimed-complete domains to artifact score ≥ 6 plus ``explain_hooks`` /
+  ``checkpoint`` (unless ``analysis_only``). Ensemble gained a dedicated
+  ``ensemble_capability_matrix``; timeseries documents analysis-only floor.
+  CONTRIBUTING defines the domain floor explicitly.
+- **Industry probe honesty.** ``probe_industry_extras.py`` aligns probes with
+  extras, emits platform tags + markdown artifacts, and surfaces
+  ``skipped_by_marker``. On Windows every module is probed in a subprocess so
+  native AV/DLL crashes cannot kill the CI parent. Capability matrices expose
+  ``platform_markers`` for LightFM / giotto-tda / learn2learn / skope-rules /
+  neuralforecast.
+- **Session monolith split (critical maintainability fix).** Public
+  ``buildml.Session`` API unchanged (482 methods preserved). Domain method
+  signatures/docstrings moved into ``buildml/session/mixins/`` (34 domain
+  mixins + ``_shared`` annotation bag); ``session.py`` is now the thin
+  assembler (~840 LOC) owning ``__init__``, context manager, and state glue.
+  Orchestration remains in ``*_ops.py``. Eliminated all
+  ``from buildml.session._imports import *`` star-imports in ops (explicit
+  imports; ``Literal``/``Any`` from ``typing``). Coverage
+  ``fail_under`` raised 20 → 25 (classical+checkpoint smoke ~26.5%).
 
 - **Quality / hygiene ratchet pass (critical-evaluation follow-up).** Deleted
   stale root ``audit_session2.txt`` (outdated docstring residue). Added
-  ``[tool.coverage.report] fail_under = 20`` (measured classical-smoke floor
-  ~26%; full CI suite higher). Widened scoped CI mypy to
-  ``buildml/_version.py`` plus ``explain`` capability/glossary/prerequisites
-  (and fixed ``worked_example_pattern`` typing in anomaly concept notes). Added
-  GitHub Actions ``windows-classical`` job (core+dev, import smoke, ruff,
-  classical alpha smoke; Torch/PyG remain Linux-only). Replaced silent
-  ``except: pass`` blocks under ``buildml/`` with ``logger.debug(...,
-  exc_info=True)`` + intent comments. Replaced all 259 Session/ops
-  ``Controls …; see the function signature`` template Parameter blurbs with
-  pedagogical text (docstring audit still 0). Aligned
+  ``[tool.coverage.report] fail_under`` (later raised to 25). Widened scoped
+  CI mypy to ``buildml/_version.py`` plus ``explain``
+  capability/glossary/prerequisites (and fixed ``worked_example_pattern``
+  typing in anomaly concept notes). Added GitHub Actions ``windows-classical``
+  job (core+dev, import smoke, ruff, classical alpha smoke; Torch/PyG remain
+  Linux-only). Replaced silent ``except: pass`` blocks under ``buildml/`` with
+  ``logger.debug(..., exc_info=True)`` + intent comments. Replaced all 259
+  Session/ops ``Controls …; see the function signature`` template Parameter
+  blurbs with pedagogical text (docstring audit still 0). Aligned
   ``requirements.txt`` / ``requirements-dev.txt`` to ``pyproject.toml`` ranges
   with install-honesty notes; CONTRIBUTING documents coverage/mypy/Windows CI.
 

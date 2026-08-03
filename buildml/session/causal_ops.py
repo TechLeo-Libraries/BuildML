@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.causal.checkpoint import load_causal_bundle, save_causal_bundle
 from buildml.causal.estimate import estimate_causal
@@ -133,7 +136,7 @@ def _resolve_assumptions(
             "Causal estimation refuses to run from EDA alone."
         )
     stored.validate()
-    return stored
+    return cast(CausalAssumptions, stored)
 
 
 def fit_causal_op(
@@ -426,7 +429,7 @@ def save_causal_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_causal_bundle_op(session, path: str | Path):
+def load_causal_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a causal bundle into this Session.
 
     Delegates to :func:`buildml.causal.checkpoint.load_causal_bundle` and
@@ -438,13 +441,16 @@ def load_causal_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded causal plan.
     path:
         Path to a ``buildml.causal_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with causal plan attached for chaining.
     """
-    plan = load_causal_bundle(path)
+    plan = load_causal_bundle(path, trusted=trusted)
     session._causal_plan = plan
     session._causal_assumptions = plan.assumptions
     session._causal_fit_result = None
@@ -462,4 +468,4 @@ def load_causal_bundle_op(session, path: str | Path):
             "outcome_column": plan.outcome_column,
         },
     )
-    return session
+    return cast("Session", session)

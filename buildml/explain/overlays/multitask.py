@@ -248,7 +248,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore a multi-output / chain learner without refitting.",
         "Multi-task bundle load.",
         ("Validate bundle format.", "Attach MultiTaskPlan; clear fit/predict/eval slots."),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory with meta.json + multitask_plan.joblib.",),
         outputs=("Session with multitask_plan attached.",),
         prerequisites=(DATASET,),

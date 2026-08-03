@@ -71,6 +71,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import re
 import sys
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
@@ -146,6 +147,22 @@ IMPLICIT_ARGS = frozenset({"self", "cls"})
 
 #: A one-word summary ("Fit.") teaches nothing; require a real sentence.
 MIN_SUMMARY_WORDS = 4
+
+#: Session mixin methods may be thin facades that point at canonical docs on
+#: ``buildml.session.*_ops``. When a public method under
+#: ``buildml/session/mixins/`` carries a real summary, a description, Returns
+#: (when annotated), and an explicit ops pointer, it is exempt from the full
+#: Parameters / Raises essays — those live on the ops function. Properties are
+#: unchanged. See CONTRIBUTING.md "Session architecture" and "Docstring
+#: standard".
+FACADE_MIXIN_PREFIX = "buildml/session/mixins/"
+
+#: Patterns that mark a mixin docstring as a facade pointer to ops.
+FACADE_POINTER_RE = re.compile(
+    r"(?:buildml\.session\.\w+_ops|:func:`buildml\.session\.\w+_ops|"
+    r"Canonical Parameters, Raises, Notes|Session facade over)",
+    re.IGNORECASE,
+)
 
 SECTION_NAMES = (
     "Parameters",
@@ -359,6 +376,22 @@ def iter_definitions(tree: ast.Module) -> Iterator[tuple[DefNode, str]]:
     yield from walk(tree, "", False)
 
 
+def is_session_facade(path: str, doc: str, node: DefNode) -> bool:
+    """Return True when ``node`` is an allowed Session mixin facade docstring.
+
+    Facades still need a real summary, a description paragraph, Returns when
+    the annotation promises a value, and an explicit pointer to the canonical
+    ``*_ops`` function. They may omit the full Parameters / Raises essays.
+    """
+    if not path.startswith(FACADE_MIXIN_PREFIX):
+        return False
+    if is_property(node):
+        return False
+    if isinstance(node, ast.ClassDef):
+        return False
+    return bool(FACADE_POINTER_RE.search(doc))
+
+
 def audit_definition(node: DefNode, symbol: str, path: str) -> list[Finding]:
     """Return every standard violation for one public definition."""
     findings: list[Finding] = []
@@ -380,12 +413,22 @@ def audit_definition(node: DefNode, symbol: str, path: str) -> list[Finding]:
         add("summary-too-short", f"summary {summary!r} is not a full sentence")
 
     prop = is_property(node)
+    facade = is_session_facade(path, doc, node)
     arguments = argument_names(node)
     wants_return = returns_a_value(node)
     needs_body = bool(arguments) or wants_return or raises_directly(node)
 
     if needs_body and len(preamble) < 2 and not prop:
         add("no-description", "summary line only; explain what the operation does and why")
+
+    if facade and not prop:
+        # Facade contract: summary + description (above) + Returns + ops pointer.
+        if wants_return and "Returns" not in sections and "Yields" not in sections:
+            annotation = annotated_return(node) or "value"
+            add("missing-returns", f"facade returns {annotation} with no Returns section")
+        if not FACADE_POINTER_RE.search(doc):
+            add("no-description", "facade missing canonical ops pointer")
+        return findings
 
     if arguments and not prop:
         if "Parameters" not in sections:

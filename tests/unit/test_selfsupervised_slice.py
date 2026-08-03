@@ -87,7 +87,7 @@ def test_masked_tabular_pretext_head_eval_bundle(tmp_path: Path) -> None:
 
     bundle = session.save_ssl_bundle(tmp_path / "ssl")
     assert (bundle / "meta.json").is_file()
-    plan, loaded_head = load_ssl_bundle(bundle)
+    plan, loaded_head = load_ssl_bundle(bundle, trusted=True)
     assert plan.latent_dim == 6
     assert loaded_head is not None
     import json

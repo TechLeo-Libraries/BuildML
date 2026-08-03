@@ -352,7 +352,7 @@ def test_serve_health_and_predict_pipeline(tmp_path: Path) -> None:
     session.save_pipeline(bundle_dir, evaluate_partition=None)
 
     try:
-        app = create_serving_app(bundle_dir, kind="pipeline", title="PassO Serve")
+        app = create_serving_app(bundle_dir, kind="pipeline", title="PassO Serve", trusted=True)
         client = TestClient(app)
         health = client.get("/health")
         assert health.status_code == 200
@@ -382,7 +382,7 @@ def test_serve_missing_extra_message() -> None:
     from buildml.serving.app import create_serving_app
 
     with pytest.raises(MissingExtraError) as exc:
-        create_serving_app("unused", kind="pipeline")
+        create_serving_app("unused", kind="pipeline", trusted=True)
     assert "serve" in str(exc.value).lower() or "buildml[serve]" in str(exc.value)
 
 

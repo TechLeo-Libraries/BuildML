@@ -50,7 +50,7 @@ def test_lag_ridge_still_works(tmp_path: Path) -> None:
     out = save_forecast_bundle(tmp_path / "fc", plan, fit_result=fit, eval_result=ev)
     meta = (out / "meta.json").read_text(encoding="utf-8")
     assert BUNDLE_FORMAT_V2 in meta
-    loaded = load_forecast_bundle(out)
+    loaded = load_forecast_bundle(out, trusted=True)
     assert loaded.method == "lag_ridge"
 
 

@@ -51,7 +51,7 @@ def test_apply_preprocess_plans_roundtrip_held_out(tmp_path: Path) -> None:
 
     pipe = tmp_path / "pipe"
     session.save_pipeline(pipe, evaluate_partition=None)
-    restored = Session.ingest(frame).load_pipeline(pipe)
+    restored = Session.ingest(frame).load_pipeline(pipe, trusted=True)
     assert restored.impute_plan is not None
     assert restored.scale_plan is not None
     assert restored.encode_plan is not None
@@ -99,7 +99,7 @@ def test_apply_preprocess_plans_roundtrip_held_out(tmp_path: Path) -> None:
             }
         )
         .split(test_size=0.25, stratify=True, random_state=0)
-        .load_pipeline(pipe)
+        .load_pipeline(pipe, trusted=True)
     )
     applied = fresh.apply_preprocess_plans()
     assert "impute" in applied.applied

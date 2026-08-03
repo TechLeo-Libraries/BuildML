@@ -56,7 +56,7 @@ def test_session_fit_interval_eval_bundle(tmp_path: Path) -> None:
     assert (out / "probabilistic_plan.joblib").is_file()
 
     other = _session()
-    other.load_probabilistic_bundle(out)
+    other.load_probabilistic_bundle(out, trusted=True)
     assert other.probabilistic_plan is not None
     assert other.probabilistic_plan.estimator_name == "bayesian_ridge"
     reloaded = other.evaluate_probabilistic(partition="test")

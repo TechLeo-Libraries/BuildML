@@ -103,7 +103,7 @@ def test_label_propagation_fit_predict_evaluate_bundle(tmp_path: Path) -> None:
 
     bundle = session.save_semisupervised_bundle(tmp_path / "semi")
     assert (bundle / "meta.json").is_file()
-    plan = load_semisupervised_bundle(bundle)
+    plan = load_semisupervised_bundle(bundle, trusted=True)
     assert plan.method == "label_propagation"
     import json
 

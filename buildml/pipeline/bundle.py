@@ -36,6 +36,12 @@ import joblib
 
 from buildml._version import __version__
 from buildml.core.errors import ValidationError
+from buildml.core.serialization import (
+    assert_local_load_path,
+    joblib_load_trusted,
+    read_json_sidecar,
+    sha256_file,
+)
 from buildml.model.supervised import FitResult
 from buildml.pipeline.card import ModelCard, build_model_card, load_model_card, save_model_card
 from buildml.pipeline.contract import (
@@ -537,7 +543,9 @@ def save_pipeline_bundle(
             ),
         },
     )
-    joblib.dump(fit_result.estimator, root / "model.joblib")
+    model_path = root / "model.joblib"
+    plans_path = root / "plans.joblib"
+    joblib.dump(fit_result.estimator, model_path)
     joblib.dump(
         pack_plans_payload(
             impute_plan=impute_plan,
@@ -552,7 +560,7 @@ def save_pipeline_bundle(
             custom_plan=custom_plan,
             resample_plan=resample_plan,
         ),
-        root / "plans.joblib",
+        plans_path,
     )
     save_schema_contract(root, contract)
     bundle = PipelineBundle(
@@ -573,15 +581,20 @@ def save_pipeline_bundle(
         plans_format=PLANS_FORMAT,
         bundle_format=BUNDLE_FORMAT,
     )
+    meta = bundle.to_meta()
+    meta["payload_hashes"] = {
+        "model.joblib": sha256_file(model_path),
+        "plans.joblib": sha256_file(plans_path),
+    }
     (root / "meta.json").write_text(
-        json.dumps(bundle.to_meta(), indent=2, sort_keys=True),
+        json.dumps(meta, indent=2, sort_keys=True),
         encoding="utf-8",
     )
     save_model_card(root, card)
     return root
 
 
-def load_pipeline_bundle(path: str | Path) -> PipelineBundle:
+def load_pipeline_bundle(path: str | Path, *, trusted: bool = False) -> PipelineBundle:
     """Restore an estimator together with the transforms it depends on.
 
     Reads the current format and migrates the older ones, so a bundle written by
@@ -598,6 +611,9 @@ def load_pipeline_bundle(path: str | Path) -> PipelineBundle:
     ----------
     path:
         The bundle directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -627,17 +643,28 @@ def load_pipeline_bundle(path: str | Path) -> PipelineBundle:
     save_pipeline_bundle : Writing one.
     buildml.pipeline.score.predict_from_pipeline : Predicting from one.
     """
-    root = Path(path)
+    root = assert_local_load_path(path, artifact="pipeline bundle")
     model_path = root / "model.joblib"
     plans_path = root / "plans.joblib"
     meta_path = root / "meta.json"
     if not model_path.exists() or not meta_path.exists():
         raise ValidationError(f"Pipeline bundle incomplete at '{root}'")
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    meta = read_json_sidecar(meta_path, artifact="pipeline meta.json")
     fmt = meta.get("format")
     if fmt not in SUPPORTED_BUNDLE_FORMATS and "fit" not in meta:
         raise ValidationError(f"Unrecognized pipeline bundle format '{fmt}' at '{root}'")
-    estimator = joblib.load(model_path)
+    payload_hashes = meta.get("payload_hashes")
+    model_hash = None
+    plans_hash = None
+    if isinstance(payload_hashes, dict):
+        model_hash = payload_hashes.get("model.joblib")
+        plans_hash = payload_hashes.get("plans.joblib")
+    estimator = joblib_load_trusted(
+        model_path,
+        trusted=trusted,
+        artifact="joblib plan",
+        expected_sha256=model_hash if isinstance(model_hash, str) else None,
+    )
     fit_meta = meta["fit"]
     fit_result = FitResult(
         estimator=estimator,
@@ -661,7 +688,12 @@ def load_pipeline_bundle(path: str | Path) -> PipelineBundle:
     }
     plans_format = PLANS_FORMAT_V1
     if plans_path.exists():
-        loaded = joblib.load(plans_path)
+        loaded = joblib_load_trusted(
+            plans_path,
+            trusted=trusted,
+            artifact="joblib plan",
+            expected_sha256=plans_hash if isinstance(plans_hash, str) else None,
+        )
         plans, plans_format = unpack_plans_payload(loaded)
     card = None
     card_path = root / "model_card.json"

@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from buildml.session._imports import *  # noqa: F403
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
+
+from buildml.session._imports import (
+    ValidationError,
+)
 
 
 def rag_ingest_corpus(
@@ -14,7 +22,7 @@ def rag_ingest_corpus(
     glob: str = "*.txt",
     encoding: str = "utf-8",
     role: Literal['index', 'eval_only'] = "index",
-) -> Session:
+) -> "Session":
     """Load a text corpus for the RAG path (requires ``buildml[rag]``).
 
     Provide a file/directory ``source``, an in-memory document sequence, or
@@ -85,16 +93,14 @@ def rag_ingest_corpus(
         {"source": corpus.source, "role": role, "text_column": text_column, "id_column": id_column},
         result_summary=corpus.to_dict(),
     )
-    return session
-
-
+    return cast("Session", session)
 def rag_chunk(
     session,
     *,
     size: int = 512,
     overlap: int = 64,
     strategy: str = "fixed",
-) -> Session:
+) -> "Session":
     """Chunk the active RAG corpus (fixed or recursive strategy).
 
     ``strategy="recursive"`` splits on paragraph/line/sentence boundaries before
@@ -139,9 +145,7 @@ def rag_chunk(
         {"size": size, "overlap": overlap, "strategy": strategy},
         result_summary=result.to_dict(),
     )
-    return session
-
-
+    return cast("Session", session)
 def rag_embed_and_index(
     session,
     *,
@@ -150,7 +154,7 @@ def rag_embed_and_index(
     chunk_overlap: int | None = None,
     chunk_strategy: str | None = None,
     device: str | None = None,
-) -> Session:
+) -> "Session":
     """Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
 
     Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
@@ -226,9 +230,7 @@ def rag_embed_and_index(
         result_summary=session._rag_index_result.to_dict(),
         warnings=tuple(index.warnings),
     )
-    return session
-
-
+    return cast("Session", session)
 def rag_retrieve(
     session,
     query: str,
@@ -278,7 +280,6 @@ def rag_retrieve(
     from buildml.rag.defaults import default_retrieve_config
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.retrieve import retrieve
-
     from buildml.rag.types import RetrieveConfig
 
     require_rag_stack(feature="RAG retrieve")
@@ -304,7 +305,7 @@ def rag_retrieve(
         query,
         k=k,
         config=cfg,
-        mode=mode,
+        mode=cast(Any, mode),
         filters=filters,
         rerank=rerank,
         fusion=fusion,
@@ -487,9 +488,9 @@ def rag_evaluate(
         session._rag_index,
         qrels,
         k=k,
-        relevance_mode=relevance_mode,
+        relevance_mode=cast(Any, relevance_mode),
         retrieve_config=retrieve_config,
-        mode=mode,
+        mode=cast(Any, mode),
     )
     session._rag_eval_result = result
     session._record(
@@ -512,7 +513,7 @@ def rag_upsert(
     *,
     chunks: Sequence[Any] | None = None,
     chunk: bool = True,
-) -> Session:
+) -> "Session":
     """Upsert documents or chunks into the active RAG index without a full rebuild.
 
     Replaces existing ``chunk_id`` rows and re-embeds only new/changed text.
@@ -566,12 +567,10 @@ def rag_upsert(
         result_summary=result.to_dict(),
         warnings=tuple(result.warnings),
     )
-    return session
-
-
+    return cast("Session", session)
 def rag_delete(
     session, *, chunk_ids: Sequence[str] | None = None, doc_ids: Sequence[str] | None = None
-) -> Session:
+) -> "Session":
     """Delete chunks by id and/or parent document id from the active RAG index.
 
     Removes matching rows from the in-memory index and refreshes Session chunk
@@ -618,9 +617,7 @@ def rag_delete(
         },
         result_summary=result.to_dict(),
     )
-    return session
-
-
+    return cast("Session", session)
 def save_rag_bundle(session, path: str | Path) -> Path:
     """Persist the active RAG index as ``buildml.rag_bundle.v1``.
 
@@ -656,11 +653,12 @@ def save_rag_bundle(session, path: str | Path) -> Path:
     return destination
 
 
-def load_rag_bundle(session, path: str | Path) -> Session:
+def load_rag_bundle(session, path: str | Path) -> "Session":
     """Load a RAG bundle into this Session (requires ``buildml[rag]``).
 
     Delegates to :func:`buildml.rag.checkpoint.load_rag_bundle` and restores
-    index, chunk, and index-result state on the Session.
+    index, chunk, and index-result state on the Session. RAG bundles use JSONL
+    and NumPy arrays — not joblib/pickle — so no ``trusted`` gate applies.
 
     Parameters
     ----------
@@ -674,12 +672,12 @@ def load_rag_bundle(session, path: str | Path) -> Session:
     Session
         ``session`` with RAG index attached for chaining.
     """
-    from buildml.rag.checkpoint import load_rag_bundle
+    from buildml.rag.checkpoint import load_rag_bundle as _load_rag_bundle
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.results import ChunkResult
 
     require_rag_stack(feature="RAG bundle load")
-    index = load_rag_bundle(path)
+    index = _load_rag_bundle(path)
     session._rag_index = index
     session._rag_index_result = index.to_index_result()
     session._rag_chunks = ChunkResult(
@@ -688,4 +686,4 @@ def load_rag_bundle(session, path: str | Path) -> Session:
     session._record(
         "load_rag_bundle", {"path": str(path)}, result_summary=session._rag_index_result.to_dict()
     )
-    return session
+    return cast("Session", session)

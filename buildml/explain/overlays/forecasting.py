@@ -241,7 +241,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Validate bundle format.",
             "Attach ForecastPlan; clear prior fit/generate/eval result slots.",
         ),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("forecast_bundle directory.",),
         outputs=("Session with forecast_plan attached.",),
         prerequisites=(DATASET,),

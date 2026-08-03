@@ -112,7 +112,7 @@ def test_isolation_forest_fit_score_evaluate_and_bundle(tmp_path: Path) -> None:
     path = session.save_anomaly_bundle(tmp_path / "anomaly")
     assert (path / "meta.json").is_file()
     assert (path / "anomaly_plan.joblib").is_file()
-    plan = load_anomaly_bundle(path)
+    plan = load_anomaly_bundle(path, trusted=True)
     assert plan.method == "isolation_forest"
     assert plan.columns == session.anomaly_plan.columns
 
@@ -120,7 +120,7 @@ def test_isolation_forest_fit_score_evaluate_and_bundle(tmp_path: Path) -> None:
         {"x": "feature", "y": "feature", "is_fraud": "target"}
     )
     restored.split(test_size=0.25, stratify=True, random_state=0).scale(method="standard")
-    restored.load_anomaly_bundle(path)
+    restored.load_anomaly_bundle(path, trusted=True)
     again = restored.score_anomalies(partition="test")
     assert again.flags == scored.flags
 
@@ -129,7 +129,7 @@ def test_isolation_forest_fit_score_evaluate_and_bundle(tmp_path: Path) -> None:
         bad.mkdir()
         (bad / "meta.json").write_text('{"format": "buildml.rag_bundle.v1"}', encoding="utf-8")
         (bad / "anomaly_plan.joblib").write_bytes(b"not-a-real-joblib")
-        load_anomaly_bundle(bad)
+        load_anomaly_bundle(bad, trusted=True)
 
 
 def test_novelty_and_supervised_modes() -> None:
@@ -219,6 +219,6 @@ def test_low_level_fit_detector_matches_session(tmp_path: Path) -> None:
     assert fit.method == "isolation_forest"
     assert scored.n_rows == eval_result.n_rows
     path = save_anomaly_bundle(tmp_path / "direct", plan, fit_result=fit)
-    restored = load_anomaly_bundle(path)
+    restored = load_anomaly_bundle(path, trusted=True)
     assert restored.method == plan.method
     assert restored.columns == plan.columns

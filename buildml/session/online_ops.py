@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 import pandas as pd
 
@@ -386,7 +389,7 @@ def save_online_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_online_bundle_op(session, path: str | Path) -> Any:
+def load_online_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load an online-learning bundle into this Session.
 
     Delegates to :func:`buildml.online.checkpoint.load_online_bundle`,
@@ -398,13 +401,16 @@ def load_online_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded online plan.
     path:
         Path to a ``buildml.online_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with online plan attached for chaining.
     """
-    plan = load_online_bundle(path)
+    plan = load_online_bundle(path, trusted=trusted)
     session._online_plan = plan
     session._online_fit_result = None
     session._online_update_result = None
@@ -415,4 +421,4 @@ def load_online_bundle_op(session, path: str | Path) -> Any:
         {"path": str(path), "backend": plan.backend, "estimator_name": plan.estimator_name},
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

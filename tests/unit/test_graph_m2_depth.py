@@ -102,7 +102,7 @@ def test_classical_inductive_fit_eval_bundle(tmp_path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(columns=["f1", "f2"], method="standard")
     )
-    other.load_graph_bundle(out)
+    other.load_graph_bundle(out, trusted=True)
     assert other.graph_plan is not None
     assert other.graph_spec is not None
     ev2 = other.evaluate_graph(partition="test")

@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.tda.results import TdaEvalResult, TdaFitResult, TdaPlan
 
@@ -91,7 +92,7 @@ def save_tda_bundle(
     return destination
 
 
-def load_tda_bundle(path: str | Path) -> TdaPlan:
+def load_tda_bundle(path: str | Path, *, trusted: bool = False) -> TdaPlan:
     """Load a TDA bundle from disk into a :class:`~buildml.tda.results.TdaPlan`.
 
     Supports v1 (native ripser/persim only) and v2 bundles. Rehydrates train
@@ -102,6 +103,9 @@ def load_tda_bundle(path: str | Path) -> TdaPlan:
     ----------
     path:
         Bundle directory written by :func:`save_tda_bundle`.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -128,7 +132,7 @@ def load_tda_bundle(path: str | Path) -> TdaPlan:
         raise ValidationError(
             f"Unsupported TDA bundle format {fmt!r}; expected one of {SUPPORTED_BUNDLE_FORMATS}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, TdaPlan):
         plan = loaded
     elif isinstance(loaded, dict) and "plan" in loaded:

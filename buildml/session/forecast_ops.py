@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 import numpy as np
 import pandas as pd
@@ -317,7 +320,7 @@ def save_forecast_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_forecast_bundle_op(session, path: str | Path) -> Any:
+def load_forecast_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load a forecast bundle into this Session.
 
     Delegates to :func:`buildml.forecasting.checkpoint.load_forecast_bundle`
@@ -329,13 +332,16 @@ def load_forecast_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded ForecastPlan.
     path:
         Path to a ``buildml.forecast_bundle.v2`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with ForecastPlan attached for chaining.
     """
-    plan = load_forecast_bundle(path)
+    plan = load_forecast_bundle(path, trusted=trusted)
     session._forecast_plan = plan
     session._forecast_fit_result = None
     session._forecast_generate_result = None
@@ -345,4 +351,4 @@ def load_forecast_bundle_op(session, path: str | Path) -> Any:
         {"path": str(path), "method": plan.method, "horizon": plan.horizon},
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

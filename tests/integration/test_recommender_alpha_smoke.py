@@ -75,7 +75,7 @@ def test_recommender_alpha_smoke(tmp_path: Path) -> None:
         )
         .split(test_size=0.2, validation_size=0.15, random_state=0)
     )
-    other.load_recommender_bundle(bundle)
+    other.load_recommender_bundle(bundle, trusted=True)
     assert other.recommender_plan is not None
     assert other.evaluate_recommender(k=5).n_holdout_interactions > 0
 

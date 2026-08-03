@@ -57,7 +57,7 @@ def test_save_load_pipeline_roundtrip(tmp_path: Path) -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .impute(strategy="median")
         .scale(method="standard")
-        .load_pipeline(bundle_dir)
+        .load_pipeline(bundle_dir, trusted=True)
     )
     assert restored.fit_result is not None
     assert restored.impute_plan is not None
@@ -107,7 +107,7 @@ def test_pipeline_persists_outlier_binning_select_date_plans(tmp_path: Path) -> 
         assert label in card_md
         assert label in session.model_card.lineage["plans_present"]  # type: ignore[index]
 
-    restored = Session.ingest(frame).load_pipeline(bundle)
+    restored = Session.ingest(frame).load_pipeline(bundle, trusted=True)
     assert restored.outlier_plan is not None
     assert restored.binning_plan is not None
     assert restored.feature_select_plan is not None
@@ -170,7 +170,7 @@ def test_pipeline_bundle_distinct_from_checkpoint(tmp_path: Path) -> None:
     assert "checkpoint_compatibility" in session.model_card.lineage
     assert "complementary" in session.model_card.lineage["checkpoint_compatibility"].lower()
 
-    restored_ckpt = Session.checkpoint_load(ckpt)
+    restored_ckpt = Session.checkpoint_load(ckpt, trusted=True)
     assert restored_ckpt.impute_plan is not None
     assert restored_ckpt.fit_result is None
 
@@ -194,7 +194,7 @@ def test_checkpoint_plan_roundtrip_applies_transforms(tmp_path: Path) -> None:
     path = tmp_path / "ckpt_plans"
     session.checkpoint_save(path)
 
-    restored = Session.checkpoint_load(path)
+    restored = Session.checkpoint_load(path, trusted=True)
     assert restored.impute_plan is not None
     assert restored.scale_plan is not None
     # Data already transformed in the checkpoint frame.

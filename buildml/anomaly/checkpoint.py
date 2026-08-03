@@ -10,6 +10,12 @@ import joblib
 
 from buildml._version import __version__
 from buildml.anomaly.results import AnomalyEvalResult, AnomalyFitResult, AnomalyPlan
+from buildml.core.serialization import (
+    assert_local_load_path,
+    attach_payload_sha256,
+    joblib_load_trusted,
+    read_json_sidecar,
+)
 from buildml.core.errors import ValidationError
 
 BUNDLE_FORMAT = "buildml.anomaly_bundle.v1"
@@ -66,7 +72,8 @@ ValidationError
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
     payload = {"plan": plan}
-    joblib.dump(payload, destination / "anomaly_plan.joblib")
+    plan_path = destination / "anomaly_plan.joblib"
+    joblib.dump(payload, plan_path)
     meta: dict[str, Any] = {
         "format": BUNDLE_FORMAT,
         "buildml_version": __version__,
@@ -75,31 +82,36 @@ ValidationError
         "fit": None if fit_result is None else fit_result.to_dict(),
         "eval": None if eval_result is None else eval_result.to_dict(),
     }
+    meta = attach_payload_sha256(meta, plan_path)
     (destination / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return destination
 
 
-def load_anomaly_bundle(path: str | Path) -> AnomalyPlan:
+def load_anomaly_bundle(path: str | Path, *, trusted: bool = False) -> AnomalyPlan:
     """Load an anomaly bundle into an :class:`AnomalyPlan`.
 
-Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
+    Persists or restores plan state as joblib plus JSON metadata. Distinct from Session checkpoints — reload workflow via checkpoint_load separately.
 
-Parameters
-----------
-path:
-    Filesystem path to the bundle directory.
+    Parameters
+    ----------
+    path:
+        Filesystem path to the bundle directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
-Returns
--------
-AnomalyPlan
-    Fitted plan object (AnomalyPlan) with private estimators attached.
+    Returns
+    -------
+    AnomalyPlan
+        Fitted plan object (AnomalyPlan) with private estimators attached.
 
-Raises
-------
-ValidationError
-    When preconditions for this operation are not met.
+    Raises
+    ------
+    ValidationError
+        When preconditions for this operation are not met.
+        
     """
-    root = Path(path)
+    root = assert_local_load_path(path, artifact="anomaly bundle")
     meta_path = root / "meta.json"
     plan_path = root / "anomaly_plan.joblib"
     if not meta_path.is_file() or not plan_path.is_file():
@@ -107,13 +119,18 @@ ValidationError
             f"Incomplete anomaly bundle at {root}. "
             f"Expected meta.json and anomaly_plan.joblib ({BUNDLE_FORMAT})."
         )
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    meta = read_json_sidecar(meta_path, artifact="anomaly meta.json")
     fmt = meta.get("format")
     if fmt != BUNDLE_FORMAT:
         raise ValidationError(
             f"Unsupported anomaly bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(
+        plan_path,
+        trusted=trusted,
+        artifact="joblib plan",
+        expected_sha256=meta.get("payload_sha256"),
+    )
     if isinstance(loaded, AnomalyPlan):
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:

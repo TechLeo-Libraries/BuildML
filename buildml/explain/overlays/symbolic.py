@@ -407,6 +407,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         parameters=(
             _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
         ),
         inputs=("Bundle directory.",),
         outputs=("Session with plan attached.",),

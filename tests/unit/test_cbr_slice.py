@@ -85,7 +85,7 @@ def test_session_fit_predict_eval_bundle(tmp_path: Path) -> None:
     assert (out / "cbr_plan.joblib").is_file()
 
     other = _clf_session()
-    other.load_cbr_bundle(out)
+    other.load_cbr_bundle(out, trusted=True)
     assert other.cbr_plan is not None
     assert other.cbr_plan.metric == "euclidean"
     reloaded = other.evaluate_cbr(partition="test")

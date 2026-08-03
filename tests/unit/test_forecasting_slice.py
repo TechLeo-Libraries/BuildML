@@ -105,7 +105,7 @@ def test_lag_ridge_fit_generate_evaluate_and_bundle(tmp_path: Path) -> None:
     path = session.save_forecast_bundle(tmp_path / "fc")
     assert (path / "meta.json").is_file()
     assert (path / "forecast_plan.joblib").is_file()
-    plan = load_forecast_bundle(path)
+    plan = load_forecast_bundle(path, trusted=True)
     assert plan.method == "lag_ridge"
     assert plan.lags == session.forecast_plan.lags
 
@@ -114,7 +114,7 @@ def test_lag_ridge_fit_generate_evaluate_and_bundle(tmp_path: Path) -> None:
         .set_roles({"ts": "time", "y": "target", "promo": "feature"})
         .time_split(test_size=0.2, validation_size=0.2)
     )
-    restored.load_forecast_bundle(path)
+    restored.load_forecast_bundle(path, trusted=True)
     again = restored.generate_forecast(horizon=5)
     assert again.predictions == gen.predictions
 
@@ -125,7 +125,7 @@ def test_lag_ridge_fit_generate_evaluate_and_bundle(tmp_path: Path) -> None:
             '{"format": "buildml.rag_bundle.v1"}', encoding="utf-8"
         )
         (bad / "forecast_plan.joblib").write_bytes(b"x")
-        load_forecast_bundle(bad)
+        load_forecast_bundle(bad, trusted=True)
 
 
 def test_seasonal_naive_and_baselines() -> None:

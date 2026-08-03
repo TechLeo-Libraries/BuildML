@@ -115,7 +115,7 @@ def test_fit_adapt_evaluate_bundle(tmp_path: Path) -> None:
 
     bundle = session.save_metalearning_bundle(tmp_path / "metalearning_bundle")
     assert (bundle / "meta.json").is_file()
-    plan = load_metalearning_bundle(bundle)
+    plan = load_metalearning_bundle(bundle, trusted=True)
     assert plan.n_train_rows == fit.n_train_rows
 
     restored = Session.ingest(session.to_pandas()).set_roles(
@@ -128,7 +128,7 @@ def test_fit_adapt_evaluate_bundle(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_metalearning_bundle(bundle)
+    restored.load_metalearning_bundle(bundle, trusted=True)
     assert restored.metalearning_plan is not None
     assert restored.metalearning_plan.method == "prototypical"
 

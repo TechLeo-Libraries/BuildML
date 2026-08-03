@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -372,7 +375,7 @@ def save_federated_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_federated_bundle_op(session, path: str | Path) -> Any:
+def load_federated_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load a federated-learning bundle into this Session.
 
     Delegates to :func:`buildml.federated.checkpoint.load_federated_bundle`
@@ -384,13 +387,16 @@ def load_federated_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded federated plan.
     path:
         Path to a ``buildml.federated_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with federated plan attached for chaining.
     """
-    plan = load_federated_bundle(path)
+    plan = load_federated_bundle(path, trusted=trusted)
     session._federated_plan = plan
     session._federated_fit_result = None
     session._federated_eval_result = None
@@ -407,4 +413,4 @@ def load_federated_bundle_op(session, path: str | Path) -> Any:
         },
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

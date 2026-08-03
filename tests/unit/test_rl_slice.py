@@ -104,7 +104,7 @@ def test_imitation_fit_predict_eval_bundle(tmp_path: Path) -> None:
     assert (out / "imitation_plan.joblib").is_file()
 
     other = _demo_session()
-    other.load_imitation_bundle(out)
+    other.load_imitation_bundle(out, trusted=True)
     assert other.imitation_plan is not None
     reloaded = other.evaluate_imitation(partition="test")
     assert "accuracy" in reloaded.metrics
@@ -138,7 +138,7 @@ def test_bandit_fit_act_eval_bundle(tmp_path: Path) -> None:
     assert (out / "rl_plan.joblib").is_file()
 
     other = _bandit_session()
-    other.load_rl_bundle(out)
+    other.load_rl_bundle(out, trusted=True)
     assert other.rl_plan is not None
     assert other.rl_plan.algorithm == "linucb"
     reloaded = other.evaluate_rl(partition="test")

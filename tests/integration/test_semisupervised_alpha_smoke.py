@@ -57,6 +57,6 @@ def test_semisupervised_alpha_gate_smoke(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_semisupervised_bundle(bundle)
+    restored.load_semisupervised_bundle(bundle, trusted=True)
     again = restored.predict_semisupervised(partition="validation")
     assert again.predictions == first.predictions

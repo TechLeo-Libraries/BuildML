@@ -77,6 +77,6 @@ def test_federated_alpha_smoke(tmp_path: Path) -> None:
     )
     other._split_plan = session.split_plan
     other._dataset = session.dataset
-    other.load_federated_bundle(bundle)
+    other.load_federated_bundle(bundle, trusted=True)
     ev2 = other.evaluate_federated(partition="test", per_client=False)
     assert ev2.method == "fedavg"

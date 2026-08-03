@@ -186,6 +186,7 @@ def load_serving_bundle(
     *,
     kind: BundleKind = "pipeline",
     map_location: str = "cpu",
+    trusted: bool = False,
 ) -> ServingState:
     """Read an artifact from disk once, ready to answer requests from memory.
 
@@ -208,6 +209,9 @@ def load_serving_bundle(
         Where to place TorchScript tensors — ``'cpu'`` (the default),
         ``'cuda'``, or a specific device. Ignored for pipelines. Loading a
         GPU-saved module onto a CPU-only host needs this left at ``'cpu'``.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/TorchScript payloads.
+        Pass only for artifacts you created or fully trust.
 
     Returns
     -------
@@ -237,11 +241,15 @@ def load_serving_bundle(
 
         if not root.exists():
             raise ValidationError(f"Pipeline bundle path does not exist: {root}")
-        bundle = load_pipeline_bundle(root)
+        bundle = load_pipeline_bundle(root, trusted=trusted)
         return ServingState(kind="pipeline", path=root, pipeline_bundle=bundle)
     if kind == "torchscript":
+        from buildml.core.serialization import require_trusted_deserialize
         from buildml.dl.extras import require_torch
 
+        require_trusted_deserialize(
+            trusted=trusted, artifact="TorchScript module", path=root
+        )
         torch = require_torch(feature="TorchScript serving")
         ts_path = root
         if root.is_dir():
@@ -273,6 +281,7 @@ def create_serving_app(
     title: str = "BuildML Serve",
     map_location: str = "cpu",
     api_keys: str | list[str] | tuple[str, ...] | None = None,
+    trusted: bool = False,
 ) -> Any:
     """Load a bundle and wrap it in a FastAPI app with five endpoints.
 
@@ -303,6 +312,9 @@ def create_serving_app(
         One key or several. When given, every request must present a matching
         key; when ``None``, the app is unauthenticated and must not be reachable
         from an untrusted network.
+    trusted:
+        Must be ``True`` to deserialize the served artifact. Operators own this
+        opt-in; the default refuses pickle/joblib/TorchScript loads.
 
     Returns
     -------
@@ -344,6 +356,7 @@ def create_serving_app(
             "artifacts/churn-pipeline",
             title="Churn v3",
             api_keys="local-dev-key",
+            trusted=True,
         )
 
         from fastapi.testclient import TestClient
@@ -361,7 +374,9 @@ def create_serving_app(
     buildml.serving.launch.serve_bundle : Doing this and starting a server.
     """
     _require_fastapi()
-    state = load_serving_bundle(path, kind=kind, map_location=map_location)
+    state = load_serving_bundle(
+        path, kind=kind, map_location=map_location, trusted=trusted
+    )
     state.title = title
     set_serving_state(state)
 

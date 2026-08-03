@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -305,7 +308,7 @@ def save_multitask_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_multitask_bundle_op(session, path: str | Path) -> Any:
+def load_multitask_bundle_op(session, path: str | Path, *, trusted: bool = False) -> Any:
     """Load a multi-task bundle into this Session.
 
     Delegates to :func:`buildml.multitask.checkpoint.load_multitask_bundle`
@@ -317,13 +320,16 @@ def load_multitask_bundle_op(session, path: str | Path) -> Any:
         Session instance to populate with the loaded multi-task plan.
     path:
         Path to a ``buildml.multitask_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with multi-task plan attached for chaining.
     """
-    plan = load_multitask_bundle(path)
+    plan = load_multitask_bundle(path, trusted=trusted)
     session._multitask_plan = plan
     session._multitask_fit_result = None
     session._multitask_predict_result = None
@@ -339,4 +345,4 @@ def load_multitask_bundle_op(session, path: str | Path) -> Any:
         },
         result_summary=plan.to_dict(),
     )
-    return session
+    return cast("Session", session)

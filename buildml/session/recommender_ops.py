@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -300,7 +303,7 @@ def save_recommender_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_recommender_bundle_op(session, path: str | Path):
+def load_recommender_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a recommender bundle into this Session.
 
     Delegates to :func:`buildml.recommenders.checkpoint.load_recommender_bundle`
@@ -312,13 +315,16 @@ def load_recommender_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded recommender plan.
     path:
         Path to a ``buildml.recommender_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with recommender plan attached for chaining.
     """
-    plan = load_recommender_bundle(path)
+    plan = load_recommender_bundle(path, trusted=trusted)
     session._recommender_plan = plan
     session._recommender_fit_result = None
     session._recommender_eval_result = None
@@ -328,4 +334,4 @@ def load_recommender_bundle_op(session, path: str | Path):
         {"path": str(path)},
         result_summary={"path": str(path), "format": "buildml.recommender_bundle.v1"},
     )
-    return session
+    return cast("Session", session)

@@ -141,7 +141,7 @@ def test_serving_api_key_auth(tmp_path: Path) -> None:
     )
     bundle_dir = tmp_path / "pipe"
     session.save_pipeline(bundle_dir)
-    app = create_serving_app(bundle_dir, kind="pipeline", api_keys=["secret-key"])
+    app = create_serving_app(bundle_dir, kind="pipeline", api_keys=["secret-key"], trusted=True)
     client = TestClient(app)
     health = client.get("/health")
     assert health.status_code == 200
@@ -167,7 +167,7 @@ def test_serving_api_key_auth(tmp_path: Path) -> None:
     )
     assert wrong.status_code == 401
 
-    open_app = create_serving_app(bundle_dir, kind="pipeline")
+    open_app = create_serving_app(bundle_dir, kind="pipeline", trusted=True)
     open_client = TestClient(open_app)
     open_health = open_client.get("/health")
     assert open_health.status_code == 200
@@ -239,7 +239,7 @@ def test_serve_refuses_public_bind_without_api_keys(tmp_path: Path) -> None:
     fake = tmp_path / "model.ts.pt"
     fake.write_bytes(b"not-a-real-bundle")
     with pytest.raises(ValidationError, match="allow_insecure_public_bind|api_keys"):
-        serve_bundle(fake, kind="torchscript", host="0.0.0.0", port=18080)
+        serve_bundle(fake, kind="torchscript", host="0.0.0.0", port=18080, trusted=True)
 
 
 def test_serve_cli_documents_insecure_public_bind_flag() -> None:

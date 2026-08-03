@@ -85,7 +85,7 @@ def test_session_fit_transform_evaluate_bundle(tmp_path: Path) -> None:
 
     session.save_tda_bundle(tmp_path / "tda")
     other = _demo_session()
-    other.load_tda_bundle(tmp_path / "tda")
+    other.load_tda_bundle(tmp_path / "tda", trusted=True)
     assert other.tda_plan is not None
     assert other.evaluate_tda(partition="test").n_rows > 0
 

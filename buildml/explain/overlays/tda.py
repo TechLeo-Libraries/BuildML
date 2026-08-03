@@ -218,7 +218,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore TdaPlan from buildml.tda_bundle.v2 (v1 compatible).",
         "TDA bundle load.",
         ("Read meta.json + tda_plan.joblib.", "Attach plan; clear live eval/transform."),
-        parameters=(_p("path", "str | Path", "Bundle directory."),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory.",),
         outputs=("Session with tda_plan attached.",),
         prerequisites=(DATASET,),

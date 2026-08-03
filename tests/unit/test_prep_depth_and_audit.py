@@ -186,7 +186,7 @@ def test_text_and_pca_roundtrip_through_pipeline(tmp_path) -> None:
     )
     path = tmp_path / "pipe"
     session.save_pipeline(path)
-    restored = Session().load_pipeline(path)
+    restored = Session().load_pipeline(path, trusted=True)
     assert restored.text_plan is not None
     assert restored.reduce_plan is not None
     assert restored.fit_result is not None

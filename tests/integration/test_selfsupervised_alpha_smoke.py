@@ -54,6 +54,6 @@ def test_selfsupervised_alpha_gate_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    restored.load_ssl_bundle(bundle)
+    restored.load_ssl_bundle(bundle, trusted=True)
     again = restored.evaluate_ssl(partition="validation")
     assert again.metrics["accuracy"] == pytest.approx(ev.metrics["accuracy"])

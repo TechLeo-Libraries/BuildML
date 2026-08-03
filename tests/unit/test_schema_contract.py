@@ -45,7 +45,7 @@ def test_save_pipeline_writes_schema_contract(tmp_path: Path) -> None:
     pipe = tmp_path / "pipe"
     session.save_pipeline(pipe, evaluate_partition=None)
     assert (pipe / SCHEMA_CONTRACT_FILENAME).exists()
-    bundle = load_pipeline_bundle(pipe)
+    bundle = load_pipeline_bundle(pipe, trusted=True)
     assert bundle.schema_contract is not None
     assert "age" in bundle.schema_contract.columns
     assert "y" not in bundle.schema_contract.columns  # target not required at score time
@@ -63,13 +63,19 @@ def test_predict_rejects_missing_and_wrong_type(tmp_path: Path) -> None:
     session.save_pipeline(pipe, evaluate_partition=None)
 
     with pytest.raises(ValidationError, match="missing columns"):
-        predict_from_pipeline(pipe, pd.DataFrame({"age": [1.0, 2.0]}), apply_plans=False)
+        predict_from_pipeline(
+            pipe,
+            pd.DataFrame({"age": [1.0, 2.0]}),
+            apply_plans=False,
+            trusted=True,
+        )
 
     with pytest.raises(ValidationError, match="wrong-type"):
         predict_from_pipeline(
             pipe,
             pd.DataFrame({"age": ["a", "b"], "income": ["c", "d"]}),
             apply_plans=False,
+            trusted=True,
         )
 
 
@@ -83,7 +89,7 @@ def test_predict_allows_extra_columns_with_warning(tmp_path: Path) -> None:
     pipe = tmp_path / "pipe"
     session.save_pipeline(pipe, evaluate_partition=None)
     holdout = _tiny_cls().assign(extra=1.0)
-    scored = predict_from_pipeline(pipe, holdout[["age", "income", "extra"]], apply_plans=False)
+    scored = predict_from_pipeline(pipe, holdout[["age", "income", "extra"]], apply_plans=False, trusted=True)
     assert scored.n_rows == len(holdout)
     assert any("extra columns" in w for w in scored.warnings)
     assert scored.contract_validation is not None
@@ -111,12 +117,13 @@ def test_legacy_bundle_without_contract_still_scores(tmp_path: Path) -> None:
     meta["has_schema_contract"] = False
     (pipe / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
 
-    bundle = load_pipeline_bundle(pipe)
+    bundle = load_pipeline_bundle(pipe, trusted=True)
     assert bundle.schema_contract is None
     scored = predict_from_pipeline(
         pipe,
         _tiny_cls()[["age", "income"]],
         apply_plans=False,
+        trusted=True,
     )
     assert scored.n_rows > 0
     assert scored.contract_validation is not None

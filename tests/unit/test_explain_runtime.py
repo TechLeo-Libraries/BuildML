@@ -143,7 +143,7 @@ def test_checkpoint_preserves_v2_and_loads_old_history(tmp_path: Path) -> None:
 
     saved = json.loads((path / "history.json").read_text(encoding="utf-8"))
     assert saved[0]["schema_version"] == 2
-    restored = Session.checkpoint_load(path)
+    restored = Session.checkpoint_load(path, trusted=True)
     assert all(record["schema_version"] == 2 for record in restored.history)
     assert [record["sequence"] for record in restored.history] == list(
         range(1, len(restored.history) + 1)
@@ -153,7 +153,7 @@ def test_checkpoint_preserves_v2_and_loads_old_history(tmp_path: Path) -> None:
         json.dumps([{"action": "ingest", "details": {"format": "parquet"}}]),
         encoding="utf-8",
     )
-    old_restored = Session.checkpoint_load(path)
+    old_restored = Session.checkpoint_load(path, trusted=True)
     assert old_restored.history[0]["schema_version"] == 2
     assert old_restored.history[0]["parameters"]["format"] == "parquet"
 

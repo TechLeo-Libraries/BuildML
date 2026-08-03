@@ -30,7 +30,7 @@ def test_checkpoint_roundtrip_reattaches_polars_native(tmp_path: Path) -> None:
     path = tmp_path / "ckpt_polars"
     session.checkpoint_save(path)
 
-    restored = Session.checkpoint_load(path)
+    restored = Session.checkpoint_load(path, trusted=True)
     assert restored.reattach_result is not None
     assert restored.reattach_result.status == "resume"
     assert restored.dataset.engine == EngineName.POLARS
@@ -50,7 +50,7 @@ def test_checkpoint_roundtrip_reattaches_duckdb_native(tmp_path: Path) -> None:
     session = Session.ingest(frame, engine="duckdb").set_roles({"a": "feature", "y": "target"})
     path = tmp_path / "ckpt_duck"
     session.checkpoint_save(path)
-    restored = Session.checkpoint_load(path)
+    restored = Session.checkpoint_load(path, trusted=True)
     assert restored.dataset.engine == EngineName.DUCKDB
     assert restored.dataset.has_native
     assert any("Restored duckdb native handle" in m for m in restored.reattach_result.messages)  # type: ignore[union-attr]
@@ -62,7 +62,7 @@ def test_checkpoint_pandas_engine_skips_native_reattach(tmp_path: Path) -> None:
     session = Session.ingest(pd.DataFrame({"a": [1, 2], "y": [0, 1]}))
     path = tmp_path / "ckpt_pd"
     session.checkpoint_save(path)
-    restored = Session.checkpoint_load(path)
+    restored = Session.checkpoint_load(path, trusted=True)
     assert restored.dataset.engine == EngineName.PANDAS
     assert not restored.dataset.has_native
     assert restored.reattach_result is not None

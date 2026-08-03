@@ -249,7 +249,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Read meta.json + graph_plan.joblib.",
             "Attach plan and graph_spec; clear fit/predict/eval slots.",
         ),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory with meta.json + graph_plan.joblib.",),
         outputs=("Session with graph_plan attached.",),
         prerequisites=(DATASET,),

@@ -28,6 +28,7 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
+from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
 from buildml.ensemble.results import EnsembleFitResult, EnsemblePlan
 from buildml.model.supervised import FitResult
@@ -142,7 +143,7 @@ def save_ensemble_bundle(
     return destination
 
 
-def load_ensemble_bundle(path: str | Path) -> tuple[EnsemblePlan, FitResult | None]:
+def load_ensemble_bundle(path: str | Path, *, trusted: bool = False) -> tuple[EnsemblePlan, FitResult | None]:
     """Read a bundle back, reconstructing the fit result if it was not stored.
 
     Checks the format marker before unpickling, so a directory that is not a
@@ -159,6 +160,9 @@ def load_ensemble_bundle(path: str | Path) -> tuple[EnsemblePlan, FitResult | No
     ----------
     path:
         The bundle directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
@@ -209,7 +213,7 @@ def load_ensemble_bundle(path: str | Path) -> tuple[EnsemblePlan, FitResult | No
         raise ValidationError(
             f"Unsupported ensemble bundle format {fmt!r}; expected {BUNDLE_FORMAT}."
         )
-    loaded = joblib.load(plan_path)
+    loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, EnsemblePlan):
         plan = loaded
         fit_result = None

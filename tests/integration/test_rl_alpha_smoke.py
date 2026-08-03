@@ -66,7 +66,7 @@ def test_imitation_and_bandit_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard", columns=["s0", "s1"])
     )
-    other.load_rl_bundle(tmp_path / "rl")
+    other.load_rl_bundle(tmp_path / "rl", trusted=True)
     assert other.evaluate_rl(partition="validation").offline is True
 
 
@@ -92,6 +92,6 @@ def test_gym_reinforce_smoke(tmp_path: Path) -> None:
     assert "mean_return" in ev.metrics
     session.save_rl_bundle(tmp_path / "gym_rl")
     other = Session.ingest(frame).set_roles({"a": "feature", "y": "target"})
-    other.load_rl_bundle(tmp_path / "gym_rl")
+    other.load_rl_bundle(tmp_path / "gym_rl", trusted=True)
     assert other.rl_plan is not None
     assert other.rl_plan.mode == "gym_reinforce"

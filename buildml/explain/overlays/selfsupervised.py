@@ -233,7 +233,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Restore a train-fitted SSL encoder without refitting the pretext.",
         "Self-supervised bundle load.",
         ("Validate bundle format.", "Attach plans; clear transient result slots."),
-        parameters=(_p("path", "str | Path", "Bundle directory.", required=True),),
+        parameters=(
+            _p("path", "str | Path", "Bundle directory.", required=True),
+            _p(
+                "trusted",
+                "bool",
+                "Must be True to deserialize pickle/joblib/torch payloads (default False).",
+                False,
+            ),
+        ),
         inputs=("Bundle directory with meta.json + ssl_plan.joblib.",),
         outputs=("Session with ssl_plan (and optional ssl_head_plan) attached.",),
         prerequisites=(DATASET,),

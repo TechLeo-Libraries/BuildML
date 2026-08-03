@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from buildml.dl.extras import torch_available, torch_spec_available
+from buildml.core.industry_markers import platform_skip_entry
 from buildml.symbolic.extras import (
     imodels_available,
     skope_rules_available,
@@ -55,8 +56,12 @@ def symbolic_capability_matrix() -> dict[str, Any]:
                     "Interpretable-model rule export via skope-rules (SkopeRules) "
                     "and imodels (RuleFit, BoostedRules) when installed."
                 ),
+                **platform_skip_entry("skope_rules", extra="symbolic-industry"),
             },
         },
+        "platform_markers": [
+            platform_skip_entry("skope_rules", extra="symbolic-industry"),
+        ],
         "neuro_symbolic_backends": {
             "sklearn": {
                 "available": True,

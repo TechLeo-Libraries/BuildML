@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Sequence, cast
+
+if TYPE_CHECKING:
+    from buildml.session.session import Session
 
 from buildml.core.errors import ValidationError
 from buildml.data.splits import PartitionName
@@ -533,7 +536,7 @@ def save_symbolic_bundle_op(session, path: str | Path) -> Path:
     return out
 
 
-def load_symbolic_bundle_op(session, path: str | Path):
+def load_symbolic_bundle_op(session, path: str | Path, *, trusted: bool = False):
     """Load a symbolic bundle into this Session.
 
     Delegates to :func:`buildml.symbolic.checkpoint.load_symbolic_bundle` and
@@ -546,13 +549,16 @@ def load_symbolic_bundle_op(session, path: str | Path):
         Session instance to populate with the loaded plan.
     path:
         Path to a ``buildml.symbolic_bundle.v1`` directory.
+    trusted:
+        Must be ``True`` to deserialize pickle/joblib/torch payloads. Pass
+        only for artifacts you created or fully trust. Defaults to ``False``.
 
     Returns
     -------
     Session
         ``session`` with symbolic plan attached for chaining.
     """
-    plan = load_symbolic_bundle(path)
+    plan = load_symbolic_bundle(path, trusted=trusted)
     if isinstance(plan, NeuroSymbolicPlan):
         session._neuro_symbolic_plan = plan
         session._neuro_symbolic_fit_result = None
@@ -576,8 +582,8 @@ def load_symbolic_bundle_op(session, path: str | Path):
         summary = {
             "path": str(path),
             "kind": "symbolic",
-            "source": plan.source,
-            "n_rules": plan.n_rules,
+            "source": str(plan.source),
+            "n_rules": str(plan.n_rules),
         }
     session._symbolic_eval_result = None
     session._record(
@@ -585,7 +591,7 @@ def load_symbolic_bundle_op(session, path: str | Path):
         {"path": str(path)},
         result_summary=summary,
     )
-    return session
+    return cast("Session", session)
 
 
 def symbolic_capability_matrix_op() -> dict[str, Any]:

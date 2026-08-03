@@ -114,7 +114,7 @@ def test_session_fedavg_loop_and_bundle(tmp_path: Path) -> None:
     assert rounds_path.is_file()
     assert rounds_path.read_text(encoding="utf-8").count("round_history") >= 1
 
-    plan = load_federated_bundle(bundle)
+    plan = load_federated_bundle(bundle, trusted=True)
     assert plan.method == "fedavg"
 
     restored = Session.ingest(_frame()).set_roles(
@@ -127,7 +127,7 @@ def test_session_fedavg_loop_and_bundle(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_federated_bundle(bundle)
+    restored.load_federated_bundle(bundle, trusted=True)
     assert restored.federated_plan is not None
     assert restored.federated_plan.estimator_name == "sgd_classifier"
 

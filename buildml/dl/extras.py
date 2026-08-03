@@ -24,9 +24,29 @@ buildml.core.errors.MissingExtraError : The error, carrying the install hint.
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import sys
 from typing import Any
 
 from buildml.core.errors import MissingExtraError
+
+
+def _subprocess_import_ok(module: str, *, timeout: float = 45.0) -> bool:
+    """Import ``module`` in a child process so a hard crash cannot kill us.
+
+    Used on Windows where broken Torch DLL loads can raise a fatal access
+    violation instead of a catchable Python exception.
+    """
+    try:
+        completed = subprocess.run(
+            [sys.executable, "-c", f"import {module}"],
+            check=False,
+            capture_output=True,
+            timeout=timeout,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return completed.returncode == 0
 
 
 def require_torch(*, feature: str = "Deep learning (Torch)") -> Any:
@@ -106,6 +126,10 @@ def torch_available() -> bool:
     """
     if importlib.util.find_spec("torch") is None:
         return False
+    # Windows + broken CUDA/DLL installs can hard-crash the process on import.
+    # Probe in a subprocess so capability matrices / EDA never kill the parent.
+    if sys.platform == "win32":
+        return _subprocess_import_ok("torch")
     try:
         import torch  # noqa: F401
     except Exception:
