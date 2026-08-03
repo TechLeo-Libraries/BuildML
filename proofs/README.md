@@ -6,27 +6,33 @@ artifacts where applicable, and JSON metrics under `results/` (gitignored).
 
 | Tier | Count | What it proves |
 | --- | ---: | --- |
-| **A** | **26/26** | One named product scenario per major Session domain |
-| **B** | **6/6** | Cross-domain products composing multiple Session surfaces |
-| **C** | **26/26** | Same-split industry twin + `comparison.json` per Tier A |
+| **A** | **57/57** | One named product scenario per major Session domain (incl. ensembles + Torch) |
+| **B** | **36/36** | Cross-domain products composing multiple Session surfaces |
+| **C** | **57/57** | Same-split industry twin + `comparison.json` per Tier A |
 
-**Status:** proof program **complete**. Optional deepeners (not failures):
-`gymnasium` via `buildml[rl]` enables the CartPole REINFORCE path (BC core
-always runs); TDA prefers editable `pip install -e ".[tda]"`.
+**Expansion:** +30 Tier A, +30 Tier B, +30 Tier C twins beyond the baseline cohort
+(ensembles, Torch/DL, and previously uncomposed Tier B domains).
+
+**Status:** proof program **complete** for the expanded inventory. Optional
+deepeners (not failures): `gymnasium` via `buildml[rl]` enables CartPole /
+FrozenLake paths; TDA prefers editable `pip install -e ".[tda]"`; Torch wheels
+deepen `torch-*` / `nova-torch-bench` when importable.
 
 **Richer backends exercised in this env when installed:**
 
 | Package | Proof path deepened |
 | --- | --- |
-| `implicit` | `movie-recs-collaborative` → ALS (`backend=implicit`) |
-| `sentence-transformers` | `support-kb-rag` → dense / auto embedder |
-| `flaml` (+ GBDT extras) | `churn-automl-search`, Tier B `ledger-underwriting-studio` |
+| `implicit` | `movie-recs-collaborative`, `catalog-recs-implicit` → ALS |
+| `sentence-transformers` | `support-kb-rag`, `policy-handbook-rag` → dense / auto embedder |
+| `flaml` (+ GBDT extras) | `churn-automl-search`, Tier B `ledger-underwriting-studio` / `orbit-multitask-hub` / `keystone-underwrite-ml` |
 | AutoGluon | preferred when FLAML absent and `autogluon.tabular` imports |
+| `torch` | `torch-tabular-underwrite`, `torch-text-intent`, Tier B `nova-torch-bench` |
+| `ripser` / `persim` | `credit-tda-shape`, `process-tda-shape`, Tier B `prism` / `kiln` / `volt` |
 
 Library note: default `Session.scale` / `encode` / `impute` (and related
 numeric/categorical preprocess) skip `ignore` / `id` / `target` / `group` /
 `time` / `weight` roles — knapsack cost columns stay usable without
-feature-scoped workarounds (Tier B `aegis` / `ledger`).
+feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products).
 
 ---
 
@@ -36,7 +42,7 @@ feature-scoped workarounds (Tier B `aegis` / `ledger`).
    ```bash
    pip install -e ".[dev]"
    # domain extras as needed, e.g.:
-   pip install -e ".[tda,rl,rag]"
+   pip install -e ".[tda,rl,rag,torch]"
    ```
 2. Run one project or the full harness from the repo root:
    ```bash
@@ -57,13 +63,13 @@ Prefer an **editable** install from the repo so `pyproject.toml` extras resolve:
 ```bash
 pip install -e ".[tda]"
 # or a fuller set, e.g.
-pip install -e ".[tda,automl,rag,rl]"
+pip install -e ".[tda,automl,rag,rl,torch]"
 ```
 
 `pip install "buildml[tda]"` against a **non-editable / older wheel** can fail
 because that installed package metadata may not declare the `tda` extra even
 when the current `pyproject.toml` does. If you already installed ripser/persim
-directly, Tier A `credit-tda-shape` can still complete; the editable extra is
+directly, Tier A TDA proofs can still complete; the editable extra is
 the supported path for fresh envs.
 
 **Torch:** proof JSON may include a `torch` block (`skip_torch_paths=false`
@@ -93,23 +99,27 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 | --- | --- | --- |
 | Root overview | [`README.md`](../README.md) | → `proofs/` |
 | Guide index | [`guides/README.md`](../guides/README.md) | Mapping table + per-domain links |
-| Classical | `quickstart-classical.md`, `classical-end-to-end.md` | → `loan-approval-classical` |
-| AutoML | `quickstart-automl.md`, `automl-deep.md` | → `churn-automl-search` · Tier B `ledger-underwriting-studio` |
-| Anomaly | `quickstart-anomaly.md` | → `network-intrusion-anomaly` · Tier B `aegis-fraud-platform` |
-| Forecasting / TS | `quickstart-forecasting.md`, `quickstart-timeseries-analysis.md` | → `store-sales-forecast` · Tier B `harbor-demand-desk` |
-| RAG | `quickstart-rag.md` | → `support-kb-rag` · Tier B `pulse-support-copilot` |
-| Unsupervised | `quickstart-unsupervised.md` | → `cluster-customer-segments` |
-| Recommenders / LTR | `quickstart-recommenders.md`, `quickstart-ranking.md` | → `movie-recs-collaborative`, `search-relevance-ltr` |
-| KG / TDA / Causal / Graph / Prob | matching quickstarts | → matching Tier A slugs |
-| Semi / AL / SSL | matching quickstarts | → Tier A + Tier B `atlas-label-studio` |
-| Online / Decisions | matching quickstarts | → Tier A + Tier B `aegis` / `harbor` / `ledger` |
+| Classical | `quickstart-classical.md`, `classical-end-to-end.md` | → `loan-approval-classical`, `mortgage-default-classical`, `claim-severity-regression` |
+| Ensembles | `quickstart-ensemble.md` (when present) | → `voting-ensemble-attrition`, `stacking-credit-risk`, `blending-payment-risk` · Tier B `citadel-ensemble-desk`, `keystone-underwrite-ml` |
+| Torch / DL | `quickstart-dl.md` / Torch guides | → `torch-tabular-underwrite`, `torch-text-intent` · Tier B `nova-torch-bench` |
+| AutoML | `quickstart-automl.md`, `automl-deep.md` | → `churn-automl-search` · Tier B `ledger`, `orbit`, `keystone` |
+| Anomaly | `quickstart-anomaly.md` | → `network-intrusion-anomaly`, `payment-rail-anomaly`, `iot-sensor-anomaly` · Tier B `aegis`, `sentinel`, `rivulet`, `volt` |
+| Forecasting / TS | `quickstart-forecasting.md`, `quickstart-timeseries-analysis.md` | → `store-sales-forecast`, `energy-load-forecast` · Tier B `harbor`, `ballast`, `terrace` |
+| RAG | `quickstart-rag.md` | → `support-kb-rag`, `policy-handbook-rag` · Tier B `pulse`, `parchment`, `helix`, `zenith` |
+| Unsupervised | `quickstart-unsupervised.md` | → `cluster-customer-segments`, `sku-embedding-clusters` · Tier B `canyon`, `forge`, `kiln` |
+| Recommenders / LTR | `quickstart-recommenders.md`, `quickstart-ranking.md` | → `movie-recs-collaborative`, `catalog-recs-implicit`, `search-relevance-ltr`, `sponsored-ad-ltr` · Tier B `meridian`, `aurora`, `compass` |
+| KG / TDA / Causal / Graph / Prob | matching quickstarts | → matching Tier A + expansion slugs · Tier B `helix`, `prism`, `lattice`, `apex`, `cornerstone`, `ballast`, `relay` |
+| Semi / AL / SSL | matching quickstarts | → Tier A + expansion · Tier B `atlas`, `beacon`, `zenith` |
+| Online / Decisions | matching quickstarts | → Tier A + expansion · Tier B `aegis`, `harbor`, `ledger`, `rivulet`, `campaign` products |
 | Federated / Multi-task / Meta / Symbolic / CBR / Synthetic / IL+RL | matching quickstarts | → matching Tier A (+ Tier B where listed) |
-| NLP (text) | `quickstart-nlp.md`, `nlp-deep.md` | → `ticket-routing-nlp` |
+| NLP (text) | `quickstart-nlp.md`, `nlp-deep.md` | → `ticket-routing-nlp`, `torch-text-intent` · Tier B `folio-claims-nlp`, `zenith-support-os` |
 | Sphinx | `docs/index.rst`, `docs/features.rst`, `docs/guide-index.rst` | Mirror Markdown proof pointers |
 
 ---
 
 ## Tier A — Single-domain deep projects
+
+### Baseline cohort (1–27)
 
 | # | Project | Domain | Status | Notes |
 | ---: | --- | --- | --- | --- |
@@ -139,6 +149,42 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 | 24 | [prob-interval-risk](prob-interval-risk/) | Probabilistic | **completed** | Tier C BayesianRidge+quantile |
 | 25 | [imitation-cartpole-control](imitation-cartpole-control/) | IL + RL | **completed** | Tier C sklearn BC twin; gym REINFORCE when `gymnasium` installed |
 | 26 | [ticket-routing-nlp](ticket-routing-nlp/) | NLP (text) | **completed** | Tier C `TfidfVectorizer`+`LogisticRegression` Pipeline twin |
+| 27 | [tabular-q-frozenlake](tabular-q-frozenlake/) | Tabular RL | **completed** | FrozenLake Q-learning when `gymnasium` present |
+
+### Expansion cohort (28–57)
+
+| # | Project | Domain | Status | Notes |
+| ---: | --- | --- | --- | --- |
+| 28 | [mortgage-default-classical](mortgage-default-classical/) | Classical | **completed** | Mortgage default (distinct from consumer loan) |
+| 29 | [claim-severity-regression](claim-severity-regression/) | Classical regression | **completed** | P&C severity |
+| 30 | [voting-ensemble-attrition](voting-ensemble-attrition/) | Ensemble voting | **completed** | Soft voting LR+RF |
+| 31 | [stacking-credit-risk](stacking-credit-risk/) | Ensemble stacking | **completed** | OOF stacking CV inside train |
+| 32 | [blending-payment-risk](blending-payment-risk/) | Ensemble blending | **completed** | Train-holdout blend |
+| 33 | [torch-tabular-underwrite](torch-tabular-underwrite/) | Torch tabular | **completed** | Honest skip if Torch unavailable |
+| 34 | [torch-text-intent](torch-text-intent/) | Torch text | **completed** | Support-ticket intent; skip if no Torch |
+| 35 | [payment-rail-anomaly](payment-rail-anomaly/) | Anomaly | **completed** | Payment authorization rails |
+| 36 | [iot-sensor-anomaly](iot-sensor-anomaly/) | Anomaly | **completed** | Factory IoT sensors |
+| 37 | [energy-load-forecast](energy-load-forecast/) | Forecast | **completed** | Hourly grid load |
+| 38 | [weather-prob-intervals](weather-prob-intervals/) | Probabilistic | **completed** | Conformal / Bayesian intervals |
+| 39 | [policy-handbook-rag](policy-handbook-rag/) | RAG | **completed** | Policy handbook corpus |
+| 40 | [catalog-recs-implicit](catalog-recs-implicit/) | Recommenders | **completed** | E-commerce catalog |
+| 41 | [sponsored-ad-ltr](sponsored-ad-ltr/) | LTR | **completed** | Sponsored ad judgments |
+| 42 | [logistics-kg-linkpred](logistics-kg-linkpred/) | KG | **completed** | Logistics / supply triples |
+| 43 | [process-tda-shape](process-tda-shape/) | TDA | **completed** | Manufacturing process clouds |
+| 44 | [radiology-semi-labels](radiology-semi-labels/) | Semi-supervised | **completed** | Imaging-feature proxy |
+| 45 | [defect-active-budget](defect-active-budget/) | Active learning | **completed** | Defect labeling budget |
+| 46 | [clickstream-online](clickstream-online/) | Online | **completed** | Conversion stream |
+| 47 | [sku-multitask-retail](sku-multitask-retail/) | Multi-task | **completed** | Buy + high-margin |
+| 48 | [coldstart-meta-adapt](coldstart-meta-adapt/) | Meta-learning | **completed** | Cold-start domain adapt |
+| 49 | [compliance-neuro-symbolic](compliance-neuro-symbolic/) | Symbolic | **completed** | Compliance rules |
+| 50 | [warranty-cbr-memory](warranty-cbr-memory/) | CBR | **completed** | Warranty case memory |
+| 51 | [campaign-budget-optimize](campaign-budget-optimize/) | Optimize / decisions | **completed** | Campaign knapsack / threshold |
+| 52 | [tabular-synth-utility](tabular-synth-utility/) | Synthetic | **completed** | Utility / TSTR disclosure |
+| 53 | [sku-embedding-clusters](sku-embedding-clusters/) | Unsupervised | **completed** | Product embedding clusters |
+| 54 | [tabular-ssl-probe](tabular-ssl-probe/) | Self-supervised | **completed** | Masked tabular pretext |
+| 55 | [uplift-marketing-causal](uplift-marketing-causal/) | Causal | **completed** | Marketing uplift AIPW |
+| 56 | [edge-fleet-federated](edge-fleet-federated/) | Federated | **completed** | Edge device clients |
+| 57 | [peer-lending-graph](peer-lending-graph/) | Graph | **completed** | P2P lending rings |
 
 Each Tier A README includes: business purpose, data source, leakage controls,
 BuildML API steps, metrics, limitations, and an **Industry comparison** section.
@@ -146,6 +192,8 @@ BuildML API steps, metrics, limitations, and an **Industry comparison** section.
 ---
 
 ## Tier B — Named cross-domain products
+
+### Baseline cohort
 
 | Product | Domains combined | Status |
 | --- | --- | --- |
@@ -156,6 +204,41 @@ BuildML API steps, metrics, limitations, and an **Industry comparison** section.
 | [Ledger Underwriting Studio](ledger-underwriting-studio/) | classical + AutoML + causal assumptions + cost-sensitive decisions + calibration | **completed** |
 | [Nexus Federated Clinical](nexus-federated-clinical/) | federated sim + probabilistic uncertainty + evaluation disclosures | **completed** |
 
+### Expansion cohort (30)
+
+| Product | Domains combined | Status |
+| --- | --- | --- |
+| [Meridian Recs Commerce](meridian-recs-commerce/) | recommenders + ranking + classical + decisions | **completed** |
+| [Helix Knowledge Mesh](helix-knowledge-mesh/) | KG + RAG + symbolic | **completed** |
+| [Prism Shape Monitor](prism-shape-monitor/) | TDA + anomaly + classical | **completed** |
+| [Orbit Multi-Task Hub](orbit-multitask-hub/) | multitask + AutoML + decisions | **completed** |
+| [Quasar Meta Adapt](quasar-meta-adapt/) | metalearning + SSL + classical | **completed** |
+| [Forge Synth Lab](forge-synth-lab/) | synthetic + classical TSTR + clusters | **completed** |
+| [Canyon Segment Studio](canyon-segment-studio/) | unsupervised + classical + decisions | **completed** |
+| [Vector Control Deck](vector-control-deck/) | IL/RL + decisions + classical | **completed** |
+| [Citadel Ensemble Desk](citadel-ensemble-desk/) | voting/stacking + anomaly + decisions | **completed** |
+| [Nova Torch Bench](nova-torch-bench/) | torch + classical + probabilistic | **completed** |
+| [Sentinel IoT Watch](sentinel-iot-watch/) | anomaly + online + forecast | **completed** |
+| [Ballast Energy Desk](ballast-energy-desk/) | forecast + probabilistic + optimize | **completed** |
+| [Parchment Policy Copilot](parchment-policy-copilot/) | RAG + ranking + CBR | **completed** |
+| [Lattice Supply Graph](lattice-supply-graph/) | graph + KG + classical | **completed** |
+| [Beacon Label Factory](beacon-label-factory/) | SSL + semi-supervised + active learning | **completed** |
+| [Rivulet Stream Risk](rivulet-stream-risk/) | online + anomaly + decisions | **completed** |
+| [Cornerstone Mortgage Suite](cornerstone-mortgage-suite/) | classical + causal + decisions | **completed** |
+| [Apex Uplift Studio](apex-uplift-studio/) | causal + classical + decisions | **completed** |
+| [Relay Edge Federated](relay-edge-federated/) | federated + probabilistic + classical | **completed** |
+| [Mosaic Warranty Desk](mosaic-warranty-desk/) | CBR + symbolic + classical | **completed** |
+| [Kiln Process TDA](kiln-process-tda/) | TDA + unsupervised + anomaly | **completed** |
+| [Aurora Ad Ranker](aurora-ad-ranker/) | ranking + classical + decisions | **completed** |
+| [Compass Catalog Recs](compass-catalog-recs/) | recommenders + graph + classical | **completed** |
+| [Folio Claims NLP](folio-claims-nlp/) | NLP + CBR + symbolic | **completed** |
+| [Dynamo Click Lab](dynamo-click-lab/) | online + metalearning + classical | **completed** |
+| [Scaffold Compliance AI](scaffold-compliance-ai/) | symbolic + neuro-symbolic + decisions | **completed** |
+| [Terrace Retail Mesh](terrace-retail-mesh/) | multitask + forecast + recommenders | **completed** |
+| [Volt Sensor Fusion](volt-sensor-fusion/) | anomaly + TDA + classical | **completed** |
+| [Keystone Underwrite ML](keystone-underwrite-ml/) | stacking + AutoML + causal | **completed** |
+| [Zenith Support OS](zenith-support-os/) | RAG + NLP + active learning | **completed** |
+
 ---
 
 ## Tier C — Industry baseline twins
@@ -163,34 +246,18 @@ BuildML API steps, metrics, limitations, and an **Industry comparison** section.
 For each completed Tier A: `baseline_industry.py` **or** a comparison section
 in `script.py` on the **same split**, writing `results/comparison.json`.
 
-| Project | Tier C status |
-| --- | --- |
-| loan-approval-classical | **filled** (sklearn Pipeline twin) |
-| network-intrusion-anomaly | **filled** (IsolationForest + val F1 threshold) |
-| store-sales-forecast | **filled** (SARIMAX / seasonal_naive) |
-| churn-automl-search | **filled** (RandomizedSearchCV) |
-| cluster-customer-segments | **filled** (KMeans+PCA) |
-| support-kb-rag | **filled** (TF-IDF cosine) |
-| movie-recs-collaborative | **filled** (item-cosine) |
-| search-relevance-ltr | **filled** (Ridge pointwise) |
-| causal-treatment-effect | **filled** (sklearn AIPW) |
-| semi-label-efficiency | **filled** (LabelPropagation) |
-| active-labeling-budget | **filled** (margin sampling) |
-| stream-fraud-online | **filled** (SGD partial_fit) |
-| prob-interval-risk | **filled** (BayesianRidge + val quantile) |
-| graph-fraud-rings | **filled** (networkx features + LR) |
-| ssl-representation-probe | **filled** (PCA + logistic probe) |
-| credit-tda-shape | **filled** (logistic on raw features) |
-| kg-biomed-linkpred | **filled** (train co-occurrence PMI / filtered ranking) |
-| multi-target-underwriting | **filled** (MultiOutputClassifier) |
-| few-shot-domain-adapt | **filled** (NearestCentroid k-shot) |
-| policy-rules-neuro-symbolic | **filled** (DecisionTreeClassifier) |
-| case-memory-claims | **filled** (KNeighborsClassifier) |
-| cost-sensitive-collections | **filled** (val cost-threshold sweep) |
-| synthetic-privacy-utility | **filled** (independent column bootstrap) |
-| federated-hospital-sim | **filled** (pooled centralized SGD) |
-| imitation-cartpole-control | **filled** (sklearn BC; gym disclosed when present) |
-| ticket-routing-nlp | **filled** (`Pipeline(TfidfVectorizer + LogisticRegression)`) |
+All **57** Tier A projects ship a Tier C twin (`baseline_industry.py`, or
+embedded comparison for `loan-approval-classical`). Expansion twins follow the
+same `write_comparison` envelope and leakage disclosures as the baseline cohort.
+
+Re-run Tier C after the matching Tier A `script.py`:
+
+```bash
+.\.venv\Scripts\python.exe proofs\<slug>\script.py
+.\.venv\Scripts\python.exe proofs\<slug>\baseline_industry.py
+# or
+.\.venv\Scripts\python.exe -m proofs._lib.run_all --tier C
+```
 
 ---
 

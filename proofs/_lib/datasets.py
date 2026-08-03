@@ -477,3 +477,324 @@ def load_support_tickets_synthetic(
         ),
     }
     return frame, meta
+
+
+def load_mortgage_default_synthetic(
+    *,
+    n: int = 1400,
+    seed: int = 31,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Synthetic mortgage default table (distinct from consumer loan approval)."""
+    rng = np.random.default_rng(seed)
+    ltv = rng.beta(5, 3, size=n) * 1.2
+    dti = rng.beta(2.5, 4.0, size=n)
+    credit_score = rng.normal(680, 55, size=n).clip(480, 850)
+    rate = rng.normal(6.2, 1.1, size=n).clip(2.5, 12.0)
+    term_years = rng.choice([15, 20, 30], size=n, p=[0.15, 0.2, 0.65])
+    property_type = rng.choice(["sfr", "condo", "townhome"], size=n, p=[0.6, 0.25, 0.15])
+    type_bias = {"sfr": -0.1, "condo": 0.15, "townhome": 0.05}
+    logit = (
+        -1.5
+        + 2.8 * (ltv - 0.8)
+        + 2.2 * dti
+        - 0.008 * (credit_score - 650)
+        + 0.12 * (rate - 5.5)
+        + 0.02 * (term_years - 20)
+        + np.array([type_bias[t] for t in property_type])
+        + rng.normal(0, 0.4, size=n)
+    )
+    defaulted = (1 / (1 + np.exp(-logit)) > 0.5).astype(int)
+    frame = pd.DataFrame(
+        {
+            "ltv": ltv,
+            "dti": dti,
+            "credit_score": credit_score,
+            "note_rate": rate,
+            "term_years": term_years.astype(float),
+            "property_type": property_type,
+            "defaulted": defaulted,
+        }
+    )
+    miss = rng.random(n) < 0.06
+    frame.loc[miss, "credit_score"] = np.nan
+    meta = {
+        "name": "mortgage_default_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(n),
+        "target": "defaulted",
+        "positive_rate": float(defaulted.mean()),
+        "notes": "Synthetic mortgage default; not a real servicing / HMDA extract.",
+    }
+    return frame, meta
+
+
+def load_claim_severity_synthetic(
+    *,
+    n: int = 1100,
+    seed: int = 29,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Synthetic insurance claim severity (regression target)."""
+    rng = np.random.default_rng(seed)
+    vehicle_age = rng.integers(0, 20, size=n).astype(float)
+    driver_age = rng.normal(42, 14, size=n).clip(18, 90)
+    prior_claims = rng.poisson(0.6, size=n).astype(float)
+    urban = rng.binomial(1, 0.55, size=n).astype(float)
+    deductible = rng.choice([250, 500, 1000], size=n).astype(float)
+    severity = (
+        800
+        + 45 * vehicle_age
+        + 12 * (70 - driver_age).clip(0, None)
+        + 350 * prior_claims
+        + 220 * urban
+        - 0.15 * deductible
+        + rng.lognormal(4.5, 0.55, size=n)
+    ).clip(100, None)
+    frame = pd.DataFrame(
+        {
+            "vehicle_age": vehicle_age,
+            "driver_age": driver_age,
+            "prior_claims": prior_claims,
+            "urban": urban,
+            "deductible": deductible,
+            "severity": severity,
+        }
+    )
+    meta = {
+        "name": "claim_severity_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(n),
+        "target": "severity",
+        "notes": "Synthetic P&C severity; not a real claims extract.",
+    }
+    return frame, meta
+
+
+def load_payment_rail_anomaly_synthetic(
+    *,
+    n_normal: int = 1800,
+    n_attack: int = 100,
+    seed: int = 41,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Payment-rail anomaly table (ACH / card authorization style)."""
+    rng = np.random.default_rng(seed)
+    normal = pd.DataFrame(
+        {
+            "amount_z": rng.normal(0, 1, n_normal),
+            "hour_sin": np.sin(2 * np.pi * rng.integers(0, 24, n_normal) / 24),
+            "hour_cos": np.cos(2 * np.pi * rng.integers(0, 24, n_normal) / 24),
+            "merchant_risk": rng.beta(2, 8, n_normal),
+            "device_age_days": rng.exponential(180, n_normal).clip(1, 2000),
+            "velocity_1h": rng.poisson(2, n_normal).astype(float),
+            "is_attack": np.zeros(n_normal, dtype=int),
+        }
+    )
+    attack = pd.DataFrame(
+        {
+            "amount_z": rng.normal(2.5, 0.8, n_attack),
+            "hour_sin": np.sin(2 * np.pi * rng.integers(0, 6, n_attack) / 24),
+            "hour_cos": np.cos(2 * np.pi * rng.integers(0, 6, n_attack) / 24),
+            "merchant_risk": rng.beta(5, 2, n_attack),
+            "device_age_days": rng.exponential(20, n_attack).clip(1, 200),
+            "velocity_1h": rng.poisson(12, n_attack).astype(float),
+            "is_attack": np.ones(n_attack, dtype=int),
+        }
+    )
+    frame = pd.concat([normal, attack], ignore_index=True)
+    frame = frame.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+    meta = {
+        "name": "payment_rail_anomaly_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(len(frame)),
+        "n_attack": int(n_attack),
+        "target": "is_attack",
+        "notes": "Synthetic payment authorizations; not a card-network extract.",
+    }
+    return frame, meta
+
+
+def load_iot_sensor_anomaly_synthetic(
+    *,
+    n_normal: int = 1600,
+    n_fault: int = 90,
+    seed: int = 43,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Factory IoT sensor anomaly table."""
+    rng = np.random.default_rng(seed)
+    normal = pd.DataFrame(
+        {
+            "temp_c": rng.normal(55, 3, n_normal),
+            "vibration": rng.normal(0.4, 0.08, n_normal),
+            "current_a": rng.normal(12, 1.2, n_normal),
+            "pressure": rng.normal(101, 2, n_normal),
+            "rpm": rng.normal(1800, 40, n_normal),
+            "is_fault": np.zeros(n_normal, dtype=int),
+        }
+    )
+    fault = pd.DataFrame(
+        {
+            "temp_c": rng.normal(72, 4, n_fault),
+            "vibration": rng.normal(1.1, 0.2, n_fault),
+            "current_a": rng.normal(18, 2.0, n_fault),
+            "pressure": rng.normal(95, 3, n_fault),
+            "rpm": rng.normal(1650, 80, n_fault),
+            "is_fault": np.ones(n_fault, dtype=int),
+        }
+    )
+    frame = pd.concat([normal, fault], ignore_index=True)
+    frame = frame.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+    meta = {
+        "name": "iot_sensor_anomaly_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(len(frame)),
+        "n_fault": int(n_fault),
+        "target": "is_fault",
+        "notes": "Synthetic industrial sensors; not a real SCADA extract.",
+    }
+    return frame, meta
+
+
+def load_energy_load_synthetic(
+    *,
+    n_hours: int = 24 * 120,
+    seed: int = 17,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Hourly energy load with daily/weekly seasonality."""
+    rng = np.random.default_rng(seed)
+    times = pd.date_range("2023-01-01", periods=n_hours, freq="h")
+    t = np.arange(n_hours)
+    daily = 80 * np.sin(2 * np.pi * (t % 24) / 24 - 0.8)
+    weekly = 25 * np.sin(2 * np.pi * t / (24 * 7))
+    temp = 15 + 10 * np.sin(2 * np.pi * t / (24 * 365.25)) + rng.normal(0, 2, n_hours)
+    load = (
+        400 + daily + weekly + 3.5 * (22 - temp).clip(0, None) + rng.normal(0, 12, n_hours)
+    ).clip(50, None)
+    frame = pd.DataFrame({"ts": times, "temp_c": temp, "load_mw": load})
+    meta = {
+        "name": "energy_load_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(n_hours),
+        "freq": "h",
+        "target": "load_mw",
+        "time_column": "ts",
+        "notes": "Synthetic grid load; time_split required.",
+    }
+    return frame, meta
+
+
+def load_attrition_tabular_synthetic(
+    *,
+    n: int = 1200,
+    seed: int = 23,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """HR attrition table for ensemble / classical proofs."""
+    rng = np.random.default_rng(seed)
+    tenure = rng.exponential(4.0, size=n).clip(0.1, 30)
+    salary = rng.lognormal(10.9, 0.4, size=n)
+    overtime = rng.binomial(1, 0.28, size=n).astype(float)
+    satisfaction = rng.beta(3, 2, size=n)
+    promotions = rng.poisson(0.4, size=n).astype(float)
+    dept = rng.choice(["eng", "sales", "ops", "hr"], size=n)
+    dept_bias = {"eng": -0.1, "sales": 0.2, "ops": 0.05, "hr": -0.05}
+    logit = (
+        -0.4
+        - 0.08 * tenure
+        - 0.15 * np.log1p(salary) / 10
+        + 1.1 * overtime
+        - 1.8 * satisfaction
+        - 0.25 * promotions
+        + np.array([dept_bias[d] for d in dept])
+        + rng.normal(0, 0.45, size=n)
+    )
+    # Bernoulli draw (not hard threshold) so seeds keep usable class balance.
+    p_leave = 1.0 / (1.0 + np.exp(-logit))
+    left = (rng.random(n) < p_leave).astype(int)
+    frame = pd.DataFrame(
+        {
+            "tenure_years": tenure,
+            "salary": salary,
+            "overtime": overtime,
+            "satisfaction": satisfaction,
+            "promotions": promotions,
+            "department": dept,
+            "left": left,
+        }
+    )
+    meta = {
+        "name": "attrition_tabular_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(n),
+        "target": "left",
+        "positive_rate": float(left.mean()),
+        "notes": "Synthetic HR attrition; not a real employee extract.",
+    }
+    return frame, meta
+
+
+def load_catalog_interactions_synthetic(
+    *,
+    n_users: int = 90,
+    n_items: int = 70,
+    seed: int = 13,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """E-commerce catalog interactions for recommender proofs."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for u in range(n_users):
+        liked = rng.choice(n_items, size=max(10, n_items // 5), replace=False)
+        for item in liked:
+            rows.append(
+                {
+                    "user_id": f"u{u}",
+                    "item_id": f"sku{item}",
+                    "rating": float(rng.integers(3, 6)),
+                    "category_code": float(item % 9),
+                    "price_band": float((item * 2) % 5),
+                }
+            )
+    frame = pd.DataFrame(rows)
+    meta = {
+        "name": "catalog_interactions_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(len(frame)),
+        "n_users": n_users,
+        "n_items": n_items,
+        "notes": "Synthetic catalog clicks/ratings; not a real retail extract.",
+    }
+    return frame, meta
+
+
+def load_ad_ltr_judgments_synthetic(
+    *,
+    n_queries: int = 70,
+    n_ads: int = 10,
+    seed: int = 27,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Sponsored ad LTR judgments."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for q in range(n_queries):
+        q_center = float(q % 5)
+        for ad in range(n_ads):
+            relevance_feat = float(rng.normal(q_center, 0.7))
+            bid = float(rng.uniform(0.2, 3.0))
+            ctr_prior = float(rng.beta(2, 8))
+            score = 2.5 - abs(relevance_feat - q_center) + 0.3 * bid + 0.8 * ctr_prior
+            rel = float(max(0, min(4, int(round(score)))))
+            rows.append(
+                {
+                    "query_id": f"q{q}",
+                    "ad_id": f"ad{ad}",
+                    "rel_feat": relevance_feat,
+                    "bid": bid,
+                    "ctr_prior": ctr_prior,
+                    "relevance": rel,
+                }
+            )
+    frame = pd.DataFrame(rows)
+    meta = {
+        "name": "ad_ltr_judgments_synthetic",
+        "license": "synthetic/public-domain (generated in-repo)",
+        "n_rows": int(len(frame)),
+        "notes": "Synthetic ad judgments; not a real auction log.",
+    }
+    return frame, meta

@@ -52,7 +52,7 @@ class ForecastSessionMixin:
             Canonical documentation for parameters, raises, and examples.
         """
         return cast(
-            ForecastFitResult,
+            "ForecastFitResult",
             forecast_ops.fit_forecast(
                 self,
                 method=method,

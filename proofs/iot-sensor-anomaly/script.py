@@ -1,0 +1,149 @@
+"""Tier A proof: factory IoT sensor anomaly detection."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path as _Path
+
+_REPO = _Path(__file__).resolve().parents[2]
+if str(_REPO) not in sys.path:
+    sys.path.insert(0, str(_REPO))
+
+from proofs._lib.bootstrap import ensure_repo_on_path
+
+ensure_repo_on_path()
+
+from buildml import Session
+from buildml.core.errors import MissingExtraError
+from proofs._lib import (
+    assert_disjoint_partitions,
+    assert_no_test_in_selection,
+    extra_available,
+    load_iot_sensor_anomaly_synthetic,
+    metrics_round,
+    new_proof_context,
+    write_results,
+)
+
+FEATURES = ["temp_c", "vibration", "current_a", "pressure", "rpm"]
+LABEL = "is_fault"
+
+
+def _labels(plan) -> list[str]:
+    n = max(plan.train_indices + plan.validation_indices + plan.test_indices) + 1
+    out = ["unused"] * n
+    for i in plan.train_indices:
+        out[i] = "train"
+    for i in plan.validation_indices:
+        out[i] = "validation"
+    for i in plan.test_indices:
+        out[i] = "test"
+    return out
+
+
+def main() -> None:
+    ctx = new_proof_context("iot-sensor-anomaly", seed=109)
+    frame, data_meta = load_iot_sensor_anomaly_synthetic(seed=ctx.seed)
+    pyod_ok = extra_available("pyod")
+
+    session = (
+        Session.ingest(frame)
+        .set_roles({**{c: "feature" for c in FEATURES}, LABEL: "target"})
+        .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=ctx.seed)
+        .scale(method="standard")
+    )
+    plan = session.split_plan
+    assert plan is not None
+    counts = assert_disjoint_partitions(_labels(plan))
+
+    try:
+        if pyod_ok:
+            fit = session.fit_anomaly(
+                backend="pyod",
+                method="hbos",
+                mode="unsupervised",
+                contamination=0.06,
+                random_state=ctx.seed,
+            )
+            backend_used, method_used = "pyod", "hbos"
+        else:
+            fit = session.fit_anomaly(
+                method="isolation_forest",
+                mode="unsupervised",
+                contamination=0.06,
+                random_state=ctx.seed,
+            )
+            backend_used, method_used = "sklearn", "isolation_forest"
+    except (MissingExtraError, TypeError, ValueError):
+        fit = session.fit_anomaly(
+            method="isolation_forest",
+            mode="unsupervised",
+            contamination=0.06,
+            random_state=ctx.seed,
+        )
+        backend_used, method_used = "sklearn", "isolation_forest"
+
+    assert_no_test_in_selection(
+        selection_partition="validation",
+        evaluation_partition="test",
+    )
+    tune = session.tune_anomaly_threshold(
+        partition="validation",
+        label_column=LABEL,
+        positive_label=1,
+        metric="f1",
+    )
+    scored = session.score_anomalies(partition="test")
+    ev = session.evaluate_anomaly(partition="test", positive_label=1)
+    bundle = session.save_anomaly_bundle(ctx.artifacts_dir / "anomaly_bundle")
+    labeled = metrics_round(dict(getattr(ev, "labeled_metrics", {}) or {}))
+    write_results(
+        ctx,
+        {
+            "status": "completed",
+            "data": data_meta,
+            "split": {"kind": plan.kind, "counts": counts, "stratify": True},
+            "backend": backend_used,
+            "method": method_used,
+            "pyod_available": pyod_ok,
+            "fit": {
+                "threshold": float(getattr(fit, "threshold", float("nan"))),
+                "train_alert_rate": float(
+                    getattr(fit, "train_alert_rate", float("nan"))
+                ),
+            },
+            "threshold_tuning": {
+                "partition": "validation",
+                "result": metrics_round(
+                    tune.to_dict() if hasattr(tune, "to_dict") else {"raw": str(tune)}
+                ),
+            },
+            "test_score": {
+                "n_flagged": int(getattr(scored, "n_flagged", -1)),
+                "alert_rate": float(getattr(scored, "alert_rate", float("nan"))),
+            },
+            "test_labeled_metrics": labeled,
+            "bundle_path": str(bundle),
+            "leakage_controls": [
+                "Unsupervised fit on train features only",
+                "Threshold tuned on validation labels only",
+                "Test scored/evaluated after threshold locked",
+            ],
+            "industry_comparison": {
+                "status": "filled",
+                "note": (
+                    "Tier C baseline_industry.py: sklearn IsolationForest twin on the same split; "
+                    "run script then baseline_industry.py for results/comparison.json."
+                ),
+            },
+            "limitations": [
+                "Synthetic industrial sensors — not a real SCADA extract",
+                "Labeled fault metrics assume label quality",
+            ],
+        },
+    )
+    print("iot-sensor-anomaly OK", labeled)
+
+
+if __name__ == "__main__":
+    main()

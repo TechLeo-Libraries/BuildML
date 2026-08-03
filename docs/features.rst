@@ -324,9 +324,11 @@ Proof suite (Tier A/B/C)
 End-to-end evidence that Session domains work with honest splits and holdout
 metrics lives in the repository ``proofs/`` directory (not thin smoke):
 
-* **Tier A — 26/26:** one deep project per major domain (classical through NLP)
-* **Tier B — 6/6:** Aegis, Harbor, Atlas, Pulse, Ledger, Nexus cross-domain products
-* **Tier C — 26/26:** same-split industry twins writing ``comparison.json``
+* **Tier A — 57/57:** one deep project per major domain (classical through NLP,
+  plus ensembles and Torch tabular/text)
+* **Tier B — 36/36:** baseline Aegis/Harbor/Atlas/Pulse/Ledger/Nexus plus 30
+  expansion products (Meridian, Helix, Citadel, Nova, Zenith, …)
+* **Tier C — 57/57:** same-split industry twins writing ``comparison.json``
   (qualitative competitive bar 5-B — workflow parity over tiny metric gaps)
 
 Re-run from a source checkout::

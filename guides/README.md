@@ -226,31 +226,33 @@ When an API is alpha, guides say so and show the honest limit next to the exampl
 ## Proof suite deep-links
 
 Industry-standard Tier A/B/C projects live under
-[`proofs/`](../proofs/README.md) (**26/26** Tier A, **6/6** Tier B, **26/26**
+[`proofs/`](../proofs/README.md) (**57/57** Tier A, **36/36** Tier B, **57/57**
 Tier C — not smoke). Re-run: `python -m proofs._lib.run_all --tier all`.
 
 | Domain | Proof project |
 | --- | --- |
-| Classical | [loan-approval-classical](../proofs/loan-approval-classical/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/) |
-| AutoML | [churn-automl-search](../proofs/churn-automl-search/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/) |
-| Anomaly | [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/) · Tier B [aegis-fraud-platform](../proofs/aegis-fraud-platform/) |
-| Forecast / TS | [store-sales-forecast](../proofs/store-sales-forecast/) · Tier B [harbor-demand-desk](../proofs/harbor-demand-desk/) |
-| RAG | [support-kb-rag](../proofs/support-kb-rag/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/) |
-| Clustering | [cluster-customer-segments](../proofs/cluster-customer-segments/) |
-| Recommenders | [movie-recs-collaborative](../proofs/movie-recs-collaborative/) |
-| LTR | [search-relevance-ltr](../proofs/search-relevance-ltr/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/) |
-| Knowledge graphs | [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/) |
-| TDA | [credit-tda-shape](../proofs/credit-tda-shape/) |
-| Semi / AL / SSL | [semi-label-efficiency](../proofs/semi-label-efficiency/), [active-labeling-budget](../proofs/active-labeling-budget/), [ssl-representation-probe](../proofs/ssl-representation-probe/) · Tier B [atlas-label-studio](../proofs/atlas-label-studio/) |
-| Online / Graph / Decisions | [stream-fraud-online](../proofs/stream-fraud-online/), [graph-fraud-rings](../proofs/graph-fraud-rings/), [cost-sensitive-collections](../proofs/cost-sensitive-collections/) · Tier B [aegis-fraud-platform](../proofs/aegis-fraud-platform/), [harbor-demand-desk](../proofs/harbor-demand-desk/), [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/) |
-| Probabilistic | [prob-interval-risk](../proofs/prob-interval-risk/) · Tier B [harbor-demand-desk](../proofs/harbor-demand-desk/), [nexus-federated-clinical](../proofs/nexus-federated-clinical/) |
-| Causal | [causal-treatment-effect](../proofs/causal-treatment-effect/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/) |
-| Multi-task | [multi-target-underwriting](../proofs/multi-target-underwriting/) |
-| Meta-learning | [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/) |
-| Federated | [federated-hospital-sim](../proofs/federated-hospital-sim/) · Tier B [nexus-federated-clinical](../proofs/nexus-federated-clinical/) |
-| Symbolic / CBR | [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/), [case-memory-claims](../proofs/case-memory-claims/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/) |
-| Synthetic | [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/) |
-| Imitation + RL | [imitation-cartpole-control](../proofs/imitation-cartpole-control/) |
-| NLP (text) | [ticket-routing-nlp](../proofs/ticket-routing-nlp/) |
+| Classical | [loan-approval-classical](../proofs/loan-approval-classical/), [mortgage-default-classical](../proofs/mortgage-default-classical/), [claim-severity-regression](../proofs/claim-severity-regression/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/), [cornerstone-mortgage-suite](../proofs/cornerstone-mortgage-suite/) |
+| Ensembles | [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/), [stacking-credit-risk](../proofs/stacking-credit-risk/), [blending-payment-risk](../proofs/blending-payment-risk/) · Tier B [citadel-ensemble-desk](../proofs/citadel-ensemble-desk/), [keystone-underwrite-ml](../proofs/keystone-underwrite-ml/) |
+| Torch / DL | [torch-tabular-underwrite](../proofs/torch-tabular-underwrite/), [torch-text-intent](../proofs/torch-text-intent/) · Tier B [nova-torch-bench](../proofs/nova-torch-bench/) |
+| AutoML | [churn-automl-search](../proofs/churn-automl-search/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/), [orbit-multitask-hub](../proofs/orbit-multitask-hub/), [keystone-underwrite-ml](../proofs/keystone-underwrite-ml/) |
+| Anomaly | [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/), [payment-rail-anomaly](../proofs/payment-rail-anomaly/), [iot-sensor-anomaly](../proofs/iot-sensor-anomaly/) · Tier B [aegis-fraud-platform](../proofs/aegis-fraud-platform/), [sentinel-iot-watch](../proofs/sentinel-iot-watch/), [rivulet-stream-risk](../proofs/rivulet-stream-risk/), [volt-sensor-fusion](../proofs/volt-sensor-fusion/) |
+| Forecast / TS | [store-sales-forecast](../proofs/store-sales-forecast/), [energy-load-forecast](../proofs/energy-load-forecast/) · Tier B [harbor-demand-desk](../proofs/harbor-demand-desk/), [ballast-energy-desk](../proofs/ballast-energy-desk/), [terrace-retail-mesh](../proofs/terrace-retail-mesh/) |
+| RAG | [support-kb-rag](../proofs/support-kb-rag/), [policy-handbook-rag](../proofs/policy-handbook-rag/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/), [parchment-policy-copilot](../proofs/parchment-policy-copilot/), [helix-knowledge-mesh](../proofs/helix-knowledge-mesh/), [zenith-support-os](../proofs/zenith-support-os/) |
+| Clustering | [cluster-customer-segments](../proofs/cluster-customer-segments/), [sku-embedding-clusters](../proofs/sku-embedding-clusters/) · Tier B [canyon-segment-studio](../proofs/canyon-segment-studio/), [forge-synth-lab](../proofs/forge-synth-lab/) |
+| Recommenders | [movie-recs-collaborative](../proofs/movie-recs-collaborative/), [catalog-recs-implicit](../proofs/catalog-recs-implicit/) · Tier B [meridian-recs-commerce](../proofs/meridian-recs-commerce/), [compass-catalog-recs](../proofs/compass-catalog-recs/) |
+| LTR | [search-relevance-ltr](../proofs/search-relevance-ltr/), [sponsored-ad-ltr](../proofs/sponsored-ad-ltr/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/), [aurora-ad-ranker](../proofs/aurora-ad-ranker/), [meridian-recs-commerce](../proofs/meridian-recs-commerce/) |
+| Knowledge graphs | [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/), [logistics-kg-linkpred](../proofs/logistics-kg-linkpred/) · Tier B [helix-knowledge-mesh](../proofs/helix-knowledge-mesh/), [lattice-supply-graph](../proofs/lattice-supply-graph/) |
+| TDA | [credit-tda-shape](../proofs/credit-tda-shape/), [process-tda-shape](../proofs/process-tda-shape/) · Tier B [prism-shape-monitor](../proofs/prism-shape-monitor/), [kiln-process-tda](../proofs/kiln-process-tda/), [volt-sensor-fusion](../proofs/volt-sensor-fusion/) |
+| Semi / AL / SSL | [semi-label-efficiency](../proofs/semi-label-efficiency/), [radiology-semi-labels](../proofs/radiology-semi-labels/), [active-labeling-budget](../proofs/active-labeling-budget/), [defect-active-budget](../proofs/defect-active-budget/), [ssl-representation-probe](../proofs/ssl-representation-probe/), [tabular-ssl-probe](../proofs/tabular-ssl-probe/) · Tier B [atlas-label-studio](../proofs/atlas-label-studio/), [beacon-label-factory](../proofs/beacon-label-factory/), [zenith-support-os](../proofs/zenith-support-os/) |
+| Online / Graph / Decisions | [stream-fraud-online](../proofs/stream-fraud-online/), [clickstream-online](../proofs/clickstream-online/), [graph-fraud-rings](../proofs/graph-fraud-rings/), [peer-lending-graph](../proofs/peer-lending-graph/), [cost-sensitive-collections](../proofs/cost-sensitive-collections/), [campaign-budget-optimize](../proofs/campaign-budget-optimize/) · Tier B [aegis-fraud-platform](../proofs/aegis-fraud-platform/), [rivulet-stream-risk](../proofs/rivulet-stream-risk/), [lattice-supply-graph](../proofs/lattice-supply-graph/) |
+| Probabilistic | [prob-interval-risk](../proofs/prob-interval-risk/), [weather-prob-intervals](../proofs/weather-prob-intervals/) · Tier B [harbor-demand-desk](../proofs/harbor-demand-desk/), [ballast-energy-desk](../proofs/ballast-energy-desk/), [nexus-federated-clinical](../proofs/nexus-federated-clinical/), [relay-edge-federated](../proofs/relay-edge-federated/), [nova-torch-bench](../proofs/nova-torch-bench/) |
+| Causal | [causal-treatment-effect](../proofs/causal-treatment-effect/), [uplift-marketing-causal](../proofs/uplift-marketing-causal/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/), [apex-uplift-studio](../proofs/apex-uplift-studio/), [cornerstone-mortgage-suite](../proofs/cornerstone-mortgage-suite/), [keystone-underwrite-ml](../proofs/keystone-underwrite-ml/) |
+| Multi-task | [multi-target-underwriting](../proofs/multi-target-underwriting/), [sku-multitask-retail](../proofs/sku-multitask-retail/) · Tier B [orbit-multitask-hub](../proofs/orbit-multitask-hub/), [terrace-retail-mesh](../proofs/terrace-retail-mesh/) |
+| Meta-learning | [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/), [coldstart-meta-adapt](../proofs/coldstart-meta-adapt/) · Tier B [quasar-meta-adapt](../proofs/quasar-meta-adapt/), [dynamo-click-lab](../proofs/dynamo-click-lab/) |
+| Federated | [federated-hospital-sim](../proofs/federated-hospital-sim/), [edge-fleet-federated](../proofs/edge-fleet-federated/) · Tier B [nexus-federated-clinical](../proofs/nexus-federated-clinical/), [relay-edge-federated](../proofs/relay-edge-federated/) |
+| Symbolic / CBR | [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/), [compliance-neuro-symbolic](../proofs/compliance-neuro-symbolic/), [case-memory-claims](../proofs/case-memory-claims/), [warranty-cbr-memory](../proofs/warranty-cbr-memory/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/), [mosaic-warranty-desk](../proofs/mosaic-warranty-desk/), [scaffold-compliance-ai](../proofs/scaffold-compliance-ai/) |
+| Synthetic | [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/), [tabular-synth-utility](../proofs/tabular-synth-utility/) · Tier B [forge-synth-lab](../proofs/forge-synth-lab/) |
+| Imitation + RL | [imitation-cartpole-control](../proofs/imitation-cartpole-control/), [tabular-q-frozenlake](../proofs/tabular-q-frozenlake/) · Tier B [vector-control-deck](../proofs/vector-control-deck/) |
+| NLP (text) | [ticket-routing-nlp](../proofs/ticket-routing-nlp/), [torch-text-intent](../proofs/torch-text-intent/) · Tier B [folio-claims-nlp](../proofs/folio-claims-nlp/), [zenith-support-os](../proofs/zenith-support-os/) |
 
 Full inventory and Tier C comparison status: [proofs/README.md](../proofs/README.md).

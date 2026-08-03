@@ -8,6 +8,22 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Added
+
+- **Proof suite expansion (+30 Tier A, +30 Tier B, +30 Tier C twins).** Inventory
+  is now **57/57** Tier A, **36/36** Tier B, **57/57** Tier C. New Tier A covers
+  ensembles (`fit_voting` / `fit_stacking` / `fit_blending`), Torch tabular/text,
+  and additional industry scenarios across anomaly, forecast, RAG, recommenders,
+  LTR, KG, TDA, semi/AL/SSL, online, multitask, meta, symbolic, CBR, decisions,
+  synthetic, unsupervised, causal, federated, and graph. New Tier B products
+  compose ≥3 Session surfaces each (Meridian, Helix, Prism, Orbit, Quasar,
+  Forge, Canyon, Vector, Citadel, Nova, Sentinel, Ballast, Parchment, Lattice,
+  Beacon, Rivulet, Cornerstone, Apex, Relay, Mosaic, Kiln, Aurora, Compass,
+  Folio, Dynamo, Scaffold, Terrace, Volt, Keystone, Zenith). Shared synthetic
+  loaders extended in ``proofs/_lib/datasets.py``. Harness:
+  ``python -m proofs._lib.run_all --tier all``. Docs: ``proofs/README.md``,
+  root README, ``guides/README.md``, Sphinx ``features.rst``.
+
 ### Security
 
 - **Trusted deserialize gate.** All joblib/pickle/torch bundle and checkpoint

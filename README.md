@@ -311,9 +311,9 @@ metrics lives under [`proofs/`](proofs/README.md) — **not** smoke tests.
 
 | Tier | Status | Meaning |
 | --- | --- | --- |
-| A | **26/26** | One deep project per major domain |
-| B | **6/6** | Named products composing multiple Session surfaces |
-| C | **26/26** | Same-split industry twin + `comparison.json` (qualitative bar 5-B) |
+| A | **57/57** | One deep project per major domain (incl. ensembles + Torch) |
+| B | **36/36** | Named products composing multiple Session surfaces |
+| C | **57/57** | Same-split industry twin + `comparison.json` (qualitative bar 5-B) |
 
 ```bash
 # Full harness from repo root
