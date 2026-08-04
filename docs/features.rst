@@ -363,5 +363,5 @@ Domain → proof mappings are in ``guides/README.md`` (rendered here as
 ``pip install -e ".[tda]"``. ``buildml[production]`` remains best-effort on
 Python 3.13 (environment markers skip broken upstream wheels).
 
-Install honesty stays unchanged: PyPI ``buildml`` is legacy 1.x until a 2.x
-wheel ships: use a GitHub or editable install for Session APIs above.
+Install with ``pip install buildml`` for Session 2.4.x. Legacy 1.x remains
+available only under an explicit pin (``buildml==1.0.9``).

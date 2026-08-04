@@ -374,12 +374,12 @@ See [CHANGELOG.md](CHANGELOG.md) for release notes and
 
 ## Documentation
 
-- [Proof suite](proofs/README.md): Tier A/B/C inventory, harness, Tier C interpretation
-- [Guides](guides/README.md): quickstarts (each major domain links its proof) and glossary
-- [Concepts](docs/concepts.rst): roles, partitions, train-fitted plans
-- [Workflow guide](docs/workflow-guide.rst): ordering, leakage, diagnostics
-- [Sphinx docs](docs/index.rst): installation, features, API reference, legacy boundary
-- [Changelog](CHANGELOG.md): release notes
+- [Proof suite](https://github.com/TechLeo-Libraries/BuildML/blob/main/proofs/README.md) — Tier A/B/C inventory, harness, Tier C interpretation
+- [Guides](https://github.com/TechLeo-Libraries/BuildML/blob/main/guides/README.md) — quickstarts (each major domain links its proof) and [glossary](https://github.com/TechLeo-Libraries/BuildML/blob/main/guides/glossary.md)
+- [Concepts](https://buildml.readthedocs.io/en/latest/concepts.html) — roles, partitions, train-fitted plans
+- [Workflow guide](https://buildml.readthedocs.io/en/latest/workflow-guide.html) — ordering, leakage, diagnostics
+- [Sphinx docs](https://buildml.readthedocs.io/en/latest/) — installation, features, API reference, legacy boundary
+- [Changelog](https://github.com/TechLeo-Libraries/BuildML/blob/main/CHANGELOG.md) — release notes
 
 ---
 
